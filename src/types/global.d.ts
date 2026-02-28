@@ -1654,6 +1654,14 @@ declare global {
           delete: (projectId: string, chapterId: string, versionId: string) => Promise<{ success: boolean; error?: string }>;
         };
       };
+      // Onboarding wizard
+      onboarding?: {
+        checkDependencies: () => Promise<{ cli: boolean; gateway: boolean; config: boolean; database: boolean }>;
+        checkPermissions: () => Promise<{ camera: string; microphone: string; screen: string; notifications: string }>;
+        requestPermission: (mediaType: 'camera' | 'microphone') => Promise<{ granted: boolean }>;
+        testGatewayConnection: () => Promise<{ reachable: boolean; hasToken: boolean; error?: string }>;
+        populateSampleData: () => Promise<{ inserted: number; skipped: number }>;
+      };
     };
   }
 }

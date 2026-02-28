@@ -20,6 +20,9 @@ import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
+import EmptyState from './EmptyState';
 
 const logger = createLogger('Meetings');
 
@@ -166,6 +169,7 @@ export default function MeetingsPanel() {
   const [transcriptionSaving, setTranscriptionSaving] = useState(false);
   const [transcriptionSaved, setTranscriptionSaved] = useState(false);
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(false);
+  const [pastMeetingsError, setPastMeetingsError] = useState<string | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(null);
 
   // AI Chat
@@ -570,7 +574,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       } catch { /* ignore */ }
       setPastMeetings(meetings);
     } catch (err) {
-      // '[Meetings] Error loading:', err;
+      logger.error('Error loading past meetings:', err);
+      setPastMeetingsError(err instanceof Error ? err.message : 'Failed to load past meetings');
     } finally {
       setLoadingPastMeetings(false);
     }
@@ -1182,15 +1187,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     <div className="h-full flex flex-col bg-clawd-bg">
       {/* Header */}
       <div className="shrink-0 border-b border-clawd-border bg-clawd-surface">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+        <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-success-subtle flex items-center justify-center">
                 <Phone size={20} className="text-success" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-clawd-text">Meetings</h1>
-                <p className="text-sm text-clawd-text-dim">
+                <h1 className="text-heading-2">Meetings</h1>
+                <p className="text-secondary">
                   {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
                 </p>
               </div>
@@ -1392,7 +1397,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
                           <Phone size={36} className="text-success" />
                         </div>
-                        <h2 className="text-xl font-semibold text-clawd-text mb-2">Start a Meeting</h2>
+                        <h2 className="text-heading-3 mb-2">Start a Meeting</h2>
                         <p className="text-clawd-text-dim mb-6 max-w-md mx-auto">
                           Record, transcribe, and extract action items from your meetings with AI-powered transcription.
                         </p>
@@ -1796,10 +1801,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* Meeting Info */}
                     <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                      <h2 className="text-xl font-semibold text-clawd-text mb-2">
+                      <h2 className="text-heading-3 mb-2">
                         {selectedMeeting.title || selectedMeeting.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </h2>
-                      <div className="flex items-center gap-4 text-sm text-clawd-text-dim">
+                      <div className="flex items-center gap-4 text-secondary">
                         <span className="flex items-center gap-1">
                           <Calendar size={14} />
                           {selectedMeeting.date.toLocaleDateString()}
@@ -1924,27 +1929,34 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div>
                     {/* Past Meetings List */}
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-clawd-text">Past Meetings</h2>
+                      <h2 className="text-heading-3">Past Meetings</h2>
                       <button 
                         onClick={loadPastMeetings} 
                         disabled={loadingPastMeetings}
                         className="text-sm text-clawd-text-dim hover:text-clawd-accent flex items-center gap-1"
                       >
-                        <Loader2 size={14} className={loadingPastMeetings ? 'animate-spin' : ''} />
+                        {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
                         Refresh
                       </button>
                     </div>
 
                     {loadingPastMeetings ? (
                       <div className="flex items-center justify-center py-12">
-                        <Loader2 size={24} className="animate-spin text-clawd-text-dim" />
+                        <Spinner size={24} />
                       </div>
+                    ) : pastMeetingsError ? (
+                      <ErrorDisplay
+                        error={pastMeetingsError}
+                        context={{ action: 'load meetings', resource: 'past meetings' }}
+                        onRetry={() => { setPastMeetingsError(null); loadPastMeetings(); }}
+                        inline
+                      />
                     ) : pastMeetings.length === 0 ? (
-                      <div className="text-center py-12 bg-clawd-surface border border-clawd-border rounded-2xl">
-                        <Calendar size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
-                        <p className="text-clawd-text-dim">No past meetings found</p>
-                        <p className="text-sm text-clawd-text-dim/60 mt-1">Meetings are saved to ~/froggo/meetings/</p>
-                      </div>
+                      <EmptyState
+                        icon={Calendar}
+                        title="No meetings recorded"
+                        description="Start a meeting to see it here. Recordings are saved to ~/froggo/meetings/."
+                      />
                     ) : (
                       <div className="space-y-3">
                         {pastMeetings.map((meeting) => (
@@ -2000,7 +2012,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             {/* Transcribe Audio File View */}
             {activeView === 'transcribe' && (
               <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-xl font-semibold text-clawd-text mb-4">Transcribe Audio File</h2>
+                <h2 className="text-heading-3 mb-4">Transcribe Audio File</h2>
                 <p className="text-clawd-text-dim mb-6">
                   Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
                 </p>

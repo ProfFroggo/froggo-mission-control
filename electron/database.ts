@@ -110,6 +110,19 @@ export function getSessionsDb(): Database.Database | null {
 }
 
 /**
+ * Run a function inside a database transaction.
+ * Automatically commits on success, rolls back on error.
+ * Uses better-sqlite3's synchronous transaction API.
+ *
+ * @param fn Function to execute inside the transaction
+ * @returns The return value of fn
+ */
+export function runTransaction<T>(fn: () => T): T {
+  const wrapped = db.transaction(fn);
+  return wrapped();
+}
+
+/**
  * Close all database connections
  * Call during app shutdown
  */

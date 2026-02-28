@@ -33,7 +33,7 @@ interface ScheduledItem {
 }
 
 const typeConfig: Record<ScheduledItemType, { icon: any; color: string; label: string }> = {
-  tweet: { icon: XIcon, color: 'text-white bg-white/10', label: 'Post' },
+  tweet: { icon: XIcon, color: 'text-clawd-text bg-clawd-text/10', label: 'Post' },
   email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
   message: { icon: Mail, color: 'text-review bg-review-subtle', label: 'Message' },
 };

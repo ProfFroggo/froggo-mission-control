@@ -79,7 +79,7 @@ export interface IpcChannelRegistration<TArgs extends unknown[] = unknown[], TRe
  */
 export function registerHandler<TArgs extends unknown[], TReturn>(
   channel: string,
-  handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TReturn
+  handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TReturn | Promise<TReturn>
 ): void {
   if (registeredHandlers.has(channel)) {
     logger.warn(`[IPC] Handler '${channel}' already registered, skipping`);
@@ -168,7 +168,7 @@ export function validateModuleChannel(moduleId: string, channel: string): boolea
 export function registerModuleHandler<TArgs extends unknown[], TReturn>(
   moduleId: string,
   channel: string,
-  handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TReturn
+  handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TReturn | Promise<TReturn>
 ): void {
   validateModuleChannel(moduleId, channel);
   registerHandler(channel, handler);

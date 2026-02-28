@@ -686,7 +686,7 @@ export default function SessionsFilter() {
               <span>{ch.label}</span>
               {ch.count > 0 && (
                 <span className={`text-xs px-1.5 rounded-full ${
-                  filter === ch.id ? 'bg-white/20' : 'bg-clawd-bg'
+                  filter === ch.id ? 'bg-clawd-text/20' : 'bg-clawd-bg'
                 }`}>
                   {ch.count}
                 </span>

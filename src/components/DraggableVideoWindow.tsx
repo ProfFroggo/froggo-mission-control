@@ -189,14 +189,14 @@ export default function DraggableVideoWindow({
           )}
           <button
             onClick={minimize}
-            className="p-1 rounded hover:bg-white/10 text-white transition-colors"
+            className="p-1 rounded hover:bg-clawd-text/10 text-clawd-text transition-colors"
             title="Minimize"
           >
             <Minimize2 size={14} />
           </button>
           <button
             onClick={toggleViewMode}
-            className="p-1 rounded hover:bg-white/10 text-white transition-colors"
+            className="p-1 rounded hover:bg-clawd-text/10 text-clawd-text transition-colors"
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
           >
             <Maximize2 size={14} />

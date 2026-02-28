@@ -253,7 +253,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between mb-3 group"
       >
-        <h2 className="text-lg font-medium flex items-center gap-2 group-hover:text-clawd-accent transition-colors">
+        <h2 className="text-heading-3 flex items-center gap-2 group-hover:text-clawd-accent transition-colors">
           {icon}
           {title}
         </h2>
@@ -483,16 +483,16 @@ export default function EnhancedSettingsPanel() {
   };
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="max-w-8xl mx-auto">
         {/* Header with Search */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+              <h1 className="text-heading-2 mb-2 flex items-center gap-2">
                 <Settings size={24} /> Settings
               </h1>
-              <p className="text-clawd-text-dim">Configure Froggo dashboard preferences</p>
+              <p className="text-secondary">Configure Froggo dashboard preferences</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -727,16 +727,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Auto Refresh</div>
                       <div className="text-sm text-clawd-text-dim">Automatically refresh sessions list</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, autoRefresh: !s.autoRefresh }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.autoRefresh ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.autoRefresh ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.autoRefresh}
+                      onChange={(checked) => setSettings(s => ({ ...s, autoRefresh: checked }))}
+                    />
                   </div>
                   {settings.autoRefresh && (
                     <div>
@@ -1016,16 +1010,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Enable Caching</div>
                       <div className="text-sm text-clawd-text-dim">Cache responses for faster loading</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, performance: { ...s.performance, enableCache: !s.performance.enableCache } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.performance.enableCache ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.performance.enableCache ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.performance.enableCache}
+                      onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableCache: checked } }))}
+                    />
                   </div>
 
                   {settings.performance.enableCache && (
@@ -1071,16 +1059,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Lazy Loading</div>
                       <div className="text-sm text-clawd-text-dim">Load content as needed</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, performance: { ...s.performance, enableLazyLoading: !s.performance.enableLazyLoading } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.performance.enableLazyLoading ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.performance.enableLazyLoading ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.performance.enableLazyLoading}
+                      onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableLazyLoading: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1088,16 +1070,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Animations</div>
                       <div className="text-sm text-clawd-text-dim">Enable UI animations</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, performance: { ...s.performance, animationsEnabled: !s.performance.animationsEnabled } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.performance.animationsEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.performance.animationsEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.performance.animationsEnabled}
+                      onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, animationsEnabled: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1105,16 +1081,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">List Virtualization</div>
                       <div className="text-sm text-clawd-text-dim">Render only visible items in long lists</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, performance: { ...s.performance, enableVirtualization: !s.performance.enableVirtualization } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.performance.enableVirtualization ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.performance.enableVirtualization ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.performance.enableVirtualization}
+                      onChange={(checked) => setSettings(s => ({ ...s, performance: { ...s.performance, enableVirtualization: checked } }))}
+                    />
                   </div>
 
                   <button
@@ -1169,16 +1139,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Auto Cleanup</div>
                       <div className="text-sm text-clawd-text-dim">Automatically delete old data</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, data: { ...s.data, autoCleanup: !s.data.autoCleanup } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.data.autoCleanup ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.data.autoCleanup ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.data.autoCleanup}
+                      onChange={(checked) => setSettings(s => ({ ...s, data: { ...s.data, autoCleanup: checked } }))}
+                    />
                   </div>
 
                   <div>
@@ -1202,16 +1166,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Usage Analytics</div>
                       <div className="text-sm text-clawd-text-dim">Collect anonymous usage data</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, data: { ...s.data, enableAnalytics: !s.data.enableAnalytics } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.data.enableAnalytics ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.data.enableAnalytics ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.data.enableAnalytics}
+                      onChange={(checked) => setSettings(s => ({ ...s, data: { ...s.data, enableAnalytics: checked } }))}
+                    />
                   </div>
 
                   <button
@@ -1242,16 +1200,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Reduce Motion</div>
                       <div className="text-sm text-clawd-text-dim">Minimize animations and transitions</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, reduceMotion: !s.accessibility.reduceMotion } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.accessibility.reduceMotion ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.accessibility.reduceMotion ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.accessibility.reduceMotion}
+                      onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, reduceMotion: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1259,16 +1211,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">High Contrast</div>
                       <div className="text-sm text-clawd-text-dim">Increase color contrast</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, highContrast: !s.accessibility.highContrast } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.accessibility.highContrast ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.accessibility.highContrast ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.accessibility.highContrast}
+                      onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, highContrast: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1276,16 +1222,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Large Text</div>
                       <div className="text-sm text-clawd-text-dim">Use larger text sizes throughout</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, largeText: !s.accessibility.largeText } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.accessibility.largeText ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.accessibility.largeText ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.accessibility.largeText}
+                      onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, largeText: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1293,16 +1233,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Screen Reader Optimized</div>
                       <div className="text-sm text-clawd-text-dim">Optimize for screen readers</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, screenReaderOptimized: !s.accessibility.screenReaderOptimized } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.accessibility.screenReaderOptimized ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.accessibility.screenReaderOptimized ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.accessibility.screenReaderOptimized}
+                      onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, screenReaderOptimized: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1310,16 +1244,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Keyboard Navigation Hints</div>
                       <div className="text-sm text-clawd-text-dim">Show keyboard shortcuts in UI</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, keyboardNavigationHints: !s.accessibility.keyboardNavigationHints } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.accessibility.keyboardNavigationHints ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.accessibility.keyboardNavigationHints ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.accessibility.keyboardNavigationHints}
+                      onChange={(checked) => setSettings(s => ({ ...s, accessibility: { ...s.accessibility, keyboardNavigationHints: checked } }))}
+                    />
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1342,16 +1270,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Launch on Startup</div>
                       <div className="text-sm text-clawd-text-dim">Start app when you log in</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, launchOnStartup: !s.window.launchOnStartup } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.launchOnStartup ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.launchOnStartup ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.launchOnStartup}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, launchOnStartup: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1359,16 +1281,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Start Minimized</div>
                       <div className="text-sm text-clawd-text-dim">Launch app minimized to tray</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, startMinimized: !s.window.startMinimized } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.startMinimized ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.startMinimized ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.startMinimized}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, startMinimized: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1376,16 +1292,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Minimize to Tray</div>
                       <div className="text-sm text-clawd-text-dim">Minimize to system tray instead of taskbar</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, minimizeToTray: !s.window.minimizeToTray } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.minimizeToTray ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.minimizeToTray ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.minimizeToTray}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, minimizeToTray: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1393,16 +1303,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Close to Tray</div>
                       <div className="text-sm text-clawd-text-dim">Keep app running in background when closed</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, closeToTray: !s.window.closeToTray } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.closeToTray ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.closeToTray ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.closeToTray}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, closeToTray: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1410,16 +1314,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Always on Top</div>
                       <div className="text-sm text-clawd-text-dim">Keep window above other windows</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, alwaysOnTop: !s.window.alwaysOnTop } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.alwaysOnTop ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.alwaysOnTop ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.alwaysOnTop}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, alwaysOnTop: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1427,16 +1325,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Remember Window Position</div>
                       <div className="text-sm text-clawd-text-dim">Restore window position on launch</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, window: { ...s.window, rememberWindowPosition: !s.window.rememberWindowPosition } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.window.rememberWindowPosition ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.window.rememberWindowPosition ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.window.rememberWindowPosition}
+                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, rememberWindowPosition: checked } }))}
+                    />
                   </div>
                 </div>
               </CollapsibleSection>

@@ -1,27 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
-import { 
-  Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, 
-  ArrowRight, Calendar, RefreshCw, Bell, ChevronDown, 
-  Inbox, ListTodo, AlertTriangle, Sparkles, 
-  TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
-  X, Minus, Maximize2, Shield, type LucideIcon
+import { useEffect, useState, useMemo } from 'react';
+import {
+  Wifi, WifiOff, CheckCircle, Bot, ArrowRight, Calendar,
+  Zap, Shield, AlertTriangle, Inbox,
+  ListTodo, Activity, MapPin, Video, ChevronRight,
+  Loader2, XCircle, DollarSign,
+  MessageSquare, Mail, Twitter, FileText, type LucideIcon
 } from 'lucide-react';
-import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
-import { Responsive as ResponsiveGridLayout } from 'react-grid-layout/legacy';
-import type { LayoutItem } from 'react-grid-layout/legacy';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
-import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
 import AgentAvatar from './AgentAvatar';
-import TodayCalendarWidget from './TodayCalendarWidget';
-import QuickStatsWidget from './QuickStatsWidget';
-import WeatherWidget from './WeatherWidget';
-import TokenSummaryWidget from './TokenSummaryWidget';
-import HealthStatusWidget from './HealthStatusWidget';
-import InboxWidget from './InboxWidget';
-import NewContentWidget from './NewContentWidget';
 import { useStore } from '../store/store';
-import { useShallow } from 'zustand/react/shallow';
+import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
 
@@ -30,1013 +17,7 @@ interface DashboardProps {
   onShowBrief?: () => void;
 }
 
-interface WidgetConfig {
-  id: string;
-  title: string;
-  icon: LucideIcon;
-  removable: boolean;
-}
-
-const WIDGET_CONFIGS: WidgetConfig[] = [
-  { id: 'hero', title: 'Dashboard Header', icon: Sparkles, removable: false },
-  { id: 'approvals', title: 'Pending Approvals', icon: Inbox, removable: true },
-  { id: 'inbox', title: 'Unread Inbox', icon: Inbox, removable: true },
-  { id: 'active-tasks', title: 'Active Tasks', icon: ListTodo, removable: true },
-  { id: 'urgent', title: 'Needs Attention', icon: AlertTriangle, removable: true },
-  { id: 'agents-count', title: 'Active Agents', icon: Bot, removable: true },
-  { id: 'new-content', title: 'New Content', icon: Sparkles, removable: true },
-  { id: 'active-work', title: 'Active Work', icon: Activity, removable: true },
-  { id: 'calendar', title: 'Calendar', icon: Calendar, removable: true },
-  { id: 'weather', title: 'Weather', icon: TrendingUp, removable: true },
-  { id: 'quick-stats', title: 'Quick Stats', icon: TrendingUp, removable: true },
-  { id: 'token-usage', title: 'Token Usage', icon: Zap, removable: true },
-  { id: 'health-status', title: 'System Health', icon: Shield, removable: true },
-  { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
-];
-
-const DEFAULT_LAYOUT: LayoutItem[] = [
-  { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
-  { i: 'approvals', x: 0, y: 5, w: 2, h: 4 },
-  { i: 'inbox', x: 2, y: 5, w: 2, h: 4 },
-  { i: 'active-tasks', x: 4, y: 5, w: 2, h: 4 },
-  { i: 'urgent', x: 6, y: 5, w: 2, h: 4 },
-  { i: 'agents-count', x: 8, y: 5, w: 2, h: 4 },
-  { i: 'new-content', x: 10, y: 5, w: 2, h: 4 },
-  { i: 'active-work', x: 0, y: 9, w: 8, h: 8 },
-  { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
-  { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
-  { i: 'quick-stats', x: 10, y: 13, w: 2, h: 3 },
-  { i: 'token-usage', x: 8, y: 16, w: 4, h: 3 },
-  { i: 'health-status', x: 0, y: 17, w: 4, h: 4 },
-  { i: 'activity', x: 0, y: 21, w: 12, h: 5 },
-];
-
-interface DashboardWidgetProps {
-  id: string;
-  title: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-  onRemove?: () => void;
-  editMode: boolean;
-  minimized: boolean;
-  onToggleMinimize: () => void;
-  removable?: boolean;
-}
-
-function DashboardWidget({ 
-  id: _id, 
-  title, 
-  icon: Icon, 
-  children, 
-  onRemove, 
-  editMode, 
-  minimized, 
-  onToggleMinimize,
-  removable = true 
-}: DashboardWidgetProps) {
-  return (
-    <div className="h-full bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border overflow-hidden shadow-xl flex flex-col relative">
-      {/* Minimal drag handle - only visible in edit mode */}
-      {editMode && (
-        <div className="widget-drag-handle absolute top-2 left-1/2 -translate-x-1/2 z-10 cursor-move">
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-clawd-bg/80 backdrop-blur-sm border border-clawd-border/50">
-            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
-            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
-            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
-          </div>
-        </div>
-      )}
-      
-      {/* Control buttons - only in edit mode */}
-      {editMode && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-          <button
-            onClick={onToggleMinimize}
-            className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-clawd-border/80 rounded-lg transition-colors border border-clawd-border/50"
-            title={minimized ? "Maximize" : "Minimize"}
-          >
-            {minimized ? <Maximize2 size={14} className="text-clawd-text-dim" /> : <Minus size={14} className="text-clawd-text-dim" />}
-          </button>
-          {removable && onRemove && (
-            <button
-              onClick={onRemove}
-              className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-error-subtle rounded-lg transition-colors border border-clawd-border/50"
-              title="Remove widget"
-            >
-              <X size={14} className="text-error" />
-            </button>
-          )}
-        </div>
-      )}
-      
-      {/* Content - no header bar, full height */}
-      <div className={`flex-1 overflow-auto ${minimized ? 'hidden' : ''} ${editMode ? 'pt-2' : ''}`}>
-        {children}
-      </div>
-      
-      {minimized && (
-        <div className="flex-1 flex items-center justify-center text-clawd-text-dim text-sm">
-          <div className="flex items-center gap-2">
-            <Icon size={16} className="text-clawd-text-dim/50" />
-            <span>{title} (minimized)</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
-  // Data fields — useShallow prevents re-render unless these specific values change
-  const { connected, sessions, tasks, agents, activities, approvals, gatewaySessions, loading } = useStore(
-    useShallow(s => ({
-      connected: s.connected,
-      sessions: s.sessions,
-      tasks: s.tasks,
-      agents: s.agents,
-      activities: s.activities,
-      approvals: s.approvals,
-      gatewaySessions: s.gatewaySessions,
-      loading: s.loading,
-    }))
-  );
-  // Action functions — stable references, no re-render risk
-  const fetchSessions = useStore(s => s.fetchSessions);
-  const fetchAgents = useStore(s => s.fetchAgents);
-  const clearActivities = useStore(s => s.clearActivities);
-  const loadGatewaySessions = useStore(s => s.loadGatewaySessions);
-  
-  const [greeting, setGreeting] = useState('');
-  const [showActivityStream, setShowActivityStream] = useState(false);
-  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
-  
-  // Widget customization state
-  const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState<LayoutItem[]>(() => {
-    const saved = localStorage.getItem('dashboard-widget-layout');
-    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
-  });
-  const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('dashboard-hidden-widgets');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-  const [minimizedWidgets, setMinimizedWidgets] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('dashboard-minimized-widgets');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-  const [showAddWidget, setShowAddWidget] = useState(false);
-
-  // Grid container width
-  const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(1200);
-  useEffect(() => {
-    const el = gridContainerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      for (const entry of entries) setContainerWidth(entry.contentRect.width);
-    });
-    ro.observe(el);
-    setContainerWidth(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-  
-  // Computed metrics
-  const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-  const needsReview = tasks.filter(t => t.status === 'review');
-  const pendingApprovals = approvals.filter(a => a.status === 'pending');
-  const unassignedTasks = tasks.filter(t => !t.assignedTo && t.status !== 'done');
-  const urgentTasks = tasks.filter(t => t.priority === 'p0' && t.status !== 'done');
-  const completedToday = tasks.filter(t => 
-    t.status === 'done' && 
-    new Date(t.updatedAt).toDateString() === new Date().toDateString()
-  ).length;
-
-  // Agent counts from Gateway
-  const subagentSessions = gatewaySessions.filter(s => s.type === 'subagent');
-  const activeSubagents = subagentSessions.filter(s => s.isActive);
-  
-  // Agent count from registry (exclude phantom agents like 'main', 'chat-agent')
-  const PHANTOM_AGENTS = ['main', 'chat-agent'];
-  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
-  const totalAgentCount = realAgents.length;
-
-  // Attention items for hero
-  const urgentCount = pendingApprovals.length + urgentTasks.length + unassignedTasks.length;
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good morning');
-    else if (hour < 17) setGreeting('Good afternoon');
-    else setGreeting('Good evening');
-  }, []);
-
-  useEffect(() => {
-    fetchAgents();
-  }, [fetchAgents]);
-
-  useEffect(() => {
-    if (connected) {
-      loadGatewaySessions();
-      const interval = setInterval(loadGatewaySessions, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [connected, loadGatewaySessions]);
-
-  const handleLayoutChange = (newLayout: readonly LayoutItem[]) => {
-    setLayout([...newLayout]);
-    localStorage.setItem('dashboard-widget-layout', JSON.stringify(newLayout));
-  };
-
-  const handleRemoveWidget = (widgetId: string) => {
-    const newHidden = new Set(hiddenWidgets);
-    newHidden.add(widgetId);
-    setHiddenWidgets(newHidden);
-    localStorage.setItem('dashboard-hidden-widgets', JSON.stringify([...newHidden]));
-  };
-
-  const handleAddWidget = (widgetId: string) => {
-    const newHidden = new Set(hiddenWidgets);
-    newHidden.delete(widgetId);
-    setHiddenWidgets(newHidden);
-    localStorage.setItem('dashboard-hidden-widgets', JSON.stringify([...newHidden]));
-    setShowAddWidget(false);
-  };
-
-  const handleResetLayout = () => {
-    showConfirm({
-      title: 'Reset Dashboard',
-      message: 'Reset dashboard to default layout? This will restore all widgets to their original positions.',
-      confirmLabel: 'Reset',
-      type: 'warning',
-    }, () => {
-      setLayout(DEFAULT_LAYOUT);
-      setHiddenWidgets(new Set());
-      setMinimizedWidgets(new Set());
-      localStorage.setItem('dashboard-widget-layout', JSON.stringify(DEFAULT_LAYOUT));
-      localStorage.removeItem('dashboard-hidden-widgets');
-      localStorage.removeItem('dashboard-minimized-widgets');
-    });
-  };
-
-  const handleToggleMinimize = (widgetId: string) => {
-    const newMinimized = new Set(minimizedWidgets);
-    if (newMinimized.has(widgetId)) {
-      newMinimized.delete(widgetId);
-    } else {
-      newMinimized.add(widgetId);
-    }
-    setMinimizedWidgets(newMinimized);
-    localStorage.setItem('dashboard-minimized-widgets', JSON.stringify([...newMinimized]));
-  };
-
-  /** Session object from gateway */
-  interface SessionInfo {
-    key?: string;
-    channel?: string;
-    displayName?: string;
-  }
-
-  const getSessionIcon = (session: SessionInfo) => {
-    if (session.channel === 'whatsapp') return '💬';
-    if (session.channel === 'telegram') return '✈️';
-    if (session.channel === 'discord') return '🎮';
-    if (session.key?.includes('subagent')) return '🤖';
-    if (session.key?.includes('cron')) return '⏰';
-    return '💻';
-  };
-
-  const getSessionName = (session: SessionInfo) => {
-    const key = session.key || '';
-    const parts = key.split(':');
-    const last = parts[parts.length - 1];
-    if (last.includes('-') && last.length > 20) {
-      return last.slice(0, 8) + '...';
-    }
-    return last || 'Unknown';
-  };
-
-  return (
-    <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
-      {/* Grid Layout */}
-      <div ref={gridContainerRef} className="px-6 py-4">
-        <ResponsiveGridLayout
-          className="layout"
-          layouts={{ lg: layout }}
-          width={containerWidth}
-          breakpoints={{ lg: 1200, md: 996, sm: 768 }}
-          cols={{ lg: 12, md: 12, sm: 12 }}
-          rowHeight={40}
-          margin={[8, 8]}
-          onLayoutChange={handleLayoutChange}
-          isDraggable={editMode}
-          isResizable={editMode}
-          draggableHandle=".widget-drag-handle"
-          compactType="vertical"
-          preventCollision={false}
-        >
-          {/* HERO WIDGET */}
-          {/* Hero is NOT a widget — static header, no wrapper */}
-            <div key="hero">
-              <div className="h-full flex flex-col justify-center px-6 py-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="space-y-3">
-                      <h1 className="text-3xl font-bold tracking-tight leading-tight bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent">
-                        {greeting}, Kevin
-                      </h1>
-                      
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-                          connected 
-                            ? 'bg-success-subtle text-success border border-success-border' 
-                            : 'bg-error-subtle text-error border border-error-border'
-                        }`}>
-                          {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-                          {connected ? 'All Systems Online' : 'Connecting...'}
-                        </div>
-
-                        {urgentCount > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-warning-subtle text-warning border border-warning-border backdrop-blur-sm animate-pulse">
-                            <AlertTriangle size={12} />
-                            {urgentCount} urgent {urgentCount === 1 ? 'item' : 'items'}
-                          </div>
-                        )}
-
-                        {activeSubagents.length > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border backdrop-blur-sm">
-                            <Bot size={12} />
-                            {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
-                          </div>
-                        )}
-
-                        {completedToday > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-success-subtle text-success border border-success-border backdrop-blur-sm">
-                            <CheckCircle size={12} />
-                            {completedToday} completed today
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Edit layout controls - compact floating panel */}
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        {/* Single compact button to toggle edit mode */}
-                        <button
-                          onClick={() => setEditMode(!editMode)}
-                          className={`p-2 rounded-lg transition-all ${
-                            editMode 
-                              ? 'bg-clawd-accent text-white shadow-lg' 
-                              : 'bg-clawd-surface/50 text-clawd-text-dim hover:bg-clawd-surface border border-clawd-border'
-                          }`}
-                          title={editMode ? 'Exit edit mode' : 'Edit layout'}
-                        >
-                          <Edit3 size={18} />
-                        </button>
-                        
-                        {/* Floating panel with edit tools - only shown in edit mode */}
-                        {editMode && (
-                          <div className="absolute right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 p-3 min-w-[200px]">
-                            <div className="space-y-2">
-                              {/* Add Widget */}
-                              <button
-                                onClick={() => setShowAddWidget(!showAddWidget)}
-                                className="w-full flex items-center gap-2 px-3 py-2 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent/30 transition-colors text-sm font-medium"
-                              >
-                                <Plus size={16} />
-                                Add Widget
-                              </button>
-                              
-                              {/* Reset Layout */}
-                              <button
-                                onClick={handleResetLayout}
-                                className="w-full flex items-center gap-2 px-3 py-2 bg-clawd-bg text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors text-sm font-medium"
-                                title="Reset to default layout"
-                              >
-                                <RotateCcw size={16} />
-                                Reset Layout
-                              </button>
-                              
-                              {/* Done button */}
-                              <button
-                                onClick={() => setEditMode(false)}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm font-medium"
-                              >
-                                Done Editing
-                              </button>
-                            </div>
-                            
-                            {/* Add widget dropdown */}
-                            {showAddWidget && (
-                              <div className="mt-2 pt-2 border-t border-clawd-border max-h-48 overflow-y-auto">
-                                {WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable).map(w => (
-                                  <button
-                                    key={w.id}
-                                    onClick={() => { handleAddWidget(w.id); setShowAddWidget(false); }}
-                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-clawd-border/50 rounded-lg transition-colors text-left"
-                                  >
-                                    <w.icon size={16} className="text-clawd-accent" />
-                                    <span className="text-sm">{w.title}</span>
-                                  </button>
-                                ))}
-                                {WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable).length === 0 && (
-                                  <div className="px-3 py-2 text-xs text-clawd-text-dim text-center">All widgets visible</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-              </div>
-            </div>
-
-          {/* APPROVALS WIDGET */}
-          {!hiddenWidgets.has('approvals') && (
-            <div key="approvals">
-              <DashboardWidget
-                id="approvals"
-                title="Pending Approvals"
-                icon={Inbox}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('approvals')}
-                onToggleMinimize={() => handleToggleMinimize('approvals')}
-                onRemove={() => handleRemoveWidget('approvals')}
-              >
-                <button 
-                  onClick={() => onNavigate?.('approvals')}
-                  className="w-full h-full p-6 text-left hover:bg-clawd-bg/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-clawd-text-dim'}`} />
-                    {pendingApprovals.length > 0 && (
-                      <span className="px-3 py-1 bg-orange-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
-                        {pendingApprovals.length}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-orange-400 bg-clip-text text-transparent">
-                    {pendingApprovals.length}
-                  </div>
-                  
-                  <div className="text-sm font-medium text-clawd-text-dim mb-3">Pending Approvals</div>
-                  
-                  {pendingApprovals.length > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-warning font-medium">
-                      <Zap size={14} />
-                      Action required
-                    </div>
-                  )}
-                </button>
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* INBOX WIDGET */}
-          {!hiddenWidgets.has('inbox') && (
-            <div key="inbox">
-              <DashboardWidget
-                id="inbox"
-                title="Unread Inbox"
-                icon={Inbox}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('inbox')}
-                onToggleMinimize={() => handleToggleMinimize('inbox')}
-                onRemove={() => handleRemoveWidget('inbox')}
-              >
-                <InboxWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* ACTIVE TASKS WIDGET */}
-          {!hiddenWidgets.has('active-tasks') && (
-            <div key="active-tasks">
-              <DashboardWidget
-                id="active-tasks"
-                title="Active Tasks"
-                icon={ListTodo}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('active-tasks')}
-                onToggleMinimize={() => handleToggleMinimize('active-tasks')}
-                onRemove={() => handleRemoveWidget('active-tasks')}
-              >
-                <button 
-                  onClick={() => onNavigate?.('kanban')}
-                  className="w-full h-full p-6 text-left hover:bg-clawd-bg/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-clawd-text-dim'}`} />
-                    {needsReview.length > 0 && (
-                      <span className="px-2.5 py-0.5 bg-review-subtle text-white text-xs font-medium rounded-full">
-                        {needsReview.length} review
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-blue-400 bg-clip-text text-transparent">
-                    {inProgressTasks.length}
-                  </div>
-                  
-                  <div className="text-sm font-medium text-clawd-text-dim mb-2">In Progress</div>
-                  
-                  {inProgressTasks.length > 0 && (
-                    <div className="h-2 bg-clawd-bg/50 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min((inProgressTasks.length / (inProgressTasks.length + needsReview.length)) * 100, 100)}%` }}
-                      />
-                    </div>
-                  )}
-                </button>
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* URGENT TASKS WIDGET */}
-          {!hiddenWidgets.has('urgent') && (
-            <div key="urgent">
-              <DashboardWidget
-                id="urgent"
-                title="Needs Attention"
-                icon={AlertTriangle}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('urgent')}
-                onToggleMinimize={() => handleToggleMinimize('urgent')}
-                onRemove={() => handleRemoveWidget('urgent')}
-              >
-                <button 
-                  onClick={() => onNavigate?.('kanban')}
-                  className="w-full h-full p-6 text-left hover:bg-clawd-bg/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-clawd-text-dim'}`} />
-                    {urgentTasks.length > 0 && (
-                      <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                        P0
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-yellow-400 bg-clip-text text-transparent">
-                    {urgentTasks.length + unassignedTasks.length}
-                  </div>
-                  
-                  <div className="text-sm font-medium text-clawd-text-dim">Needs Attention</div>
-                  
-                  {urgentTasks.length > 0 && (
-                    <div className="mt-2 text-xs text-warning">
-                      {urgentTasks.length} urgent • {unassignedTasks.length} unassigned
-                    </div>
-                  )}
-                </button>
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* AGENTS COUNT WIDGET */}
-          {!hiddenWidgets.has('agents-count') && (
-            <div key="agents-count">
-              <DashboardWidget
-                id="agents-count"
-                title="Active Agents"
-                icon={Bot}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('agents-count')}
-                onToggleMinimize={() => handleToggleMinimize('agents-count')}
-                onRemove={() => handleRemoveWidget('agents-count')}
-              >
-                <button 
-                  onClick={() => onNavigate?.('agents')}
-                  className="w-full h-full p-6 text-left hover:bg-clawd-bg/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-clawd-text-dim'}`} />
-                    {activeSubagents.length > 0 && (
-                      <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
-                    )}
-                  </div>
-                  
-                  <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-green-400 bg-clip-text text-transparent">
-                    {totalAgentCount}
-                  </div>
-                  
-                  <div className="text-sm font-medium text-clawd-text-dim">Active Agents</div>
-                  
-                  {activeSubagents.length > 0 && (
-                    <div className="mt-2 text-xs text-success">
-                      {activeSubagents.length} sub-agent{activeSubagents.length > 1 ? 's' : ''} running
-                    </div>
-                  )}
-                </button>
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* NEW CONTENT WIDGET */}
-          {!hiddenWidgets.has('new-content') && (
-            <div key="new-content">
-              <DashboardWidget
-                id="new-content"
-                title="New Content"
-                icon={Sparkles}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('new-content')}
-                onToggleMinimize={() => handleToggleMinimize('new-content')}
-                onRemove={() => handleRemoveWidget('new-content')}
-              >
-                <NewContentWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* ACTIVE WORK WIDGET */}
-          {!hiddenWidgets.has('active-work') && (
-            <div key="active-work">
-              <DashboardWidget
-                id="active-work"
-                title="Active Work"
-                icon={Activity}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('active-work')}
-                onToggleMinimize={() => handleToggleMinimize('active-work')}
-                onRemove={() => handleRemoveWidget('active-work')}
-              >
-                <div>
-                  <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between bg-gradient-to-r from-clawd-surface to-clawd-bg">
-                    <div className="flex items-center gap-2">
-                      {inProgressTasks.length > 0 && (
-                        <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
-                          {inProgressTasks.length}
-                        </span>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => onNavigate?.('kanban')}
-                      className="flex items-center gap-2 text-sm text-clawd-accent hover:text-clawd-accent-dim transition-colors group"
-                    >
-                      View All 
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
-                  </div>
-                  
-                  <div className="divide-y divide-clawd-border/30 max-h-96 overflow-y-auto">
-                    {loading.tasks ? (
-                      <div className="p-4 space-y-3">
-                        <TaskCardSkeleton />
-                        <TaskCardSkeleton />
-                        <TaskCardSkeleton />
-                      </div>
-                    ) : [...inProgressTasks, ...needsReview].length === 0 ? (
-                      <div className="p-12 text-center">
-                        <CheckCircle size={48} className="mx-auto mb-4 text-success/50" />
-                        <p className="text-lg font-medium text-clawd-text-dim mb-2">All caught up!</p>
-                        <p className="text-sm text-clawd-text-dim mb-4">No active tasks at the moment</p>
-                        <button 
-                          onClick={() => onNavigate?.('kanban')}
-                          className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
-                        >
-                          Create a task
-                        </button>
-                      </div>
-                    ) : (
-                      [...inProgressTasks, ...needsReview].slice(0, 8).map((task) => {
-                        const agent = agents.find(a => a.id === task.assignedTo);
-                        return (
-                          <div 
-                            key={task.id} 
-                            className="group p-4 hover:bg-clawd-bg/30 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
-                            onClick={() => onNavigate?.('kanban')}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate?.('kanban'); } }}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Task: ${task.title}, status: ${task.status}`}
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                                task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
-                                task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
-                                'bg-clawd-text-dim'
-                              }`} />
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-3 mb-1">
-                                  <h3 className="font-medium text-clawd-text group-hover:text-clawd-accent transition-colors">
-                                    {task.title}
-                                  </h3>
-                                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
-                                    task.status === 'review' 
-                                      ? 'bg-review-subtle text-review border border-review-border' 
-                                      : 'bg-info-subtle text-info border border-info-border'
-                                  }`}>
-                                    {task.status === 'in-progress' ? 'working' : task.status}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex items-center gap-3 text-sm text-clawd-text-dim">
-                                  {task.project && (
-                                    <span className="flex items-center gap-1.5">
-                                      <TrendingUp size={14} />
-                                      {task.project}
-                                    </span>
-                                  )}
-                                  {agent && (
-                                    <span className="flex items-center gap-1.5">
-                                      <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                                      {agent.name}
-                                    </span>
-                                  )}
-                                  {task.updatedAt && (
-                                    <span className="flex items-center gap-1.5">
-                                      <Clock size={14} />
-                                      {formatTimeAgo(task.updatedAt)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* CALENDAR WIDGET */}
-          {!hiddenWidgets.has('calendar') && (
-            <div key="calendar">
-              <DashboardWidget
-                id="calendar"
-                title="Calendar"
-                icon={Calendar}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('calendar')}
-                onToggleMinimize={() => handleToggleMinimize('calendar')}
-                onRemove={() => handleRemoveWidget('calendar')}
-              >
-                <TodayCalendarWidget onNavigate={onNavigate} />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* WEATHER WIDGET */}
-          {!hiddenWidgets.has('weather') && (
-            <div key="weather">
-              <DashboardWidget
-                id="weather"
-                title="Weather"
-                icon={TrendingUp}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('weather')}
-                onToggleMinimize={() => handleToggleMinimize('weather')}
-                onRemove={() => handleRemoveWidget('weather')}
-              >
-                <WeatherWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* QUICK STATS WIDGET */}
-          {!hiddenWidgets.has('quick-stats') && (
-            <div key="quick-stats">
-              <DashboardWidget
-                id="quick-stats"
-                title="Quick Stats"
-                icon={TrendingUp}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('quick-stats')}
-                onToggleMinimize={() => handleToggleMinimize('quick-stats')}
-                onRemove={() => handleRemoveWidget('quick-stats')}
-              >
-                <QuickStatsWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* TOKEN USAGE WIDGET */}
-          {!hiddenWidgets.has('token-usage') && (
-            <div key="token-usage">
-              <DashboardWidget
-                id="token-usage"
-                title="Token Usage"
-                icon={Zap}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('token-usage')}
-                onToggleMinimize={() => handleToggleMinimize('token-usage')}
-                onRemove={() => handleRemoveWidget('token-usage')}
-              >
-                <TokenSummaryWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* HEALTH STATUS WIDGET */}
-          {!hiddenWidgets.has('health-status') && (
-            <div key="health-status">
-              <DashboardWidget
-                id="health-status"
-                title="System Health"
-                icon={Shield}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('health-status')}
-                onToggleMinimize={() => handleToggleMinimize('health-status')}
-                onRemove={() => handleRemoveWidget('health-status')}
-              >
-                <HealthStatusWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
-          {/* ACTIVITY STREAM WIDGET */}
-          {!hiddenWidgets.has('activity') && (
-            <div key="activity">
-              <DashboardWidget
-                id="activity"
-                title="Activity Stream"
-                icon={Users}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('activity')}
-                onToggleMinimize={() => handleToggleMinimize('activity')}
-                onRemove={() => handleRemoveWidget('activity')}
-              >
-                <div>
-                  <div 
-                    onClick={() => setShowActivityStream(!showActivityStream)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-clawd-bg/20 transition-all group cursor-pointer border-b border-clawd-border/30"
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowActivityStream(!showActivityStream); } }}
-                  >
-                    <div className="text-sm text-clawd-text-dim">
-                      {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); fetchSessions(); }}
-                        className="p-2 hover:bg-clawd-border/50 rounded-lg transition-colors"
-                        title="Refresh"
-                      >
-                        <RefreshCw size={18} className="text-clawd-text-dim hover:text-clawd-accent transition-colors" />
-                      </button>
-                      <div className={`transform transition-transform duration-200 ${showActivityStream ? 'rotate-180' : ''}`}>
-                        <ChevronDown size={24} className="text-clawd-text-dim group-hover:text-clawd-accent transition-colors" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {showActivityStream && (
-                    <div className="bg-clawd-bg/20">
-                      <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-clawd-border/30">
-                        {/* Sessions */}
-                        <div className="p-6">
-                          <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <MessageSquare size={14} />
-                            Sessions ({sessions.length})
-                          </h4>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {loading.sessions ? (
-                              <>
-                                <SessionCardSkeleton />
-                                <SessionCardSkeleton />
-                                <SessionCardSkeleton />
-                              </>
-                            ) : sessions.length === 0 ? (
-                              <p className="text-sm text-clawd-text-dim text-center py-8">No active sessions</p>
-                            ) : (
-                              sessions.slice(0, 6).map((s: SessionInfo & { updatedAt?: number }) => {
-                                const isActive = Date.now() - (s.updatedAt || 0) < 300000;
-                                return (
-                                  <div 
-                                    key={s.key} 
-                                    className="flex items-center gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
-                                  >
-                                    <span className="text-xl">{getSessionIcon(s)}</span>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
-                                      <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt ?? 0)}</div>
-                                    </div>
-                                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Agents */}
-                        <div className="p-6">
-                          <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <Bot size={14} />
-                            Agents ({totalAgentCount})
-                          </h4>
-                          <div className="space-y-2">
-                            {agents.slice(0, 4).map((agent) => (
-                              <div 
-                                key={agent.id} 
-                                className="flex items-center gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
-                              >
-                                <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="lg" />
-                                <div className="flex-1">
-                                  <div className="text-sm font-medium">{agent.name}</div>
-                                  <div className={`text-xs ${
-                                    agent.status === 'busy' ? 'text-warning' :
-                                    agent.status === 'active' ? 'text-success' : 'text-clawd-text-dim'
-                                  }`}>
-                                    {agent.status}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            
-                            {activeSubagents.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-clawd-border/30 space-y-2">
-                                {activeSubagents.slice(0, 3).map((session) => (
-                                  <div 
-                                    key={session.key}
-                                    className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-success-border"
-                                  >
-                                    <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-xs font-medium truncate">{session.displayName}</div>
-                                      <div className="text-xs text-clawd-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Notifications */}
-                        <div className="p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider flex items-center gap-2">
-                              <Bell size={14} />
-                              Notifications ({activities.length})
-                            </h4>
-                            {activities.length > 0 && (
-                              <button 
-                                onClick={clearActivities}
-                                className="text-xs text-clawd-text-dim hover:text-clawd-accent transition-colors"
-                              >
-                                Clear all
-                              </button>
-                            )}
-                          </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {activities.length === 0 ? (
-                              <div className="text-center py-8">
-                                <Bell size={32} className="mx-auto mb-2 text-clawd-text-dim/30" />
-                                <p className="text-sm text-clawd-text-dim">All caught up</p>
-                              </div>
-                            ) : (
-                              activities.slice(0, 8).map((a) => (
-                                <div 
-                                  key={a.id} 
-                                  className="flex items-start gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
-                                >
-                                  <span className="text-lg flex-shrink-0">
-                                    {a.type === 'chat' ? '💬' : 
-                                     a.type === 'task' ? '✅' : 
-                                     a.type === 'agent' ? '🤖' : '⚙️'}
-                                  </span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-clawd-text line-clamp-2">{a.message}</p>
-                                    <p className="text-xs text-clawd-text-dim mt-1">{formatTimeAgo(a.timestamp)}</p>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </DashboardWidget>
-            </div>
-          )}
-        </ResponsiveGridLayout>
-      </div>
-
-      <ConfirmDialog
-        open={open}
-        onClose={closeConfirm}
-        onConfirm={onConfirm}
-        title={config.title}
-        message={config.message}
-        confirmLabel={config.confirmLabel}
-        cancelLabel={config.cancelLabel}
-        type={config.type}
-      />
-    </div>
-  );
-}
+// ── Utilities ──────────────────────────────────────────────
 
 function formatTimeAgo(ts: number): string {
   if (!ts) return 'unknown';
@@ -1046,4 +27,747 @@ function formatTimeAgo(ts: number): string {
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
   return new Date(ts).toLocaleDateString();
+}
+
+function formatTokens(tokens: number): string {
+  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
+  return tokens.toString();
+}
+
+function formatCost(cost: number): string {
+  if (cost >= 1) return `$${cost.toFixed(2)}`;
+  if (cost >= 0.01) return `$${cost.toFixed(3)}`;
+  return `$${cost.toFixed(4)}`;
+}
+
+const APPROVAL_ICONS: Record<string, LucideIcon> = {
+  tweet: Twitter,
+  reply: Twitter,
+  email: Mail,
+  message: MessageSquare,
+  task: ListTodo,
+  action: Zap,
+};
+
+const PHANTOM_AGENTS = ['main', 'chat-agent'];
+
+// ── HeaderBar ──────────────────────────────────────────────
+
+function HeaderBar({ connected }: { connected: boolean }) {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  return (
+    <div className="flex items-center justify-between px-6 py-4 border-b border-clawd-border/50">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-clawd-text to-clawd-accent bg-clip-text text-transparent">
+          {greeting}, Kevin
+        </h1>
+        <p className="text-sm text-clawd-text-dim mt-0.5">{dateStr}</p>
+      </div>
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
+        connected
+          ? 'bg-success-subtle text-success border border-success-border'
+          : 'bg-error-subtle text-error border border-error-border'
+      }`}>
+        {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+        {connected ? 'Online' : 'Connecting...'}
+      </div>
+    </div>
+  );
+}
+
+// ── StatStrip ──────────────────────────────────────────────
+
+interface StatCardProps {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  color: string;
+  pulse?: boolean;
+  onClick?: () => void;
+  sub?: string;
+}
+
+function StatCard({ label, value, icon: Icon, color, pulse, onClick, sub }: StatCardProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex-1 min-w-0 p-4 bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border hover:border-clawd-accent/50 transition-all group text-left"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <Icon size={18} className={color} />
+        {pulse && value > 0 && (
+          <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+        )}
+      </div>
+      <div className={`text-3xl font-bold ${color}`}>{value}</div>
+      <div className="text-xs text-clawd-text-dim mt-1 font-medium">{label}</div>
+      {sub && <div className="text-xs text-clawd-text-dim/70 mt-0.5">{sub}</div>}
+    </button>
+  );
+}
+
+function StatStrip({
+  pendingApprovals,
+  inProgressCount,
+  completedToday,
+  activeAgentCount,
+  totalAgentCount,
+  onNavigate,
+}: {
+  pendingApprovals: number;
+  inProgressCount: number;
+  completedToday: number;
+  activeAgentCount: number;
+  totalAgentCount: number;
+  onNavigate?: (view: View) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-4">
+      <StatCard
+        label="Pending Approvals"
+        value={pendingApprovals}
+        icon={Inbox}
+        color={pendingApprovals > 0 ? 'text-orange-400' : 'text-clawd-text-dim'}
+        pulse={pendingApprovals > 0}
+        onClick={() => onNavigate?.('approvals')}
+      />
+      <StatCard
+        label="In Progress"
+        value={inProgressCount}
+        icon={Activity}
+        color={inProgressCount > 0 ? 'text-blue-400' : 'text-clawd-text-dim'}
+        onClick={() => onNavigate?.('kanban')}
+      />
+      <StatCard
+        label="Done Today"
+        value={completedToday}
+        icon={CheckCircle}
+        color={completedToday > 0 ? 'text-emerald-400' : 'text-clawd-text-dim'}
+        onClick={() => onNavigate?.('kanban')}
+      />
+      <StatCard
+        label="Active Agents"
+        value={activeAgentCount}
+        icon={Bot}
+        color={activeAgentCount > 0 ? 'text-green-400' : 'text-clawd-text-dim'}
+        onClick={() => onNavigate?.('agents')}
+        sub={`${totalAgentCount} total`}
+      />
+    </div>
+  );
+}
+
+// ── ApprovalsQueue ─────────────────────────────────────────
+
+function ApprovalCard({
+  item,
+  onApprove,
+  onReject,
+}: {
+  item: ApprovalItem;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}) {
+  const Icon = APPROVAL_ICONS[item.type] || FileText;
+
+  return (
+    <div className="p-4 border-b border-clawd-border/30 hover:bg-clawd-bg/30 transition-colors">
+      <div className="flex items-start gap-3">
+        <div className="mt-1 p-2 rounded-lg bg-clawd-bg/50">
+          <Icon size={16} className="text-clawd-text-dim" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">
+                {item.type}
+              </span>
+              <h4 className="font-medium text-clawd-text mt-0.5 line-clamp-1">{item.title}</h4>
+            </div>
+            <span className="text-xs text-clawd-text-dim flex-shrink-0">
+              {formatTimeAgo(item.createdAt)}
+            </span>
+          </div>
+          <p className="text-sm text-clawd-text-dim mt-1 line-clamp-2">{item.content}</p>
+          {item.metadata?.to && (
+            <p className="text-xs text-clawd-text-dim/70 mt-1">To: {item.metadata.to}</p>
+          )}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => onApprove(item.id)}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              Approve
+            </button>
+            <button
+              onClick={() => onReject(item.id)}
+              className="px-4 py-1.5 bg-clawd-bg hover:bg-red-500/20 text-clawd-text-dim hover:text-red-400 text-xs font-medium rounded-lg border border-clawd-border transition-colors"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApprovalsQueue({
+  approvals,
+  onApprove,
+  onReject,
+  onNavigate,
+}: {
+  approvals: ApprovalItem[];
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+  onNavigate?: (view: View) => void;
+}) {
+  const pending = approvals.filter(a => a.status === 'pending');
+
+  return (
+    <div className={`bg-clawd-surface/80 backdrop-blur-xl rounded-xl border overflow-hidden flex flex-col ${
+      pending.length > 0 ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-clawd-border'
+    }`}>
+      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Inbox size={16} className={pending.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} />
+          <h2 className="font-semibold text-sm">Needs Your Decision</h2>
+          {pending.length > 0 && (
+            <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
+              {pending.length}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => onNavigate?.('approvals')}
+          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+        >
+          View All <ArrowRight size={12} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto max-h-[400px]">
+        {pending.length === 0 ? (
+          <div className="p-8 text-center">
+            <CheckCircle size={32} className="mx-auto mb-2 text-emerald-400/50" />
+            <p className="text-sm text-clawd-text-dim font-medium">All caught up</p>
+            <p className="text-xs text-clawd-text-dim/70 mt-1">No pending approvals</p>
+          </div>
+        ) : (
+          pending.slice(0, 10).map(item => (
+            <ApprovalCard
+              key={item.id}
+              item={item}
+              onApprove={onApprove}
+              onReject={onReject}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ActivityFeed ───────────────────────────────────────────
+
+function ActivityFeed({
+  inProgressTasks,
+  agents,
+  activities,
+  onNavigate,
+}: {
+  inProgressTasks: Task[];
+  agents: Agent[];
+  activities: { id: string; type: string; message: string; timestamp: number }[];
+  onNavigate?: (view: View) => void;
+}) {
+  return (
+    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity size={16} className="text-blue-400" />
+          <h2 className="font-semibold text-sm">What&apos;s Happening</h2>
+          {inProgressTasks.length > 0 && (
+            <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
+              {inProgressTasks.length} active
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => onNavigate?.('kanban')}
+          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+        >
+          All Tasks <ArrowRight size={12} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto max-h-[400px]">
+        {/* Active work */}
+        {inProgressTasks.length > 0 && (
+          <div className="divide-y divide-clawd-border/30">
+            {inProgressTasks.slice(0, 6).map(task => {
+              const agent = agents.find(a => a.id === task.assignedTo);
+              return (
+                <div
+                  key={task.id}
+                  className="p-3 hover:bg-clawd-bg/30 transition-colors cursor-pointer"
+                  onClick={() => onNavigate?.('kanban')}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-clawd-text truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {agent && (
+                          <span className="flex items-center gap-1 text-xs text-clawd-text-dim">
+                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
+                            {agent.name}
+                          </span>
+                        )}
+                        {task.updatedAt && (
+                          <span className="text-xs text-clawd-text-dim">{formatTimeAgo(task.updatedAt)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-info-subtle text-info text-xs rounded-full flex-shrink-0">
+                      working
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Recent activity */}
+        {activities.length > 0 && (
+          <div className={inProgressTasks.length > 0 ? 'border-t border-clawd-border/50' : ''}>
+            <div className="px-4 py-2 bg-clawd-bg/30">
+              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wider">Recent Activity</span>
+            </div>
+            <div className="divide-y divide-clawd-border/20">
+              {activities.slice(0, 8).map(a => (
+                <div key={a.id} className="px-4 py-2.5 flex items-start gap-3">
+                  <span className="text-sm flex-shrink-0 mt-0.5">
+                    {a.type === 'chat' ? '💬' : a.type === 'task' ? '📋' : a.type === 'agent' ? '🤖' : a.type === 'error' ? '⚠️' : '📡'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-clawd-text-dim line-clamp-1">{a.message}</p>
+                  </div>
+                  <span className="text-xs text-clawd-text-dim/50 flex-shrink-0">
+                    {formatTimeAgo(a.timestamp)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {inProgressTasks.length === 0 && activities.length === 0 && (
+          <div className="p-8 text-center">
+            <Activity size={32} className="mx-auto mb-2 text-clawd-text-dim/30" />
+            <p className="text-sm text-clawd-text-dim">No active work right now</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── TodaySchedule ──────────────────────────────────────────
+
+function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadEvents = async () => {
+    try {
+      if (!window.clawdbot?.calendar?.today) {
+        setEvents([]);
+        setLoading(false);
+        return;
+      }
+      const result = await window.clawdbot.calendar.today();
+      if (result?.success && result.events) {
+        const sorted = result.events.sort((a: CalendarEvent, b: CalendarEvent) => {
+          const aTime = a.start.dateTime || a.start.date || '';
+          const bTime = b.start.dateTime || b.start.date || '';
+          return aTime.localeCompare(bTime);
+        });
+        setEvents(sorted);
+      } else {
+        setEvents([]);
+      }
+    } catch {
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEvents();
+    const interval = setInterval(loadEvents, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const formatTime = (event: CalendarEvent): string => {
+    if (event.start.date && !event.start.dateTime) return 'All day';
+    if (event.start.dateTime) {
+      return new Date(event.start.dateTime).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    }
+    return '';
+  };
+
+  const isNow = (event: CalendarEvent): boolean => {
+    const start = event.start.dateTime;
+    const end = event.end?.dateTime;
+    if (!start || !end) return false;
+    const now = Date.now();
+    return now >= new Date(start).getTime() && now <= new Date(end).getTime();
+  };
+
+  const getMeetingLink = (event: CalendarEvent): string | null => {
+    if (!event.conferenceData?.entryPoints) return null;
+    const videoEntry = event.conferenceData.entryPoints.find(e =>
+      e.entryPointType === 'video' || e.uri.includes('meet.google.com') || e.uri.includes('zoom.us')
+    );
+    return videoEntry?.uri || null;
+  };
+
+  return (
+    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar size={16} className="text-blue-400" />
+          <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
+        </div>
+        <button
+          onClick={() => onNavigate?.('schedule')}
+          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+        >
+          Full Calendar <ChevronRight size={12} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto max-h-[300px]">
+        {loading ? (
+          <div className="p-6 text-center">
+            <Loader2 size={20} className="mx-auto mb-2 animate-spin text-clawd-text-dim" />
+            <p className="text-xs text-clawd-text-dim">Loading events...</p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="p-6 text-center">
+            <Calendar size={28} className="mx-auto mb-2 text-clawd-text-dim/30" />
+            <p className="text-sm text-clawd-text-dim">No events today</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-clawd-border/30">
+            {events.slice(0, 6).map(event => {
+              const happening = isNow(event);
+              const meetingLink = getMeetingLink(event);
+              return (
+                <div
+                  key={event.id}
+                  className={`p-3 hover:bg-clawd-bg/30 transition-colors ${
+                    happening ? 'bg-info-subtle/30 border-l-2 border-l-blue-400' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-14 text-right flex-shrink-0 ${
+                      happening ? 'text-blue-400 font-semibold' : 'text-clawd-text-dim'
+                    }`}>
+                      <span className="text-xs">{formatTime(event)}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${happening ? 'text-blue-400' : 'text-clawd-text'}`}>
+                        {event.summary}
+                        {happening && (
+                          <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full font-bold">
+                            NOW
+                          </span>
+                        )}
+                      </p>
+                      {event.location && (
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-clawd-text-dim">
+                          <MapPin size={10} />
+                          <span className="truncate">{event.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {meetingLink && (
+                      <a
+                        href={meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 p-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent hover:text-white transition-all"
+                        title="Join meeting"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <Video size={14} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {events.length > 6 && (
+              <div className="p-2 text-center">
+                <button
+                  onClick={() => onNavigate?.('schedule')}
+                  className="text-xs text-clawd-accent hover:underline"
+                >
+                  +{events.length - 6} more
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── SystemHealth ───────────────────────────────────────────
+
+interface SystemStatus {
+  watcherRunning: boolean;
+  killSwitchOn: boolean;
+  inProgressTasks: number;
+}
+
+interface TokenSummary {
+  totalTokens: number;
+  totalCost: number;
+  topAgent?: string;
+  topAgentTokens?: number;
+}
+
+function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: GatewaySession[]; connected: boolean }) {
+  const [sysStatus, setSysStatus] = useState<SystemStatus | null>(null);
+  const [tokenSummary, setTokenSummary] = useState<TokenSummary | null>(null);
+
+  const loadAll = async () => {
+    // System status
+    try {
+      const result = await window.clawdbot?.system?.status();
+      if (result?.success && result.status) {
+        setSysStatus(result.status as unknown as SystemStatus);
+      }
+    } catch { /* ignore */ }
+
+    // Token summary
+    try {
+      const result = await window.clawdbot?.tokens?.summary({ period: 'day' });
+      if (result?.by_agent && result.by_agent.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalTokens = result.by_agent.reduce((sum: number, a: any) => sum + a.total_all, 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalCost = result.by_agent.reduce((sum: number, a: any) => sum + (a.total_cost || 0), 0);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sorted = [...result.by_agent].sort((a: any, b: any) => b.total_all - a.total_all);
+        setTokenSummary({
+          totalTokens,
+          totalCost,
+          topAgent: sorted[0]?.agent,
+          topAgentTokens: sorted[0]?.total_all,
+        });
+      } else {
+        setTokenSummary({ totalTokens: 0, totalCost: 0 });
+      }
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    loadAll();
+    const interval = setInterval(loadAll, 30000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const activeSessions = gatewaySessions.filter(s => s.isActive);
+  const health = sysStatus
+    ? sysStatus.killSwitchOn ? 'critical' : !sysStatus.watcherRunning ? 'warning' : 'healthy'
+    : 'unknown';
+
+  return (
+    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Shield size={16} className={
+            health === 'healthy' ? 'text-emerald-400' :
+            health === 'warning' ? 'text-yellow-400' :
+            health === 'critical' ? 'text-red-400' :
+            'text-clawd-text-dim'
+          } />
+          <h2 className="font-semibold text-sm">System Health</h2>
+        </div>
+        <div className={`flex items-center gap-1.5 text-xs font-medium ${
+          health === 'healthy' ? 'text-emerald-400' :
+          health === 'warning' ? 'text-yellow-400' :
+          health === 'critical' ? 'text-red-400' :
+          'text-clawd-text-dim'
+        }`}>
+          {health === 'healthy' ? <CheckCircle size={12} /> :
+           health === 'warning' ? <AlertTriangle size={12} /> :
+           health === 'critical' ? <XCircle size={12} /> :
+           <Loader2 size={12} className="animate-spin" />}
+          {health === 'healthy' ? 'All Good' :
+           health === 'warning' ? 'Warning' :
+           health === 'critical' ? 'Critical' : 'Loading'}
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Gateway */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-clawd-text-dim">Gateway</span>
+          <span className={connected ? 'text-emerald-400' : 'text-red-400'}>
+            {connected ? 'Connected' : 'Disconnected'}
+          </span>
+        </div>
+
+        {/* Sessions */}
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-clawd-text-dim">Active Sessions</span>
+          <span className="text-clawd-text">{activeSessions.length}</span>
+        </div>
+
+        {/* Watcher */}
+        {sysStatus && (
+          <>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-clawd-text-dim">Task Watcher</span>
+              <span className={sysStatus.watcherRunning ? 'text-emerald-400' : 'text-red-400'}>
+                {sysStatus.watcherRunning ? 'Running' : 'Stopped'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-clawd-text-dim">Safety Lock</span>
+              <span className={sysStatus.killSwitchOn ? 'text-red-400' : 'text-emerald-400'}>
+                {sysStatus.killSwitchOn ? 'Engaged' : 'Normal'}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Token usage */}
+        {tokenSummary && (
+          <div className="pt-3 border-t border-clawd-border/50 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-clawd-text-dim flex items-center gap-1">
+                <Zap size={10} /> Tokens Today
+              </span>
+              <span className="text-clawd-text font-medium">{formatTokens(tokenSummary.totalTokens)}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-clawd-text-dim flex items-center gap-1">
+                <DollarSign size={10} /> Cost
+              </span>
+              <span className="text-clawd-text font-medium">{formatCost(tokenSummary.totalCost)}</span>
+            </div>
+            {tokenSummary.topAgent && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-clawd-text-dim">Top Agent</span>
+                <span className="text-clawd-text capitalize">
+                  {tokenSummary.topAgent} ({formatTokens(tokenSummary.topAgentTokens || 0)})
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Dashboard ─────────────────────────────────────────
+
+export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
+  const {
+    connected, tasks, agents, activities, approvals,
+    fetchAgents, gatewaySessions, loadGatewaySessions,
+    approveItem, rejectItem, loadApprovals,
+  } = useStore();
+
+  // Load data on mount
+  useEffect(() => {
+    fetchAgents().catch(() => {});
+    loadApprovals().catch(() => {});
+  }, [fetchAgents, loadApprovals]);
+
+  useEffect(() => {
+    if (connected) {
+      loadGatewaySessions().catch(() => {});
+      const interval = setInterval(() => loadGatewaySessions().catch(() => {}), 30000);
+      return () => clearInterval(interval);
+    }
+  }, [connected, loadGatewaySessions]);
+
+  // Computed metrics
+  const inProgressTasks = useMemo(() => tasks.filter(t => t.status === 'in-progress'), [tasks]);
+  const completedToday = useMemo(() =>
+    tasks.filter(t =>
+      t.status === 'done' &&
+      new Date(t.updatedAt).toDateString() === new Date().toDateString()
+    ).length,
+    [tasks]
+  );
+
+  const realAgents = useMemo(() => agents.filter(a => !PHANTOM_AGENTS.includes(a.id)), [agents]);
+  const activeSubagents = useMemo(() => gatewaySessions.filter(s => s.type === 'subagent' && s.isActive), [gatewaySessions]);
+  const activeAgentCount = useMemo(() => {
+    const activeFromRegistry = realAgents.filter(a => a.status === 'active').length;
+    return activeFromRegistry + activeSubagents.length;
+  }, [realAgents, activeSubagents]);
+
+  const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
+
+  return (
+    <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
+      {/* Header */}
+      <HeaderBar connected={connected} />
+
+      {/* Stat Strip */}
+      <StatStrip
+        pendingApprovals={pendingApprovals.length}
+        inProgressCount={inProgressTasks.length}
+        completedToday={completedToday}
+        activeAgentCount={activeAgentCount}
+        totalAgentCount={realAgents.length}
+        onNavigate={onNavigate}
+      />
+
+      {/* Main content: Approvals + Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-4">
+        <ApprovalsQueue
+          approvals={approvals}
+          onApprove={approveItem}
+          onReject={rejectItem}
+          onNavigate={onNavigate}
+        />
+        <ActivityFeed
+          inProgressTasks={inProgressTasks}
+          agents={agents}
+          activities={activities}
+          onNavigate={onNavigate}
+        />
+      </div>
+
+      {/* Bottom row: Schedule + System Health */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-6">
+        <TodaySchedule onNavigate={onNavigate} />
+        <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
+      </div>
+    </div>
+  );
 }

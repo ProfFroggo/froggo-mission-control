@@ -17,6 +17,7 @@ import {
 import { Zap, DollarSign, TrendingUp, Shield } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
 import AgentTokenDetailModal from './AgentTokenDetailModal';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
 
 interface TokenSummaryResponse {
   by_agent: Array<{
@@ -235,9 +236,9 @@ export default function TokenUsageWidget() {
             data={chartData}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="agent" stroke="#9CA3AF" />
-            <YAxis stroke="#9CA3AF" />
+            <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+            <XAxis dataKey="agent" stroke={CHART_AXIS.stroke} />
+            <YAxis stroke={CHART_AXIS.stroke} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar
@@ -309,9 +310,9 @@ export default function TokenUsageWidget() {
               const threshold = (budget.alert_threshold || 0.9) * 100;
               let barColor = getAgentTheme(agent.agent).color; // Green (< 70%)
               if (percentage >= threshold) {
-                barColor = '#EF4444'; // Red (>= alert threshold)
+                barColor = CHART_COLORS.red; // Red (>= alert threshold)
               } else if (percentage >= 70) {
-                barColor = '#F59E0B'; // Yellow (70-90%)
+                barColor = CHART_COLORS.amber; // Yellow (70-90%)
               }
 
               return (

@@ -14,7 +14,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   google: {
     name: 'Google',
     logo: '🔵',
-    color: '#4285f4',
+    color: 'var(--color-info)',
     description: 'Gmail, Calendar, Drive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts'] as DataType[],
     authMethods: ['oauth'] as const,
@@ -22,7 +22,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   icloud: {
     name: 'iCloud',
     logo: '☁️',
-    color: '#007aff',
+    color: 'var(--color-info)',
     description: 'Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,
@@ -31,7 +31,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   microsoft: {
     name: 'Microsoft',
     logo: '🔷',
-    color: '#00a4ef',
+    color: 'var(--color-info)',
     description: 'Outlook, Calendar, OneDrive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts', 'tasks'] as DataType[],
     authMethods: ['oauth'] as const,
@@ -39,7 +39,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   apple: {
     name: 'Apple',
     logo: '',
-    color: '#000000',
+    color: 'var(--clawd-text)',
     description: 'iCloud Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,

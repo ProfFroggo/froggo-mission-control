@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
 
 export default function TaskTrendsChart() {
   const [data, setData] = useState<TaskCompletionTrend[]>([]);
@@ -73,34 +74,34 @@ export default function TaskTrendsChart() {
     if (chartType === 'line') {
       return (
         <LineChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="date" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" />
+          <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+          <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
+          <YAxis stroke={CHART_AXIS.stroke} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           <Line
             type="monotone"
             dataKey="created"
-            stroke="#3B82F6"
+            stroke={CHART_COLORS.blue}
             name="Created"
             strokeWidth={2}
-            dot={{ fill: '#3B82F6' }}
+            dot={{ fill: CHART_COLORS.blue }}
           />
           <Line
             type="monotone"
             dataKey="completed"
-            stroke="#10B981"
+            stroke={CHART_COLORS.green}
             name="Completed"
             strokeWidth={2}
-            dot={{ fill: '#10B981' }}
+            dot={{ fill: CHART_COLORS.green }}
           />
           <Line
             type="monotone"
             dataKey="completionRate"
-            stroke="#8B5CF6"
+            stroke={CHART_COLORS.purple}
             name="Completion Rate"
             strokeWidth={2}
-            dot={{ fill: '#8B5CF6' }}
+            dot={{ fill: CHART_COLORS.purple }}
           />
         </LineChart>
       );
@@ -109,13 +110,13 @@ export default function TaskTrendsChart() {
     if (chartType === 'bar') {
       return (
         <BarChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="date" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" />
+          <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+          <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
+          <YAxis stroke={CHART_AXIS.stroke} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar dataKey="created" fill="#3B82F6" name="Created" />
-          <Bar dataKey="completed" fill="#10B981" name="Completed" />
+          <Bar dataKey="created" fill={CHART_COLORS.blue} name="Created" />
+          <Bar dataKey="completed" fill={CHART_COLORS.green} name="Completed" />
         </BarChart>
       );
     }
@@ -125,23 +126,23 @@ export default function TaskTrendsChart() {
       <AreaChart {...commonProps}>
         <defs>
           <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+            <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+            <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-        <XAxis dataKey="date" stroke="#9CA3AF" />
-        <YAxis stroke="#9CA3AF" />
+        <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+        <XAxis dataKey="date" stroke={CHART_AXIS.stroke} />
+        <YAxis stroke={CHART_AXIS.stroke} />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
         <Area
           type="monotone"
           dataKey="created"
-          stroke="#3B82F6"
+          stroke={CHART_COLORS.blue}
           fillOpacity={1}
           fill="url(#colorCreated)"
           name="Created"
@@ -149,7 +150,7 @@ export default function TaskTrendsChart() {
         <Area
           type="monotone"
           dataKey="completed"
-          stroke="#10B981"
+          stroke={CHART_COLORS.green}
           fillOpacity={1}
           fill="url(#colorCompleted)"
           name="Completed"

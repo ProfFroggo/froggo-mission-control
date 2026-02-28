@@ -846,7 +846,7 @@ ${pdfText.slice(0, 15000)}`;
   registerModuleHandler('froggo-finance', 'finance:account:list', async () => {
     try {
       const rows = prepare(
-        `SELECT * FROM finance_accounts WHERE archived = 0 OR archived IS NULL ORDER BY created_at ASC`
+        `SELECT id, name, type, account_number, currency, balance, last_synced_at, metadata, created_at, updated_at, archived FROM finance_accounts WHERE archived = 0 OR archived IS NULL ORDER BY created_at ASC`
       ).all();
       return { success: true, accounts: rows };
     } catch (error: any) {
@@ -934,7 +934,8 @@ ${pdfText.slice(0, 15000)}`;
     try {
       const whereClause = accountId ? `WHERE account_id = ? AND status != 'dismissed'` : `WHERE status != 'dismissed'`;
       const params = accountId ? [accountId] : [];
-      const rows = prepare(`SELECT * FROM finance_recurring ${whereClause} ORDER BY confidence DESC, detected_at DESC`).all(...params);
+      const recurCols = 'id, account_id, description, normalized_merchant, amount, currency, frequency, confidence, next_expected_date, status, detected_at, updated_at, dismissed_count, dismissed_at';
+      const rows = prepare(`SELECT ${recurCols} FROM finance_recurring ${whereClause} ORDER BY confidence DESC, detected_at DESC`).all(...params);
       return { success: true, recurring: rows };
     } catch (error: any) {
       safeLog.error('[Finance] Recurring list error:', error.message);

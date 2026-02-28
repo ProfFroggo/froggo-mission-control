@@ -32,6 +32,8 @@ import {
   type ProjectStats,
 } from '../services/analyticsService';
 import { Spinner } from './LoadingStates';
+import EmptyState from './EmptyState';
+import ErrorDisplay from './ErrorDisplay';
 
 type TimeRange = '7d' | '30d' | '90d';
 type AnalyticsView = 'overview' | 'tasks' | 'agents' | 'time' | 'projects';
@@ -40,7 +42,8 @@ export default function AnalyticsPanel() {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [view, setView] = useState<AnalyticsView>('overview');
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState<Error | null>(null);
+
   // Analytics data
   const [completionTrends, setCompletionTrends] = useState<TaskCompletionTrend[]>([]);
   const [agentUtilization, setAgentUtilization] = useState<AgentUtilization[]>([]);
@@ -55,9 +58,10 @@ export default function AnalyticsPanel() {
 
   const loadAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
       const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-      
+
       const [trends, agents, heatmap, projects, vel, subtasks] = await Promise.all([
         getTaskCompletionTrends(days),
         getAgentUtilization(),
@@ -73,8 +77,8 @@ export default function AnalyticsPanel() {
       setProjectStats(projects);
       setVelocity(vel);
       setSubtaskStats(subtasks);
-    } catch (error) {
-      // 'Failed to load analytics:', error;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load analytics'));
     } finally {
       setLoading(false);
     }
@@ -118,16 +122,40 @@ export default function AnalyticsPanel() {
     );
   }
 
+  if (error) {
+    return (
+      <ErrorDisplay
+        error={error}
+        context={{ action: 'load analytics', resource: 'analytics data' }}
+        onRetry={loadAnalytics}
+      />
+    );
+  }
+
+  const hasData = completionTrends.length > 0 || agentUtilization.length > 0 || projectStats.length > 0;
+  if (!hasData) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <EmptyState
+          icon={BarChart3}
+          title="No analytics data yet"
+          description="Analytics data appears as agents process tasks. Check back after some activity."
+          action={{ label: 'Refresh', onClick: loadAnalytics }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <h2 className="text-heading-2 flex items-center gap-2">
             <BarChart3 className="text-clawd-accent" size={20} />
             Analytics & Insights
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-secondary mt-1">
             Comprehensive productivity tracking and performance metrics
           </p>
         </div>
@@ -206,8 +234,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-info mb-1">
                   {totalCompleted}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Tasks Completed</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Tasks Completed</div>
+                <div className="mt-2 text-caption">
                   {totalCreated} created • {avgCompletionRate}% rate
                 </div>
               </div>
@@ -220,8 +248,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-review mb-1">
                   {agentUtilization.length}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Active Agents</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Active Agents</div>
+                <div className="mt-2 text-caption">
                   {agentUtilization.filter(a => a.tasksInProgress > 0).length} working now
                 </div>
               </div>
@@ -234,8 +262,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-warning mb-1">
                   {totalHours.toFixed(0)}h
                 </div>
-                <div className="text-sm text-clawd-text-dim">Total Hours</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Total Hours</div>
+                <div className="mt-2 text-caption">
                   Last {timeRange === '7d' ? '7' : timeRange === '30d' ? '30' : '90'} days
                 </div>
               </div>
@@ -248,8 +276,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-success mb-1">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Avg Velocity</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Avg Velocity</div>
+                <div className="mt-2 text-caption">
                   Tasks/day throughput
                 </div>
               </div>
@@ -267,7 +295,7 @@ export default function AnalyticsPanel() {
             {/* Subtask Progress */}
             {subtaskStats.length > 0 && (
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                   <Target size={16} className="text-clawd-accent" />
                   Active Tasks - Subtask Progress
                 </h3>
@@ -306,9 +334,9 @@ export default function AnalyticsPanel() {
         {view === 'time' && <TimeTrackingPanel />}
         
         {view === 'projects' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Calendar size={16} className="text-clawd-accent" />
                 Project Statistics
               </h3>
@@ -321,7 +349,7 @@ export default function AnalyticsPanel() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="font-medium">{project.project}</div>
-                        <div className="text-sm text-clawd-text-dim">
+                        <div className="text-secondary">
                           {project.totalTasks} total • {project.completedTasks} completed
                         </div>
                       </div>
@@ -331,7 +359,7 @@ export default function AnalyticsPanel() {
                             ? Math.round((project.completedTasks / project.totalTasks) * 100)
                             : 0}%
                         </div>
-                        <div className="text-xs text-clawd-text-dim">completion</div>
+                        <div className="text-caption">completion</div>
                       </div>
                     </div>
 

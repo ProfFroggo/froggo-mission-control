@@ -385,7 +385,7 @@ export default function ExportBackupTab() {
                   autoBackupEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                <div className={`w-5 h-5 rounded-full bg-clawd-text shadow transition-transform ${
                   autoBackupEnabled ? 'translate-x-6' : 'translate-x-0.5'
                 }`} />
               </button>

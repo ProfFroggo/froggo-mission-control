@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { createLogger } from '../utils/logger';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 const logger = createLogger('Analytics');
 
@@ -260,11 +261,11 @@ export default function AnalyticsOverview() {
           <h2 className="font-semibold">Task Activity</h2>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-sm" />
+              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.green }} />
               <span className="text-clawd-text-dim">Completed</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-sm" />
+              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.blue }} />
               <span className="text-clawd-text-dim">Created</span>
             </div>
           </div>
@@ -274,28 +275,28 @@ export default function AnalyticsOverview() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis 
-                  dataKey="label" 
-                  stroke="#9CA3AF" 
-                  fontSize={10}
+                <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  stroke={CHART_AXIS.stroke}
+                  fontSize={CHART_AXIS.fontSize}
                   interval={Math.floor(dailyData.length / 10)}
                   angle={dailyData.length > 14 ? -45 : 0}
                   textAnchor={dailyData.length > 14 ? 'end' : 'middle'}
                   height={dailyData.length > 14 ? 50 : 30}
                 />
-                <YAxis stroke="#9CA3AF" fontSize={10} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px'
+                <YAxis stroke={CHART_AXIS.stroke} fontSize={CHART_AXIS.fontSize} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: CHART_TOOLTIP.backgroundColor,
+                    border: CHART_TOOLTIP.border,
+                    borderRadius: CHART_TOOLTIP.borderRadius,
                   }}
-                  labelStyle={{ color: '#9CA3AF' }}
+                  labelStyle={{ color: CHART_AXIS.stroke }}
                 />
                 <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                <Bar dataKey="completed" name="Completed" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="created" name="Created" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="completed" name="Completed" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="created" name="Created" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

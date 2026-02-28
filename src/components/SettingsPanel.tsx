@@ -11,6 +11,7 @@ import LogsTab from './LogsTab';
 import ExportBackupTab from './ExportBackupTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
 import AccessibilitySettings from './AccessibilitySettings';
+import { Toggle } from './Toggle';
 
 interface NotificationPreferences {
   taskUpdates: boolean;
@@ -262,14 +263,14 @@ export default function SettingsPanel() {
   };
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+        <div className="mb-6">
+          <h1 className="text-heading-2 mb-2 flex items-center gap-2">
             <Settings size={24} /> Settings
           </h1>
-          <p className="text-clawd-text-dim">Configure Froggo dashboard preferences</p>
+          <p className="text-secondary">Configure Froggo dashboard preferences</p>
         </div>
 
         {/* Tabs */}
@@ -403,10 +404,10 @@ export default function SettingsPanel() {
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Connection */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Wifi size={16} /> Connection
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -441,7 +442,7 @@ export default function SettingsPanel() {
 
             {/* Default Panel */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Startup
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -470,7 +471,7 @@ export default function SettingsPanel() {
 
             {/* Navigation */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Navigation
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -479,28 +480,21 @@ export default function SettingsPanel() {
                     <div className="font-medium">Collapsed Sidebar</div>
                     <div className="text-sm text-clawd-text-dim">Show sidebar as icon only</div>
                   </div>
-                  <button
-                    onClick={() => {
-                      const newValue = !localStorage.getItem('sidebarExpanded') || localStorage.getItem('sidebarExpanded') === 'true';
-                      localStorage.setItem('sidebarExpanded', String(!newValue));
-                      // Trigger a custom event so Sidebar can pick up the change
+                  <Toggle
+                    checked={localStorage.getItem('sidebarExpanded') === 'false'}
+                    onChange={(checked) => {
+                      localStorage.setItem('sidebarExpanded', String(!checked));
                       window.dispatchEvent(new Event('sidebarStateChange'));
                     }}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      localStorage.getItem('sidebarExpanded') === 'false' ? 'bg-success' : 'bg-clawd-border'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                      localStorage.getItem('sidebarExpanded') === 'false' ? 'translate-x-6' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                    colorScheme="green"
+                  />
                 </div>
               </div>
             </section>
 
             {/* Voice */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Volume2 size={16} /> Voice
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -509,16 +503,10 @@ export default function SettingsPanel() {
                     <div className="font-medium">Voice Responses</div>
                     <div className="text-sm text-clawd-text-dim">Read responses aloud</div>
                   </div>
-                  <button
-                    onClick={() => setSettings(s => ({ ...s, voiceEnabled: !s.voiceEnabled }))}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      settings.voiceEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      settings.voiceEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                  <Toggle
+                    checked={settings.voiceEnabled}
+                    onChange={(checked) => setSettings(s => ({ ...s, voiceEnabled: checked }))}
+                  />
                 </div>
                 <div>
                   <label htmlFor="voice-speed" className="block text-sm text-clawd-text-dim mb-2">
@@ -540,7 +528,7 @@ export default function SettingsPanel() {
 
             {/* Data */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <RefreshCw size={16} /> Data Refresh
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -549,16 +537,10 @@ export default function SettingsPanel() {
                     <div className="font-medium">Auto Refresh</div>
                     <div className="text-sm text-clawd-text-dim">Automatically refresh sessions list</div>
                   </div>
-                  <button
-                    onClick={() => setSettings(s => ({ ...s, autoRefresh: !s.autoRefresh }))}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      settings.autoRefresh ? 'bg-clawd-accent' : 'bg-clawd-border'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      settings.autoRefresh ? 'translate-x-6' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                  <Toggle
+                    checked={settings.autoRefresh}
+                    onChange={(checked) => setSettings(s => ({ ...s, autoRefresh: checked }))}
+                  />
                 </div>
                 {settings.autoRefresh && (
                   <div>
@@ -582,7 +564,7 @@ export default function SettingsPanel() {
 
             {/* Export/Import */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Download size={16} /> Backup & Restore
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -619,10 +601,10 @@ export default function SettingsPanel() {
 
         {/* APPEARANCE TAB */}
         {activeTab === 'appearance' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Theme */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Moon size={16} /> Theme
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -675,7 +657,7 @@ export default function SettingsPanel() {
 
             {/* Typography */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Type size={16} /> Typography
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -726,7 +708,7 @@ export default function SettingsPanel() {
 
         {/* NOTIFICATIONS TAB */}
         {activeTab === 'notifications' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Global Notification Settings */}
             <section>
               <GlobalNotificationSettings />
@@ -734,7 +716,7 @@ export default function SettingsPanel() {
 
             {/* Dashboard-specific Notification Preferences */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Bell size={16} /> Dashboard Notification Preferences
               </h2>
               <p className="text-sm text-clawd-text-dim mb-4">
@@ -747,16 +729,10 @@ export default function SettingsPanel() {
                     <div className="font-medium">Enable Notifications</div>
                     <div className="text-sm text-clawd-text-dim">Master switch for all notifications</div>
                   </div>
-                  <button
-                    onClick={() => setSettings(s => ({ ...s, notificationsEnabled: !s.notificationsEnabled }))}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      settings.notificationsEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      settings.notificationsEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                  <Toggle
+                    checked={settings.notificationsEnabled}
+                    onChange={(checked) => setSettings(s => ({ ...s, notificationsEnabled: checked }))}
+                  />
                 </div>
 
                 {/* Notification Types */}
@@ -768,20 +744,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Task Updates</div>
                       <div className="text-xs text-clawd-text-dim">Status changes, completions, assignments</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, taskUpdates: !s.notifications.taskUpdates }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.taskUpdates ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.taskUpdates}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, taskUpdates: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.taskUpdates ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -789,20 +756,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Agent Messages</div>
                       <div className="text-xs text-clawd-text-dim">Messages from Coder, Writer, Researcher agents</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, agentMessages: !s.notifications.agentMessages }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.agentMessages ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.agentMessages}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, agentMessages: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.agentMessages ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -810,20 +768,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Approval Requests</div>
                       <div className="text-xs text-clawd-text-dim">Tweets, emails, calendar events pending approval</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, approvalRequests: !s.notifications.approvalRequests }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.approvalRequests ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.approvalRequests}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, approvalRequests: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.approvalRequests ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -831,20 +780,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">System Alerts</div>
                       <div className="text-xs text-clawd-text-dim">Errors, warnings, important system events</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, systemAlerts: !s.notifications.systemAlerts }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.systemAlerts ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.systemAlerts}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, systemAlerts: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.systemAlerts ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
                 </div>
 
@@ -857,20 +797,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Email Notifications</div>
                       <div className="text-xs text-clawd-text-dim">Send notifications to email (coming soon)</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, emailNotifications: !s.notifications.emailNotifications }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.emailNotifications ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.emailNotifications}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, emailNotifications: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.emailNotifications ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -878,20 +809,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Discord Notifications</div>
                       <div className="text-xs text-clawd-text-dim">Send notifications to Discord (coming soon)</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, discordNotifications: !s.notifications.discordNotifications }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.discordNotifications ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.discordNotifications}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, discordNotifications: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.discordNotifications ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -899,20 +821,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Telegram Notifications</div>
                       <div className="text-xs text-clawd-text-dim">Send notifications to Telegram (coming soon)</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, telegramNotifications: !s.notifications.telegramNotifications }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.telegramNotifications ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.telegramNotifications}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, telegramNotifications: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.telegramNotifications ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -920,20 +833,11 @@ export default function SettingsPanel() {
                       <div className="font-medium text-sm">Notification Sound</div>
                       <div className="text-xs text-clawd-text-dim">Play sound with notifications</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ 
-                        ...s, 
-                        notifications: { ...s.notifications, soundEnabled: !s.notifications.soundEnabled }
-                      }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.notifications.soundEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.notifications.soundEnabled}
+                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, soundEnabled: checked } }))}
                       disabled={!settings.notificationsEnabled}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.notifications.soundEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
@@ -943,10 +847,10 @@ export default function SettingsPanel() {
 
         {/* KEYBOARD SHORTCUTS TAB */}
         {activeTab === 'shortcuts' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2">
+                <h2 className="text-heading-3 flex items-center gap-2">
                   <Keyboard size={16} /> Keyboard Shortcuts
                 </h2>
                 <button
@@ -1004,9 +908,9 @@ export default function SettingsPanel() {
 
         {/* AUTOMATION TAB */}
         {activeTab === 'automation' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 ⚡ Automation
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -1027,16 +931,11 @@ export default function SettingsPanel() {
                         : 'All external actions blocked (safe mode)'}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSettings(s => ({ ...s, externalActionsEnabled: !s.externalActionsEnabled }))}
-                    className={`w-12 h-6 rounded-full transition-colors ${
-                      settings.externalActionsEnabled ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      settings.externalActionsEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+                  <Toggle
+                    checked={settings.externalActionsEnabled}
+                    onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
+                    colorScheme="green"
+                  />
                 </div>
 
                 {/* Rate Limits */}

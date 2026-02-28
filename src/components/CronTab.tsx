@@ -204,7 +204,7 @@ export default function CronTab() {
                       job.enabled ? 'bg-clawd-accent' : 'bg-clawd-border'
                     }`}
                   >
-                    <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    <div className={`w-4 h-4 rounded-full bg-clawd-text shadow transition-transform ${
                       job.enabled ? 'translate-x-5' : 'translate-x-0.5'
                     }`} />
                   </button>

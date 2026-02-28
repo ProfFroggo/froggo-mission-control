@@ -22,6 +22,9 @@ import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 import { createLogger } from '../utils/logger';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
+import EmptyState from './EmptyState';
 
 const logger = createLogger('VoiceChat');
 
@@ -125,6 +128,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const nextId = (suffix: string) => `vc-${Date.now()}-${++msgCounter.current}-${suffix}`;
   const [messages, setMessages] = useState<VoiceChatMessage[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -169,10 +173,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // Load history from SQLite on agent switch
   useEffect(() => {
     setHistoryLoaded(false);
+    setLoadError(null);
     loadVoiceHistory(selectedAgent.id).then(msgs => {
       setMessages(msgs);
       setHistoryLoaded(true);
-    }).catch(() => {
+    }).catch((err) => {
+      logger.error('Failed to load voice history:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load voice history');
       setMessages([]);
       setHistoryLoaded(true);
     });
@@ -517,6 +524,24 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   );
   
   // ── Render ──
+  if (!historyLoaded) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load voice chat', resource: 'messages' }}
+        onRetry={() => { setLoadError(null); setHistoryLoaded(false); }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-clawd-bg">
       {/* API Key Warning */}
@@ -554,7 +579,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                   🧠 {agentContext.tasks.length}
                 </span>
               )}
-              {speaking && <Waveform level={speakLevel} color="#4ade80" bars={5} height={20} />}
+              {speaking && <Waveform level={speakLevel} color="var(--color-success)" bars={5} height={20} />}
             </div>
           )}
         </div>
@@ -566,7 +591,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </button>
           )}
           
-          <button onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Settings">
+          <button data-voice-settings onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Settings">
             <Settings size={16} />
           </button>
           
@@ -618,7 +643,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div data-voice-transcript className="flex-1 overflow-y-auto p-4 space-y-3">
         {!historyLoaded && (
           <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
             <Loader2 className="w-6 h-6 animate-spin mb-2" />
@@ -626,21 +651,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         )}
         {historyLoaded && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full">
             <div className="relative mb-4">
               <AgentAvatar agentId={selectedAgent.id} size="2xl" />
             </div>
-            <p className="text-lg font-medium text-clawd-text mb-1">Voice Chat with {selectedAgent.name}</p>
-            <p className="text-sm text-center max-w-xs">
-              Press call to connect via <span className="text-warning">Gemini Live</span>. Real-time audio streaming with {selectedAgent.name}.
-              {selectedAgent.role && <span className="block mt-1 text-xs opacity-70">{selectedAgent.role}</span>}
-              {agentContext && (
-                <span className="block mt-2 text-xs opacity-60">
-                  🧠 {agentContext.tasks.length} task{agentContext.tasks.length !== 1 ? 's' : ''}
-                  {agentContext.sessions.length > 0 && ` · ${agentContext.sessions.length} session${agentContext.sessions.length !== 1 ? 's' : ''}`}
-                </span>
-              )}
-            </p>
+            <EmptyState
+              type="generic"
+              description={`Press call to connect via Gemini Live. Real-time audio streaming with ${selectedAgent.name}.`}
+              compact
+            />
           </div>
         )}
         
@@ -685,7 +704,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {callActive && audioState === 'suspended' && (
         <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
           <button onClick={handleEnableAudio}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-black font-medium transition-colors">
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-clawd-bg font-medium transition-colors">
             <Volume2 size={18} />
             Enable Audio
           </button>
@@ -700,13 +719,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {listening && !speaking && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-indigo-400 font-medium">⚡ Listening…</span>
-                <Waveform level={micLevel} color="#818cf8" bars={12} height={40} />
+                <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
               </div>
             )}
             {speaking && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-success font-medium">{selectedAgent.name} speaking</span>
-                <Waveform level={speakLevel} color="#4ade80" bars={12} height={40} />
+                <Waveform level={speakLevel} color="var(--color-success)" bars={12} height={40} />
               </div>
             )}
             {!listening && !speaking && <span className="text-xs text-clawd-text-dim">Tap mic to speak</span>}
@@ -734,14 +753,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       <div className="border-t border-clawd-border p-4">
         <div className="flex items-center justify-center gap-4">
           {callActive && (
-            <button onClick={toggleMic} disabled={speaking}
+            <button data-voice-meeting onClick={toggleMic} disabled={speaking}
               className={`p-4 rounded-full transition-all ${listening ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'} disabled:opacity-40`}
               title={listening ? 'Pause mic' : 'Resume mic'}>
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
             </button>
           )}
           
-          <button onClick={() => callActive ? endCall() : startCall()} disabled={connecting}
+          <button data-voice-orb onClick={() => callActive ? endCall() : startCall()} disabled={connecting}
             className={`p-5 rounded-full transition-all ${callActive ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30' : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'} disabled:opacity-40`}
             title={callActive ? 'End call' : 'Start call'}>
             {connecting ? <Loader2 size={26} className="animate-spin" /> : callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
