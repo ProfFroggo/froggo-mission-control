@@ -591,7 +591,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </button>
           )}
           
-          <button onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Settings">
+          <button data-voice-settings onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Settings">
             <Settings size={16} />
           </button>
           
@@ -643,7 +643,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div data-voice-transcript className="flex-1 overflow-y-auto p-4 space-y-3">
         {!historyLoaded && (
           <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
             <Loader2 className="w-6 h-6 animate-spin mb-2" />
@@ -753,14 +753,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       <div className="border-t border-clawd-border p-4">
         <div className="flex items-center justify-center gap-4">
           {callActive && (
-            <button onClick={toggleMic} disabled={speaking}
+            <button data-voice-meeting onClick={toggleMic} disabled={speaking}
               className={`p-4 rounded-full transition-all ${listening ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'} disabled:opacity-40`}
               title={listening ? 'Pause mic' : 'Resume mic'}>
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
             </button>
           )}
           
-          <button onClick={() => callActive ? endCall() : startCall()} disabled={connecting}
+          <button data-voice-orb onClick={() => callActive ? endCall() : startCall()} disabled={connecting}
             className={`p-5 rounded-full transition-all ${callActive ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30' : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'} disabled:opacity-40`}
             title={callActive ? 'End call' : 'Start call'}>
             {connecting ? <Loader2 size={26} className="animate-spin" /> : callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
