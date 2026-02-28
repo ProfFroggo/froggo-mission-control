@@ -22,6 +22,8 @@ import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 import { createLogger } from '../utils/logger';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 
 const logger = createLogger('VoiceChat');
@@ -126,6 +128,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const nextId = (suffix: string) => `vc-${Date.now()}-${++msgCounter.current}-${suffix}`;
   const [messages, setMessages] = useState<VoiceChatMessage[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -170,10 +173,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // Load history from SQLite on agent switch
   useEffect(() => {
     setHistoryLoaded(false);
+    setLoadError(null);
     loadVoiceHistory(selectedAgent.id).then(msgs => {
       setMessages(msgs);
       setHistoryLoaded(true);
-    }).catch(() => {
+    }).catch((err) => {
+      logger.error('Failed to load voice history:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load voice history');
       setMessages([]);
       setHistoryLoaded(true);
     });
@@ -518,6 +524,24 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   );
   
   // ── Render ──
+  if (!historyLoaded) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load voice chat', resource: 'messages' }}
+        onRetry={() => { setLoadError(null); setHistoryLoaded(false); }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-clawd-bg">
       {/* API Key Warning */}

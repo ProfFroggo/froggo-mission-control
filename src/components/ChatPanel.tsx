@@ -14,6 +14,8 @@ import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
 import EmptyState from './EmptyState';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 
 const logger = createLogger('ChatPanel');
 
@@ -45,6 +47,7 @@ export default function ChatPanel() {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState<string | null>(null);
   const agents = useStore(s => s.agents);
   const chatAgents = fetchAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(chatAgents.length > 0 ? chatAgents[0] : null);
@@ -318,7 +321,8 @@ export default function ChatPanel() {
       }
       setHistoryLoaded(true);
     } catch (e) {
-      // '[Chat] Failed to load history:', e;
+      logger.error('Failed to load history:', e);
+      setLoadError(e instanceof Error ? e.message : 'Failed to load chat history');
       setHistoryLoaded(true); // Don't retry
     }
   }, [messages]);
@@ -829,11 +833,18 @@ export default function ChatPanel() {
   if (!selectedAgent) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={48} className="mx-auto mb-4 animate-spin text-clawd-accent" />
-          <p className="text-lg font-medium">Loading agents...</p>
-        </div>
+        <Spinner size={32} />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load chat', resource: 'messages' }}
+        onRetry={() => { setLoadError(null); setHistoryLoaded(false); }}
+      />
     );
   }
 

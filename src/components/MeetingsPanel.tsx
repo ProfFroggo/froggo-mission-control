@@ -19,6 +19,8 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { createLogger } from '../utils/logger';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 
 const logger = createLogger('Meetings');
@@ -166,6 +168,7 @@ export default function MeetingsPanel() {
   const [transcriptionSaving, setTranscriptionSaving] = useState(false);
   const [transcriptionSaved, setTranscriptionSaved] = useState(false);
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(false);
+  const [pastMeetingsError, setPastMeetingsError] = useState<string | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(null);
 
   // AI Chat
@@ -570,7 +573,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       } catch { /* ignore */ }
       setPastMeetings(meetings);
     } catch (err) {
-      // '[Meetings] Error loading:', err;
+      logger.error('Error loading past meetings:', err);
+      setPastMeetingsError(err instanceof Error ? err.message : 'Failed to load past meetings');
     } finally {
       setLoadingPastMeetings(false);
     }
@@ -1927,15 +1931,22 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         disabled={loadingPastMeetings}
                         className="text-sm text-clawd-text-dim hover:text-clawd-accent flex items-center gap-1"
                       >
-                        <Loader2 size={14} className={loadingPastMeetings ? 'animate-spin' : ''} />
+                        {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
                         Refresh
                       </button>
                     </div>
 
                     {loadingPastMeetings ? (
                       <div className="flex items-center justify-center py-12">
-                        <Loader2 size={24} className="animate-spin text-clawd-text-dim" />
+                        <Spinner size={24} />
                       </div>
+                    ) : pastMeetingsError ? (
+                      <ErrorDisplay
+                        error={pastMeetingsError}
+                        context={{ action: 'load meetings', resource: 'past meetings' }}
+                        onRetry={() => { setPastMeetingsError(null); loadPastMeetings(); }}
+                        inline
+                      />
                     ) : pastMeetings.length === 0 ? (
                       <EmptyState
                         icon={Calendar}

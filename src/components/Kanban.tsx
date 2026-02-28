@@ -11,6 +11,7 @@ import PokeModal from './PokeModal';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
@@ -64,6 +65,7 @@ export default function Kanban() {
   const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading, taskCounts } = useStore();
   
   // Local loading states for operations
+  const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
   const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
@@ -76,7 +78,7 @@ export default function Kanban() {
   
   // Load tasks from froggo-db on mount and poll (only when visible)
   useEffect(() => {
-    loadTasksFromDB();
+    loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks'));
     
     // Polling with visibility detection - stop polling when tab hidden
     // Increased to 30s for better performance
@@ -509,6 +511,16 @@ export default function Kanban() {
       });
     }
   };
+
+  if (taskLoadError) {
+    return (
+      <ErrorDisplay
+        error={taskLoadError}
+        context={{ action: 'load tasks', resource: 'task board' }}
+        onRetry={() => { setTaskLoadError(null); loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks')); }}
+      />
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
