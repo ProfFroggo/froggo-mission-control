@@ -138,15 +138,22 @@ export default function InboxPanel() {
       const result = await window.clawdbot?.inbox.list();
       let allItems: InboxItem[] = result.success ? (result.items || []) : [];
       
-      // Also load tasks in "review" status that haven't been reviewed yet
+      // Also load tasks in "review" or "human-review" status that haven't been reviewed yet
       try {
-        const tasksResult = await window.clawdbot?.tasks.list('review');
-        if (tasksResult?.success && tasksResult.tasks?.length > 0) {
+        const [reviewResult, humanReviewResult] = await Promise.all([
+          window.clawdbot?.tasks.list('review'),
+          window.clawdbot?.tasks.list('human-review'),
+        ]);
+        const reviewTasks = [
+          ...((reviewResult?.success && reviewResult.tasks) || []),
+          ...((humanReviewResult?.success && humanReviewResult.tasks) || []),
+        ];
+        if (reviewTasks.length > 0) {
           // Convert tasks to inbox item format
-          // ONLY show tasks with reviewStatus='pending' (not yet reviewed)
-          const taskItems = tasksResult.tasks
+          // Show tasks with reviewStatus starting with 'pending' (e.g. 'pending', 'pending-kevin')
+          const taskItems = reviewTasks
             .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
-            .filter((t: any) => t.reviewStatus === 'pending') // FIX: Only show pending reviews
+            .filter((t: any) => !t.reviewStatus || t.reviewStatus.startsWith('pending'))
             .map((t: any) => ({
               id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
               type: 'task' as const,
