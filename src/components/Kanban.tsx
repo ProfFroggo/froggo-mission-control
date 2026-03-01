@@ -976,7 +976,7 @@ export default function Kanban() {
       {/* Archive Confirmation Dialog */}
       {showArchiveConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-clawd-bg1 rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
+          <div className="bg-clawd-bg rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
             <h3 className="text-heading-3 mb-2">Archive Done Tasks</h3>
             <p className="text-clawd-text-dim mb-4">
               Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
@@ -985,7 +985,7 @@ export default function Kanban() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowArchiveConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-clawd-bg2 hover:bg-clawd-border transition-colors"
+                className="px-4 py-2 rounded-lg bg-clawd-surface hover:bg-clawd-border transition-colors"
               >
                 Cancel
               </button>
