@@ -1537,6 +1537,7 @@ declare global {
         checkUpdates: () =>
           Promise<{ success: boolean; updates?: Array<{ moduleId: string; installedVersion: string; latestVersion: string }>; error?: string }>;
         onRestartRequired: (callback: (data: { moduleId: string }) => void) => () => void;
+        onDeepLinkInstall?: (callback: (data: { moduleId: string }) => void) => () => void;
       };
       // Agent Packages — install/uninstall/status for agent workspace packages
       agentPackage?: {
