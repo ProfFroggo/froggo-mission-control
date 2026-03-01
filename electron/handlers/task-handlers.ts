@@ -25,6 +25,7 @@ import { prepare, db } from '../database';
 import { safeLog } from '../logger';
 import { emitTaskEvent } from '../events';
 import { SCRIPTS_DIR } from '../paths';
+import { validateTaskId, validateFilePath, validateString } from '../ipc-validation';
 
 // PATH env for child processes that call froggo-db or openclaw by name
 const CHILD_ENV = { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` };
@@ -119,6 +120,7 @@ async function handleTaskSync(
     dueDate?: number;
   }
 ): Promise<{ success: boolean; error?: string }> {
+  if (!validateTaskId(task.id)) return { success: false, error: 'Invalid task ID' };
   safeLog.log('[Tasks] Sync called with:', JSON.stringify(task));
 
   return new Promise((resolve) => {
@@ -277,6 +279,7 @@ async function handleTaskStart(
   _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
   return new Promise((resolve) => {
     execFile('froggo-db', ['task-start', taskId], { timeout: 10000, env: CHILD_ENV }, (error) => {
       resolve({ success: !error });
@@ -289,6 +292,8 @@ async function handleTaskComplete(
   taskId: string,
   outcome?: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
+  if (outcome && !validateString(outcome, 500)) return { success: false, error: 'Invalid outcome' };
   return new Promise((resolve) => {
     const args = ['task-complete', taskId];
     if (outcome) args.push('--outcome', outcome);
@@ -302,6 +307,7 @@ async function handleTaskDelete(
   _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
   // Direct SQL: set cancelled=1 to soft-delete.
   // The enforce_valid_state_transitions trigger blocks 'cancelled' as a status value.
   // The cancelled column is the proper soft-delete mechanism.
@@ -357,6 +363,7 @@ async function handleTaskPokeInternal(
   taskId: string,
   title: string
 ): Promise<{ success: boolean; agentId?: string; response?: string; sessionKey?: null; error?: string }> {
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
   safeLog.log(`[Tasks] Internal Poke: ${taskId} - ${title}`);
 
   try {
@@ -714,16 +721,19 @@ async function handleAttachmentsAdd(
   category: string = 'deliverable',
   uploadedBy: string = 'user'
 ): Promise<{ success: boolean; attachment?: any; error?: string }> {
-  const filename = path.basename(filePath);
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
+  const validPath = validateFilePath(filePath);
+  if (!validPath) return { success: false, error: 'Invalid file path' };
+  const filename = path.basename(validPath);
 
   let fileSize = 0;
   let mimeType = 'application/octet-stream';
 
   try {
-    const stats = fs.statSync(filePath);
+    const stats = fs.statSync(validPath);
     fileSize = stats.size;
 
-    const ext = path.extname(filePath).toLowerCase();
+    const ext = path.extname(validPath).toLowerCase();
     const mimeTypes: Record<string, string> = {
       '.pdf': 'application/pdf',
       '.png': 'image/png',
@@ -751,19 +761,19 @@ async function handleAttachmentsAdd(
 
   try {
     const result = prepare('INSERT INTO task_attachments (task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-      taskId, filePath, filename, fileSize, mimeType, category, uploadedBy, now
+      taskId, validPath, filename, fileSize, mimeType, category, uploadedBy, now
     );
 
     const attachmentId = Number(result.lastInsertRowid);
 
-    execFile('froggo-db', ['task-activity', taskId, 'file_attached', `Attached: ${filename} (${category})`, '--details', filePath], { env: CHILD_ENV }, () => {});
+    execFile('froggo-db', ['task-activity', taskId, 'file_attached', `Attached: ${filename} (${category})`, '--details', validPath], { env: CHILD_ENV }, () => {});
 
     return {
       success: true,
       attachment: {
         id: attachmentId,
         task_id: taskId,
-        file_path: filePath,
+        file_path: validPath,
         filename,
         file_size: fileSize,
         mime_type: mimeType,
@@ -805,8 +815,10 @@ async function handleAttachmentsOpen(
   _: Electron.IpcMainInvokeEvent,
   filePath: string
 ): Promise<{ success: boolean; error?: string }> {
+  const validPath = validateFilePath(filePath);
+  if (!validPath) return { success: false, error: 'Invalid file path' };
   try {
-    const err = await shell.openPath(filePath);
+    const err = await shell.openPath(validPath);
     return { success: !err, error: err || undefined };
   } catch (e: any) {
     return { success: false, error: e.message };
@@ -817,6 +829,7 @@ async function handleAttachmentsAutoDetect(
   _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; output?: string; error?: string }> {
+  if (!validateTaskId(taskId)) return { success: false, error: 'Invalid task ID' };
   return new Promise((resolve) => {
     execFile(path.join(SCRIPTS_DIR, 'attachment-helper.sh'), ['detect', taskId], { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
