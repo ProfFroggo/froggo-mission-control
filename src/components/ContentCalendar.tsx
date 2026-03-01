@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Edit3, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Eye } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -253,13 +253,7 @@ export default function ContentCalendar() {
 
           {getItemsForDate(selectedDate).length === 0 ? (
             <div className="text-center py-4 text-clawd-text-dim">
-              <p className="text-sm">No content scheduled</p>
-              <button 
-                onClick={() => showToast('info', 'Schedule content feature coming soon')}
-                className="mt-2 text-clawd-accent text-sm hover:underline"
-              >
-                + Add content
-              </button>
+              <p className="text-sm">No content scheduled for this date</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -281,19 +275,12 @@ export default function ContentCalendar() {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <button 
+                      <button
                         onClick={() => showToast('info', `Preview: ${item.content}`)}
                         className="p-1 hover:bg-clawd-border rounded"
                         title="Preview"
                       >
                         <Eye size={14} className="text-clawd-text-dim" />
-                      </button>
-                      <button 
-                        onClick={() => showToast('info', 'Edit feature coming soon')}
-                        className="p-1 hover:bg-clawd-border rounded"
-                        title="Edit"
-                      >
-                        <Edit3 size={14} className="text-clawd-text-dim" />
                       </button>
                     </div>
                   </div>

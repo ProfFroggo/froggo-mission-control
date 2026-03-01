@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench, Loader2, type LucideIcon } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Edit3, Save, MessageSquare, ChevronRight, Book, User, Wrench, Loader2, type LucideIcon } from 'lucide-react';
 import { showToast } from './Toast';
 import SkillsTab from './SkillsTab';
 import NodesTab from './NodesTab';
@@ -317,13 +317,6 @@ export default function ContextControlBoard() {
           <div className="flex-1 overflow-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-clawd-text-dim">{agents.length} agents configured</div>
-              <button 
-                onClick={() => showToast('info', 'Create agent feature coming soon')}
-                className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm"
-              >
-                <Plus size={14} />
-                New Agent
-              </button>
             </div>
             <div className="space-y-3">
               {agents.map((agent) => (
