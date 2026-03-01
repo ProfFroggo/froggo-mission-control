@@ -2357,15 +2357,21 @@ ipcMain.handle('attachments:delete', async (_, attachmentId: number) => {
 });
 
 ipcMain.handle('attachments:open', async (_, filePath: string) => {
-  // Open file in default system application
-  const openCmd = process.platform === 'darwin' ? 'open' :
-                  process.platform === 'win32' ? 'start' : 'xdg-open';
-  
-  return new Promise((resolve) => {
-    exec(`${openCmd} "${filePath}"`, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  // Validate path — no shell metacharacters, must exist
+  if (!filePath || typeof filePath !== 'string') {
+    return { success: false, error: 'Invalid file path' };
+  }
+  const resolved = path.resolve(filePath.replace(/^~/, HOME));
+  if (!fs.existsSync(resolved)) {
+    return { success: false, error: 'File not found' };
+  }
+  // Use Electron shell.openPath (no shell injection risk)
+  try {
+    const errorMsg = await shell.openPath(resolved);
+    return { success: !errorMsg, error: errorMsg || undefined };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
 });
 
 ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
