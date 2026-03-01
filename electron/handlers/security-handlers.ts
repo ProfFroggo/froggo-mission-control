@@ -40,7 +40,7 @@ initSecurityDB();
 export function registerSecurityHandlers(): void {
   registerHandler('security:listKeys', async () => {
     try { const secDb = getSecurityDb(); return { success: true, keys: secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all() }; }
-    catch (error: any) { safeLog.error('[Security] List keys error:', error); return { success: false, keys: [], error: error.message }; }
+    catch (error: unknown) { safeLog.error('[Security] List keys error:', error); return { success: false, keys: [], error: error.message }; }
   });
 
   registerHandler('security:addKey', async (_event, key: { name: string; service: string; key: string }) => {
@@ -49,17 +49,17 @@ export function registerSecurityHandlers(): void {
       const id = `key-${Date.now()}`;
       secDb.prepare('INSERT INTO api_keys (id, name, service, key, created_at) VALUES (?, ?, ?, ?, ?)').run(id, key.name, key.service, key.key, new Date().toISOString());
       return { success: true, id };
-    } catch (error: any) { safeLog.error('[Security] Add key error:', error); return { success: false, error: error.message }; }
+    } catch (error: unknown) { safeLog.error('[Security] Add key error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('security:deleteKey', async (_event, keyId: string) => {
     try { const secDb = getSecurityDb(); secDb.prepare('DELETE FROM api_keys WHERE id = ?').run(keyId); return { success: true }; }
-    catch (error: any) { safeLog.error('[Security] Delete key error:', error); return { success: false, error: error.message }; }
+    catch (error: unknown) { safeLog.error('[Security] Delete key error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('security:listAuditLogs', async () => {
     try { const secDb = getSecurityDb(); return { success: true, logs: secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all() }; }
-    catch (error: any) { safeLog.error('[Security] List audit logs error:', error); return { success: false, logs: [], error: error.message }; }
+    catch (error: unknown) { safeLog.error('[Security] List audit logs error:', error); return { success: false, logs: [], error: error.message }; }
   });
 
   registerHandler('security:updateAuditLog', async (_event, logId: string, updates: { status?: string }) => {
@@ -68,17 +68,17 @@ export function registerSecurityHandlers(): void {
       const secDb = getSecurityDb();
       secDb.prepare('UPDATE audit_logs SET status = ? WHERE id = ?').run(updates.status, logId);
       return { success: true };
-    } catch (error: any) { safeLog.error('[Security] Update audit log error:', error); return { success: false, error: error.message }; }
+    } catch (error: unknown) { safeLog.error('[Security] Update audit log error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('security:listAlerts', async () => {
     try { const secDb = getSecurityDb(); return { success: true, alerts: secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all() }; }
-    catch (error: any) { safeLog.error('[Security] List alerts error:', error); return { success: false, alerts: [], error: error.message }; }
+    catch (error: unknown) { safeLog.error('[Security] List alerts error:', error); return { success: false, alerts: [], error: error.message }; }
   });
 
   registerHandler('security:dismissAlert', async (_event, alertId: string) => {
     try { const secDb = getSecurityDb(); secDb.prepare('UPDATE security_alerts SET dismissed = 1 WHERE id = ?').run(alertId); return { success: true }; }
-    catch (error: any) { safeLog.error('[Security] Dismiss alert error:', error); return { success: false, error: error.message }; }
+    catch (error: unknown) { safeLog.error('[Security] Dismiss alert error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('security:runAudit', async () => {
@@ -102,7 +102,7 @@ export function registerSecurityHandlers(): void {
         insertAlert.run(`alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, now, alert.severity, alert.message, alert.source);
       }
       return { success: true, findings: output.findings || [], alerts: output.alerts || [], summary: output.summary || 'Audit complete' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Security] Run audit error:', error);
       return { success: false, error: error.message, findings: [], alerts: [] };
     }

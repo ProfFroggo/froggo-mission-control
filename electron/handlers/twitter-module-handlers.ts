@@ -53,7 +53,7 @@ function parseXApiEnv(): Record<string, string> | null {
       result[key] = value;
     }
     return result;
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('[TwitterModule] Failed to parse x-api.env:', err.message);
     return null;
   }
