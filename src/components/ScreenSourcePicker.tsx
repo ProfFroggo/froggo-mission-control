@@ -43,15 +43,14 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         thumbnailSize: { width: 320, height: 180 },
       });
       const sources = result?.sources || [];
-
-      // Check if we got no sources (likely permission issue on macOS)
       if (sources.length === 0) {
-        console.warn('[ScreenSourcePicker] No sources returned - possible screen recording permission issue');
-        setError('no-permission');
+        // Electron 28+ on macOS: desktopCapturer.getSources() returns empty
+        // even with permission granted (ad-hoc signing). Fall back to browser picker.
+        console.warn('[ScreenSourcePicker] No sources from Electron API, falling back to browser picker');
+        setError('no-electron');
         setLoading(false);
         return;
       }
-      
       setSources(sources as ScreenSource[]);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
