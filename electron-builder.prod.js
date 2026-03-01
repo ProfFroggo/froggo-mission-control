@@ -6,12 +6,16 @@ const path = require('path');
 module.exports = {
   appId: 'com.froggo.app',
   productName: 'Froggo',
-  npmRebuild: false,
+  npmRebuild: true,
   directories: {
     output: 'release/prod',
   },
   files: ['dist/**/*', 'dist-electron/**/*'],
-  asar: false,
+  asar: true,
+  asarUnpack: [
+    '**/node_modules/better-sqlite3/**',
+    '**/node_modules/sqlite3/**',
+  ],
   extraResources: [
     {
       from: 'public/models',
@@ -21,8 +25,11 @@ module.exports = {
   ],
   mac: {
     category: 'public.app-category.productivity',
-    target: 'dir',
+    target: ['dmg'],
     icon: 'build/icon.icns',
+    identity: '-',
+    entitlements: 'build/entitlements.mac.plist',
+    entitlementsInherit: 'build/entitlements.mac.plist',
     extendInfo: {
       NSMicrophoneUsageDescription:
         'Froggo uses your microphone for voice commands and meeting transcription.',
@@ -31,6 +38,13 @@ module.exports = {
       NSSpeechRecognitionUsageDescription:
         'Froggo uses speech recognition for voice commands.',
     },
+  },
+  dmg: {
+    contents: [
+      { x: 130, y: 220, type: 'file' },
+      { x: 410, y: 220, type: 'link', path: '/Applications' },
+    ],
+    window: { width: 540, height: 380 },
   },
   extraMetadata: {
     main: 'dist-electron/main.js',
@@ -47,7 +61,7 @@ module.exports = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableCookieEncryption]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: false, // asar: false in config
+      [FuseV1Options.OnlyLoadAppFromAsar]: true,
     });
     console.log('[afterPack] Electron Fuses flipped for production');
 
