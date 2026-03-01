@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 69 — DMG Build Pipeline
-Plan: 01 of 1
+Phase: 70 — Onboarding Hardening
+Plan: 02 of 2
 Status: Phase complete
-Last activity: 2026-03-01 — Completed 69-01-PLAN.md (Configure electron-builder for DMG output with ASAR and entitlements)
+Last activity: 2026-03-01 — Completed 70-02-PLAN.md (Blocking wizard UI + DependencyGate)
 
-Progress: [██████░░░░░░░░░░░░░░] 24%
+Progress: [███████░░░░░░░░░░░░░] 26%
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [██████░░░░░░░░░░░░░░] 24%
 | 59 | 5/5 | ~18 min | ~4 min |
 | 60 | 3/3 | ~9 min | ~3 min |
 | 69 | 1/1 | ~2 min | ~2 min |
+| 70 | 2/2 | ~7 min | ~3.5 min |
 
 ## Accumulated Context
 
@@ -80,6 +81,12 @@ Progress: [██████░░░░░░░░░░░░░░] 24%
 - Full binary paths required for execFile: /opt/homebrew/bin/openclaw, /opt/homebrew/bin/froggo-db, /opt/homebrew/bin/x-api, /opt/homebrew/bin/gog
 - Module-level gateway listeners (store.ts, notificationService.ts) are intentional singletons -- never cleaned up
 - Zustand arrays must have explicit bounds: artifactStore MAX_ARTIFACTS=200, MAX_VERSIONS_PER_ARTIFACT=50
+- All handler files use getDb() (lazy) not bare db — database.ts no longer exports module-level db
+- Startup sequence order: verifyPaths -> startGateway -> runMigrations -> registerHandlers -> createWindow
+- startup:getState IPC uses ipcMain.handle() directly (not registerHandler) — intentional, boot diagnostics bypass sender validation
+- DependencyGate fails open: IPC error renders app normally (never black-screen on IPC edge case)
+- Only database is CRITICAL_DEPS in wizard/gate — cli/gateway/config show instructions but allow degraded operation
+- preload startup namespace: window.clawdbot.startup.getState() for boot diagnostics, separate from onboarding namespace
 
 ### Pending Todos
 
@@ -91,8 +98,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-01 UTC
-Stopped at: Completed 69-01-PLAN.md (Phase 69 complete)
+Last session: 2026-03-01T11:35:03Z
+Stopped at: Completed 70-02-PLAN.md (Blocking wizard + DependencyGate) — Phase 70 complete
 Resume file: None
 
 ### Hourly Alignment Checks

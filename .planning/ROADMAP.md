@@ -311,8 +311,10 @@ Plans:
 ### Phase 70: Onboarding Hardening
 **Goal**: App startup validates all dependencies, blocks on missing tools, shows setup UI
 **Requirements**: ONBD2-01, ONBD2-02, ONBD2-03, ONBD2-04, ONBD2-05
-**Plans:**
-- [ ] 70-01: Startup dependency validation + blocking check UI + gateway auto-start + graceful degradation
+**Plans:** 2 plans
+Plans:
+- [ ] 70-01-PLAN.md -- Lazy database + pre-window startup checks + gateway auto-start
+- [ ] 70-02-PLAN.md -- Blocking wizard UI + DependencyGate for every-launch validation
 
 ### Phase 71: Marketplace Integration
 **Goal**: Dashboard connects to marketplace, handles module install/update via deep links
@@ -401,6 +403,6 @@ Plans:
 | 67. Bug Fixes & Error Handling | v10.0 | 0/2 | Not started | - |
 | 68. UI/UX Polish | v10.0 | 0/2 | Not started | - |
 | 69. DMG Build Pipeline | v10.0 | 0/1 | Not started | - |
-| 70. Onboarding Hardening | v10.0 | 0/1 | Not started | - |
+| 70. Onboarding Hardening | v10.0 | 0/2 | Not started | - |
 | 71. Marketplace Integration | v10.0 | 0/1 | Not started | - |
 | 72. Professional Quality Pass | v10.0 | 0/1 | Not started | - |
