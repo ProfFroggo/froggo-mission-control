@@ -30,6 +30,7 @@ import {
   SCRIPTS_DIR, TOOLS_DIR, DATA_DIR,
   FROGGO_DB, FROGGO_DB_CLI, TGCLI, DISCORDCLI, SHELL_PATH,
 } from '../paths';
+import { validateAccountEmail, validateEmailId, validateString } from '../ipc-validation';
 
 // ── Renderer broadcast (replaces safeSend from main.ts) ──────────────────────
 
@@ -994,6 +995,7 @@ export function registerCommsHandlers(): void {
   });
 
   registerHandler('messages:context', async (_, messageId: string, platform: string, limit?: number) => {
+    if (!messageId || typeof messageId !== 'string') return { success: true, messages: [] };
     const lim = limit || 5;
     const messages: any[] = [];
 
@@ -1276,6 +1278,10 @@ export function registerCommsHandlers(): void {
       safeLog.error('[Email:send] Missing account - cannot send without GOG_ACCOUNT');
       return { success: false, error: 'Missing account - please specify which email account to send from' };
     }
+    if (!validateAccountEmail(options.account)) {
+      safeLog.error('[Email:send] Invalid account email:', options.account);
+      return { success: false, error: 'Invalid account email address' };
+    }
     return new Promise((resolve) => {
       safeLog.log('[Email:send] Sending via execFile to:', options.to.slice(0, 50));
       execFile('/opt/homebrew/bin/gog', ['gmail', 'send', '--to', options.to, '--subject', options.subject || 'No Subject', '--body', options.body], {
@@ -1310,23 +1316,25 @@ export function registerCommsHandlers(): void {
 
   registerHandler('email:unread', async (_, account?: string) => {
     if (!account) return { success: false, emails: [], error: 'No email account specified' };
-    const acct = account;
+    const validAcct = validateAccountEmail(account);
+    if (!validAcct) return { success: false, emails: [], error: 'Invalid account email address' };
     return new Promise((resolve) => {
       execFile('/opt/homebrew/bin/gog', ['gmail', 'search', 'is:unread', '--json', '--limit', '20'], {
-        timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: GOG_ENV_PATH }
+        timeout: 30000, env: { ...process.env, GOG_ACCOUNT: validAcct, PATH: GOG_ENV_PATH }
       }, (error, stdout) => {
         if (error) {
           safeLog.error('[Email] Unread error:', error);
           resolve({ success: false, emails: [], error: error.message });
           return;
         }
-        try { resolve({ success: true, emails: JSON.parse(stdout), account: acct }); }
-        catch { resolve({ success: true, emails: [], raw: stdout, account: acct }); }
+        try { resolve({ success: true, emails: JSON.parse(stdout), account: validAcct }); }
+        catch { resolve({ success: true, emails: [], raw: stdout, account: validAcct }); }
       });
     });
   });
 
   registerHandler('email:body', async (_, emailId: string, account?: string) => {
+    if (!validateEmailId(emailId)) return { success: false, body: '', error: 'Invalid email ID' };
     const envPath = `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}`;
     let tryAccounts: string[] = account ? [account] : [];
     if (!account) {
@@ -1360,6 +1368,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('email:search', async (_, query: string, account?: string) => {
     if (!account) return { success: false, emails: [], error: 'No email account specified' };
+    if (!validateAccountEmail(account)) return { success: false, emails: [], error: 'Invalid account email address' };
     const acct = account;
     return new Promise((resolve) => {
       execFile('/opt/homebrew/bin/gog', ['gmail', 'search', query, '--json', '--limit', '20'], {
@@ -1377,6 +1386,8 @@ export function registerCommsHandlers(): void {
   });
 
   registerHandler('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
+    if (!validateAccountEmail(to)) return { success: false, error: 'Invalid recipient email address' };
+    if (account && !validateAccountEmail(account)) return { success: false, error: 'Invalid account email address' };
     const acct = account || getDefaultGogEmail();
     const title = `Email to ${to}: ${subject.slice(0, 30)}`;
     const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
