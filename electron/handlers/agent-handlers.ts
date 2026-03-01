@@ -17,6 +17,7 @@ import { exec, execSync, execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare } from '../database';
 import { safeLog } from '../logger';
+import { validateAgentName } from '../ipc-validation';
 import {
   PROJECT_ROOT, SCRIPTS_DIR, FROGGO_DB,
   OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY, agentWorkspace,
@@ -293,42 +294,42 @@ export function registerAgentHandlers(): void {
   registerHandler('agents:getDetails', async (_event, agentId: string) => {
     safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
     debugLog(`[agents:getDetails] Called with agentId: ${agentId}`);
-    const froggoDbPath = FROGGO_DB;
+    const validAgent = validateAgentName(agentId);
+    if (!validAgent) return { success: false, error: 'Invalid agent ID' };
     const agentAliases: Record<string, string[]> = { main: ['main', 'froggo'], froggo: ['main', 'froggo'], coder: ['coder'], researcher: ['researcher'], writer: ['writer'], chief: ['chief'], onchain_worker: ['onchain_worker'] };
-    const dbIds = agentAliases[agentId] || [agentId];
-    const dbIdsSql = dbIds.map(id => `'${id}'`).join(',');
+    const dbIds = agentAliases[validAgent] || [validAgent];
+    const placeholders = dbIds.map(() => '?').join(',');
     let taskStats = { total: 0, completed: 0 };
     let recentTasks: any[] = [];
     let skills: any[] = [];
     let brainNotes: string[] = [];
     let agentRules = 'AGENT.md not found';
     try {
-      const taskStatsResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0)" -json`, { encoding: 'utf-8' });
-      const parsed = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
-      taskStats = { total: parsed.total || 0, completed: parsed.completed || 0 };
-    } catch (e: any) { safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message); }
+      const taskStatsRow = prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0)`).get(...dbIds) as any;
+      taskStats = { total: taskStatsRow?.total || 0, completed: taskStatsRow?.completed || 0 };
+    } catch (e: any) { safeLog.error(`[agents:getDetails] taskStats query failed for ${validAgent}:`, e.message); }
     try {
-      const recentTasksResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`, { encoding: 'utf-8' });
-      recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
+      const recentTasksRows = prepare(`SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10`).all(...dbIds) as any[];
+      recentTasks = (recentTasksRows || []).map((task: any) => {
         let outcome = 'unknown';
         try { const metadata = task.metadata ? JSON.parse(task.metadata) : {}; outcome = metadata.outcome || (task.status === 'done' ? 'success' : 'ongoing'); } catch (_e) { outcome = task.status === 'done' ? 'success' : 'ongoing'; }
         return { ...task, outcome, completedAt: task.completed_at };
       });
-    } catch (e: any) { safeLog.error(`[agents:getDetails] recentTasks query failed for ${agentId}:`, e.message); }
+    } catch (e: any) { safeLog.error(`[agents:getDetails] recentTasks query failed for ${validAgent}:`, e.message); }
     try {
-      const skillsResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC" -json`, { encoding: 'utf-8' });
-      skills = JSON.parse(skillsResult || '[]').map((s: any) => ({ name: s.name, proficiency: s.proficiency, lastUsed: s.last_used, successCount: s.success_count, failureCount: s.failure_count }));
-    } catch (e: any) { safeLog.error(`[agents:getDetails] skills query failed for ${agentId}:`, e.message); }
+      const skillsRows = prepare('SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC').all() as any[];
+      skills = (skillsRows || []).map((s: any) => ({ name: s.name, proficiency: s.proficiency, lastUsed: s.last_used, successCount: s.success_count, failureCount: s.failure_count }));
+    } catch (e: any) { safeLog.error(`[agents:getDetails] skills query failed for ${validAgent}:`, e.message); }
     try {
-      const brainNotesResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`, { encoding: 'utf-8' });
-      brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.description);
-    } catch (e: any) { safeLog.error(`[agents:getDetails] brainNotes query failed for ${agentId}:`, e.message); }
+      const brainNotesRows = prepare("SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20").all() as any[];
+      brainNotes = (brainNotesRows || []).map((row: any) => row.description);
+    } catch (e: any) { safeLog.error(`[agents:getDetails] brainNotes query failed for ${validAgent}:`, e.message); }
     try {
-      const agentMdPath = path.join(PROJECT_ROOT, 'agents', agentId, 'AGENT.md');
+      const agentMdPath = path.join(PROJECT_ROOT, 'agents', validAgent, 'AGENT.md');
       agentRules = fs.readFileSync(agentMdPath, 'utf-8');
     } catch (_e) {
       try {
-        const altPaths = [path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'), ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
+        const altPaths = [path.join(PROJECT_ROOT, 'agents', validAgent.toLowerCase(), 'AGENT.md'), ...dbIds.filter(id => id !== validAgent).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
         for (const altPath of altPaths) { if (fs.existsSync(altPath)) { agentRules = fs.readFileSync(altPath, 'utf-8'); break; } }
       } catch (_e2) { /* keep default */ }
     }
@@ -351,7 +352,6 @@ export function registerAgentHandlers(): void {
   });
 
   registerHandler('agents:search', async (_event, query: string) => {
-    const froggoDbPath = FROGGO_DB;
     const registry = getAgentRegistry();
     const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {};
     for (const [id, entry] of Object.entries(registry)) {
@@ -365,13 +365,14 @@ export function registerAgentHandlers(): void {
         let taskCount = 0; let recentTask = ''; let status = 'idle';
         try {
           const agentEntry = registry[agentIdLoop];
-          const dbIds = (agentEntry?.aliases || [agentIdLoop]).map(id => `'${id}'`).join(',');
-          const countResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds})" -json`, { encoding: 'utf-8', timeout: 3000 });
-          taskCount = JSON.parse(countResult)?.[0]?.cnt || 0;
-          const activeResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds}) AND status IN ('in-progress','todo')" -json`, { encoding: 'utf-8', timeout: 3000 });
-          status = (JSON.parse(activeResult)?.[0]?.cnt || 0) > 0 ? 'active' : 'idle';
-          const recentResult = execSync(`sqlite3 "${froggoDbPath}" "SELECT title FROM tasks WHERE assigned_to IN (${dbIds}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1" -json`, { encoding: 'utf-8', timeout: 3000 });
-          recentTask = JSON.parse(recentResult || '[]')[0]?.title || '';
+          const dbIdsArr = agentEntry?.aliases || [agentIdLoop];
+          const ph = dbIdsArr.map(() => '?').join(',');
+          const countRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph})`).get(...dbIdsArr) as any;
+          taskCount = countRow?.cnt || 0;
+          const activeRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph}) AND status IN ('in-progress','todo')`).get(...dbIdsArr) as any;
+          status = (activeRow?.cnt || 0) > 0 ? 'active' : 'idle';
+          const recentRow = prepare(`SELECT title FROM tasks WHERE assigned_to IN (${ph}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1`).get(...dbIdsArr) as any;
+          recentTask = recentRow?.title || '';
         } catch (_e) { /* DB query failed, continue with defaults */ }
         results.push({ id: agentIdLoop, name: agentIdLoop.charAt(0).toUpperCase() + agentIdLoop.slice(1).replace(/_/g, ' '), role: def.role, description: def.description, capabilities: def.capabilities, taskCount, recentTask, status });
       }
