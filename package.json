@@ -1,6 +1,6 @@
 {
   "name": "froggo-dashboard",
-  "version": "1.0.0",
+  "version": "10.0.0",
   "description": "Froggo Dashboard - Agent Management & Task Tracking",
   "main": "dist-electron/main.js",
   "scripts": {
