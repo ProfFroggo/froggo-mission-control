@@ -26,7 +26,7 @@ export function registerAnalyticsHandlers(): void {
       const agents = prepare(`SELECT assigned_to as agent, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND assigned_to IS NOT NULL AND assigned_to != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY assigned_to ORDER BY total DESC`).all();
       const projects = prepare(`SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`).all();
       return { success: true, completions, created, agents, projects, days };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[analytics:getData] Error:', error.message);
       return { success: true, completions: [], created: [], agents: [], projects: [], days: 0 };
     }
@@ -36,14 +36,14 @@ export function registerAnalyticsHandlers(): void {
     try {
       const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
       return { success: true, data };
-    } catch (error: unknown) { safeLog.error('[analytics:subtaskStats] Error:', error.message); return { success: true, data: [] }; }
+    } catch (error: any) { safeLog.error('[analytics:subtaskStats] Error:', error.message); return { success: true, data: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'analytics:heatmap', async (_event, days: number = 30) => {
     try {
       const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
       return { success: true, data };
-    } catch (error: unknown) { safeLog.error('[analytics:heatmap] Error:', error.message); return { success: true, data: [] }; }
+    } catch (error: any) { safeLog.error('[analytics:heatmap] Error:', error.message); return { success: true, data: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'analytics:timeTracking', async (_event, projectFilter?: string) => {
@@ -57,7 +57,7 @@ export function registerAnalyticsHandlers(): void {
         query += ` ORDER BY started_at DESC`;
         return { success: true, data: prepare(query).all() };
       }
-    } catch (error: unknown) { safeLog.error('[analytics:timeTracking] Error:', error.message); return { success: true, data: [] }; }
+    } catch (error: any) { safeLog.error('[analytics:timeTracking] Error:', error.message); return { success: true, data: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'tokens:summary', async (_event, args?: { agent?: string; period?: string }) => {
@@ -70,12 +70,12 @@ export function registerAnalyticsHandlers(): void {
       else if (args?.period === 'week') minTimestamp = now - (7 * 24 * 60 * 60 * 1000);
       else if (args?.period === 'month') minTimestamp = now - (30 * 24 * 60 * 60 * 1000);
       let query = 'SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions';
-      const params: (string | number | null)[] = [];
+      const params: any[] = [];
       const whereClauses: string[] = [];
       if (minTimestamp > 0) { whereClauses.push('created_at >= ?'); params.push(minTimestamp); }
       if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
       if (whereClauses.length) query += ' WHERE ' + whereClauses.join(' AND ');
-      const rows = sdb.prepare(query).all(...params) as Record<string, unknown>[];
+      const rows = sdb.prepare(query).all(...params) as any[];
       const pricing: Record<string, { input: number; output: number }> = {
         'claude-sonnet-4-5': { input: 3.0, output: 15.0 }, 'claude-opus-4': { input: 15.0, output: 75.0 },
         'gemini-2.0-flash-exp': { input: 0.0, output: 0.0 }, 'o1-preview': { input: 15.0, output: 60.0 },
@@ -83,11 +83,11 @@ export function registerAnalyticsHandlers(): void {
       };
       const agentStats = new Map<string, { input: number; output: number; total: number; cost: number; calls: number }>();
       for (const row of rows) {
-        const agent = (row['agent_id'] as string) || 'unknown';
-        const inputTokens = (row['input_tokens'] as number) || 0;
-        const outputTokens = (row['output_tokens'] as number) || 0;
-        const totalTokens = (row['total_tokens'] as number) || 0;
-        const modelKey = (row['model'] as string) || 'claude-sonnet-4-5';
+        const agent = row.agent_id || 'unknown';
+        const inputTokens = row.input_tokens || 0;
+        const outputTokens = row.output_tokens || 0;
+        const totalTokens = row.total_tokens || 0;
+        const modelKey = row.model || 'claude-sonnet-4-5';
         const modelPricing = pricing[modelKey] || pricing['claude-sonnet-4-5'];
         const cost = (inputTokens / 1000000) * modelPricing.input + (outputTokens / 1000000) * modelPricing.output;
         const stats = agentStats.get(agent) || { input: 0, output: 0, total: 0, cost: 0, calls: 0 };
@@ -98,7 +98,7 @@ export function registerAnalyticsHandlers(): void {
         agent, total_input: stats.input, total_output: stats.output, total_all: stats.total, total_cost: stats.cost, calls: stats.calls,
       })).sort((a, b) => b.total_all - a.total_all);
       return { by_agent, period: args?.period || 'all' };
-    } catch (err: unknown) { return { error: err.message, by_agent: [] }; }
+    } catch (err: any) { return { error: err.message, by_agent: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'tokens:log', async (_event, args?: { agent?: string; limit?: number; since?: number }) => {
@@ -107,31 +107,31 @@ export function registerAnalyticsHandlers(): void {
       if (!sdb) return { error: 'sessions.db not found', entries: [] };
       const limit = args?.limit || 100;
       let query = 'SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions';
-      const params: (string | number | null)[] = [];
+      const params: any[] = [];
       const whereClauses: string[] = [];
       if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
       if (args?.since && args.since > 0) { whereClauses.push('created_at >= ?'); params.push(args.since); }
       if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
       query += ' ORDER BY created_at DESC LIMIT ?';
       params.push(limit);
-      const rows = sdb.prepare(query).all(...params) as Record<string, unknown>[];
-      return { entries: rows.map(row => ({ id: row['session_id'], timestamp: row['created_at'], agent: (row['agent_id'] as string) || 'unknown', session_id: row['session_id'], model: (row['model'] as string) || 'unknown', input_tokens: (row['input_tokens'] as number) || 0, output_tokens: (row['output_tokens'] as number) || 0, total_tokens: (row['total_tokens'] as number) || 0 })) };
-    } catch (err: unknown) { return { error: err.message, entries: [] }; }
+      const rows = sdb.prepare(query).all(...params) as any[];
+      return { entries: rows.map(row => ({ id: row.session_id, timestamp: row.created_at, agent: row.agent_id || 'unknown', session_id: row.session_id, model: row.model || 'unknown', input_tokens: row.input_tokens || 0, output_tokens: row.output_tokens || 0, total_tokens: row.total_tokens || 0 })) };
+    } catch (err: any) { return { error: err.message, entries: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'tokens:budget', async (_event, agent: string) => {
     try {
-      const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent) as Record<string, unknown>;
+      const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent) as any;
       if (!budgetRow) return { agent, daily_limit: 0, used_today: 0, remaining: 0, percentage_used: 0, percent_used: 0, alert_threshold: 0.9, over_budget: false, hard_limit: false };
       const startOfDay = new Date().setHours(0, 0, 0, 0);
       let usedToday = 0;
       const sdb = getSessionsDb();
-      if (sdb) { try { const usageRow = sdb.prepare('SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = ? AND created_at >= ?').get(agent, startOfDay) as Record<string, unknown>; usedToday = (usageRow?.['total'] as number) || 0; } catch { usedToday = 0; } }
-      const dailyLimit = (budgetRow['daily_token_limit'] as number) || 0;
+      if (sdb) { try { const usageRow = sdb.prepare('SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = ? AND created_at >= ?').get(agent, startOfDay) as any; usedToday = usageRow?.total || 0; } catch { usedToday = 0; } }
+      const dailyLimit = budgetRow.daily_token_limit || 0;
       const remaining = Math.max(0, dailyLimit - usedToday);
       const percentageUsed = dailyLimit > 0 ? usedToday / dailyLimit : 0;
-      return { agent, daily_limit: dailyLimit, used_today: usedToday, remaining, percentage_used: percentageUsed, percent_used: percentageUsed, alert_threshold: (budgetRow['alert_threshold'] as number) || 0.9, over_budget: usedToday > dailyLimit && budgetRow['hard_limit'] === 1, hard_limit: budgetRow['hard_limit'] === 1 };
-    } catch (err: unknown) { return { error: err.message }; }
+      return { agent, daily_limit: dailyLimit, used_today: usedToday, remaining, percentage_used: percentageUsed, percent_used: percentageUsed, alert_threshold: budgetRow.alert_threshold || 0.9, over_budget: usedToday > dailyLimit && budgetRow.hard_limit === 1, hard_limit: budgetRow.hard_limit === 1 };
+    } catch (err: any) { return { error: err.message }; }
   });
 
   registerModuleHandler('froggo-analytics', 'get-performance-report', async (_event, args?: { days?: number }) => {
@@ -144,7 +144,7 @@ export function registerAnalyticsHandlers(): void {
         }, (error, stdout) => { if (error) reject(error); else resolve(stdout); });
       });
       return JSON.parse(result);
-    } catch (err: unknown) { return { error: err.message, agents: [] }; }
+    } catch (err: any) { return { error: err.message, agents: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'get-agent-audit', async (_event, args: { agentId: string; days?: number }) => {
@@ -157,14 +157,14 @@ export function registerAnalyticsHandlers(): void {
         }, (error, stdout) => { if (error) reject(error); else resolve(stdout); });
       });
       return JSON.parse(result);
-    } catch (err: unknown) { return { error: err.message, timeline: [] }; }
+    } catch (err: any) { return { error: err.message, timeline: [] }; }
   });
 
   registerModuleHandler('froggo-analytics', 'get-dm-history', async (_event, args?: { limit?: number; agent?: string }) => {
     try {
       const limit = args?.limit || 50;
       return prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
-    } catch (e: unknown) { safeLog.error('get-dm-history error:', e); return []; }
+    } catch (e: any) { safeLog.error('get-dm-history error:', e); return []; }
   });
 
   registerModuleHandler('froggo-analytics', 'get-circuit-status', async () => {
@@ -172,6 +172,6 @@ export function registerAnalyticsHandlers(): void {
       const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
       return state.circuit_breakers || {};
-    } catch (e: unknown) { safeLog.error('[Analytics] Context history error:', e.message); return {}; }
+    } catch (e: any) { safeLog.error('[Analytics] Context history error:', e.message); return {}; }
   });
 }

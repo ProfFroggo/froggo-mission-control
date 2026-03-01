@@ -36,7 +36,7 @@ async function getDefaultGogEmail(): Promise<string> {
       }, (error, stdout) => { if (error) rej(error); else res(stdout); });
     });
     const gogData = JSON.parse(gogList);
-    const accounts = (gogData.accounts || []).filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail'));
+    const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
     return accounts[0]?.email || '';
   } catch {
     return '';
@@ -83,8 +83,8 @@ export function registerCalendarHandlers(): void {
   registerHandler('calendar:events:create', async (_, event: {
     title: string; description?: string; start_time: string | number; end_time?: string | number;
     all_day?: boolean; location?: string; color?: string; category?: string; status?: string;
-    recurrence?: Record<string, unknown>; attendees?: Record<string, unknown>[] | unknown; reminders?: Record<string, unknown>; source?: string; source_id?: string;
-    task_id?: string; metadata?: Record<string, unknown>;
+    recurrence?: any; attendees?: any; reminders?: any; source?: string; source_id?: string;
+    task_id?: string; metadata?: any;
   }) => {
     const eventId = `event-${Date.now()}`;
     const now = Date.now();
@@ -122,7 +122,7 @@ export function registerCalendarHandlers(): void {
           task_id: event.task_id, created_at: now, updated_at: now, metadata: event.metadata
         }
       };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Calendar] Create error:', error);
       return { success: false, error: error.message };
     }
@@ -131,11 +131,11 @@ export function registerCalendarHandlers(): void {
   registerHandler('calendar:events:update', async (_, eventId: string, updates: {
     title?: string; description?: string; start_time?: string | number; end_time?: string | number;
     all_day?: boolean; location?: string; color?: string; category?: string; status?: string;
-    recurrence?: Record<string, unknown>; attendees?: Record<string, unknown>[] | unknown; reminders?: Record<string, unknown>; source?: string; source_id?: string;
-    task_id?: string; metadata?: Record<string, unknown>;
+    recurrence?: any; attendees?: any; reminders?: any; source?: string; source_id?: string;
+    task_id?: string; metadata?: any;
   }) => {
     const setParts: string[] = [];
-    const params: (string | number | null)[] = [];
+    const params: any[] = [];
     if (updates.title !== undefined) { setParts.push('title = ?'); params.push(updates.title); }
     if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
     if (updates.start_time !== undefined) {
@@ -167,7 +167,7 @@ export function registerCalendarHandlers(): void {
         'SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id = ?'
       ).get(eventId);
       return { success: true, event: updatedEvent || null };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Calendar] Update error:', error);
       return { success: false, error: error.message };
     }
@@ -208,7 +208,7 @@ export function registerCalendarHandlers(): void {
       }
     }
     if (accounts.length === 0) return { success: true, events: [] };
-    const allEvents: Record<string, unknown>[] = [];
+    const allEvents: any[] = [];
     const errors: string[] = [];
     await Promise.all(accounts.map((acct) => {
       const cmd = `/opt/homebrew/bin/gog calendar events ${daysArg} --account ${acct} --json`;
@@ -233,8 +233,8 @@ export function registerCalendarHandlers(): void {
     return { success: true, events: allEvents, accounts, errors };
   });
 
-  registerHandler('calendar:createEvent', async (_, params: Record<string, unknown>) => {
-    const { account, title, start, end, location, description, attendees, isAllDay, recurrence, _timeZone } = params as { account?: string; title: string; start: string; end?: string; location?: string; description?: string; attendees?: Array<{ email: string }>; isAllDay?: boolean; recurrence?: string; _timeZone?: string };
+  registerHandler('calendar:createEvent', async (_, params: any) => {
+    const { account, title, start, end, location, description, attendees, isAllDay, recurrence, _timeZone } = params;
     const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar create ${calendarId}`;
@@ -244,7 +244,7 @@ export function registerCalendarHandlers(): void {
     if (location) cmd += ` --location "${location.replace(/"/g, '\\"')}"`;
     if (description) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
     if (attendees && attendees.length > 0) {
-      const attendeeEmails = attendees.map((a) => a.email).join(',');
+      const attendeeEmails = attendees.map((a: any) => a.email).join(',');
       cmd += ` --attendees "${attendeeEmails}"`;
     }
     if (recurrence && recurrence !== 'none') {
@@ -263,8 +263,8 @@ export function registerCalendarHandlers(): void {
     });
   });
 
-  registerHandler('calendar:updateEvent', async (_, params: Record<string, unknown>) => {
-    const { account, eventId, title, start, end, location, description, attendees, isAllDay, _timeZone } = params as { account?: string; eventId: string; title?: string; start?: string; end?: string; location?: string; description?: string; attendees?: Array<{ email: string }>; isAllDay?: boolean; _timeZone?: string };
+  registerHandler('calendar:updateEvent', async (_, params: any) => {
+    const { account, eventId, title, start, end, location, description, attendees, isAllDay, _timeZone } = params;
     const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar update ${calendarId} "${eventId}"`;
@@ -276,7 +276,7 @@ export function registerCalendarHandlers(): void {
     if (location !== undefined) cmd += ` --location "${location.replace(/"/g, '\\"')}"`;
     if (description !== undefined) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
     if (attendees && attendees.length > 0) {
-      const attendeeEmails = attendees.map((a) => a.email).join(',');
+      const attendeeEmails = attendees.map((a: any) => a.email).join(',');
       cmd += ` --attendees "${attendeeEmails}"`;
     }
     safeLog.log('[Calendar] Update event command:', cmd);
@@ -289,9 +289,8 @@ export function registerCalendarHandlers(): void {
     });
   });
 
-  registerHandler('calendar:deleteEvent', async (_, params: Record<string, unknown>) => {
-    const account = params['account'] as string | undefined;
-    const eventId = params['eventId'] as string;
+  registerHandler('calendar:deleteEvent', async (_, params: any) => {
+    const { account, eventId } = params;
     const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
@@ -332,7 +331,7 @@ export function registerCalendarHandlers(): void {
         }, (error, stdout) => { if (error) rej(error); else res(stdout); });
       });
       const gogData = JSON.parse(gogList);
-      knownAccounts = (gogData.accounts || []).map((a: Record<string, unknown>) => a['email'] as string).filter(Boolean);
+      knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
     } catch {
       safeLog.warn('[Calendar] Failed to discover gog accounts for listAccounts');
     }
@@ -414,7 +413,7 @@ export function registerCalendarHandlers(): void {
       const result = await calendarService.aggregateEvents(options || {});
       safeLog.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
       return { success: true, ...result };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Calendar:aggregate] Error:', error);
       return { success: false, error: error.message, events: [], sources: { google: {}, missionControl: 0 }, errors: [] };
     }
@@ -425,7 +424,7 @@ export function registerCalendarHandlers(): void {
       calendarService.clearCache(source);
       safeLog.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Calendar:clearCache] Error:', error);
       return { success: false, error: error.message };
     }
@@ -436,7 +435,7 @@ export function registerCalendarHandlers(): void {
       const stats = calendarService.getCacheStats();
       safeLog.log('[Calendar:cacheStats] Stats:', stats);
       return { success: true, stats };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Calendar:cacheStats] Error:', error);
       return { success: false, error: error.message };
     }
@@ -448,7 +447,7 @@ export function registerCalendarHandlers(): void {
     try {
       const result = await accountsServiceV2.listAccounts();
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Accounts] List error:', error);
       return { success: false, accounts: [], error: error.message };
     }
@@ -460,9 +459,9 @@ export function registerCalendarHandlers(): void {
   }) => {
     try {
       safeLog.log('[Accounts] Adding account:', request.email);
-      const result = await accountsService.addAccount(request as Parameters<typeof accountsService.addAccount>[0]);
+      const result = await accountsService.addAccount(request as any);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Accounts] Add error:', error);
       return { success: false, error: error.message };
     }
@@ -472,7 +471,7 @@ export function registerCalendarHandlers(): void {
     try {
       const result = await accountsService.testAccount(accountId);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Accounts] Test error:', error);
       return { success: false, error: error.message };
     }
@@ -483,7 +482,7 @@ export function registerCalendarHandlers(): void {
       safeLog.log('[Accounts] Refreshing OAuth for:', accountId);
       const result = await accountsServiceV2.refreshAccount(accountId);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Accounts] Refresh error:', error);
       return { success: false, error: error.message };
     }
@@ -494,7 +493,7 @@ export function registerCalendarHandlers(): void {
       safeLog.log('[Accounts] Removing account:', accountId);
       const result = await accountsServiceV2.removeAccount(accountId);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Accounts] Remove error:', error);
       return { success: false, error: error.message };
     }
@@ -506,7 +505,7 @@ export function registerCalendarHandlers(): void {
     try {
       const result = await accountsServiceV2.listAccounts();
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] List error:', error);
       return { success: false, accounts: [], error: error.message };
     }
@@ -516,7 +515,7 @@ export function registerCalendarHandlers(): void {
     try {
       const account = await connectedAccountsService.getAccount(accountId);
       return { success: true, account };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Get error:', error);
       return { success: false, account: null, error: error.message };
     }
@@ -526,7 +525,7 @@ export function registerCalendarHandlers(): void {
     try {
       const permissions = await connectedAccountsService.getAccountPermissions(accountId);
       return { success: true, permissions };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Get permissions error:', error);
       return { success: false, permissions: [], error: error.message };
     }
@@ -536,17 +535,17 @@ export function registerCalendarHandlers(): void {
     try {
       const types = await connectedAccountsService.getAvailableAccountTypes();
       return { success: true, types };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Get available types error:', error);
       return { success: false, types: [], error: error.message };
     }
   });
 
-  registerHandler('connectedAccounts:add', async (_, accountType: string, options?: Record<string, unknown>) => {
+  registerHandler('connectedAccounts:add', async (_, accountType: string, options?: any) => {
     try {
       const result = await connectedAccountsService.addAccount(accountType, options);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Add error:', error);
       return { success: false, error: error.message };
     }
@@ -556,7 +555,7 @@ export function registerCalendarHandlers(): void {
     try {
       const result = await connectedAccountsService.removeAccount(accountId);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Remove error:', error);
       return { success: false, error: error.message };
     }
@@ -567,7 +566,7 @@ export function registerCalendarHandlers(): void {
       safeLog.log('[ConnectedAccounts] Refreshing OAuth for:', accountId);
       const result = await accountsServiceV2.refreshAccount(accountId);
       return result;
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Refresh error:', error);
       return { success: false, error: error.message };
     }
@@ -577,7 +576,7 @@ export function registerCalendarHandlers(): void {
     try {
       const history = await connectedAccountsService.getSyncHistory(accountId, limit);
       return { success: true, history };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Get sync history error:', error);
       return { success: false, history: [], error: error.message };
     }
@@ -587,7 +586,7 @@ export function registerCalendarHandlers(): void {
     try {
       const result = await connectedAccountsService.importGoogleAccounts();
       return { success: true, ...result };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[ConnectedAccounts] Import Google error:', error);
       return { success: false, imported: 0, errors: [error.message] };
     }

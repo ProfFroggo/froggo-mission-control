@@ -54,7 +54,7 @@ async function fetchRegistry(): Promise<{ success: true; registry: ModuleRegistr
     cachedRegistry = parsed.data;
     cacheExpiresAt = now + CACHE_TTL_MS;
     return { success: true, registry: parsed.data };
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { success: false, error: err.message ?? String(err) };
   }
 }
@@ -81,7 +81,7 @@ export function registerMarketplaceHandlers(): void {
   registerHandler('marketplace:registry:fetch', async (_event) => {
     try {
       return await fetchRegistry();
-    } catch (err: unknown) {
+    } catch (err: any) {
       logger.error('[Marketplace] registry:fetch error:', err.message);
       return { success: false, error: err.message };
     }
@@ -102,7 +102,7 @@ export function registerMarketplaceHandlers(): void {
         ).run(moduleId, name, version, now, now, REGISTRY_URL);
         logger.info(`[Marketplace] Installed module "${moduleId}" v${version}`);
         return { success: true, restartRequired: true };
-      } catch (err: unknown) {
+      } catch (err: any) {
         logger.error('[Marketplace] module:install error:', err.message);
         return { success: false, error: err.message };
       }
@@ -139,7 +139,7 @@ export function registerMarketplaceHandlers(): void {
 
       logger.info(`[Marketplace] Uninstalled module "${moduleId}"`);
       return { success: true, uninstalled: true };
-    } catch (err: unknown) {
+    } catch (err: any) {
       logger.error('[Marketplace] module:uninstall error:', err.message);
       return { success: false, error: err.message };
     }
@@ -155,7 +155,7 @@ export function registerMarketplaceHandlers(): void {
         installed: !!row,
         module: row ?? null,
       };
-    } catch (err: unknown) {
+    } catch (err: any) {
       logger.error('[Marketplace] module:status error:', err.message);
       return { success: false, installed: false, module: null, error: err.message };
     }
@@ -191,7 +191,7 @@ export function registerMarketplaceHandlers(): void {
       }
 
       return { success: true, updates };
-    } catch (err: unknown) {
+    } catch (err: any) {
       logger.error('[Marketplace] registry:compare error:', err.message);
       return { success: false, error: err.message };
     }

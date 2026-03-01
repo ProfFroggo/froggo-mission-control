@@ -150,7 +150,7 @@ async function handleTaskSync(
 
         safeLog.log('[Tasks] Created:', task.id);
         resolve({ success: true });
-      } catch (err: unknown) {
+      } catch (err: any) {
         safeLog.error('[Tasks] Create error:', err.message);
         resolve({ success: false, error: err.message });
       }
@@ -165,7 +165,7 @@ async function handleTaskUpdate(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const sqlFields: string[] = [];
-    const params: (string | number | null)[] = [];
+    const params: any[] = [];
 
     if (updates.planningNotes !== undefined) {
       sqlFields.push('planning_notes = ?');
@@ -207,7 +207,7 @@ async function handleTaskUpdate(
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -220,7 +220,7 @@ async function handleTaskList(
   try {
     const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
     let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
-    const params: (string | number | null)[] = [];
+    const params: any[] = [];
 
     if (status) {
       whereClause += ' AND status = ?';
@@ -236,12 +236,11 @@ async function handleTaskList(
       LIMIT 500
     `).all(...params);
 
-    const countRow = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as Record<string, unknown>;
-    const totalDone = countRow['COUNT(*)'] as number;
-    const totalArchived = totalDone - (tasks as Record<string, unknown>[]).filter((t) => t['status'] === 'done').length;
+    const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
+    const totalArchived = totalDone - (tasks as any[]).filter((t: any) => t.status === 'done').length;
 
     return { success: true, tasks, totalDone, totalArchived };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:list] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -257,7 +256,7 @@ async function handleTaskSearch(
     const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
     const tasks = prepare(`SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE ? OR description LIKE ? OR id LIKE ?) ${archiveFilter} ORDER BY updated_at DESC LIMIT 100`).all(pattern, pattern, pattern);
     return { success: true, tasks };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:search] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -270,7 +269,7 @@ async function handleTaskGetWithProgress(
   try {
     const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
     return { success: true, task: task || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:getWithProgress] Error:', error.message);
     return { success: false, task: null };
   }
@@ -323,7 +322,7 @@ async function handleTaskDelete(
       safeLog.warn('[Tasks] Delete: task not found:', taskId);
       return { success: false, error: 'Task not found' };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -343,7 +342,7 @@ async function handleTaskArchiveDone(): Promise<{ success: boolean; count?: numb
     const count = archive();
     safeLog.log(`[Tasks] Archived ${count} done tasks`);
     return { success: true, count };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Archive done error:', error.message);
     return { success: false, error: error.message, count: 0 };
   }
@@ -439,7 +438,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
     safeLog.log(`[Tasks] Internal poke response from ${taskAgent}: ${response.slice(0, 100)}...`);
     return { success: true, agentId: taskAgent, response };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
     return {
       success: true,
@@ -457,20 +456,20 @@ async function handleSubtaskList(
 ): Promise<{ success: boolean; subtasks: any[]; error?: string }> {
   try {
     const rows = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
-    const subtasks = (rows as Record<string, unknown>[]).map((st) => ({
-      id: st['id'],
-      taskId: st['task_id'],
-      title: st['title'],
-      description: st['description'],
-      completed: st['completed'] === 1,
-      completedAt: st['completed_at'],
-      completedBy: st['completed_by'],
-      assignedTo: st['assigned_to'],
-      position: st['position'],
-      createdAt: st['created_at'],
+    const subtasks = (rows as any[]).map((st: any) => ({
+      id: st.id,
+      taskId: st.task_id,
+      title: st.title,
+      description: st.description,
+      completed: st.completed === 1,
+      completedAt: st.completed_at,
+      completedBy: st.completed_by,
+      assignedTo: st.assigned_to,
+      position: st.position,
+      createdAt: st.created_at,
     }));
     return { success: true, subtasks };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] List error:', error);
     return { success: false, subtasks: [] };
   }
@@ -491,8 +490,8 @@ async function handleSubtaskAdd(
   try {
     const now = Date.now();
 
-    const posResult = prepare('SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM subtasks WHERE task_id = ?').get(taskId) as Record<string, unknown>;
-    const position = (posResult?.['next_pos'] as number) || 0;
+    const posResult = prepare('SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM subtasks WHERE task_id = ?').get(taskId) as any;
+    const position = posResult?.next_pos || 0;
     safeLog.log('[Subtasks] Position:', position);
 
     prepare('INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
@@ -517,7 +516,7 @@ async function handleSubtaskAdd(
 
     emitTaskEvent('task.updated', taskId);
     return { success: true, id: subtask.id };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Add error:', error.message);
     return { success: false, error: error.message };
   }
@@ -531,7 +530,7 @@ async function handleSubtaskUpdate(
   try {
     const now = Date.now();
     const sets: string[] = ['updated_at = ?'];
-    const params: (string | number | null)[] = [now];
+    const params: any[] = [now];
 
     if (updates.completed !== undefined) {
       sets.push('completed = ?');
@@ -561,25 +560,25 @@ async function handleSubtaskUpdate(
     prepare(`UPDATE subtasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
 
     if (updates.completed !== undefined) {
-      const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as Record<string, unknown>;
-      if (subtask?.['task_id']) {
+      const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
+      if (subtask?.task_id) {
         const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
         const message = updates.completed
-          ? `Completed: ${subtask['title']}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
-          : `Reopened: ${subtask['title']}`;
+          ? `Completed: ${subtask.title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
+          : `Reopened: ${subtask.title}`;
         prepare('INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES (?, ?, ?, ?, ?)').run(
-          subtask['task_id'],
+          subtask.task_id,
           action,
           message,
           updates.completedBy || null,
           now
         );
-        emitTaskEvent('task.updated', subtask['task_id'] as string);
+        emitTaskEvent('task.updated', subtask.task_id);
       }
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -590,23 +589,23 @@ async function handleSubtaskDelete(
   subtaskId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as Record<string, unknown>;
+    const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
 
     prepare('DELETE FROM subtasks WHERE id = ?').run(subtaskId);
 
-    if (subtask?.['task_id']) {
+    if (subtask?.task_id) {
       const now = Date.now();
       prepare('INSERT INTO task_activity (task_id, action, message, timestamp) VALUES (?, ?, ?, ?)').run(
-        subtask['task_id'],
+        subtask.task_id,
         'subtask_deleted',
-        `Deleted subtask: ${subtask['title'] || ''}`,
+        `Deleted subtask: ${subtask.title || ''}`,
         now
       );
-      emitTaskEvent('task.updated', subtask['task_id'] as string);
+      emitTaskEvent('task.updated', subtask.task_id);
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -625,7 +624,7 @@ async function handleSubtaskReorder(
     });
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Reorder error:', error.message);
     return { success: false };
   }
@@ -641,17 +640,17 @@ async function handleActivityList(
   try {
     const lim = limit || 50;
     const rows = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
-    const activities = (rows as Record<string, unknown>[]).map((a) => ({
-      id: a['id'],
-      taskId: a['task_id'],
-      agentId: a['agent_id'],
-      action: a['action'],
-      message: a['message'],
-      details: a['details'],
-      timestamp: a['timestamp'],
+    const activities = (rows as any[]).map((a: any) => ({
+      id: a.id,
+      taskId: a.task_id,
+      agentId: a.agent_id,
+      action: a.action,
+      message: a.message,
+      details: a.details,
+      timestamp: a.timestamp,
     }));
     return { success: true, activities };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Activity] List error:', error);
     return { success: false, activities: [] };
   }
@@ -675,7 +674,7 @@ async function handleActivityAdd(
 
     emitTaskEvent('task.updated', taskId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Activity] Add error:', error.message);
     return { success: false };
   }
@@ -690,7 +689,7 @@ async function handleAttachmentsList(
   try {
     const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id = ? ORDER BY uploaded_at DESC').all(taskId);
     return { success: true, attachments };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] List error:', error);
     return { success: false, attachments: [] };
   }
@@ -704,12 +703,12 @@ async function handleAttachmentsListAll(): Promise<{ success: boolean; attachmen
       FROM task_attachments ta
       LEFT JOIN tasks t ON ta.task_id = t.id
       ORDER BY ta.uploaded_at DESC
-    `).all() as Record<string, unknown>[]).map((row) => ({
+    `).all() as any[]).map((row: any) => ({
       ...row,
-      category: inferFileCategory((row['filename'] as string) || '', row['mime_type'] as string, row['task_title'] as string, row['task_assignee'] as string),
+      category: inferFileCategory(row.filename || '', row.mime_type, row.task_title, row.task_assignee),
     }));
     return { success: true, attachments };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] ListAll error:', error);
     return { success: false, attachments: [] };
   }
@@ -783,7 +782,7 @@ async function handleAttachmentsAdd(
         uploaded_at: now
       }
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -794,20 +793,19 @@ async function handleAttachmentsDelete(
   attachmentId: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const attachment = prepare('SELECT task_id, filename FROM task_attachments WHERE id = ?').get(attachmentId) as Record<string, unknown>;
+    const attachment = prepare('SELECT task_id, filename FROM task_attachments WHERE id = ?').get(attachmentId) as any;
     if (!attachment) {
       return { success: false, error: 'Attachment not found' };
     }
 
-    const task_id = attachment['task_id'] as string;
-    const filename = attachment['filename'] as string;
+    const { task_id, filename } = attachment;
 
     prepare('DELETE FROM task_attachments WHERE id = ?').run(attachmentId);
 
     execFile('froggo-db', ['task-activity', task_id, 'file_deleted', `Deleted attachment: ${filename}`], { env: CHILD_ENV }, () => {});
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -822,7 +820,7 @@ async function handleAttachmentsOpen(
   try {
     const err = await shell.openPath(validPath);
     return { success: !err, error: err || undefined };
-  } catch (e: unknown) {
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 }
@@ -915,7 +913,7 @@ async function handleTaskFork(
     safeLog.log('[Tasks] Forked:', newId, 'from', parentTaskId);
     emitTaskEvent('task.created', newId);
     return { success: true, id: newId };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Fork error:', error.message);
     return { success: false, error: error.message };
   }
@@ -930,7 +928,7 @@ async function handleTaskChildren(
       'SELECT id, title, status, priority, assigned_to, created_at, project_name, stage_number, stage_name FROM tasks WHERE parent_task_id = ? ORDER BY stage_number, created_at'
     ).all(taskId) as TaskRow[];
     return { success: true, children };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Children error:', error.message);
     return { success: false, children: [] };
   }
@@ -946,7 +944,7 @@ async function handleTaskParent(
 
     const parent = prepare('SELECT id, title, status, priority, assigned_to, project_name, stage_number, stage_name FROM tasks WHERE id = ?').get(task.parent_task_id) as TaskRow | undefined;
     return { success: true, parent };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Parent error:', error.message);
     return { success: false };
   }
