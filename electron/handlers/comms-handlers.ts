@@ -21,7 +21,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execSync, execFileSync } from 'child_process';
+import { exec, execFile, execSync, execFileSync } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
@@ -61,6 +61,8 @@ function getDefaultGogEmail(): string {
 
 const COMMS_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 const FROGGO_DB_PATH = FROGGO_DB_CLI;
+const GOG_ENV_PATH = `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}`;
+const FROGGO_DB_ENV_PATH = `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH || '/usr/bin:/bin'}`;
 
 const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
   return new Promise((resolve) => {
@@ -372,7 +374,11 @@ async function refreshCommsBackground() {
       try {
         const lastTs = await getFetchState('email', acct);
         const timeFilter = lastTs ? `newer_than:30m` : 'newer_than:30d';
-        const emailRaw = await runMsgCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${timeFilter}" --json --limit 50`, 30000);
+        const emailRaw = await new Promise<string>((res) => {
+          execFile('/opt/homebrew/bin/gog', ['gmail', 'search', timeFilter, '--json', '--limit', '50'], {
+            timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: GOG_ENV_PATH }
+          }, (error, stdout) => { res(error ? '' : stdout); });
+        });
         if (emailRaw) {
           const emailData = JSON.parse(emailRaw);
           const emails = emailData.threads || emailData || [];
@@ -549,9 +555,9 @@ async function runImportantEmailCheck() {
   for (const acct of emailAccounts) {
     try {
       const output = await new Promise<string>((resolve) => {
-        exec(
-          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread newer_than:1d" --json --limit 20`,
-          { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } },
+        execFile(
+          '/opt/homebrew/bin/gog', ['gmail', 'search', 'is:unread newer_than:1d', '--json', '--limit', '20'],
+          { timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: GOG_ENV_PATH } },
           (error, stdout) => {
             if (error) resolve('[]');
             else resolve(stdout);
@@ -705,9 +711,8 @@ export function registerCommsHandlers(): void {
   registerHandler('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
     const injectionScriptPath = path.join(SCRIPTS_DIR, 'injection-detect.sh');
     return new Promise((resolve) => {
-      const contentBase64 = Buffer.from(item.content).toString('base64');
-      const detectCmd = `echo "${contentBase64}" | base64 -d | ${injectionScriptPath}`;
-      exec(detectCmd, { timeout: 5000 }, (detectError, detectStdout) => {
+      // Pass content as first argument — execFile passes args directly (no shell)
+      execFile(injectionScriptPath, [item.content], { timeout: 5000 }, (detectError, detectStdout) => {
         let injectionResult = null;
         try {
           if (detectStdout) {
@@ -825,8 +830,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:toggleStar', async (_, messageId: string) => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh toggle-star "${messageId}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['toggle-star', messageId], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try { resolve(JSON.parse(stdout)); } catch { resolve({ success: false, error: 'Failed to parse response' }); }
       });
@@ -836,8 +840,7 @@ export function registerCommsHandlers(): void {
   registerHandler('inbox:markRead', async (_, messageId: string, isRead: boolean = true) => {
     try { prepare('UPDATE comms_cache SET is_read = ? WHERE external_id = ?').run(isRead ? 1 : 0, messageId); } catch { /* best-effort */ }
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['mark-read', messageId, isRead ? '1' : '0'], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try { resolve(JSON.parse(stdout)); } catch { resolve({ success: false, error: 'Failed to parse response' }); }
       });
@@ -846,8 +849,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:addTag', async (_, messageId: string, tag: string) => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh add-tag "${messageId}" "${tag}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['add-tag', messageId, tag], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try { resolve(JSON.parse(stdout)); } catch { resolve({ success: false, error: 'Failed to parse response' }); }
       });
@@ -856,8 +858,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:removeTag', async (_, messageId: string, tag: string) => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh remove-tag "${messageId}" "${tag}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['remove-tag', messageId, tag], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try { resolve(JSON.parse(stdout)); } catch { resolve({ success: false, error: 'Failed to parse response' }); }
       });
@@ -866,8 +867,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:setProject', async (_, messageId: string, project: string) => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh set-project "${messageId}" "${project}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['set-project', messageId, project], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try { resolve(JSON.parse(stdout)); } catch { resolve({ success: false, error: 'Failed to parse response' }); }
       });
@@ -876,8 +876,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:search', async (_, query: string, limit: number = 50) => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh search "${query}" ${limit}`;
-      exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['search', query, String(limit)], { timeout: 10000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try {
           const results = stdout.trim().split('\n').filter(Boolean);
@@ -904,8 +903,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:getSuggestions', async (_, type: 'senders' | 'projects' | 'tags' | 'platforms') => {
     return new Promise((resolve) => {
-      const cmd = `${SCRIPTS_DIR}/inbox-filter.sh suggestions ${type}`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['suggestions', type], { timeout: 5000 }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         try {
           const suggestions = stdout.trim().split('\n').filter(Boolean);
@@ -999,35 +997,29 @@ export function registerCommsHandlers(): void {
     const lim = limit || 5;
     const messages: any[] = [];
 
-    const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
-      return new Promise((resolve) => {
-        exec(cmd, { timeout, env: { ...process.env, PATH: `${SHELL_PATH}:${process.env.PATH || ''}` } }, (error, stdout) => {
-          if (error) resolve('');
-          else resolve(stdout);
-        });
-      });
-    };
-
     try {
       if (platform === 'whatsapp') {
         const jid = messageId.replace('wa-', '');
         const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
-        const nameQuery = `SELECT COALESCE(c.push_name, c.full_name, m.chat_name, 'Unknown') as name FROM messages m LEFT JOIN contacts c ON m.chat_jid = c.jid WHERE m.chat_jid='${jid}' LIMIT 1`;
-        const nameRaw = await runCmd(`sqlite3 "${waDbPath}" "${nameQuery}"`, 3000);
-        const contactName = nameRaw?.trim() || 'Unknown';
-        const query = `SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid='${jid}' ORDER BY ts DESC LIMIT ${lim}`;
-        const raw = await runCmd(`sqlite3 "${waDbPath}" "${query}" -json`, 5000);
-        if (raw) {
-          try {
-            const rows = JSON.parse(raw);
-            for (const row of rows.reverse()) {
-              messages.push({ sender: row.from_me ? 'You' : contactName, text: row.text || '', timestamp: row.time || '', fromMe: !!row.from_me });
-            }
-          } catch (e) { safeLog.error('[History] Failed to parse WhatsApp messages:', e); }
-        }
+        // Use better-sqlite3 with parameterized queries — no SQL injection possible
+        const waDb = require('better-sqlite3')(waDbPath, { readonly: true });
+        try {
+          const nameRow = waDb.prepare(
+            "SELECT COALESCE(c.push_name, c.full_name, m.chat_name, ?) as name FROM messages m LEFT JOIN contacts c ON m.chat_jid = c.jid WHERE m.chat_jid = ? LIMIT 1"
+          ).get('Unknown', jid) as any;
+          const contactName = nameRow?.name || 'Unknown';
+          const rows = waDb.prepare(
+            "SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid = ? ORDER BY ts DESC LIMIT ?"
+          ).all(jid, lim) as any[];
+          for (const row of rows.reverse()) {
+            messages.push({ sender: row.from_me ? 'You' : contactName, text: row.text || '', timestamp: row.time || '', fromMe: !!row.from_me });
+          }
+        } finally { waDb.close(); }
       } else if (platform === 'telegram') {
         const chatId = messageId.replace('tg-', '');
-        const raw = await runCmd(`${TGCLI} messages ${chatId} --limit ${lim}`, 5000);
+        const raw = await new Promise<string>((res) => {
+          execFile(TGCLI, ['messages', chatId, '--limit', String(lim)], { timeout: 5000 }, (err, stdout) => res(err ? '' : stdout));
+        });
         if (raw) {
           const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
           for (const line of lines) {
@@ -1039,7 +1031,9 @@ export function registerCommsHandlers(): void {
         }
       } else if (platform === 'discord') {
         const channelId = messageId.replace('discord-', '');
-        const raw = await runCmd(`${DISCORDCLI} messages ${channelId} --limit ${lim}`, 5000);
+        const raw = await new Promise<string>((res) => {
+          execFile(DISCORDCLI, ['messages', channelId, '--limit', String(lim)], { timeout: 5000 }, (err, stdout) => res(err ? '' : stdout));
+        });
         if (raw) {
           const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
           for (const line of lines) {
@@ -1208,9 +1202,9 @@ export function registerCommsHandlers(): void {
 
   registerHandler('vip:list', async (_, category?: string) => {
     return new Promise((resolve) => {
-      let cmd = `froggo-db vip-list --json`;
-      if (category) cmd += ` --category "${category}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      const args = ['vip-list', '--json'];
+      if (category) { args.push('--category', category); }
+      execFile('froggo-db', args, { timeout: 5000, env: { ...process.env, PATH: FROGGO_DB_ENV_PATH } }, (error, stdout) => {
         if (error) { resolve([]); return; }
         try { resolve(JSON.parse(stdout || '[]')); } catch { resolve([]); }
       });
@@ -1221,12 +1215,10 @@ export function registerCommsHandlers(): void {
     identifier: string; label: string; type?: string; category?: string; boost?: number; notes?: string;
   }) => {
     return new Promise((resolve) => {
-      const type = data.type || 'email';
-      const boost = data.boost || 30;
-      let cmd = `froggo-db vip-add "${data.identifier}" "${data.label}" --type "${type}" --boost ${boost}`;
-      if (data.category) cmd += ` --category "${data.category}"`;
-      if (data.notes) cmd += ` --notes "${data.notes}"`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      const args = ['vip-add', data.identifier, data.label, '--type', data.type || 'email', '--boost', String(data.boost || 30)];
+      if (data.category) { args.push('--category', data.category); }
+      if (data.notes) { args.push('--notes', data.notes); }
+      execFile('froggo-db', args, { timeout: 5000, env: { ...process.env, PATH: FROGGO_DB_ENV_PATH } }, (error, stdout) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         const idMatch = stdout.match(/ID: (\d+)/);
         const vipId = idMatch ? parseInt(idMatch[1]) : null;
@@ -1239,12 +1231,12 @@ export function registerCommsHandlers(): void {
     label?: string; boost?: number; category?: string; notes?: string;
   }) => {
     return new Promise((resolve) => {
-      let cmd = `froggo-db vip-update ${id}`;
-      if (updates.label) cmd += ` --label "${updates.label}"`;
-      if (updates.boost !== undefined) cmd += ` --boost ${updates.boost}`;
-      if (updates.category) cmd += ` --category "${updates.category}"`;
-      if (updates.notes) cmd += ` --notes "${updates.notes}"`;
-      exec(cmd, { timeout: 5000 }, (error) => {
+      const args = ['vip-update', String(id)];
+      if (updates.label) { args.push('--label', updates.label); }
+      if (updates.boost !== undefined) { args.push('--boost', String(updates.boost)); }
+      if (updates.category) { args.push('--category', updates.category); }
+      if (updates.notes) { args.push('--notes', updates.notes); }
+      execFile('froggo-db', args, { timeout: 5000, env: { ...process.env, PATH: FROGGO_DB_ENV_PATH } }, (error) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         resolve({ success: true, message: 'VIP updated successfully' });
       });
@@ -1253,8 +1245,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('vip:remove', async (_, id: number) => {
     return new Promise((resolve) => {
-      const cmd = `froggo-db vip-remove ${id}`;
-      exec(cmd, { timeout: 5000 }, (error) => {
+      execFile('froggo-db', ['vip-remove', String(id)], { timeout: 5000, env: { ...process.env, PATH: FROGGO_DB_ENV_PATH } }, (error) => {
         if (error) { resolve({ success: false, error: error.message }); return; }
         resolve({ success: true, message: 'VIP removed successfully' });
       });
@@ -1263,8 +1254,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('vip:check', async (_, identifier: string) => {
     return new Promise((resolve) => {
-      const cmd = `froggo-db vip-check "${identifier}" --json`;
-      exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      execFile('froggo-db', ['vip-check', identifier, '--json'], { timeout: 5000, env: { ...process.env, PATH: FROGGO_DB_ENV_PATH } }, (error, stdout) => {
         if (error) { resolve(null); return; }
         try {
           const result = JSON.parse(stdout || '{"vip":false}');
@@ -1287,12 +1277,11 @@ export function registerCommsHandlers(): void {
       return { success: false, error: 'Missing account - please specify which email account to send from' };
     }
     return new Promise((resolve) => {
-      const escapedTo = options.to.replace(/"/g, '\\"');
-      const escapedSubject = (options.subject || 'No Subject').replace(/"/g, '\\"');
-      const escapedBody = options.body.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-      const cmd = `GOG_ACCOUNT="${options.account}" gog gmail send --to "${escapedTo}" --subject "${escapedSubject}" --body "${escapedBody}"`;
-      safeLog.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
-      exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
+      safeLog.log('[Email:send] Sending via execFile to:', options.to.slice(0, 50));
+      execFile('/opt/homebrew/bin/gog', ['gmail', 'send', '--to', options.to, '--subject', options.subject || 'No Subject', '--body', options.body], {
+        timeout: 60000,
+        env: { ...process.env, GOG_ACCOUNT: options.account!, PATH: GOG_ENV_PATH }
+      }, (error, stdout, stderr) => {
         if (error) {
           safeLog.error('[Email:send] Error:', error.message, stderr);
           resolve({ success: false, error: error.message });
@@ -1322,9 +1311,10 @@ export function registerCommsHandlers(): void {
   registerHandler('email:unread', async (_, account?: string) => {
     if (!account) return { success: false, emails: [], error: 'No email account specified' };
     const acct = account;
-    const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 20`;
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      execFile('/opt/homebrew/bin/gog', ['gmail', 'search', 'is:unread', '--json', '--limit', '20'], {
+        timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: GOG_ENV_PATH }
+      }, (error, stdout) => {
         if (error) {
           safeLog.error('[Email] Unread error:', error);
           resolve({ success: false, emails: [], error: error.message });
@@ -1347,16 +1337,18 @@ export function registerCommsHandlers(): void {
       } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
     }
     for (const acct of tryAccounts) {
-      for (const subcmd of [`gmail read ${emailId}`, `gmail thread get ${emailId}`]) {
+      for (const subArgs of [['gmail', 'read', emailId], ['gmail', 'thread', 'get', emailId]]) {
         try {
           const stdout = await new Promise<string>((resolve, reject) => {
-            exec(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog ${subcmd}`, { timeout: 30000, env: { ...process.env, PATH: envPath } }, (error, stdout) => {
+            execFile('/opt/homebrew/bin/gog', subArgs, {
+              timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: envPath }
+            }, (error, stdout) => {
               if (error) reject(error);
               else resolve(stdout);
             });
           });
           if (stdout && stdout.length > 10) {
-            safeLog.log(`[Email] Body loaded for ${emailId} via ${subcmd} (${acct})`);
+            safeLog.log(`[Email] Body loaded for ${emailId} via ${subArgs.join(' ')} (${acct})`);
             return { success: true, body: stdout, emailId };
           }
         } catch (_e) { /* try next */ }
@@ -1369,10 +1361,10 @@ export function registerCommsHandlers(): void {
   registerHandler('email:search', async (_, query: string, account?: string) => {
     if (!account) return { success: false, emails: [], error: 'No email account specified' };
     const acct = account;
-    const escapedQuery = query.replace(/"/g, '\\"');
-    const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --limit 20`;
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      execFile('/opt/homebrew/bin/gog', ['gmail', 'search', query, '--json', '--limit', '20'], {
+        timeout: 30000, env: { ...process.env, GOG_ACCOUNT: acct, PATH: GOG_ENV_PATH }
+      }, (error, stdout) => {
         if (error) {
           safeLog.error('[Email] Search error:', error);
           resolve({ success: false, emails: [], error: error.message });
@@ -1388,9 +1380,10 @@ export function registerCommsHandlers(): void {
     const acct = account || getDefaultGogEmail();
     const title = `Email to ${to}: ${subject.slice(0, 30)}`;
     const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
-    const cmd = `/opt/homebrew/bin/froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error) => {
+      execFile('/opt/homebrew/bin/froggo-db', ['inbox-add', '--type', 'email', '--title', title, '--content', content, '--channel', 'dashboard'], {
+        timeout: 5000, env: { ...process.env, PATH: GOG_ENV_PATH }
+      }, (error) => {
         if (error) {
           safeLog.error('[Email] Queue error:', error);
           resolve({ success: false, error: error.message });
@@ -1413,9 +1406,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('search:telegram', async (_, query: string) => {
     return new Promise((resolve) => {
-      const escapedQuery = query.replace(/"/g, '\\"');
-      const cmd = `tgcli search "${escapedQuery}" --json 2>/dev/null || echo '{"chats":[]}'`;
-      exec(cmd, { timeout: 15000 }, (error, stdout) => {
+      execFile(TGCLI, ['search', query, '--json'], { timeout: 15000 }, (error, stdout) => {
         if (error) { resolve({ success: false, chats: [], note: 'Telegram search failed' }); return; }
         try {
           const result = JSON.parse(stdout || '{"chats":[]}');
@@ -1434,9 +1425,7 @@ export function registerCommsHandlers(): void {
 
   registerHandler('search:whatsapp', async (_, query: string) => {
     return new Promise((resolve) => {
-      const escapedQuery = query.replace(/"/g, '\\"');
-      const cmd = `wacli messages search "${escapedQuery}" --json --limit 10`;
-      exec(cmd, { timeout: 15000 }, (error, stdout) => {
+      execFile('/opt/homebrew/bin/wacli', ['messages', 'search', query, '--json', '--limit', '10'], { timeout: 15000 }, (error, stdout) => {
         if (error) { resolve({ success: false, messages: [], error: error.message }); return; }
         try {
           const result = JSON.parse(stdout || '{}');
@@ -1444,8 +1433,8 @@ export function registerCommsHandlers(): void {
           resolve({
             success: true,
             messages: messages.map((m: any) => ({
-              id: m.MsgID, content: m.Text || m.DisplayText, from: m.ChatName,
-              timestamp: m.Timestamp, body: m.Text,
+              id: m.id, type: 'whatsapp', content: m.text || m.body || '', from: m.from || m.sender || '',
+              timestamp: m.timestamp || '',
             }))
           });
         } catch { resolve({ success: true, messages: [], raw: stdout }); }
