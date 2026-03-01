@@ -41,6 +41,7 @@ export default function ConfirmDialog({
 }: ConfirmDialogProps) {
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const config = {
     danger: {
@@ -71,11 +72,12 @@ export default function ConfirmDialog({
     if (!canConfirm) return;
 
     setIsProcessing(true);
+    setActionError(null);
     try {
       await onConfirm();
       onClose();
     } catch (error) {
-      // 'Confirmation action failed:', error;
+      setActionError(error instanceof Error ? error.message : String(error));
     } finally {
       setIsProcessing(false);
       setInputValue('');
@@ -85,6 +87,7 @@ export default function ConfirmDialog({
   const handleClose = () => {
     if (!isProcessing) {
       setInputValue('');
+      setActionError(null);
       onClose();
     }
   };
@@ -144,6 +147,9 @@ export default function ConfirmDialog({
               </p>
             )}
           </div>
+        )}
+        {actionError && (
+          <p className="text-sm text-error mt-2">{actionError}</p>
         )}
       </BaseModalBody>
 

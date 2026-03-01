@@ -22,6 +22,7 @@ import {
   Legend,
 } from 'recharts';
 import { CHART_COLORS, CHART_AXIS } from '../lib/chartTheme';
+import ErrorDisplay from './ErrorDisplay';
 
 interface BenchmarkData {
   period: string;
@@ -45,6 +46,7 @@ interface ComparisonMetric {
 
 export default function PerformanceBenchmarks() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [compareMode, setCompareMode] = useState<'wow' | 'mom' | 'yoy'>('wow'); // Week/Month/Year over X
   const [benchmarks, setBenchmarks] = useState<BenchmarkData[]>([]);
   const [metrics, setMetrics] = useState<ComparisonMetric[]>([]);
@@ -55,6 +57,7 @@ export default function PerformanceBenchmarks() {
 
   const loadBenchmarks = async () => {
     setLoading(true);
+    setError(null);
     try {
       const dbExec = window.clawdbot?.db?.exec;
       if (!dbExec) throw new Error('Database not available');
@@ -175,8 +178,8 @@ export default function PerformanceBenchmarks() {
 
         setMetrics(compareMetrics);
       }
-    } catch (error) {
-      // 'Failed to load benchmarks:', error;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -267,6 +270,10 @@ export default function PerformanceBenchmarks() {
         </div>
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={loadBenchmarks} context={{ action: 'load performance benchmarks' }} />;
   }
 
   return (

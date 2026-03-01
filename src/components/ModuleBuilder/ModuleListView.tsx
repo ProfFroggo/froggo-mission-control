@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Package, Clock } from 'lucide-react';
+import ErrorDisplay from '../ErrorDisplay';
+import { showToast } from '../Toast';
 
 interface ModuleListItem {
   id: string;
@@ -30,15 +32,17 @@ function timeAgo(ts: number): string {
 export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleListViewProps) {
   const [modules, setModules] = useState<ModuleListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<Error | null>(null);
 
   const loadModules = async () => {
+    setLoadError(null);
     try {
       const result = await window.clawdbot.moduleBuilder?.list();
       if (result?.success && result.modules) {
         setModules(result.modules);
       }
     } catch (err) {
-      console.error('[ModuleList] Failed to load:', err);
+      setLoadError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -53,7 +57,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
       await window.clawdbot.moduleBuilder?.delete(id);
       setModules(prev => prev.filter(m => m.id !== id));
     } catch (err) {
-      console.error('[ModuleList] Delete failed:', err);
+      showToast('error', 'Failed to delete module', String(err));
     }
   };
 
@@ -63,6 +67,10 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
         Loading modules...
       </div>
     );
+  }
+
+  if (loadError) {
+    return <ErrorDisplay error={loadError} onRetry={loadModules} context={{ action: 'load modules' }} />;
   }
 
   return (

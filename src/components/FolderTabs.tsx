@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
 import FolderManager from './FolderManager';
+import ErrorDisplay from './ErrorDisplay';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -82,6 +83,7 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
 
 export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, onConversationDrop }: FolderTabsProps) {
   const [folders, setFolders] = useState<MessageFolder[]>([]);
+  const [folderLoadError, setFolderLoadError] = useState<Error | null>(null);
   const [showManager, setShowManager] = useState(false);
   const [allSessionsCount, setAllSessionsCount] = useState(0);
   const [dragOverFolder, setDragOverFolder] = useState<number | null>(null);
@@ -99,20 +101,21 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
   }, []);
 
   const loadFolders = async () => {
+    setFolderLoadError(null);
     try {
       const result = await window.clawdbot?.folders.list();
       if (result?.success) {
-        const sortedFolders = (result?.folders || []).sort((a: MessageFolder, b: MessageFolder) => 
+        const sortedFolders = (result?.folders || []).sort((a: MessageFolder, b: MessageFolder) =>
           (a as any).sort_order - (b as any).sort_order
         );
         setFolders(sortedFolders);
-        
+
         // Calculate total sessions count
         const total = sortedFolders.reduce((sum: number, f: MessageFolder) => sum + (f.conversation_count ?? 0), 0);
         setAllSessionsCount(total);
       }
-    } catch {
-      // Silent fail - folders will remain empty
+    } catch (err) {
+      setFolderLoadError(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -207,28 +210,42 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             )}
           </button>
 
+          {/* Folder load error */}
+          {folderLoadError && (
+            <div className="px-2 py-1 flex-1 min-w-0">
+              <ErrorDisplay
+                error={folderLoadError}
+                onRetry={loadFolders}
+                inline
+                context={{ action: 'load folders' }}
+              />
+            </div>
+          )}
+
           {/* Folder Tabs (Draggable & Droppable) */}
-          <DndContext 
-            sensors={sensors} 
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-          >
-            <SortableContext 
-              items={folders.map(f => f.id)} 
-              strategy={horizontalListSortingStrategy}
+          {!folderLoadError && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
             >
-              {folders.map((folder) => (
-                <SortableFolderTab
-                  key={folder.id}
-                  folder={folder}
-                  isActive={selectedFolder === folder.id}
-                  onClick={() => onSelectFolder(folder.id)}
-                  isOver={dragOverFolder === folder.id}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={folders.map(f => f.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {folders.map((folder) => (
+                  <SortableFolderTab
+                    key={folder.id}
+                    folder={folder}
+                    isActive={selectedFolder === folder.id}
+                    onClick={() => onSelectFolder(folder.id)}
+                    isOver={dragOverFolder === folder.id}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1 px-2 ml-auto border-l border-clawd-border">

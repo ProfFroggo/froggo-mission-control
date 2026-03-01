@@ -3,6 +3,7 @@ import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, R
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
+import ErrorDisplay from './ErrorDisplay';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 
@@ -57,6 +58,7 @@ interface LibraryFilesTabProps {
 export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = {}) {
   const [files, setFiles] = useState<LibraryFileItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [searchQuery, setSearchQuery] = useState(initialPath || '');
   const [selectedCategory, setSelectedCategory] = useState<FileCategory | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -80,6 +82,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       // Sync filesystem to database first
       await window.clawdbot?.library?.sync();
@@ -115,7 +118,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       }
       setProjectInputs(projectMap);
     } catch (_error) {
-      // '[Library] Load error:', error;
+      setLoadError(_error instanceof Error ? _error : new Error(String(_error)));
     } finally {
       setLoading(false);
     }
@@ -445,6 +448,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       <div className="flex-1 overflow-y-auto p-6">
         {loading && files.length === 0 ? (
           <SkeletonList count={5} />
+        ) : loadError ? (
+          <ErrorDisplay error={loadError} onRetry={loadFiles} context={{ action: 'load files' }} />
         ) : filteredFiles.length === 0 ? (
           <EmptyState
             type="files"
