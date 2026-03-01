@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, FileText, BookOpen, Lightbulb } from 'lucide-react';
+import { FolderOpen, FileText, Lightbulb } from 'lucide-react';
 import LibraryFilesTab from './LibraryFilesTab';
 import LibraryTemplatesTab from './LibraryTemplatesTab';
 import LibrarySkillsTab from './LibrarySkillsTab';
 
-type LibraryTab = 'files' | 'templates' | 'skills' | 'resources';
+type LibraryTab = 'files' | 'templates' | 'skills';
 
 const tabs: Array<{ id: LibraryTab; label: string; icon: any }> = [
   { id: 'skills', label: 'Skills', icon: Lightbulb },
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'files', label: 'Files', icon: FolderOpen },
-  { id: 'resources', label: 'Resources', icon: BookOpen },
 ];
 
 export default function LibraryPanel() {
@@ -69,17 +68,6 @@ export default function LibraryPanel() {
         {activeTab === 'files' && <LibraryFilesTab initialPath={navigatePath} />}
         {activeTab === 'templates' && <LibraryTemplatesTab />}
         {activeTab === 'skills' && <LibrarySkillsTab />}
-        {activeTab === 'resources' && (
-          <div className="h-full flex items-center justify-center p-8">
-            <div className="text-center">
-              <BookOpen size={48} className="text-clawd-text-dim mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Resources Coming Soon</h3>
-              <p className="text-clawd-text-dim max-w-md">
-                This section will contain documentation, guides, and reference materials.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

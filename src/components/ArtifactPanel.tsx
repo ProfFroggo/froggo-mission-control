@@ -11,7 +11,7 @@ import {
   Download,
   Trash2,
   History,
-  X,
+  type LucideIcon,
 } from 'lucide-react';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
 import MarkdownMessage from './MarkdownMessage';
@@ -20,7 +20,7 @@ interface ArtifactPanelProps {
   sessionId?: string;
 }
 
-const ARTIFACT_ICONS: Record<ArtifactType, React.ComponentType<{ size?: number; className?: string }>> = {
+const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
   code: Code,
   image: ImageIcon,
   file: FileText,
@@ -33,7 +33,7 @@ const ARTIFACT_COLORS: Record<ArtifactType, string> = {
   code: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
   image: 'text-green-500 bg-green-500/10 border-green-500/30',
   file: 'text-purple-500 bg-purple-500/10 border-purple-500/30',
-  text: 'text-gray-500 bg-gray-500/10 border-gray-500/30',
+  text: 'text-muted bg-muted-subtle border-muted-border',
   diagram: 'text-orange-500 bg-orange-500/10 border-orange-500/30',
   data: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30',
 };
@@ -47,7 +47,6 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     selectArtifact,
     deleteArtifact,
     getFilteredArtifacts,
-    setFilterBySession,
   } = useArtifactStore();
 
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -100,7 +99,6 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
 
   const renderArtifactContent = (artifact: Artifact) => {
     const Icon = ARTIFACT_ICONS[artifact.type];
-    const colorClass = ARTIFACT_COLORS[artifact.type];
 
     switch (artifact.type) {
       case 'code':
@@ -297,16 +295,12 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
               <h5 className="text-xs font-semibold mb-2">Version History</h5>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {selectedArtifact.versions.map((v) => (
-                  <button
+                  <div
                     key={v.version}
-                    onClick={() => {
-                      // TODO: Implement version revert
-                      console.log('Revert to version', v.version);
-                    }}
                     className={`w-full text-left px-2 py-1.5 rounded text-xs ${
                       v.version === selectedArtifact.currentVersion
                         ? 'bg-clawd-accent/20 border border-clawd-accent/30'
-                        : 'hover:bg-clawd-surface'
+                        : 'bg-clawd-bg'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -321,7 +315,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                     {v.changeDescription && (
                       <p className="text-clawd-text-dim mt-0.5">{v.changeDescription}</p>
                     )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>

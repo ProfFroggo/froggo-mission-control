@@ -342,7 +342,7 @@ export default function EnhancedSettingsPanel() {
         defaultCalendarAccount: settings.defaultCalendarAccount,
       });
     } catch (e) {
-      // '[Settings] Failed to save automation settings:', e;
+      showToast('error', 'Failed to save automation settings', String(e));
     }
 
     setSaved(true);
