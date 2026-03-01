@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useKeyboardNav';
 
 export interface BaseModalProps {
   /** Whether the modal is open */
@@ -112,9 +113,16 @@ export default function BaseModal({
   onClosingStart,
   onClosingComplete,
 }: BaseModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap(isOpen);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Callback ref that merges trapRef and modalRef
+  const modalRef = useRef<HTMLDivElement>(null);
+  const setModalRef = useCallback((node: HTMLDivElement | null) => {
+    (modalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    (trapRef as React.MutableRefObject<HTMLElement | null>).current = node;
+  }, [trapRef]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -125,27 +133,15 @@ export default function BaseModal({
     };
   }, []);
 
-  // Track focus for focus trapping
+  // Track focus for restore-on-close
   useEffect(() => {
     if (isOpen) {
       // Store the element that had focus before modal opened
       previousActiveElement.current = document.activeElement as HTMLElement;
-      
-      // Focus the modal container after a brief delay (for animation)
-      timeoutRef.current = setTimeout(() => {
-        modalRef.current?.focus();
-      }, 50);
     } else {
       // Restore focus when modal closes
       previousActiveElement.current?.focus();
     }
-    
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
   }, [isOpen]);
 
   // ESC key handler
@@ -164,38 +160,6 @@ export default function BaseModal({
     window.addEventListener('keydown', handleEscape, { capture: true });
     return () => window.removeEventListener('keydown', handleEscape, { capture: true });
   }, [isOpen, preventEscClose]);
-
-  // Focus trap handler
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleFocusTrap = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-
-      const modal = modalRef.current;
-      if (!modal) return;
-
-      const focusableElements = modal.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (e.shiftKey && document.activeElement === firstElement) {
-        // Shift+Tab on first element -> focus last
-        e.preventDefault();
-        lastElement?.focus();
-      } else if (!e.shiftKey && document.activeElement === lastElement) {
-        // Tab on last element -> focus first
-        e.preventDefault();
-        firstElement?.focus();
-      }
-    };
-
-    window.addEventListener('keydown', handleFocusTrap);
-    return () => window.removeEventListener('keydown', handleFocusTrap);
-  }, [isOpen]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -255,7 +219,7 @@ export default function BaseModal({
         {/* Modal Content - Enhanced responsive sizing and transitions */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
-          ref={modalRef}
+          ref={setModalRef}
           role="dialog"
           aria-modal="true"
           aria-label={ariaLabel}

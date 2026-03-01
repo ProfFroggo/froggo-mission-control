@@ -145,7 +145,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Report List */}
-          <div className="w-80 border-r border-clawd-border overflow-y-auto">
+          <div className="w-80 flex-shrink-0 border-r border-clawd-border overflow-y-auto">
             {loading ? (
               <div className="p-4 text-center text-clawd-text-dim">Loading...</div>
             ) : reports.length === 0 ? (
@@ -180,7 +180,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
           </div>
 
           {/* Main - Report Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 min-w-0 overflow-y-auto p-6">
             {loadingContent ? (
               <div className="flex items-center justify-center h-full">
                 <RefreshCw size={32} className="animate-spin text-clawd-text-dim" />

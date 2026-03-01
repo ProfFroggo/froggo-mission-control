@@ -327,7 +327,7 @@ export default function MeetingTranscribe() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Meeting List */}
-        <div className="w-80 border-r border-clawd-border flex flex-col">
+        <div className="w-80 flex-shrink-0 border-r border-clawd-border flex flex-col">
           {/* New Meeting Form */}
           <div className="p-4 border-b border-clawd-border">
             <h3 className="text-sm font-semibold mb-3">Start New Meeting</h3>
@@ -516,7 +516,7 @@ export default function MeetingTranscribe() {
         </div>
 
         {/* Main - Transcript View */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col">
           {selectedMeeting ? (
             <>
               {/* Meeting Header */}

@@ -107,7 +107,7 @@ export default function ContextControlBoard() {
         setSkills(loadedSkills);
       }
     } catch (e) {
-      // 'Failed to load skills:', e;
+      showToast('error', 'Failed to load skills', String(e));
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ export default function ContextControlBoard() {
         setAgents(loadedAgents);
       }
     } catch (e) {
-      // 'Failed to load agents:', e;
+      showToast('error', 'Failed to load agents', String(e));
     } finally {
       setLoading(false);
     }
@@ -218,7 +218,7 @@ export default function ContextControlBoard() {
         {activeTab === 'context' && (
           <>
             {/* File List */}
-            <div className="w-64 border-r border-clawd-border bg-clawd-bg p-4">
+            <div className="w-64 flex-shrink-0 border-r border-clawd-border bg-clawd-bg p-4">
               <div className="text-xs text-clawd-text-dim uppercase tracking-wide mb-3">Context Files</div>
               <div className="space-y-1">
                 {contextFiles.map((file) => {
@@ -244,7 +244,7 @@ export default function ContextControlBoard() {
             </div>
 
             {/* File Editor */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 min-w-0 flex flex-col">
               {selectedFile ? (
                 <>
                   <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
