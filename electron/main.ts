@@ -52,6 +52,62 @@ const modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
 
+// ── Deep link protocol ──────────────────────────────────────────────────────
+let pendingDeepLinkUrl: string | null = null;
+
+// Register openclaw:// protocol handler
+if (process.defaultApp) {
+  // Dev mode: need to pass script path
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('openclaw', process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('openclaw');
+}
+
+// Single-instance lock — focus existing window on second launch
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    // Windows/Linux: URL passed via argv
+    const url = commandLine.find(arg => arg.startsWith('openclaw://'));
+    if (url) handleDeepLink(url);
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+// macOS: open-url fires when app is already running OR during cold launch
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleDeepLink(url);
+});
+
+function handleDeepLink(url: string) {
+  safeLog.log('[DeepLink] Received:', url);
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'openclaw:') return;
+    // openclaw://install/module-id → action=install, moduleId=module-id
+    const action = parsed.hostname || parsed.pathname.split('/')[1];
+    const moduleId = parsed.pathname.replace(/^\/+/, '');
+    if (action === 'install' && moduleId) {
+      if (mainWindow && mainWindow.webContents) {
+        mainWindow.webContents.send('deep-link:install', { moduleId });
+      } else {
+        // Cold launch: buffer until renderer is ready
+        pendingDeepLinkUrl = moduleId;
+      }
+    }
+  } catch (err) {
+    safeLog.error('[DeepLink] Failed to parse URL:', err);
+  }
+}
+
 // Request microphone AND camera access on macOS
 if (process.platform === 'darwin') {
   systemPreferences.askForMediaAccess('microphone').then(granted => { safeLog.log('Microphone access:', granted ? 'granted' : 'denied'); });
@@ -396,6 +452,16 @@ app.whenReady().then(async () => {
 
   // Create window
   createWindow();
+
+  // Flush any deep link that arrived during cold launch
+  if (mainWindow) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      if (pendingDeepLinkUrl) {
+        mainWindow?.webContents.send('deep-link:install', { moduleId: pendingDeepLinkUrl });
+        pendingDeepLinkUrl = null;
+      }
+    });
+  }
 
   // Start notification event listeners (requires mainWindow)
   if (mainWindow) { stopNotificationEvents = setupNotificationEvents(mainWindow); }

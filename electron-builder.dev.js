@@ -17,6 +17,12 @@ module.exports = {
   ],
   mac: {
     category: 'public.app-category.productivity',
+    protocols: [
+      {
+        name: 'OpenClaw Protocol',
+        schemes: ['openclaw'],
+      },
+    ],
     target: 'dir',
     icon: 'build/icon.icns',
     extendInfo: {
