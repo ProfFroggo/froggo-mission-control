@@ -8,7 +8,7 @@
  */
 
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { getSecurityDb } from '../database';
 import { safeLog } from '../logger';
@@ -85,7 +85,11 @@ export function registerSecurityHandlers(): void {
     try {
       safeLog.log('[Security] Running AI security audit...');
       const scriptPath = path.join(SCRIPTS_DIR, 'security-audit.sh');
-      const result = execSync(`bash "${scriptPath}"`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024, timeout: 60000 });
+      const result = await new Promise<string>((resolve, reject) => {
+        execFile('bash', [scriptPath], { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024, timeout: 60000 }, (error, stdout) => {
+          if (error) reject(error); else resolve(stdout);
+        });
+      });
       const output = JSON.parse(result);
       const secDb = getSecurityDb();
       const now = new Date().toISOString();

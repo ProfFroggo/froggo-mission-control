@@ -15,7 +15,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec, execSync } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
 import { safeLog } from '../logger';
@@ -27,12 +27,14 @@ import { connectedAccountsService } from '../connected-accounts-service';
 
 // ── Default email account helper ─────────────────────────────────────────────
 
-function getDefaultGogEmail(): string {
+async function getDefaultGogEmail(): Promise<string> {
   try {
-    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
-      timeout: 5000,
-      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
-    }).toString();
+    const gogList = await new Promise<string>((res, rej) => {
+      execFile('/opt/homebrew/bin/gog', ['auth', 'list', '--json'], {
+        timeout: 5000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+      }, (error, stdout) => { if (error) rej(error); else res(stdout); });
+    });
     const gogData = JSON.parse(gogList);
     const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
     return accounts[0]?.email || '';
@@ -191,13 +193,17 @@ export function registerCalendarHandlers(): void {
       accounts.push(account);
     } else {
       try {
-        const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: execEnv }).toString();
+        const gogList = await new Promise<string>((res, rej) => {
+          execFile('/opt/homebrew/bin/gog', ['auth', 'list', '--json'], { timeout: 5000, env: execEnv }, (error, stdout) => {
+            if (error) rej(error); else res(stdout);
+          });
+        });
         const gogData = JSON.parse(gogList);
         for (const a of gogData.accounts || []) {
           if (a.email && a.services?.includes('calendar')) accounts.push(a.email);
         }
       } catch {
-        const fallback = getDefaultGogEmail();
+        const fallback = await getDefaultGogEmail();
         if (fallback) accounts.push(fallback);
       }
     }
@@ -214,7 +220,7 @@ export function registerCalendarHandlers(): void {
             const events = Array.isArray(data) ? data : (data.events || []);
             for (const ev of events) { ev.account = acct; ev.source = 'google'; }
             allEvents.push(...events);
-          } catch { /* ignore */ }
+          } catch (e) { safeLog.debug('[Calendar] Account fetch parse failed:', e); }
           resolve();
         });
       });
@@ -229,7 +235,7 @@ export function registerCalendarHandlers(): void {
 
   registerHandler('calendar:createEvent', async (_, params: any) => {
     const { account, title, start, end, location, description, attendees, isAllDay, recurrence, _timeZone } = params;
-    const acct = account || getDefaultGogEmail();
+    const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar create ${calendarId}`;
     cmd += ` --summary "${title.replace(/"/g, '\\"')}"`;
@@ -259,7 +265,7 @@ export function registerCalendarHandlers(): void {
 
   registerHandler('calendar:updateEvent', async (_, params: any) => {
     const { account, eventId, title, start, end, location, description, attendees, isAllDay, _timeZone } = params;
-    const acct = account || getDefaultGogEmail();
+    const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar update ${calendarId} "${eventId}"`;
     if (title) cmd += ` --summary "${title.replace(/"/g, '\\"')}"`;
@@ -285,7 +291,7 @@ export function registerCalendarHandlers(): void {
 
   registerHandler('calendar:deleteEvent', async (_, params: any) => {
     const { account, eventId } = params;
-    const acct = account || getDefaultGogEmail();
+    const acct = account || await getDefaultGogEmail();
     const calendarId = 'primary';
     const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
     safeLog.log('[Calendar] Delete event command:', cmd);
@@ -318,10 +324,12 @@ export function registerCalendarHandlers(): void {
   registerHandler('calendar:listAccounts', async () => {
     let knownAccounts: string[] = [];
     try {
-      const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
-        timeout: 5000,
-        env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
-      }).toString();
+      const gogList = await new Promise<string>((res, rej) => {
+        execFile('/opt/homebrew/bin/gog', ['auth', 'list', '--json'], {
+          timeout: 5000,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+        }, (error, stdout) => { if (error) rej(error); else res(stdout); });
+      });
       const gogData = JSON.parse(gogList);
       knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
     } catch {

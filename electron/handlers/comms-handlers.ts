@@ -398,10 +398,13 @@ async function refreshCommsBackground() {
  * Start comms polling timer. Call from main.ts app.on('ready').
  */
 export function startCommsPolling(): void {
-  setTimeout(() => {
-    refreshCommsBackground().then(() => {
+  setTimeout(async () => {
+    try {
+      await refreshCommsBackground();
       sendToRenderer('comms-updated', { ts: Date.now() });
-    });
+    } catch (e) {
+      safeLog.error('[CommsPolling] Initial refresh error:', e);
+    }
   }, 10000);
 
   setInterval(async () => {
