@@ -28,6 +28,7 @@ import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
 import OnboardingWizard from './components/OnboardingWizard';
 import NetworkStatus from './components/NetworkStatus';
+import { DependencyGate } from './components/DependencyGate';
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
@@ -335,6 +336,7 @@ function App() {
   }, [commandPaletteOpen, toggleMuted]);
 
   return (
+    <DependencyGate>
     <ErrorBoundary panelName="Application Root">
       {/* Network Status Indicator */}
       <NetworkStatus />
@@ -500,6 +502,7 @@ function App() {
         </ErrorBoundary>
       </div>
     </ErrorBoundary>
+    </DependencyGate>
   );
 }
 

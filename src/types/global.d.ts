@@ -1662,6 +1662,13 @@ declare global {
         testGatewayConnection: () => Promise<{ reachable: boolean; hasToken: boolean; error?: string }>;
         populateSampleData: () => Promise<{ inserted: number; skipped: number }>;
       };
+      // Startup diagnostics — boot-time path checks and gateway state
+      startup?: {
+        getState: () => Promise<{
+          pathResults: Array<{ path: string; label: string; exists: boolean; critical: boolean }>;
+          gatewayRunning: boolean;
+        }>;
+      };
     };
   }
 }

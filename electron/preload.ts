@@ -1035,4 +1035,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     testGatewayConnection: () => ipcRenderer.invoke('onboarding:testGatewayConnection'),
     populateSampleData: () => ipcRenderer.invoke('onboarding:populateSampleData'),
   },
+  // Startup diagnostics — boot-time path checks and gateway state
+  startup: {
+    getState: () => ipcRenderer.invoke('startup:getState'),
+  },
 });
