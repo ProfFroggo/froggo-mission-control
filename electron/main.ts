@@ -507,11 +507,13 @@ function createWindow() {
       if (sources.length > 0) {
         callback({ video: sources[0] });
       } else {
-        callback({});
+        // desktopCapturer returns empty on macOS with ad-hoc signing —
+        // use useSystemPicker to let macOS handle it natively
+        callback({ video: { id: '', name: '' } as any, useSystemPicker: true } as any);
       }
     } catch (err) {
       safeLog.error('[DisplayMedia] Failed to get sources:', err);
-      callback({});
+      callback({ video: { id: '', name: '' } as any, useSystemPicker: true } as any);
     }
   });
 

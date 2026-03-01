@@ -45,6 +45,14 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
       });
       const sources = result?.sources || [];
       console.log('[ScreenSourcePicker] Got sources:', sources.length);
+      if (sources.length === 0) {
+        // Electron 28+ on macOS: desktopCapturer.getSources() returns empty
+        // even when permission is granted. Fall back to browser picker.
+        console.warn('[ScreenSourcePicker] No sources from Electron API, falling back to browser picker');
+        setError('no-electron');
+        setLoading(false);
+        return;
+      }
       setSources(sources as ScreenSource[]);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
