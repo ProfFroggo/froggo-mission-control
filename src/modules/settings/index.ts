@@ -13,7 +13,7 @@ import { ModuleLoader, type ModuleManifest, type ModuleLifecycle } from '../../c
 import { ViewRegistry } from '../../core/ViewRegistry';
 import manifest from './module.json';
 
-const SettingsPanel = lazy(() => import('../../components/SettingsPanel'));
+const SettingsPanel = lazy(() => import('../../components/EnhancedSettingsPanel'));
 const ModulesPage = lazy(() => import('../../components/ModulesPage'));
 const MarketplaceBrowse = lazy(() => import('../../components/MarketplaceBrowse'));
 
