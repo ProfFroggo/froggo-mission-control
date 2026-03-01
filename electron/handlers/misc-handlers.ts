@@ -22,7 +22,7 @@ const execAsync = promisify(exec);
 
 export function registerMiscHandlers(): void {
   // Core db:exec handler
-  registerHandler('db:exec', async (_event, query: string, params?: (string | number | null | boolean)[]) => {
+  registerHandler('db:exec', async (_event, query: string, params?: any[]) => {
     try {
       const queryLower = query.trim().toLowerCase();
       if (!queryLower.startsWith('select') && !queryLower.startsWith('insert')) {
@@ -32,11 +32,11 @@ export function registerMiscHandlers(): void {
       const bindParams = params && params.length > 0 ? params : [];
       if (queryLower.startsWith('insert')) { stmt.run(...bindParams); return { success: true, result: [] }; }
       else { return { success: true, result: stmt.all(...bindParams) }; }
-    } catch (error: unknown) { safeLog.error('[DB] Exec error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[DB] Exec error:', error); return { success: false, error: error.message }; }
   });
 
   // NEW: db:query alias for db:exec
-  registerHandler('db:query', async (_event, query: string, params?: (string | number | null | boolean)[]) => {
+  registerHandler('db:query', async (_event, query: string, params?: any[]) => {
     try {
       const queryLower = query.trim().toLowerCase();
       if (!queryLower.startsWith('select') && !queryLower.startsWith('insert')) {
@@ -46,7 +46,7 @@ export function registerMiscHandlers(): void {
       const bindParams = params && params.length > 0 ? params : [];
       if (queryLower.startsWith('insert')) { stmt.run(...bindParams); return { success: true, result: [] }; }
       else { return { success: true, result: stmt.all(...bindParams) }; }
-    } catch (error: unknown) { safeLog.error('[DB] Query error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[DB] Query error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('fs:writeBase64', async (_event, filePath: string, base64Data: string) => {
@@ -55,7 +55,7 @@ export function registerMiscHandlers(): void {
       if (!check.valid) { safeLog.error('[FS] Write blocked:', check.error); return { success: false, error: check.error }; }
       fs.writeFileSync(check.resolved, Buffer.from(base64Data, 'base64'));
       return { success: true, path: check.resolved };
-    } catch (error: unknown) { safeLog.error('[FS] Write error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[FS] Write error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('fs:readFile', async (_event, filePath: string, encoding?: string) => {
@@ -64,7 +64,7 @@ export function registerMiscHandlers(): void {
       if (!check.valid) { safeLog.error('[FS] Read blocked:', check.error); return { success: false, error: check.error }; }
       const content = fs.readFileSync(check.resolved, encoding as BufferEncoding || 'utf8');
       return { success: true, content };
-    } catch (error: unknown) { safeLog.error('[FS] Read error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[FS] Read error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('fs:append', async (_event, filePath: string, content: string) => {
@@ -75,7 +75,7 @@ export function registerMiscHandlers(): void {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.appendFileSync(check.resolved, content);
       return { success: true, path: check.resolved };
-    } catch (error: unknown) { safeLog.error('[FS] Append error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[FS] Append error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('exec:run', async (_event, command: string) => {
@@ -114,38 +114,38 @@ export function registerMiscHandlers(): void {
     try {
       const rows = getDb().prepare(`SELECT id, name, description, status, overall_progress, created_at, updated_at FROM module_specs WHERE status != 'archived' ORDER BY updated_at DESC`).all();
       return { success: true, modules: rows };
-    } catch (error: unknown) { safeLog.error('[ModuleBuilder] list error:', error.message); return { success: false, modules: [], error: error.message }; }
+    } catch (error: any) { safeLog.error('[ModuleBuilder] list error:', error.message); return { success: false, modules: [], error: error.message }; }
   });
 
   registerHandler('module:get', async (_event, id: string) => {
     try {
-      const row = getDb().prepare('SELECT * FROM module_specs WHERE id = ?').get(id) as Record<string, unknown>;
+      const row = getDb().prepare('SELECT * FROM module_specs WHERE id = ?').get(id) as any;
       if (!row) return { success: false, error: 'not found' };
-      row['spec'] = JSON.parse((row['spec'] as string) || '{}');
-      row['conversation'] = JSON.parse((row['conversation'] as string) || '[]');
-      row['conversation_state'] = JSON.parse((row['conversation_state'] as string) || '{}');
+      row.spec = JSON.parse(row.spec || '{}');
+      row.conversation = JSON.parse(row.conversation || '[]');
+      row.conversation_state = JSON.parse(row.conversation_state || '{}');
       return { success: true, module: row };
-    } catch (error: unknown) { safeLog.error('[ModuleBuilder] get error:', error.message); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[ModuleBuilder] get error:', error.message); return { success: false, error: error.message }; }
   });
 
-  registerHandler('module:save', async (_event, data: Record<string, unknown>) => {
+  registerHandler('module:save', async (_event, data: any) => {
     try {
       const now = Date.now();
-      const existing = getDb().prepare('SELECT created_at FROM module_specs WHERE id = ?').get(data['id'] as string) as Record<string, unknown>;
-      const createdAt = (existing?.['created_at'] as number) || (data['created_at'] as number) || now;
+      const existing = getDb().prepare('SELECT created_at FROM module_specs WHERE id = ?').get(data.id) as any;
+      const createdAt = existing?.created_at || data.created_at || now;
       getDb().prepare(`INSERT OR REPLACE INTO module_specs (id, name, description, status, spec, conversation, conversation_state, overall_progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-        data['id'], (data['name'] as string) || '', (data['description'] as string) || '', (data['status'] as string) || 'in-progress',
-        JSON.stringify(data['spec'] || {}), JSON.stringify(data['conversation'] || []),
-        JSON.stringify(data['conversation_state'] || {}), (data['overall_progress'] as number) || 0, createdAt, now
+        data.id, data.name || '', data.description || '', data.status || 'in-progress',
+        JSON.stringify(data.spec || {}), JSON.stringify(data.conversation || []),
+        JSON.stringify(data.conversation_state || {}), data.overall_progress || 0, createdAt, now
       );
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[ModuleBuilder] save error:', error.message); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[ModuleBuilder] save error:', error.message); return { success: false, error: error.message }; }
   });
 
   registerHandler('module:delete', async (_event, id: string) => {
     try {
       getDb().prepare('UPDATE module_specs SET status = ?, updated_at = ? WHERE id = ?').run('archived', Date.now(), id);
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[ModuleBuilder] delete error:', error.message); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[ModuleBuilder] delete error:', error.message); return { success: false, error: error.message }; }
   });
 }

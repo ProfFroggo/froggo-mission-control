@@ -84,8 +84,8 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
     const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit} --max-age-hours 2160`, 3000);
     if (raw && raw.trim().startsWith('[')) {
       const cached = JSON.parse(raw);
-      return cached.map((m: Record<string, unknown>) => {
-        let meta: Record<string, unknown> = {};
+      return cached.map((m: any) => {
+        let meta: any = {};
         if (m.metadata) {
           try {
             meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
@@ -133,7 +133,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
   return null;
 };
 
-const writeCommsToCache = async (messages: Record<string, unknown>[]): Promise<void> => {
+const writeCommsToCache = async (messages: any[]): Promise<void> => {
   try {
     const cacheData = messages.map(m => ({
       platform: m.platform,
@@ -204,7 +204,7 @@ async function refreshCommsBackground() {
   commsRefreshInProgress = true;
   safeLog.log('[CommsPolling] Background refresh starting...');
 
-  const allMessages: Record<string, unknown>[] = [];
+  const allMessages: any[] = [];
   const DISCORDCLI_PATH = DISCORDCLI;
 
   const relativeTime = (dateStr: string): string => {
@@ -224,8 +224,8 @@ async function refreshCommsBackground() {
 
   const getFetchState = async (platform: string, account = ''): Promise<string | null> => {
     try {
-      const row = prepare('SELECT last_message_ts FROM comms_fetch_state WHERE platform = ? AND account = ?').get(platform, account) as Record<string, unknown>;
-      return (row?.['last_message_ts'] as string) || null;
+      const row = prepare('SELECT last_message_ts FROM comms_fetch_state WHERE platform = ? AND account = ?').get(platform, account) as any;
+      return row?.last_message_ts || null;
     } catch { return null; }
   };
 
@@ -352,8 +352,8 @@ async function refreshCommsBackground() {
       if (gogAuthRaw) {
         const gogData = JSON.parse(gogAuthRaw);
         const gmailAccts = (gogData.accounts || [])
-          .filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail'))
-          .map((a: Record<string, unknown>) => a['email'] as string);
+          .filter((a: any) => a.services?.includes('gmail'))
+          .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
     } catch (err) { safeLog.debug('[Email] Failed to discover email accounts:', err); }
@@ -448,7 +448,7 @@ interface ImportantEmailResult {
   amount?: string;
 }
 
-function detectImportantEmail(email: Record<string, unknown>): ImportantEmailResult | null {
+function detectImportantEmail(email: any): ImportantEmailResult | null {
   const id = email.id || email.ID || email.threadId;
   const from = email.from || email.From || '';
   const subject = email.subject || email.Subject || '';
@@ -534,8 +534,8 @@ async function runImportantEmailCheck() {
     if (gogAuthRaw) {
       const gogData = JSON.parse(gogAuthRaw);
       const gmailAccts = (gogData.accounts || [])
-        .filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail'))
-        .map((a: Record<string, unknown>) => a['email'] as string);
+        .filter((a: any) => a.services?.includes('gmail'))
+        .map((a: any) => a.email);
       if (gmailAccts.length > 0) emailAccounts = gmailAccts;
     }
   } catch (e) {
@@ -577,7 +577,7 @@ async function runImportantEmailCheck() {
               "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', 'email', datetime('now'))"
             ).run('email', title, content, `${important.priority} priority`);
             safeLog.log(`[Email] Created inbox item: ${title}`);
-          } catch (err: unknown) {
+          } catch (err: any) {
             safeLog.error('[Email] Failed to create inbox item:', err);
           }
 
@@ -620,47 +620,47 @@ export function startEmailAutoCheck(): void {
 
 // ── Smart folder rule evaluator ──────────────────────────────────────────────
 
-function evaluateRuleSimple(rule: Record<string, unknown>, data: Record<string, unknown>): boolean {
-  if (!rule['enabled'] || !rule['conditions'] || (rule['conditions'] as unknown[]).length === 0) {
+function evaluateRuleSimple(rule: any, data: any): boolean {
+  if (!rule.enabled || !rule.conditions || rule.conditions.length === 0) {
     return false;
   }
 
-  const results = (rule['conditions'] as Record<string, unknown>[]).map((cond) => {
+  const results = rule.conditions.map((cond: any) => {
     let result = false;
 
-    switch (cond['type']) {
+    switch (cond.type) {
       case 'sender_matches':
-        result = data['sender'] ? (data['sender'] as string).includes(cond['value'] as string) : false;
+        result = data.sender ? data.sender.includes(cond.value) : false;
         break;
       case 'sender_name_contains':
-        result = data['senderName'] ? (data['senderName'] as string).toLowerCase().includes(String(cond['value']).toLowerCase()) : false;
+        result = data.senderName ? data.senderName.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
         break;
       case 'content_contains':
-        result = data['content'] ? (data['content'] as string).toLowerCase().includes(String(cond['value']).toLowerCase()) : false;
+        result = data.content ? data.content.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
         break;
       case 'platform_is':
-        result = data['platform'] ? (data['platform'] as string).toLowerCase() === String(cond['value']).toLowerCase() : false;
+        result = data.platform ? data.platform.toLowerCase() === String(cond.value).toLowerCase() : false;
         break;
       case 'priority_above':
-        result = data['priorityScore'] !== undefined ? (data['priorityScore'] as number) > Number(cond['value']) : false;
+        result = data.priorityScore !== undefined ? data.priorityScore > Number(cond.value) : false;
         break;
       case 'priority_below':
-        result = data['priorityScore'] !== undefined ? (data['priorityScore'] as number) < Number(cond['value']) : false;
+        result = data.priorityScore !== undefined ? data.priorityScore < Number(cond.value) : false;
         break;
       case 'is_urgent':
-        result = Boolean(data['isUrgent']);
+        result = Boolean(data.isUrgent);
         break;
       case 'has_attachment':
-        result = Boolean(data['hasAttachment']);
+        result = Boolean(data.hasAttachment);
         break;
       default:
         result = false;
     }
 
-    return cond['negate'] ? !result : result;
+    return cond.negate ? !result : result;
   });
 
-  return rule['operator'] === 'AND' ? results.every((r: boolean) => r) : results.some((r: boolean) => r);
+  return rule.operator === 'AND' ? results.every((r: boolean) => r) : results.some((r: boolean) => r);
 }
 
 // ── Register all comms handlers ──────────────────────────────────────────────
@@ -679,7 +679,7 @@ export function registerCommsHandlers(): void {
       ).run(item.type, item.title, item.content, item.context || '', item.channel || 'system', item.metadata || '{}');
       safeLog.log('[Inbox:addWithMetadata] Added successfully');
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox:addWithMetadata] Error:', error);
       return { success: false, error: error.message };
     }
@@ -690,11 +690,11 @@ export function registerCommsHandlers(): void {
     try {
       safeLog.log('[Inbox:list] Executing parameterized query for status:', effectiveStatus);
       const items = prepare('SELECT * FROM inbox WHERE status = ? ORDER BY created DESC LIMIT 50').all(effectiveStatus);
-      safeLog.log('[Inbox:list] SUCCESS - Found', (items as unknown[]).length, 'items with status:', effectiveStatus);
+      safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
       return { success: true, items };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox:list] Error:', error);
-      return { success: false, items: [], error: error instanceof Error ? error.message : String(error) };
+      return { success: false, items: [], error: error.message };
     }
   });
 
@@ -712,7 +712,7 @@ export function registerCommsHandlers(): void {
         } catch (e) {
           safeLog.error('[Inbox] Failed to parse injection detection result:', e);
         }
-        const metadata: Record<string, unknown> = {};
+        const metadata: any = {};
         if (injectionResult && injectionResult.detected) {
           metadata.injectionWarning = {
             detected: true, type: injectionResult.type,
@@ -725,7 +725,7 @@ export function registerCommsHandlers(): void {
             "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES (?, ?, ?, ?, 'pending', ?, ?, datetime('now'))"
           ).run(item.type, item.title, item.content, item.context || '', item.channel || 'unknown', JSON.stringify(metadata));
           resolve({ success: true, injectionWarning: injectionResult?.detected ? injectionResult : null });
-        } catch (error: unknown) {
+        } catch (error: any) {
           safeLog.error('[Inbox] Add error:', error);
           resolve({ success: false, error: error.message });
         }
@@ -741,29 +741,29 @@ export function registerCommsHandlers(): void {
     }
     try {
       const setClauses: string[] = [];
-      const params: (string | number | null)[] = [];
+      const params: any[] = [];
       if (updates.status) { setClauses.push('status = ?'); params.push(updates.status); }
       if (updates.feedback) { setClauses.push('feedback = ?'); params.push(updates.feedback); }
       if (updates.status) { setClauses.push("reviewed_at = datetime('now')"); }
       if (setClauses.length === 0) return { success: false };
-      params.push(typeof id === 'string' ? id : Number(id));
+      params.push(id);
       prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox:update] Error:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: error.message };
     }
   });
 
   registerHandler('inbox:approveAll', async () => {
     try {
-      const countRow = prepare("SELECT COUNT(*) as cnt FROM inbox WHERE status = 'pending'").get() as Record<string, unknown>;
-      const count = (countRow?.['cnt'] as number) || 0;
+      const countRow = prepare("SELECT COUNT(*) as cnt FROM inbox WHERE status = 'pending'").get() as any;
+      const count = countRow?.cnt || 0;
       prepare("UPDATE inbox SET status = 'approved', reviewed_at = datetime('now') WHERE status = 'pending'").run();
       return { success: true, count };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox:approveAll] Error:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: error.message };
     }
   });
 
@@ -771,7 +771,7 @@ export function registerCommsHandlers(): void {
     try {
       const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
       return { success: true, items };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox] List revisions error:', error);
       return { success: false, items: [] };
     }
@@ -780,41 +780,41 @@ export function registerCommsHandlers(): void {
   registerHandler('inbox:submitRevision', async (_, originalId: number, revisedContent: string, revisedTitle?: string) => {
     safeLog.log(`[Inbox] Submit revision for item ${originalId}`);
     try {
-      const original = prepare('SELECT * FROM inbox WHERE id = ?').get(originalId) as Record<string, unknown>;
+      const original = prepare('SELECT * FROM inbox WHERE id = ?').get(originalId) as any;
       if (!original) return { success: false, error: 'Original item not found' };
-      const newTitle = revisedTitle || `[Revised] ${original['title']}`;
-      const context = `Revision of inbox item #${originalId}. Original feedback: ${original['feedback'] || 'none'}`;
+      const newTitle = revisedTitle || `[Revised] ${original.title}`;
+      const context = `Revision of inbox item #${originalId}. Original feedback: ${original.feedback || 'none'}`;
       prepare(
         "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))"
-      ).run(original['type'], newTitle, revisedContent, context, original['source_channel'] || 'revision');
+      ).run(original.type, newTitle, revisedContent, context, original.source_channel || 'revision');
       try {
         prepare("UPDATE inbox SET status = 'revised', reviewed_at = datetime('now') WHERE id = ?").run(originalId);
-      } catch (updateErr: unknown) {
+      } catch (updateErr: any) {
         safeLog.error('[Inbox] Update original error:', updateErr);
       }
       safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
       sendToRenderer('inbox-updated', { revision: true, originalId });
       return { success: true, message: 'Revision submitted for approval' };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Inbox] Revision error:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+      return { success: false, error: error.message };
     }
   });
 
   registerHandler('inbox:getRevisionContext', async (_, itemId: number) => {
     try {
-      const item = prepare("SELECT * FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as Record<string, unknown>;
+      const item = prepare("SELECT * FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as any;
       if (!item) return { success: false, error: 'Item not found or not in needs-revision status' };
       return {
         success: true,
         item: {
-          id: item['id'], type: item['type'], title: item['title'],
-          originalContent: item['content'], feedback: item['feedback'],
-          context: item['context'], created: item['created'], sourceChannel: item['source_channel'],
+          id: item.id, type: item.type, title: item.title,
+          originalContent: item.content, feedback: item.feedback,
+          context: item.context, created: item.created, sourceChannel: item.source_channel,
         }
       };
-    } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   });
 
@@ -876,7 +876,7 @@ export function registerCommsHandlers(): void {
     });
   });
 
-  registerHandler('inbox:filter', async (_, criteria: Record<string, unknown>) => {
+  registerHandler('inbox:filter', async (_, criteria: any) => {
     return new Promise((resolve) => {
       const child = execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['filter'], {
         encoding: 'utf-8', timeout: 10000,
@@ -911,7 +911,7 @@ export function registerCommsHandlers(): void {
       const status = JSON.parse(result);
       safeLog.log('[Inbox] Historical data check:', status);
       return { success: true, ...status };
-    } catch (e: unknown) {
+    } catch (e: any) {
       safeLog.error('[Inbox] Historical data check failed:', e);
       return { success: false, error: e.message };
     }
@@ -926,7 +926,7 @@ export function registerCommsHandlers(): void {
         else { safeLog.log('[Inbox] Backfill triggered:', stdout); }
       });
       return { success: true, message: 'Backfill started in background' };
-    } catch (e: unknown) {
+    } catch (e: any) {
       safeLog.error('[Inbox] Backfill trigger failed:', e);
       return { success: false, error: e.message };
     }
@@ -952,7 +952,7 @@ export function registerCommsHandlers(): void {
       }
     }
 
-    const getSessionKey = (m: Record<string, unknown>): string => `${m['platform']}:${m['from'] || m['sender']}`;
+    const getSessionKey = (m: any): string => `${m.platform}:${m.from || m.sender}`;
 
     const cacheAge = await getCommsCacheAge();
     safeLog.log(`[Messages] Cache age: ${Math.round(cacheAge / 1000)}s`);
@@ -987,7 +987,7 @@ export function registerCommsHandlers(): void {
   registerHandler('messages:context', async (_, messageId: string, platform: string, limit?: number) => {
     if (!messageId || typeof messageId !== 'string') return { success: true, messages: [] };
     const lim = limit || 5;
-    const messages: Record<string, unknown>[] = [];
+    const messages: any[] = [];
 
     try {
       if (platform === 'whatsapp') {
@@ -998,13 +998,13 @@ export function registerCommsHandlers(): void {
         try {
           const nameRow = waDb.prepare(
             "SELECT COALESCE(c.push_name, c.full_name, m.chat_name, ?) as name FROM messages m LEFT JOIN contacts c ON m.chat_jid = c.jid WHERE m.chat_jid = ? LIMIT 1"
-          ).get('Unknown', jid) as Record<string, unknown>;
-          const contactName = (nameRow?.['name'] as string) || 'Unknown';
+          ).get('Unknown', jid) as any;
+          const contactName = nameRow?.name || 'Unknown';
           const rows = waDb.prepare(
             "SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid = ? ORDER BY ts DESC LIMIT ?"
-          ).all(jid, lim) as Record<string, unknown>[];
+          ).all(jid, lim) as any[];
           for (const row of rows.reverse()) {
-            messages.push({ sender: row['from_me'] ? 'You' : contactName, text: (row['text'] as string) || '', timestamp: (row['time'] as string) || '', fromMe: !!row['from_me'] });
+            messages.push({ sender: row.from_me ? 'You' : contactName, text: row.text || '', timestamp: row.time || '', fromMe: !!row.from_me });
           }
         } finally { waDb.close(); }
       } else if (platform === 'telegram') {
@@ -1037,7 +1037,7 @@ export function registerCommsHandlers(): void {
         }
       }
       return { success: true, messages };
-    } catch (e: unknown) {
+    } catch (e: any) {
       safeLog.error('[Messages:Context] Error:', e);
       return { success: false, messages: [], error: e.message };
     }
@@ -1086,7 +1086,7 @@ export function registerCommsHandlers(): void {
       }
       safeLog.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
       return { success: true, result };
-    } catch (e: unknown) {
+    } catch (e: any) {
       safeLog.error('[Messages:Send] Error:', e);
       return { success: false, error: e.message };
     }
@@ -1104,17 +1104,17 @@ export function registerCommsHandlers(): void {
           SUM(CASE WHEN platform = 'email' AND is_read = 0 THEN 1 ELSE 0 END) as email_unread
         FROM message_read_state
         WHERE is_read = 0
-      `).get() as Record<string, unknown>;
+      `).get() as any;
       const byPlatform: { [key: string]: number } = {};
-      if ((result?.['whatsapp_unread'] as number) > 0) byPlatform['whatsapp'] = result?.['whatsapp_unread'] as number;
-      if ((result?.['telegram_unread'] as number) > 0) byPlatform['telegram'] = result?.['telegram_unread'] as number;
-      if ((result?.['discord_unread'] as number) > 0) byPlatform['discord'] = result?.['discord_unread'] as number;
-      if ((result?.['email_unread'] as number) > 0) byPlatform['email'] = result?.['email_unread'] as number;
-      safeLog.log('[Messages:Unread] Total:', result?.['total_unread'], 'By platform:', byPlatform);
-      return { success: true, count: (result?.['total_unread'] as number) || 0, byPlatform };
-    } catch (e: unknown) {
+      if (result.whatsapp_unread > 0) byPlatform['whatsapp'] = result.whatsapp_unread;
+      if (result.telegram_unread > 0) byPlatform['telegram'] = result.telegram_unread;
+      if (result.discord_unread > 0) byPlatform['discord'] = result.discord_unread;
+      if (result.email_unread > 0) byPlatform['email'] = result.email_unread;
+      safeLog.log('[Messages:Unread] Total:', result.total_unread, 'By platform:', byPlatform);
+      return { success: true, count: result.total_unread || 0, byPlatform };
+    } catch (e: any) {
       safeLog.error('[Messages:Unread] Error:', e);
-      return { success: false, count: 0, error: e instanceof Error ? e.message : String(e) };
+      return { success: false, count: 0, error: e.message };
     }
   });
 
@@ -1127,7 +1127,7 @@ export function registerCommsHandlers(): void {
       prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(ARCHIVE_FOLDER_ID, sessionKey, 'user');
       safeLog.log('[Conversations] Archived:', sessionKey);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Conversations] Archive error:', error);
       return { success: false, error: error.message };
     }
@@ -1140,7 +1140,7 @@ export function registerCommsHandlers(): void {
       prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(ARCHIVE_FOLDER_ID, sessionKey);
       safeLog.log('[Conversations] Unarchived:', sessionKey);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Conversations] Unarchive error:', error);
       return { success: false, error: error.message };
     }
@@ -1160,7 +1160,7 @@ export function registerCommsHandlers(): void {
       ).all(ARCHIVE_FOLDER_ID);
       safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
       return { success: true, conversations };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Conversations] Archived list error:', error);
       return { success: false, conversations: [] };
     }
@@ -1169,8 +1169,8 @@ export function registerCommsHandlers(): void {
   registerHandler('conversations:isArchived', async (_, sessionKey: string) => {
     const ARCHIVE_FOLDER_ID = 4;
     try {
-      const row = prepare('SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ? AND session_key = ?').get(ARCHIVE_FOLDER_ID, sessionKey) as Record<string, unknown>;
-      return { isArchived: ((row?.['count'] as number) || 0) > 0 };
+      const row = prepare('SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ? AND session_key = ?').get(ARCHIVE_FOLDER_ID, sessionKey) as any;
+      return { isArchived: (row?.count || 0) > 0 };
     } catch {
       return { isArchived: false };
     }
@@ -1182,7 +1182,7 @@ export function registerCommsHandlers(): void {
       prepare("UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = ? AND (is_read IS NULL OR is_read = 0)").run(sessionKey);
       safeLog.log('[Conversations] Marked as read:', sessionKey);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Conversations] Mark read error:', error);
       return { success: false, error: error.message };
     }
@@ -1200,7 +1200,7 @@ export function registerCommsHandlers(): void {
       })();
       safeLog.log('[Conversations] Deleted:', sessionKey);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[Conversations] Delete error:', error);
       return { success: false, error: error.message };
     }
@@ -1312,8 +1312,8 @@ export function registerCommsHandlers(): void {
         try {
           const data = JSON.parse(stdout);
           const gmailAccounts = (data.accounts || [])
-            .filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail'))
-            .map((a: Record<string, unknown>) => ({ email: a['email'], label: (a['email'] as string).split('@')[0] }));
+            .filter((a: any) => a.services?.includes('gmail'))
+            .map((a: any) => ({ email: a.email, label: a.email.split('@')[0] }));
           resolve({ success: true, accounts: gmailAccounts });
         } catch { resolve({ success: true, accounts: [] }); }
       });
@@ -1351,7 +1351,7 @@ export function registerCommsHandlers(): void {
           }, (error, stdout) => { if (error) rej(error); else res(stdout); });
         });
         const gogData = JSON.parse(gogList);
-        tryAccounts = (gogData.accounts || []).filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail')).map((a: Record<string, unknown>) => a['email'] as string);
+        tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
       } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
     }
     for (const acct of tryAccounts) {
@@ -1407,8 +1407,8 @@ export function registerCommsHandlers(): void {
           }, (error, stdout) => { if (error) rej(error); else res(stdout); });
         });
         const gogData = JSON.parse(gogList);
-        const accounts = (gogData.accounts || []).filter((a: Record<string, unknown>) => (a['services'] as string[] | undefined)?.includes('gmail'));
-        acct = (accounts[0]?.['email'] as string) || '';
+        const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
+        acct = accounts[0]?.email || '';
       } catch { acct = ''; }
     }
     const title = `Email to ${to}: ${subject.slice(0, 30)}`;
@@ -1446,8 +1446,8 @@ export function registerCommsHandlers(): void {
           const chats = result.chats || result || [];
           resolve({
             success: true,
-            messages: Array.isArray(chats) ? (chats as Record<string, unknown>[]).map((c) => ({
-              id: c['id'], type: 'chat', content: `Chat: ${c['name'] || c['title']}`, from: c['name'] || c['title'],
+            messages: Array.isArray(chats) ? chats.map((c: any) => ({
+              id: c.id, type: 'chat', content: `Chat: ${c.name || c.title}`, from: c.name || c.title,
             })) : [],
             note: 'Searches chat names only'
           });
@@ -1465,9 +1465,9 @@ export function registerCommsHandlers(): void {
           const messages = result.data?.messages || [];
           resolve({
             success: true,
-            messages: (messages as Record<string, unknown>[]).map((m) => ({
-              id: m['id'], type: 'whatsapp', content: m['text'] || m['body'] || '', from: m['from'] || m['sender'] || '',
-              timestamp: m['timestamp'] || '',
+            messages: messages.map((m: any) => ({
+              id: m.id, type: 'whatsapp', content: m.text || m.body || '', from: m.from || m.sender || '',
+              timestamp: m.timestamp || '',
             }))
           });
         } catch { resolve({ success: true, messages: [], raw: stdout }); }

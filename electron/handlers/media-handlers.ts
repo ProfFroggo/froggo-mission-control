@@ -56,7 +56,7 @@ export function registerMediaHandlers(): void {
       const stats = fs.statSync(filePath);
       safeLog.log('[Media] Uploaded:', uniqueFileName, 'size:', stats.size);
       return { success: true, path: filePath, fileName: uniqueFileName, size: stats.size };
-    } catch (error: unknown) { safeLog.error('[Media] Upload error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[Media] Upload error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('media:delete', async (_event, filePath: string) => {
@@ -64,7 +64,7 @@ export function registerMediaHandlers(): void {
       if (!filePath.startsWith(UPLOADS_DIR)) return { success: false, error: 'Invalid file path' };
       if (fs.existsSync(filePath)) { fs.unlinkSync(filePath); safeLog.log('[Media] Deleted:', filePath); }
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[Media] Delete error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[Media] Delete error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('media:cleanup', async () => {
@@ -79,7 +79,7 @@ export function registerMediaHandlers(): void {
       }
       safeLog.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
       return { success: true, deletedCount };
-    } catch (error: unknown) { safeLog.error('[Media] Cleanup error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[Media] Cleanup error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('screenshot:capture', async (_event, outputPath: string) => {
@@ -105,7 +105,7 @@ export function registerMediaHandlers(): void {
   async function syncLibraryFromFilesystem() {
     const libraryRoot = LIBRARY_DIR;
     const categories = ['content', 'creative', 'dev', 'finance', 'marketing', 'projects', 'reports', 'research', 'social', 'test-logs', 'ui-design', 'docs', 'other'];
-    const scannedFiles: { id: string; name: string; path: string; category: string; size: number; createdAt: string; updatedAt: string }[] = [];
+    const scannedFiles: any[] = [];
     
     for (const category of categories) {
       const categoryPath = path.join(libraryRoot, category);
@@ -175,7 +175,7 @@ export function registerMediaHandlers(): void {
   registerHandler('library:sync', async () => {
     try {
       return await syncLibraryFromFilesystem();
-    } catch (error: unknown) {
+    } catch (error: any) {
       safeLog.error('[library:sync] Error:', error);
       return { success: false, error: error.message };
     }
@@ -184,19 +184,19 @@ export function registerMediaHandlers(): void {
   registerHandler('library:list', async (_event, category?: string) => {
     if (!fs.existsSync(LIBRARY_DIR)) fs.mkdirSync(LIBRARY_DIR, { recursive: true });
     try {
-      let rawFiles: Record<string, unknown>[];
-      if (category) rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as Record<string, unknown>[];
-      else rawFiles = prepare('SELECT * FROM library ORDER BY updated_at DESC').all() as Record<string, unknown>[];
-      const files = rawFiles.map((f) => {
+      let rawFiles: any[];
+      if (category) rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
+      else rawFiles = prepare('SELECT * FROM library ORDER BY updated_at DESC').all() as any[];
+      const files = rawFiles.map((f: any) => {
         let linkedTasks: string[] = []; let tags: string[] = [];
-        try { linkedTasks = f['linked_tasks'] ? JSON.parse(f['linked_tasks'] as string) : []; } catch { /* ignore */ }
-        try { tags = f['tags'] ? JSON.parse(f['tags'] as string) : []; } catch { /* ignore */ }
-        const rawCat = (f['category'] as string) || 'other';
-        const cat = (VALID_FILE_CATEGORIES as readonly string[]).includes(rawCat) ? rawCat : inferFileCategory((f['name'] as string) || '');
-        return { id: (f['id'] as string) || '', name: (f['name'] as string) || 'Unnamed', path: (f['path'] as string) || '', category: cat, size: (f['size'] as number) || 0, mimeType: (f['mime_type'] as string) || null, createdAt: (f['created_at'] as string) || new Date().toISOString(), updatedAt: (f['updated_at'] as string) || new Date().toISOString(), linkedTasks, tags, project: (f['project'] as string) || null };
+        try { linkedTasks = f.linked_tasks ? JSON.parse(f.linked_tasks) : []; } catch { /* ignore */ }
+        try { tags = f.tags ? JSON.parse(f.tags) : []; } catch { /* ignore */ }
+        const rawCat = f.category || 'other';
+        const cat = (VALID_FILE_CATEGORIES as readonly string[]).includes(rawCat) ? rawCat : inferFileCategory(f.name || '');
+        return { id: f.id || '', name: f.name || 'Unnamed', path: f.path || '', category: cat, size: f.size || 0, mimeType: f.mime_type || null, createdAt: f.created_at || new Date().toISOString(), updatedAt: f.updated_at || new Date().toISOString(), linkedTasks, tags, project: f.project || null };
       });
       return { success: true, files };
-    } catch (error: unknown) { safeLog.error('[library:list] Error:', error); return { success: true, files: [] }; }
+    } catch (error: any) { safeLog.error('[library:list] Error:', error); return { success: true, files: [] }; }
   });
 
   registerHandler('library:upload', async () => {
@@ -214,60 +214,59 @@ export function registerMediaHandlers(): void {
       getDb().exec(`CREATE TABLE IF NOT EXISTS library (id TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, category TEXT DEFAULT 'other', size INTEGER, mime_type TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), linked_tasks TEXT, tags TEXT)`);
       prepare('INSERT INTO library (id, name, path, category, size) VALUES (?, ?, ?, ?, ?)').run(fileId, fileName, destPath, cat, stats.size);
       return { success: true, file: { id: fileId, name: fileName, path: destPath, category: cat, size: stats.size } };
-    } catch (error: unknown) { return { success: false, error: error.message }; }
+    } catch (error: any) { return { success: false, error: error.message }; }
   });
 
   registerHandler('library:delete', async (_event, fileId: string) => {
     try {
-      const row = prepare('SELECT path FROM library WHERE id = ?').get(fileId) as Record<string, unknown>;
-      if (row?.['path'] && fs.existsSync(row['path'] as string)) fs.unlinkSync(row['path'] as string);
+      const row = prepare('SELECT path FROM library WHERE id = ?').get(fileId) as any;
+      if (row?.path && fs.existsSync(row.path)) fs.unlinkSync(row.path);
       const info = prepare('DELETE FROM library WHERE id = ?').run(fileId);
       if (info.changes === 0) return { success: false, error: 'File not found' };
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[Library] Delete error:', error); return { success: false }; }
+    } catch (error: any) { safeLog.error('[Library] Delete error:', error); return { success: false }; }
   });
 
   registerHandler('library:link', async (_event, fileId: string, taskId: string) => {
     try {
-      const row = prepare('SELECT linked_tasks FROM library WHERE id = ?').get(fileId) as Record<string, unknown>;
+      const row = prepare('SELECT linked_tasks FROM library WHERE id = ?').get(fileId) as any;
       let linkedTasks: string[] = [];
-      try { if (row?.['linked_tasks']) linkedTasks = JSON.parse(row['linked_tasks'] as string); } catch { /* ignore */ }
+      try { if (row?.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks); } catch { /* ignore */ }
       if (!linkedTasks.includes(taskId)) linkedTasks.push(taskId);
       prepare("UPDATE library SET linked_tasks = ?, updated_at = datetime('now') WHERE id = ?").run(JSON.stringify(linkedTasks), fileId);
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[Library] Link error:', error); return { success: false }; }
+    } catch (error: any) { safeLog.error('[Library] Link error:', error); return { success: false }; }
   });
 
   registerHandler('library:view', async (_event, fileId: string) => {
     try {
-      const file = prepare('SELECT path, mime_type, name FROM library WHERE id = ?').get(fileId) as Record<string, unknown>;
+      const file = prepare('SELECT path, mime_type, name FROM library WHERE id = ?').get(fileId) as any;
       if (!file) return { success: false, error: 'File not found' };
-      const filePath = (file['path'] as string).replace('~', process.env.HOME || '');
+      const filePath = file.path.replace('~', process.env.HOME || '');
       if (!fs.existsSync(filePath)) return { success: false, error: 'File does not exist on disk' };
-      const mimeType = (file['mime_type'] as string) || '';
-      const fileName = file['name'] as string;
+      const mimeType = file.mime_type || '';
       if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
-        return { success: true, content: fs.readFileSync(filePath, 'utf-8'), mimeType, name: fileName, path: filePath, viewType: 'text' };
+        return { success: true, content: fs.readFileSync(filePath, 'utf-8'), mimeType, name: file.name, path: filePath, viewType: 'text' };
       } else if (mimeType.startsWith('image/')) {
         const base64 = fs.readFileSync(filePath).toString('base64');
-        return { success: true, content: `data:${mimeType};base64,${base64}`, mimeType, name: fileName, path: filePath, viewType: 'image' };
+        return { success: true, content: `data:${mimeType};base64,${base64}`, mimeType, name: file.name, path: filePath, viewType: 'image' };
       } else {
-        return { success: true, mimeType, name: fileName, path: filePath, viewType: 'binary' };
+        return { success: true, mimeType, name: file.name, path: filePath, viewType: 'binary' };
       }
-    } catch (error: unknown) { return { success: false, error: error.message }; }
+    } catch (error: any) { return { success: false, error: error.message }; }
   });
 
   registerHandler('library:download', async (_event, fileId: string) => {
     try {
-      const file = prepare('SELECT path, name FROM library WHERE id = ?').get(fileId) as Record<string, unknown>;
+      const file = prepare('SELECT path, name FROM library WHERE id = ?').get(fileId) as any;
       if (!file) return { success: false, error: 'File not found' };
-      const sourcePath = (file['path'] as string).replace('~', process.env.HOME || '');
+      const sourcePath = file.path.replace('~', process.env.HOME || '');
       if (!fs.existsSync(sourcePath)) return { success: false, error: 'File does not exist on disk' };
-      const saveResult = await dialog.showSaveDialog({ title: 'Save File', defaultPath: file['name'] as string });
+      const saveResult = await dialog.showSaveDialog({ title: 'Save File', defaultPath: file.name });
       if (saveResult.canceled || !saveResult.filePath) return { success: false, error: 'Cancelled' };
       fs.copyFileSync(sourcePath, saveResult.filePath);
       return { success: true, path: saveResult.filePath };
-    } catch (error: unknown) { return { success: false, error: error.message }; }
+    } catch (error: any) { return { success: false, error: error.message }; }
   });
 
   registerHandler('library:update', async (_event, fileId: string, updates: { category?: string; tags?: string[]; project?: string }) => {
@@ -276,7 +275,7 @@ export function registerMediaHandlers(): void {
       if (updates.tags !== undefined) prepare('UPDATE library SET tags = ?, updated_at = datetime("now") WHERE id = ?').run(JSON.stringify(updates.tags), fileId);
       if (updates.project !== undefined) prepare('UPDATE library SET project = ?, updated_at = datetime("now") WHERE id = ?').run(updates.project, fileId);
       return { success: true };
-    } catch (error: unknown) { safeLog.error('[library:update] Error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[library:update] Error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('library:uploadBuffer', async (_event, data: { name: string; type: string; buffer: ArrayBuffer }) => {
@@ -289,14 +288,14 @@ export function registerMediaHandlers(): void {
       const cat = inferFileCategory(data.name, data.type);
       prepare('INSERT INTO library (id, name, path, category, size, mime_type) VALUES (?, ?, ?, ?, ?, ?)').run(fileId, data.name, destPath, cat, stats.size, data.type || null);
       return { success: true, file: { id: fileId, name: data.name, path: destPath, category: cat, size: stats.size } };
-    } catch (error: unknown) { safeLog.error('[library:uploadBuffer] Error:', error); return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[library:uploadBuffer] Error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('skills:list', async () => {
     try {
       const dbSkills = prepare(`SELECT as2.agent_id, as2.skill_name, as2.proficiency, as2.success_count, as2.failure_count, as2.last_used, as2.notes, ar.name as agent_name, ar.emoji as agent_emoji FROM agent_skills as2 LEFT JOIN agent_registry ar ON as2.agent_id = ar.id ORDER BY as2.agent_id, as2.proficiency DESC`).all();
       return { success: true, skills: dbSkills };
-    } catch (error: unknown) { safeLog.error('[skills:list] Error:', error); return { success: false, error: error.message, skills: [] }; }
+    } catch (error: any) { safeLog.error('[skills:list] Error:', error); return { success: false, error: error.message, skills: [] }; }
   });
 
   registerHandler('shell:openPath', async (_event, filePath: string) => {
@@ -305,6 +304,6 @@ export function registerMediaHandlers(): void {
       if (!fs.existsSync(expandedPath)) return { success: false, error: 'Path does not exist' };
       const result = await shell.openPath(expandedPath);
       return result === '' ? { success: true } : { success: false, error: result };
-    } catch (error: unknown) { return { success: false, error: error.message }; }
+    } catch (error: any) { return { success: false, error: error.message }; }
   });
 }
