@@ -3,13 +3,11 @@ import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, User
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
-import MarkdownWithMentions from './MarkdownWithMentions';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import ArtifactPanel from './ArtifactPanel';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
-import { useArtifactStore } from '../store/artifactStore';
 import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
@@ -36,8 +34,6 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
-  const { isCollapsed: artifactPanelCollapsed } = useArtifactStore();
-
   // Auto-extract artifacts from messages
   useArtifactExtraction(
     room?.messages.map(m => ({
