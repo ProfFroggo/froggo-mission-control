@@ -21,7 +21,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execFile, execSync, execFileSync } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
@@ -42,21 +42,7 @@ function sendToRenderer(channel: string, ...args: unknown[]): void {
   });
 }
 
-// ── Default email account helper ─────────────────────────────────────────────
-
-function getDefaultGogEmail(): string {
-  try {
-    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
-      timeout: 5000,
-      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
-    }).toString();
-    const gogData = JSON.parse(gogList);
-    const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
-    return accounts[0]?.email || '';
-  } catch {
-    return '';
-  }
-}
+// ── Default email account helper removed (was using execSync) ─────────────────
 
 // ── Comms cache infrastructure ───────────────────────────────────────────────
 
@@ -889,15 +875,16 @@ export function registerCommsHandlers(): void {
 
   registerHandler('inbox:filter', async (_, criteria: any) => {
     return new Promise((resolve) => {
-      try {
-        const result = execSync(
-          `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
-          { input: JSON.stringify(criteria), encoding: 'utf-8', timeout: 10000 }
-        );
-        const results = result.trim().split('\n').filter(Boolean);
+      const child = execFile(path.join(SCRIPTS_DIR, 'inbox-filter.sh'), ['filter'], {
+        encoding: 'utf-8', timeout: 10000,
+      }, (error, stdout) => {
+        if (error) { resolve({ success: false, error: error.message || 'Filter failed' }); return; }
+        const results = stdout.trim().split('\n').filter(Boolean);
         resolve({ success: true, results });
-      } catch (error: any) {
-        resolve({ success: false, error: error.message || 'Filter failed' });
+      });
+      if (child.stdin) {
+        child.stdin.write(JSON.stringify(criteria));
+        child.stdin.end();
       }
     });
   });
@@ -1064,16 +1051,32 @@ export function registerCommsHandlers(): void {
       let result: string;
       switch (platform) {
         case 'whatsapp':
-          result = execFileSync(PATHS.wacli, ['send', to, message], { encoding: 'utf-8', timeout: 30000 });
+          result = await new Promise<string>((resolve, reject) => {
+            execFile(PATHS.wacli, ['send', to, message], { encoding: 'utf-8', timeout: 30000 }, (error, stdout) => {
+              if (error) reject(error); else resolve(stdout);
+            });
+          });
           break;
         case 'telegram':
-          result = execFileSync(PATHS.tgcli, ['send', to, message, '--yes'], { encoding: 'utf-8', timeout: 30000 });
+          result = await new Promise<string>((resolve, reject) => {
+            execFile(PATHS.tgcli, ['send', to, message, '--yes'], { encoding: 'utf-8', timeout: 30000 }, (error, stdout) => {
+              if (error) reject(error); else resolve(stdout);
+            });
+          });
           break;
         case 'email':
-          result = execFileSync(PATHS.gog, ['gmail', 'send', '--to', to, '--body', message], { encoding: 'utf-8', timeout: 30000 });
+          result = await new Promise<string>((resolve, reject) => {
+            execFile(PATHS.gog, ['gmail', 'send', '--to', to, '--body', message], { encoding: 'utf-8', timeout: 30000 }, (error, stdout) => {
+              if (error) reject(error); else resolve(stdout);
+            });
+          });
           break;
         case 'discord':
-          result = execFileSync(PATHS.openclaw, ['message', 'send', '--channel', 'discord', '--to', to, '--message', message], { encoding: 'utf-8', timeout: 30000 });
+          result = await new Promise<string>((resolve, reject) => {
+            execFile(PATHS.openclaw, ['message', 'send', '--channel', 'discord', '--to', to, '--message', message], { encoding: 'utf-8', timeout: 30000 }, (error, stdout) => {
+              if (error) reject(error); else resolve(stdout);
+            });
+          });
           break;
         default:
           return { success: false, error: `Unknown platform: ${platform}` };
@@ -1339,7 +1342,11 @@ export function registerCommsHandlers(): void {
     let tryAccounts: string[] = account ? [account] : [];
     if (!account) {
       try {
-        const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
+        const gogList = await new Promise<string>((res, rej) => {
+          execFile('/opt/homebrew/bin/gog', ['auth', 'list', '--json'], {
+            timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` }
+          }, (error, stdout) => { if (error) rej(error); else res(stdout); });
+        });
         const gogData = JSON.parse(gogList);
         tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
       } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
@@ -1388,7 +1395,19 @@ export function registerCommsHandlers(): void {
   registerHandler('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
     if (!validateAccountEmail(to)) return { success: false, error: 'Invalid recipient email address' };
     if (account && !validateAccountEmail(account)) return { success: false, error: 'Invalid account email address' };
-    const acct = account || getDefaultGogEmail();
+    let acct = account || '';
+    if (!acct) {
+      try {
+        const gogList = await new Promise<string>((res, rej) => {
+          execFile('/opt/homebrew/bin/gog', ['auth', 'list', '--json'], {
+            timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` }
+          }, (error, stdout) => { if (error) rej(error); else res(stdout); });
+        });
+        const gogData = JSON.parse(gogList);
+        const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
+        acct = accounts[0]?.email || '';
+      } catch { acct = ''; }
+    }
     const title = `Email to ${to}: ${subject.slice(0, 30)}`;
     const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
     return new Promise((resolve) => {

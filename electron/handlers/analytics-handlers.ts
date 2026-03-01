@@ -11,7 +11,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
 import { registerModuleHandler } from '../ipc-registry';
 import { prepare, getSessionsDb } from '../database';
 import { safeLog } from '../logger';
@@ -137,7 +137,12 @@ export function registerAnalyticsHandlers(): void {
   registerModuleHandler('froggo-analytics', 'get-performance-report', async (_event, args?: { days?: number }) => {
     try {
       const days = args?.days || 30;
-      const result = execSync(`${FROGGO_DB_CLI} performance-report --days ${days} --json`, { encoding: 'utf-8', timeout: 10000, env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' } });
+      const result = await new Promise<string>((resolve, reject) => {
+        execFile(FROGGO_DB_CLI, ['performance-report', '--days', String(days), '--json'], {
+          encoding: 'utf-8', timeout: 10000,
+          env: { ...process.env, PATH: `${process.env.PATH || '/usr/bin:/bin'}:/usr/local/bin:/opt/homebrew/bin` }
+        }, (error, stdout) => { if (error) reject(error); else resolve(stdout); });
+      });
       return JSON.parse(result);
     } catch (err: any) { return { error: err.message, agents: [] }; }
   });
@@ -145,7 +150,12 @@ export function registerAnalyticsHandlers(): void {
   registerModuleHandler('froggo-analytics', 'get-agent-audit', async (_event, args: { agentId: string; days?: number }) => {
     try {
       const days = args.days || 30;
-      const result = execSync(`${FROGGO_DB_CLI} agent-audit ${args.agentId} --days ${days} --json`, { encoding: 'utf-8', timeout: 10000, env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' } });
+      const result = await new Promise<string>((resolve, reject) => {
+        execFile(FROGGO_DB_CLI, ['agent-audit', args.agentId, '--days', String(days), '--json'], {
+          encoding: 'utf-8', timeout: 10000,
+          env: { ...process.env, PATH: `${process.env.PATH || '/usr/bin:/bin'}:/usr/local/bin:/opt/homebrew/bin` }
+        }, (error, stdout) => { if (error) reject(error); else resolve(stdout); });
+      });
       return JSON.parse(result);
     } catch (err: any) { return { error: err.message, timeline: [] }; }
   });

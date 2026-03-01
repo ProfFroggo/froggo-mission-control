@@ -13,7 +13,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execSync, execFile } from 'child_process';
+import { execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare } from '../database';
 import { safeLog } from '../logger';
@@ -104,7 +104,7 @@ export function registerAgentHandlers(): void {
 
   registerHandler('agents:list', async () => {
     return new Promise((resolve) => {
-      exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
+      execFile(OPENCLAW, ['agents', 'list', '--json'], { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
         if (error) {
           safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
           const agents = getAgentsFromDB();
@@ -208,7 +208,7 @@ export function registerAgentHandlers(): void {
   registerHandler('agents:getActiveSessions', async () => {
     try {
       const result = await new Promise<string>((resolve, reject) => {
-        exec('openclaw sessions list --kinds agent --limit 50 --json', { encoding: 'utf-8', timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
+        execFile(OPENCLAW, ['sessions', 'list', '--kinds', 'agent', '--limit', '50', '--json'], { encoding: 'utf-8', timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
           if (error) reject(new Error(stderr || error.message));
           else resolve(stdout.trim());
         });
@@ -254,7 +254,17 @@ export function registerAgentHandlers(): void {
     const metricsScriptPath = path.join(SCRIPTS_DIR, 'agent-metrics.sh');
     for (const agentId of agents) {
       try {
-        const result = execSync(`"${metricsScriptPath}" "${agentId}"`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+        const result = await new Promise<string>((resolve, reject) => {
+          execFile(metricsScriptPath, [agentId], {
+            encoding: 'utf-8',
+            maxBuffer: 10 * 1024 * 1024,
+            timeout: 15000,
+            env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
+          }, (error, stdout) => {
+            if (error) reject(error);
+            else resolve(stdout);
+          });
+        });
         const data = JSON.parse(result);
         const m = data.metrics || {};
         const sm = data.subtask_metrics || {};
@@ -268,8 +278,8 @@ export function registerAgentHandlers(): void {
           totalActivities: am.total_activities || 0, completionActions: am.completion_actions || 0, blockedActions: am.blocked_actions || 0, progressUpdates: am.progress_updates || 0, lastActivityTimestamp: am.last_activity_timestamp || null,
           performanceTrend: trend, successRate: (m.completion_rate || 0) / 100, avgTime: m.avg_task_time_hours ? `${m.avg_task_time_hours}h` : 'N/A',
         };
-      } catch (e) {
-        safeLog.error(`Failed to get metrics for ${agentId}:`, e);
+      } catch (e: any) {
+        safeLog.error(`[agents:getMetrics] Failed for ${agentId}:`, e.message);
         metrics[agentId] = { totalTasks: 0, completedTasks: 0, completionRate: 0, avgTaskTimeHours: 0, successRate: 0, avgTime: 'N/A' };
       }
     }
@@ -401,7 +411,7 @@ export function registerAgentHandlers(): void {
       const sessionKey = `agent:${agentId}:dashboard`;
       try {
         await new Promise<void>((resolve, reject) => {
-          exec('openclaw sessions list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
+          execFile(OPENCLAW, ['sessions', 'list', '--json'], { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
             if (error) { reject(error); return; }
             try {
               const sessions = JSON.parse(stdout);
