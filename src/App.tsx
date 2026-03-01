@@ -381,21 +381,23 @@ function App() {
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >
           <PerformanceProfiler id={`${currentView}-panel`}>
-            <Suspense fallback={<LoadingPanel />}>
-              {/* Dynamic view rendering — driven by ViewRegistry */}
-              {currentView === 'contacts'
-                ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
-                : (() => {
-                    const reg = ViewRegistry.get(currentView);
-                    if (!reg) return null;
-                    const Comp = reg.component;
-                    if (currentView === 'dashboard') {
-                      return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
-                    }
-                    return <Comp />;
-                  })()
-              }
-            </Suspense>
+            <ErrorBoundary panelName={currentView} key={currentView}>
+              <Suspense fallback={<LoadingPanel />}>
+                {/* Dynamic view rendering — driven by ViewRegistry */}
+                {currentView === 'contacts'
+                  ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+                  : (() => {
+                      const reg = ViewRegistry.get(currentView);
+                      if (!reg) return null;
+                      const Comp = reg.component;
+                      if (currentView === 'dashboard') {
+                        return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
+                      }
+                      return <Comp />;
+                    })()
+                }
+              </Suspense>
+            </ErrorBoundary>
           </PerformanceProfiler>
         </main>
 
