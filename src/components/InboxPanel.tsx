@@ -166,6 +166,31 @@ export default function InboxPanel() {
         // Task items unavailable, continue with other inbox items
       }
       
+      // Also load tasks in "human-review" status (approval required)
+      try {
+        const humanReviewResult = await window.clawdbot?.tasks.list('human-review');
+        if (humanReviewResult?.success && humanReviewResult.tasks?.length > 0) {
+          const humanReviewItems = humanReviewResult.tasks
+            .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
+            .filter((t: any) => t.approval_status === 'pending') // Only show pending approvals
+            .map((t: any) => ({
+              id: `task-approval-${t.id}`, // Prefix for human approval
+              type: 'task' as const,
+              title: `🚦 Human Approval: ${t.title}`,
+              content: t.planning_notes || t.description || t.last_agent_update || 'Task requires human approval',
+              context: `Project: ${t.project || 'General'} | Priority: ${t.priority || 'p3'}`,
+              status: 'pending',
+              source_channel: 'kanban',
+              created: new Date(t.created_at || Date.now()).toISOString(),
+              metadata: JSON.stringify({ taskId: t.id, project: t.project, taskStatus: t.status, approvalRequired: true }),
+              isTask: true,
+            }));
+          allItems = [...humanReviewItems, ...allItems];
+        }
+      } catch (_e) {
+        // Human review tasks unavailable, continue
+      }
+      
       // BUGFIX: Filter out items currently being processed OR recently approved to prevent flash
       // When items are approved/rejected, they're removed optimistically but may
       // reappear on next poll if API hasn't finished updating. Exclude processing IDs and recently approved.
