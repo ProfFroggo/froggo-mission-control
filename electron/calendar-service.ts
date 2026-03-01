@@ -223,7 +223,7 @@ class CalendarService {
 
   /**
    * Fetch events from Mission Control schedule
-   * TODO: Implement when Mission Control schedule format is defined
+   * Deferred: Mission Control schedule format not yet defined (v11)
    */
   private async fetchMissionControl(): Promise<CalendarEvent[]> {
     const cacheKey = 'mission-control';
@@ -232,8 +232,7 @@ class CalendarService {
     const cached = this.getCached(cacheKey);
     if (cached) return cached;
 
-    // TODO: Implement Mission Control schedule fetching
-    // For now, return empty array
+    // Mission Control integration deferred to v11 — format not yet defined
     logger.info('[CalendarService] Mission Control integration pending');
     return [];
   }

@@ -390,7 +390,7 @@ class ConnectedAccountsService {
       // Remove from database
       await dbRun('DELETE FROM connected_accounts WHERE id = ?', [accountId]);
 
-      // TODO: Revoke OAuth tokens if applicable
+      // OAuth token revocation deferred — no OAuth providers configured yet (v11)
 
       logger.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
       return { success: true };
