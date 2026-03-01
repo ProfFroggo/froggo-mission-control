@@ -24,7 +24,7 @@ function getAnthropicApiKey(): string {
   try {
     const keyPath = path.join(os.homedir(), '.openclaw', 'anthropic.key');
     if (!key && fs.existsSync(keyPath)) key = fs.readFileSync(keyPath, 'utf-8').trim();
-  } catch { /* ignore */ }
+  } catch (e) { safeLog.debug('[AI Context] Failed to load anthropic key file:', e); }
   if (!key) {
     try {
       for (const cfgPath of [OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY]) {
@@ -43,7 +43,7 @@ function getAnthropicApiKey(): string {
         }
         if (key) break;
       }
-    } catch { /* ignore */ }
+    } catch (e) { safeLog.debug('[AI Context] Failed to load context from openclaw config:', e); }
   }
   return key;
 }
@@ -53,7 +53,7 @@ function getOpenaiApiKey(): string {
   try {
     const keyPath = path.join(os.homedir(), '.openclaw', 'openai.key');
     if (!key && fs.existsSync(keyPath)) key = fs.readFileSync(keyPath, 'utf-8').trim();
-  } catch { /* ignore */ }
+  } catch (e) { safeLog.debug('[AI Context] Failed to load openai key file:', e); }
   return key;
 }
 
@@ -136,8 +136,8 @@ export function registerAiHandlers(): void {
     else if (platform === 'discord') platformInstruction = 'This is a Discord message. Keep it concise and natural.';
     let scheduleContext = context.calendarContext || '';
     let taskCtx = context.taskContext || '';
-    if (!scheduleContext) { try { const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[]; scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; '); } catch { /* ignore */ } }
-    if (!taskCtx) { try { const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[]; taskCtx = tasks.map((t: any) => t.title).join('; '); } catch { /* ignore */ } }
+    if (!scheduleContext) { try { const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[]; scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (schedule):', e); } }
+    if (!taskCtx) { try { const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[]; taskCtx = tasks.map((t: any) => t.title).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (tasks):', e); } }
     let contextBlock = '';
     if (scheduleContext) contextBlock += `\nUser's upcoming schedule: ${scheduleContext}`;
     if (taskCtx) contextBlock += `\nUser's active tasks: ${taskCtx}`;

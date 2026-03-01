@@ -88,7 +88,7 @@ export function registerToolbarHandlers(): void {
       const isFloating = floatingToolbarWindow && !floatingToolbarWindow.isDestroyed();
       const bounds = isFloating ? floatingToolbarWindow!.getBounds() : null;
       return { success: true, isFloating, bounds };
-    } catch (error: any) { return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[Toolbar] getState error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('toolbar:resize', async (event, height: number) => {
@@ -102,7 +102,7 @@ export function registerToolbarHandlers(): void {
         win.setBounds({ x: bounds.x, y: newY, width: bounds.width, height: clampedH });
       }
       return { success: true };
-    } catch (error: any) { return { success: false, error: error.message }; }
+    } catch (error: any) { safeLog.error('[Toolbar] resize error:', error); return { success: false, error: error.message }; }
   });
 
   // NEW: toolbar:action broadcasts to all windows

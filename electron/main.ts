@@ -218,7 +218,11 @@ async function processScheduledItems() {
         const result = await xPostTweet(item.content);
         if (result.success) { updateScheduleStatus(item.id, 'completed'); } else { updateScheduleStatus(item.id, 'failed', result.error || 'Unknown tweet error'); }
         continue;
-      } catch (e: any) { safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message); }
+      } catch (e: any) {
+        safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
+        updateScheduleStatus(item.id, 'failed', (e.message || 'Tweet exception').slice(0, 500));
+        continue;
+      }
     } else if (item.type === 'email') {
       const recipient = metadata.recipient || metadata.to || '';
       const account = metadata.account || '';

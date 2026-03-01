@@ -172,6 +172,6 @@ export function registerAnalyticsHandlers(): void {
       const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
       return state.circuit_breakers || {};
-    } catch (_e) { return {}; }
+    } catch (e: any) { safeLog.error('[Analytics] Context history error:', e.message); return {}; }
   });
 }
