@@ -197,7 +197,7 @@ async function handleExecuteTweet(_: Electron.IpcMainInvokeEvent, content: strin
       }
       return { success: false, error: result.error };
     }
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[Execute] Tweet exception:', e.message);
     if (taskId) {
       execFile(FROGGO_DB, ['task-update', taskId, '--status', 'failed'], () => {});
@@ -214,7 +214,7 @@ async function handleTwitterMentions(): Promise<any> {
     const mentions = await xApi.getMentions(20);
     safeLog.log('[Twitter] Got', mentions.length, 'mentions');
     return { success: true, mentions };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[Twitter] Mentions error:', e.message);
     return { success: false, mentions: [], error: e.message };
   }
@@ -226,7 +226,7 @@ async function handleTwitterHome(_: Electron.IpcMainInvokeEvent, limit?: number)
     const tweets = await xApi.getHomeTimeline(limit || 20);
     safeLog.log('[Twitter] Got', tweets.length, 'home tweets');
     return { success: true, tweets };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[Twitter] Home error:', e.message);
     return { success: false, tweets: [], error: e.message };
   }
@@ -256,7 +256,7 @@ async function handleXSearch(_: Electron.IpcMainInvokeEvent, query: string, coun
   try {
     const tweets = await xApi.searchRecent(query, count || 20);
     return { success: true, tweets };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Search] Error:', e.message);
     return { success: false, tweets: [], error: e.message };
   }
@@ -267,7 +267,7 @@ async function handleXLike(_: Electron.IpcMainInvokeEvent, tweetId: string): Pro
   try {
     const result = await xApi.likeTweet(tweetId);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Like] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -278,7 +278,7 @@ async function handleXUnlike(_: Electron.IpcMainInvokeEvent, tweetId: string): P
   try {
     const result = await xApi.unlikeTweet(tweetId);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Unlike] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -289,7 +289,7 @@ async function handleXRetweet(_: Electron.IpcMainInvokeEvent, tweetId: string): 
   try {
     const result = await xApi.retweet(tweetId);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Retweet] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -300,7 +300,7 @@ async function handleXUnretweet(_: Electron.IpcMainInvokeEvent, tweetId: string)
   try {
     const result = await xApi.unretweet(tweetId);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Unretweet] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -315,7 +315,7 @@ async function handleXFollow(_: Electron.IpcMainInvokeEvent, username: string): 
     }
     const result = await xApi.followUser(profile.id);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Follow] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -330,7 +330,7 @@ async function handleXUnfollow(_: Electron.IpcMainInvokeEvent, username: string)
     }
     const result = await xApi.unfollowUser(profile.id);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Unfollow] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -341,7 +341,7 @@ async function handleXProfile(_: Electron.IpcMainInvokeEvent, username: string):
   try {
     const profile = await xApi.getUserProfile(username);
     return { success: true, profile };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Profile] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -355,7 +355,7 @@ async function handleXPost(_: Electron.IpcMainInvokeEvent, text: string, options
       quote: options?.quote,
     });
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Post] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -366,7 +366,7 @@ async function handleXDelete(_: Electron.IpcMainInvokeEvent, tweetId: string): P
   try {
     const result = await xApi.deleteTweet(tweetId);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Delete] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -377,7 +377,7 @@ async function handleXDm(_: Electron.IpcMainInvokeEvent, participantId: string, 
   try {
     const result = await xApi.sendDM(participantId, text);
     return result;
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:DM] Error:', e.message);
     return { success: false, error: e.message };
   }
@@ -388,7 +388,7 @@ async function handleXHome(_: Electron.IpcMainInvokeEvent, limit?: number): Prom
   try {
     const tweets = await xApi.getHomeTimeline(limit || 20);
     return { success: true, tweets };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Home] Error:', e.message);
     return { success: false, tweets: [], error: e.message };
   }
@@ -404,7 +404,7 @@ async function handleXFollowers(_: Electron.IpcMainInvokeEvent, username?: strin
     }
     const followers = await xApi.getFollowers(userId, count || 100);
     return { success: true, followers };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Followers] Error:', e.message);
     return { success: false, followers: [], error: e.message };
   }
@@ -420,7 +420,7 @@ async function handleXFollowing(_: Electron.IpcMainInvokeEvent, username?: strin
     }
     const following = await xApi.getFollowing(userId, count || 100);
     return { success: true, following };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[X:Following] Error:', e.message);
     return { success: false, following: [], error: e.message };
   }
@@ -475,7 +475,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
 
     safeLog.log(`[X/Research] Created research idea: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Research] Propose error:', error.message);
     return { success: false, error: error.message };
   }
@@ -484,7 +484,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
 async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: { status?: string; limit?: number }): Promise<any> {
   try {
     let query = 'SELECT * FROM x_research_ideas';
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.status) {
       query += ' WHERE status = ?';
@@ -502,7 +502,7 @@ async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: { s
     const ideas = stmt.all(...params);
 
     // Parse JSON fields
-    const parsed = ideas.map((idea: any) => {
+    const parsed = ideas.map((idea: Record<string, unknown>) => {
       let citations: string[] = [];
       try {
         citations = idea.citations ? JSON.parse(idea.citations) : [];
@@ -517,7 +517,7 @@ async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: { s
     });
 
     return { success: true, ideas: parsed };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Research] List error:', error.message);
     return { success: false, ideas: [], error: error.message };
   }
@@ -541,7 +541,7 @@ async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: { id
     }
 
     // Update file (add approval metadata)
-    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as Record<string, unknown>;
     if (idea && idea.file_path && fs.existsSync(idea.file_path)) {
       let content = fs.readFileSync(idea.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: approved');
@@ -555,7 +555,7 @@ async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: { id
 
     safeLog.log(`[X/Research] Approved research idea: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Research] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -579,7 +579,7 @@ async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: { id:
     }
 
     // Update file
-    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as Record<string, unknown>;
     if (idea && idea.file_path && fs.existsSync(idea.file_path)) {
       let content = fs.readFileSync(idea.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: rejected');
@@ -595,7 +595,7 @@ async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: { id:
 
     safeLog.log(`[X/Research] Rejected research idea: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Research] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -663,7 +663,7 @@ ${description}
 
     safeLog.log(`[X/Plan] Created content plan: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Plan] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -672,7 +672,7 @@ ${description}
 async function handleXPlanList(_: Electron.IpcMainInvokeEvent, filters?: { status?: string; contentType?: string; limit?: number }): Promise<any> {
   try {
     let query = 'SELECT * FROM x_content_plans WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.status) {
       query += ' AND status = ?';
@@ -695,7 +695,7 @@ async function handleXPlanList(_: Electron.IpcMainInvokeEvent, filters?: { statu
     const plans = stmt.all(...params);
 
     return { success: true, plans };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Plan] List error:', error.message);
     return { success: false, plans: [], error: error.message };
   }
@@ -719,7 +719,7 @@ async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: { id: st
     }
 
     // Update file
-    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as Record<string, unknown>;
     if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
       let content = fs.readFileSync(plan.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: approved');
@@ -733,7 +733,7 @@ async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: { id: st
 
     safeLog.log(`[X/Plan] Approved content plan: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Plan] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -757,7 +757,7 @@ async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: { id: str
     }
 
     // Update file
-    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as Record<string, unknown>;
     if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
       let content = fs.readFileSync(plan.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: rejected');
@@ -773,7 +773,7 @@ async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: { id: str
 
     safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Plan] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -802,7 +802,7 @@ async function handleXDraftCreate(_: Electron.IpcMainInvokeEvent, data: {
 
     // Create markdown file
     const dateStr = new Date(now).toISOString().split('T')[0];
-    const plan = prepare('SELECT title FROM x_content_plans WHERE id = ?').get(planId) as any;
+    const plan = prepare('SELECT title FROM x_content_plans WHERE id = ?').get(planId) as Record<string, unknown>;
     const slug = (plan?.title || 'draft').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
     const filename = `${dateStr}-${slug}-${version}.md`;
     const filePath = path.join(os.homedir(), 'froggo', 'x-content', 'drafts', filename);
@@ -846,7 +846,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
 
     safeLog.log(`[X/Draft] Created draft: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Draft] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -855,7 +855,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
 async function handleXDraftList(_: Electron.IpcMainInvokeEvent, filters?: { status?: string; planId?: string; limit?: number }): Promise<any> {
   try {
     let query = 'SELECT * FROM x_drafts WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.status) {
       query += ' AND status = ?';
@@ -878,7 +878,7 @@ async function handleXDraftList(_: Electron.IpcMainInvokeEvent, filters?: { stat
     const drafts = stmt.all(...params);
 
     // Parse JSON fields
-    const parsed = drafts.map((draft: any) => {
+    const parsed = drafts.map((draft: Record<string, unknown>) => {
       let media_paths: string[] = [];
       try {
         media_paths = draft.media_paths ? JSON.parse(draft.media_paths) : [];
@@ -893,7 +893,7 @@ async function handleXDraftList(_: Electron.IpcMainInvokeEvent, filters?: { stat
     });
 
     return { success: true, drafts: parsed };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Draft] List error:', error.message);
     return { success: false, drafts: [], error: error.message };
   }
@@ -917,7 +917,7 @@ async function handleXDraftApprove(_: Electron.IpcMainInvokeEvent, data: { id: s
     }
 
     // Update file
-    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as Record<string, unknown>;
     if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
       let content = fs.readFileSync(draft.file_path, 'utf-8');
       content = content.replace(/status: draft/, 'status: approved');
@@ -931,7 +931,7 @@ async function handleXDraftApprove(_: Electron.IpcMainInvokeEvent, data: { id: s
 
     safeLog.log(`[X/Draft] Approved draft: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Draft] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -955,7 +955,7 @@ async function handleXDraftReject(_: Electron.IpcMainInvokeEvent, data: { id: st
     }
 
     // Update file
-    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as Record<string, unknown>;
     if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
       let content = fs.readFileSync(draft.file_path, 'utf-8');
       content = content.replace(/status: draft/, 'status: rejected');
@@ -971,7 +971,7 @@ async function handleXDraftReject(_: Electron.IpcMainInvokeEvent, data: { id: st
 
     safeLog.log(`[X/Draft] Rejected draft: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Draft] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -994,9 +994,9 @@ async function handleXDraftPickImage(): Promise<any> {
 
 async function handleXAnalyticsSummary(): Promise<any> {
   try {
-    const totalPosts = (prepare("SELECT COUNT(*) as count FROM x_drafts WHERE status = 'posted'").get() as any)?.count || 0;
-    const totalApproved = (prepare("SELECT COUNT(*) as count FROM x_drafts WHERE status = 'approved'").get() as any)?.count || 0;
-    const totalDrafts = (prepare("SELECT COUNT(*) as count FROM x_drafts").get() as any)?.count || 0;
+    const totalPosts = (prepare("SELECT COUNT(*) as count FROM x_drafts WHERE status = 'posted'").get() as Record<string, unknown>)?.['count'] as number || 0;
+    const totalApproved = (prepare("SELECT COUNT(*) as count FROM x_drafts WHERE status = 'approved'").get() as Record<string, unknown>)?.['count'] as number || 0;
+    const totalDrafts = (prepare("SELECT COUNT(*) as count FROM x_drafts").get() as Record<string, unknown>)?.['count'] as number || 0;
     return {
       success: true,
       totalPosts,
@@ -1007,7 +1007,7 @@ async function handleXAnalyticsSummary(): Promise<any> {
       impressions: totalPosts * 2341,
       estimated: true,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[Analytics] Summary error:', e.message);
     return { success: false, totalPosts: 0, totalApproved: 0, totalDrafts: 0, engagementRate: 0, reach: 0, impressions: 0 };
   }
@@ -1019,7 +1019,7 @@ async function handleXAnalyticsTopContent(): Promise<any> {
       "SELECT id, content, status, created_at FROM x_drafts WHERE status IN ('posted', 'approved') ORDER BY created_at DESC LIMIT 5"
     ).all();
     return { success: true, posts };
-  } catch (e: any) {
+  } catch (e: unknown) {
     safeLog.error('[Analytics] TopContent error:', e.message);
     return { success: true, posts: [] };
   }
@@ -1038,7 +1038,7 @@ async function handleXScheduleCreate(_: Electron.IpcMainInvokeEvent, data: {
     const id = `sched-${now}`;
 
     // Verify draft exists and is approved
-    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as Record<string, unknown>;
     if (!draft) {
       throw new Error('Draft not found or not approved');
     }
@@ -1058,7 +1058,7 @@ async function handleXScheduleCreate(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Schedule] Created scheduled post: ${id} for ${new Date(scheduledFor).toISOString()}`);
     return { success: true, id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Schedule] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1082,7 +1082,7 @@ async function handleXScheduleList(_: Electron.IpcMainInvokeEvent, filters?: {
       WHERE 1=1
     `;
 
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.status) {
       query += ' AND s.status = ?';
@@ -1110,7 +1110,7 @@ async function handleXScheduleList(_: Electron.IpcMainInvokeEvent, filters?: {
     const results = stmt.all(...params);
 
     return { success: true, scheduled: results };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Schedule] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1126,7 +1126,7 @@ async function handleXScheduleUpdate(_: Electron.IpcMainInvokeEvent, data: {
     const now = Date.now();
 
     let query = 'UPDATE x_scheduled_posts SET updated_at = ?';
-    const params: any[] = [now];
+    const params: (string | number | null)[] = [now];
 
     if (scheduledFor !== undefined) {
       query += ', scheduled_for = ?';
@@ -1150,7 +1150,7 @@ async function handleXScheduleUpdate(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Schedule] Updated scheduled post: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Schedule] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1169,7 +1169,7 @@ async function handleXScheduleDelete(_: Electron.IpcMainInvokeEvent, data: { id:
 
     safeLog.log(`[X/Schedule] Deleted scheduled post: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Schedule] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1190,7 +1190,7 @@ async function handleXScheduleSimple(_: Electron.IpcMainInvokeEvent, text: strin
 
     safeLog.log(`[X/Schedule] Scheduled post: ${id} for ${new Date(scheduledTime).toISOString()}`);
     return { success: true, id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Schedule] Schedule error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1204,7 +1204,7 @@ async function handleXScheduled(): Promise<any> {
     `);
     const results = stmt.all();
     return { success: true, scheduled: results };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Scheduled] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1221,7 +1221,7 @@ async function handleXCancel(_: Electron.IpcMainInvokeEvent, id: string): Promis
 
     safeLog.log(`[X/Cancel] Cancelled scheduled post: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Cancel] Error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1233,18 +1233,18 @@ async function handleXCancel(_: Electron.IpcMainInvokeEvent, id: string): Promis
 async function handleXCampaignList(): Promise<any> {
   try {
     const rows = prepare('SELECT * FROM x_campaigns ORDER BY updated_at DESC').all();
-    const campaigns = (rows as any[]).map(r => ({
+    const campaigns = (rows as Record<string, unknown>[]).map(r => ({
       ...r,
       stages: JSON.parse(r.stages || '[]'),
     }));
     return { success: true, campaigns };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X:Campaign:List] Error:', error.message);
     return { success: false, campaigns: [], error: error.message };
   }
 }
 
-async function handleXCampaignSave(_: Electron.IpcMainInvokeEvent, campaign: any): Promise<any> {
+async function handleXCampaignSave(_: Electron.IpcMainInvokeEvent, campaign: Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
     const now = Date.now();
     const id = campaign.id || `campaign-${now}`;
@@ -1254,7 +1254,7 @@ async function handleXCampaignSave(_: Electron.IpcMainInvokeEvent, campaign: any
       .run(id, campaign.title || '', campaign.subject || '', stages, campaign.status || 'draft', campaign.start_date || null, id, now, now);
     safeLog.log(`[X:Campaign:Save] Saved campaign: ${id}`);
     return { success: true, id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X:Campaign:Save] Error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1268,7 +1268,7 @@ async function handleXCampaignDelete(_: Electron.IpcMainInvokeEvent, id: string)
     }
     safeLog.log(`[X:Campaign:Delete] Deleted campaign: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X:Campaign:Delete] Error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1354,7 +1354,7 @@ async function handleXMentionFetch(): Promise<any> {
 
     safeLog.log(`[X/Mentions] Fetched mentions: ${newCount} new, ${updatedCount} updated`);
     return { success: true, new: newCount, updated: updatedCount };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Mentions] Fetch error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1371,7 +1371,7 @@ async function handleXMentionList(_: Electron.IpcMainInvokeEvent, filters?: {
       WHERE 1=1
     `;
 
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.replyStatus) {
       query += ' AND reply_status = ?';
@@ -1394,7 +1394,7 @@ async function handleXMentionList(_: Electron.IpcMainInvokeEvent, filters?: {
     const results = stmt.all(...params);
 
     return { success: true, mentions: results };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Mentions] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1412,7 +1412,7 @@ async function handleXMentionUpdate(_: Electron.IpcMainInvokeEvent, data: {
     const now = Date.now();
 
     let query = 'UPDATE x_mentions SET updated_at = ?';
-    const params: any[] = [now];
+    const params: (string | number | null)[] = [now];
 
     if (replyStatus) {
       query += ', reply_status = ?';
@@ -1446,7 +1446,7 @@ async function handleXMentionUpdate(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Mentions] Updated mention: ${id}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Mentions] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1490,7 +1490,7 @@ async function handleXMentionReply(_: Electron.IpcMainInvokeEvent, data: {
     } else {
       throw new Error('Failed to post reply');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/Mentions] Reply error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1515,7 +1515,7 @@ async function handleXReplyGuyListHotMentions(_: Electron.IpcMainInvokeEvent, fi
       WHERE m.reply_status = 'pending'
     `;
 
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.minLikes) {
       query += ' AND like_count >= ?';
@@ -1540,7 +1540,7 @@ async function handleXReplyGuyListHotMentions(_: Electron.IpcMainInvokeEvent, fi
     const results = stmt.all(...params);
 
     return { success: true, mentions: results };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/ReplyGuy] List hot mentions error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1557,7 +1557,7 @@ async function handleXReplyGuyCreateQuickDraft(_: Electron.IpcMainInvokeEvent, d
     const id = `draft-${now}`;
 
     // Get mention details
-    const mention = prepare('SELECT * FROM x_mentions WHERE id = ?').get(mentionId) as any;
+    const mention = prepare('SELECT * FROM x_mentions WHERE id = ?').get(mentionId) as Record<string, unknown>;
     if (!mention) {
       throw new Error('Mention not found');
     }
@@ -1624,7 +1624,7 @@ ${replyText}
 
     safeLog.log(`[X/ReplyGuy] Created quick draft: ${id} (fast-track: ${fastTrack})`);
     return { success: true, id, draftPath };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/ReplyGuy] Create quick draft error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1638,7 +1638,7 @@ async function handleXReplyGuyPostNow(_: Electron.IpcMainInvokeEvent, data: {
     const now = Date.now();
 
     // Get draft
-    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as Record<string, unknown>;
     if (!draft) {
       throw new Error('Draft not found or not approved');
     }
@@ -1694,7 +1694,7 @@ async function handleXReplyGuyPostNow(_: Electron.IpcMainInvokeEvent, data: {
     } else {
       throw new Error('Failed to post tweet');
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[X/ReplyGuy] Post now error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1721,7 +1721,7 @@ async function handleXRedditCreateMonitor(_: Electron.IpcMainInvokeEvent, data: 
 
     safeLog.log(`[Reddit] Created monitor: ${id} for ${productUrl}`);
     return { success: true, monitorId: id };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Create monitor error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1734,7 +1734,7 @@ async function handleXRedditListMonitors(): Promise<any> {
     `).all();
 
     return { success: true, monitors };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] List monitors error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1745,7 +1745,7 @@ async function handleXRedditFetch(): Promise<any> {
     // Get active monitors
     const monitors = prepare(`
       SELECT * FROM x_reddit_monitors WHERE status = 'active'
-    `).all() as any[];
+    `).all() as Record<string, unknown>[];
 
     if (monitors.length === 0) {
       return { success: false, error: 'No active monitors' };
@@ -1783,7 +1783,7 @@ async function handleXRedditFetch(): Promise<any> {
 
     safeLog.log(`[Reddit] Fetch complete: ${newCount} new threads`);
     return { success: true, count: newCount };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Fetch error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1796,7 +1796,7 @@ async function handleXRedditListThreads(_: Electron.IpcMainInvokeEvent, filters?
 }): Promise<any> {
   try {
     let query = `SELECT * FROM x_reddit_threads WHERE 1=1`;
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
 
     if (filters?.status) {
       query += ' AND reply_status = ?';
@@ -1818,7 +1818,7 @@ async function handleXRedditListThreads(_: Electron.IpcMainInvokeEvent, filters?
     const threads = prepare(query).all(...params);
 
     return { success: true, threads };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] List threads error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1850,7 +1850,7 @@ async function handleXRedditGenerateDraft(_: Electron.IpcMainInvokeEvent, data: 
       const parsed = JSON.parse(stdout.trim());
       const payloads = parsed?.result?.payloads;
       if (Array.isArray(payloads) && payloads.length > 0) {
-        draft = payloads.map((p: any) => p.text || '').join('\n').trim();
+        draft = (payloads as Record<string, unknown>[]).map((p) => (p['text'] as string) || '').join('\n').trim();
       }
     } catch {
       // If JSON parse fails, use raw stdout as the draft
@@ -1862,7 +1862,7 @@ async function handleXRedditGenerateDraft(_: Electron.IpcMainInvokeEvent, data: 
     }
 
     return { success: true, draft };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Generate draft error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1885,7 +1885,7 @@ async function handleXRedditSaveDraft(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[Reddit] Saved draft for thread: ${threadId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Save draft error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1899,7 +1899,7 @@ async function handleXRedditPostReply(_: Electron.IpcMainInvokeEvent, data: {
     const { threadId, replyText } = data;
 
     // Get thread info
-    const thread = prepare('SELECT * FROM x_reddit_threads WHERE id = ?').get(threadId) as any;
+    const thread = prepare('SELECT * FROM x_reddit_threads WHERE id = ?').get(threadId) as Record<string, unknown>;
     if (!thread) {
       throw new Error('Thread not found');
     }
@@ -1918,7 +1918,7 @@ async function handleXRedditPostReply(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[Reddit] Posted reply to thread: ${threadId}`);
     return { success: true, commentId: `reddit-${now}` };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Post reply error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1941,7 +1941,7 @@ async function handleXRedditUpdateThread(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[Reddit] Updated thread ${threadId} status to ${status}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     safeLog.error('[Reddit] Update thread error:', error.message);
     return { success: false, error: error.message };
   }

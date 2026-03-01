@@ -50,36 +50,39 @@ function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
   }
 }
 
+// Extend global type for agent registry cache
+declare global { var _agentRegistryCache: Record<string, AgentRegistryEntry> | undefined; var _agentRegistryCacheTime: number | undefined; }
+
 function getAgentRegistry(): Record<string, AgentRegistryEntry> {
   const now = Date.now();
-  if (!(global as any)._agentRegistryCache || now - ((global as any)._agentRegistryCacheTime || 0) > 60000) {
-    (global as any)._agentRegistryCache = loadAgentRegistry();
-    (global as any)._agentRegistryCacheTime = now;
+  if (!globalThis._agentRegistryCache || now - (globalThis._agentRegistryCacheTime || 0) > 60000) {
+    globalThis._agentRegistryCache = loadAgentRegistry();
+    globalThis._agentRegistryCacheTime = now;
   }
-  return (global as any)._agentRegistryCache;
+  return globalThis._agentRegistryCache;
 }
 
-function getAgentsFromDB(): any[] {
+function getAgentsFromDB(): Record<string, unknown>[] {
   try {
-    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status IN ('active', 'disabled', 'training') ORDER BY name`).all() as any[];
-    return rows.map((r: any) => ({
-      id: r.id,
-      identityName: r.name || r.id,
+    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status IN ('active', 'disabled', 'training') ORDER BY name`).all() as Record<string, unknown>[];
+    return rows.map((r) => ({
+      id: r['id'],
+      identityName: r['name'] || r['id'],
       identityEmoji: '\u{1F916}',
-      description: r.role || r.description || '',
-      workspace: agentWorkspace(r.id),
+      description: r['role'] || r['description'] || '',
+      workspace: agentWorkspace(r['id'] as string),
       model: '',
-      isDefault: r.id === 'froggo',
+      isDefault: r['id'] === 'froggo',
     }));
-  } catch (e: any) {
-    safeLog.error('[Agents] DB fallback failed:', e.message);
+  } catch (e: unknown) {
+    safeLog.error('[Agents] DB fallback failed:', e instanceof Error ? e.message : String(e));
     return [];
   }
 }
 
 // Debug file logger for agent issues
 const debugLogPath = '/tmp/froggo-dashboard-debug.log';
-function debugLog(...args: any[]) {
+function debugLog(...args: unknown[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
@@ -122,8 +125,8 @@ export function registerAgentHandlers(): void {
           }
           safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
           resolve({ success: true, agents: rawAgents });
-        } catch (parseError: any) {
-          safeLog.warn('[Agents] Parse failed, falling back to DB:', parseError.message);
+        } catch (parseError: unknown) {
+          safeLog.warn('[Agents] Parse failed, falling back to DB:', parseError instanceof Error ? parseError.message : String(parseError));
           const agents = getAgentsFromDB();
           resolve({ success: agents.length > 0, agents });
         }
@@ -145,9 +148,10 @@ export function registerAgentHandlers(): void {
           const data = JSON.parse(stdout || '{}');
           safeLog.log(`[Sessions] Loaded ${data.sessions?.length || 0} sessions from gateway`);
           resolve({ success: true, sessions: data.sessions || [], count: data.count || 0, path: data.path });
-        } catch (parseError: any) {
-          safeLog.warn('[Sessions] Parse failed:', parseError.message);
-          resolve({ success: false, error: parseError.message, sessions: [] });
+        } catch (parseError: unknown) {
+          const msg = parseError instanceof Error ? parseError.message : String(parseError);
+          safeLog.warn('[Sessions] Parse failed:', msg);
+          resolve({ success: false, error: msg, sessions: [] });
         }
       });
     });
@@ -158,8 +162,8 @@ export function registerAgentHandlers(): void {
       const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status IN ('active', 'disabled', 'training') ORDER BY name`).all();
       safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
       return agents;
-    } catch (error: any) {
-      safeLog.error('[AgentRegistry] Error:', error.message);
+    } catch (error: unknown) {
+      safeLog.error('[AgentRegistry] Error:', error instanceof Error ? error.message : String(error));
       return [];
     }
   });
@@ -178,7 +182,7 @@ export function registerAgentHandlers(): void {
         safeLog.error('[WidgetManifest] Path traversal attempt:', manifestPath);
         return { error: 'Invalid manifest path' };
       }
-      let manifest: any;
+      let manifest: Record<string, unknown>;
       try {
         manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       } catch (parseError) {
@@ -199,7 +203,7 @@ export function registerAgentHandlers(): void {
       }
       safeLog.log(`[WidgetManifest] Loaded manifest for ${agentId}`);
       return manifest;
-    } catch (err: any) {
+    } catch (err: unknown) {
       safeLog.error('[WidgetManifest] Error reading manifest:', err.message);
       return { error: err.message };
     }
@@ -218,24 +222,25 @@ export function registerAgentHandlers(): void {
       const sessions = data.sessions || [];
       const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
       const activeSessions = sessions
-        .filter((s: any) => s.updatedAt && s.updatedAt > twoMinutesAgo)
-        .map((s: any) => {
+        .filter((s) => s.updatedAt && s.updatedAt > twoMinutesAgo)
+        .map((s) => {
           const parts = s.key.split(':');
-          return { agentId: parts[1], sessionKey: s.key, sessionType: parts[2] || 'main', updatedAt: s.updatedAt, totalTokens: s.totalTokens || 0, isActive: true };
+          return { agentId: parts[1], sessionKey: s.key, sessionType: parts[2] || 'main', updatedAt: s.updatedAt, totalTokens: (s as Record<string, unknown>)['totalTokens'] || 0, isActive: true };
         });
       return { success: true, sessions: activeSessions };
-    } catch (error: any) {
-      safeLog.error('[agents:getActiveSessions] Error:', error.message);
-      return { success: false, sessions: [], error: error.message };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      safeLog.error('[agents:getActiveSessions] Error:', msg);
+      return { success: false, sessions: [], error: msg };
     }
   });
 
   registerHandler('agents:getRegistry', async () => {
     const registry = getAgentRegistry();
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     for (const [id, entry] of Object.entries(registry)) {
       if (id === 'froggo') continue;
-      result[id] = { role: entry.role || 'Agent', description: (entry as any).description || '', capabilities: entry.capabilities || [], aliases: entry.aliases || [], clawdAgentId: entry.clawdAgentId || id };
+      result[id] = { role: entry.role || 'Agent', description: (entry as Record<string, unknown>)['description'] as string || '', capabilities: entry.capabilities || [], aliases: entry.aliases || [], clawdAgentId: entry.clawdAgentId || id };
     }
     return result;
   });
@@ -243,14 +248,14 @@ export function registerAgentHandlers(): void {
   registerHandler('agents:getMetrics', async () => {
     let agents: string[] = [];
     try {
-      const rows = prepare(`SELECT id FROM agent_registry WHERE status = 'active' ORDER BY id`).all() as any[];
-      agents = rows.map(r => r.id).filter(id => id !== 'froggo');
+      const rows = prepare(`SELECT id FROM agent_registry WHERE status = 'active' ORDER BY id`).all() as Record<string, unknown>[];
+      agents = rows.map(r => r['id'] as string).filter(id => id !== 'froggo');
     } catch (e) {
       safeLog.error('[agents:getMetrics] Failed to load agents from DB:', e);
       const registry = getAgentRegistry();
       agents = Object.keys(registry).filter(id => id !== 'froggo');
     }
-    const metrics: Record<string, any> = {};
+    const metrics: Record<string, Record<string, unknown>> = {};
     const metricsScriptPath = path.join(SCRIPTS_DIR, 'agent-metrics.sh');
     for (const agentId of agents) {
       try {
@@ -278,23 +283,25 @@ export function registerAgentHandlers(): void {
           totalActivities: am.total_activities || 0, completionActions: am.completion_actions || 0, blockedActions: am.blocked_actions || 0, progressUpdates: am.progress_updates || 0, lastActivityTimestamp: am.last_activity_timestamp || null,
           performanceTrend: trend, successRate: (m.completion_rate || 0) / 100, avgTime: m.avg_task_time_hours ? `${m.avg_task_time_hours}h` : 'N/A',
         };
-      } catch (e: any) {
-        safeLog.error(`[agents:getMetrics] Failed for ${agentId}:`, e.message);
+      } catch (e: unknown) {
+        safeLog.error(`[agents:getMetrics] Failed for ${agentId}:`, e instanceof Error ? e.message : String(e));
         metrics[agentId] = { totalTasks: 0, completedTasks: 0, completionRate: 0, avgTaskTimeHours: 0, successRate: 0, avgTime: 'N/A' };
       }
     }
     // Clara special handling
     if (agents.includes('clara')) {
       try {
-        const reviewMetrics = prepare(`SELECT COUNT(*) as total_reviews, SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN reviewStatus = 'rejected' THEN 1 ELSE 0 END) as rejected, SUM(CASE WHEN reviewStatus = 'pending' THEN 1 ELSE 0 END) as pending, ROUND(CAST(SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN reviewStatus IN ('approved', 'rejected') THEN 1 ELSE 0 END), 0) * 100, 1) as approval_rate FROM tasks WHERE reviewerId = 'clara' AND reviewStatus IS NOT NULL`).get() as any;
-        const recentReviews = prepare(`SELECT COUNT(*) as recent_reviews FROM tasks WHERE reviewerId = 'clara' AND reviewStatus IN ('approved', 'rejected') AND updated_at > (strftime('%s','now') - 7*24*60*60) * 1000`).get() as any;
+        const reviewMetrics = prepare(`SELECT COUNT(*) as total_reviews, SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) as approved, SUM(CASE WHEN reviewStatus = 'rejected' THEN 1 ELSE 0 END) as rejected, SUM(CASE WHEN reviewStatus = 'pending' THEN 1 ELSE 0 END) as pending, ROUND(CAST(SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) AS FLOAT) / NULLIF(SUM(CASE WHEN reviewStatus IN ('approved', 'rejected') THEN 1 ELSE 0 END), 0) * 100, 1) as approval_rate FROM tasks WHERE reviewerId = 'clara' AND reviewStatus IS NOT NULL`).get() as Record<string, unknown>;
+        const recentReviews = prepare(`SELECT COUNT(*) as recent_reviews FROM tasks WHERE reviewerId = 'clara' AND reviewStatus IN ('approved', 'rejected') AND updated_at > (strftime('%s','now') - 7*24*60*60) * 1000`).get() as Record<string, unknown>;
+        const rm = reviewMetrics || {};
+        const rr = recentReviews || {};
         metrics['clara'] = {
-          totalTasks: reviewMetrics.total_reviews || 0, completedTasks: (reviewMetrics.approved || 0) + (reviewMetrics.rejected || 0), inProgressTasks: reviewMetrics.pending || 0, reviewTasks: reviewMetrics.pending || 0, blockedTasks: 0,
-          completionRate: reviewMetrics.approval_rate || 0, avgTaskTimeHours: 0, reviewSuccessRate: reviewMetrics.approval_rate || 0, completedLast7Days: recentReviews.recent_reviews || 0,
+          totalTasks: rm['total_reviews'] || 0, completedTasks: ((rm['approved'] as number) || 0) + ((rm['rejected'] as number) || 0), inProgressTasks: rm['pending'] || 0, reviewTasks: rm['pending'] || 0, blockedTasks: 0,
+          completionRate: rm['approval_rate'] || 0, avgTaskTimeHours: 0, reviewSuccessRate: rm['approval_rate'] || 0, completedLast7Days: rr['recent_reviews'] || 0,
           p0Tasks: 0, p1Tasks: 0, p2Tasks: 0, p3Tasks: 0, totalSubtasks: 0, completedSubtasks: 0, subtaskCompletionRate: 0,
-          totalActivities: reviewMetrics.total_reviews || 0, completionActions: (reviewMetrics.approved || 0) + (reviewMetrics.rejected || 0), blockedActions: 0, progressUpdates: 0, lastActivityTimestamp: null, performanceTrend: [],
-          successRate: (reviewMetrics.approval_rate || 0) / 100, avgTime: 'N/A',
-          claraMetrics: { totalReviews: reviewMetrics.total_reviews || 0, approved: reviewMetrics.approved || 0, rejected: reviewMetrics.rejected || 0, pending: reviewMetrics.pending || 0, approvalRate: reviewMetrics.approval_rate || 0 },
+          totalActivities: rm['total_reviews'] || 0, completionActions: ((rm['approved'] as number) || 0) + ((rm['rejected'] as number) || 0), blockedActions: 0, progressUpdates: 0, lastActivityTimestamp: null, performanceTrend: [],
+          successRate: ((rm['approval_rate'] as number) || 0) / 100, avgTime: 'N/A',
+          claraMetrics: { totalReviews: rm['total_reviews'] || 0, approved: rm['approved'] || 0, rejected: rm['rejected'] || 0, pending: rm['pending'] || 0, approvalRate: rm['approval_rate'] || 0 },
         };
       } catch (e) { safeLog.error('Failed to get Clara review metrics:', e); }
     }
@@ -310,30 +317,30 @@ export function registerAgentHandlers(): void {
     const dbIds = agentAliases[validAgent] || [validAgent];
     const placeholders = dbIds.map(() => '?').join(',');
     let taskStats = { total: 0, completed: 0 };
-    let recentTasks: any[] = [];
-    let skills: any[] = [];
+    let recentTasks: Record<string, unknown>[] = [];
+    let skills: Record<string, unknown>[] = [];
     let brainNotes: string[] = [];
     let agentRules = 'AGENT.md not found';
     try {
-      const taskStatsRow = prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0)`).get(...dbIds) as any;
-      taskStats = { total: taskStatsRow?.total || 0, completed: taskStatsRow?.completed || 0 };
-    } catch (e: any) { safeLog.error(`[agents:getDetails] taskStats query failed for ${validAgent}:`, e.message); }
+      const taskStatsRow = prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0)`).get(...dbIds) as Record<string, unknown>;
+      taskStats = { total: (taskStatsRow?.['total'] as number) || 0, completed: (taskStatsRow?.['completed'] as number) || 0 };
+    } catch (e: unknown) { safeLog.error(`[agents:getDetails] taskStats query failed for ${validAgent}:`, e instanceof Error ? e.message : String(e)); }
     try {
-      const recentTasksRows = prepare(`SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10`).all(...dbIds) as any[];
-      recentTasks = (recentTasksRows || []).map((task: any) => {
+      const recentTasksRows = prepare(`SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${placeholders}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10`).all(...dbIds) as Record<string, unknown>[];
+      recentTasks = (recentTasksRows || []).map((task) => {
         let outcome = 'unknown';
-        try { const metadata = task.metadata ? JSON.parse(task.metadata) : {}; outcome = metadata.outcome || (task.status === 'done' ? 'success' : 'ongoing'); } catch (_e) { outcome = task.status === 'done' ? 'success' : 'ongoing'; }
-        return { ...task, outcome, completedAt: task.completed_at };
+        try { const metadata = task['metadata'] ? JSON.parse(task['metadata'] as string) : {}; outcome = metadata.outcome || (task['status'] === 'done' ? 'success' : 'ongoing'); } catch (_e) { outcome = task['status'] === 'done' ? 'success' : 'ongoing'; }
+        return { ...task, outcome, completedAt: task['completed_at'] };
       });
-    } catch (e: any) { safeLog.error(`[agents:getDetails] recentTasks query failed for ${validAgent}:`, e.message); }
+    } catch (e: unknown) { safeLog.error(`[agents:getDetails] recentTasks query failed for ${validAgent}:`, e instanceof Error ? e.message : String(e)); }
     try {
-      const skillsRows = prepare('SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC').all() as any[];
-      skills = (skillsRows || []).map((s: any) => ({ name: s.name, proficiency: s.proficiency, lastUsed: s.last_used, successCount: s.success_count, failureCount: s.failure_count }));
-    } catch (e: any) { safeLog.error(`[agents:getDetails] skills query failed for ${validAgent}:`, e.message); }
+      const skillsRows = prepare('SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC').all() as Record<string, unknown>[];
+      skills = (skillsRows || []).map((s) => ({ name: s['name'], proficiency: s['proficiency'], lastUsed: s['last_used'], successCount: s['success_count'], failureCount: s['failure_count'] }));
+    } catch (e: unknown) { safeLog.error(`[agents:getDetails] skills query failed for ${validAgent}:`, e instanceof Error ? e.message : String(e)); }
     try {
-      const brainNotesRows = prepare("SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20").all() as any[];
-      brainNotes = (brainNotesRows || []).map((row: any) => row.description);
-    } catch (e: any) { safeLog.error(`[agents:getDetails] brainNotes query failed for ${validAgent}:`, e.message); }
+      const brainNotesRows = prepare("SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20").all() as Record<string, unknown>[];
+      brainNotes = (brainNotesRows || []).map((row) => row['description'] as string);
+    } catch (e: unknown) { safeLog.error(`[agents:getDetails] brainNotes query failed for ${validAgent}:`, e instanceof Error ? e.message : String(e)); }
     try {
       const agentMdPath = path.join(PROJECT_ROOT, 'agents', validAgent, 'AGENT.md');
       agentRules = fs.readFileSync(agentMdPath, 'utf-8');
@@ -351,14 +358,14 @@ export function registerAgentHandlers(): void {
     try {
       prepare("INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES (?, 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')").run(skill);
       return { success: true };
-    } catch (error: any) { return { success: false, error: error.message }; }
+    } catch (error: unknown) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
   });
 
   registerHandler('agents:updateSkill', async (_event, agentId: string, skillName: string, proficiency: number) => {
     try {
       prepare("UPDATE skill_evolution SET proficiency = ?, updated_at = datetime('now') WHERE skill_name = ?").run(proficiency, skillName);
       return { success: true };
-    } catch (error: any) { return { success: false, error: error.message }; }
+    } catch (error: unknown) { return { success: false, error: error instanceof Error ? error.message : String(error) }; }
   });
 
   registerHandler('agents:search', async (_event, query: string) => {
@@ -368,7 +375,7 @@ export function registerAgentHandlers(): void {
       agentDefinitions[id] = { role: entry.role, description: entry.description, capabilities: entry.capabilities };
     }
     const q = query.toLowerCase();
-    const results: any[] = [];
+    const results: Record<string, unknown>[] = [];
     for (const [agentIdLoop, def] of Object.entries(agentDefinitions)) {
       const searchable = `${agentIdLoop} ${def.role} ${def.description} ${def.capabilities.join(' ')}`.toLowerCase();
       if (searchable.includes(q)) {
@@ -377,12 +384,12 @@ export function registerAgentHandlers(): void {
           const agentEntry = registry[agentIdLoop];
           const dbIdsArr = agentEntry?.aliases || [agentIdLoop];
           const ph = dbIdsArr.map(() => '?').join(',');
-          const countRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph})`).get(...dbIdsArr) as any;
-          taskCount = countRow?.cnt || 0;
-          const activeRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph}) AND status IN ('in-progress','todo')`).get(...dbIdsArr) as any;
-          status = (activeRow?.cnt || 0) > 0 ? 'active' : 'idle';
-          const recentRow = prepare(`SELECT title FROM tasks WHERE assigned_to IN (${ph}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1`).get(...dbIdsArr) as any;
-          recentTask = recentRow?.title || '';
+          const countRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph})`).get(...dbIdsArr) as Record<string, unknown>;
+          taskCount = (countRow?.['cnt'] as number) || 0;
+          const activeRow = prepare(`SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${ph}) AND status IN ('in-progress','todo')`).get(...dbIdsArr) as Record<string, unknown>;
+          status = ((activeRow?.['cnt'] as number) || 0) > 0 ? 'active' : 'idle';
+          const recentRow = prepare(`SELECT title FROM tasks WHERE assigned_to IN (${ph}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1`).get(...dbIdsArr) as Record<string, unknown>;
+          recentTask = (recentRow?.['title'] as string) || '';
         } catch (_e) { /* DB query failed, continue with defaults */ }
         results.push({ id: agentIdLoop, name: agentIdLoop.charAt(0).toUpperCase() + agentIdLoop.slice(1).replace(/_/g, ' '), role: def.role, description: def.description, capabilities: def.capabilities, taskCount, recentTask, status });
       }
@@ -398,7 +405,7 @@ export function registerAgentHandlers(): void {
         });
       });
       return { success: true, output: result };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[agents:spawnForTask] Error:', error.message);
       return { success: false, error: error.message };
     }
@@ -415,7 +422,7 @@ export function registerAgentHandlers(): void {
             if (error) { reject(error); return; }
             try {
               const sessions = JSON.parse(stdout);
-              const sessionExists = sessions.sessions?.some((s: any) => s.key === sessionKey);
+              const sessionExists = sessions.sessions?.some((s: Record<string, unknown>) => s['key'] === sessionKey);
               if (!sessionExists) {
                 safeLog.log(`[agents:spawnChat] Session ${sessionKey} not found, spawning...`);
                 const chatRegistry = getAgentRegistry();
@@ -429,11 +436,12 @@ export function registerAgentHandlers(): void {
             } catch (parseError) { reject(parseError); }
           });
         });
-      } catch (checkError: any) { safeLog.warn(`[agents:spawnChat] Session check failed, continuing anyway:`, checkError.message); }
+      } catch (checkError: unknown) { safeLog.warn(`[agents:spawnChat] Session check failed, continuing anyway:`, checkError instanceof Error ? checkError.message : String(checkError)); }
       return { success: true, sessionKey };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
-      return { success: false, error: error.message || 'Failed to spawn chat session' };
+      const errMsg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errMsg || 'Failed to spawn chat session' };
     }
   });
 
@@ -453,18 +461,20 @@ export function registerAgentHandlers(): void {
         try {
           const parsed = JSON.parse(extracted);
           const payloads = parsed?.result?.payloads;
-          if (Array.isArray(payloads) && payloads.length > 0) extracted = payloads.map((p: any) => p.text || '').join('\n').trim();
+          if (Array.isArray(payloads) && payloads.length > 0) extracted = (payloads as Record<string, unknown>[]).map((p) => (p['text'] as string) || '').join('\n').trim();
           if (!extracted && parsed?.result?.text) extracted = parsed.result.text;
         } catch { /* not JSON */ }
         response = extracted || 'No response from agent';
-      } catch (cliErr: any) {
-        safeLog.error(`[agents:chat] CLI agent failed: ${cliErr.message}`);
-        response = `Agent unavailable: ${cliErr.message}. Ensure openclaw gateway is running and the agent session is active.`;
+      } catch (cliErr: unknown) {
+        const cliErrMsg = cliErr instanceof Error ? cliErr.message : String(cliErr);
+        safeLog.error(`[agents:chat] CLI agent failed: ${cliErrMsg}`);
+        response = `Agent unavailable: ${cliErrMsg}. Ensure openclaw gateway is running and the agent session is active.`;
       }
       return { success: true, response };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('Agent chat error:', error);
-      return { success: false, error: error.message || 'Unknown error', response: `Error: ${error.message || 'Unknown error'}` };
+      const errMsg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: errMsg || 'Unknown error', response: `Error: ${errMsg || 'Unknown error'}` };
     }
   });
 

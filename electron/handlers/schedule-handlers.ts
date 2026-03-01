@@ -23,47 +23,47 @@ const MAX_PINS = 10;
 
 // ── Smart folder rule evaluator ──────────────────────────────────────────────
 
-function evaluateRuleSimple(rule: any, data: any): boolean {
-  if (!rule.enabled || !rule.conditions || rule.conditions.length === 0) {
+function evaluateRuleSimple(rule: Record<string, unknown>, data: Record<string, unknown>): boolean {
+  if (!rule['enabled'] || !rule['conditions'] || (rule['conditions'] as unknown[]).length === 0) {
     return false;
   }
 
-  const results = rule.conditions.map((cond: any) => {
+  const results = (rule['conditions'] as Record<string, unknown>[]).map((cond) => {
     let result = false;
 
-    switch (cond.type) {
+    switch (cond['type']) {
       case 'sender_matches':
-        result = data.sender ? data.sender.includes(cond.value) : false;
+        result = data['sender'] ? (data['sender'] as string).includes(cond['value'] as string) : false;
         break;
       case 'sender_name_contains':
-        result = data.senderName ? data.senderName.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
+        result = data['senderName'] ? (data['senderName'] as string).toLowerCase().includes(String(cond['value']).toLowerCase()) : false;
         break;
       case 'content_contains':
-        result = data.content ? data.content.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
+        result = data['content'] ? (data['content'] as string).toLowerCase().includes(String(cond['value']).toLowerCase()) : false;
         break;
       case 'platform_is':
-        result = data.platform ? data.platform.toLowerCase() === String(cond.value).toLowerCase() : false;
+        result = data['platform'] ? (data['platform'] as string).toLowerCase() === String(cond['value']).toLowerCase() : false;
         break;
       case 'priority_above':
-        result = data.priorityScore !== undefined ? data.priorityScore > Number(cond.value) : false;
+        result = data['priorityScore'] !== undefined ? (data['priorityScore'] as number) > Number(cond['value']) : false;
         break;
       case 'priority_below':
-        result = data.priorityScore !== undefined ? data.priorityScore < Number(cond.value) : false;
+        result = data['priorityScore'] !== undefined ? (data['priorityScore'] as number) < Number(cond['value']) : false;
         break;
       case 'is_urgent':
-        result = Boolean(data.isUrgent);
+        result = Boolean(data['isUrgent']);
         break;
       case 'has_attachment':
-        result = Boolean(data.hasAttachment);
+        result = Boolean(data['hasAttachment']);
         break;
       default:
         result = false;
     }
 
-    return cond.negate ? !result : result;
+    return cond['negate'] ? !result : result;
   });
 
-  return rule.operator === 'AND' ? results.every((r: boolean) => r) : results.some((r: boolean) => r);
+  return rule['operator'] === 'AND' ? results.every((r: boolean) => r) : results.some((r: boolean) => r);
 }
 
 // ── Register all schedule handlers ───────────────────────────────────────────
@@ -88,22 +88,22 @@ export function registerScheduleHandlers(): void {
           metadata TEXT
         )
       `);
-      const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as any[];
-      const items = rows.map((row: any) => ({
-        id: row.id, type: row.type, content: row.content,
-        scheduledFor: row.scheduled_for, status: row.status,
-        createdAt: row.created_at, sentAt: row.sent_at, error: row.error,
-        metadata: row.metadata ? (() => { try { return JSON.parse(row.metadata); } catch { return undefined; } })() : undefined,
+      const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as Record<string, unknown>[];
+      const items = rows.map((row) => ({
+        id: row['id'], type: row['type'], content: row['content'],
+        scheduledFor: row['scheduled_for'], status: row['status'],
+        createdAt: row['created_at'], sentAt: row['sent_at'], error: row['error'],
+        metadata: row['metadata'] ? (() => { try { return JSON.parse(row['metadata'] as string); } catch { return undefined; } })() : undefined,
       }));
       safeLog.log('[Schedule:list] Parsed', items.length, 'items');
       return { success: true, items };
-    } catch (e: any) {
+    } catch (e: unknown) {
       safeLog.error('[Schedule:list] Error:', e);
       return { success: true, items: [] };
     }
   });
 
-  registerHandler('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
+  registerHandler('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: Record<string, unknown> }) => {
     safeLog.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
     const id = `sched-${Date.now()}`;
     try {
@@ -138,7 +138,7 @@ export function registerScheduleHandlers(): void {
         return { success: true, id, warning: 'Cron job creation failed' };
       }
       return { success: true, id };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Schedule:add] Error:', error);
       return { success: false, error: error.message };
     }
@@ -153,15 +153,15 @@ export function registerScheduleHandlers(): void {
         body: JSON.stringify({ action: 'remove', jobId: id })
       }).catch((err) => safeLog.error('[Cron] Failed to remove job via API:', err));
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { success: false, error: error.message };
     }
   });
 
-  registerHandler('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => {
+  registerHandler('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: Record<string, unknown> }) => {
     try {
       const setClauses: string[] = [];
-      const params: any[] = [];
+      const params: (string | number | null)[] = [];
       if (item.type) { setClauses.push('type = ?'); params.push(item.type); }
       if (item.content) { setClauses.push('content = ?'); params.push(item.content); }
       if (item.scheduledFor) { setClauses.push('scheduled_for = ?'); params.push(item.scheduledFor); }
@@ -170,34 +170,34 @@ export function registerScheduleHandlers(): void {
       params.push(id);
       prepare(`UPDATE schedule SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { success: false, error: error.message };
     }
   });
 
   registerHandler('schedule:sendNow', async (_, id: string) => {
     try {
-      const item = prepare('SELECT * FROM schedule WHERE id = ?').get(id) as any;
+      const item = prepare('SELECT * FROM schedule WHERE id = ?').get(id) as Record<string, unknown>;
       if (!item) return { success: false, error: 'Item not found' };
 
-      if (item.type === 'tweet') {
-        const result = await xPostTweet(item.content);
+      if (item['type'] === 'tweet') {
+        const result = await xPostTweet(item['content'] as string);
         if (result.success) {
           prepare("UPDATE schedule SET status = 'completed' WHERE id = ?").run(id);
           return { success: true, id: result.id };
         } else {
           return { success: false, error: result.error };
         }
-      } else if (item.type === 'email') {
+      } else if (item['type'] === 'email') {
         let meta: Record<string, string> = {};
-        try { meta = item.metadata ? JSON.parse(item.metadata) : {}; }
+        try { meta = item['metadata'] ? JSON.parse(item['metadata'] as string) : {}; }
         catch (e) { safeLog.error('[ScheduleProcessor] Failed to parse email metadata:', e); meta = {}; }
-        const recipient = meta.recipient || meta.to || '';
-        const account = meta.account || '';
+        const recipient = meta['recipient'] || meta['to'] || '';
+        const account = meta['account'] || '';
         if (!recipient || !recipient.trim()) return { success: false, error: 'Missing email recipient' };
         if (!account || !account.trim()) return { success: false, error: 'Missing GOG account - cannot send email without account' };
         return new Promise((resolve) => {
-          execFile('/opt/homebrew/bin/gog', ['gmail', 'drafts', 'create', '--to', recipient, '--subject', meta.subject || 'No subject', '--body', item.content], {
+          execFile('/opt/homebrew/bin/gog', ['gmail', 'drafts', 'create', '--to', recipient, '--subject', meta['subject'] || 'No subject', '--body', item['content'] as string], {
             timeout: 30000,
             env: { ...process.env, GOG_ACCOUNT: account, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` }
           }, (execError) => {
@@ -206,13 +206,13 @@ export function registerScheduleHandlers(): void {
               prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(
                 status, execError ? execError.message.slice(0, 500) : null, id
               );
-            } catch (dbErr: any) { safeLog.error('[Schedule:sendNow] DB update error:', dbErr); }
+            } catch (dbErr: unknown) { safeLog.error('[Schedule:sendNow] DB update error:', dbErr); }
             resolve({ success: !execError, error: execError?.message });
           });
         });
       }
       return { success: false, error: 'Unknown item type' };
-    } catch (e: any) {
+    } catch (e: unknown) {
       return { success: false, error: e.message };
     }
   });
@@ -223,7 +223,7 @@ export function registerScheduleHandlers(): void {
     try {
       const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
       return { success: true, snoozes };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] List error:', error);
       return { success: false, snoozes: [] };
     }
@@ -233,7 +233,7 @@ export function registerScheduleHandlers(): void {
     try {
       const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
       return { success: true, snooze: row || null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] Get error:', error);
       return { success: false, snooze: null };
     }
@@ -251,7 +251,7 @@ export function registerScheduleHandlers(): void {
       }
       safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] Set error:', error);
       return { success: false, error: error.message };
     }
@@ -260,17 +260,17 @@ export function registerScheduleHandlers(): void {
   registerHandler('snooze:unset', async (_, sessionKey: string) => {
     try {
       const now = Date.now();
-      const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
+      const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as Record<string, unknown>;
       if (!snooze) return { success: true };
       getDb().transaction(() => {
         prepare('INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
-          sessionKey, snooze.snooze_until, snooze.snooze_reason || '', now, snooze.created_at
+          sessionKey, snooze['snooze_until'], snooze['snooze_reason'] || '', now, snooze['created_at']
         );
         prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);
       })();
       safeLog.log('[Snooze] Unsnoozed:', sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] Unset error:', error);
       return { success: false, error: error.message };
     }
@@ -281,7 +281,7 @@ export function registerScheduleHandlers(): void {
       prepare('UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = ?').run(sessionKey);
       safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] Mark reminder error:', error);
       return { success: false, error: error.message };
     }
@@ -292,7 +292,7 @@ export function registerScheduleHandlers(): void {
       const now = Date.now();
       const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
       return { success: true, snoozes };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] Expired list error:', error);
       return { success: false, snoozes: [] };
     }
@@ -303,7 +303,7 @@ export function registerScheduleHandlers(): void {
       const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
       const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
       return { success: true, history };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Snooze] History error:', error);
       return { success: false, history: [] };
     }
@@ -315,7 +315,7 @@ export function registerScheduleHandlers(): void {
     try {
       const pins = prepare('SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC').all();
       return { success: true, pins };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] List error:', error);
       return { success: false, pins: [] };
     }
@@ -325,7 +325,7 @@ export function registerScheduleHandlers(): void {
     try {
       const row = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
       return { success: true, pinned: !!row };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] Is-pinned error:', error);
       return { success: false, pinned: false };
     }
@@ -333,19 +333,19 @@ export function registerScheduleHandlers(): void {
 
   registerHandler('pins:pin', async (_, sessionKey: string, notes?: string) => {
     try {
-      const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
-      const currentCount = countResult?.count || 0;
+      const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as Record<string, unknown>;
+      const currentCount = countResult?.['count'] as number || 0;
       const existing = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
       if (!existing && currentCount >= MAX_PINS) {
         safeLog.error(`[Pins] Pin limit reached (${MAX_PINS} max)`);
         return { success: false, error: `Maximum ${MAX_PINS} pinned conversations allowed. Unpin another conversation first.` };
       }
-      const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
-      const nextOrder = orderResult?.next_order || 0;
+      const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as Record<string, unknown>;
+      const nextOrder = orderResult?.['next_order'] as number || 0;
       prepare('INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES (?, ?, ?)').run(sessionKey, notes || null, nextOrder);
       safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] Pin error:', error);
       return { success: false, error: error.message };
     }
@@ -356,7 +356,7 @@ export function registerScheduleHandlers(): void {
       prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
       safeLog.log('[Pins] Unpinned:', sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] Unpin error:', error);
       return { success: false, error: error.message };
     }
@@ -370,19 +370,19 @@ export function registerScheduleHandlers(): void {
         safeLog.log('[Pins] Toggled:', sessionKey, '-> unpinned');
         return { success: true, pinned: false };
       } else {
-        const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
-        const currentCount = countResult?.count || 0;
+        const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as Record<string, unknown>;
+        const currentCount = countResult?.['count'] as number || 0;
         if (currentCount >= MAX_PINS) {
           safeLog.error(`[Pins] Toggle pin limit reached (${MAX_PINS} max)`);
           return { success: false, error: `Maximum ${MAX_PINS} pinned conversations allowed. Unpin another conversation first.` };
         }
-        const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
-        const nextOrder = orderResult?.next_order || 0;
+        const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as Record<string, unknown>;
+        const nextOrder = orderResult?.['next_order'] as number || 0;
         prepare('INSERT INTO conversation_pins (session_key, pin_order) VALUES (?, ?)').run(sessionKey, nextOrder);
         safeLog.log('[Pins] Toggled:', sessionKey, '-> pinned at order', nextOrder);
         return { success: true, pinned: true };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] Toggle error:', error);
       return { success: false, error: error.message };
     }
@@ -400,7 +400,7 @@ export function registerScheduleHandlers(): void {
       }
       safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Pins] Reorder error:', error);
       return { success: false, error: 'Reorder failed' };
     }
@@ -408,9 +408,9 @@ export function registerScheduleHandlers(): void {
 
   registerHandler('pins:count', async () => {
     try {
-      const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
-      return { success: true, count: result?.count || 0 };
-    } catch (error: any) {
+      const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as Record<string, unknown>;
+      return { success: true, count: (result?.['count'] as number) || 0 };
+    } catch (error: unknown) {
       safeLog.error('[Pins] Count error:', error);
       return { success: false, count: 0 };
     }
@@ -422,7 +422,7 @@ export function registerScheduleHandlers(): void {
     try {
       const folders = prepare('SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name').all();
       return { success: true, folders };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] List error:', error);
       return { success: false, folders: [] };
     }
@@ -435,7 +435,7 @@ export function registerScheduleHandlers(): void {
     try {
       const result = prepare('INSERT INTO message_folders (name, icon, color, description) VALUES (?, ?, ?, ?)').run(folder.name, icon, color, description);
       return { success: true, folderId: Number(result.lastInsertRowid) };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Create error:', error);
       return { success: false, error: error.message };
     }
@@ -443,7 +443,7 @@ export function registerScheduleHandlers(): void {
 
   registerHandler('folders:update', async (_, folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => {
     const setParts: string[] = [];
-    const params: any[] = [];
+    const params: (string | number | null)[] = [];
     if (updates.name) { setParts.push('name = ?'); params.push(updates.name); }
     if (updates.icon) { setParts.push('icon = ?'); params.push(updates.icon); }
     if (updates.color) { setParts.push('color = ?'); params.push(updates.color); }
@@ -454,7 +454,7 @@ export function registerScheduleHandlers(): void {
     try {
       getDb().prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Update error:', error);
       return { success: false, error: error.message };
     }
@@ -464,7 +464,7 @@ export function registerScheduleHandlers(): void {
     try {
       prepare('DELETE FROM message_folders WHERE id = ?').run(folderId);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Delete error:', error);
       return { success: false, error: error.message };
     }
@@ -474,7 +474,7 @@ export function registerScheduleHandlers(): void {
     try {
       prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (?, ?, ?)').run(folderId, sessionKey, notes || null);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Assign error:', error);
       return { success: false, error: error.message };
     }
@@ -484,7 +484,7 @@ export function registerScheduleHandlers(): void {
     try {
       prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(folderId, sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Unassign error:', error);
       return { success: false, error: error.message };
     }
@@ -494,7 +494,7 @@ export function registerScheduleHandlers(): void {
     try {
       const folders = prepare('SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = ? ORDER BY f.sort_order, f.name').all(sessionKey);
       return { success: true, folders };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Get for conversation error:', error);
       return { success: false, folders: [] };
     }
@@ -504,7 +504,7 @@ export function registerScheduleHandlers(): void {
     try {
       const conversations = prepare('SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ? ORDER BY added_at DESC').all(folderId);
       return { success: true, conversations };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Folders] Get conversations error:', error);
       return { success: false, conversations: [] };
     }
@@ -514,15 +514,15 @@ export function registerScheduleHandlers(): void {
 
   registerHandler('folders:rules:list', async () => {
     try {
-      const folders = prepare('SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1').all() as any[];
-      const rules = folders.map((f: any) => {
+      const folders = prepare('SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1').all() as Record<string, unknown>[];
+      const rules = folders.map((f) => {
         try {
-          const parsed = f.rules ? JSON.parse(f.rules) : null;
-          return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
+          const parsed = f['rules'] ? JSON.parse(f['rules'] as string) : null;
+          return parsed ? { ...parsed, folderId: f['id'], folderName: f['folder_name'] } : null;
         } catch (_e) { return null; }
       }).filter(Boolean);
       return { success: true, rules };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[FolderRules] List error:', error);
       return { success: false, rules: [] };
     }
@@ -530,24 +530,24 @@ export function registerScheduleHandlers(): void {
 
   registerHandler('folders:rules:get', async (_, folderId: number) => {
     try {
-      const row = prepare('SELECT rules FROM message_folders WHERE id = ?').get(folderId) as any;
-      if (row && row.rules) {
-        const rule = JSON.parse(row.rules);
+      const row = prepare('SELECT rules FROM message_folders WHERE id = ?').get(folderId) as Record<string, unknown>;
+      if (row && row['rules']) {
+        const rule = JSON.parse(row['rules'] as string);
         return { success: true, rule };
       }
       return { success: true, rule: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[FolderRules] Get error:', error);
       return { success: false, rule: null };
     }
   });
 
-  registerHandler('folders:rules:save', async (_, folderId: number, rule: any) => {
+  registerHandler('folders:rules:save', async (_, folderId: number, rule: Record<string, unknown>) => {
     try {
       const rulesJson = JSON.stringify(rule);
       prepare('UPDATE message_folders SET rules = ?, is_smart = 1 WHERE id = ?').run(rulesJson, folderId);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[FolderRules] Save error:', error);
       return { success: false, error: error.message };
     }
@@ -557,29 +557,29 @@ export function registerScheduleHandlers(): void {
     try {
       prepare('UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ?').run(folderId);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[FolderRules] Delete error:', error);
       return { success: false, error: error.message };
     }
   });
 
-  registerHandler('folders:auto-assign', async (_, sessionKey: string, conversationData: any) => {
+  registerHandler('folders:auto-assign', async (_, sessionKey: string, conversationData: Record<string, unknown>) => {
     try {
-      const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as any[];
+      const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as Record<string, unknown>[];
       const matchedFolderIds: number[] = [];
       for (const folder of folders) {
         try {
-          const rule = JSON.parse(folder.rules);
+          const rule = JSON.parse(folder['rules'] as string);
           if (evaluateRuleSimple(rule, conversationData)) {
-            matchedFolderIds.push(folder.id);
-            prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder.id, sessionKey, 'rule');
+            matchedFolderIds.push(folder['id'] as number);
+            prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder['id'], sessionKey, 'rule');
           }
         } catch (e) {
           safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
         }
       }
       return { success: true, matchedFolderIds };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[FolderRules] Auto-assign error:', error);
       return { success: false, matchedFolderIds: [] };
     }
