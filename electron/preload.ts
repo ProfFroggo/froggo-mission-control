@@ -1019,6 +1019,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.on('marketplace:restart-required', handler);
       return () => ipcRenderer.removeListener('marketplace:restart-required', handler);
     },
+    onDeepLinkInstall: (callback: (data: { moduleId: string }) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('deep-link:install', handler);
+      return () => ipcRenderer.removeListener('deep-link:install', handler);
+    },
   },
   // Agent Packages — install/uninstall/status for agent workspace packages
   agentPackage: {

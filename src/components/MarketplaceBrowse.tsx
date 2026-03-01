@@ -381,6 +381,17 @@ export default function MarketplaceBrowse() {
     return unsub;
   }, [loadData]);
 
+  // Auto-install from deep link
+  useEffect(() => {
+    const pendingId = sessionStorage.getItem('marketplace-pending-install');
+    if (!pendingId || loading || !modules.length) return;
+    sessionStorage.removeItem('marketplace-pending-install');
+    const mod = modules.find(m => m.id === pendingId);
+    if (mod && !installedMap[mod.id]?.installed) {
+      handleInstall(mod);
+    }
+  }, [modules, loading, installedMap]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   async function handleInstall(mod: RegistryModule) {

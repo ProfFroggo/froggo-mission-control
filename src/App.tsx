@@ -155,6 +155,17 @@ function App() {
     return () => cleanup?.();
   }, []);
 
+  // Deep link: openclaw://install/module-id → navigate to marketplace
+  useEffect(() => {
+    const mp = (window as any).clawdbot?.marketplace;
+    if (!mp?.onDeepLinkInstall) return;
+    const unsub = mp.onDeepLinkInstall((data: { moduleId: string }) => {
+      sessionStorage.setItem('marketplace-pending-install', data.moduleId);
+      setCurrentView('marketplace');
+    });
+    return unsub;
+  }, []);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
