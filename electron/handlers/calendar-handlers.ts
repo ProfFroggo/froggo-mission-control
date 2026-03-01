@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec, execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 import { FROGGO_DB } from '../paths';
 import { calendarService } from '../calendar-service';
@@ -162,7 +162,7 @@ export function registerCalendarHandlers(): void {
     setParts.push('updated_at = ?'); params.push(Date.now());
     params.push(eventId);
     try {
-      db.prepare(`UPDATE calendar_events SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+      getDb().prepare(`UPDATE calendar_events SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
       const updatedEvent = prepare(
         'SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id = ?'
       ).get(eventId);

@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BrowserWindow, dialog, shell } from 'electron';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 import { UPLOADS_DIR, LIBRARY_DIR } from '../paths';
 
@@ -139,7 +139,7 @@ export function registerMediaHandlers(): void {
     }
     
     // Create table if not exists
-    db.exec(`CREATE TABLE IF NOT EXISTS library (
+    getDb().exec(`CREATE TABLE IF NOT EXISTS library (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       path TEXT NOT NULL,
@@ -211,7 +211,7 @@ export function registerMediaHandlers(): void {
     const stats = fs.statSync(destPath);
     const cat = inferFileCategory(fileName);
     try {
-      db.exec(`CREATE TABLE IF NOT EXISTS library (id TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, category TEXT DEFAULT 'other', size INTEGER, mime_type TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), linked_tasks TEXT, tags TEXT)`);
+      getDb().exec(`CREATE TABLE IF NOT EXISTS library (id TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, category TEXT DEFAULT 'other', size INTEGER, mime_type TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), linked_tasks TEXT, tags TEXT)`);
       prepare('INSERT INTO library (id, name, path, category, size) VALUES (?, ?, ?, ?, ?)').run(fileId, fileName, destPath, cat, stats.size);
       return { success: true, file: { id: fileId, name: fileName, path: destPath, category: cat, size: stats.size } };
     } catch (error: any) { return { success: false, error: error.message }; }

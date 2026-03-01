@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { registerHandler } from './ipc-registry';
-import { db } from './database';
+import { getDb } from './database';
 import { createLogger } from './utils/logger';
 import { FROGGO_DB_CLI, SHELL_PATH } from './paths';
 import { execFile } from 'child_process';
@@ -43,12 +43,12 @@ async function handleMemoryStatus(): Promise<MemoryStatusResult> {
     const lastRotations: Record<string, string | null> = {};
     try {
       // Check if memory_archive table exists
-      const tableCheck = db.prepare(
+      const tableCheck = getDb().prepare(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='memory_archive'"
       ).get();
 
       if (tableCheck) {
-        const rows = db.prepare(
+        const rows = getDb().prepare(
           'SELECT agent_id, COUNT(*) as cnt, MAX(archived_at) as last_rotation FROM memory_archive GROUP BY agent_id'
         ).all() as Array<{ agent_id: string; cnt: number; last_rotation: string | null }>;
         for (const row of rows) {

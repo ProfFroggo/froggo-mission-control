@@ -24,7 +24,7 @@ import * as path from 'path';
 import { exec, execFile } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 import {
   SCRIPTS_DIR, TOOLS_DIR, DATA_DIR,
@@ -1191,7 +1191,7 @@ export function registerCommsHandlers(): void {
   registerHandler('conversations:delete', async (_, sessionKey: string) => {
     safeLog.log('[Conversations] Delete:', sessionKey);
     try {
-      db.transaction(() => {
+      getDb().transaction(() => {
         prepare('DELETE FROM conversation_folders WHERE session_key = ?').run(sessionKey);
         prepare("DELETE FROM comms_cache WHERE (platform || ':' || sender) = ?").run(sessionKey);
         prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);

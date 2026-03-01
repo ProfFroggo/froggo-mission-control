@@ -15,7 +15,7 @@
 import { dialog } from 'electron';
 import crypto from 'node:crypto';
 import { registerHandler } from '../ipc-registry';
-import { db } from '../database';
+import { getDb } from '../database';
 import {
   storeModuleSecret,
   hasModuleSecret,
@@ -116,7 +116,7 @@ export function registerModuleIntegrationHandlers(): void {
     'module:integration:get',
     async (_event, moduleId: string) => {
       try {
-        const row = db.prepare('SELECT * FROM module_integrations WHERE module_id = ?').get(moduleId) as Record<string, unknown> | undefined;
+        const row = getDb().prepare('SELECT * FROM module_integrations WHERE module_id = ?').get(moduleId) as Record<string, unknown> | undefined;
         if (row) {
           return {
             success: true,
@@ -130,7 +130,7 @@ export function registerModuleIntegrationHandlers(): void {
         // No row — create a new pending integration record
         const id = crypto.randomUUID();
         const now = Date.now();
-        db.prepare(
+        getDb().prepare(
           `INSERT INTO module_integrations (id, module_id, status, wizard_step, wizard_data, created_at, updated_at)
            VALUES (?, ?, 'pending', 0, '{}', ?, ?)`,
         ).run(id, moduleId, now, now);
@@ -161,7 +161,7 @@ export function registerModuleIntegrationHandlers(): void {
     'module:integration:upsert',
     async (_event, moduleId: string, step: number, wizardData: Record<string, unknown>) => {
       try {
-        db.prepare(
+        getDb().prepare(
           `UPDATE module_integrations SET wizard_step = ?, wizard_data = ?, updated_at = ? WHERE module_id = ?`,
         ).run(step, JSON.stringify(wizardData), Date.now(), moduleId);
         return { success: true };
@@ -179,7 +179,7 @@ export function registerModuleIntegrationHandlers(): void {
     async (_event, moduleId: string) => {
       try {
         const now = Date.now();
-        db.prepare(
+        getDb().prepare(
           `UPDATE module_integrations SET status = 'active', completed_at = ?, updated_at = ? WHERE module_id = ?`,
         ).run(now, now, moduleId);
         return { success: true };

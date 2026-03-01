@@ -15,7 +15,7 @@ import { dialog } from 'electron';
 import crypto from 'node:crypto';
 import semver from 'semver';
 import { registerHandler } from '../ipc-registry';
-import { db } from '../database';
+import { getDb } from '../database';
 import { deleteModuleBridgeDir } from '../cred-store-bridge';
 import { ModuleRegistrySchema, type ModuleRegistry } from '../marketplace-schema';
 import { createLogger } from '../utils/logger';
@@ -95,7 +95,7 @@ export function registerMarketplaceHandlers(): void {
     async (_event, moduleId: string, name: string, version: string) => {
       try {
         const now = Date.now();
-        db.prepare(
+        getDb().prepare(
           `INSERT OR REPLACE INTO installed_modules
            (id, name, installed_version, enabled, installed_at, updated_at, source, sha256, registry_url)
            VALUES (?, ?, ?, 1, ?, ?, 'marketplace', '', ?)`,
@@ -131,11 +131,11 @@ export function registerMarketplaceHandlers(): void {
       deleteModuleBridgeDir(moduleId);
 
       // Delete from installed_modules
-      db.prepare('DELETE FROM installed_modules WHERE id = ?').run(moduleId);
+      getDb().prepare('DELETE FROM installed_modules WHERE id = ?').run(moduleId);
 
       // Delete integration record — DELETE instead of status UPDATE because
       // module_integrations.status CHECK constraint only allows 'pending','active','failed'
-      db.prepare('DELETE FROM module_integrations WHERE module_id = ?').run(moduleId);
+      getDb().prepare('DELETE FROM module_integrations WHERE module_id = ?').run(moduleId);
 
       logger.info(`[Marketplace] Uninstalled module "${moduleId}"`);
       return { success: true, uninstalled: true };
@@ -149,7 +149,7 @@ export function registerMarketplaceHandlers(): void {
   // Check if a module is installed by ID
   registerHandler('marketplace:module:status', async (_event, moduleId: string) => {
     try {
-      const row = db.prepare('SELECT * FROM installed_modules WHERE id = ?').get(moduleId) as Record<string, unknown> | undefined;
+      const row = getDb().prepare('SELECT * FROM installed_modules WHERE id = ?').get(moduleId) as Record<string, unknown> | undefined;
       return {
         success: true,
         installed: !!row,
@@ -171,7 +171,7 @@ export function registerMarketplaceHandlers(): void {
       }
       const { registry } = result as { success: true; registry: ModuleRegistry };
 
-      const installed = db.prepare('SELECT id, installed_version FROM installed_modules WHERE enabled = 1').all() as Array<{
+      const installed = getDb().prepare('SELECT id, installed_version FROM installed_modules WHERE enabled = 1').all() as Array<{
         id: string;
         installed_version: string;
       }>;
