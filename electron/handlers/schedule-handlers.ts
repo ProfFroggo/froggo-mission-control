@@ -15,7 +15,7 @@
 
 import { execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 import { postTweet as xPostTweet } from '../x-api-client';
 
@@ -75,7 +75,7 @@ export function registerScheduleHandlers(): void {
   registerHandler('schedule:list', async () => {
     safeLog.log('[Schedule:list] Called');
     try {
-      db.exec(`
+      getDb().exec(`
         CREATE TABLE IF NOT EXISTS schedule (
           id TEXT PRIMARY KEY,
           type TEXT NOT NULL,
@@ -107,7 +107,7 @@ export function registerScheduleHandlers(): void {
     safeLog.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
     const id = `sched-${Date.now()}`;
     try {
-      db.exec(`
+      getDb().exec(`
         CREATE TABLE IF NOT EXISTS schedule (
           id TEXT PRIMARY KEY,
           type TEXT NOT NULL,
@@ -262,7 +262,7 @@ export function registerScheduleHandlers(): void {
       const now = Date.now();
       const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
       if (!snooze) return { success: true };
-      db.transaction(() => {
+      getDb().transaction(() => {
         prepare('INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
           sessionKey, snooze.snooze_until, snooze.snooze_reason || '', now, snooze.created_at
         );
@@ -452,7 +452,7 @@ export function registerScheduleHandlers(): void {
     if (setParts.length === 0) return { success: false, error: 'No updates provided' };
     params.push(folderId);
     try {
-      db.prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+      getDb().prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
       return { success: true };
     } catch (error: any) {
       safeLog.error('[Folders] Update error:', error);

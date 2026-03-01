@@ -13,7 +13,7 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { registerHandler } from './ipc-registry';
 import { X_API_CLI, SHELL_PATH } from './paths';
-import { prepare, db } from './database';
+import { prepare, getDb } from './database';
 import { createLogger } from './utils/logger';
 
 const logger = createLogger('XPublishing');
@@ -236,10 +236,10 @@ export async function postThread(tweets: string[]): Promise<ThreadResult> {
  */
 function ensureScheduledPostsMetadata(): void {
   try {
-    const cols = (db.prepare("PRAGMA table_info(scheduled_posts)").all() as Array<{ name: string }>);
+    const cols = (getDb().prepare("PRAGMA table_info(scheduled_posts)").all() as Array<{ name: string }>);
     const hasMetadata = cols.some(c => c.name === 'metadata');
     if (!hasMetadata) {
-      db.exec("ALTER TABLE scheduled_posts ADD COLUMN metadata TEXT");
+      getDb().exec("ALTER TABLE scheduled_posts ADD COLUMN metadata TEXT");
       logger.debug('[XPublish] Added metadata column to scheduled_posts table');
     }
   } catch (e: any) {

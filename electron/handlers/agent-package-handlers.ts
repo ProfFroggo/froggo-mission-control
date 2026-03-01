@@ -20,7 +20,7 @@
 import * as fs from 'node:fs';
 import { dialog } from 'electron';
 import { registerHandler } from '../ipc-registry';
-import { db } from '../database';
+import { getDb } from '../database';
 import { deleteModuleBridgeDir } from '../cred-store-bridge';
 import {
   provisionAgentWorkspace,
@@ -89,7 +89,7 @@ export function registerAgentPackageHandlers(): void {
 
       // Step 3: Insert into installed_agents
       const now = Date.now();
-      db.prepare(
+      getDb().prepare(
         `INSERT OR REPLACE INTO installed_agents
          (id, agent_id, name, installed_version, workspace_path, installed_at, updated_at, source, sha256, registry_url)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'marketplace', ?, ?)`,
@@ -128,7 +128,7 @@ export function registerAgentPackageHandlers(): void {
   registerHandler('agent-package:uninstall', async (_event, packageId: string) => {
     try {
       // Look up the installed agent by package ID
-      const row = db.prepare('SELECT * FROM installed_agents WHERE id = ?').get(packageId) as Record<string, unknown> | undefined;
+      const row = getDb().prepare('SELECT * FROM installed_agents WHERE id = ?').get(packageId) as Record<string, unknown> | undefined;
       if (!row) {
         return { success: false, error: `Agent package "${packageId}" is not installed` };
       }
@@ -163,7 +163,7 @@ export function registerAgentPackageHandlers(): void {
       deleteModuleBridgeDir(packageId);
 
       // Delete DB row
-      db.prepare('DELETE FROM installed_agents WHERE id = ?').run(packageId);
+      getDb().prepare('DELETE FROM installed_agents WHERE id = ?').run(packageId);
 
       logger.info(`[AgentPackage] Uninstalled agent package "${packageId}" (workspace retained at ${workspacePath})`);
       return { success: true, uninstalled: true, gatewayRestartRequired: true };
@@ -178,7 +178,7 @@ export function registerAgentPackageHandlers(): void {
   // Check if an agent package is installed by its package ID.
   registerHandler('agent-package:status', async (_event, packageId: string) => {
     try {
-      const row = db.prepare('SELECT * FROM installed_agents WHERE id = ?').get(packageId) as Record<string, unknown> | undefined;
+      const row = getDb().prepare('SELECT * FROM installed_agents WHERE id = ?').get(packageId) as Record<string, unknown> | undefined;
       return {
         success: true,
         installed: !!row,
@@ -194,7 +194,7 @@ export function registerAgentPackageHandlers(): void {
   // List all installed agent packages ordered by install time (newest first).
   registerHandler('agent-package:list', async (_event) => {
     try {
-      const rows = db.prepare('SELECT * FROM installed_agents ORDER BY installed_at DESC').all() as Array<Record<string, unknown>>;
+      const rows = getDb().prepare('SELECT * FROM installed_agents ORDER BY installed_at DESC').all() as Array<Record<string, unknown>>;
       return { success: true, agents: rows };
     } catch (err: any) {
       logger.error('[AgentPackage] list error:', err.message);

@@ -25,8 +25,8 @@ import { registerSearchHandlers } from './search-service';
 import { registerKnowledgeHandlers } from './knowledge-service';
 import { registerAllHandlers, startCommsPolling, startEmailAutoCheck } from './handlers/index';
 import { registerOnboardingHandlers } from './onboarding-service';
-import { prepare, closeDb, db } from './database';
-import { DATA_DIR } from './paths';
+import { prepare, closeDb, getDb } from './database';
+import { DATA_DIR, verifyPaths, PathCheckResult } from './paths';
 import { runMigrations } from './migrations';
 
 // ============== SAFE LOGGER (EPIPE-proof) ==============
@@ -289,7 +289,7 @@ app.whenReady().then(() => {
   }
 
   // Run database migrations
-  runMigrations(db);
+  runMigrations(getDb());
 
   // Initialize X API tokens from secret store
   try { initXApiTokens(); } catch (err) { safeLog.error('[Main] Failed to initialize X API tokens:', err); }

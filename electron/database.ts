@@ -3,6 +3,10 @@
  *
  * Provides in-process DB access with prepared statement cache.
  * Eliminates ~150ms child_process overhead per query.
+ *
+ * Main DB (froggo.db) uses lazy initialization via getDb() so the
+ * app can start and show a native error dialog when the file is missing,
+ * rather than crashing silently at module load time.
  */
 
 import Database from 'better-sqlite3';
@@ -16,17 +20,27 @@ const logger = createLogger('Database');
 const FROGGO_DB_PATH = FROGGO_DB;
 const SCHEDULE_DB_PATH = SCHEDULE_DB;
 
-// Main database connection (froggo.db)
-export const db = new Database(FROGGO_DB_PATH, { fileMustExist: true });
+// Lazy main database connection (froggo.db)
+let mainDb: Database.Database | null = null;
 
-// Enable WAL mode for concurrent read performance
-db.pragma('journal_mode = WAL');
-db.pragma('wal_autocheckpoint = 1000');
-db.pragma('synchronous = normal');   // Reduce fsync frequency. Safe with WAL mode.
-db.pragma('cache_size = -32000');    // 32MB page cache (negative = KB). Default is 2MB.
-db.pragma('temp_store = memory');    // Temp tables/indices in RAM, not disk.
-db.pragma('mmap_size = 134217728'); // 128MB memory-mapped I/O. Reduces syscalls.
-db.pragma('busy_timeout = 5000');   // 5s retry on lock instead of immediate SQLITE_BUSY.
+/**
+ * Get the main database connection (lazy initialization).
+ * Throws if froggo.db does not exist (fileMustExist: true).
+ * Call verifyPaths() before the first getDb() to surface a friendly error.
+ */
+export function getDb(): Database.Database {
+  if (!mainDb) {
+    mainDb = new Database(FROGGO_DB_PATH, { fileMustExist: true });
+    mainDb.pragma('journal_mode = WAL');
+    mainDb.pragma('wal_autocheckpoint = 1000');
+    mainDb.pragma('synchronous = normal');   // Reduce fsync frequency. Safe with WAL mode.
+    mainDb.pragma('cache_size = -32000');    // 32MB page cache (negative = KB). Default is 2MB.
+    mainDb.pragma('temp_store = memory');    // Temp tables/indices in RAM, not disk.
+    mainDb.pragma('mmap_size = 134217728'); // 128MB memory-mapped I/O. Reduces syscalls.
+    mainDb.pragma('busy_timeout = 5000');   // 5s retry on lock instead of immediate SQLITE_BUSY.
+  }
+  return mainDb;
+}
 
 // Prepared statement cache
 const statementCache = new Map<string, Database.Statement>();
@@ -38,7 +52,7 @@ const statementCache = new Map<string, Database.Statement>();
  */
 export function prepare(sql: string): Database.Statement {
   if (!statementCache.has(sql)) {
-    statementCache.set(sql, db.prepare(sql));
+    statementCache.set(sql, getDb().prepare(sql));
   }
   return statementCache.get(sql)!;
 }
@@ -118,7 +132,7 @@ export function getSessionsDb(): Database.Database | null {
  * @returns The return value of fn
  */
 export function runTransaction<T>(fn: () => T): T {
-  const wrapped = db.transaction(fn);
+  const wrapped = getDb().transaction(fn);
   return wrapped();
 }
 
@@ -136,6 +150,16 @@ export function closeDb(): void {
     }
   });
   statementCache.clear();
+
+  // Close main DB if open
+  if (mainDb) {
+    try {
+      mainDb.close();
+    } catch (error) {
+      logger.error('[Database] Failed to close froggo.db:', error);
+    }
+    mainDb = null;
+  }
 
   // Close schedule DB if open
   if (scheduleDb) {
@@ -169,11 +193,4 @@ export function closeDb(): void {
 
   // Close all per-book writing databases
   closeAllBookDbs();
-
-  // Close main DB
-  try {
-    db.close();
-  } catch (error) {
-    logger.error('[Database] Failed to close froggo.db:', error);
-  }
 }

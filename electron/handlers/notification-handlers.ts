@@ -8,7 +8,7 @@
  */
 
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 
 export function registerNotificationHandlers(): void {
@@ -44,7 +44,7 @@ export function registerNotificationHandlers(): void {
         if (settings.notes !== undefined) { setParts.push('notes = ?'); params.push(settings.notes || ''); }
         if (setParts.length === 0) return { success: false, error: 'No updates provided' };
         params.push(sessionKey);
-        db.prepare('UPDATE conversation_notification_settings SET ' + setParts.join(', ') + ' WHERE session_key = ?').run(...params);
+        getDb().prepare('UPDATE conversation_notification_settings SET ' + setParts.join(', ') + ' WHERE session_key = ?').run(...params);
       } else {
         const notificationLevel = settings.notification_level || 'all';
         const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
@@ -108,7 +108,7 @@ export function registerNotificationHandlers(): void {
       if (defaults.enable_batching !== undefined) { setParts.push('enable_batching = ?'); params.push(defaults.enable_batching ? 1 : 0); }
       if (defaults.batch_interval_minutes !== undefined) { setParts.push('batch_interval_minutes = ?'); params.push(defaults.batch_interval_minutes); }
       if (setParts.length === 0) return { success: false, error: 'No updates provided' };
-      db.prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
+      getDb().prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
       return { success: true };
     } catch (error: any) {
       safeLog.error('[NotificationSettings] Set global defaults error:', error);

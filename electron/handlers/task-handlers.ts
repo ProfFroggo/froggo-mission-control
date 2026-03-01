@@ -21,7 +21,7 @@ import * as path from 'path';
 import { execFile } from 'child_process';
 import { shell } from 'electron';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { safeLog } from '../logger';
 import { emitTaskEvent } from '../events';
 import { SCRIPTS_DIR } from '../paths';
@@ -332,7 +332,7 @@ async function handleTaskArchiveDone(): Promise<{ success: boolean; count?: numb
   try {
     const now = Date.now();
 
-    const archive = db.transaction(() => {
+    const archive = getDb().transaction(() => {
       const result = prepare(
         'UPDATE tasks SET archived = 1, updated_at = ? WHERE status = ? AND (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)'
       ).run(now, 'done');

@@ -12,7 +12,7 @@ import * as path from 'path';
 import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { registerHandler } from '../ipc-registry';
-import { prepare, db } from '../database';
+import { prepare, getDb } from '../database';
 import { validateFsPath } from '../fs-validation';
 import { secureExec, getAuditLog, validateCommand } from '../shell-security';
 import { safeLog } from '../logger';
@@ -112,14 +112,14 @@ export function registerMiscHandlers(): void {
   // Module Builder persistence
   registerHandler('module:list', async () => {
     try {
-      const rows = db.prepare(`SELECT id, name, description, status, overall_progress, created_at, updated_at FROM module_specs WHERE status != 'archived' ORDER BY updated_at DESC`).all();
+      const rows = getDb().prepare(`SELECT id, name, description, status, overall_progress, created_at, updated_at FROM module_specs WHERE status != 'archived' ORDER BY updated_at DESC`).all();
       return { success: true, modules: rows };
     } catch (error: any) { safeLog.error('[ModuleBuilder] list error:', error.message); return { success: false, modules: [], error: error.message }; }
   });
 
   registerHandler('module:get', async (_event, id: string) => {
     try {
-      const row = db.prepare('SELECT * FROM module_specs WHERE id = ?').get(id) as any;
+      const row = getDb().prepare('SELECT * FROM module_specs WHERE id = ?').get(id) as any;
       if (!row) return { success: false, error: 'not found' };
       row.spec = JSON.parse(row.spec || '{}');
       row.conversation = JSON.parse(row.conversation || '[]');
@@ -131,9 +131,9 @@ export function registerMiscHandlers(): void {
   registerHandler('module:save', async (_event, data: any) => {
     try {
       const now = Date.now();
-      const existing = db.prepare('SELECT created_at FROM module_specs WHERE id = ?').get(data.id) as any;
+      const existing = getDb().prepare('SELECT created_at FROM module_specs WHERE id = ?').get(data.id) as any;
       const createdAt = existing?.created_at || data.created_at || now;
-      db.prepare(`INSERT OR REPLACE INTO module_specs (id, name, description, status, spec, conversation, conversation_state, overall_progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      getDb().prepare(`INSERT OR REPLACE INTO module_specs (id, name, description, status, spec, conversation, conversation_state, overall_progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
         data.id, data.name || '', data.description || '', data.status || 'in-progress',
         JSON.stringify(data.spec || {}), JSON.stringify(data.conversation || []),
         JSON.stringify(data.conversation_state || {}), data.overall_progress || 0, createdAt, now
@@ -144,7 +144,7 @@ export function registerMiscHandlers(): void {
 
   registerHandler('module:delete', async (_event, id: string) => {
     try {
-      db.prepare('UPDATE module_specs SET status = ?, updated_at = ? WHERE id = ?').run('archived', Date.now(), id);
+      getDb().prepare('UPDATE module_specs SET status = ?, updated_at = ? WHERE id = ?').run('archived', Date.now(), id);
       return { success: true };
     } catch (error: any) { safeLog.error('[ModuleBuilder] delete error:', error.message); return { success: false, error: error.message }; }
   });
