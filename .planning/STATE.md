@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 60 — Onboarding First Run
-Plan: 03 of 3
+Phase: 69 — DMG Build Pipeline
+Plan: 01 of 1
 Status: Phase complete
-Last activity: 2026-02-28 — Completed 60-03-PLAN.md (Wire OnboardingWizard into App.tsx)
+Last activity: 2026-03-01 — Completed 69-01-PLAN.md (Configure electron-builder for DMG output with ASAR and entitlements)
 
 Progress: [██████░░░░░░░░░░░░░░] 24%
 
@@ -46,6 +46,7 @@ Progress: [██████░░░░░░░░░░░░░░] 24%
 | 58 | 5/5 | ~34 min | ~7 min |
 | 59 | 5/5 | ~18 min | ~4 min |
 | 60 | 3/3 | ~9 min | ~3 min |
+| 69 | 1/1 | ~2 min | ~2 min |
 
 ## Accumulated Context
 
@@ -59,7 +60,10 @@ Progress: [██████░░░░░░░░░░░░░░] 24%
 - Obsidian-style module system (same-process, manifest.json, self-registration)
 - Feature-level toggles only (not sub-feature)
 - Credential bridge: 0600 files at ~/.openclaw/credentials/dispatcher/ (not macOS Keychain CLI)
-- Module "install" = feature-flag toggle for compiled-in modules (no runtime dynamic import — ASAR broken)
+- Module "install" = feature-flag toggle for compiled-in modules (no runtime dynamic import — ASAR is enabled in prod)
+- ASAR enabled in prod builds: native modules (better-sqlite3, sqlite3) use asarUnpack; do NOT add app-sandbox entitlement (execFile to /opt/homebrew/bin/* would be blocked)
+- Prod build identity is '-' (ad-hoc signing); afterPack re-signs after fuse flip to prevent SIGKILL
+- entitlements at build/entitlements.mac.plist (not repo root entitlements.plist)
 - Module view ownership: modules are sole registrars for their view IDs
 - Only registerModuleHandler() channels are lifecycle-managed; registerHandler() channels are permanent (legacy-safe)
 - moduleFactories Map persists handler references across unregister cycles — NOT cleared on disable
@@ -87,8 +91,8 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-28 UTC
-Stopped at: Completed 60-03-PLAN.md (Phase 60 complete)
+Last session: 2026-03-01 UTC
+Stopped at: Completed 69-01-PLAN.md (Phase 69 complete)
 Resume file: None
 
 ### Hourly Alignment Checks
