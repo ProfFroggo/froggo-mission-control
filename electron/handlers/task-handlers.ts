@@ -18,12 +18,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
+import { shell } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
 import { safeLog } from '../logger';
 import { emitTaskEvent } from '../events';
 import { SCRIPTS_DIR } from '../paths';
+
+// PATH env for child processes that call froggo-db or openclaw by name
+const CHILD_ENV = { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` };
 
 // ── File category helpers (for attachments:listAll) ──────────────────────────
 
@@ -118,7 +122,7 @@ async function handleTaskSync(
   safeLog.log('[Tasks] Sync called with:', JSON.stringify(task));
 
   return new Promise((resolve) => {
-    exec(`froggo-db task-get "${task.id}"`, { timeout: 5000 }, (getError, getStdout) => {
+    execFile('froggo-db', ['task-get', task.id], { timeout: 5000, env: CHILD_ENV }, (getError, getStdout) => {
       if (!getError && getStdout && getStdout.includes('"id"')) {
         safeLog.log('[Tasks] Task already exists:', task.id);
         resolve({ success: true });
@@ -273,10 +277,8 @@ async function handleTaskStart(
   _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const cmd = `froggo-db task-start "${taskId}"`;
-
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error) => {
+    execFile('froggo-db', ['task-start', taskId], { timeout: 10000, env: CHILD_ENV }, (error) => {
       resolve({ success: !error });
     });
   });
@@ -287,11 +289,10 @@ async function handleTaskComplete(
   taskId: string,
   outcome?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const outcomeArg = outcome ? `--outcome ${outcome}` : '';
-  const cmd = `froggo-db task-complete "${taskId}" ${outcomeArg}`;
-
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error) => {
+    const args = ['task-complete', taskId];
+    if (outcome) args.push('--outcome', outcome);
+    execFile('froggo-db', args, { timeout: 10000, env: CHILD_ENV }, (error) => {
       resolve({ success: !error });
     });
   });
@@ -360,9 +361,9 @@ async function handleTaskPokeInternal(
 
   try {
     const taskAgent = await new Promise<string>((resolve) => {
-      exec(
-        `froggo-db task-get ${taskId} 2>/dev/null`,
-        { encoding: 'utf-8', timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+      execFile(
+        'froggo-db', ['task-get', taskId],
+        { encoding: 'utf-8', timeout: 5000, env: CHILD_ENV },
         (error, stdout) => {
           if (!error && stdout) {
             try {
@@ -383,15 +384,14 @@ Task: "${title}" (ID: ${taskId})
 The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
 Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
-    const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
     const response = await new Promise<string>((resolve, reject) => {
-      exec(
-        `openclaw agent --local --message "${escapedPrompt}" --agent ${taskAgent} --json --timeout 30`,
+      execFile(
+        'openclaw', ['agent', '--local', '--message', pokePrompt, '--agent', taskAgent, '--json', '--timeout', '30'],
         {
           encoding: 'utf-8',
           timeout: 35000,
           maxBuffer: 5 * 1024 * 1024,
-          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+          env: CHILD_ENV
         },
         (error, stdout, stderr) => {
           if (error) {
@@ -756,8 +756,7 @@ async function handleAttachmentsAdd(
 
     const attachmentId = Number(result.lastInsertRowid);
 
-    const activityCmd = `froggo-db task-activity "${taskId}" "file_attached" "Attached: ${filename} (${category})" --details "${filePath}"`;
-    exec(activityCmd, () => {});
+    execFile('froggo-db', ['task-activity', taskId, 'file_attached', `Attached: ${filename} (${category})`, '--details', filePath], { env: CHILD_ENV }, () => {});
 
     return {
       success: true,
@@ -793,8 +792,7 @@ async function handleAttachmentsDelete(
 
     prepare('DELETE FROM task_attachments WHERE id = ?').run(attachmentId);
 
-    const activityCmd = `froggo-db task-activity "${task_id}" "file_deleted" "Deleted attachment: ${filename}"`;
-    exec(activityCmd, () => {});
+    execFile('froggo-db', ['task-activity', task_id, 'file_deleted', `Deleted attachment: ${filename}`], { env: CHILD_ENV }, () => {});
 
     return { success: true };
   } catch (error: any) {
@@ -807,24 +805,20 @@ async function handleAttachmentsOpen(
   _: Electron.IpcMainInvokeEvent,
   filePath: string
 ): Promise<{ success: boolean; error?: string }> {
-  const openCmd = process.platform === 'darwin' ? 'open' :
-                  process.platform === 'win32' ? 'start' : 'xdg-open';
-
-  return new Promise((resolve) => {
-    exec(`${openCmd} "${filePath}"`, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    const err = await shell.openPath(filePath);
+    return { success: !err, error: err || undefined };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
 }
 
 async function handleAttachmentsAutoDetect(
   _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; output?: string; error?: string }> {
-  const cmd = `${path.join(SCRIPTS_DIR, 'attachment-helper.sh')} detect "${taskId}"`;
-
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
+    execFile(path.join(SCRIPTS_DIR, 'attachment-helper.sh'), ['detect', taskId], { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Attachments] Auto-detect error:', error, stderr);
         resolve({ success: false, error: error.message });
