@@ -22,6 +22,44 @@ interface OnboardingWizardProps {
   onSkip: () => void;
 }
 
+// Install instructions shown inline for each failed dependency
+const INSTALL_INSTRUCTIONS: Record<string, { title: string; instructions: string[] }> = {
+  database: {
+    title: 'Task Database Missing',
+    instructions: [
+      'The task database was not found at ~/froggo/data/froggo.db',
+      'Run: mkdir -p ~/froggo/data',
+      'Then restore from backup or initialize a new database',
+    ],
+  },
+  cli: {
+    title: 'OpenClaw CLI Not Found',
+    instructions: [
+      'Install OpenClaw: npm install -g openclaw',
+      'Then run: openclaw setup',
+      'CLI expected at: /opt/homebrew/bin/openclaw',
+    ],
+  },
+  gateway: {
+    title: 'Gateway Not Running',
+    instructions: [
+      'The OpenClaw gateway is required for AI features',
+      'Start it: launchctl kickstart gui/$(id -u)/ai.openclaw.gateway',
+      'Or run: openclaw gateway start',
+    ],
+  },
+  config: {
+    title: 'OpenClaw Config Missing',
+    instructions: [
+      'Configuration file not found at ~/.openclaw/openclaw.json',
+      'Run: openclaw setup to create initial config',
+    ],
+  },
+};
+
+// Only database is critical — app cannot function without it
+const CRITICAL_DEPS = ['database'] as const;
+
 type DepStatus = 'checking' | 'ok' | 'fail';
 
 interface DependencyState {
@@ -215,10 +253,19 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         ].map(item => (
           <div
             key={item.key}
-            className="flex items-center gap-3 p-3 rounded-lg bg-clawd-bg border border-clawd-border"
+            className="rounded-lg bg-clawd-bg border border-clawd-border overflow-hidden"
           >
-            {depIcon(depStatus[item.key])}
-            <span className="text-sm text-clawd-text">{item.label}</span>
+            <div className="flex items-center gap-3 p-3">
+              {depIcon(depStatus[item.key])}
+              <span className="text-sm text-clawd-text">{item.label}</span>
+            </div>
+            {depStatus[item.key] === 'fail' && INSTALL_INSTRUCTIONS[item.key] && (
+              <div className="ml-8 pb-3 pr-3 space-y-1">
+                {INSTALL_INSTRUCTIONS[item.key].instructions.map((line, i) => (
+                  <p key={i} className="text-xs text-clawd-text-dim font-mono">{line}</p>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -400,6 +447,11 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // Welcome and Finish have their own nav; middle steps use shared chrome
   const showSharedNav = currentStep > 0 && currentStep < STEP_COUNT - 1;
 
+  // Block Continue on the dependency step when critical deps (database) fail
+  const criticalFailed = currentStep === 1
+    ? CRITICAL_DEPS.some(dep => depStatus[dep] === 'fail')
+    : false;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
       <div className="w-full max-w-lg bg-clawd-surface rounded-2xl shadow-2xl border border-clawd-border overflow-hidden">
@@ -424,24 +476,44 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
         {/* Shared navigation for middle steps */}
         {showSharedNav && (
-          <div className="px-8 pb-6 flex items-center justify-between">
-            <button
-              onClick={goBack}
-              className="flex items-center gap-1 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
-            >
-              <ArrowLeft size={14} />
-              Back
-            </button>
-            <span className="text-xs text-clawd-text-dim">
-              Step {currentStep + 1} of {STEP_COUNT}
-            </span>
-            <button
-              onClick={goNext}
-              className="flex items-center gap-1 px-4 py-2 text-sm bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
-            >
-              Continue
-              <ArrowRight size={14} />
-            </button>
+          <div className="px-8 pb-6">
+            {criticalFailed && (
+              <div className="mb-3 text-center">
+                <p className="text-sm text-red-400">
+                  Fix the critical issues above before continuing.
+                </p>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+              >
+                <ArrowLeft size={14} />
+                Back
+              </button>
+              <span className="text-xs text-clawd-text-dim">
+                Step {currentStep + 1} of {STEP_COUNT}
+              </span>
+              <div className="flex items-center gap-2">
+                {criticalFailed && (
+                  <button
+                    onClick={checkDependencies}
+                    className="px-3 py-1 text-sm rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 transition-colors"
+                  >
+                    Re-check
+                  </button>
+                )}
+                <button
+                  onClick={goNext}
+                  disabled={criticalFailed}
+                  className="flex items-center gap-1 px-4 py-2 text-sm bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Continue
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
