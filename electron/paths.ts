@@ -86,16 +86,35 @@ export const agentWorkspace = (agentId: string) =>
   path.join(HOME, `${AGENT_PREFIX}${agentId}`);
 
 // ── Startup diagnostics ──
-export function verifyPaths(): void {
-  const critical = [
-    { p: FROGGO_DB,      label: 'Task database' },
-    { p: OPENCLAW_CONFIG, label: 'OpenClaw config' },
-    { p: FROGGO_DB_CLI,  label: 'froggo-db CLI' },
-    { p: SCRIPTS_DIR,    label: 'Scripts directory' },
-    { p: X_API_CLI,      label: 'x-api CLI' },
+
+export interface PathCheckResult {
+  path: string;
+  label: string;
+  exists: boolean;
+  critical: boolean;  // true = app cannot function without this
+}
+
+/**
+ * Verify all critical and optional filesystem paths on startup.
+ * Returns structured results so callers can decide whether to abort.
+ *
+ * @returns Array of path check results with existence and criticality flags
+ */
+export function verifyPaths(): PathCheckResult[] {
+  const checks: Array<{ p: string; label: string; critical: boolean }> = [
+    { p: FROGGO_DB,       label: 'Task database (froggo.db)', critical: true },
+    { p: OPENCLAW_CONFIG, label: 'OpenClaw config',           critical: false },
+    { p: FROGGO_DB_CLI,   label: 'froggo-db CLI',            critical: false },
+    { p: SCRIPTS_DIR,     label: 'Scripts directory',         critical: false },
+    { p: X_API_CLI,       label: 'x-api CLI',                critical: false },
   ];
-  for (const { p, label } of critical) {
-    if (!fs.existsSync(p)) logger.error(`[STARTUP] MISSING: ${label} at ${p}`);
+
+  const results: PathCheckResult[] = [];
+  for (const { p, label, critical } of checks) {
+    const exists = fs.existsSync(p);
+    if (!exists) logger.error(`[STARTUP] MISSING: ${label} at ${p}`);
     else logger.debug(`[STARTUP] OK: ${label}`);
+    results.push({ path: p, label, exists, critical });
   }
+  return results;
 }
