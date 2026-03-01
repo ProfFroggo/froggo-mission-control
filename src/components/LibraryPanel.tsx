@@ -45,10 +45,14 @@ export default function LibraryPanel() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-1 px-6">
+        <div className="flex gap-1 px-6" role="tablist" aria-label="Library sections">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
+              role="tab"
+              aria-selected={activeTab === id}
+              aria-controls={`library-tabpanel-${id}`}
+              id={`library-tab-${id}`}
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === id
@@ -64,7 +68,12 @@ export default function LibraryPanel() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
+      <div
+        className="flex-1 overflow-hidden"
+        role="tabpanel"
+        id={`library-tabpanel-${activeTab}`}
+        aria-labelledby={`library-tab-${activeTab}`}
+      >
         {activeTab === 'files' && <LibraryFilesTab initialPath={navigatePath} />}
         {activeTab === 'templates' && <LibraryTemplatesTab />}
         {activeTab === 'skills' && <LibrarySkillsTab />}
