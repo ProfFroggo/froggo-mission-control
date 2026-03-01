@@ -13,7 +13,7 @@
  * 32 registerHandler calls total.
  */
 
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
 import { safeLog } from '../logger';
@@ -196,9 +196,11 @@ export function registerScheduleHandlers(): void {
         const account = meta.account || '';
         if (!recipient || !recipient.trim()) return { success: false, error: 'Missing email recipient' };
         if (!account || !account.trim()) return { success: false, error: 'Missing GOG account - cannot send email without account' };
-        const execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${(meta.subject || 'No subject').replace(/"/g, '\\"')}" --body "${item.content.replace(/"/g, '\\"')}"`;
         return new Promise((resolve) => {
-          exec(execCmd, { timeout: 30000 }, (execError) => {
+          execFile('/opt/homebrew/bin/gog', ['gmail', 'drafts', 'create', '--to', recipient, '--subject', meta.subject || 'No subject', '--body', item.content], {
+            timeout: 30000,
+            env: { ...process.env, GOG_ACCOUNT: account, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` }
+          }, (execError) => {
             const status = execError ? 'failed' : 'sent';
             try {
               prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(
