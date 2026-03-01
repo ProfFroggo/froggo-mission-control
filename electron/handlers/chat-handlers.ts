@@ -21,15 +21,15 @@ export function registerChatHandlers(): void {
     try {
       prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, channel, msg.role, msg.content);
       return { success: true };
-    } catch (error: any) { return { success: false, error: error.message }; }
+    } catch (error: unknown) { return { success: false, error: error.message }; }
   });
 
   registerHandler('chat:loadMessages', async (_event, limit: number = 50, sessionKey?: string, channel?: string) => {
     const session = sessionKey || 'dashboard';
     const ch = channel || 'dashboard';
     try {
-      const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, ch, limit) as any[];
-      const messages = rows.reverse().map((r: any) => ({ id: `db-${r.id}`, role: r.role, content: r.content, timestamp: new Date(r.timestamp).getTime() }));
+      const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, ch, limit) as Record<string, unknown>[];
+      const messages = rows.reverse().map((r) => ({ id: `db-${r['id']}`, role: r['role'], content: r['content'], timestamp: new Date(r['timestamp'] as string).getTime() }));
       return { success: true, messages };
     } catch { return { success: true, messages: [] }; }
   });
@@ -40,7 +40,7 @@ export function registerChatHandlers(): void {
     try {
       prepare('DELETE FROM messages WHERE session_key = ? AND channel = ?').run(session, ch);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Chat] clearMessages error:', error.message);
       return { success: false, error: error.message };
     }
@@ -63,7 +63,7 @@ export function registerChatHandlers(): void {
           const suggestions = stdout.trim().split('\n').map(s => s.trim()).filter(s => s.length > 0 && s.length < 200).slice(0, 3);
           safeLog.log('[SuggestedReplies] Generated', suggestions.length, 'suggestions');
           resolve(suggestions.length === 0 ? { success: false, error: 'No valid suggestions generated', suggestions: [] } : { success: true, suggestions });
-        } catch (parseError: any) {
+        } catch (parseError: unknown) {
           safeLog.error('[SuggestedReplies] Parse error:', parseError.message);
           resolve({ success: false, error: 'Failed to parse suggestions', suggestions: [] });
         }
@@ -101,7 +101,7 @@ export function registerChatHandlers(): void {
     return new Promise((resolve) => {
       exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) { safeLog.error('[Starred] List error:', stderr || error.message); resolve({ success: false, error: stderr || error.message, starred: [] }); }
-        else { try { resolve({ success: true, starred: JSON.parse(stdout) }); } catch (e: any) { resolve({ success: false, error: e.message, starred: [] }); } }
+        else { try { resolve({ success: true, starred: JSON.parse(stdout) }); } catch (e: unknown) { resolve({ success: false, error: e.message, starred: [] }); } }
       });
     });
   });
@@ -112,7 +112,7 @@ export function registerChatHandlers(): void {
     return new Promise((resolve) => {
       exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) { safeLog.error('[Starred] Search error:', stderr || error.message); resolve({ success: false, error: stderr || error.message, results: [] }); }
-        else { try { resolve({ success: true, results: JSON.parse(stdout) }); } catch (e: any) { resolve({ success: false, error: e.message, results: [] }); } }
+        else { try { resolve({ success: true, results: JSON.parse(stdout) }); } catch (e: unknown) { resolve({ success: false, error: e.message, results: [] }); } }
       });
     });
   });

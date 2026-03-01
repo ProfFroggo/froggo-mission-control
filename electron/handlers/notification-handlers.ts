@@ -16,18 +16,18 @@ export function registerNotificationHandlers(): void {
     try {
       const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
       return { success: true, settings: row || null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Get error:', error);
       return { success: false, settings: null };
     }
   });
 
-  registerHandler('notification-settings:set', async (_event, sessionKey: string, settings: any) => {
+  registerHandler('notification-settings:set', async (_event, sessionKey: string, settings: Record<string, unknown>) => {
     try {
       const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
       if (existing) {
         const setParts: string[] = [];
-        const params: any[] = [];
+        const params: (string | number | null)[] = [];
         if (settings.notification_level !== undefined) { setParts.push('notification_level = ?'); params.push(settings.notification_level); }
         if (settings.sound_enabled !== undefined) { setParts.push('sound_enabled = ?'); params.push(settings.sound_enabled ? 1 : 0); }
         if (settings.sound_type !== undefined) { setParts.push('sound_type = ?'); params.push(settings.sound_type); }
@@ -65,7 +65,7 @@ export function registerNotificationHandlers(): void {
         );
       }
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Set error:', error);
       return { success: false, error: error.message };
     }
@@ -75,7 +75,7 @@ export function registerNotificationHandlers(): void {
     try {
       prepare('DELETE FROM conversation_notification_settings WHERE session_key = ?').run(sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Delete error:', error);
       return { success: false, error: error.message };
     }
@@ -85,16 +85,16 @@ export function registerNotificationHandlers(): void {
     try {
       const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
       return { success: true, defaults: row || null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Get global defaults error:', error);
       return { success: false, defaults: null };
     }
   });
 
-  registerHandler('notification-settings:set-global-defaults', async (_event, defaults: any) => {
+  registerHandler('notification-settings:set-global-defaults', async (_event, defaults: Record<string, unknown>) => {
     try {
       const setParts: string[] = [];
-      const params: any[] = [];
+      const params: (string | number | null)[] = [];
       if (defaults.default_notification_level !== undefined) { setParts.push('default_notification_level = ?'); params.push(defaults.default_notification_level); }
       if (defaults.default_sound_enabled !== undefined) { setParts.push('default_sound_enabled = ?'); params.push(defaults.default_sound_enabled ? 1 : 0); }
       if (defaults.default_sound_type !== undefined) { setParts.push('default_sound_type = ?'); params.push(defaults.default_sound_type); }
@@ -110,7 +110,7 @@ export function registerNotificationHandlers(): void {
       if (setParts.length === 0) return { success: false, error: 'No updates provided' };
       getDb().prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Set global defaults error:', error);
       return { success: false, error: error.message };
     }
@@ -120,7 +120,7 @@ export function registerNotificationHandlers(): void {
     try {
       const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
       return { success: true, settings: row || null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Get effective error:', error);
       return { success: false, settings: null };
     }
@@ -137,7 +137,7 @@ export function registerNotificationHandlers(): void {
         prepare("INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES (?, 'none', ?)").run(sessionKey, muteUntil);
       }
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Mute error:', error);
       return { success: false, error: error.message };
     }
@@ -147,7 +147,7 @@ export function registerNotificationHandlers(): void {
     try {
       prepare("UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = ?").run(sessionKey);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[NotificationSettings] Unmute error:', error);
       return { success: false, error: error.message };
     }
@@ -157,7 +157,7 @@ export function registerNotificationHandlers(): void {
     try {
       prepare('INSERT INTO rejected_decisions (type, title, content, reason) VALUES (?, ?, ?, ?)').run(rejection.type, rejection.title, rejection.content || '', rejection.reason || '');
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Rejections] Log error:', error);
       return { success: false, error: error.message };
     }

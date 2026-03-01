@@ -27,32 +27,32 @@ const TEMP_DIR = os.tmpdir();
 
 export function registerSettingsHandlers(): void {
   registerModuleHandler('froggo-settings', 'settings:getApiKey', async (_event, keyName: string) => {
-    try { return getSecret(keyName); } catch (err: any) { safeLog.error('[Settings] getApiKey error:', err.message); return null; }
+    try { return getSecret(keyName); } catch (err: unknown) { safeLog.error('[Settings] getApiKey error:', err.message); return null; }
   });
 
   registerModuleHandler('froggo-settings', 'settings:storeApiKey', async (_event, keyName: string, value: string) => {
-    try { storeSecret(keyName, value); return { success: true }; } catch (err: any) { safeLog.error('[Settings] storeApiKey error:', err.message); return { success: false, error: err.message }; }
+    try { storeSecret(keyName, value); return { success: true }; } catch (err: unknown) { safeLog.error('[Settings] storeApiKey error:', err.message); return { success: false, error: err.message }; }
   });
 
   registerModuleHandler('froggo-settings', 'settings:hasApiKey', async (_event, keyName: string) => {
-    try { return hasSecret(keyName); } catch (err: any) { safeLog.error('[Settings] hasApiKey error:', err.message); return false; }
+    try { return hasSecret(keyName); } catch (err: unknown) { safeLog.error('[Settings] hasApiKey error:', err.message); return false; }
   });
 
   registerModuleHandler('froggo-settings', 'settings:deleteApiKey', async (_event, keyName: string) => {
-    try { deleteSecret(keyName); return { success: true }; } catch (err: any) { safeLog.error('[Settings] deleteApiKey error:', err.message); return { success: false, error: err.message }; }
+    try { deleteSecret(keyName); return { success: true }; } catch (err: unknown) { safeLog.error('[Settings] deleteApiKey error:', err.message); return { success: false, error: err.message }; }
   });
 
   registerModuleHandler('froggo-settings', 'screen:getSources', async (_event, opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) => {
     try {
       const sources = await desktopCapturer.getSources({
-        types: (opts?.types as any) || ['window', 'screen'],
+        types: (opts?.types as Parameters<typeof desktopCapturer.getSources>[0]['types']) || ['window', 'screen'],
         thumbnailSize: opts?.thumbnailSize || { width: 320, height: 180 },
       });
       return sources.map(source => ({
         id: source.id, name: source.name, thumbnail: source.thumbnail.toDataURL(),
         display_id: source.display_id, appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[ScreenCapture] Failed to get sources:', error);
       return [];
     }
@@ -90,7 +90,7 @@ export function registerSettingsHandlers(): void {
           else { safeLog.log('Whisper transcript:', transcript); resolve({ transcript, stdout }); }
         });
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('Whisper failed:', error);
       try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
       return { error: error.message };

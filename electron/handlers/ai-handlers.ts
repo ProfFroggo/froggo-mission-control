@@ -32,7 +32,7 @@ function getAnthropicApiKey(): string {
           const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
           const providerSources = [cfg.models?.providers || {}, cfg.providers || {}];
           for (const providers of providerSources) {
-            for (const prov of Object.values(providers) as any[]) {
+            for (const prov of Object.values(providers) as Record<string, unknown>[]) {
               if (prov?.apiKey?.startsWith('sk-ant')) { key = prov.apiKey; break; }
               if (prov?.anthropicApiKey?.startsWith('sk-ant')) { key = prov.anthropicApiKey; break; }
               if (prov?.config?.apiKey?.startsWith('sk-ant')) { key = prov.config.apiKey; break; }
@@ -76,7 +76,7 @@ export function registerAiHandlers(): void {
       });
       safeLog.log('[AI:Task] Created task:', task.title, result.trim());
       return { success: true, result: result.trim() };
-    } catch (e: any) { safeLog.error('[AI:Task] Error:', e); return { success: false, error: e.message }; }
+    } catch (e: unknown) { safeLog.error('[AI:Task] Error:', e); return { success: false, error: e.message }; }
   });
 
   registerHandler('ai:createDetectedEvent', async (_event, event: { title: string; date: string; time?: string; duration?: string; location?: string; description?: string }) => {
@@ -93,7 +93,7 @@ export function registerAiHandlers(): void {
       });
       safeLog.log('[AI:Event] Created event:', event.title, result.trim());
       return { success: true, result: result.trim() };
-    } catch (e: any) { safeLog.error('[AI:Event] Error:', e); return { success: false, error: e.message }; }
+    } catch (e: unknown) { safeLog.error('[AI:Event] Error:', e); return { success: false, error: e.message }; }
   });
 
   registerHandler('ai:generate-content', async (_event, prompt: string, type: string, options?: { agent?: string }) => {
@@ -108,7 +108,7 @@ export function registerAiHandlers(): void {
         execFile(OPENCLAW, ['agent', '--agent', agentId, '--message', fullPrompt, '--json'], { encoding: 'utf-8', timeout: 60000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout) => {
           if (error) { safeLog.error('[AI:Generate] CLI error:', error.message); reject(error); return; }
           let output = stdout.trim();
-          try { const parsed = JSON.parse(output); const payloads = parsed?.result?.payloads; if (Array.isArray(payloads) && payloads.length > 0) output = payloads.map((p: any) => p.text || '').join('\n').trim(); if (!output && parsed?.result?.text) output = parsed.result.text; } catch { /* not JSON */ }
+          try { const parsed = JSON.parse(output); const payloads = parsed?.result?.payloads; if (Array.isArray(payloads) && payloads.length > 0) output = payloads.map((p: Record<string, unknown>) => (p['text'] as string) || '').join('\n').trim(); if (!output && parsed?.result?.text) output = parsed.result.text; } catch { /* not JSON */ }
           resolve(output);
         });
       });
@@ -119,7 +119,7 @@ export function registerAiHandlers(): void {
           else return { success: true, ideas: [{ idea: response, hook: '' }] };
         } catch { return { success: true, ideas: [{ idea: response, hook: '' }] }; }
       } else { return { success: true, response }; }
-    } catch (e: any) { safeLog.error('[AI:Generate] Error:', e); return { success: false, error: e.message }; }
+    } catch (e: unknown) { safeLog.error('[AI:Generate] Error:', e); return { success: false, error: e.message }; }
   });
 
   registerHandler('ai:generateReply', async (_event, context: { threadMessages: Array<{ role: string; content: string }>; platform?: string; recipientName?: string; subject?: string; tone?: 'formal' | 'casual' | 'auto'; calendarContext?: string; taskContext?: string }) => {
@@ -136,8 +136,8 @@ export function registerAiHandlers(): void {
     else if (platform === 'discord') platformInstruction = 'This is a Discord message. Keep it concise and natural.';
     let scheduleContext = context.calendarContext || '';
     let taskCtx = context.taskContext || '';
-    if (!scheduleContext) { try { const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[]; scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (schedule):', e); } }
-    if (!taskCtx) { try { const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[]; taskCtx = tasks.map((t: any) => t.title).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (tasks):', e); } }
+    if (!scheduleContext) { try { const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as Record<string, unknown>[]; scheduleContext = events.map((e) => `${e['title']} at ${e['start_time']}`).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (schedule):', e); } }
+    if (!taskCtx) { try { const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as Record<string, unknown>[]; taskCtx = tasks.map((t) => t['title'] as string).join('; '); } catch (e) { safeLog.debug('[AI Reply] Context load failed (tasks):', e); } }
     let contextBlock = '';
     if (scheduleContext) contextBlock += `\nUser's upcoming schedule: ${scheduleContext}`;
     if (taskCtx) contextBlock += `\nUser's active tasks: ${taskCtx}`;
@@ -154,17 +154,17 @@ export function registerAiHandlers(): void {
       const draft = data.content?.[0]?.text?.trim() || '';
       safeLog.log('[AI] Reply generated, length:', draft.length);
       return { success: true, draft };
-    } catch (e: any) { safeLog.error('[AI] Reply generation error:', e.message); return { success: false, error: e.message }; }
+    } catch (e: unknown) { safeLog.error('[AI] Reply generation error:', e.message); return { success: false, error: e.message }; }
   });
 
   registerHandler('ai:getAnalysis', async (_event, id: string, platform: string) => {
     try {
-      const row = prepare("SELECT triage, summary, tasks, events, reply_draft, reply_needed FROM comms_ai_analysis WHERE external_id = ? AND platform = ?").get(id, platform) as any;
+      const row = prepare("SELECT triage, summary, tasks, events, reply_draft, reply_needed FROM comms_ai_analysis WHERE external_id = ? AND platform = ?").get(id, platform) as Record<string, unknown>;
       if (!row) return { success: true, analysis: null };
-      let tasks: any[] = []; let events: any[] = [];
-      try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore */ }
-      try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore */ }
-      return { success: true, analysis: { triage: row.triage, summary: row.summary, tasks, events, reply_draft: row.reply_draft, reply_needed: !!row.reply_needed } };
-    } catch (e: any) { return { success: false, error: e.message }; }
+      let tasks: unknown[] = []; let events: unknown[] = [];
+      try { tasks = row['tasks'] ? JSON.parse(row['tasks'] as string) : []; } catch { /* ignore */ }
+      try { events = row['events'] ? JSON.parse(row['events'] as string) : []; } catch { /* ignore */ }
+      return { success: true, analysis: { triage: row['triage'], summary: row['summary'], tasks, events, reply_draft: row['reply_draft'], reply_needed: !!row['reply_needed'] } };
+    } catch (e: unknown) { return { success: false, error: e.message }; }
   });
 }
