@@ -1,6 +1,7 @@
-import { app, BrowserWindow, shell, dialog, screen, systemPreferences, desktopCapturer } from 'electron';
+import { app, BrowserWindow, shell, dialog, screen, systemPreferences, desktopCapturer, ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as http from 'http';
+import * as os from 'os';
 import * as path from 'path';
 import { exec, execFile, execSync, execFileSync } from 'child_process';
 import { setupNotificationHandlers } from './notification-service';
@@ -274,8 +275,76 @@ function startScheduledPoster() {
 // Notification event cleanup
 let stopNotificationEvents: (() => void) | null = null;
 
-app.whenReady().then(() => {
-  // Start local HTTP server to serve model files in prod
+/**
+ * Check if the OpenClaw gateway is healthy and attempt to start it if not.
+ * Returns true if the gateway is running (or was successfully started),
+ * false if it could not be started.
+ */
+async function startGateway(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = http.get('http://127.0.0.1:18789/health', { timeout: 3000 }, (res) => {
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => {
+      // Gateway not running — try to start it via launchctl kickstart
+      safeLog.log('[Startup] Gateway not running, attempting auto-start...');
+      const uid = process.getuid?.() ?? 501;
+      execFile('launchctl', ['kickstart', '-k', `gui/${uid}/ai.openclaw.gateway`],
+        { timeout: 10000 },
+        (kickErr) => {
+          if (kickErr) {
+            // Kickstart failed — try bootstrap as fallback (plist might not be loaded yet)
+            const plistPath = path.join(os.homedir(), 'Library/LaunchAgents/ai.openclaw.gateway.plist');
+            execFile('launchctl', ['bootstrap', `gui/${uid}`, plistPath],
+              { timeout: 10000 },
+              (bootstrapErr) => {
+                if (bootstrapErr) {
+                  safeLog.warn('[Startup] Gateway auto-start failed:', bootstrapErr.message);
+                  resolve(false);
+                } else {
+                  // Wait for gateway to come up after bootstrap
+                  setTimeout(() => resolve(true), 3000);
+                }
+              }
+            );
+          } else {
+            // Wait for gateway to come up after kickstart
+            setTimeout(() => resolve(true), 3000);
+          }
+        }
+      );
+    });
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
+app.whenReady().then(async () => {
+  // ── Pre-window startup checks ────────────────────────────────────────────
+  const pathResults = verifyPaths();
+  const criticalMissing = pathResults.filter(r => r.critical && !r.exists);
+
+  if (criticalMissing.length > 0) {
+    const missing = criticalMissing.map(r => `  - ${r.label}\n    ${r.path}`).join('\n');
+    dialog.showErrorBox(
+      'Froggo: Required Files Missing',
+      `Cannot start — the following required files are missing:\n\n${missing}\n\nPlease ensure the Froggo project is set up at ~/froggo/ with a valid database.\n\nThe app will now quit.`
+    );
+    app.quit();
+    return;
+  }
+
+  // Auto-start gateway if not running
+  const gatewayRunning = await startGateway();
+  if (gatewayRunning) {
+    safeLog.log('[Startup] Gateway is running');
+  } else {
+    safeLog.warn('[Startup] Gateway is not running — app will start in degraded mode');
+  }
+
+  // Store startup state for renderer queries
+  const startupState = { pathResults, gatewayRunning };
+
+  // ── Start local HTTP server to serve model files in prod ─────────────────
   if (!isDev) {
     modelServer = http.createServer((req, res) => {
       const filePath = path.join(process.resourcesPath, 'models', path.basename(req.url || ''));
@@ -316,6 +385,9 @@ app.whenReady().then(() => {
 
   // Register Onboarding wizard IPC handlers (deps, permissions, sample data)
   registerOnboardingHandlers();
+
+  // Expose startup state to renderer
+  ipcMain.handle('startup:getState', () => startupState);
 
   // Start background services
   startTaskNotifyWatcher();
