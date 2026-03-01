@@ -60,13 +60,14 @@ function App() {
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
-  const { toggleMuted, loadApprovals } = useStore();
+  const { toggleMuted, loadApprovals, fetchAgents } = useStore();
   const toolbarVisible = usePanelConfigStore(s => s.panels.find(p => p.id === 'toolbar')?.visible ?? true);
 
-  // Load approvals from inbox database
+  // Load approvals and agents on app launch
   useEffect(() => {
     loadApprovals();
-  }, [loadApprovals]);
+    fetchAgents();
+  }, [loadApprovals, fetchAgents]);
 
   // Initialize all registered modules, then sync sidebar with new views
   const syncPanels = usePanelConfigStore(s => s.syncWithViewRegistry);
