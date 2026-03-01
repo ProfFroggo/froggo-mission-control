@@ -8,6 +8,10 @@ import { showToast } from '../components/Toast';
 
 const storeLogger = createLogger('Store');
 
+// Guard against concurrent updateTask calls for the same task ID
+// Prevents rollback state corruption when two calls race for the same task
+const pendingTaskUpdates = new Set<string>();
+
 export type TaskStatus = 'blocked' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
 
@@ -589,6 +593,13 @@ export const useStore = create<Store>()(
         window.clawdbot?.tasks?.sync(newTask).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
       },
       updateTask: (id: string, updates: Partial<Task>) => {
+        // Drop concurrent update for the same task — prevents rollback state corruption
+        if (pendingTaskUpdates.has(id)) {
+          console.warn('[Store] Dropping concurrent update for task:', id);
+          return;
+        }
+        pendingTaskUpdates.add(id);
+
         // Snapshot original values for rollback
         const original = get().tasks.find((t: Task) => t.id === id);
         const rollbackValues = original
@@ -619,6 +630,9 @@ export const useStore = create<Store>()(
                 tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
               }));
             }
+          })
+          .finally(() => {
+            pendingTaskUpdates.delete(id);
           });
       },
       moveTask: (id: string, status: TaskStatus) => {
@@ -1113,7 +1127,7 @@ Start now.`;
             };
             // Sync to DB instead of local-only state
             await window.clawdbot?.tasks?.sync?.(taskData);
-            useStore.getState().loadTasksFromDB();
+            await useStore.getState().loadTasksFromDB();
 
             // Notify main session
             if (result.success) {
@@ -1170,7 +1184,7 @@ Start now.`;
           }));
           // Sync task to DB (not local-only)
           window.clawdbot?.tasks?.sync?.(revisionTask).then(() => {
-            useStore.getState().loadTasksFromDB();
+            useStore.getState().loadTasksFromDB().catch((e: Error) => console.error('[Store] loadTasks error:', e));
           }).catch((err: Error) => {
             console.error("[Store] Revision task sync failed:", err);
             showToast('error', 'Revision task failed', err.message);
@@ -1285,7 +1299,7 @@ if (gateway.connected) {
 // Set up IPC listener for task notifications from file watcher
 if (typeof window !== 'undefined' && window.clawdbot?.tasks?.onNotification) {
   window.clawdbot.tasks.onNotification((notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => {
-    useStore.getState().loadTasksFromDB();
+    useStore.getState().loadTasksFromDB().catch((e: Error) => console.error('[Store] loadTasks error:', e));
     useStore.getState().addActivity({
       type: 'task',
       message: `📋 New task from Discord: ${notification.title}`,
@@ -1328,7 +1342,7 @@ const TASK_REFRESH_DEBOUNCE = 400;
 function debouncedTaskRefresh() {
   clearTimeout((window as any).__taskRefreshTimer);
   (window as any).__taskRefreshTimer = setTimeout(() => {
-    useStore.getState().loadTasksFromDB();
+    useStore.getState().loadTasksFromDB().catch((e: Error) => console.error('[Store] loadTasks error:', e));
   }, TASK_REFRESH_DEBOUNCE);
 }
 
