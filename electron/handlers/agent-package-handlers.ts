@@ -81,7 +81,7 @@ export function registerAgentPackageHandlers(): void {
         // Rollback: remove the provisioned workspace
         try {
           fs.rmSync(workspacePath, { recursive: true, force: true });
-        } catch (cleanupErr: any) {
+        } catch (cleanupErr: unknown) {
           logger.error(`[AgentPackage] Workspace rollback failed:`, cleanupErr.message);
         }
         return { success: false, error: registerResult.error };
@@ -114,7 +114,7 @@ export function registerAgentPackageHandlers(): void {
         gatewayRestartRequired: true,
       };
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('[AgentPackage] install error:', err.message);
       return { success: false, error: err.message ?? String(err) };
     } finally {
@@ -168,7 +168,7 @@ export function registerAgentPackageHandlers(): void {
       logger.info(`[AgentPackage] Uninstalled agent package "${packageId}" (workspace retained at ${workspacePath})`);
       return { success: true, uninstalled: true, gatewayRestartRequired: true };
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('[AgentPackage] uninstall error:', err.message);
       return { success: false, error: err.message ?? String(err) };
     }
@@ -184,7 +184,7 @@ export function registerAgentPackageHandlers(): void {
         installed: !!row,
         agent: row ?? null,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('[AgentPackage] status error:', err.message);
       return { success: false, installed: false, agent: null, error: err.message };
     }
@@ -196,7 +196,7 @@ export function registerAgentPackageHandlers(): void {
     try {
       const rows = getDb().prepare('SELECT * FROM installed_agents ORDER BY installed_at DESC').all() as Array<Record<string, unknown>>;
       return { success: true, agents: rows };
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('[AgentPackage] list error:', err.message);
       return { success: false, agents: [], error: err.message };
     }

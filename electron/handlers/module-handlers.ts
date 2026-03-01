@@ -35,7 +35,7 @@ export function registerModuleCredentialHandlers(): void {
         storeModuleSecret(moduleId, credentialId, value);
         writeBridgeFile(moduleId, credentialId, value);
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleCreds] store error:', err.message);
         return { success: false, error: err.message };
       }
@@ -52,7 +52,7 @@ export function registerModuleCredentialHandlers(): void {
         );
         const details = credentialIds.map(id => ({ id, set: hasModuleSecret(moduleId, id) }));
         return { success: true, status, details };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleCreds] status error:', err.message);
         return { success: false, status: 'red' as const, details: [] };
       }
@@ -69,7 +69,7 @@ export function registerModuleCredentialHandlers(): void {
         }
         deleteModuleBridgeDir(moduleId);
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleCreds] delete error:', err.message);
         return { success: false, error: err.message };
       }
@@ -101,7 +101,7 @@ export function registerModuleCredentialHandlers(): void {
         deleteModuleBridgeDir(moduleId);
         logger.info(`Module "${moduleId}" credentials removed`);
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleCreds] uninstall error:', err.message);
         return { success: false, error: err.message };
       }
@@ -148,7 +148,7 @@ export function registerModuleIntegrationHandlers(): void {
             updated_at: now,
           },
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleIntegration] get error:', err.message);
         return { success: false, error: err.message };
       }
@@ -165,7 +165,7 @@ export function registerModuleIntegrationHandlers(): void {
           `UPDATE module_integrations SET wizard_step = ?, wizard_data = ?, updated_at = ? WHERE module_id = ?`,
         ).run(step, JSON.stringify(wizardData), Date.now(), moduleId);
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleIntegration] upsert error:', err.message);
         return { success: false, error: err.message };
       }
@@ -183,7 +183,7 @@ export function registerModuleIntegrationHandlers(): void {
           `UPDATE module_integrations SET status = 'active', completed_at = ?, updated_at = ? WHERE module_id = ?`,
         ).run(now, now, moduleId);
         return { success: true };
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleIntegration] complete error:', err.message);
         return { success: false, error: err.message };
       }
@@ -245,7 +245,7 @@ export function registerModuleIntegrationHandlers(): void {
             error: `HTTP ${response.status}`,
             rawError,
           };
-        } catch (fetchErr: any) {
+        } catch (fetchErr: unknown) {
           clearTimeout(timeoutId);
           return {
             success: false,
@@ -253,7 +253,7 @@ export function registerModuleIntegrationHandlers(): void {
             rawError: String(fetchErr),
           };
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[ModuleIntegration] health:test error:', err.message);
         return { success: false, error: err.message };
       }

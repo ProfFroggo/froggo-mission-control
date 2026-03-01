@@ -61,7 +61,7 @@ export function registerToolbarHandlers(): void {
       });
       safeLog.log('[Toolbar] Floating toolbar window created');
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Toolbar] Pop-out error:', error.message);
       return { success: false, error: error.message };
     }
@@ -77,7 +77,7 @@ export function registerToolbarHandlers(): void {
         return { success: true };
       }
       return { success: false, error: 'No floating toolbar window' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       safeLog.error('[Toolbar] Pop-in error:', error.message);
       return { success: false, error: error.message };
     }
@@ -88,7 +88,7 @@ export function registerToolbarHandlers(): void {
       const isFloating = floatingToolbarWindow && !floatingToolbarWindow.isDestroyed();
       const bounds = isFloating ? floatingToolbarWindow!.getBounds() : null;
       return { success: true, isFloating, bounds };
-    } catch (error: any) { safeLog.error('[Toolbar] getState error:', error); return { success: false, error: error.message }; }
+    } catch (error: unknown) { safeLog.error('[Toolbar] getState error:', error); return { success: false, error: error.message }; }
   });
 
   registerHandler('toolbar:resize', async (event, height: number) => {
@@ -102,7 +102,7 @@ export function registerToolbarHandlers(): void {
         win.setBounds({ x: bounds.x, y: newY, width: bounds.width, height: clampedH });
       }
       return { success: true };
-    } catch (error: any) { safeLog.error('[Toolbar] resize error:', error); return { success: false, error: error.message }; }
+    } catch (error: unknown) { safeLog.error('[Toolbar] resize error:', error); return { success: false, error: error.message }; }
   });
 
   // NEW: toolbar:action broadcasts to all windows
