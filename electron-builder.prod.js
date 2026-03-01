@@ -25,6 +25,12 @@ module.exports = {
   ],
   mac: {
     category: 'public.app-category.productivity',
+    protocols: [
+      {
+        name: 'OpenClaw Protocol',
+        schemes: ['openclaw'],
+      },
+    ],
     target: ['dmg'],
     icon: 'build/icon.icns',
     identity: '-',
