@@ -108,9 +108,10 @@ async function ensureGatewayToken() {
       saved.gatewayToken = token;
       localStorage.setItem('froggo-settings', JSON.stringify(saved));
       logger.debug('[Gateway] Loaded token from openclaw config');
-      gateway.connect();
     }
-  } catch { /* ignore */ }
+  } catch { /* ignore — will connect with whatever localStorage has */ }
+  // Always connect after token attempt (with whatever token we have)
+  gateway.connect();
 }
 
 type Listener = GatewayListener;
@@ -142,6 +143,8 @@ class Gateway {
   // Per-runId callback system — components register handlers keyed by runId
   // so multiple concurrent requests (e.g. multi-agent rooms) each get their own events
   private runCallbacks = new Map<string, RunCallback>();
+  // Timeout IDs for in-flight runCallbacks — stored so they can be cleared on disconnect
+  private runCallbackTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   // Offline queue for actions during disconnection
   private offlineQueue: QueuedAction[] = [];
   private maxOfflineQueueSize = 50;
@@ -295,17 +298,20 @@ class Gateway {
             if (msg.event === 'chat.message' || (msg.event === 'chat' && payload?.state === 'final')) {
               if (content && cb.onMessage) cb.onMessage(content, payload);
               if (cb.onEnd) cb.onEnd(payload);
+              const _tid1 = this.runCallbackTimeouts.get(eventRunId); if (_tid1) { clearTimeout(_tid1); this.runCallbackTimeouts.delete(eventRunId); }
               this.runCallbacks.delete(eventRunId);
               this.activeRunIds.delete(eventRunId);
             }
             if (msg.event === 'chat.end') {
               if (cb.onEnd) cb.onEnd(payload);
+              const _tid2 = this.runCallbackTimeouts.get(eventRunId); if (_tid2) { clearTimeout(_tid2); this.runCallbackTimeouts.delete(eventRunId); }
               this.runCallbacks.delete(eventRunId);
               this.activeRunIds.delete(eventRunId);
             }
             if (msg.event === 'chat.error') {
               const errMsg = payload?.message || payload?.error || 'Unknown error';
               if (cb.onError) cb.onError(errMsg, payload);
+              const _tid3 = this.runCallbackTimeouts.get(eventRunId); if (_tid3) { clearTimeout(_tid3); this.runCallbackTimeouts.delete(eventRunId); }
               this.runCallbacks.delete(eventRunId);
               this.activeRunIds.delete(eventRunId);
             }
@@ -314,6 +320,7 @@ class Gateway {
               if (payload?.state === 'final') {
                 if (content && cb.onMessage) cb.onMessage(content, payload);
                 if (cb.onEnd) cb.onEnd(payload);
+                const _tid4 = this.runCallbackTimeouts.get(eventRunId); if (_tid4) { clearTimeout(_tid4); this.runCallbackTimeouts.delete(eventRunId); }
                 this.runCallbacks.delete(eventRunId);
                 this.activeRunIds.delete(eventRunId);
               } else if (payload?.state === 'delta') {
@@ -439,6 +446,12 @@ class Gateway {
       p.reject(new Error('Connection closed'));
     }
     this.pending.clear();
+
+    // Clear all pending runCallback timeouts before firing onError
+    for (const [, timeoutId] of this.runCallbackTimeouts) {
+      clearTimeout(timeoutId);
+    }
+    this.runCallbackTimeouts.clear();
 
     // Fire onError for any in-flight runCallbacks so components can reset streaming state
     for (const [runId, cb] of this.runCallbacks) {
@@ -739,7 +752,6 @@ class Gateway {
       const cleanup = () => {
         unsub1();
         unsub2();
-        unsub3();
         unsub4();
         unsub5();
       };
@@ -786,16 +798,6 @@ class Gateway {
         captureRunId(data);
         if (!isOurEvent(data)) return;
         if (data.delta) responseContent += data.delta;
-      });
-
-      // Final message — use authoritative content if available, otherwise keep accumulated deltas
-      const unsub3 = this.on('chat.message', (data: ChatEventData) => {
-        captureRunId(data);
-        if (!isOurEvent(data)) return;
-        if (data.content && data.content.length > responseContent.length) {
-          responseContent = data.content;
-        }
-        finish(responseContent);
       });
 
       // Unified chat event — handles final-state detection
@@ -890,6 +892,8 @@ class Gateway {
 
   /** Remove a tracked runId (call when response is complete) */
   clearRunId(runId: string) {
+    const tid = this.runCallbackTimeouts.get(runId);
+    if (tid) { clearTimeout(tid); this.runCallbackTimeouts.delete(runId); }
     this.activeRunIds.delete(runId);
     this.runCallbacks.delete(runId);
   }
@@ -915,15 +919,17 @@ class Gateway {
       this.activeRunIds.add(runId);
       this.runCallbacks.set(runId, callbacks);
       // Safety timeout — clean up after 3 minutes if no response
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (this.runCallbacks.has(runId)) {
           console.warn('[Gateway] RunId timeout, cleaning up:', runId);
           const cb = this.runCallbacks.get(runId);
           if (cb?.onError) cb.onError('Response timeout', {});
           this.runCallbacks.delete(runId);
           this.activeRunIds.delete(runId);
+          this.runCallbackTimeouts.delete(runId);
         }
       }, 180000);
+      this.runCallbackTimeouts.set(runId, timeoutId);
     }
     return runId;
   }
@@ -1071,4 +1077,3 @@ if (typeof window !== 'undefined' && window.clawdbot?.gateway?.onBroadcast) {
 }
 
 ensureGatewayToken();
-gateway.connect();
