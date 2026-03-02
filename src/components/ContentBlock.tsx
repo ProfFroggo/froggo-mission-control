@@ -21,8 +21,9 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
     return <MarkdownMessage content={block.text || ''} />;
   }
 
-  // Thinking blocks - collapsible with icon
+  // Thinking blocks - collapsible with icon (skip empty ones)
   if (block.type === 'thinking') {
+    if (!block.text?.trim()) return null;
     return (
       <div className="my-3 border border-clawd-border/50 rounded-lg bg-clawd-bg/30 overflow-hidden">
         <button

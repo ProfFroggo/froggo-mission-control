@@ -140,7 +140,7 @@ body {
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid rgba(38, 38, 38, 0.3);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--clawd-border-glass);
 }
 
 /* Light theme modal */
@@ -595,8 +595,8 @@ mark {
 }
 
 .react-grid-item > .react-resizable-handle::after {
-  border-right-color: rgba(255, 255, 255, 0.3) !important;
-  border-bottom-color: rgba(255, 255, 255, 0.3) !important;
+  border-right-color: var(--clawd-border-glass-hover) !important;
+  border-bottom-color: var(--clawd-border-glass-hover) !important;
 }
 
 .react-resizable-handle {
