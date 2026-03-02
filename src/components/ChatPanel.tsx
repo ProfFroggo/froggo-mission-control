@@ -125,7 +125,12 @@ export default function ChatPanel() {
         const parsedMessages = result.messages.map((msg: ChatMessage) => {
           if (typeof msg.content === 'string' && msg.content.startsWith('[')) {
             try {
-              return { ...msg, content: JSON.parse(msg.content) };
+              const parsed = JSON.parse(msg.content);
+              // Strip empty thinking blocks that show "0 chars"
+              const filtered = Array.isArray(parsed)
+                ? parsed.filter((b: any) => !(b.type === 'thinking' && !b.thinking?.trim() && !b.text?.trim()))
+                : parsed;
+              return { ...msg, content: filtered };
             } catch {
               return msg; // Keep as string if parse fails
             }
@@ -337,8 +342,9 @@ export default function ChatPanel() {
               content = m.content;
             } else if (Array.isArray(m.content)) {
               // Keep the full array for assistant messages to show tool calls
+              // Strip empty thinking blocks that show "0 chars" on load
               if (m.role === 'assistant') {
-                content = m.content;
+                content = m.content.filter((c: any) => !(c.type === 'thinking' && !c.thinking?.trim() && !c.text?.trim()));
               } else {
                 // For user messages, extract text only
                 content = m.content
@@ -475,10 +481,14 @@ export default function ChatPanel() {
 
         // Fire-and-forget: DB save, speech, routing — all parallel, non-blocking
         // Save FULL structured content to DB (not just text!)
+        // Strip empty thinking blocks before saving — they show "0 chars" on reload
         if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
-          const contentToSave = typeof finalFullContent === 'string' 
-            ? finalFullContent 
-            : JSON.stringify(finalFullContent);
+          const cleaned = Array.isArray(finalFullContent)
+            ? finalFullContent.filter((b: any) => !(b.type === 'thinking' && !b.text?.trim()))
+            : finalFullContent;
+          const contentToSave = typeof cleaned === 'string'
+            ? cleaned
+            : JSON.stringify(cleaned);
           
           window.clawdbot.chat.saveMessage({
             role: 'assistant',
@@ -550,10 +560,14 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database with full structured content
+        // Strip empty thinking blocks before saving
         if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
-          const contentToSave = typeof finalFullContent === 'string' 
-            ? finalFullContent 
-            : JSON.stringify(finalFullContent);
+          const cleaned = Array.isArray(finalFullContent)
+            ? finalFullContent.filter((b: any) => !(b.type === 'thinking' && !b.text?.trim()))
+            : finalFullContent;
+          const contentToSave = typeof cleaned === 'string'
+            ? cleaned
+            : JSON.stringify(cleaned);
             
           window.clawdbot?.chat.saveMessage({
             role: 'assistant',

@@ -69,7 +69,10 @@
   --clawd-bg: #0a0a0a;               /* Page background */
   --clawd-surface: #141414;          /* Cards, panels, elevated surfaces */
   --clawd-border: #262626;           /* Borders, dividers */
-  
+  --clawd-border-glass: rgba(255, 255, 255, 0.08);   /* Subtle glass borders (dark) */
+  --clawd-border-glass-hover: rgba(255, 255, 255, 0.15); /* Glass border hover state */
+  --clawd-border-subtle: rgba(38, 38, 38, 0.5);      /* Muted dividers */
+
   /* Text colors */
   --clawd-text: #fafafa;             /* Primary text */
   --clawd-text-dim: #a1a1aa;         /* Secondary text, muted content */
@@ -249,7 +252,10 @@
   --clawd-bg: #fafafa;
   --clawd-surface: #ffffff;
   --clawd-border: #e4e4e7;
-  
+  --clawd-border-glass: rgba(0, 0, 0, 0.08);
+  --clawd-border-glass-hover: rgba(0, 0, 0, 0.15);
+  --clawd-border-subtle: rgba(228, 228, 231, 0.5);
+
   /* Text colors */
   --clawd-text: #18181b;
   --clawd-text-dim: #52525b;
