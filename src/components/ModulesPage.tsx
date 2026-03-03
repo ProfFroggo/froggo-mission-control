@@ -554,9 +554,15 @@ export default function ModulesPage() {
     cards.some((c) => (c.manifest.category ?? 'system') === cat),
   );
 
-  const filteredCards = selectedCategory
+  const filteredCards = (selectedCategory
     ? cards.filter((c) => (c.manifest.category ?? 'system') === selectedCategory)
-    : cards;
+    : cards
+  ).sort((a, b) => {
+    const aCore = a.manifest.core ? 0 : 1;
+    const bCore = b.manifest.core ? 0 : 1;
+    if (aCore !== bCore) return aCore - bCore;
+    return a.manifest.name.localeCompare(b.manifest.name);
+  });
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

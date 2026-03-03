@@ -23,15 +23,14 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'chat', label: 'Chat', visible: true, order: 8 },
   { id: 'accounts', label: 'Accounts', visible: true, order: 9 },
   { id: 'approvals', label: 'Approvals', visible: true, order: 10 },
-  { id: 'context', label: 'Context', visible: true, order: 11 },
-  { id: 'codeagent', label: 'Dev', visible: true, order: 12 },
-  { id: 'library', label: 'Library', visible: true, order: 13 },
-  { id: 'schedule', label: 'Schedule', visible: true, order: 14 },
-  { id: 'notifications', label: 'Notifications', visible: true, order: 15 },
-  { id: 'writing', label: 'Writing', visible: true, order: 16 },
-  { id: 'finance', label: 'Finance', visible: true, order: 17 },
-  { id: 'modulebuilder', label: 'Module Builder', visible: true, order: 18 },
-  { id: 'toolbar', label: 'Floating Toolbar', visible: true, order: 19 },
+  { id: 'codeagent', label: 'Dev', visible: true, order: 11 },
+  { id: 'library', label: 'Library', visible: true, order: 12 },
+  { id: 'schedule', label: 'Schedule', visible: true, order: 13 },
+  { id: 'notifications', label: 'Notifications', visible: true, order: 14 },
+  { id: 'writing', label: 'Writing', visible: true, order: 15 },
+  { id: 'finance', label: 'Finance', visible: true, order: 16 },
+  { id: 'modulebuilder', label: 'Module Builder', visible: true, order: 17 },
+  { id: 'toolbar', label: 'Floating Toolbar', visible: true, order: 18 },
 ];
 
 function loadFromStorage(): PanelConfig[] {
@@ -95,13 +94,25 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
     for (const panel of panels) {
       const prev = prevPanels.find(p => p.id === panel.id);
       if (prev && prev.visible !== panel.visible) {
-        const view = ViewRegistry.get(panel.id);
-        if (view?.moduleId) {
+        // Try ViewRegistry first; if view was unregistered (disposed module), fall back to ModuleLoader
+        let moduleId = ViewRegistry.get(panel.id)?.moduleId;
+        if (!moduleId) {
+          for (const reg of ModuleLoader.getAll()) {
+            if (reg.manifest.views?.some(v => v.id === panel.id)) {
+              moduleId = reg.manifest.id;
+              break;
+            }
+          }
+        }
+        if (moduleId) {
           if (!panel.visible) {
-            ModuleLoader.disableModule(view.moduleId);
+            ModuleLoader.disableModule(moduleId);
           } else {
-            ModuleLoader.enableModule(view.moduleId).catch(err => {
-              console.error(`[PanelConfig] Failed to re-enable module "${view.moduleId}":`, err);
+            ModuleLoader.enableModule(moduleId).then(() => {
+              // Force re-render so sidebar picks up re-registered ViewRegistry entries
+              set(state => ({ panels: [...state.panels] }));
+            }).catch(err => {
+              console.error(`[PanelConfig] Failed to re-enable module "${moduleId}":`, err);
             });
           }
         }

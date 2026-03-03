@@ -324,10 +324,6 @@ function App() {
         // Cmd+Shift shortcuts (navigation only - theme toggle handled above)
         if (e.shiftKey) {
           switch (e.key.toUpperCase()) {
-            case 'C':
-              e.preventDefault();
-              setCurrentView('context');
-              break;
             case 'L':
               e.preventDefault();
               setCurrentView('library');
