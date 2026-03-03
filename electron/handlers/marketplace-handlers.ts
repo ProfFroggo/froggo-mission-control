@@ -73,6 +73,15 @@ function verifySha256(data: Buffer, expected: string): boolean {
   return actual === expected;
 }
 
+// ── Built-in module mapping ──────────────────────────────────────────────────
+// Registry IDs (froggo.pro) → built-in module IDs (ModuleLoader).
+// If a registry module maps to a compiled-in module, it's already installed.
+// Core modules are compiled-in and always active — can't be uninstalled.
+// Only list registry IDs that map to core modules here.
+const BUILTIN_MODULES: Record<string, string> = {
+  'froggo-settings': 'settings',
+};
+
 // ── Handler registration ──────────────────────────────────────────────────────
 
 export function registerMarketplaceHandlers(): void {
@@ -88,12 +97,14 @@ export function registerMarketplaceHandlers(): void {
   });
 
   // Handler 2: marketplace:module:install
-  // INSERT OR REPLACE into installed_modules; always signals restartRequired: true
-  // (compiled-in modules are already loaded — restart notice is cosmetic for UX)
+  // INSERT OR REPLACE into installed_modules; skip if it's a built-in
   registerHandler(
     'marketplace:module:install',
     async (_event, moduleId: string, name: string, version: string) => {
       try {
+        if (BUILTIN_MODULES[moduleId]) {
+          return { success: true, restartRequired: false, builtin: true };
+        }
         const now = Date.now();
         getDb().prepare(
           `INSERT OR REPLACE INTO installed_modules
@@ -146,15 +157,21 @@ export function registerMarketplaceHandlers(): void {
   });
 
   // Handler 4: marketplace:module:status
-  // Check if a module is installed by ID
+  // Check if a module is installed — either in DB or as a built-in
   registerHandler('marketplace:module:status', async (_event, moduleId: string) => {
     try {
+      // Check DB first (marketplace-installed modules)
       const row = getDb().prepare('SELECT * FROM installed_modules WHERE id = ?').get(moduleId) as Record<string, unknown> | undefined;
-      return {
-        success: true,
-        installed: !!row,
-        module: row ?? null,
-      };
+      if (row) {
+        return { success: true, installed: true, module: row };
+      }
+
+      // Check if this registry ID maps to a compiled-in module
+      if (BUILTIN_MODULES[moduleId]) {
+        return { success: true, installed: true, builtin: true, module: null };
+      }
+
+      return { success: true, installed: false, module: null };
     } catch (err: any) {
       logger.error('[Marketplace] module:status error:', err.message);
       return { success: false, installed: false, module: null, error: err.message };

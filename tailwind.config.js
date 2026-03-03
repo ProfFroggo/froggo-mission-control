@@ -10,6 +10,9 @@ export default {
       maxWidth: {
         '8xl': '90rem',
       },
+      borderColor: {
+        DEFAULT: 'var(--clawd-border, #2a2a2a)',
+      },
       colors: {
         'clawd': {
           bg: 'var(--clawd-bg, #0a0a0a)',
