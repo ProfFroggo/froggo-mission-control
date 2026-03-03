@@ -112,6 +112,7 @@ interface InstalledModuleRow {
 
 interface InstalledInfo {
   installed: boolean;
+  builtin?: boolean;
   module?: InstalledModuleRow;
 }
 
@@ -174,6 +175,7 @@ function CategoryChip({
 function ModuleCard({
   mod,
   installed,
+  builtin,
   hasUpdate,
   isInstalling,
   onInstall,
@@ -182,6 +184,7 @@ function ModuleCard({
 }: {
   mod: RegistryModule;
   installed: boolean;
+  builtin?: boolean;
   hasUpdate: boolean;
   isInstalling: boolean;
   onInstall: (mod: RegistryModule) => void;
@@ -275,6 +278,11 @@ function ModuleCard({
                 <Trash2 size={13} />
               </button>
             </>
+          ) : builtin ? (
+            <span className="flex items-center gap-1.5 text-xs text-clawd-accent font-medium">
+              <PackageCheck size={13} />
+              Built-in
+            </span>
           ) : (
             <>
               <span className="flex items-center gap-1.5 text-xs text-green-400 font-medium">
@@ -345,6 +353,7 @@ export default function MarketplaceBrowse() {
               m.id,
               {
                 installed: !!result?.installed,
+                builtin: !!result?.builtin,
                 module: result?.module ?? undefined,
               } as InstalledInfo,
             ] as const;
@@ -559,6 +568,7 @@ export default function MarketplaceBrowse() {
               key={mod.id}
               mod={mod}
               installed={installedMap[mod.id]?.installed ?? false}
+              builtin={installedMap[mod.id]?.builtin}
               hasUpdate={updateSet.has(mod.id)}
               isInstalling={installing === mod.id}
               onInstall={handleInstall}

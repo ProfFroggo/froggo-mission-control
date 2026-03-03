@@ -25,7 +25,6 @@ const CodeAgentDashboardRaw = lazy(() => import('./CodeAgentDashboard'));
 const ContextControlBoardRaw = lazy(() => import('./ContextControlBoard'));
 const AnalyticsDashboardRaw = lazy(() => import('./AnalyticsDashboard'));
 const ConnectedAccountsPanelRaw = lazy(() => import('./ConnectedAccountsPanel'));
-const DMFeedRaw = lazy(() => import('./DMFeed'));
 const FinancePanelRaw = lazy(() => import('./FinancePanel'));
 const WritingWorkspaceRaw = lazy(() => import('./writing/WritingWorkspace'));
 const ModuleBuilderPageRaw = lazy(() => import('./ModuleBuilder/ModuleBuilderPage'));
@@ -47,7 +46,6 @@ export const CodeAgentDashboard = withErrorBoundary(CodeAgentDashboardRaw, 'Code
 export const ContextControlBoard = withErrorBoundary(ContextControlBoardRaw, 'Context Control');
 export const AnalyticsDashboard = withErrorBoundary(AnalyticsDashboardRaw, 'Analytics');
 export const ConnectedAccountsPanel = withErrorBoundary(ConnectedAccountsPanelRaw, 'Connected Accounts');
-export const DMFeed = withErrorBoundary(DMFeedRaw, 'Agent Messages');
 export const FinancePanel = withErrorBoundary(FinancePanelRaw, 'Finance Manager');
 export const WritingWorkspace = withErrorBoundary(WritingWorkspaceRaw, 'Writing Workspace');
 export const ModuleBuilderPage = withErrorBoundary(ModuleBuilderPageRaw, 'Module Builder');
