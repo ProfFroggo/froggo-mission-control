@@ -6,8 +6,6 @@
   "author": "Froggo Team",
   "icon": "BarChart2",
   "category": "productivity",
-  "core": true,
-
   "credentials": [],
 
   "views": [

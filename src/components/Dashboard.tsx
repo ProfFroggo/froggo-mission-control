@@ -10,7 +10,7 @@ import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
 import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
 
 interface DashboardProps {
   onNavigate?: (view: View) => void;

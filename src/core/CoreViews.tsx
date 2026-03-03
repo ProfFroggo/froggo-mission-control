@@ -19,7 +19,7 @@ import {
 import { ViewRegistry } from './ViewRegistry';
 
 // Register all core views — order here doesn't matter, panelConfig controls display order
-// NOTE: finance, analytics, settings, library, inbox, chat, kanban, approvals, notifications, meetings, voicechat, schedule, writing, accounts, context, codeagent, modulebuilder are registered by their respective modules (src/modules/*)
+// NOTE: finance, analytics, settings, library, inbox, chat, kanban, approvals, notifications, meetings, voicechat, schedule, writing, accounts, codeagent, modulebuilder are registered by their respective modules (src/modules/*)
 [
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
 ].forEach(view => ViewRegistry.register(view));

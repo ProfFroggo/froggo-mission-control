@@ -22,7 +22,6 @@ const CommsInbox3PaneRaw = lazy(() => import('./CommsInbox3Pane'));
 const LibraryPanelRaw = lazy(() => import('./LibraryPanel'));
 const SchedulePanelRaw = lazy(() => import('./SchedulePanel'));
 const CodeAgentDashboardRaw = lazy(() => import('./CodeAgentDashboard'));
-const ContextControlBoardRaw = lazy(() => import('./ContextControlBoard'));
 const AnalyticsDashboardRaw = lazy(() => import('./AnalyticsDashboard'));
 const ConnectedAccountsPanelRaw = lazy(() => import('./ConnectedAccountsPanel'));
 const FinancePanelRaw = lazy(() => import('./FinancePanel'));
@@ -43,7 +42,6 @@ export const CommsInbox3Pane = withErrorBoundary(CommsInbox3PaneRaw, 'Communicat
 export const LibraryPanel = withErrorBoundary(LibraryPanelRaw, 'Library');
 export const SchedulePanel = withErrorBoundary(SchedulePanelRaw, 'Schedule');
 export const CodeAgentDashboard = withErrorBoundary(CodeAgentDashboardRaw, 'Code Agent Dashboard');
-export const ContextControlBoard = withErrorBoundary(ContextControlBoardRaw, 'Context Control');
 export const AnalyticsDashboard = withErrorBoundary(AnalyticsDashboardRaw, 'Analytics');
 export const ConnectedAccountsPanel = withErrorBoundary(ConnectedAccountsPanelRaw, 'Connected Accounts');
 export const FinancePanel = withErrorBoundary(FinancePanelRaw, 'Finance Manager');
