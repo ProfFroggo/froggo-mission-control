@@ -1,0 +1,17 @@
+{
+  "name": "memory-mcp",
+  "version": "1.0.0",
+  "description": "Froggo memory MCP server — Obsidian vault search and write",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest"
+  }
+}
