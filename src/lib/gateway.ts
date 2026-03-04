@@ -1,4 +1,4 @@
-// Gateway WebSocket Client - connects to Clawdbot gateway
+// Gateway WebSocket Client - connects to froggo-nextjs gateway
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('Gateway');
@@ -95,22 +95,23 @@ function getSettings(): { gatewayUrl: string; gatewayToken: string } {
   return { gatewayUrl: DEFAULT_GATEWAY_WS, gatewayToken: DEFAULT_TOKEN };
 }
 
-// Fetch gateway token from openclaw config via Electron IPC — always overwrite to stay in sync
+// Ensure gateway token is loaded from localStorage or env, then connect
 let _configTokenLoaded = false;
-async function ensureGatewayToken() {
+function ensureGatewayToken() {
   if (_configTokenLoaded) return;
   _configTokenLoaded = true;
-  try {
-    const w = window as any;
-    const token = await w.clawdbot?.gateway?.getToken?.();
-    if (token) {
+  // Token comes from localStorage (froggo-settings) or env variable
+  const envToken = typeof process !== 'undefined' ? (process.env?.NEXT_PUBLIC_GATEWAY_TOKEN ?? '') : '';
+  if (envToken) {
+    try {
       const saved = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
-      saved.gatewayToken = token;
-      localStorage.setItem('froggo-settings', JSON.stringify(saved));
-      logger.debug('[Gateway] Loaded token from openclaw config');
-    }
-  } catch { /* ignore — will connect with whatever localStorage has */ }
-  // Always connect after token attempt (with whatever token we have)
+      if (!saved.gatewayToken) {
+        saved.gatewayToken = envToken;
+        localStorage.setItem('froggo-settings', JSON.stringify(saved));
+        logger.debug('[Gateway] Loaded token from environment');
+      }
+    } catch { /* ignore */ }
+  }
   gateway.connect();
 }
 
@@ -553,7 +554,7 @@ class Gateway {
       params: {
         minProtocol: 3, 
         maxProtocol: 3,
-        client: { id: 'openclaw-control-ui', version: '1.0.0', platform: 'electron', mode: 'ui' },
+        client: { id: 'froggo-nextjs', version: '1.0.0', platform: 'web', mode: 'ui' },
         role: 'operator',
         scopes: ['operator.admin', 'operator.write', 'operator.read'],
         caps: ['streaming'],
@@ -1062,18 +1063,6 @@ export function reconnectGateway() {
 
 export function forceReconnect() {
   reconnectGateway();
-}
-
-// Set up listener for broadcast events from Electron main process
-// This enables real-time task updates when database changes happen
-if (typeof window !== 'undefined' && window.clawdbot?.gateway?.onBroadcast) {
-  window.clawdbot.gateway.onBroadcast((broadcastData: { type: string; event: string; payload: any }) => {
-    logger.debug('[Gateway] Received broadcast from main:', broadcastData.event);
-    // Emit the event locally to all listeners
-    if (broadcastData.event && broadcastData.payload) {
-      gateway['emit'](broadcastData.event, broadcastData.payload);
-    }
-  });
 }
 
 if (typeof window !== 'undefined') {
