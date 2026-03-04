@@ -4,6 +4,7 @@ import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
 import HRReportsModal from './HRReportsModal';
+import { agentApi, analyticsApi } from '../lib/api';
 
 interface TeamHealth {
   totalAgents: number;
@@ -23,42 +24,26 @@ export default function HRSection() {
 
   const loadTeamHealth = useCallback(async () => {
     try {
-      // Load from IPC bridge if available, otherwise use defaults
-      const dbExec = window.clawdbot?.db?.exec;
-      if (dbExec) {
-        const statsRes = await dbExec(`
-          SELECT 
-            (SELECT COUNT(DISTINCT id) FROM agent_registry WHERE status = 'active') as total_agents,
-            (SELECT ROUND(AVG(proficiency), 1) FROM agent_skills) as avg_prof,
-            (SELECT COUNT(*) FROM agent_training_log) as recent_trainings
-        `);
-        const skillsRes = await dbExec(
-          `SELECT agent_id, skill_name, proficiency FROM agent_skills WHERE proficiency < 4 ORDER BY proficiency ASC LIMIT 5`
-        );
-        const result = statsRes?.result || [];
-        const skills = skillsRes?.result || [];
-        const gaps = skills.map((s: any) => `${s.agent_id}:${s.skill_name}(${s.proficiency})`);
-        const needsTraining = [...new Set(skills.map((s: any) => s.agent_id))];
+      // Load from REST API
+      const [agentsData, activityData] = await Promise.all([
+        agentApi.getAll().catch(() => []),
+        analyticsApi.getAgentActivity().catch(() => ({})),
+      ]);
+      const agentsList = Array.isArray(agentsData) ? agentsData : agentsData?.agents || [];
+      const totalAgents = agentsList.filter((a: any) => a.status === 'active').length || agentsList.length;
+      const avgProficiency = activityData?.avgProficiency ?? 7.2;
+      const skillGaps = activityData?.skillGaps || [];
+      const recentTrainings = activityData?.recentTrainings || 0;
+      const agentsNeedingTraining = activityData?.agentsNeedingTraining || [];
 
-        setTeamHealth({
-          totalAgents: result?.[0]?.total_agents || 5,
-          avgProficiency: result?.[0]?.avg_prof || 7.2,
-          skillGaps: gaps,
-          recentTrainings: result?.[0]?.recent_trainings || 0,
-          agentsNeedingTraining: needsTraining as string[],
-        });
-      } else {
-        // Fallback — static values
-        setTeamHealth({
-          totalAgents: 6,
-          avgProficiency: 7.4,
-          skillGaps: [],
-          recentTrainings: 0,
-          agentsNeedingTraining: [],
-        });
-      }
+      setTeamHealth({
+        totalAgents: totalAgents || 6,
+        avgProficiency: avgProficiency,
+        skillGaps,
+        recentTrainings,
+        agentsNeedingTraining,
+      });
     } catch (e) {
-      // 'Failed to load team health:', e;
       setTeamHealth({ totalAgents: 6, avgProficiency: 7.0, skillGaps: [], recentTrainings: 0, agentsNeedingTraining: [] });
     } finally {
       setLoading(false);
