@@ -78,8 +78,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Update Zustand stores to call typed API methods (`taskApi.*`, `agentApi.*`, etc.), strip all IPC store calls
-- [ ] 04-02: Wire `ChatPanel.tsx` to SSE stream endpoint, remove all `window.clawdbot.gateway.*` references, verify dashboard renders without errors
+- [x] 04-01: Update Zustand stores to call typed API methods (`taskApi.*`, `agentApi.*`, etc.), strip all IPC store calls ✓ 2026-03-04
+- [x] 04-02: Wire `ChatPanel.tsx` to SSE stream endpoint, remove all `window.clawdbot.gateway.*` references, verify dashboard renders without errors ✓ 2026-03-04
 
 ### Phase 5: MCP Servers
 **Goal**: `froggo-db` MCP and memory MCP running standalone — agents can query DB and read memory through tool calls
@@ -196,7 +196,7 @@ Plans:
 | 1. Electron Strip + Next.js Scaffold | 3/3 | Complete | 2026-03-04 |
 | 2. Database Layer | 2/2 | Complete | 2026-03-04 |
 | 3. API Routes | 4/4 | Complete | 2026-03-04 |
-| 4. Frontend Wiring | 0/2 | Not started | - |
+| 4. Frontend Wiring | 2/2 | Complete | 2026-03-04 |
 | 5. MCP Servers | 0/2 | Not started | - |
 | 6. Agent Definitions | 0/2 | Not started | - |
 | 7. Permission & Hook System | 0/2 | Not started | - |
