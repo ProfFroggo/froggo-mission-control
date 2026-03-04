@@ -1010,7 +1010,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
       }
       case 'list_tasks': {
-        const where = [];
+        const where: string[] = [];
         if (args.agent_id && isCleanId(args.agent_id)) where.push(`assigned_to='${args.agent_id}'`);
         if (args.status && args.status !== 'all' && isCleanId(args.status)) where.push(`status='${args.status}'`);
         const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';

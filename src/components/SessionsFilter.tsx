@@ -179,7 +179,7 @@ export default function SessionsFilter() {
       if (result?.success && result?.pins) {
         // Pins are already sorted by pin_order ASC from the backend
         const orderedKeys = result?.pins.map((p: any) => p.session_key);
-        const pinSet = new Set(orderedKeys);
+        const pinSet = new Set<string>(orderedKeys);
         setPinnedSessions(pinSet);
         setPinnedOrder(orderedKeys);
       }

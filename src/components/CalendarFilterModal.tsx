@@ -60,7 +60,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
       // Load saved filter preferences
       const savedFilters = localStorage.getItem('calendar-filter-preferences');
-      let enabledIds = null;
+      let enabledIds: string[] | null = null;
       if (savedFilters) {
         try {
           enabledIds = JSON.parse(savedFilters);
