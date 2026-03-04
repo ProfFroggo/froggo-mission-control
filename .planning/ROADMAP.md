@@ -45,7 +45,7 @@ None (no ~/.claude/skills/expertise/ available)
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Remove Electron deps (`npm uninstall electron electron-builder ...`), install Next.js, create `next.config.js`, update `tsconfig.json` and `package.json` scripts
+- [x] 01-01: Remove Electron deps (`npm uninstall electron electron-builder ...`), install Next.js, create `next.config.js`, update `tsconfig.json` and `package.json` scripts ✓ 2026-03-04
 - [ ] 01-02: Create App Router structure (`app/layout.tsx`, `app/page.tsx`), verify TypeScript compiles
 - [ ] 01-03: Create `src/lib/api.ts` (typed API clients) + `src/lib/bridge.ts` (`window.clawdbot` polyfill), verify app loads at `localhost:3000`
 
@@ -193,7 +193,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Setup & Audit | — | Complete | 2026-03-04 |
-| 1. Electron Strip + Next.js Scaffold | 0/3 | Not started | - |
+| 1. Electron Strip + Next.js Scaffold | 1/3 | In progress | - |
 | 2. Database Layer | 0/2 | Not started | - |
 | 3. API Routes | 0/4 | Not started | - |
 | 4. Frontend Wiring | 0/2 | Not started | - |
