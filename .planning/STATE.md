@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 12 — SSE Streaming
+**Current focus:** Phase 13 — Skills
 
 ## Current Position
 
-Phase: 12 of 14 (SSE Streaming)
-Plan: 0 of 2 in current phase
+Phase: 13 of 14 (Skills)
+Plan: 0 of 1 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 11 (all 2 plans): cron daemon, cron-setup.sh, cron MCP server
+Last activity: 2026-03-04 — Completed Phase 12 (all 2 plans): real SSE streaming, events polling, useRealtimeUpdates hook
 
-Progress: ███████████████████░ 86%
+Progress: ████████████████████░ 93%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
+- Total plans completed: 27
 - Average duration: 3 min
 - Total execution time: 0.75 hours
 
@@ -38,6 +38,7 @@ Progress: ███████████████████░ 86%
 | 9 (complete) | 2/2 | 5 min | 2.5 min |
 | 10 (complete) | 2/2 | 5 min | 2.5 min |
 | 11 (complete) | 2/2 | 5 min | 2.5 min |
+| 12 (complete) | 2/2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -57,6 +58,7 @@ Progress: ███████████████████░ 86%
 - Phase 9: ChatRoomsPanel module at src/modules/chat-rooms/ with room list, message thread, 5s polling; API routes verified from Phase 3
 - Phase 10: Session CRUD API at /api/agents/[id]/session; spawn resumes existing sessions; /api/sessions listing; sessionApi client
 - Phase 11: cron-daemon.js reads schedule.json; cron-setup.sh installs 6 crontab entries; cron MCP server (3 tools) in .claude/settings.json
+- Phase 12: Real SSE streaming via child_process.spawn; /api/events polling endpoint; useRealtimeUpdates React hook
 
 ### Deferred Issues
 
@@ -72,5 +74,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 11 complete — starting Phase 12 (SSE Streaming, 2 plans)
+Stopped at: Phase 12 complete — starting Phase 13 (Skills, 1 plan)
 Resume file: None

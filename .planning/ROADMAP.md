@@ -24,7 +24,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
 - [x] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
 - [x] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
-- [ ] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
+- [x] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
 - [ ] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
 - [ ] **Phase 14: Final Integration & Testing** - E2E smoke test, approval flow, inter-agent comms, memory recall, cleanup
 
@@ -161,8 +161,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: Create `/api/agents/[id]/stream` SSE endpoint — calls Claude Code SDK `query()` with streaming, pipes deltas as `data:` events
-- [ ] 12-02: Dashboard real-time polling for non-SSE events (task updates, agent status changes); verify full streaming E2E
+- [x] 12-01: Real SSE streaming — spawns claude CLI, pipes stream-json output as SSE data events ✓ 2026-03-04
+- [x] 12-02: Events polling endpoint + useRealtimeUpdates hook for dashboard real-time updates ✓ 2026-03-04
 
 ### Phase 13: Skills
 **Goal**: Project-specific Claude Code skills installed — agents invoke `froggo-db` skill and coding standards skill without manual setup
@@ -204,6 +204,6 @@ Plans:
 | 9. Chat Rooms | 2/2 | Complete | 2026-03-04 |
 | 10. Session Management | 2/2 | Complete | 2026-03-04 |
 | 11. Cron & Automation | 2/2 | Complete | 2026-03-04 |
-| 12. SSE Streaming | 0/2 | Not started | - |
+| 12. SSE Streaming | 2/2 | Complete | 2026-03-04 |
 | 13. Skills | 0/1 | Not started | - |
 | 14. Final Integration & Testing | 0/2 | Not started | - |
