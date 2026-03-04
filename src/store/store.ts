@@ -242,60 +242,21 @@ interface Store {
 
 }
 
-// Execute approved items via direct IPC calls
+// Execute approved items — delegates to gateway agent for all external actions
 async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; error?: string }> {
-  const clawdbot = window.clawdbot;
-
   try {
     switch (item.type) {
       case 'tweet':
       case 'reply': {
-        // Post tweet directly via bird CLI IPC
-        if (clawdbot?.execute?.tweet) {
-          const result = await clawdbot.execute.tweet(item.content);
-          if (!result.success) {
-            console.error('[Approval] Tweet failed:', result.error);
-            // Fallback: notify agent to handle it
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-            return { success: false, error: result.error };
-          }
-        } else {
-          // Fallback if IPC not available
-          await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-        }
+        await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         break;
       }
       case 'email': {
-        // Send email directly via gog gmail IPC
-        if (clawdbot?.email?.send && item.metadata?.to) {
-          const result = await clawdbot.email.send({
-            to: item.metadata.to,
-            subject: item.metadata.subject || item.title || 'No subject',
-            body: item.content,
-            account: item.metadata.account,
-          });
-          if (!result.success) {
-            console.error('[Approval] Email failed:', result.error);
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-            return { success: false, error: result.error };
-          }
-        } else {
-          await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-        }
+        await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         break;
       }
       case 'message': {
-        // Send message via messages IPC
-        if (clawdbot?.messages?.send && item.metadata?.platform && item.metadata?.to) {
-          const result = await clawdbot.messages.send(item.metadata.platform, item.metadata.to, item.content);
-          if (!result?.success) {
-            console.error('[Approval] Message failed:', result?.error);
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-            return { success: false, error: result?.error };
-          }
-        } else {
-          await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-        }
+        await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         break;
       }
       case 'task': {
