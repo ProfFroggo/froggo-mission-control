@@ -18,6 +18,7 @@ import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 import { getAgentTheme } from '../utils/agentThemes';
 import WidgetLoader from './WidgetLoader';
 import { createLogger } from '../utils/logger';
+import { agentApi, analyticsApi } from '../lib/api';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
@@ -71,43 +72,21 @@ export default function AgentPanel() {
   const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
 
   useEffect(() => {
-    window.clawdbot?.agentManagement?.ctx?.check().then((res) => {
-      if (res?.success && res.health) setCtxHealth(res.health);
-    }).catch(() => {});
+    // Context health check — no REST equivalent, skip silently
+    console.warn('Not implemented: agentManagement.ctx.check');
   }, []);
 
   useEffect(() => {
-    (window as any).clawdbot?.memoryLifecycle?.status().then((res: any) => {
-      if (res?.success && res.agents) {
-        const health: Record<string, any> = {};
-        for (const a of res.agents) {
-          health[a.agentId] = {
-            sizeKB: a.memorySizeKB,
-            archiveChunks: a.archiveChunks,
-            health: a.health,
-            lastRotation: a.lastRotation,
-          };
-        }
-        setMemoryHealth(health);
-      }
-    }).catch(() => {});
+    // Memory lifecycle status — no REST equivalent, skip silently
+    console.warn('Not implemented: memoryLifecycle.status');
   }, []);
 
   const handleMemoryRotate = async (agentId: string) => {
     if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via froggo-db memory-search.`)) return;
     setRotatingAgent(agentId);
     try {
-      const res = await (window as any).clawdbot?.memoryLifecycle?.rotate(agentId);
-      if (res?.success) {
-        const statusRes = await (window as any).clawdbot?.memoryLifecycle?.status();
-        if (statusRes?.success && statusRes.agents) {
-          const health: Record<string, any> = {};
-          for (const a of statusRes.agents) {
-            health[a.agentId] = { sizeKB: a.memorySizeKB, archiveChunks: a.archiveChunks, health: a.health, lastRotation: a.lastRotation };
-          }
-          setMemoryHealth(health);
-        }
-      }
+      // Memory rotation — no REST equivalent
+      console.warn('Not implemented: memoryLifecycle.rotate', agentId);
     } finally {
       setRotatingAgent(null);
     }
@@ -166,7 +145,7 @@ export default function AgentPanel() {
   const loadAgentMetrics = async () => {
     setLoadingMetrics(true);
     try {
-      const data = await window.clawdbot?.agents?.getMetrics();
+      const data = await analyticsApi.getAgentActivity();
       if (data) setAgentMetrics(data);
     } catch (e) { logger.error('Failed to load agent metrics:', e); }
     finally { setLoadingMetrics(false); }
@@ -180,12 +159,8 @@ export default function AgentPanel() {
 
   const handleAgentStop = async (agentId: string) => {
     try {
-      const result = await window.clawdbot?.agentManagement?.agent?.stop(agentId);
-      if (result?.success) {
-        await fetchAgents(); // Refresh agent list from DB
-      } else {
-        logger.error('[AgentPanel] Stop failed:', result?.error);
-      }
+      await agentApi.updateStatus(agentId, 'disabled');
+      await fetchAgents();
     } catch (err) {
       logger.error('[AgentPanel] Stop error:', err);
     }
@@ -193,12 +168,8 @@ export default function AgentPanel() {
 
   const handleAgentStart = async (agentId: string) => {
     try {
-      const result = await window.clawdbot?.agentManagement?.agent?.start(agentId);
-      if (result?.success) {
-        await fetchAgents(); // Refresh agent list from DB
-      } else {
-        logger.error('[AgentPanel] Start failed:', result?.error);
-      }
+      await agentApi.updateStatus(agentId, 'active');
+      await fetchAgents();
     } catch (err) {
       logger.error('[AgentPanel] Start error:', err);
     }

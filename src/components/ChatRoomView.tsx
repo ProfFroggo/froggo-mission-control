@@ -136,8 +136,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         try {
           const uploadDir = '/Users/worker/froggo/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
-          parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
+          console.warn('Not implemented: fs.writeBase64 for image upload', tempPath);
+          parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
         } catch {
           parts.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
         }
@@ -145,7 +145,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         try {
           const uploadDir = '/Users/worker/froggo/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
           parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
         } catch {
           parts.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
@@ -154,7 +154,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         try {
           const uploadDir = '/Users/worker/froggo/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
           parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
         } catch {
           parts.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);

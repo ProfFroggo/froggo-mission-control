@@ -12,6 +12,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { matchTaskToAgent } from '../lib/agents';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
+import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/api';
 
 const logger = createLogger('InboxPanel');
 
@@ -128,26 +129,19 @@ export default function InboxPanel() {
   const loadInbox = useCallback(async () => {
     setLoading(true);
     try {
-      // Check if running in Electron with clawdbot API
-      if (!window.clawdbot?.inbox?.list) {
-        logger.debug('clawdbot.inbox not available (web mode)');
-        setItems([]);
-        return;
-      }
-      
-      // Load inbox items
-      const result = await window.clawdbot?.inbox.list();
-      let allItems: InboxItem[] = result.success ? (result.items || []) : [];
+      // Load inbox items via REST API
+      const result = await inboxApi.getAll();
+      let allItems: InboxItem[] = Array.isArray(result) ? result : (result?.items || []);
       
       // Also load tasks in "review" or "human-review" status that haven't been reviewed yet
       try {
         const [reviewResult, humanReviewResult] = await Promise.all([
-          window.clawdbot?.tasks.list('review'),
-          window.clawdbot?.tasks.list('human-review'),
+          taskApi.getAll({ status: 'review' }),
+          taskApi.getAll({ status: 'human-review' }),
         ]);
         const reviewTasks = [
-          ...((reviewResult?.success && reviewResult.tasks) || []),
-          ...((humanReviewResult?.success && humanReviewResult.tasks) || []),
+          ...(Array.isArray(reviewResult) ? reviewResult : (reviewResult?.tasks || [])),
+          ...(Array.isArray(humanReviewResult) ? humanReviewResult : (humanReviewResult?.tasks || [])),
         ];
         if (reviewTasks.length > 0) {
           // Convert tasks to inbox item format
@@ -175,9 +169,10 @@ export default function InboxPanel() {
       
       // Also load tasks in "human-review" status (approval required)
       try {
-        const humanReviewResult = await window.clawdbot?.tasks.list('human-review');
-        if (humanReviewResult?.success && humanReviewResult.tasks?.length > 0) {
-          const humanReviewItems = humanReviewResult.tasks
+        const humanReviewResult2 = await taskApi.getAll({ status: 'human-review' });
+        const hrTasks = Array.isArray(humanReviewResult2) ? humanReviewResult2 : (humanReviewResult2?.tasks || []);
+        if (hrTasks.length > 0) {
+          const humanReviewItems = hrTasks
             .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
             .filter((t: any) => t.approval_status === 'pending') // Only show pending approvals
             .map((t: any) => ({
@@ -510,10 +505,11 @@ export default function InboxPanel() {
   // Check if agent is still active on this task
   const checkForActiveAgent = async (taskId: string) => {
     try {
-      const result = await window.clawdbot?.sessions.list();
-      if (result?.success && result?.sessions) {
+      const result = await sessionApi.getAll();
+      const sessions = Array.isArray(result) ? result : (result?.sessions || []);
+      if (sessions.length > 0) {
         // Find session with label matching task ID
-        const activeSession = result?.sessions.find((s: any) => {
+        const activeSession = sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
           const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
           // Label contains task ID (e.g., "coder-task-123")
@@ -631,12 +627,12 @@ export default function InboxPanel() {
       
       try {
         // Add Stage 2 item to inbox
-        const result = await window.clawdbot?.inbox.addWithMetadata(stage2Item);
-        
-        if (result?.success) {
+        const result = await inboxApi.create(stage2Item);
+
+        if (result) {
           // Mark original as approved (Stage 1 complete)
           setItems(prev => prev.filter(i => i.id !== item.id));
-          await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
+          await inboxApi.update(Number(item.id), { status: 'approved' });
           showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
         } else {
           showToast('error', 'Failed to create send task', result?.error);
@@ -675,16 +671,16 @@ export default function InboxPanel() {
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
           // FIX: Update BOTH reviewStatus (to mark as reviewed) AND status (to move to done)
-          await window.clawdbot?.tasks.update(meta.taskId, { 
+          await taskApi.update(meta.taskId, {
             reviewStatus: 'approved',
             status: 'done'
           } as any);
           return;
         }
       }
-      
+
       // Regular inbox item - update and create execution task
-      await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
+      await inboxApi.update(Number(item.id), { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
@@ -716,14 +712,14 @@ export default function InboxPanel() {
         metadata,
       };
       
-      const result = await window.clawdbot?.tasks.sync(taskData);
-      if (!result?.success) {
-        logger.error('Task creation failed:', result?.error);
+      const result = await taskApi.create(taskData);
+      if (!result) {
+        logger.error('Task creation failed');
       } else {
         // SAFEGUARD: Verify the status is correct after a brief delay
         setTimeout(async () => {
           try {
-            await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
+            await taskApi.update(taskData.id, { status: 'in-progress' });
           } catch (_e) {
             // Non-blocking: status update is best-effort
           }

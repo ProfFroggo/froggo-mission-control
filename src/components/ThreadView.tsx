@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, Star, Mail, Check, User, Paperclip } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
+import { inboxApi } from '../lib/api';
 
 interface ThreadMessage {
   id: string;
@@ -211,9 +212,10 @@ export default function ThreadView({
     const loadThread = async () => {
       setLoading(true);
       try {
-        const result = await window.clawdbot?.inbox?.getThread?.(threadId);
-        if (result?.success && result.items) {
-          setMessages(result.items as any[]);
+        const result = await inboxApi.getAll({ thread_id: threadId });
+        const items = Array.isArray(result) ? result : (result?.items || []);
+        if (items.length > 0) {
+          setMessages(items as any[]);
         }
       } catch (e) {
         // '[ThreadView] Failed to load thread:', e;

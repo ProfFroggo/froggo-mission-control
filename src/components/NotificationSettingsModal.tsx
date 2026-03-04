@@ -4,12 +4,13 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect } from 'react';
-import { 
-  Bell, BellOff, Volume2, VolumeX, Moon, Clock, 
+import {
+  Bell, BellOff, Volume2, VolumeX, Moon, Clock,
   Hash, AlertCircle, X, Settings, Save, Trash2,
-  ZapOff, MessageSquare 
+  ZapOff, MessageSquare
 } from 'lucide-react';
 import { showToast } from './Toast';
+import { settingsApi } from '../lib/api';
 
 interface NotificationSettingsModalProps {
   sessionKey: string;
@@ -64,15 +65,15 @@ export default function NotificationSettingsModal({
     setLoading(true);
     try {
       // Load conversation-specific settings
-      const result = await window.clawdbot?.notificationSettings.get(sessionKey);
-      
+      const result = await settingsApi.get(`notifications.${sessionKey}`).catch(() => ({ success: false }));
+
       // Load global defaults
-      const defaultsResult = await window.clawdbot?.notificationSettings.getGlobalDefaults();
+      const defaultsResult = await settingsApi.get('notifications.defaults').catch(() => ({ success: false }));
       
-      if (result?.success && result?.settings) {
+      if (result?.value || (result?.success && result?.settings)) {
         // Has custom settings
         setHasCustomSettings(true);
-        const s = result.settings;
+        const s = result.value || result.settings;
         setSettings(s);
         
         setNotificationLevel(s.notification_level || 'all');
@@ -89,10 +90,10 @@ export default function NotificationSettingsModal({
         setBadgeCountEnabled(s.badge_count_enabled === 1);
         setMuteUntil(s.mute_until ?? null);
         setNotes(s.notes || '');
-      } else if (defaultsResult?.success && defaultsResult?.defaults) {
+      } else if (defaultsResult?.value || (defaultsResult?.success && defaultsResult?.defaults)) {
         // No custom settings, use global defaults
         setHasCustomSettings(false);
-        const d = defaultsResult?.defaults;
+        const d = defaultsResult.value || defaultsResult?.defaults;
         setGlobalDefaults(d);
         
         setNotificationLevel(d.default_notification_level || 'all');
@@ -131,10 +132,7 @@ export default function NotificationSettingsModal({
         notes: notes,
       };
 
-      const result = await window.clawdbot?.notificationSettings.set(
-        sessionKey,
-        updatedSettings as unknown as NotificationPrefs
-      );
+      const result = await settingsApi.set(`notifications.${sessionKey}`, updatedSettings);
 
       if (result?.success) {
         setHasCustomSettings(true);
@@ -156,7 +154,7 @@ export default function NotificationSettingsModal({
     
     setSaving(true);
     try {
-      const result = await window.clawdbot?.notificationSettings.delete(sessionKey);
+      const result = await settingsApi.set(`notifications.${sessionKey}`, null);
       if (result?.success) {
         setHasCustomSettings(false);
         await loadSettings(); // Reload to show defaults
@@ -174,10 +172,10 @@ export default function NotificationSettingsModal({
     
     setSaving(true);
     try {
-      const result = await window.clawdbot?.notificationSettings.muteConversation(
-        sessionKey,
-        until.toISOString()
-      );
+      const result = await settingsApi.set(`notifications.${sessionKey}`, {
+        notification_level: 'none',
+        mute_until: until.toISOString(),
+      });
       
       if (result?.success) {
         setMuteUntil(until.toISOString());
@@ -194,7 +192,10 @@ export default function NotificationSettingsModal({
   const handleUnmute = async () => {
     setSaving(true);
     try {
-      const result = await window.clawdbot?.notificationSettings.unmuteConversation(sessionKey);
+      const result = await settingsApi.set(`notifications.${sessionKey}`, {
+        notification_level: 'all',
+        mute_until: null,
+      });
       
       if (result?.success) {
         setMuteUntil(null);

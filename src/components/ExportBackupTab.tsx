@@ -7,6 +7,30 @@ import { useState, useEffect } from 'react';
 import { Download, Upload, Database, Clock, HardDrive, CheckCircle, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { taskApi, agentApi, chatApi, settingsApi } from '../lib/api';
+
+function downloadJSON(data: any, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadCSV(data: any[], filename: string) {
+  if (!data.length) return;
+  const headers = Object.keys(data[0]);
+  const csv = [headers.join(','), ...data.map(row => headers.map(h => JSON.stringify(row[h] ?? '')).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface BackupInfo {
   filename: string;
@@ -48,10 +72,9 @@ export default function ExportBackupTab() {
 
   const loadBackups = async () => {
     try {
-      const result = await window.clawdbot?.exportBackup?.listBackups();
-      if (result?.success) {
-        setBackups((result.backups || []) as BackupInfo[]);
-      }
+      const result = await settingsApi.get('backups.list').catch(() => null);
+      const backupList = result?.value || result?.backups || [];
+      setBackups(Array.isArray(backupList) ? backupList as BackupInfo[] : []);
     } catch (error) {
       // '[ExportBackup] Failed to load backups:', error;
     }
@@ -59,9 +82,9 @@ export default function ExportBackupTab() {
 
   const loadStats = async () => {
     try {
-      const result = await window.clawdbot?.exportBackup?.getStats();
-      if (result?.success) {
-        setStats(result.stats);
+      const result = await settingsApi.get('backups.stats').catch(() => null);
+      if (result?.value || result?.stats) {
+        setStats(result.value || result.stats);
       }
     } catch (error) {
       // '[ExportBackup] Failed to load stats:', error;
@@ -91,17 +114,15 @@ export default function ExportBackupTab() {
   const handleExportTasks = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.exportBackup?.exportTasks({
-        format: exportFormat,
-        filters: {} // Could add filters UI later
-      });
-      
-      if (result?.success) {
-        showToast('success', 'Tasks Exported', `Saved to: ${result.filepath}`);
-        loadStats();
+      const tasks = await taskApi.getAll();
+      const data = Array.isArray(tasks) ? tasks : (tasks?.tasks || []);
+      const filename = `tasks-export-${new Date().toISOString().slice(0, 10)}.${exportFormat}`;
+      if (exportFormat === 'csv') {
+        downloadCSV(data, filename);
       } else {
-        showToast('error', 'Export Failed', result?.error || 'Unknown error');
+        downloadJSON(data, filename);
       }
+      showToast('success', 'Tasks Exported', `Downloaded as ${filename}`);
     } catch (error) {
       showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
@@ -113,17 +134,15 @@ export default function ExportBackupTab() {
   const handleExportAgentLogs = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.exportBackup?.exportAgentLogs({
-        format: exportFormat,
-        filters: {}
-      });
-      
-      if (result?.success) {
-        showToast('success', 'Agent Logs Exported', `Saved to: ${result.filepath}`);
-        loadStats();
+      const agents = await agentApi.getAll();
+      const data = Array.isArray(agents) ? agents : (agents?.agents || []);
+      const filename = `agent-logs-export-${new Date().toISOString().slice(0, 10)}.${exportFormat}`;
+      if (exportFormat === 'csv') {
+        downloadCSV(data, filename);
       } else {
-        showToast('error', 'Export Failed', result?.error || 'Unknown error');
+        downloadJSON(data, filename);
       }
+      showToast('success', 'Agent Logs Exported', `Downloaded as ${filename}`);
     } catch (error) {
       showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
@@ -135,17 +154,15 @@ export default function ExportBackupTab() {
   const handleExportChatHistory = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.exportBackup?.exportChatHistory({
-        format: exportFormat,
-        filters: {}
-      });
-      
-      if (result?.success) {
-        showToast('success', 'Chat History Exported', `Saved to: ${result.filepath}`);
-        loadStats();
+      const sessions = await chatApi.getSessions();
+      const sessionList = Array.isArray(sessions) ? sessions : (sessions?.sessions || []);
+      const filename = `chat-history-export-${new Date().toISOString().slice(0, 10)}.${exportFormat}`;
+      if (exportFormat === 'csv') {
+        downloadCSV(sessionList, filename);
       } else {
-        showToast('error', 'Export Failed', result?.error || 'Unknown error');
+        downloadJSON(sessionList, filename);
       }
+      showToast('success', 'Chat History Exported', `Downloaded as ${filename}`);
     } catch (error) {
       showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
@@ -153,21 +170,20 @@ export default function ExportBackupTab() {
     }
   };
 
-  // Create Backup
+  // Create Backup (downloads full data dump as JSON)
   const handleCreateBackup = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.exportBackup?.createBackup({
-        includeAttachments
-      });
-      
-      if (result?.success) {
-        showToast('success', 'Backup Created', `Saved to: ${result.filepath}`);
-        loadBackups();
-        loadStats();
-      } else {
-        showToast('error', 'Backup Failed', result?.error || 'Unknown error');
-      }
+      const [tasks, agents, sessions, settings] = await Promise.all([
+        taskApi.getAll().catch(() => []),
+        agentApi.getAll().catch(() => []),
+        chatApi.getSessions().catch(() => []),
+        settingsApi.getAll().catch(() => ({})),
+      ]);
+      const backup = { tasks, agents, sessions, settings, timestamp: new Date().toISOString(), version: '1.0' };
+      const filename = `froggo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      downloadJSON(backup, filename);
+      showToast('success', 'Backup Created', `Downloaded as ${filename}`);
     } catch (error) {
       showToast('error', 'Backup Failed', error instanceof Error ? error.message : String(error));
     } finally {
@@ -175,56 +191,27 @@ export default function ExportBackupTab() {
     }
   };
 
-  // Restore Backup
-  const handleRestoreBackup = async (backupPath: string) => {
+  // Restore Backup (stubbed for web - no file dialog)
+  const handleRestoreBackup = async (_backupPath: string) => {
     showConfirm({
       title: 'Restore Backup',
-      message: '⚠️ This will replace your current database. Are you sure you want to restore from this backup?',
-      confirmLabel: 'Restore',
+      message: 'Backup restore from browser is not yet supported. Please use the CLI or server-side tools.',
+      confirmLabel: 'OK',
       type: 'danger',
     }, async () => {
-      setLoading(true);
-      try {
-        const result = await window.clawdbot?.exportBackup?.restoreBackup(backupPath);
-        
-        if (result?.success) {
-          showToast('success', 'Backup Restored', 'Database restored successfully. Refreshing...');
-          setTimeout(() => window.location.reload(), 2000);
-        } else {
-          showToast('error', 'Restore Failed', result?.error || 'Unknown error');
-        }
-      } catch (error) {
-        showToast('error', 'Restore Failed', error instanceof Error ? error.message : String(error));
-      } finally {
-        setLoading(false);
-      }
+      showToast('info', 'Not available', 'Restore is not supported in web mode');
     });
   };
 
-  // Cleanup Old Backups
+  // Cleanup Old Backups (stubbed for web)
   const handleCleanupBackups = async () => {
     showConfirm({
       title: 'Cleanup Backups',
-      message: `Delete all but the ${keepBackupsCount} most recent backups?`,
-      confirmLabel: 'Delete',
+      message: `Backup cleanup is managed server-side. This action is not available in web mode.`,
+      confirmLabel: 'OK',
       type: 'danger',
     }, async () => {
-      setLoading(true);
-      try {
-        const result = await window.clawdbot?.exportBackup?.cleanupOldBackups(keepBackupsCount);
-        
-        if (result?.success) {
-          showToast('success', 'Cleanup Complete', `Deleted ${result.deletedCount} old backups`);
-          loadBackups();
-          loadStats();
-        } else {
-          showToast('error', 'Cleanup Failed', result?.error || 'Unknown error');
-        }
-      } catch (error) {
-        showToast('error', 'Cleanup Failed', error instanceof Error ? error.message : String(error));
-      } finally {
-        setLoading(false);
-      }
+      showToast('info', 'Not available', 'Cleanup is managed server-side');
     });
   };
 

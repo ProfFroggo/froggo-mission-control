@@ -3,6 +3,7 @@ import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, RefreshCw, Inbox 
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
+import { inboxApi, scheduleApi } from '../lib/api';
 
 interface UnifiedNotification {
   id: string;
@@ -38,9 +39,10 @@ export default function NotificationsPanel() {
       const items: UnifiedNotification[] = [];
       
       // 1. Load inbox approvals
-      const inboxResult = await window.clawdbot?.inbox?.list().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
-      if (inboxResult?.items) {
-        for (const item of inboxResult.items.filter((i: any) => i.status === 'pending')) {
+      const inboxResult = await inboxApi.getAll().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
+      const inboxItems = Array.isArray(inboxResult) ? inboxResult : (inboxResult?.items || []);
+      if (inboxItems.length > 0) {
+        for (const item of inboxItems.filter((i: any) => i.status === 'pending')) {
           items.push({
             id: `inbox-${item.id}`,
             type: 'approval',
@@ -57,7 +59,7 @@ export default function NotificationsPanel() {
       }
 
       // 2. Load calendar events (today)
-      const calendarResult = await window.clawdbot?.calendar?.today().catch((err: any) => { console.error('[Notifications] Failed to get calendar:', err); return null; });
+      const calendarResult = await scheduleApi.getAll().catch((err: any) => { console.error('[Notifications] Failed to get calendar:', err); return null; });
       if (calendarResult?.events) {
         const now = Date.now();
         for (const event of calendarResult.events) {
@@ -102,7 +104,7 @@ export default function NotificationsPanel() {
   const handleApprove = async (notif: UnifiedNotification) => {
     if (notif.source === 'inbox' && notif.data) {
       try {
-        await window.clawdbot?.inbox?.update(notif.data.id, { status: 'approved' });
+        await inboxApi.update(notif.data.id, { status: 'approved' });
         setNotifications(prev => prev.filter(n => n.id !== notif.id));
         showToast('success', 'Approved', notif.title);
       } catch (e) {

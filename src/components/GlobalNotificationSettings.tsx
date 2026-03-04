@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { 
-  Bell, BellOff, Volume2, Moon, Clock, 
-  AlertCircle, Save, ZapOff 
+import {
+  Bell, BellOff, Volume2, Moon, Clock,
+  AlertCircle, Save, ZapOff
 } from 'lucide-react';
 import { showToast } from './Toast';
+import { settingsApi } from '../lib/api';
 
 export default function GlobalNotificationSettings() {
   const [loading, setLoading] = useState(true);
@@ -31,10 +32,10 @@ export default function GlobalNotificationSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot!.notificationSettings.getGlobalDefaults();
-      
-      if (result.success && result.defaults) {
-        const d = result.defaults;
+      const result = await settingsApi.get('notifications.defaults');
+
+      const d = result?.value || (result?.success && result?.defaults ? result.defaults : null);
+      if (d) {
         setDefaults(d);
         
         setDefaultNotificationLevel(String(d.default_notification_level || 'all'));
@@ -50,7 +51,7 @@ export default function GlobalNotificationSettings() {
         setEnableBatching(d.enable_batching === 1);
         setBatchIntervalMinutes(Number(d.batch_interval_minutes || 15));
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // '[GlobalNotificationSettings] Failed to load:', error;
     } finally {
       setLoading(false);
@@ -75,7 +76,7 @@ export default function GlobalNotificationSettings() {
         batch_interval_minutes: batchIntervalMinutes,
       };
 
-      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults as unknown as NotificationPrefs);
+      const result = await settingsApi.set('notifications.defaults', updatedDefaults);
 
       if (result.success) {
         showToast('success', 'Global notification settings saved successfully!');

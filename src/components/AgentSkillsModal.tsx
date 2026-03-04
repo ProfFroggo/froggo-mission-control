@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Award } from 'lucide-react';
+import { libraryApi } from '../lib/api';
 
 interface AgentSkill {
   agent_id: string;
@@ -41,11 +42,8 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
 
   const loadSkills = async () => {
     try {
-      const dbExec = window.clawdbot?.db?.exec;
-      if (dbExec) {
-        const res = await dbExec('SELECT * FROM agent_skills ORDER BY agent_id, proficiency DESC');
-        setSkills((res?.result || []) as AgentSkill[]);
-      }
+      const res = await libraryApi.getSkills();
+      setSkills(Array.isArray(res) ? res as AgentSkill[] : []);
     } catch (e) {
       // 'Failed to load skills:', e;
     } finally {

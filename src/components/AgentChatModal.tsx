@@ -5,6 +5,7 @@ import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
+import { agentApi, chatApi } from '../lib/api';
 
 interface AgentChatModalProps {
   agentId: string;
@@ -101,14 +102,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
     }]);
 
     try {
-      // Spawn a real agent session via IPC
-      const ipc = window.clawdbot?.agents;
-      if (!ipc?.spawnChat) {
-        throw new Error('Agent chat IPC not available — are you running in the Electron app?');
-      }
-
-      const result = await ipc.spawnChat(agentId);
-      // Handle both formats: string key (legacy) or { success, sessionKey } (new)
+      // Spawn a real agent session via REST API
+      const result = await agentApi.spawn(agentId);
       const key = typeof result === 'string' ? result : result?.sessionKey;
       if (key) {
         setSessionKey(key);
@@ -121,7 +116,6 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         throw new Error(result?.error || 'No session key returned');
       }
     } catch (e: unknown) {
-      // '[AgentChat] Failed to spawn chat session:', e;
       const errMsg = e instanceof Error ? e.message : 'Unknown error';
       setMessages([{
         role: 'system',
@@ -309,11 +303,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       });
       streamCleanupRef.current = unsub;
 
-      // Send the message to the real session via IPC
-      const ipc = window.clawdbot?.agents;
-      const result = ipc?.chat
-        ? await ipc.chat(sessionKey, userText)
-        : await gateway.sendToSession(sessionKey, userText);
+      // Send the message to the real session via gateway
+      const result = await gateway.sendToSession(sessionKey, userText);
 
       // If we get a direct response (non-streaming), use it
       const responseText = typeof result === 'string' ? result : (result as any)?.response;

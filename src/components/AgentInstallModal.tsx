@@ -16,6 +16,7 @@ import { Bot, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import IntegrationWizard from './IntegrationWizard';
 import { Spinner } from './LoadingStates';
+import { marketplaceApi } from '../lib/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -76,14 +77,7 @@ export default function AgentInstallModal({
   const handleInstall = async () => {
     setPhase('installing');
     try {
-      const ap = (window as any).clawdbot?.agentPackage;
-      if (!ap) {
-        setErrorMsg('Agent package IPC bridge not available.');
-        setPhase('error');
-        return;
-      }
-
-      const result = await ap.install(entry);
+      const result = await marketplaceApi.installAgent(entry.id);
 
       if (result?.success) {
         if (result.needsCredentials && entry.agent.credentials?.length) {

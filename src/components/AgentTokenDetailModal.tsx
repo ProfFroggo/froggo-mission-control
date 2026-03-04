@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
+import { analyticsApi } from '../lib/api';
 
 interface AgentTokenDetailModalProps {
   isOpen: boolean;
@@ -41,16 +42,8 @@ export default function AgentTokenDetailModal({
 
     setLoading(true);
     try {
-      if (!window.clawdbot?.tokens) {
-        setSessionLog([]);
-        setLoading(false);
-        return; // IPC not available (web mode)
-      }
-      const log = await window.clawdbot.tokens.log({
-        agent,
-        limit: 50,
-      });
-      setSessionLog((log?.entries || []) as TokenLogEntry[]);
+      const data = await analyticsApi.getTokenUsage({ agent, limit: '50' });
+      setSessionLog((data?.entries || []) as TokenLogEntry[]);
     } catch (error) {
       // 'Failed to load session log:', error;
       setSessionLog([]);

@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
 import { showToast } from './Toast';
+import { financeApi } from '../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -71,13 +72,8 @@ function QuickProjectionTab() {
     (async () => {
       setLoading(true);
       try {
-        const res = await window.clawdbot?.finance?.recurring?.list();
-        if (res?.success && res.recurring) {
-          const confirmed = (res.recurring as RecurringItem[]).filter(
-            (r) => r.status === 'confirmed',
-          );
-          setRecurring(confirmed);
-        }
+        // Recurring items not available via REST yet - use empty
+        setRecurring([]);
       } finally {
         setLoading(false);
       }
@@ -114,12 +110,8 @@ function QuickProjectionTab() {
     }
     setCalculating(true);
     try {
-      const res = await window.clawdbot?.finance?.scenario?.projectSimple(adjs);
-      if (res?.success && res.before && res.after && res.savings) {
-        setResult({ before: res.before, after: res.after, savings: res.savings });
-      } else {
-        showToast('error', 'Projection failed', res?.error || 'Unknown error');
-      }
+      // Scenario projections not yet available via REST - show placeholder
+      showToast('info', 'Projections not available in web mode');
     } catch (err: unknown) {
       showToast('error', 'Error', err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -313,8 +305,8 @@ function ScenarioBuilderTab() {
   const loadScenarios = useCallback(async () => {
     setLoadingScenarios(true);
     try {
-      const res = await window.clawdbot?.finance?.scenario?.list();
-      if (res?.success) setScenarios((res.scenarios as FinanceScenario[]) || []);
+      const stored = localStorage.getItem('finance-scenarios');
+      if (stored) setScenarios(JSON.parse(stored));
     } finally {
       setLoadingScenarios(false);
     }
@@ -323,15 +315,12 @@ function ScenarioBuilderTab() {
   useEffect(() => {
     loadScenarios();
     (async () => {
-      const res = await window.clawdbot?.finance?.account?.balances();
-      if (res?.success && res.balances) {
-        setAccounts(
-          (res.balances as Array<{ id: string; name: string }>).map((a) => ({
-            id: a.id,
-            name: a.name,
-          })),
-        );
-      }
+      try {
+        const balances: any[] = await financeApi.getAccounts();
+        if (Array.isArray(balances)) {
+          setAccounts(balances.map((a: any) => ({ id: a.id, name: a.name })));
+        }
+      } catch { /* accounts not available */ }
     })();
   }, [loadScenarios]);
 
@@ -358,33 +347,22 @@ function ScenarioBuilderTab() {
         events:  form.eventRows.filter((r) => r.label && r.amount !== 0 && r.date),
       };
 
-      const createRes = await window.clawdbot?.finance?.scenario?.create({
+      const id = `scenario-${Date.now()}`;
+      const newScenario: FinanceScenario = {
+        id,
         name: form.name.trim(),
-        description: form.description || undefined,
+        description: form.description || '',
         baseAccountId: form.baseAccountId || undefined,
         projectionMonths: form.projectionMonths,
-      });
+        adjustments,
+      } as any;
 
-      if (!createRes?.success || !createRes.id) {
-        showToast('error', 'Create failed', createRes?.error || 'Unknown error');
-        return;
-      }
-
-      const id = createRes.id;
-
-      // Persist adjustments via update
-      await window.clawdbot?.finance?.scenario?.update(id, adjustments);
+      const updatedScenarios = [...scenarios, newScenario];
+      setScenarios(updatedScenarios);
+      localStorage.setItem('finance-scenarios', JSON.stringify(updatedScenarios));
 
       showToast('success', 'Scenario saved', form.name);
       resetForm();
-      await loadScenarios();
-
-      // Auto-run projection
-      setProjecting(true);
-      const projRes = await window.clawdbot?.finance?.scenario?.project(id);
-      if (projRes?.success && projRes.months) {
-        setProjectionData((prev) => ({ ...prev, [id]: projRes.months as ProjectionMonth[] }));
-      }
     } catch (err: unknown) {
       showToast('error', 'Error', err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -396,14 +374,8 @@ function ScenarioBuilderTab() {
   const runProjection = async (id: string) => {
     setProjecting(true);
     try {
-      const res = await window.clawdbot?.finance?.scenario?.project(id);
-      if (res?.success && res.months) {
-        setProjectionData((prev) => ({ ...prev, [id]: res.months as ProjectionMonth[] }));
-      } else {
-        showToast('error', 'Projection failed', res?.error || 'Unknown error');
-      }
-    } catch (err: unknown) {
-      showToast('error', 'Error', err instanceof Error ? err.message : 'Unknown error');
+      // Projections not available via REST — show info
+      showToast('info', 'Projections not available in web mode');
     } finally {
       setProjecting(false);
     }
@@ -411,17 +383,14 @@ function ScenarioBuilderTab() {
 
   const deleteScenario = async (id: string, name: string) => {
     if (!window.confirm(`Delete scenario "${name}"?`)) return;
-    try {
-      await window.clawdbot?.finance?.scenario?.delete(id);
-      setScenarios((prev) => prev.filter((s) => s.id !== id));
-      setProjectionData((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    } catch {
-      showToast('error', 'Delete failed');
-    }
+    const updated = scenarios.filter((s) => s.id !== id);
+    setScenarios(updated);
+    localStorage.setItem('finance-scenarios', JSON.stringify(updated));
+    setProjectionData((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   // Build comparison chart data

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image, Calendar, Clock, X } from 'lucide-react';
+import { approvalApi, scheduleApi } from '../lib/api';
 
 type PostMode = 'single' | 'thread';
 
@@ -255,8 +256,8 @@ export default function XPublishComposer() {
   const loadRateLimit = async () => {
     try {
       setRateLimitLoading(true);
-      const rl = await window.clawdbot?.xPublish?.rateLimit();
-      setRateLimit(rl || null);
+      // Rate limit tracking not available via web — show as unlimited
+      setRateLimit(null);
     } catch {
       setRateLimit(null);
     } finally {
@@ -267,9 +268,17 @@ export default function XPublishComposer() {
   const loadScheduledList = async () => {
     try {
       setLoadingScheduled(true);
-      const result = await (window.clawdbot?.xPublish?.scheduledList?.() ?? Promise.resolve({ success: true, scheduled: [] }));
-      const posts = (result as any)?.scheduled ?? (Array.isArray(result) ? result : []);
-      setScheduled(Array.isArray(posts) ? (posts as ScheduledPost[]) : []);
+      const result = await scheduleApi.getAll();
+      const posts = (Array.isArray(result) ? result : [])
+        .filter((item: any) => item.platform === 'twitter' && item.scheduledTime);
+      setScheduled(posts.map((p: any) => ({
+        id: p.id,
+        content: p.content,
+        scheduled_time: p.scheduledTime,
+        status: p.status || 'pending',
+        media_id: p.mediaId || null,
+        metadata: p.metadata || null,
+      })));
     } catch {
       setScheduled([]);
     } finally {
@@ -278,12 +287,8 @@ export default function XPublishComposer() {
   };
 
   const loadFailedPosts = async () => {
-    try {
-      const result = await window.clawdbot?.xPublish?.failedList?.();
-      if (result?.success && result.failed?.length > 0) {
-        setFailedPosts(result.failed);
-      }
-    } catch { /* ignore */ }
+    // Failed posts tracking not available via web API
+    setFailedPosts([]);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,28 +303,11 @@ export default function XPublishComposer() {
     setMediaId(null);
     setMediaError(null);
 
-    // Upload using Electron file path
-    const filePath = (file as any).path as string | undefined;
-    if (!filePath) {
-      setMediaError('Cannot read file path. Please try again.');
-      return;
-    }
-
-    setUploadingMedia(true);
-    try {
-      const result = await (window.clawdbot?.xPublish?.mediaUpload?.(filePath) ?? Promise.resolve(null));
-      if (result?.mediaId) {
-        setMediaId(result.mediaId);
-      } else {
-        setMediaError(result?.error || 'Upload failed');
-      }
-    } catch (err: unknown) {
-      setMediaError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploadingMedia(false);
-      // Reset file input so same file can be re-selected
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    // In web mode, media upload is handled via approval — just store the preview
+    setUploadingMedia(false);
+    setMediaId(null);
+    // Reset file input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const clearMedia = () => {
@@ -377,25 +365,22 @@ export default function XPublishComposer() {
     setShowConfirm(false);
 
     try {
-      let res: PostResult;
-      if (mode === 'single') {
-        res = (await window.clawdbot?.xPublish?.post(tweets[0])) ?? { success: false, error: 'xPublish not available' };
-      } else {
-        res = (await window.clawdbot?.xPublish?.thread(tweets.filter((t) => t.trim()))) ?? { success: false, error: 'xPublish not available' };
-      }
+      // Create an approval record instead of posting directly
+      const content = mode === 'single' ? tweets[0] : JSON.stringify({ tweets: tweets.filter(t => t.trim()) });
+      await approvalApi.create({
+        type: 'tweet',
+        content,
+        tier: 3,
+        metadata: { mode, tweetCount: tweets.filter(t => t.trim()).length },
+      });
 
-      if (res.success) {
-        // Clear draft on successful post
-        localStorage.removeItem(DRAFT_KEY);
-        setResult({ success: true, tweetId: res.tweetId, threadIds: res.threadIds || res.tweets?.map((t: { id: string }) => t.id) });
-        setTimeout(() => {
-          setTweets(['']);
-          setResult(null);
-        }, 3000);
-        loadRateLimit();
-      } else {
-        setResult({ success: false, error: res.error || 'Post failed' });
-      }
+      // Clear draft on successful approval creation
+      localStorage.removeItem(DRAFT_KEY);
+      setResult({ success: true });
+      setTimeout(() => {
+        setTweets(['']);
+        setResult(null);
+      }, 3000);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unexpected error';
       setResult({ success: false, error: message });
@@ -413,44 +398,30 @@ export default function XPublishComposer() {
       return;
     }
 
-    // If editing a scheduled post, cancel the old one first
-    if (editingScheduledId) {
-      await window.clawdbot?.xPublish?.scheduledCancel?.(editingScheduledId);
-    }
-
     setSchedulingLoading(true);
     setScheduleResult(null);
 
     try {
-      let res: any;
-      if (mode === 'single') {
-        res = await (window.clawdbot?.xPublish?.schedule?.(
-          tweets[0],
-          timestampMs,
-          mediaId || undefined
-        ) ?? Promise.resolve({ success: false, error: 'xPublish.schedule not available' }));
-      } else {
-        res = await (window.clawdbot?.xPublish?.scheduleThread?.(
-          tweets.filter((t) => t.trim()),
-          timestampMs
-        ) ?? Promise.resolve({ success: false, error: 'xPublish.scheduleThread not available' }));
-      }
+      const content = mode === 'single' ? tweets[0] : JSON.stringify({ type: 'thread', tweets: tweets.filter(t => t.trim()) });
+      await scheduleApi.create({
+        type: 'draft',
+        content,
+        platform: 'twitter',
+        scheduledTime: timestampMs,
+        metadata: editingScheduledId ? JSON.stringify({ replacesId: editingScheduledId }) : undefined,
+      });
 
-      if (res?.success) {
-        // Clear draft on successful schedule
-        localStorage.removeItem(DRAFT_KEY);
-        setScheduleResult({ success: true, message: `Scheduled for ${formatScheduledTime(timestampMs)}!` });
-        // Clear form
-        setTweets(['']);
-        setScheduledAt('');
-        setScheduling(false);
-        setEditingScheduledId(null);
-        clearMedia();
-        // Refresh list
-        await loadScheduledList();
-      } else {
-        setScheduleResult({ success: false, error: res?.error || 'Scheduling failed' });
-      }
+      // Clear draft on successful schedule
+      localStorage.removeItem(DRAFT_KEY);
+      setScheduleResult({ success: true, message: `Scheduled for ${formatScheduledTime(timestampMs)}!` });
+      // Clear form
+      setTweets(['']);
+      setScheduledAt('');
+      setScheduling(false);
+      setEditingScheduledId(null);
+      clearMedia();
+      // Refresh list
+      await loadScheduledList();
     } catch (err: unknown) {
       setScheduleResult({ success: false, error: err instanceof Error ? err.message : 'Unexpected error' });
     } finally {
@@ -458,13 +429,9 @@ export default function XPublishComposer() {
     }
   };
 
-  const handleCancelScheduled = async (id: string) => {
-    try {
-      await (window.clawdbot?.xPublish?.scheduledCancel?.(id) ?? Promise.resolve());
-      await loadScheduledList();
-    } catch {
-      // Ignore cancel errors — list will refresh anyway
-    }
+  const handleCancelScheduled = async (_id: string) => {
+    // Cancellation requires server-side support — refresh list
+    await loadScheduledList();
   };
 
   const editScheduledPost = (post: ScheduledPost) => {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
+import { agentApi } from '../lib/api';
 
 interface AgentDetailModalProps {
   agentId: string;
@@ -67,15 +68,12 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   const buildDetailsFromRealData = async () => {
     setLoading(true);
 
-    // Try IPC first (reads from froggo.db with real data)
+    // Try REST API first (reads from froggo.db with real data)
     let ipcDetails: any = null;
     try {
-      const ipc = window.clawdbot?.agents;
-      if (ipc?.getDetails) {
-        ipcDetails = await ipc.getDetails(agentId);
-      }
+      ipcDetails = await agentApi.getById(agentId);
     } catch (_e) {
-      // IPC failed, will fall back to store data
+      // API failed, will fall back to store data
     }
 
     // Get tasks from store as fallback/supplement
@@ -141,29 +139,16 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
     if (!rulesContent) {
       try {
-        const result = await window.clawdbot?.exec?.run(
-          `cat ~/froggo/agents/${agentId}/AGENT.md 2>/dev/null || cat ~/agent-${agentId}/AGENTS.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
-        );
-        if (result?.stdout) {
-          rulesContent = result.stdout;
-        }
+        const soulData = await agentApi.readSoul(agentId);
+        rulesContent = soulData?.content || `No AGENT.md found for ${agentId}`;
       } catch (_e) {
         rulesContent = `Could not load rules for ${agentId}`;
       }
     }
 
     if (brainNotes.length === 0) {
-      try {
-        const memResult = await window.clawdbot?.exec?.run(
-          `ls -1 ~/agent-${agentId}/memory/ 2>/dev/null | tail -5`
-        );
-        if (memResult?.stdout?.trim()) {
-          const files = memResult.stdout.trim().split('\n');
-          brainNotes = files.map((f: string) => `📝 ${f}`);
-        }
-      } catch (_e) {
-        // OK
-      }
+      // Brain notes / memory files — no REST equivalent
+      console.warn('Not implemented: exec.run for memory listing', agentId);
     }
 
     setDetails({

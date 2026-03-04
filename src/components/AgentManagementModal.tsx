@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { createLogger } from '../utils/logger';
+import { agentApi } from '../lib/api';
 
 const logger = createLogger('AgentManagementModal');
 
@@ -59,29 +60,27 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
     const loadData = async () => {
       const results = await Promise.allSettled([
-        window.clawdbot?.agentManagement?.soul?.read(agentId),
-        window.clawdbot?.agentManagement?.models?.read(agentId),
+        agentApi.readSoul(agentId),
+        agentApi.readModels(agentId),
       ]);
 
       // SOUL result
       const soulResult = results[0];
-      if (soulResult.status === 'fulfilled' && soulResult.value?.success) {
-        setSoulContent(soulResult.value.content || '');
-      } else if (soulResult.status === 'fulfilled' && soulResult.value?.error) {
-        setSoulError(soulResult.value.error);
-      } else if (soulResult.status === 'rejected') {
+      if (soulResult.status === 'fulfilled') {
+        const val = soulResult.value;
+        setSoulContent(val?.content || '');
+      } else {
         setSoulError('Failed to load SOUL.md');
         logger.error('Failed to load SOUL.md:', soulResult.reason);
       }
 
       // Models result
       const modelsResult = results[1];
-      if (modelsResult.status === 'fulfilled' && modelsResult.value?.success) {
-        setPrimaryModel(modelsResult.value.primary || '');
-        setFallbacks(modelsResult.value.fallbacks || []);
-      } else if (modelsResult.status === 'fulfilled' && modelsResult.value?.error) {
-        setModelError(modelsResult.value.error);
-      } else if (modelsResult.status === 'rejected') {
+      if (modelsResult.status === 'fulfilled') {
+        const val = modelsResult.value;
+        setPrimaryModel(val?.primary || '');
+        setFallbacks(val?.fallbacks || []);
+      } else {
         setModelError('Failed to load model config');
         logger.error('Failed to load model config:', modelsResult.reason);
       }
@@ -104,13 +103,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     setShowSaveConfirm(false);
     setSoulSaving(true);
     try {
-      const result = await window.clawdbot?.agentManagement?.soul?.write(agentId, soulContent);
-      if (result?.success) {
-        setSoulDirty(false);
-        setShowRestartBanner(true);
-      } else {
-        setSoulError(result?.error || 'Failed to save SOUL.md');
-      }
+      await agentApi.writeSoul(agentId, soulContent);
+      setSoulDirty(false);
+      setShowRestartBanner(true);
     } catch (e) {
       setSoulError('Failed to save SOUL.md');
       logger.error('Failed to save SOUL.md:', e);
@@ -122,12 +117,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const handleSaveModel = async () => {
     setModelSaving(true);
     try {
-      const result = await window.clawdbot?.agentManagement?.models?.write(agentId, { primary: primaryModel, fallbacks });
-      if (result?.success) {
-        setModelDirty(false);
-      } else {
-        setModelError(result?.error || 'Failed to save model config');
-      }
+      await agentApi.writeModels(agentId, { primary: primaryModel, fallbacks });
+      setModelDirty(false);
     } catch (e) {
       setModelError('Failed to save model config');
       logger.error('Failed to save model config:', e);

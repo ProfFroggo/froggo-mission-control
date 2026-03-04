@@ -4,6 +4,7 @@ import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
 import { createLogger } from '../utils/logger';
+import { sessionApi, taskApi } from '../lib/api';
 
 const logger = createLogger('CodeAgent');
 
@@ -49,44 +50,20 @@ export default function CodeAgentDashboard() {
     setLoading(true);
     setError(null);
     try {
-      // Safety check - bail if clawdbot APIs not available
-      if (!window.clawdbot) {
-        setError('Dashboard APIs not available. Ensure the app is running in Electron.');
-        return;
-      }
-      // Load recent git commits
-      const gitResult = await window.clawdbot?.exec?.run(
-        'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'
-      ).catch((err: any) => {
-        logger.error('Failed to fetch git commits:', err);
-        return { stdout: '' };
-      });
-      
-      if (gitResult?.stdout) {
-        const lines = gitResult.stdout.trim().split('\n').filter(Boolean);
-        const parsedCommits: GitCommit[] = lines.map((line: string) => {
-          const [hash, message, author, timestamp] = line.split('|');
-          return {
-            hash,
-            message,
-            author,
-            timestamp: parseInt(timestamp) * 1000,
-            files: 0, // Would need additional git command to get this
-          };
-        });
-        setCommits(parsedCommits.slice(0, 10));
-      }
+      // Git commits — no REST equivalent for exec.run
+      console.warn('Not implemented: exec.run for git log');
+      setCommits([]);
 
-      // Load sessions list - show all agent sessions
-      const sessionsResult = await window.clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
-      if (sessionsResult?.sessions) {
-        const devSessions: DevSession[] = sessionsResult.sessions
+      // Load sessions list via REST API
+      const sessionsResult = await sessionApi.getAll().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
+      if (sessionsResult?.sessions || Array.isArray(sessionsResult)) {
+        const sessionsList = sessionsResult?.sessions || sessionsResult || [];
+        const devSessions: DevSession[] = sessionsList
           .filter((s: any) => {
             const key = s.key || s.sessionKey || '';
             const label = s.label || '';
-            // Show main sessions, subagents, coder, discord bots
-            return key.includes('main') || 
-                   key.includes('subagent') || 
+            return key.includes('main') ||
+                   key.includes('subagent') ||
                    key.includes('discord') ||
                    label.includes('coder') ||
                    label.includes('froggo') ||
@@ -108,16 +85,17 @@ export default function CodeAgentDashboard() {
         setTotalTokens(devSessions.reduce((sum, s) => sum + s.tokens, 0));
       }
 
-      // Load kanban tasks that are dev-related
-      const tasksResult = await window.clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
-      if (tasksResult?.tasks) {
-        const devTasks: DevTask[] = tasksResult.tasks
+      // Load kanban tasks via REST API
+      const tasksResult = await taskApi.getAll().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
+      const tasksList = tasksResult?.tasks || (Array.isArray(tasksResult) ? tasksResult : []);
+      if (tasksList.length > 0) {
+        const devTasks: DevTask[] = tasksList
           .filter((t: any) => {
             const project = t.project || '';
             const assignee = t.assigned_to || t.assignedTo || '';
-            return project.toLowerCase().includes('dev') || 
+            return project.toLowerCase().includes('dev') ||
                    project.toLowerCase().includes('x/twitter') ||
-                   assignee === 'coder' || 
+                   assignee === 'coder' ||
                    assignee === 'chief' ||
                    assignee === 'main';
           })
@@ -135,7 +113,7 @@ export default function CodeAgentDashboard() {
 
     } catch (err) {
       logger.error('Failed to load dev data:', err);
-      setError('Could not load dev data. Ensure git is available and sessions are active.');
+      setError('Could not load dev data. Ensure sessions are active.');
     } finally {
       setLoading(false);
     }
