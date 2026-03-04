@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle, Loader2, AlertTriangle, Sparkles, Flag, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
+import { taskApi } from '../lib/api';
+import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('HealthCheck');
@@ -56,64 +58,31 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
     };
   }, []);
 
-  const execCmd = async (cmd: string): Promise<{ ok: boolean; stdout: string; error?: string }> => {
-    try {
-      const execFn = window.clawdbot?.exec?.run;
-      if (!execFn) {
-        logger.error('clawdbot.exec.run not available!');
-        return { ok: false, stdout: '', error: 'Shell exec not available' };
-      }
-      const result = await execFn(cmd);
-      if (result?.blocked) {
-        logger.error('Command blocked:', result.reason);
-        return { ok: false, stdout: '', error: `Blocked: ${result.reason}` };
-      }
-      if (!result?.success) {
-        logger.error('Command failed:', result?.stderr);
-        return { ok: false, stdout: '', error: result?.stderr || 'Unknown error' };
-      }
-      return { ok: true, stdout: result?.stdout || '' };
-    } catch (e) {
-      // '[HealthCheck] exec error:', e;
-      return { ok: false, stdout: '', error: String(e) };
-    }
+  // exec not available in web mode - task updates go through REST API
+  const execCmd = async (_cmd: string): Promise<{ ok: boolean; stdout: string; error?: string }> => {
+    // Shell exec not available in web mode
+    return { ok: false, stdout: '', error: 'Shell exec not available in web mode' };
   };
 
   const cancelTask = async (taskId: string): Promise<boolean> => {
-    const result = await execCmd(`froggo-db task-update ${taskId} --status cancelled`);
-    return result.ok;
+    try {
+      await taskApi.update(taskId, { status: 'cancelled' });
+      return true;
+    } catch { return false; }
   };
 
   const updateTaskField = async (taskId: string, field: string, value: string): Promise<boolean> => {
-    let result;
-    switch (field) {
-      case 'status':
-        result = await execCmd(`froggo-db task-update ${taskId} --status ${value}`);
-        break;
-      case 'title':
-        result = await execCmd(`froggo-db task-update ${taskId} --title "${value}"`);
-        break;
-      case 'priority':
-        result = await execCmd(`froggo-db task-update ${taskId} --priority ${value}`);
-        break;
-      case 'assigned_to':
-        result = await execCmd(`froggo-db task-update ${taskId} --assign ""`);
-        break;
-      default:
-        // Fallback for any other field
-        result = await execCmd(`froggo-db task-update ${taskId} --status ${value}`);
-        break;
-    }
-    return result.ok;
+    try {
+      await taskApi.update(taskId, { [field]: value });
+      return true;
+    } catch { return false; }
   };
 
   const fetchTasks = async (): Promise<any[]> => {
     try {
-      const result = await window.clawdbot?.tasks?.list();
-      if (result?.success && Array.isArray(result.tasks)) {
-        const filtered = result.tasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
-        return filtered;
-      }
+      const result = await taskApi.getAll();
+      const allTasks = Array.isArray(result) ? result : (result?.tasks || []);
+      return allTasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
     } catch (e) {
       // '[HealthCheck] fetchTasks error:', e;
     }
