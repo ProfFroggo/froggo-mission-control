@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 11 — Cron & Automation
+**Current focus:** Phase 12 — SSE Streaming
 
 ## Current Position
 
-Phase: 11 of 14 (Cron & Automation)
+Phase: 12 of 14 (SSE Streaming)
 Plan: 0 of 2 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 10 (all 2 plans): session API, sessions listing, sessionApi client
+Last activity: 2026-03-04 — Completed Phase 11 (all 2 plans): cron daemon, cron-setup.sh, cron MCP server
 
-Progress: ██████████████████░ 79%
+Progress: ███████████████████░ 86%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 25
 - Average duration: 3 min
 - Total execution time: 0.75 hours
 
@@ -37,6 +37,7 @@ Progress: ██████████████████░ 79%
 | 8 (complete) | 2/2 | 5 min | 2.5 min |
 | 9 (complete) | 2/2 | 5 min | 2.5 min |
 | 10 (complete) | 2/2 | 5 min | 2.5 min |
+| 11 (complete) | 2/2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -55,6 +56,7 @@ Progress: ██████████████████░ 79%
 - Phase 8: Vault at ~/froggo/memory/ with agents/, sessions/, daily/, knowledge/, projects/; QMD setup scripts in tools/; architecture.md + task-lifecycle.md seeded
 - Phase 9: ChatRoomsPanel module at src/modules/chat-rooms/ with room list, message thread, 5s polling; API routes verified from Phase 3
 - Phase 10: Session CRUD API at /api/agents/[id]/session; spawn resumes existing sessions; /api/sessions listing; sessionApi client
+- Phase 11: cron-daemon.js reads schedule.json; cron-setup.sh installs 6 crontab entries; cron MCP server (3 tools) in .claude/settings.json
 
 ### Deferred Issues
 
@@ -70,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 10 complete — starting Phase 11 (Cron & Automation, 2 plans)
+Stopped at: Phase 11 complete — starting Phase 12 (SSE Streaming, 2 plans)
 Resume file: None

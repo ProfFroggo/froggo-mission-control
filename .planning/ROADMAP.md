@@ -23,7 +23,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
 - [x] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
 - [x] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
-- [ ] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
+- [x] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
 - [ ] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
 - [ ] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
 - [ ] **Phase 14: Final Integration & Testing** - E2E smoke test, approval flow, inter-agent comms, memory recall, cleanup
@@ -151,8 +151,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 11-01: Cron entries for recurring work: email check interval, QMD freshness, task notifications watcher
-- [ ] 11-02: Cron MCP server — tools: `schedule_task`, `list_jobs`, `cancel_job`; cron daemon process (`src/server/cron-daemon.ts`)
+- [x] 11-01: Cron daemon + cron-setup.sh with 6 scheduled jobs ✓ 2026-03-04
+- [x] 11-02: Cron MCP server — schedule_task, list_jobs, cancel_job; registered in settings.json ✓ 2026-03-04
 
 ### Phase 12: SSE Streaming
 **Goal**: Full streaming pipeline — chat messages stream token-by-token via SSE, dashboard shows live typing indicator
@@ -203,7 +203,7 @@ Plans:
 | 8. Memory System | 2/2 | Complete | 2026-03-04 |
 | 9. Chat Rooms | 2/2 | Complete | 2026-03-04 |
 | 10. Session Management | 2/2 | Complete | 2026-03-04 |
-| 11. Cron & Automation | 0/2 | Not started | - |
+| 11. Cron & Automation | 2/2 | Complete | 2026-03-04 |
 | 12. SSE Streaming | 0/2 | Not started | - |
 | 13. Skills | 0/1 | Not started | - |
 | 14. Final Integration & Testing | 0/2 | Not started | - |
