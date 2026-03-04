@@ -10,6 +10,7 @@ import FilePreviewModal from './FilePreviewModal';
 import CreateRoomModal from './CreateRoomModal';
 import ChatRoomView from './ChatRoomView';
 import { gateway, ConnectionState } from '../lib/gateway';
+import { chatApi } from '@/lib/api';
 import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
@@ -118,8 +119,8 @@ export default function ChatPanel() {
     // Load from DB for this agent
     setMessages([]);
     setHistoryLoaded(true); // prevent gateway fallback race
-    if (window.clawdbot?.chat?.loadMessages) {
-      const result = await window.clawdbot?.chat.loadMessages(50, agent.dbSessionKey);
+    try {
+      const result = await chatApi.getMessages(agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
         // Parse JSON content back to structured blocks if needed
         const parsedMessages = result.messages.map((msg: ChatMessage) => {
@@ -140,62 +141,22 @@ export default function ChatPanel() {
         setMessages(parsedMessages);
         messageCacheRef.current.set(agent.id, parsedMessages);
       }
+    } catch (_err) {
+      // DB load failed — start with empty messages
     }
   }, [selectedAgent, messages]);
 
   // Load starred message IDs
+  // TODO Phase 4: migrate — window.clawdbot.starred not available in web; no REST equivalent yet
   useEffect(() => {
-    const loadStarredIds = async () => {
-      if (!selectedAgent || !window.clawdbot?.starred?.list) return;
-      const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
-      if (result?.success && result.starred) {
-        const ids = new Set<string>(result.starred.map((s: any) => s.message_id.toString()));
-        setStarredMessageIds(ids);
-      }
-    };
-    loadStarredIds();
+    // Starred messages not yet supported in web version
   }, [selectedAgent]);
 
   // Toggle star on a message
+  // TODO Phase 4: migrate — window.clawdbot.starred not available in web; no REST equivalent yet
   const handleToggleStar = async (msg: StructuredChatMessage, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    if (!window.clawdbot?.starred) {
-      showToast('Starred messages not available', 'error');
-      return;
-    }
-
-    const messageId = parseInt(msg.id ?? '0');
-    const isStarred = starredMessageIds.has(msg.id ?? '');
-
-    try {
-      if (isStarred) {
-        // Unstar
-        const result = await window.clawdbot?.starred.unstar(messageId);
-        if (result?.success) {
-          setStarredMessageIds(prev => {
-            const next = new Set(prev);
-            next.delete(msg.id ?? '');
-            return next;
-          });
-          showToast('ChatMessage unstarred', 'success');
-        } else {
-          showToast('Failed to unstar message', 'error');
-        }
-      } else {
-        // Star
-        const result = await window.clawdbot?.starred.star(messageId);
-        if (result?.success) {
-          setStarredMessageIds(prev => new Set(prev).add(msg.id ?? ''));
-          showToast('ChatMessage starred', 'success');
-        } else {
-          showToast('Failed to star message', 'error');
-        }
-      }
-    } catch (error: unknown) {
-      // 'Toggle star error:', error;
-      showToast('Error toggling star', 'error');
-    }
+    showToast('Starred messages not available', 'error');
   };
 
   // Load messages from database on mount (and when agent changes) - this is the source of truth
@@ -205,12 +166,14 @@ export default function ChatPanel() {
       // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
       setHistoryLoaded(true);
 
-      if (window.clawdbot?.chat?.loadMessages) {
-        const result = await window.clawdbot?.chat.loadMessages(50, selectedAgent.dbSessionKey);
-        if (result.success && result.messages?.length > 0) {
+      try {
+        const result = await chatApi.getMessages(selectedAgent.dbSessionKey);
+        if (result?.success && result.messages?.length > 0) {
           setMessages(result.messages);
           messageCacheRef.current.set(selectedAgent.id, result.messages);
         }
+      } catch (_err) {
+        // DB load failed — start with empty messages
       }
     };
     loadFromDb();
@@ -218,11 +181,11 @@ export default function ChatPanel() {
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
-    if (!selectedAgent || !window.clawdbot?.chat?.saveMessage) return;
+    if (!selectedAgent) return;
     try {
-      await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
+      await chatApi.saveMessage(selectedAgent.dbSessionKey, { role, content, timestamp: Date.now() });
     } catch (err) {
-      // `[Chat] Error saving ${role} message:`, err;
+      // [Chat] Error saving message — non-fatal
     }
   };
 
@@ -482,19 +445,18 @@ export default function ChatPanel() {
         // Fire-and-forget: DB save, speech, routing — all parallel, non-blocking
         // Save FULL structured content to DB (not just text!)
         // Strip empty thinking blocks before saving — they show "0 chars" on reload
-        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        if (finalFullContent && selectedAgent) {
           const cleaned = Array.isArray(finalFullContent)
             ? finalFullContent.filter((b: any) => !(b.type === 'thinking' && !b.text?.trim()))
             : finalFullContent;
           const contentToSave = typeof cleaned === 'string'
             ? cleaned
             : JSON.stringify(cleaned);
-          
-          window.clawdbot.chat.saveMessage({
+
+          chatApi.saveMessage(selectedAgent.dbSessionKey, {
             role: 'assistant',
             content: contentToSave,
             timestamp: Date.now(),
-            sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => logger.error('Error saving assistant message:', err));
         }
 
@@ -561,19 +523,18 @@ export default function ChatPanel() {
         
         // Save assistant message to database with full structured content
         // Strip empty thinking blocks before saving
-        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        if (finalFullContent && selectedAgent) {
           const cleaned = Array.isArray(finalFullContent)
             ? finalFullContent.filter((b: any) => !(b.type === 'thinking' && !b.text?.trim()))
             : finalFullContent;
           const contentToSave = typeof cleaned === 'string'
             ? cleaned
             : JSON.stringify(cleaned);
-            
-          window.clawdbot?.chat.saveMessage({
+
+          chatApi.saveMessage(selectedAgent.dbSessionKey, {
             role: 'assistant',
             content: contentToSave,
             timestamp: Date.now(),
-            sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => {
             logger.error('Error saving assistant message:', err);
           });
@@ -681,18 +642,8 @@ export default function ChatPanel() {
           : msg.content.filter(b => b.type === 'text').map(b => b.text ?? '').join(''),
       }));
       
-      if (window.clawdbot?.chat?.suggestReplies) {
-        const result = await window.clawdbot?.chat.suggestReplies(context);
-        
-        if (result.success && result.suggestions?.length > 0) {
-          setSuggestedReplies(result.suggestions);
-          showToast('success', 'Suggestions ready', `${result.suggestions.length} options generated`);
-        } else {
-          showToast('error', 'No suggestions', result.error || 'Could not generate suggestions');
-        }
-      } else {
-        showToast('error', 'Not available', 'Suggestion feature not available');
-      }
+      // TODO Phase 4: migrate — window.clawdbot.chat.suggestReplies not available in web
+      showToast('error', 'Not available', 'Suggestion feature not available in web version');
     } catch (error: unknown) {
       // '[Chat] Suggestion error:', error;
       showToast('error', 'Failed to generate', error instanceof Error ? error.message : 'Unknown error');
@@ -717,8 +668,6 @@ export default function ChatPanel() {
     // Build message content with actual file contents
     let content = text;
     const fileContents: string[] = [];
-    const savedFiles: string[] = [];
-    
     for (const att of attachments) {
       if (att.dataUrl) {
         // Text-based files: decode and include content inline
@@ -735,56 +684,21 @@ export default function ChatPanel() {
             fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
           }
         } else if (att.type.startsWith('image/')) {
-          // Image: Save to shared uploads folder and tell AI to use vision
-          try {
-            const uploadDir = '/Users/worker/froggo/uploads';
-            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
-            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
-            savedFiles.push(tempPath);
-            fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
-          } catch (_e) {
-            // Fallback: include base64 data URL so agent can still see the image
-            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
-          }
+          // Image: Include base64 data URL (fs.writeBase64 not available in web)
+          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
         } else if (att.type === 'application/pdf') {
-          // PDF: Save to shared uploads folder and suggest extraction
-          try {
-            const uploadDir = '/Users/worker/froggo/uploads';
-            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
-            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
-            savedFiles.push(tempPath);
-            fileContents.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
-          } catch (_e) {
-            fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
-          }
+          // PDF: fs.writeBase64 not available in web — inform user
+          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
         } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
-          // Audio file: Transcribe with Whisper
-          try {
-            showToast('info', 'Transcribing audio...', att.name);
-            const base64 = att.dataUrl.split(',')[1];
-            const audioBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
-            const result = await window.clawdbot?.whisper?.transcribe(audioBuffer);
-            
-            if (result?.transcript) {
-              fileContents.push(`\n\n🎤 AUDIO TRANSCRIPTION: ${att.name}\n\`\`\`\n${result.transcript}\n\`\`\``);
-              showToast('success', 'Audio transcribed', `${result.transcript.split(' ').length} words`);
-            } else {
-              fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Transcription failed: ${result?.error || 'unknown error'}]`);
-            }
-          } catch (e) {
-            fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Could not transcribe: ${e}]`);
-          }
+          // Audio file: whisper transcription not available in web version
+          // TODO Phase 4: migrate — window.clawdbot.whisper not available in web
+          fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Audio transcription not available in web version]`);
         } else {
-          // Other files: save to shared uploads folder and include path
-          try {
-            const uploadDir = '/Users/worker/froggo/uploads';
-            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
-            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
-            savedFiles.push(tempPath);
-            fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
-          } catch (_e) {
-            fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
-          }
+          // Other files: fs.writeBase64 not available in web — include metadata only
+          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
         }
       }
     }
@@ -875,9 +789,11 @@ export default function ChatPanel() {
     setMessages([]);
     messageCacheRef.current.delete(selectedAgent.id);
     window.speechSynthesis.cancel();
-    // Also clear from database
-    if (window.clawdbot?.chat?.clearMessages) {
-      await window.clawdbot?.chat.clearMessages(selectedAgent.dbSessionKey);
+    // TODO Phase 4: migrate — clearMessages endpoint not yet in API; session delete as fallback
+    try {
+      await chatApi.deleteSession(selectedAgent.dbSessionKey);
+    } catch (_err) {
+      // Non-fatal — UI already cleared
     }
   };
 
