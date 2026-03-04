@@ -24,3 +24,27 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, name, role, emoji, color, capabilities, personality } = body;
+    if (!id || !name || !role) {
+      return NextResponse.json({ error: 'id, name and role are required' }, { status: 400 });
+    }
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO agents (id, name, role, emoji, color, capabilities, personality, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'idle', unixepoch())
+      ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role,
+        emoji=excluded.emoji, color=excluded.color, capabilities=excluded.capabilities,
+        personality=excluded.personality
+    `).run(id, name, role, emoji || '🤖', color || '#00BCD4',
+      JSON.stringify(Array.isArray(capabilities) ? capabilities : []), personality || '');
+    const row = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as Record<string, unknown>;
+    return NextResponse.json(parseAgent(row), { status: 201 });
+  } catch (error) {
+    console.error('POST /api/agents error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

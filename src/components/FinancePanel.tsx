@@ -3,6 +3,7 @@ import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, 
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
+import { financeApi } from '../lib/api';
 import FinanceAgentChat from './FinanceAgentChat';
 import FinanceInsightsPanel from './FinanceInsightsPanel';
 import FinanceCategoryBreakdown from './FinanceCategoryBreakdown';
@@ -106,17 +107,17 @@ export default function FinancePanel() {
   const [budgetAccountId, setBudgetAccountId] = useState<string>('');
 
   const loadAccounts = useCallback(async () => {
-    const result = await window.clawdbot?.finance?.account?.balances();
-    if (result?.success && result.balances) {
-      setAccounts(result.balances as AccountBalance[]);
-    }
+    try {
+      const result = await financeApi.getAccounts();
+      if (Array.isArray(result)) {
+        setAccounts(result as AccountBalance[]);
+      }
+    } catch { /* accounts not available yet */ }
   }, []);
 
   const loadRecurring = useCallback(async () => {
-    const result = await window.clawdbot?.finance?.recurring?.list(selectedAccountId || undefined);
-    if (result?.success && result.recurring) {
-      setRecurringItems(result.recurring);
-    }
+    // Recurring items not available via REST yet
+    setRecurringItems([]);
   }, [selectedAccountId]);
 
   const handleDrop = (e: React.DragEvent) => {
@@ -135,37 +136,26 @@ export default function FinancePanel() {
       setLoading(true);
 
       // Load transactions (filtered by selected account)
-      const txResult = await window.clawdbot?.finance?.getTransactions({
-        limit: 50,
-        accountId: selectedAccountId || undefined,
-      });
-      if (txResult?.success) {
-        setTransactions((txResult.transactions || []) as Transaction[]);
+      const params: Record<string, string> = { limit: '50' };
+      if (selectedAccountId) params.accountId = selectedAccountId;
+      const txResult = await financeApi.getTransactions(params);
+      if (Array.isArray(txResult)) {
+        setTransactions(txResult as Transaction[]);
       }
 
-      // Load family budget (filtered by selected account)
-      const familyOpts = selectedAccountId
-        ? { budgetType: 'family', accountId: selectedAccountId }
-        : 'family';
-      const familyResult = await window.clawdbot?.finance?.getBudgetStatus(familyOpts);
-      if (familyResult?.success) {
-        const status = familyResult.status as any;
-        const budget = status?.budgets?.[0] || (status?.total_limit ? status : null);
-        setFamilyBudget(budget as Budget | null);
-      }
-
-      // Load crypto budget (filtered by selected account)
-      const cryptoOpts = selectedAccountId
-        ? { budgetType: 'crypto', accountId: selectedAccountId }
-        : 'crypto';
-      const cryptoResult = await window.clawdbot?.finance?.getBudgetStatus(cryptoOpts);
-      if (cryptoResult?.success) {
-        const status = cryptoResult.status as any;
-        const budget = status?.budgets?.[0] || (status?.total_limit ? status : null);
-        setCryptoBudget(budget as Budget | null);
-      }
+      // Load budget
+      try {
+        const budgetResult: any = await financeApi.getBudget();
+        if (budgetResult) {
+          const budgets = Array.isArray(budgetResult) ? budgetResult : budgetResult?.budgets || [];
+          const family = budgets.find((b: any) => b.type === 'family') || null;
+          const crypto = budgets.find((b: any) => b.type === 'crypto') || null;
+          setFamilyBudget(family as Budget | null);
+          setCryptoBudget(crypto as Budget | null);
+        }
+      } catch { /* budgets not available */ }
     } catch (error) {
-      // '[Finance] Load error:', error;
+      // Finance load error
     } finally {
       setLoading(false);
     }
@@ -177,40 +167,16 @@ export default function FinancePanel() {
     loadRecurring();
     loadAlerts();
 
-    // Load category options for inline recategorization
-    window.clawdbot?.finance?.category?.list().then((res) => {
-      if (res?.success && res.categories) {
-        setCategoryOptions(res.categories as Array<{ name: string }>);
-      }
-    });
+    // Category options not available via REST
+    setCategoryOptions([]);
 
     // Check for new alerts every 30 seconds
     const alertInterval = setInterval(() => {
       loadAlerts();
     }, 30000);
 
-    // Listen for AI analysis status updates after uploads
-    const unsubAnalysis = window.clawdbot?.finance?.onAnalysisStatus?.((data) => {
-      if (data.status === 'started') {
-        setAiProcessing(true);
-        setAiMessage('Finance AI is analyzing your transactions...');
-      } else if (data.status === 'complete') {
-        setAiProcessing(false);
-        setAiMessage('');
-        showToast('success', 'AI Analysis Complete', data.message?.slice(0, 200) || 'Analysis finished -- check insights for details.');
-        loadFinanceData();
-        loadAccounts();
-        loadRecurring();
-      } else if (data.status === 'error') {
-        setAiProcessing(false);
-        setAiMessage('');
-        showToast('warning', 'AI Analysis Failed', data.error || 'Could not complete analysis');
-      }
-    });
-
     return () => {
       clearInterval(alertInterval);
-      unsubAnalysis?.();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -222,27 +188,8 @@ export default function FinancePanel() {
   }, [selectedAccountId, loadFinanceData, loadRecurring]);
 
   const loadAlerts = async () => {
-    try {
-      // Load alerts
-      const alertsResult = await window.clawdbot?.finance?.getAlerts();
-      if (alertsResult?.success) {
-        const newAlerts = alertsResult.alerts || [];
-        setAlerts(newAlerts as Alert[]);
-
-        // Show toasts for new alerts
-        (newAlerts as Alert[]).forEach((alert: Alert) => {
-          if (!lastAlertCheck.current.has(alert.id)) {
-            const toastType = alert.severity === 'critical' ? 'error' :
-                            alert.severity === 'warning' ? 'warning' : 'info';
-            showToast(toastType, alert.title, alert.message);
-            lastAlertCheck.current.add(alert.id);
-          }
-        });
-      }
-
-    } catch (error) {
-      // '[Finance] Alerts load error:', error;
-    }
+    // Alerts not available via REST — use empty
+    setAlerts([]);
   };
 
   const handleUploadClick = () => {
@@ -251,30 +198,8 @@ export default function FinancePanel() {
   };
 
   const handleFileUpload = async (file: File) => {
-    // Close modal immediately and let AI process in background
     setUploadModalOpen(false);
-    const targetAccount = uploadAccountId || 'acc-default';
-    showToast('info', 'Uploading', `Sending ${file.name} to Finance AI...`);
-    try {
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        const buffer = await file.arrayBuffer();
-        const result = await window.clawdbot?.finance?.uploadPDF(buffer, file.name, targetAccount);
-        if (!result?.success) {
-          showToast('error', 'Upload Failed', result?.error || 'Unknown error');
-        }
-      } else {
-        const text = await file.text();
-        const result = await window.clawdbot?.finance?.uploadCSV(text, file.name, targetAccount);
-        if (!result?.success) {
-          showToast('error', 'Upload Failed', result?.error || 'Unknown error');
-        }
-      }
-      await loadFinanceData();
-      await loadAccounts();
-      await loadRecurring();
-    } catch (error: any) {
-      showToast('error', 'Upload Failed', error.message);
-    }
+    showToast('info', 'Upload not available', 'File upload requires the backend to be configured');
   };
 
   const handleCreateBudget = async () => {
@@ -282,30 +207,8 @@ export default function FinancePanel() {
       showToast('error', 'Please enter a valid budget name and amount');
       return;
     }
-    try {
-      setBudgetSubmitting(true);
-      const result = await window.clawdbot?.finance?.createBudget({
-        name: budgetName.trim(),
-        budgetType: budgetModalType,
-        totalBudget: Number(budgetAmount),
-        currency: budgetCurrency,
-        accountId: budgetAccountId || undefined,
-      });
-      if (result?.success) {
-        showToast('success', 'Budget Created', `${budgetName} budget created successfully`);
-        setBudgetModalOpen(false);
-        setBudgetName('');
-        setBudgetAmount('');
-        await loadFinanceData();
-        await loadAccounts();
-      } else {
-        showToast('error', 'Failed to Create Budget', result?.error || 'Unknown error');
-      }
-    } catch (error: any) {
-      showToast('error', 'Error', error.message);
-    } finally {
-      setBudgetSubmitting(false);
-    }
+    showToast('info', 'Budget creation not available in web mode');
+    setBudgetSubmitting(false);
   };
 
   const handleCreateAccount = async () => {
@@ -313,46 +216,14 @@ export default function FinancePanel() {
       showToast('error', 'Please enter an account name');
       return;
     }
-    try {
-      const result = await window.clawdbot?.finance?.account?.create({
-        name: newAccountName.trim(),
-        type: newAccountType,
-        currency: newAccountCurrency,
-      });
-      if (result?.success) {
-        showToast('success', 'Account Created', `${newAccountName} account created`);
-        setShowCreateAccountModal(false);
-        setNewAccountName('');
-        setNewAccountType('bank');
-        setNewAccountCurrency('EUR');
-        await loadAccounts();
-      } else {
-        showToast('error', 'Failed to Create Account', result?.error || 'Unknown error');
-      }
-    } catch (error: any) {
-      showToast('error', 'Error', error.message);
-    }
+    showToast('info', 'Account creation not available in web mode');
   };
 
   const handleArchiveAccount = async (accountId: string, accountName: string) => {
     if (!window.confirm(`Archive account "${accountName}"? Transactions will be preserved.`)) {
       return;
     }
-    try {
-      const result = await window.clawdbot?.finance?.account?.archive(accountId);
-      if (result?.success) {
-        showToast('success', 'Account Archived', `${accountName} has been archived`);
-        // If the archived account was selected, reset to All Accounts
-        if (selectedAccountId === accountId) {
-          setSelectedAccountId(null);
-        }
-        await loadAccounts();
-      } else {
-        showToast('error', 'Failed to Archive', result?.error || 'Unknown error');
-      }
-    } catch (error: any) {
-      showToast('error', 'Error', error.message);
-    }
+    showToast('info', 'Account archiving not available in web mode');
   };
 
   const openBudgetModal = (type: 'family' | 'crypto') => {
@@ -365,12 +236,10 @@ export default function FinancePanel() {
   };
 
   const handleConfirmRecurring = async (id: string) => {
-    await window.clawdbot?.finance?.recurring?.confirm(id);
     setRecurringItems(prev => prev.map(r => r.id === id ? { ...r, status: 'confirmed' } : r));
   };
 
   const handleDismissRecurring = async (id: string) => {
-    await window.clawdbot?.finance?.recurring?.dismiss(id);
     setRecurringItems(prev => prev.filter(r => r.id !== id));
   };
 
@@ -378,18 +247,20 @@ export default function FinancePanel() {
     setExportLoading(true);
     setExportResult(null);
     try {
-      const opts: { accountId?: string; dateFrom?: number; dateTo?: number } = {};
-      if (exportAccountId) opts.accountId = exportAccountId;
-      if (exportDateFrom) opts.dateFrom = new Date(exportDateFrom).getTime();
-      if (exportDateTo) opts.dateTo = new Date(exportDateTo + 'T23:59:59').getTime();
-      const result = await window.clawdbot?.finance?.export?.xlsx(opts);
-      if (result?.canceled) {
-        setExportResult('Export canceled.');
-      } else if (result?.success) {
-        setExportResult(`Exported to: ${result.path}`);
-      } else {
-        setExportResult(`Export failed: ${result?.error || 'Unknown error'}`);
-      }
+      // Export transactions as JSON download
+      const params: Record<string, string> = {};
+      if (exportAccountId) params.accountId = exportAccountId;
+      const txData = await financeApi.getTransactions(params);
+      const blob = new Blob([JSON.stringify(txData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `finance-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportResult('Export downloaded.');
+    } catch {
+      setExportResult('Export failed.');
     } finally {
       setExportLoading(false);
     }
@@ -855,7 +726,7 @@ export default function FinancePanel() {
                               value={tx.category}
                               onChange={async (e) => {
                                 const newCat = e.target.value;
-                                await window.clawdbot?.finance?.category?.updateTransaction(tx.id, newCat);
+                                // Update category in local state only (REST stub, no backend persistence)
                                 setTransactions((prev) =>
                                   prev.map((t) => t.id === tx.id ? { ...t, category: newCat } : t)
                                 );
