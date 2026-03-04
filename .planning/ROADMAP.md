@@ -66,10 +66,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: Tasks API — `/api/tasks`, `/api/tasks/[id]`, subtasks, activity, attachments routes
-- [ ] 03-02: Agents + chat sessions API — `/api/agents`, `/api/agents/[id]`, `/api/chat/sessions`
-- [ ] 03-03: Approvals + inbox + settings + modules API — `/api/approvals`, `/api/inbox`, `/api/settings`, `/api/modules`
-- [ ] 03-04: Analytics + marketplace + schedule API; verify all routes respond correctly
+- [x] 03-01: Tasks API — `/api/tasks`, `/api/tasks/[id]`, subtasks, activity, attachments routes ✓ 2026-03-04
+- [x] 03-02: Agents + chat sessions API — `/api/agents`, `/api/agents/[id]`, `/api/chat/sessions` ✓ 2026-03-04
+- [x] 03-03: Approvals + inbox + settings + modules API — `/api/approvals`, `/api/inbox`, `/api/settings`, `/api/modules` ✓ 2026-03-04
+- [x] 03-04: Analytics + marketplace + schedule API; verify all routes respond correctly ✓ 2026-03-04
 
 ### Phase 4: Frontend Wiring
 **Goal**: Dashboard fully functional — no 404s, Zustand stores use typed API clients, chat uses SSE
@@ -195,7 +195,7 @@ Plans:
 | 0. Setup & Audit | — | Complete | 2026-03-04 |
 | 1. Electron Strip + Next.js Scaffold | 3/3 | Complete | 2026-03-04 |
 | 2. Database Layer | 2/2 | Complete | 2026-03-04 |
-| 3. API Routes | 0/4 | Not started | - |
+| 3. API Routes | 4/4 | Complete | 2026-03-04 |
 | 4. Frontend Wiring | 0/2 | Not started | - |
 | 5. MCP Servers | 0/2 | Not started | - |
 | 6. Agent Definitions | 0/2 | Not started | - |
