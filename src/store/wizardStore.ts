@@ -3,8 +3,8 @@
  *
  * State machine: idle -> braindump -> conversation -> extracting -> review -> creating -> complete
  *
- * Persists wizard state to disk via the preload bridge so the user can
- * resume an in-progress wizard after navigating away or restarting the app.
+ * Persists wizard state to localStorage so the user can
+ * resume an in-progress wizard after navigating away.
  */
 
 import { create } from 'zustand';
@@ -52,7 +52,13 @@ interface WizardState {
   reset: () => void;
 }
 
-const bridge = () => window.clawdbot?.writing?.wizard;
+const WIZARD_STORAGE_KEY = 'wizard:state';
+
+function cleanupWizardStorage(sessionId: string | null): void {
+  if (sessionId) {
+    localStorage.removeItem(`${WIZARD_STORAGE_KEY}:${sessionId}`);
+  }
+}
 
 export const useWizardStore = create<WizardState>((set, get) => ({
   step: 'idle',
@@ -80,9 +86,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
 
   cancelWizard: () => {
     const { sessionId } = get();
-    if (sessionId) {
-      try { bridge()?.delete(sessionId); } catch { /* best-effort cleanup */ }
-    }
+    cleanupWizardStorage(sessionId);
     set({
       step: 'idle',
       sessionId: null,

@@ -57,7 +57,28 @@ interface MemoryState {
   deleteFact: (projectId: string, id: string) => Promise<void>;
 }
 
-const bridge = () => window.clawdbot?.writing?.memory;
+// ── localStorage helpers ──
+
+function storageKey(projectId: string, kind: string): string {
+  return `memory:${projectId}:${kind}`;
+}
+
+function loadFromStorage<T>(projectId: string, kind: string): T[] {
+  try {
+    const raw = localStorage.getItem(storageKey(projectId, kind));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveToStorage<T>(projectId: string, kind: string, data: T[]): void {
+  localStorage.setItem(storageKey(projectId, kind), JSON.stringify(data));
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export const useMemoryStore = create<MemoryState>((set, get) => ({
   characters: [],
@@ -72,22 +93,11 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   loadMemory: async (projectId) => {
     set({ loading: true });
     try {
-      const b = bridge();
-      if (!b) return;
-
-      const [charResult, timeResult, factResult] = await Promise.all([
-        b.characters.list(projectId),
-        b.timeline.list(projectId),
-        b.facts.list(projectId),
-      ]);
-
       set({
-        characters: charResult?.success ? charResult.characters : [],
-        timeline: timeResult?.success ? timeResult.timeline : [],
-        facts: factResult?.success ? factResult.facts : [],
+        characters: loadFromStorage<CharacterProfile>(projectId, 'characters'),
+        timeline: loadFromStorage<TimelineEvent>(projectId, 'timeline'),
+        facts: loadFromStorage<VerifiedFact>(projectId, 'facts'),
       });
-    } catch (err) {
-      // '[memoryStore] loadMemory failed:', err;
     } finally {
       set({ loading: false });
     }
@@ -108,117 +118,66 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   // ── Characters ──
 
   addCharacter: async (projectId, data) => {
-    try {
-      const result = await bridge()?.characters?.create(projectId, data);
-      if (result?.success) {
-        const listResult = await bridge()?.characters?.list(projectId);
-        if (listResult?.success) set({ characters: listResult.characters });
-      }
-    } catch (err) {
-      // '[memoryStore] addCharacter failed:', err;
-    }
+    const character: CharacterProfile = { ...data, id: generateId() };
+    const updated = [...get().characters, character];
+    saveToStorage(projectId, 'characters', updated);
+    set({ characters: updated });
   },
 
   updateCharacter: async (projectId, id, data) => {
-    try {
-      const result = await bridge()?.characters?.update(projectId, id, data);
-      if (result?.success) {
-        const listResult = await bridge()?.characters?.list(projectId);
-        if (listResult?.success) set({ characters: listResult.characters });
-      }
-    } catch (err) {
-      // '[memoryStore] updateCharacter failed:', err;
-    }
+    const updated = get().characters.map((c) => (c.id === id ? { ...c, ...data } : c));
+    saveToStorage(projectId, 'characters', updated);
+    set({ characters: updated });
   },
 
   deleteCharacter: async (projectId, id) => {
-    try {
-      const result = await bridge()?.characters?.delete(projectId, id);
-      if (result?.success) {
-        const listResult = await bridge()?.characters?.list(projectId);
-        if (listResult?.success) set({ characters: listResult.characters });
-        if (get().editingId === id) set({ editingId: null });
-      }
-    } catch (err) {
-      // '[memoryStore] deleteCharacter failed:', err;
-    }
+    const updated = get().characters.filter((c) => c.id !== id);
+    saveToStorage(projectId, 'characters', updated);
+    set({ characters: updated });
+    if (get().editingId === id) set({ editingId: null });
   },
 
   // ── Timeline ──
 
   addTimelineEvent: async (projectId, data) => {
-    try {
-      const result = await bridge()?.timeline?.create(projectId, data);
-      if (result?.success) {
-        const listResult = await bridge()?.timeline?.list(projectId);
-        if (listResult?.success) set({ timeline: listResult.timeline });
-      }
-    } catch (err) {
-      // '[memoryStore] addTimelineEvent failed:', err;
-    }
+    const event: TimelineEvent = { ...data, id: generateId() };
+    const updated = [...get().timeline, event];
+    saveToStorage(projectId, 'timeline', updated);
+    set({ timeline: updated });
   },
 
   updateTimelineEvent: async (projectId, id, data) => {
-    try {
-      const result = await bridge()?.timeline?.update(projectId, id, data);
-      if (result?.success) {
-        const listResult = await bridge()?.timeline?.list(projectId);
-        if (listResult?.success) set({ timeline: listResult.timeline });
-      }
-    } catch (err) {
-      // '[memoryStore] updateTimelineEvent failed:', err;
-    }
+    const updated = get().timeline.map((e) => (e.id === id ? { ...e, ...data } : e));
+    saveToStorage(projectId, 'timeline', updated);
+    set({ timeline: updated });
   },
 
   deleteTimelineEvent: async (projectId, id) => {
-    try {
-      const result = await bridge()?.timeline?.delete(projectId, id);
-      if (result?.success) {
-        const listResult = await bridge()?.timeline?.list(projectId);
-        if (listResult?.success) set({ timeline: listResult.timeline });
-        if (get().editingId === id) set({ editingId: null });
-      }
-    } catch (err) {
-      // '[memoryStore] deleteTimelineEvent failed:', err;
-    }
+    const updated = get().timeline.filter((e) => e.id !== id);
+    saveToStorage(projectId, 'timeline', updated);
+    set({ timeline: updated });
+    if (get().editingId === id) set({ editingId: null });
   },
 
   // ── Facts ──
 
   addFact: async (projectId, data) => {
-    try {
-      const result = await bridge()?.facts?.create(projectId, data);
-      if (result?.success) {
-        const listResult = await bridge()?.facts?.list(projectId);
-        if (listResult?.success) set({ facts: listResult.facts });
-      }
-    } catch (err) {
-      // '[memoryStore] addFact failed:', err;
-    }
+    const fact: VerifiedFact = { ...data, id: generateId() };
+    const updated = [...get().facts, fact];
+    saveToStorage(projectId, 'facts', updated);
+    set({ facts: updated });
   },
 
   updateFact: async (projectId, id, data) => {
-    try {
-      const result = await bridge()?.facts?.update(projectId, id, data);
-      if (result?.success) {
-        const listResult = await bridge()?.facts?.list(projectId);
-        if (listResult?.success) set({ facts: listResult.facts });
-      }
-    } catch (err) {
-      // '[memoryStore] updateFact failed:', err;
-    }
+    const updated = get().facts.map((f) => (f.id === id ? { ...f, ...data } : f));
+    saveToStorage(projectId, 'facts', updated);
+    set({ facts: updated });
   },
 
   deleteFact: async (projectId, id) => {
-    try {
-      const result = await bridge()?.facts?.delete(projectId, id);
-      if (result?.success) {
-        const listResult = await bridge()?.facts?.list(projectId);
-        if (listResult?.success) set({ facts: listResult.facts });
-        if (get().editingId === id) set({ editingId: null });
-      }
-    } catch (err) {
-      // '[memoryStore] deleteFact failed:', err;
-    }
+    const updated = get().facts.filter((f) => f.id !== id);
+    saveToStorage(projectId, 'facts', updated);
+    set({ facts: updated });
+    if (get().editingId === id) set({ editingId: null });
   },
 }));
