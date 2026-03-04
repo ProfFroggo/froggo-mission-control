@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
-import { reconnectGateway } from '../lib/gateway';
+import { settingsApi } from '../lib/api';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
@@ -188,9 +188,9 @@ export default function SettingsPanel() {
   const handleSave = async () => {
     localStorage.setItem('froggo-settings', JSON.stringify(settings));
     
-    // Save automation settings to config file (for task-helpers.sh)
+    // Save automation settings via API
     try {
-      await window.clawdbot?.settings?.save({
+      await settingsApi.set('automation', {
         externalActionsEnabled: settings.externalActionsEnabled,
         rateLimitTweets: settings.rateLimitTweets,
         rateLimitEmails: settings.rateLimitEmails,
@@ -198,15 +198,12 @@ export default function SettingsPanel() {
         defaultCalendarAccount: settings.defaultCalendarAccount,
       });
     } catch (e) {
-      // '[Settings] Failed to save automation settings:', e;
+      // Settings API save failed — localStorage save above still applies
     }
-    
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     showToast('success', 'Settings saved', 'Your preferences have been updated');
-    
-    // Reconnect gateway with new settings
-    reconnectGateway();
   };
 
   const handleReset = () => {
@@ -405,35 +402,20 @@ export default function SettingsPanel() {
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
           <div className="space-y-6">
-            {/* Connection */}
+            {/* Claude Code System Status */}
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Wifi size={16} /> Connection
+                <Wifi size={16} /> System Status
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
-                <div>
-                  <label htmlFor="gateway-url" className="block text-sm text-clawd-text-dim mb-1">Gateway URL</label>
-                  <input
-                    id="gateway-url"
-                    type="text"
-                    value={settings.gatewayUrl}
-                    onChange={(e) => setSettings(s => ({ ...s, gatewayUrl: e.target.value }))}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                  />
+              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
+                <div className="text-sm text-gray-400 space-y-1">
+                  <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">froggo-db &middot; memory &middot; cron</span></div>
+                  <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
+                  <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
+                  <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/froggo/memory/</span></div>
                 </div>
-                <div>
-                  <label htmlFor="gateway-token" className="block text-sm text-clawd-text-dim mb-1">Token (optional)</label>
-                  <input
-                    id="gateway-token"
-                    type="password"
-                    autoComplete="off"
-                    value={settings.gatewayToken}
-                    onChange={(e) => setSettings(s => ({ ...s, gatewayToken: e.target.value }))}
-                    placeholder="Leave empty to use default"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pt-2">
                   <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success' : 'bg-error'}`} />
                   <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
