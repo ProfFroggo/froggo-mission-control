@@ -141,30 +141,14 @@ function App() {
     return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
   }, []);
 
-  // Toolbar action IPC — mirrors the in-app QuickActions behavior
+  // Deep link: ?install=module-id → navigate to marketplace
   useEffect(() => {
-    const cleanup = window.clawdbot?.toolbar?.onAction?.((action: string) => {
-      if (action === 'search')       { setSearchOpen(true); return; }
-      if (action === 'new-task')     { setCurrentView('kanban'); return; }
-      if (action === 'context-chat') { quickActionsRef.current?.openContextChat(); return; }
-      if (action === 'agent-chat')   { quickActionsRef.current?.openAgentChat(); return; }
-      // call or call:agentId — open the call modal (agent ID passed for future pre-selection)
-      if (action === 'call' || action.startsWith('call:')) {
-        quickActionsRef.current?.openCall();
-      }
-    });
-    return () => cleanup?.();
-  }, []);
-
-  // Deep link: openclaw://install/module-id → navigate to marketplace
-  useEffect(() => {
-    const mp = (window as any).clawdbot?.marketplace;
-    if (!mp?.onDeepLinkInstall) return;
-    const unsub = mp.onDeepLinkInstall((data: { moduleId: string }) => {
-      sessionStorage.setItem('marketplace-pending-install', data.moduleId);
+    const params = new URLSearchParams(window.location.search);
+    const installId = params.get('install');
+    if (installId) {
+      sessionStorage.setItem('marketplace-pending-install', installId);
       setCurrentView('marketplace');
-    });
-    return unsub;
+    }
   }, []);
 
   // Global keyboard shortcuts
@@ -486,9 +470,10 @@ function App() {
               currentView={currentView}
               onApproveAll={async () => {
                 try {
-                  const result = await window.clawdbot?.inbox?.approveAll();
-                  if (result?.success) {
-                    showToast('success', 'Approved all', `${result.count} items approved`);
+                  const res = await fetch('/api/inbox/approve-all', { method: 'POST' });
+                  if (res.ok) {
+                    const result = await res.json();
+                    showToast('success', 'Approved all', `${result.count ?? 0} items approved`);
                   }
                 } catch {
                   // Silent fail - error handled by UI state
