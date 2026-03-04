@@ -16,7 +16,7 @@ import {
   Mail, MessageCircle, Send, Gamepad2,
   Inbox, Star, Archive, AlertTriangle,
   RefreshCw, ChevronRight, ChevronDown, Search,
-  Reply, ReplyAll, Forward, MoreHorizontal,
+  Reply,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
   Activity as ActivityIcon, FileText, Code,
   CalendarPlus, ListPlus
@@ -887,6 +887,7 @@ function RightPane({
   thread,
   loadingThread,
   onSendReply,
+  onClose,
   emailBody,
   emailMetadata,
   loadingBody,
@@ -902,6 +903,7 @@ function RightPane({
   thread: ThreadMessage[];
   loadingThread: boolean;
   onSendReply: (text: string) => void;
+  onClose: () => void;
   emailBody: string;
   emailMetadata: EmailMetadata;
   loadingBody: boolean;
@@ -1118,22 +1120,13 @@ function RightPane({
           <h2 className="font-bold text-base truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
-          {!isSystem && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply">
-                <Reply size={16} />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply All">
-                <ReplyAll size={16} />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Forward">
-                <Forward size={16} />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-clawd-border" title="More">
-                <MoreHorizontal size={16} />
-              </button>
-            </div>
-          )}
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-clawd-border flex-shrink-0"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
         </div>
         <div className="flex items-center gap-2 text-sm text-clawd-text-dim">
           <span className={platformColor(conversation.platform)}>
@@ -2008,6 +2001,7 @@ export default function CommsInbox3Pane() {
         thread={thread}
         loadingThread={loadingThread}
         onSendReply={handleSendReply}
+        onClose={() => setSelectedConversation(null)}
         emailBody={emailBody}
         emailMetadata={emailMetadata}
         loadingBody={loadingBody}

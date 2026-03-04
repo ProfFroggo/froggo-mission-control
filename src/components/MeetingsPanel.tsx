@@ -160,7 +160,7 @@ export default function MeetingsPanel() {
   const [editingText, setEditingText] = useState('');
 
   // View state
-  const [activeView, setActiveView] = useState<'current' | 'history' | 'transcribe'>('current');
+  const [activeView, setActiveView] = useState<'current' | 'history' | 'transcribe' | 'upload-transcript'>('current');
   const [pastMeetings, setPastMeetings] = useState<PastMeeting[]>([]);
   const [transcribing, setTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<string>('');
@@ -721,6 +721,82 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     }
   }, [transcribeAudioFile]);
 
+  // Handle transcript file upload (.txt, .pdf, .docx)
+  const handleTranscriptUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setTranscribing(true);
+    setTranscriptionResult('');
+    setTranscriptionProgress(0);
+    setTranscriptionSaved(false);
+    setTranscriptionFileName(file.name.replace(/\.[^/.]+$/, ''));
+    setStatusMessage('Extracting text from transcript...');
+
+    const progressInterval = setInterval(() => {
+      setTranscriptionProgress(prev => prev >= 90 ? prev : prev + Math.random() * 10 + 5);
+    }, 400);
+
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      let text = '';
+
+      if (ext === 'txt') {
+        text = await file.text();
+        setTranscriptionProgress(100);
+      } else if (ext === 'pdf' || ext === 'docx' || ext === 'doc') {
+        // Use Gemini to extract text from PDF/DOCX
+        const apiKey = await getGeminiApiKey();
+        if (!apiKey) throw new Error('Gemini API key not configured — needed for PDF/DOCX extraction');
+
+        const arrayBuffer = await file.arrayBuffer();
+        const base64Data = btoa(
+          new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+
+        const mimeType = ext === 'pdf' ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inlineData: { mimeType, data: base64Data } },
+                  { text: 'Extract all text content from this document. Return only the raw text, preserving paragraphs and line breaks. Do not add commentary.' }
+                ]
+              }]
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const err = await response.text();
+          throw new Error(`Gemini API error: ${response.status} ${err}`);
+        }
+
+        const result = await response.json();
+        text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text) throw new Error('Gemini returned empty text extraction');
+        setTranscriptionProgress(100);
+      } else {
+        throw new Error(`Unsupported file type: .${ext}`);
+      }
+
+      setTranscriptionResult(text.trim());
+      setStatusMessage('Text extracted successfully!');
+    } catch (err) {
+      setStatusMessage(`Text extraction failed: ${err}`);
+      setTranscriptionProgress(0);
+    } finally {
+      clearInterval(progressInterval);
+      setTranscribing(false);
+    }
+  }, []);
+
   // Save transcription as a past meeting, then send to Froggo for task card generation
   const saveTranscriptionAsMeeting = useCallback(async () => {
     if (!transcriptionResult || transcriptionSaving) return;
@@ -1253,6 +1329,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
               }`}
             >
               Upload Audio
+            </button>
+            <button
+              onClick={() => setActiveView('upload-transcript')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+                activeView === 'upload-transcript'
+                  ? 'border-green-500 text-success'
+                  : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+              }`}
+            >
+              Upload Transcript
             </button>
           </div>
         </div>
@@ -2054,196 +2140,248 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </p>
                   </div>
                 )}
+              </div>
+            )}
 
-                {/* Transcription complete — name and save */}
-                {transcriptionResult && !transcribing && (
-                  <div className="space-y-4">
-                    {!transcriptionSaved ? (
-                      <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <CheckCircle2 size={20} className="text-success" />
-                          <span className="font-medium text-success">Transcription Complete</span>
-                        </div>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-clawd-text mb-1.5">Meeting Name</label>
-                            <input
-                              type="text"
-                              value={transcriptionFileName}
-                              onChange={(e) => setTranscriptionFileName(e.target.value)}
-                              placeholder="Name this meeting..."
-                              className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border"
-                            />
-                          </div>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={saveTranscriptionAsMeeting}
-                              disabled={transcriptionSaving}
-                              className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                            >
-                              {transcriptionSaving ? (
-                                <><Loader2 size={18} className="animate-spin" /> Processing...</>
-                              ) : (
-                                <><Check size={18} /> Save to Past Meetings</>
-                              )}
-                            </button>
-                            <button
-                              onClick={async () => {
-                                const success = await copyToClipboard(transcriptionResult);
-                                if (!success) {
-                                  alert('Failed to copy transcription. Please copy manually.');
-                                }
-                              }}
-                              className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
-                            >
-                              Copy Text
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-success-subtle border border-success-border rounded-2xl p-6 text-center">
-                        <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
-                        <p className="font-medium text-success mb-1">Saved to Past Meetings</p>
-                        <p className="text-sm text-clawd-text-dim mb-4">
-                          Summary and tasks have been generated. View in the Past Meetings tab.
-                        </p>
-                        <div className="flex gap-3 justify-center">
-                          <button
-                            onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
-                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all"
-                          >
-                            View Past Meetings
-                          </button>
-                          <button
-                            onClick={() => { setTranscriptionResult(''); setTranscriptionSaved(false); setTranscriptionProgress(0); }}
-                            className="px-4 py-2 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
-                          >
-                            Transcribe Another
-                          </button>
-                        </div>
-                      </div>
-                    )}
+            {/* Upload Transcript View */}
+            {activeView === 'upload-transcript' && (
+              <div className="p-6 max-w-2xl mx-auto">
+                <h2 className="text-heading-3 mb-4">Upload Transcript</h2>
+                <p className="text-clawd-text-dim mb-6">
+                  Upload an existing transcript file to generate a summary and extract tasks.
+                </p>
 
-                    {/* Proposed Task Cards from Froggo */}
-                    {proposedTasks.length > 0 && (
-                      <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Brain size={18} className="text-review" />
-                            <h3 className="font-medium text-clawd-text">Task Cards from Froggo</h3>
-                            <span className="text-xs px-2 py-0.5 bg-clawd-bg rounded-full text-clawd-text-dim">
-                              {proposedTasks.filter(t => t.status === 'pending').length} pending
-                            </span>
-                          </div>
-                          <p className="text-xs text-clawd-text-dim">Approve to add to Kanban</p>
-                        </div>
-                        <div className="divide-y divide-clawd-border">
-                          {proposedTasks.map((task) => (
-                            <div
-                              key={task.id}
-                              className={`p-4 transition-all ${
-                                task.status === 'rejected' ? 'opacity-40' : ''
-                              } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
-                            >
-                              {editingProposedTask === task.id ? (
-                                <div className="space-y-3">
-                                  <input
-                                    type="text"
-                                    value={editingProposedText}
-                                    onChange={(e) => setEditingProposedText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
-                                    placeholder="Edit task title..."
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => {
-                                        setProposedTasks(prev => prev.map(t =>
-                                          t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
-                                        ));
-                                        approveProposedTask(task.id);
-                                        setEditingProposedTask(null);
-                                      }}
-                                      className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm"
-                                    >
-                                      Save & Approve
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingProposedTask(null)}
-                                      className="px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="font-medium text-clawd-text">{task.title}</p>
-                                    {task.description && (
-                                      <p className="text-sm text-clawd-text-dim mt-1">{task.description}</p>
-                                    )}
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-xs px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
-                                        {task.proposedAgent}
-                                      </span>
-                                      {task.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
-                                          <Check size={10} /> Added to Kanban
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {task.status === 'pending' && (
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <button
-                                        onClick={() => approveProposedTask(task.id)}
-                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
-                                        title="Approve — add to Kanban"
-                                      >
-                                        <CheckCircle2 size={16} />
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setEditingProposedTask(task.id);
-                                          setEditingProposedText(task.title);
-                                        }}
-                                        className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim transition-all"
-                                        title="Edit & Approve"
-                                      >
-                                        <Edit3 size={16} />
-                                      </button>
-                                      <button
-                                        onClick={() => rejectProposedTask(task.id)}
-                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
-                                        title="Reject"
-                                      >
-                                        <XCircle size={16} />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Transcript preview */}
-                    <details className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
-                      <summary className="p-4 cursor-pointer hover:bg-clawd-bg/50 flex items-center gap-2">
-                        <FileText size={18} className="text-clawd-text-dim" />
-                        <span className="font-medium text-clawd-text">Transcript Preview</span>
-                      </summary>
-                      <div className="p-4 border-t border-clawd-border max-h-96 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-sm text-clawd-text">
-                          {transcriptionResult}
-                        </pre>
-                      </div>
-                    </details>
+                {!transcribing && !transcriptionResult && (
+                  <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8 text-center">
+                    <FileText size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
+                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-xl cursor-pointer transition-all">
+                      <Upload size={18} />
+                      Choose Transcript File
+                      <input
+                        type="file"
+                        accept=".txt,.pdf,.docx,.doc"
+                        onChange={handleTranscriptUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-sm text-clawd-text-dim mt-4">
+                      Supported: TXT, PDF, DOCX
+                    </p>
                   </div>
                 )}
+
+                {/* Progress bar during extraction */}
+                {transcribing && (
+                  <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Loader2 size={20} className="animate-spin text-clawd-accent" />
+                      <span className="font-medium text-clawd-text">Extracting text...</span>
+                    </div>
+                    <div className="w-full h-3 bg-clawd-bg rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-clawd-accent to-green-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-clawd-text-dim mt-2 text-right">
+                      {Math.round(transcriptionProgress)}%
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Shared post-result UI for both transcribe and upload-transcript */}
+            {(activeView === 'transcribe' || activeView === 'upload-transcript') && transcriptionResult && !transcribing && (
+              <div className="p-6 pt-0 max-w-2xl mx-auto">
+                <div className="space-y-4">
+                  {!transcriptionSaved ? (
+                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle2 size={20} className="text-success" />
+                        <span className="font-medium text-success">
+                          {activeView === 'transcribe' ? 'Transcription Complete' : 'Text Extracted'}
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Meeting Name</label>
+                          <input
+                            type="text"
+                            value={transcriptionFileName}
+                            onChange={(e) => setTranscriptionFileName(e.target.value)}
+                            placeholder="Name this meeting..."
+                            className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border"
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={saveTranscriptionAsMeeting}
+                            disabled={transcriptionSaving}
+                            className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                          >
+                            {transcriptionSaving ? (
+                              <><Loader2 size={18} className="animate-spin" /> Processing...</>
+                            ) : (
+                              <><Check size={18} /> Save to Past Meetings</>
+                            )}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              const success = await copyToClipboard(transcriptionResult);
+                              if (!success) {
+                                alert('Failed to copy transcription. Please copy manually.');
+                              }
+                            }}
+                            className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
+                          >
+                            Copy Text
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6 text-center">
+                      <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
+                      <p className="font-medium text-success mb-1">Saved to Past Meetings</p>
+                      <p className="text-sm text-clawd-text-dim mb-4">
+                        Summary and tasks have been generated. View in the Past Meetings tab.
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all"
+                        >
+                          View Past Meetings
+                        </button>
+                        <button
+                          onClick={() => { setTranscriptionResult(''); setTranscriptionSaved(false); setTranscriptionProgress(0); }}
+                          className="px-4 py-2 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
+                        >
+                          Upload Another
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Proposed Task Cards from Froggo */}
+                  {proposedTasks.length > 0 && (
+                    <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Brain size={18} className="text-review" />
+                          <h3 className="font-medium text-clawd-text">Task Cards from Froggo</h3>
+                          <span className="text-xs px-2 py-0.5 bg-clawd-bg rounded-full text-clawd-text-dim">
+                            {proposedTasks.filter(t => t.status === 'pending').length} pending
+                          </span>
+                        </div>
+                        <p className="text-xs text-clawd-text-dim">Approve to add to Kanban</p>
+                      </div>
+                      <div className="divide-y divide-clawd-border">
+                        {proposedTasks.map((task) => (
+                          <div
+                            key={task.id}
+                            className={`p-4 transition-all ${
+                              task.status === 'rejected' ? 'opacity-40' : ''
+                            } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                          >
+                            {editingProposedTask === task.id ? (
+                              <div className="space-y-3">
+                                <input
+                                  type="text"
+                                  value={editingProposedText}
+                                  onChange={(e) => setEditingProposedText(e.target.value)}
+                                  className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                  placeholder="Edit task title..."
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setProposedTasks(prev => prev.map(t =>
+                                        t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
+                                      ));
+                                      approveProposedTask(task.id);
+                                      setEditingProposedTask(null);
+                                    }}
+                                    className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm"
+                                  >
+                                    Save & Approve
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingProposedTask(null)}
+                                    className="px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-clawd-text">{task.title}</p>
+                                  {task.description && (
+                                    <p className="text-sm text-clawd-text-dim mt-1">{task.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-xs px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
+                                      {task.proposedAgent}
+                                    </span>
+                                    {task.status === 'approved' && (
+                                      <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                        <Check size={10} /> Added to Kanban
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {task.status === 'pending' && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      onClick={() => approveProposedTask(task.id)}
+                                      className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                      title="Approve — add to Kanban"
+                                    >
+                                      <CheckCircle2 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingProposedTask(task.id);
+                                        setEditingProposedText(task.title);
+                                      }}
+                                      className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim transition-all"
+                                      title="Edit & Approve"
+                                    >
+                                      <Edit3 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => rejectProposedTask(task.id)}
+                                      className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                      title="Reject"
+                                    >
+                                      <XCircle size={16} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transcript preview */}
+                  <details className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                    <summary className="p-4 cursor-pointer hover:bg-clawd-bg/50 flex items-center gap-2">
+                      <FileText size={18} className="text-clawd-text-dim" />
+                      <span className="font-medium text-clawd-text">Transcript Preview</span>
+                    </summary>
+                    <div className="p-4 border-t border-clawd-border max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm text-clawd-text">
+                        {transcriptionResult}
+                      </pre>
+                    </div>
+                  </details>
+                </div>
               </div>
             )}
 
