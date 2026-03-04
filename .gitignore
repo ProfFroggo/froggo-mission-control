@@ -2,6 +2,9 @@ node_modules/
 dist/
 dist-electron/
 release/
+.next/
+tools/*/dist/
+tools/*/node_modules/
 .DS_Store
 .env
 .env.local
