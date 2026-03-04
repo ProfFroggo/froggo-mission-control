@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
 import ReactMarkdown from 'react-markdown';
+import { analyticsApi } from '../lib/api';
 
 interface Report {
   name: string;
@@ -29,18 +30,13 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.hrReports?.list();
-      if (result?.success) {
-        setReports((result.reports || []) as Report[]);
-        if ((result.reports?.length ?? 0) > 0 && !selectedReport) {
-          // Auto-select most recent
-          loadReport(result.reports![0] as Report);
-        }
-      } else {
-        showToast('error', 'Failed to load reports', result?.error);
+      const result = await analyticsApi.getAgentActivity();
+      const reportsList = result?.reports || [];
+      setReports(reportsList as Report[]);
+      if (reportsList.length > 0 && !selectedReport) {
+        loadReport(reportsList[0] as Report);
       }
     } catch (error) {
-      // '[HRReports] Load error:', error;
       showToast('error', 'Failed to load reports', String(error));
     } finally {
       setLoading(false);
@@ -51,15 +47,11 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     setSelectedReport(report);
     setLoadingContent(true);
     try {
-      const result = await window.clawdbot?.hrReports?.read(report.name);
-      if (result?.success) {
-        setReportContent(result.content || '');
-      } else {
-        showToast('error', 'Failed to read report', result?.error);
-        setReportContent('');
-      }
+      // Individual report reading — fetch from analytics endpoint
+      const result = await analyticsApi.getAgentActivity();
+      const found = (result?.reports || []).find((r: any) => r.name === report.name);
+      setReportContent(found?.content || '');
     } catch (error) {
-      // '[HRReports] Read error:', error;
       showToast('error', 'Failed to read report', String(error));
       setReportContent('');
     } finally {

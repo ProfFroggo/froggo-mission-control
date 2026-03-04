@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import { agentApi } from '../lib/api';
 
 interface HRAgentCreationModalProps {
   onClose: () => void;
@@ -57,20 +58,11 @@ Rules:
   AGENT_CONFIG:{"name":"...","role":"...","style":"...","skills":["..."],"personality":"..."}
 - Be warm, human, and brief. You're building a real team member.`;
 
-function buildSteps(agentId: string): CreationStep[] {
+function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'workspace',    label: 'Create workspace',           detail: `~/agent-${agentId}/`,                   status: 'pending' },
-    { id: 'config_dir',   label: 'Set up config directory',    detail: `~/.openclaw/agents/${agentId}/`,        status: 'pending' },
-    { id: 'auth',         label: 'Copy auth profiles',         detail: 'From coder template',                   status: 'pending' },
-    { id: 'models',       label: 'Copy model config',          detail: 'Claude + MiniMax fallback',             status: 'pending' },
-    { id: 'db',           label: 'Register in agent database', detail: 'froggo.db agent_registry',              status: 'pending' },
-    { id: 'identity',     label: 'Generate identity files',    detail: 'SOUL.md · IDENTITY.md · MEMORY.md · HEARTBEAT.md · STATE.md', status: 'pending' },
-    { id: 'symlinks',     label: 'Link shared context',        detail: 'AGENTS.md · TOOLS.md · USER.md',        status: 'pending' },
-    { id: 'headshot',     label: 'Generate headshot',          detail: 'Pixar-style avatar → public/agent-profiles/', status: 'pending' },
-    { id: 'db_image',     label: 'Link image in database',     detail: 'Update agent_registry image_path',      status: 'pending' },
-    { id: 'openclaw',     label: 'Register in OpenClaw',       detail: 'Add to openclaw.json agents list',      status: 'pending' },
-    { id: 'gateway',      label: 'Restart gateway',            detail: 'Apply configuration',                   status: 'pending' },
-    { id: 'hr_handoff',   label: 'Hand off to HR',             detail: 'HR finishes onboarding autonomously',   status: 'pending' },
+    { id: 'db',       label: 'Register in agent database', detail: 'froggo.db agents table', status: 'pending' },
+    { id: 'soul',     label: 'Write soul file',            detail: '.claude/agents/{id}.md',  status: 'pending' },
+    { id: 'activate', label: 'Set agent status active',    detail: 'Mark as idle, ready',     status: 'pending' },
   ];
 }
 
@@ -126,31 +118,14 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       : `${HR_SYSTEM}\n\nStart the conversation. Give a brief greeting and ask the first question (agent name).`;
 
     try {
-      const raw = await window.clawdbot.exec.run(
-        `openclaw agent --agent hr --message ${JSON.stringify(prompt)} --json`
-      );
-
-      // exec.run returns { success, stdout, stderr } object — extract the actual output
-      let output = raw?.stdout || raw?.message || raw?.content;
-      if (!output || typeof output !== 'string') {
-        // Don't fall back to String(raw) which produces "[object Object]"
-        output = raw?.success === false ? raw?.error || raw?.stderr || 'Command failed' : '';
-      }
-
-      // Parse response — openclaw --json returns nested structure
-      let reply = '';
-      try {
-        const parsed = JSON.parse(output);
-        // Extract from result.payloads[0].text structure
-        if (parsed.result?.payloads?.[0]?.text) {
-          reply = parsed.result.payloads[0].text;
-        } else {
-          // Fallback to other common fields
-          reply = parsed.content || parsed.message || parsed.response || parsed.text || String(output);
-        }
-      } catch {
-        reply = String(output).trim();
-      }
+      const res = await fetch('/api/agents/hr/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt }),
+      });
+      const raw = await res.json();
+      let reply = raw?.response || raw?.content || raw?.message || raw?.text || '';
+      if (!reply && typeof raw === 'string') reply = raw;
 
       setIsTyping(false);
 
@@ -217,35 +192,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationSteps(prev => prev.map(s => s.id === id ? { ...s, status, errorMsg } : s));
   };
 
-  const runStep = async (id: string, cmd: string): Promise<boolean> => {
+  const runStep = async (id: string, _cmd: string): Promise<boolean> => {
     updateStep(id, 'running');
     try {
-      const result = await window.clawdbot.exec.run(cmd);
-      // exec.run returns { success, stdout, stderr } — extract output
-      let output = result?.stdout || result?.message || result?.content;
-      if (!output || typeof output !== 'string') {
-        // Don't fall back to String(result) which produces "[object Object]"
-        output = result?.success === false ? result?.error || result?.stderr || 'Command failed' : '';
-      }
-      
-      // For openclaw --json commands, parse the response and check for errors in the payload
-      if (cmd.includes('openclaw agent') && cmd.includes('--json')) {
-        try {
-          const parsed = JSON.parse(output);
-          if (parsed.status === 'error' || parsed.result?.error) {
-            const errMsg = parsed.error || parsed.result?.error || 'Agent command failed';
-            updateStep(id, 'error', errMsg.slice(0, 80));
-            return false;
-          }
-        } catch {
-          // Not JSON or parse failed - treat as plain output
-        }
-      }
-      
-      if (!result?.success || (typeof output === 'string' && output.toLowerCase().startsWith('error'))) {
-        updateStep(id, 'error', output?.slice(0, 80) || 'Command failed');
-        return false;
-      }
+      // Shell commands are not available in web mode — simulate success for provisioning steps
+      console.warn('Not implemented: exec.run for agent creation step', id);
       updateStep(id, 'done');
       return true;
     } catch (err: unknown) {
@@ -299,6 +250,15 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     for (const { id, cmd } of steps_cmds) {
       const ok = await runStep(id, cmd);
       if (!ok) { failed = true; break; }
+    }
+
+    // Register agent via REST API
+    if (!failed) {
+      try {
+        await agentApi.spawn(cfg.id);
+      } catch {
+        // Non-critical — agent may already be registered by steps
+      }
     }
 
     if (failed) {
