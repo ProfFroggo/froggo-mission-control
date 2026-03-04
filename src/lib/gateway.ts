@@ -1076,4 +1076,6 @@ if (typeof window !== 'undefined' && window.clawdbot?.gateway?.onBroadcast) {
   });
 }
 
-ensureGatewayToken();
+if (typeof window !== 'undefined') {
+  ensureGatewayToken();
+}
