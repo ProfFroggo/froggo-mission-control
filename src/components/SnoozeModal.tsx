@@ -58,7 +58,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
   const loadCurrentSnooze = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot!.snooze.get(sessionKey);
+      const result = await fetch(`/api/notifications?action=snooze-get&sessionKey=${encodeURIComponent(sessionKey)}`).then(r => r.ok ? r.json() : { success: false });
       if (result.success && result.snooze) {
         // Convert SnoozeEntry to SnoozeData format
         const snoozeData: SnoozeData = {
@@ -118,7 +118,11 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setSubmitting(true);
       setError('');
 
-      const result = await window.clawdbot!.snooze.set(sessionKey, String(snoozeUntil), reason || undefined);
+      const result = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'snooze-set', sessionKey, until: String(snoozeUntil), reason: reason || undefined }),
+      }).then(r => r.ok ? r.json() : { success: false });
       
       if (result.success) {
         // Snooze set successfully
@@ -139,7 +143,11 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setSubmitting(true);
       setError('');
 
-      const result = await window.clawdbot!.snooze.unset(sessionKey);
+      const result = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'snooze-unset', sessionKey }),
+      }).then(r => r.ok ? r.json() : { success: false });
       
       if (result.success) {
         // Unsnooze successful

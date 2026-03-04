@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Clock, HelpCircle, Ban, CheckCircle, StickyNote, RefreshCw, Inbox } from 'lucide-react';
+import { inboxApi, approvalApi } from '../lib/api';
 
 interface Mention {
   id: string;
@@ -37,12 +38,11 @@ export const XMentionsView: React.FC = () => {
 
   const loadMentions = async () => {
     try {
-      const filters = filter === 'all' ? {} : { replyStatus: filter };
-      const result = await window.clawdbot?.xMention?.list(filters);
-      
-      if (result?.success) {
-        setMentions((result?.mentions ?? []) as Mention[]);
-      }
+      const allItems = await inboxApi.getAll();
+      const items = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'x-mention')
+        .filter((item: any) => filter === 'all' || item.status === filter);
+      setMentions(items as Mention[]);
       setLoading(false);
     } catch (error) {
       // 'Error loading mentions:', error;
@@ -53,11 +53,8 @@ export const XMentionsView: React.FC = () => {
   const fetchNewMentions = async () => {
     setFetching(true);
     try {
-      const result = await window.clawdbot?.xMention?.fetch();
-      
-      if (result?.success) {
-        await loadMentions();
-      }
+      // Fetch is server-side — just reload from inbox
+      await loadMentions();
     } catch (error) {
       // 'Error fetching mentions:', error;
     } finally {
@@ -67,8 +64,8 @@ export const XMentionsView: React.FC = () => {
 
   const updateStatus = async (id: string, status: 'pending' | 'considering' | 'ignored' | 'replied') => {
     try {
-      await window.clawdbot?.xMention?.update({ id, replyStatus: status });
-      await loadMentions();
+      // Stub: status updates not available via REST inbox API
+      setMentions(prev => prev.map(m => m.id === id ? { ...m, reply_status: status } : m));
     } catch (error) {
       // 'Error updating mention status:', error;
     }
@@ -76,7 +73,7 @@ export const XMentionsView: React.FC = () => {
 
   const saveNotes = async (id: string, noteText: string) => {
     try {
-      await window.clawdbot?.xMention?.update({ id, notes: noteText });
+      // Stub: notes not available via REST inbox API — update local state only
       setNotes({ ...notes, [id]: '' });
     } catch (error) {
       // 'Error saving notes:', error;
@@ -85,19 +82,18 @@ export const XMentionsView: React.FC = () => {
 
   const handleReply = async (mentionId: string, tweetId: string) => {
     if (!replyText.trim()) return;
-    
+
     try {
-      const result = await window.clawdbot?.xMention?.reply({
-        mentionId,
-        replyText,
-        tweetId,
+      // External posting MUST go through approval
+      await approvalApi.create({
+        type: 'x-reply',
+        tier: 3,
+        payload: { mentionId, tweetId, replyText },
+        requestedBy: 'user',
       });
-      
-      if (result?.success) {
-        setReplyText('');
-        setSelectedMention(null);
-        await loadMentions();
-      }
+      setReplyText('');
+      setSelectedMention(null);
+      await loadMentions();
     } catch (error) {
       // 'Error replying to mention:', error;
     }

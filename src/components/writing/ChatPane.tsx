@@ -46,30 +46,13 @@ export default function ChatPane() {
       return;
     }
 
-    const loadHistory = async () => {
-      try {
-        const result = await window.clawdbot?.writing?.chat?.loadHistory(activeProjectId);
-        if (result?.success && result.messages) {
-          loadMessages(result.messages);
-        } else {
-          clearMessages();
-        }
-      } catch {
-        clearMessages();
-      }
-    };
-
-    loadHistory();
+    // Chat history is managed in-memory via the store; no IPC persistence needed
+    clearMessages();
   }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps -- store actions are stable
 
   const handleClearChat = useCallback(async () => {
     if (!activeProjectId) return;
     clearMessages();
-    try {
-      await window.clawdbot?.writing?.chat?.clearHistory(activeProjectId);
-    } catch {
-      // Clear failure is non-critical
-    }
   }, [activeProjectId, clearMessages]);
 
   const handleRetry = useCallback((assistantMessageId: string) => {
@@ -153,13 +136,7 @@ export default function ChatPane() {
           setStreaming(false);
           setStreamContent('');
 
-          // Persist both messages to disk
-          try {
-            window.clawdbot?.writing?.chat?.appendMessage(activeProjectId, userMessage);
-            window.clawdbot?.writing?.chat?.appendMessage(activeProjectId, assistantMessage);
-          } catch {
-            // Persistence failure is non-critical
-          }
+          // Chat messages are stored in-memory via the Zustand store
         },
         onError: (err) => {
           setError(typeof err === 'string' ? err : 'An error occurred');

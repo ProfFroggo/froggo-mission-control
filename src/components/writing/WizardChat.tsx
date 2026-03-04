@@ -10,7 +10,7 @@ import {
 import { useWizardStore, type ChatMessage as ChatMessageType } from '../../store/wizardStore';
 import ChatMessage from './ChatMessage';
 
-const bridge = () => window.clawdbot?.writing?.wizard;
+// Wizard persistence stub — state is managed in the Zustand store
 
 const EXTRACTION_STEPS = [
   'Analyzing conversation',
@@ -90,20 +90,7 @@ export default function WizardChat() {
 
   // Persist wizard state to disk
   const persistState = useCallback(async () => {
-    if (!sessionId) return;
-    const state = useWizardStore.getState();
-    try {
-      await bridge()?.save(sessionId, {
-        step: state.step,
-        sessionId: state.sessionId,
-        messages: state.messages,
-        selectedAgent: state.selectedAgent,
-        brainDump: state.brainDump,
-        plan: state.plan,
-      });
-    } catch {
-      // Session persist failure is non-blocking
-    }
+    // Wizard state is managed in the Zustand store; no IPC persistence needed
   }, [sessionId]);
 
   const handleSend = useCallback(

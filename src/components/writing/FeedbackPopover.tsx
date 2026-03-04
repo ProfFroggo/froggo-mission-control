@@ -245,20 +245,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           setAlternatives(parsed);
           setStreaming(false);
 
-          // Log the feedback interaction
-          try {
-            window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
-              chapterId: activeChapterId,
-              agentId: selectedAgent,
-              selectedText,
-              instructions,
-              alternatives: parsed,
-              accepted: null,
-              selectionRange: { from, to },
-            });
-          } catch {
-            // Logging failure should not block UX
-          }
+          // Feedback logging stub — no IPC persistence
         },
         onError: (err) => {
           setError(typeof err === 'string' ? err : 'An error occurred');
@@ -301,21 +288,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           setStreamContent(accumulatedRef.current);
           setStreaming(false);
 
-          // Log as fact-check interaction
-          try {
-            window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
-              type: 'fact-check',
-              chapterId: activeChapterId,
-              agentId: 'researcher',
-              selectedText: claim,
-              instructions: '(fact-check)',
-              result: accumulatedRef.current,
-              accepted: null,
-              selectionRange: { from, to },
-            });
-          } catch {
-            // Logging failure should not block UX
-          }
+          // Fact-check logging stub — no IPC persistence
         },
         onError: (err) => {
           setError(typeof err === 'string' ? err : 'An error occurred');
@@ -346,20 +319,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     // Collapse selection to prevent BubbleMenu flicker (Pitfall 1)
     editor.commands.setTextSelection(range.from + alternativeText.length);
 
-    // Log the accept
-    try {
-      window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
-        chapterId: activeChapterId,
-        agentId: selectedAgent,
-        selectedText: getSelectedText(editor),
-        instructions,
-        alternatives,
-        accepted: alternativeText,
-        selectionRange: range,
-      });
-    } catch {
-      // Logging failure should not block UX
-    }
+    // Accept logging stub — no IPC persistence
 
     reset();
   };

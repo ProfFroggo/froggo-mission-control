@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import { chatApi, settingsApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('QuickActions');
@@ -523,14 +524,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     // Log transcripts to gateway session
     const logToGateway = (role: string, text: string) => {
       try {
-        const gateway = window.clawdbot?.gateway;
-        if (gateway?.request) {
-          gateway.request('chat.inject', {
-            sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
-            role, message: text,
-            // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
-          }).catch((err: Error) => { logger.error('Failed to inject chat message:', err); });
-        }
+        // Log voice transcripts via gateway (web mode: use gateway lib)
+        try {
+          const { gateway: gw } = await import('../lib/gateway');
+          gw.send({ type: 'chat.inject', sessionKey: 'web:dashboard', role, message: text });
+        } catch { /* ignore */ }
       } catch { /* ignore */ }
     };
 
@@ -606,7 +604,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     if (envKey) return envKey;
     // 3. Try IPC to main process secret store
     try {
-      const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
+      const result = await settingsApi.get('geminiApiKey');
+      const key = result?.value;
       if (key) return key;
     } catch { /* ignore */ }
     return '';
@@ -794,22 +793,20 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
     // Load persisted chat history for this agent
     try {
-      const result = await window.clawdbot?.chat?.loadMessages(30, `toolbar:chat:${agent.id}`, 'toolbar');
-      if (result?.success && result.messages?.length > 0) {
-        setChatMessages(result.messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })));
+      const sessionKey = `toolbar:chat:${agent.id}`;
+      const result = await chatApi.getMessages(sessionKey);
+      if (Array.isArray(result) && result.length > 0) {
+        setChatMessages(result.slice(-30).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })));
       }
     } catch (_e) {
       // ignore load errors — start fresh
     }
 
-    // Spawn session via IPC (ensures agent session exists)
+    // Ensure agent session exists via REST
     try {
-      const ipc = window.clawdbot?.agents;
-      if (ipc?.spawnChat) {
-        await ipc.spawnChat(agent.id);
-      }
-    } catch (e) {
-      // '[QuickActions] Failed to spawn agent chat session:', e;
+      await chatApi.createSession(agent.id);
+    } catch (_e) {
+      // Session may already exist, ignore
     }
     setChatLoading(false);
   };
@@ -820,31 +817,33 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setChatInput('');
     setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
 
-    // Persist user message
-    window.clawdbot?.chat?.saveMessage({
+    // Persist user message via REST
+    const sessionKey = `toolbar:chat:${chatAgent.id}`;
+    chatApi.saveMessage(sessionKey, {
       role: 'user', content: msg, timestamp: Date.now(),
-      sessionKey: `toolbar:chat:${chatAgent.id}`, channel: 'toolbar',
-    });
+    }).catch(() => {});
 
     setChatLoading(true);
     try {
-      const ipc = window.clawdbot?.agents;
-      if (ipc?.chat) {
-        const sessionKey = `agent:${chatAgent.id}:main`;
-        const result = await ipc.chat(sessionKey, msg);
-        const reply = typeof result === 'string' ? result : (result?.response || result?.message || '');
-        if (reply) {
-          setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-          // Persist assistant reply
-          window.clawdbot?.chat?.saveMessage({
-            role: 'assistant', content: reply, timestamp: Date.now(),
-            sessionKey: `toolbar:chat:${chatAgent.id}`, channel: 'toolbar',
-          });
-        } else {
-          setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
-        }
+      // Use streamMessage or direct REST call
+      const { streamMessage } = await import('../lib/api');
+      let reply = '';
+      await new Promise<void>((resolve, reject) => {
+        streamMessage(
+          chatAgent.id,
+          msg,
+          (chunk: any) => { reply += chunk.delta || chunk.content || ''; },
+          () => resolve(),
+          (err: Error) => reject(err),
+        );
+      });
+      if (reply) {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+        chatApi.saveMessage(sessionKey, {
+          role: 'assistant', content: reply, timestamp: Date.now(),
+        }).catch(() => {});
       } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Chat IPC not available' }]);
+        setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
       }
     } catch (_err) {
       setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get response' }]);
@@ -914,22 +913,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   
   const handlePopOut = async () => {
     try {
-      // Check if window.electron and toolbar API are available
-      if (!window.clawdbot?.toolbar) {
-        showToast('error', 'Pop-out Failed', 'Toolbar API not available');
-        return;
-      }
-
-      const result = await window.clawdbot.toolbar.popOut({
-        width: state.isCollapsed ? 80 : 360,
-        height: 400,
-      });
-      
-      if (result.success) {
-        showToast('success', 'Toolbar Popped Out', 'Toolbar is now floating and always-on-top');
-      } else {
-        showToast('error', 'Pop-out Failed', result.error || 'Could not create floating window');
-      }
+      // Toolbar pop-out not available in web mode (Electron only)
+      showToast('info', 'Pop-out not available', 'Floating toolbar requires the desktop app');
     } catch (error) {
       // 'Pop-out error:', error;
       showToast('error', 'Pop-out Failed', 'An error occurred');
@@ -1294,7 +1279,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </span>
             )}
             <button
-              onClick={isFloating ? () => window.clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
               className="p-2 rounded-full hover:bg-clawd-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
@@ -1363,7 +1348,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
             <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
             <button
-              onClick={isFloating ? () => window.clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
               className="p-2 rounded-full hover:bg-clawd-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
@@ -1391,8 +1376,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           ref={toolbarRef}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 relative pointer-events-auto"
           role="presentation"
-          onMouseEnter={() => window.clawdbot?.toolbar?.setIgnoreMouseEvents?.(false)}
-          onMouseLeave={() => window.clawdbot?.toolbar?.setIgnoreMouseEvents?.(true)}
+          onMouseEnter={() => undefined}
+          onMouseLeave={() => undefined}
         >
           {pillContent}
         </div>

@@ -25,17 +25,20 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const calAccount = useUserSettings.getState().emailAccounts[0]?.email || '';
-      const result = calAccount ? await window.clawdbot?.calendar?.events(calAccount, 3) : null;
-      if (result?.success && result.events?.events) {
-        setEvents(result.events.events.map((e: any) => ({
+      const res = await fetch('/api/schedule');
+      if (res.ok) {
+        const data = await res.json();
+        const eventsData = data?.events || data || [];
+        setEvents(eventsData.map((e: any) => ({
           id: e.id,
-          title: e.summary || 'Untitled',
-          start: e.start?.dateTime || e.start?.date || '',
-          end: e.end?.dateTime || e.end?.date || '',
+          title: e.summary || e.title || 'Untitled',
+          start: e.start?.dateTime || e.start?.date || e.start || '',
+          end: e.end?.dateTime || e.end?.date || e.end || '',
           location: e.location || '',
           isAllDay: !!e.start?.date && !e.start?.dateTime,
         })));
+      } else {
+        setEvents([]);
       }
     } catch (_e) {
       setError('Failed to load calendar');
@@ -149,22 +152,21 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const allEmails: any[] = [];
-      for (const acc of ACCOUNTS) {
-        const result = await window.clawdbot?.email?.unread(acc.email);
-        const threads = result?.emails?.threads || result?.emails || [];
-        threads.slice(0, 5).forEach((t: any) => {
-          allEmails.push({
-            id: t.id,
-            from: t.from || t.messages?.[0]?.from || 'Unknown',
-            subject: t.subject || t.messages?.[0]?.subject || 'No subject',
-            snippet: t.snippet || '',
-            date: t.date || t.internalDate,
-            account: acc.label,
-          });
-        });
+      const res = await fetch('/api/inbox?type=email');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items || []);
+        setEmails(items.slice(0, 15).map((t: any) => ({
+          id: t.id,
+          from: t.from || t.sender || 'Unknown',
+          subject: t.subject || t.title || 'No subject',
+          snippet: t.snippet || t.preview || '',
+          date: t.date || t.createdAt,
+          account: t.account || ACCOUNTS[0]?.label || 'Email',
+        })));
+      } else {
+        setEmails([]);
       }
-      setEmails(allEmails);
     } catch (_e) {
       setError('Failed to load emails');
     } finally {
@@ -236,33 +238,15 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const clawdbot = window.clawdbot;
-      if (!clawdbot?.twitter?.mentions) {
-        setError('X API not available');
-        setLoading(false);
-        return;
-      }
-      
-      const result = await clawdbot.twitter.mentions();
-      // Mentions loaded
-      
-      if (result?.success) {
-        // Handle both JSON and raw output from bird CLI
-        let data = result.mentions || [];
-        if (!Array.isArray(data)) data = [];
-        
-        if (data.length === 0 && result.raw) {
-          // Parse raw text output if JSON failed
-          const lines = (result.raw || '').split('\n').filter((l: string) => l && l.trim());
-          data = lines.map((line: string, i: number) => ({ id: String(i), text: line }));
-        }
-        
-        setMentions(data);
+      const res = await fetch('/api/inbox?type=twitter');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items || data?.mentions || []);
+        setMentions(items);
       } else {
-        setError(result?.error || 'Could not load mentions');
+        setError('Could not load mentions');
       }
     } catch (e: unknown) {
-      // '[Mentions] Error:', e;
       setError(e instanceof Error ? e.message : 'Failed to load mentions');
     } finally {
       setLoading(false);
@@ -357,11 +341,13 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await window.clawdbot?.messages?.recent(10);
-      if (result?.success) {
-        setMessages(result.chats || []);
+      const res = await fetch('/api/notifications?type=messages&limit=10');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.chats || data?.items || []);
+        setMessages(items);
       } else {
-        setError(result?.error || 'Could not load messages');
+        setError('Could not load messages');
       }
     } catch (_e) {
       setError('Failed to load messages');

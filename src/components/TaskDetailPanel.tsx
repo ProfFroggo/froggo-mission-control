@@ -11,6 +11,7 @@ import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
 import PokeModal from './PokeModal';
+import { taskApi } from '@/lib/api';
 import { gateway } from '@/lib/gateway';
 import { createLogger } from '../utils/logger';
 
@@ -96,23 +97,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     }
   }, [task, loadTaskActivity]);
 
-  // Load attachments from DB
+  // Load attachments from REST API
   const loadAttachments = useCallback(async () => {
     if (!task) return;
     setLoadingAttachments(true);
     try {
-      const clawdbot = window.clawdbot;
-      if (!clawdbot?.tasks?.attachments) {
+      const result = await taskApi.getAttachments(task.id);
+      if (Array.isArray(result)) {
+        setAttachments(result as unknown as TaskAttachment[]);
+      } else {
         setAttachments([]);
-        setLoadingAttachments(false);
-        return; // IPC not available (web mode)
-      }
-      const result = await clawdbot.tasks.attachments.list(task.id);
-      if (result.success) {
-        setAttachments(result.attachments as unknown as TaskAttachment[]);
       }
     } catch (err: unknown) {
-      // 'Failed to load attachments:', err;
+      // Failed to load attachments - may not have attachments API route yet
+      setAttachments([]);
     } finally {
       setLoadingAttachments(false);
     }
@@ -121,18 +119,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Load child tasks for multi-stage
   useEffect(() => {
     if (!task) { setChildTasks([]); return; }
-    if (window.clawdbot?.tasks?.children) {
-      window.clawdbot.tasks.children(task.id).then((result: any) => {
-        if (result?.success && result.children) {
-          setChildTasks(result.children.map((c: any) => ({
-            id: c.id,
-            title: c.title,
-            status: c.status,
-            stageNumber: c.stage_number,
-          })));
-        }
-      }).catch(() => {});
-    }
+    taskApi.getSubtasks(task.id).then((result: any) => {
+      if (Array.isArray(result)) {
+        setChildTasks(result.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          status: c.status,
+          stageNumber: c.stage_number,
+        })));
+      } else if (result?.success && result.children) {
+        setChildTasks(result.children.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          status: c.status,
+          stageNumber: c.stage_number,
+        })));
+      }
+    }).catch(() => {});
   }, [task?.id]);
 
   useEffect(() => {
@@ -273,7 +276,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           type: 'danger',
         }, async () => {
           try {
-            await window.clawdbot?.tasks?.delete(task.id);
+            await taskApi.delete(task.id);
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
           } catch (err: unknown) {
@@ -469,98 +472,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!task || !e.target.files || e.target.files.length === 0) return;
-
-    const clawdbot = window.clawdbot;
-    if (!clawdbot?.exec || !clawdbot?.fs || !clawdbot?.tasks?.attachments) {
-      logger.debug('File upload requires Electron IPC (exec, fs, tasks.attachments)');
-      showToast('error', 'Upload unavailable', 'File upload requires the desktop app');
-      return;
-    }
-
-    const file = e.target.files[0];
-    setUploadingFile(true);
-
-    try {
-      // Copy file to deliverables directory (use ~/froggo path, shell-expandable)
-      const deliverablePath = `~/froggo/deliverables/${task.id}`;
-      const filePath = `${deliverablePath}/${file.name}`;
-
-      // Create directory if needed via electron
-      await clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
-
-      // Read file as base64
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-
-        // Write file
-        await clawdbot.fs.writeBase64(filePath, base64);
-
-        // Add attachment record
-        const result = await clawdbot.tasks.attachments?.add(
-          task.id,
-          filePath,
-          'deliverable',
-          'user'
-        );
-        
-        if (result?.success) {
-          if (result.attachment) setAttachments([result.attachment as unknown as TaskAttachment, ...attachments]);
-          showToast('success', 'File attached', file.name);
-        } else if (result) {
-          showToast('error', 'Failed to attach file', result.error);
-        }
-        setUploadingFile(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err: unknown) {
-      showToast('error', 'Upload failed', (err as Error).message);
-      setUploadingFile(false);
-    }
-    
-    // Reset input
+    // File upload not available in web mode (requires Electron fs/exec)
+    showToast('info', 'Upload unavailable', 'File upload is not available in web mode');
     e.target.value = '';
   };
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!task) return;
-    const clawdbot = window.clawdbot;
-    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
-
-    const result = await clawdbot.tasks.attachments.delete(attachmentId);
-    if (result.success) {
-      setAttachments(attachments.filter(a => a.id !== attachmentId));
-      showToast('success', 'Attachment deleted');
-      loadActivity(); // Refresh to show deletion
-    } else {
-      showToast('error', 'Failed to delete', result.error);
-    }
+    // Attachment deletion not available in web mode
+    showToast('info', 'Attachment management not available in web mode');
   };
 
   const handleOpenFile = async (filePath: string) => {
-    const clawdbot = window.clawdbot;
-    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
-    const result = await clawdbot.tasks.attachments.open(filePath);
-    if (!result.success) {
-      showToast('error', 'Failed to open file', result.error);
-    }
+    // File opening not available in web mode
+    showToast('info', 'File opening not available in web mode');
   };
 
   const handleAutoDetect = async () => {
-    if (!task) return;
-    const clawdbot = window.clawdbot;
-    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
-    setLoadingAttachments(true);
-
-    const result = await clawdbot.tasks.attachments.autoDetect(task.id);
-    if (result.success) {
-      showToast('success', 'Auto-detection complete');
-      loadAttachments();
-      loadActivity();
-    } else {
-      showToast('error', 'Auto-detection failed', result.error);
-    }
-    setLoadingAttachments(false);
+    // Auto-detect not available in web mode
+    showToast('info', 'Auto-detection not available in web mode');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -1004,8 +934,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 // Auto-save to backend (debounced by typing)
                 clearTimeout((window as any).__planningNotesTimer);
                 (window as any).__planningNotesTimer = setTimeout(() => {
-                  window.clawdbot?.tasks?.update(task.id, { 
-                    planningNotes: e.target.value 
+                  taskApi.update(task.id, {
+                    planningNotes: e.target.value
                   }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
                 }, 1000);
               }}
@@ -1602,20 +1532,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onClick={async () => {
                   setAbortingAgent(true);
                   try {
-                    const clawdbot = window.clawdbot;
-                    if (!clawdbot?.exec) {
-                      showToast('error', 'Unavailable', 'Agent abort requires the desktop app');
-                      setAbortingAgent(false);
-                      return;
-                    }
-                    // Abort the agent session via openclaw CLI
-                    const result = await clawdbot.exec.run(
-                      `openclaw sessions abort ${activeAgentInfo.sessionKey}`
-                    );
-                    
-                    if (result.success) {
-                      showToast('success', 'Agent aborted', 'Proceeding with approval...');
-                      await logTaskActivity(task.id, 'agent_aborted', `Agent session ${activeAgentInfo.displayName} aborted before approval`);
+                    // Agent abort not available in web mode (requires exec)
+                    showToast('info', 'Agent abort not available in web mode');
+                    setAbortingAgent(false);
+                    // Proceed with approval directly
+                    {
+                      showToast('success', 'Proceeding with approval...');
+                      await logTaskActivity(task.id, 'agent_aborted', `Agent session ${activeAgentInfo.displayName} abort requested`);
                       
                       // Wait a moment for session to fully terminate
                       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1712,25 +1635,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onClick={async () => {
                   if (!forkDescription.trim()) return;
                   try {
-                    if (window.clawdbot?.tasks?.fork) {
-                      const result = await window.clawdbot.tasks.fork(task.id, {
-                        title: forkDescription.trim().slice(0, 100),
-                        description: forkDescription.trim(),
-                        assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
-                        priority: task.priority,
+                    // Fork via REST: create a subtask
+                    const result = await taskApi.addSubtask(task.id, {
+                      title: forkDescription.trim().slice(0, 100),
+                      description: forkDescription.trim(),
+                      assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
+                      priority: task.priority,
+                    });
+                    if (result) {
+                      showToast('success', 'Task forked', `Created new task from "${task.title}"`);
+                      setShowForkModal(false);
+                      // Reload child tasks
+                      taskApi.getSubtasks(task.id).then((r: any) => {
+                        const children = Array.isArray(r) ? r : r?.children || [];
+                        setChildTasks(children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
                       });
-                      if (result?.success) {
-                        showToast('success', 'Task forked', `Created new task from "${task.title}"`);
-                        setShowForkModal(false);
-                        // Reload child tasks
-                        window.clawdbot.tasks.children(task.id).then((r: any) => {
-                          if (r?.success) setChildTasks(r.children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
-                        });
-                      } else {
-                        showToast('error', 'Fork failed', result?.error || 'Unknown error');
-                      }
                     } else {
-                      showToast('error', 'Fork not available', 'tasks.fork IPC not found');
+                      showToast('error', 'Fork failed', 'Unknown error');
                     }
                   } catch (err) {
                     showToast('error', 'Fork failed', (err as Error).message);

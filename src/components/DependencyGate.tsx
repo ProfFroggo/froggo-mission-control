@@ -32,13 +32,16 @@ export function DependencyGate({ children }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    window.clawdbot?.startup?.getState()
-      .then((result: StartupState) => {
-        setState(result);
+    fetch('/api/health')
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setState(data?.startup ?? null);
+        }
         setLoading(false);
       })
       .catch(() => {
-        // If IPC fails, proceed anyway (fail-open — don't block on IPC error)
+        // If health check fails, proceed anyway (fail-open)
         setLoading(false);
       });
   }, []);

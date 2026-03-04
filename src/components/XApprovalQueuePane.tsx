@@ -4,6 +4,7 @@ import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 import type { XTab } from './XTwitterPage';
+import { approvalApi, scheduleApi } from '../lib/api';
 
 interface XApprovalQueuePaneProps {
   tab: XTab;
@@ -59,11 +60,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadResearchIdeas = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xResearch?.list({ status: 'proposed', limit: 20 });
-
-      if (result?.success) {
-        setItems((result.ideas || []).map((idea: any) => ({ ...idea, itemType: 'research' as const })));
-      }
+      const result = await scheduleApi.getAll();
+      const ideas = (Array.isArray(result) ? result : [])
+        .filter((item: any) => item.type === 'research' && item.status === 'proposed');
+      setItems(ideas.map((idea: any) => ({ ...idea, itemType: 'research' as const })));
     } catch (error) {
       // '[XApprovalQueue] Load research error:', error;
     } finally {
@@ -74,11 +74,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadContentPlans = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xPlan?.list({ status: 'proposed', limit: 20 });
-
-      if (result?.success) {
-        setItems((result.plans || []).map((plan: any) => ({ ...plan, itemType: 'plan' as const })));
-      }
+      const result = await scheduleApi.getAll();
+      const plans = (Array.isArray(result) ? result : [])
+        .filter((item: any) => item.type === 'plan' && item.status === 'proposed');
+      setItems(plans.map((plan: any) => ({ ...plan, itemType: 'plan' as const })));
     } catch (error) {
       // '[XApprovalQueue] Load plans error:', error;
     } finally {
@@ -89,11 +88,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadDrafts = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xDraft?.list({ status: 'draft', limit: 20 });
-
-      if (result?.success) {
-        setItems((result.drafts || []).map((draft: any) => ({ ...draft, itemType: 'draft' as const })));
-      }
+      const result = await scheduleApi.getAll();
+      const drafts = (Array.isArray(result) ? result : [])
+        .filter((item: any) => item.type === 'draft' && item.status === 'draft');
+      setItems(drafts.map((draft: any) => ({ ...draft, itemType: 'draft' as const })));
     } catch (error) {
       // '[XApprovalQueue] Load drafts error:', error;
     } finally {
@@ -103,28 +101,22 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
 
   const handleApprove = async (id: string, itemType: 'research' | 'plan' | 'draft') => {
     try {
-      const api = itemType === 'research'
-        ? window.clawdbot?.xResearch
-        : itemType === 'plan'
-        ? window.clawdbot?.xPlan
-        : window.clawdbot?.xDraft;
-
-      const result = await api!.approve({
-        id,
-        approvedBy: getCurrentUserName(),
-      });
-
-      if (result.success) {
-        const itemLabel = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
-        showToast('success', `${itemLabel} approved`);
-        
-        // Refresh appropriate list
-        if (tab === 'research') loadResearchIdeas();
-        else if (tab === 'plan') loadContentPlans();
-        else if (tab === 'drafts') loadDrafts();
-      } else {
-        throw new Error(result.error || 'Failed to approve');
+      // Find the matching approval and respond with 'approved'
+      const approvals = await approvalApi.getAll('pending');
+      const match = (Array.isArray(approvals) ? approvals : []).find(
+        (a: any) => a.metadata?.itemId === id || a.id === id
+      );
+      if (match) {
+        await approvalApi.respond(match.id, 'approved', undefined, undefined);
       }
+
+      const itemLabel = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
+      showToast('success', `${itemLabel} approved`);
+
+      // Refresh appropriate list
+      if (tab === 'research') loadResearchIdeas();
+      else if (tab === 'plan') loadContentPlans();
+      else if (tab === 'drafts') loadDrafts();
     } catch (error: unknown) {
       // '[XApprovalQueue] Approve error:', error;
       showToast('error', `Failed to approve: ${error instanceof Error ? error.message : String(error)}`);
@@ -139,28 +131,21 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       placeholder: 'Reason...',
       confirmLabel: 'Reject',
     }, async (reason: string) => {
-      const api = itemType === 'research'
-        ? window.clawdbot?.xResearch
-        : itemType === 'plan'
-        ? window.clawdbot?.xPlan
-        : window.clawdbot?.xDraft;
-
-      const result = await api!.reject({
-        id,
-        reason: reason || undefined,
-      });
-
-      if (result.success) {
-        const label = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
-        showToast('success', `${label} rejected`);
-
-        // Refresh appropriate list
-        if (tab === 'research') loadResearchIdeas();
-        else if (tab === 'plan') loadContentPlans();
-        else if (tab === 'drafts') loadDrafts();
-      } else {
-        throw new Error(result.error || 'Failed to reject');
+      const approvals = await approvalApi.getAll('pending');
+      const match = (Array.isArray(approvals) ? approvals : []).find(
+        (a: any) => a.metadata?.itemId === id || a.id === id
+      );
+      if (match) {
+        await approvalApi.respond(match.id, 'rejected', reason || undefined, undefined);
       }
+
+      const label = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
+      showToast('success', `${label} rejected`);
+
+      // Refresh appropriate list
+      if (tab === 'research') loadResearchIdeas();
+      else if (tab === 'plan') loadContentPlans();
+      else if (tab === 'drafts') loadDrafts();
     });
   };
 

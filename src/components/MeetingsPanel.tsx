@@ -42,8 +42,9 @@ async function getGeminiApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') { _cachedGeminiKey = viteKey; return viteKey; }
   try {
-    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
-    if (key) { _cachedGeminiKey = key; return key; }
+    const { settingsApi } = await import('../lib/api');
+    const result = await settingsApi.get('gemini_api_key');
+    if (result?.value) { _cachedGeminiKey = result.value; return result.value; }
   } catch { /* ignore */ }
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
@@ -188,26 +189,10 @@ export default function MeetingsPanel() {
   }>>([]);
   const [loadingUpcomingEvents, setLoadingUpcomingEvents] = useState(false);
 
-  // Fetch upcoming calendar events
+  // Fetch upcoming calendar events — not available in web mode
   const loadUpcomingEvents = useCallback(async () => {
-    if (!window.clawdbot?.calendar?.events) return;
-    setLoadingUpcomingEvents(true);
-    try {
-      const events = await window.clawdbot.calendar.events(undefined, 7); // Next 7 days
-      if (Array.isArray(events)) {
-        // Filter to future events only
-        const now = new Date();
-        const future = events.filter((e: any) => {
-          const start = new Date(e.start?.dateTime || e.start?.date || 0);
-          return start > now;
-        });
-        setUpcomingEvents(future.slice(0, 10)); // Limit to 10
-      }
-    } catch (err) {
-      logger.error('Failed to load upcoming events:', err);
-    } finally {
-      setLoadingUpcomingEvents(false);
-    }
+    // Calendar API not available in web mode
+    setLoadingUpcomingEvents(false);
   }, []);
 
   // Refs
@@ -251,18 +236,14 @@ export default function MeetingsPanel() {
     return () => clearInterval(interval);
   }, [meetingStartTime]);
 
-  // DB Helpers
-  const dbExec = useCallback(async (sql: string, params: (string | number | boolean | null)[] = []) => {
-    if (!window.clawdbot?.db?.exec) return;
-    await window.clawdbot.db.exec(sql, params);
+  // DB Helpers — not available in web mode, return no-ops
+  const dbExec = useCallback(async (_sql: string, _params: (string | number | boolean | null)[] = []) => {
+    // DB not available in web mode
   }, []);
 
-  const dbQuery = useCallback(async <T extends Record<string, unknown>>(sql: string, params: (string | number | boolean | null)[] = []): Promise<T[]> => {
-    if (!window.clawdbot?.db?.query) return [];
-    try {
-      const res = await window.clawdbot.db.query(sql, params);
-      return (res?.rows as T[]) || [];
-    } catch { return []; }
+  const dbQuery = useCallback(async <T extends Record<string, unknown>>(_sql: string, _params: (string | number | boolean | null)[] = []): Promise<T[]> => {
+    // DB not available in web mode
+    return [];
   }, []);
 
   const ensureMeetingTables = useCallback(async () => {
@@ -448,23 +429,21 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   // Approve a proposed task and create it
   const approveProposedTask = useCallback(async (taskId: string) => {
     const task = proposedTasks.find(t => t.id === taskId);
-    if (!task || !window.clawdbot?.tasks?.sync) return;
-    
+    if (!task) return;
+
     try {
-      const result = await window.clawdbot.tasks.sync({
-        id: `meeting-${Date.now()}`,
+      const { taskApi } = await import('../lib/api');
+      await taskApi.create({
         title: task.title,
         description: `${task.description}\n\n**Plan:** ${task.plan}\n\n*Proposed agent: ${task.proposedAgent}*`,
         status: 'todo',
         project: 'Meetings'
       });
-      
-      if (result.success) {
-        setProposedTasks(prev => prev.map(t => 
-          t.id === taskId ? { ...t, status: 'approved' } : t
-        ));
-        addActivity({ type: 'task', message: `✅ Created task: ${task.title}`, timestamp: Date.now() });
-      }
+
+      setProposedTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, status: 'approved' } : t
+      ));
+      addActivity({ type: 'task', message: `Created task: ${task.title}`, timestamp: Date.now() });
     } catch (err) {
       logger.error('Failed to create task:', err);
     }
@@ -508,71 +487,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   }, []);
 
   const loadPastMeetings = useCallback(async () => {
-    if (!window.clawdbot?.exec?.run) return;
+    // File system access not available in web mode — load from DB only
     setLoadingPastMeetings(true);
     try {
-      const listResult = await window.clawdbot?.exec.run('ls -1 $HOME/froggo/meetings/*.md 2>/dev/null || echo ""');
-      if (!listResult.success || !listResult.stdout.trim()) {
-        setPastMeetings([]);
-        setLoadingPastMeetings(false);
-        return;
-      }
-      const files = listResult.stdout.trim().split('\n').filter((f: string) => f);
-      const meetings: PastMeeting[] = [];
-      for (const filepath of files) {
-        try {
-          const readResult = await window.clawdbot?.exec.run(`cat "${filepath}"`);
-          if (!readResult.success) continue;
-          const content = readResult.stdout;
-          const filename = filepath.split('/').pop() || '';
-          const match = filename.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})\.md/);
-          let date = new Date();
-          let time = '';
-          if (match) {
-            date = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]), parseInt(match[4]), parseInt(match[5]));
-            time = `${match[4]}:${match[5]}`;
-          }
-          const transcriptMatch = content.match(/## Transcript\n\n([\s\S]*?)(?=\n##|---|\n*$)/);
-          const transcript: string[] = [];
-          if (transcriptMatch) {
-            for (const line of transcriptMatch[1].split('\n')) {
-              const cleanLine = line.replace(/^>\s*/, '').trim();
-              if (cleanLine) transcript.push(cleanLine);
-            }
-          }
-          const actionItemsMatch = content.match(/## Action Items Detected\n\n([\s\S]*?)(?=\n##|---|\n*$)/);
-          const actionItems: string[] = [];
-          if (actionItemsMatch) {
-            for (const line of actionItemsMatch[1].split('\n')) {
-              const itemMatch = line.match(/- \[.\] \*\*\[(\w+)\]\*\* (.+)/);
-              if (itemMatch) actionItems.push(`[${itemMatch[1]}] ${itemMatch[2]}`);
-            }
-          }
-          const tasksMatch = content.match(/## Tasks to Create\n\n([\s\S]*?)(?=\n##|---|\n*$)/);
-          const tasksCreated: string[] = [];
-          if (tasksMatch) {
-            for (const line of tasksMatch[1].split('\n')) {
-              const taskMatch = line.match(/- \[.\] (.+)/);
-              if (taskMatch) tasksCreated.push(taskMatch[1]);
-            }
-          }
-          meetings.push({ filename, filepath, date, time, transcript, actionItems, tasksCreated, rawContent: content, source: 'file' });
-        } catch (err) {
-          // '[Meetings] Error parsing:', filepath, err;
-        }
-      }
-      meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
-      try {
-        const dbMeetings = await loadDbMeetings();
-        const fileNames = new Set(meetings.map(m => m.filename));
-        for (const dbm of dbMeetings) {
-          if (!fileNames.has(dbm.filename)) {
-            meetings.push(dbm);
-          }
-        }
-        meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
-      } catch { /* ignore */ }
-      setPastMeetings(meetings);
+      const dbMeetings = await loadDbMeetings();
+      setPastMeetings(dbMeetings);
     } catch (err) {
       logger.error('Error loading past meetings:', err);
       setPastMeetingsError(err instanceof Error ? err.message : 'Failed to load past meetings');
@@ -582,12 +501,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   }, [loadDbMeetings]);
 
   const saveMeetingToFile = useCallback(async (transcript: string[], actionItems: ActionItem[]): Promise<string | null> => {
-    if (!window.clawdbot?.exec?.run) return null;
+    // File system not available in web mode — offer download instead
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10);
     const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
     const filename = `${dateStr}-${timeStr}.md`;
-    const filepath = `$HOME/froggo/meetings/${filename}`;
     const approvedItems = actionItems.filter(i => i.status === 'approved');
     const lines: string[] = [
       `# Meeting Notes - ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
@@ -602,12 +520,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     }
     lines.push(`---`, `*Generated by Froggo Voice Assistant*`);
     const content = lines.join('\n');
-    const base64Content = btoa(unescape(encodeURIComponent(content)));
     try {
-      const result = await window.clawdbot?.exec.run(`mkdir -p $HOME/froggo/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`);
-      if (result.success) return filepath;
-    } catch (err) {
-      // '[Meeting] Save error:', err;
+      const blob = new Blob([content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      return filename;
+    } catch {
+      // Save error — non-critical
     }
     return null;
   }, []);
@@ -644,29 +567,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     setEditingText('');
   }, []);
 
-  // Gemini File API Transcription for audio files
-  const transcribeAudioFile = useCallback(async (audioFilePath: string): Promise<string> => {
-    if (!window.clawdbot?.exec?.run) {
-      throw new Error('Exec not available');
-    }
-    const apiKey = await getGeminiApiKey();
-    if (!apiKey) {
-      throw new Error('Gemini API key not configured');
-    }
-    
-    // Run transcription script — stderr has progress, stdout has transcript
-    const scriptPath = '$HOME/froggo/tools/gemini-transcribe/transcribe.sh';
-    const cmd = `API_KEY=${apiKey} bash ${scriptPath} "${audioFilePath}"`;
-
-    try {
-      const result = await window.clawdbot.exec.run(cmd);
-      if (!result.success) {
-        throw new Error(result.stderr || 'Transcription failed');
-      }
-      return result.stdout.trim();
-    } catch (err) {
-      throw new Error(`Transcription error: ${err}`);
-    }
+  // Gemini File API Transcription for audio files — uses browser Gemini API in web mode
+  const transcribeAudioFile = useCallback(async (_audioFilePath: string): Promise<string> => {
+    // Shell-based transcription not available in web mode
+    throw new Error('File-based transcription not available in web mode. Use the browser recording feature instead.');
   }, []);
 
   // Handle audio file transcription request
@@ -703,12 +607,31 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         reader.readAsDataURL(file);
       });
 
-      // Save as base64 then decode
-      const writeCmd = `echo "${base64}" | base64 -d > "${tempPath}"`;
-      await window.clawdbot?.exec.run(writeCmd);
-
-      // Transcribe
-      const result = await transcribeAudioFile(tempPath);
+      // Transcribe using Gemini API directly in browser
+      const { default: _blobResult } = await import('../lib/api');
+      // Use Gemini API directly with the base64 data
+      const apiKey = await getGeminiApiKey();
+      if (!apiKey) throw new Error('Gemini API key not configured');
+      const mimeType = file.type || 'audio/webm';
+      const transcribeResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inlineData: { mimeType, data: base64 } },
+                { text: 'Transcribe this audio accurately. Output ONLY the transcript text. If no speech detected, return empty string.' }
+              ]
+            }],
+            generationConfig: { maxOutputTokens: 4096, temperature: 0.1 }
+          })
+        }
+      );
+      if (!transcribeResponse.ok) throw new Error(`Gemini API error: ${transcribeResponse.status}`);
+      const transcribeData = await transcribeResponse.json();
+      const result = transcribeData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
       setTranscriptionProgress(100);
       setTranscriptionResult(result);
       setStatusMessage('Transcription complete!');
@@ -873,19 +796,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   }, []);
 
   const createTasksFromApproved = useCallback(async (): Promise<number> => {
-    if (!window.clawdbot?.tasks?.sync) return 0;
+    const { taskApi } = await import('../lib/api');
     const approved = meetingActionItems.filter(i => i.status === 'approved');
     let created = 0;
     for (const item of approved) {
-      const taskId = `meeting-${Date.now()}-${created}`;
       let title = (item.editedText || item.text).charAt(0).toUpperCase() + (item.editedText || item.text).slice(1);
       title = title.replace(/[,;:]$/, '').trim();
       try {
-        const result = await window.clawdbot?.tasks.sync({
-          id: taskId, title, status: 'todo', project: 'Meetings',
+        await taskApi.create({
+          title, status: 'todo', project: 'Meetings',
           description: `From meeting on ${new Date().toLocaleDateString()}`,
         });
-        if (result.success) created++;
+        created++;
       } catch { /* ignore */ }
     }
     return created;

@@ -23,18 +23,24 @@ export default function HealthStatusWidget() {
 
   const loadSystemStatus = async () => {
     try {
-      const result = await window.clawdbot.system.status();
-      
-      if (result.success && result.status) {
-        setStatus(result.status as unknown as SystemStatus);
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        const s: SystemStatus = {
+          watcherRunning: data?.watcherRunning ?? true,
+          killSwitchOn: data?.killSwitchOn ?? false,
+          inProgressTasks: data?.inProgressTasks ?? 0,
+          blockedTasks: data?.blockedTasks,
+          totalTasks: data?.totalTasks,
+        };
+        setStatus(s);
         setError(null);
       } else {
-        setError(result.error || 'Failed to load status');
+        setError('Failed to load status');
       }
-      
+
       setLoading(false);
     } catch (err: unknown) {
-      // 'Failed to load system status:', err;
       setError(err instanceof Error ? err.message : 'Failed to load');
       setLoading(false);
     }

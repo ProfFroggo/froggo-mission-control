@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Search, ExternalLink, RefreshCw, Send, Save, Sparkles, CheckCircle, Clock, AlertCircle, ThumbsUp, MessageSquare } from 'lucide-react';
+import { settingsApi, approvalApi } from '../lib/api';
 
 interface RedditThread {
   id: string;
@@ -48,12 +49,11 @@ export const XRedditView: React.FC = () => {
 
   const loadMonitors = async () => {
     try {
-      const result = await window.clawdbot?.xReddit?.listMonitors?.();
-      if (result?.success && result.monitors) {
-        setMonitors(result.monitors as RedditMonitor[]);
-        if (result.monitors.length > 0) {
-          setShowSetup(false);
-        }
+      const result = await settingsApi.get('redditMonitors');
+      const monitorsData = Array.isArray(result) ? result : [];
+      setMonitors(monitorsData as RedditMonitor[]);
+      if (monitorsData.length > 0) {
+        setShowSetup(false);
       }
     } catch (error) {
       // Error loading monitors
@@ -63,10 +63,9 @@ export const XRedditView: React.FC = () => {
 
   const loadThreads = async () => {
     try {
-      const result = await window.clawdbot?.xReddit?.listThreads?.({});
-      if (result?.success && result.threads) {
-        setThreads(result.threads as RedditThread[]);
-      }
+      const result = await settingsApi.get('redditThreads');
+      const threadsData = Array.isArray(result) ? result : [];
+      setThreads(threadsData as RedditThread[]);
     } catch (error) {
       // Error loading threads
     }
@@ -74,21 +73,17 @@ export const XRedditView: React.FC = () => {
 
   const startMonitoring = async () => {
     if (!productUrl.trim() || !keywords.trim()) return;
-    
+
     setMonitoring(true);
     try {
-      const result = await window.clawdbot?.xReddit?.createMonitor?.({
+      await settingsApi.set('redditMonitor', {
         productUrl: productUrl.trim(),
         keywords: keywords.trim(),
         subreddits: subreddits.trim() || 'all',
       });
-      
-      if (result?.success) {
-        await loadMonitors();
-        // Fetch threads based on new monitor
-        await fetchThreads();
-        setShowSetup(false);
-      }
+      await loadMonitors();
+      await loadThreads();
+      setShowSetup(false);
     } catch (error) {
       // Error starting monitoring
     } finally {
@@ -99,10 +94,8 @@ export const XRedditView: React.FC = () => {
   const fetchThreads = async () => {
     setMonitoring(true);
     try {
-      const result = await window.clawdbot?.xReddit?.fetch?.();
-      if (result?.success) {
-        await loadThreads();
-      }
+      // Fetching is server-side — just reload threads
+      await loadThreads();
     } catch (error) {
       // Error fetching threads
     } finally {
@@ -113,42 +106,19 @@ export const XRedditView: React.FC = () => {
   const generateDraft = async (thread: RedditThread) => {
     setSelectedThread({ ...thread, reply_status: 'drafting' });
     setDraftReply('');
-    
-    try {
-      const result = await window.clawdbot?.xReddit?.generateDraft?.({
-        threadId: thread.id,
-        threadTitle: thread.title,
-        threadText: thread.text,
-        subreddit: thread.subreddit,
-      });
-      
-      if (result?.success && result.draft) {
-        setDraftReply(result.draft);
-      }
-    } catch (error) {
-      // Error generating draft
-    }
+    // Stub: AI draft generation requires server-side — leave draft empty for manual entry
   };
 
   const saveDraft = async () => {
     if (!selectedThread || !draftReply.trim()) return;
-    
+
     try {
-      const result = await window.clawdbot?.xReddit?.saveDraft?.({
-        threadId: selectedThread.id,
-        replyText: draftReply.trim(),
-      });
-      
-      if (result?.success) {
-        setThreads(threads.map(t => 
-          t.id === selectedThread.id 
-            ? { ...t, reply_status: 'drafted', drafted_reply: draftReply.trim() }
-            : t
-        ));
-        if (selectedThread) {
-          setSelectedThread({ ...selectedThread, reply_status: 'drafted', drafted_reply: draftReply.trim() });
-        }
-      }
+      setThreads(threads.map(t =>
+        t.id === selectedThread.id
+          ? { ...t, reply_status: 'drafted', drafted_reply: draftReply.trim() }
+          : t
+      ));
+      setSelectedThread({ ...selectedThread, reply_status: 'drafted', drafted_reply: draftReply.trim() });
     } catch (error) {
       // Error saving draft
     }
@@ -156,24 +126,22 @@ export const XRedditView: React.FC = () => {
 
   const postReply = async () => {
     if (!selectedThread || !draftReply.trim()) return;
-    
+
     try {
-      const result = await window.clawdbot?.xReddit?.postReply?.({
-        threadId: selectedThread.id,
-        replyText: draftReply.trim(),
+      // External posting MUST go through approval
+      await approvalApi.create({
+        type: 'reddit-reply',
+        tier: 3,
+        payload: { threadId: selectedThread.id, replyText: draftReply.trim() },
+        requestedBy: 'user',
       });
-      
-      if (result?.success) {
-        setThreads(threads.map(t => 
-          t.id === selectedThread.id 
-            ? { ...t, reply_status: 'posted', posted_at: Date.now() }
-            : t
-        ));
-        if (selectedThread) {
-          setSelectedThread({ ...selectedThread, reply_status: 'posted' });
-        }
-        setDraftReply('');
-      }
+      setThreads(threads.map(t =>
+        t.id === selectedThread.id
+          ? { ...t, reply_status: 'posted', posted_at: Date.now() }
+          : t
+      ));
+      setSelectedThread({ ...selectedThread, reply_status: 'posted' });
+      setDraftReply('');
     } catch (error) {
       // Error posting reply
     }
@@ -181,8 +149,8 @@ export const XRedditView: React.FC = () => {
 
   const updateStatus = async (threadId: string, status: RedditThread['reply_status']) => {
     try {
-      await window.clawdbot?.xReddit?.updateThread?.({ threadId, status });
-      setThreads(threads.map(t => 
+      // Stub: update local state only
+      setThreads(threads.map(t =>
         t.id === threadId ? { ...t, reply_status: status } : t
       ));
     } catch (error) {

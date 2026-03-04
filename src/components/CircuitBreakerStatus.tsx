@@ -12,17 +12,20 @@ export const CircuitBreakerStatus: React.FC = () => {
   const [breakers, setBreakers] = useState<Record<string, CircuitBreakerState>>({});
 
   useEffect(() => {
-    const fetch = async () => {
+    const checkStatus = async () => {
       try {
-        const status = await window.clawdbot?.getCircuitStatus();
-        setBreakers(status || {});
-      } catch (err) {
-        // 'Failed to fetch circuit status:', err;
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          setBreakers(data?.circuitBreakers || {});
+        }
+      } catch {
+        // Health check failed — leave breakers as-is
       }
     };
 
-    fetch();
-    const interval = setInterval(fetch, 10000); // Poll every 10 seconds
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 

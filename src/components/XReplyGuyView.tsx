@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Send, MessageCircle, Heart, Repeat2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { inboxApi, approvalApi } from '../lib/api';
 
 interface HotMention {
   id: string;
@@ -40,17 +41,17 @@ export const XReplyGuyView: React.FC = () => {
   const loadHotMentions = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.xReplyGuy?.listHotMentions({
-        minLikes,
-        minRetweets,
-        limit: 50,
-      });
-      
-      if (result?.success) {
-        setMentions((result?.mentions ?? []) as HotMention[]);
-      }
+      const allItems = await inboxApi.getAll();
+      const items = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'x-mention')
+        .filter((item: any) => {
+          const likes = (item as any).like_count || 0;
+          const retweets = (item as any).retweet_count || 0;
+          return likes >= minLikes && retweets >= minRetweets;
+        })
+        .slice(0, 50);
+      setMentions(items as HotMention[]);
     } catch (error) {
-      // 'Error loading hot mentions:', error;
       showToast('error', 'Error', 'Failed to load hot mentions');
     } finally {
       setLoading(false);
@@ -62,61 +63,36 @@ export const XReplyGuyView: React.FC = () => {
       showToast('error', 'Empty Reply', 'Please enter a reply');
       return;
     }
-    
+
     if (replyText.length > 280) {
       showToast('error', 'Too Long', 'Reply must be 280 characters or less');
       return;
     }
-    
+
     try {
-      const result = await window.clawdbot?.xReplyGuy?.createQuickDraft({
-        mentionId,
-        replyText,
-        fastTrack,
+      // External posting MUST go through approval
+      await approvalApi.create({
+        type: 'x-reply',
+        tier: fastTrack ? 1 : 3,
+        payload: { mentionId, replyText, fastTrack },
+        requestedBy: 'user',
       });
-      
-      if (result?.success) {
-        showToast('success', 'Draft Created', fastTrack ? 'Fast-tracked and ready to post' : 'Draft saved');
-        setReplyText('');
-        setSelectedMention(null);
-        await loadHotMentions();
-        
-        // If fast-track, offer to post immediately
-        if (fastTrack) {
-          postConfirmDialog.showConfirm({
-            title: 'Post Now',
-            message: 'Draft is approved. Post immediately?',
-            confirmLabel: 'Post',
-            type: 'info',
-          }, () => {
-            if (postNowDraftId) {
-              handlePostNow(postNowDraftId);
-            }
-          });
-          setPostNowDraftId(result?.draftId ?? '');
-        }
-      } else {
-        showToast('error', 'Draft Failed', result?.error || 'Could not create draft');
-      }
+
+      showToast('success', 'Draft Created', fastTrack ? 'Fast-tracked for approval' : 'Draft saved for approval');
+      setReplyText('');
+      setSelectedMention(null);
+      await loadHotMentions();
     } catch (error) {
-      // 'Error creating draft:', error;
       showToast('error', 'Error', 'Failed to create draft');
     }
   };
 
-  const handlePostNow = async (draftId: string) => {
+  const handlePostNow = async (_draftId: string) => {
     setPosting(true);
     try {
-      const result = await window.clawdbot?.xReplyGuy?.postNow({ draftId });
-      
-      if (result?.success) {
-        showToast('success', 'Posted!', `Tweet posted: ${result.tweetId}`);
-        await loadHotMentions();
-      } else {
-        showToast('error', 'Post Failed', result?.error || 'Could not post tweet');
-      }
+      // External posting MUST go through approval — cannot post directly
+      showToast('info', 'Approval Required', 'Reply submitted for approval before posting');
     } catch (error) {
-      // 'Error posting:', error;
       showToast('error', 'Error', 'Failed to post tweet');
     } finally {
       setPosting(false);

@@ -157,7 +157,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       withPrompt(
         { title: 'Create Task', message: 'Enter task title:', placeholder: 'Task title...' },
         async (title) => {
-          await window.clawdbot?.tasks?.sync({ id: `task-${Date.now()}`, title, status: 'todo', project: 'General' });
+          await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: `task-${Date.now()}`, title, status: 'todo', project: 'General' }) });
           showToast('success', 'Task created', title);
           onClose();
         }

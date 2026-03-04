@@ -74,7 +74,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
   const loadRule = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot!.folders.rules.get(folderId);
+      const result = await fetch(`/api/library?action=folder-rules&folderId=${folderId}`).then(r => r.ok ? r.json() : { success: false });
       if (result.success && result.rule) {
         setRule(result.rule as unknown as Partial<FolderRule>);
       }
@@ -97,7 +97,11 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     setSaving(true);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await window.clawdbot!.folders.rules.save(folderId, rule as any);
+      const result = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'folder-rules-save', folderId, rule }),
+      }).then(r => r.ok ? r.json() : { success: false });
       if (result.success) {
         showToast('success', 'Rule saved successfully');
         onSave?.();
@@ -118,7 +122,11 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     }
 
     try {
-      const result = await window.clawdbot!.folders.rules.delete(folderId);
+      const result = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'folder-rules-delete', folderId }),
+      }).then(r => r.ok ? r.json() : { success: false });
       if (result.success) {
         showToast('success', 'Rule deleted');
         onClose?.();

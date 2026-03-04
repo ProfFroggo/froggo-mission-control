@@ -36,8 +36,9 @@ async function loadApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
   try {
-    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
-    if (key) return key;
+    const { settingsApi } = await import('../lib/api');
+    const result = await settingsApi.get('gemini_api_key');
+    if (result?.value) return result.value;
   } catch { /* ignore */ }
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');

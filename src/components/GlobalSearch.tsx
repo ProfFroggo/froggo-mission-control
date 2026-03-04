@@ -182,46 +182,39 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     const allResults: SearchResult[] = [];
 
     try {
-      // Search unified (messages, facts, tasks, agent context) via single IPC call
-      const unifiedResult = await window.clawdbot?.search?.unified(q);
-      if (unifiedResult?.success && unifiedResult.results) {
-        allResults.push(...unifiedResult.results.map((r: any) => ({
-          id: r.id || `unified-${Date.now()}-${Math.random()}`,
-          type: r.type || 'message',
-          title: r.title || r.content?.slice(0, 80) || 'Untitled',
-          snippet: r.snippet || r.content || r.description || '',
-          timestamp: r.timestamp || r.created_at,
-          source: r.source,  // Already set by search-service.ts: 'Messages', 'Facts', 'Tasks', 'Agent Context'
-          status: r.status,
-          score: r.relevance_score,
-          metadata: r,
-        })));
-      }
-
-      // Search emails
-      const emailResult = await window.clawdbot?.email?.search(q);
-      if (emailResult?.success && emailResult.emails?.threads) {
-        allResults.push(...emailResult.emails.threads.slice(0, 5).map((e: any) => ({
-          id: e.id,
-          type: 'email' as const,
-          title: e.subject || 'No subject',
-          snippet: `From: ${e.from} - ${e.snippet || ''}`.slice(0, 100),
-          timestamp: e.date,
-          source: emailResult.account || 'Email',
-          metadata: e,
-        })));
-      }
+      // Search tasks via REST API
+      try {
+        const tasksRes = await fetch('/api/tasks');
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json();
+          const taskItems = Array.isArray(tasksData) ? tasksData : (tasksData?.tasks || []);
+          const matchingTasks = taskItems.filter((t: any) =>
+            t.title?.toLowerCase().includes(q.toLowerCase()) ||
+            t.description?.toLowerCase().includes(q.toLowerCase())
+          ).slice(0, 10);
+          allResults.push(...matchingTasks.map((t: any) => ({
+            id: t.id,
+            type: 'task' as const,
+            title: t.title || 'Untitled Task',
+            snippet: t.description?.slice(0, 100) || '',
+            timestamp: t.updatedAt || t.createdAt,
+            source: 'Tasks',
+            status: t.status,
+            metadata: t,
+          })));
+        }
+      } catch { /* ignore */ }
 
       // Search sessions via gateway WebSocket
       try {
         const sessionsResult = await gateway.getSessions();
         if (sessionsResult?.sessions) {
-          const matchingSessions = sessionsResult.sessions.filter((s: any) => 
+          const matchingSessions = sessionsResult.sessions.filter((s: any) =>
             s.label?.toLowerCase().includes(q.toLowerCase()) ||
             s.channel?.toLowerCase().includes(q.toLowerCase()) ||
             s.key?.toLowerCase().includes(q.toLowerCase())
           ).slice(0, 5);
-          
+
           allResults.push(...matchingSessions.map((s: any) => ({
             id: s.key,
             type: 'session' as const,
@@ -236,33 +229,28 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         // Gateway not connected or sessions unavailable - skip sessions search
       }
 
-      // Search WhatsApp messages
-      const whatsappResult = await window.clawdbot?.search?.whatsapp(q);
-      if (whatsappResult?.success && whatsappResult.messages?.length > 0) {
-        allResults.push(...whatsappResult.messages.slice(0, 5).map((m: any) => ({
-          id: m.id || `wa-${Date.now()}`,
-          type: 'message' as const,
-          title: (m.content || m.body || 'WhatsApp message').slice(0, 80),
-          snippet: `Chat: ${m.from || 'Unknown'}`,
-          timestamp: m.timestamp,
-          source: 'WhatsApp',
-          metadata: m,
-        })));
-      }
-
-      // Search agents from database
-      const agentResult = await window.clawdbot?.agents?.search(q);
-      if (agentResult?.success && (agentResult.agents?.length ?? 0) > 0) {
-        allResults.push(...(agentResult.agents ?? []).map((a: any) => ({
-          id: `agent-${a.id}`,
-          type: 'agent' as const,
-          title: `${a.name} — ${a.role}`,
-          snippet: `${a.description}${a.recentTask ? ` • Latest: ${a.recentTask}` : ''} • ${a.taskCount} tasks • ${a.status}`,
-          source: 'Agents',
-          metadata: { role: a.id, capabilities: a.capabilities, status: a.status },
-          status: a.status === 'active' ? 'in-progress' : undefined,
-        })));
-      }
+      // Search agents via REST API
+      try {
+        const agentsRes = await fetch('/api/agents');
+        if (agentsRes.ok) {
+          const agentsData = await agentsRes.json();
+          const agentItems = Array.isArray(agentsData) ? agentsData : (agentsData?.agents || []);
+          const matchingAgents = agentItems.filter((a: any) =>
+            a.name?.toLowerCase().includes(q.toLowerCase()) ||
+            a.role?.toLowerCase().includes(q.toLowerCase()) ||
+            a.id?.toLowerCase().includes(q.toLowerCase())
+          ).slice(0, 5);
+          allResults.push(...matchingAgents.map((a: any) => ({
+            id: `agent-${a.id}`,
+            type: 'agent' as const,
+            title: `${a.name} — ${a.role || ''}`,
+            snippet: `${a.description || ''}${a.status ? ` • ${a.status}` : ''}`,
+            source: 'Agents',
+            metadata: { role: a.id, capabilities: a.capabilities, status: a.status },
+            status: a.status === 'active' ? 'in-progress' : undefined,
+          })));
+        }
+      } catch { /* ignore */ }
 
       // Apply fuzzy search with Fuse.js for better ranking
       if (allResults.length > 0) {

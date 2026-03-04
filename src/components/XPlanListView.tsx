@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft } from 'lucide-react';
 import XPlanThreadComposer from './XPlanThreadComposer';
+import { scheduleApi } from '../lib/api';
 
 interface ContentPlan {
   id: string;
@@ -24,10 +25,10 @@ export default function XPlanListView() {
   const loadPlans = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xPlan?.list({ limit: 50 });
-      if (result?.success) {
-        setPlans((result.plans || []) as ContentPlan[]);
-      }
+      const allItems = await scheduleApi.getAll();
+      const plans = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'plan');
+      setPlans(plans as ContentPlan[]);
     } catch {
       setPlans([]);
     } finally {

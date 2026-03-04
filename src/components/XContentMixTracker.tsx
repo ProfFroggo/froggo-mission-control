@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
 import { CHART_COLORS } from '../lib/chartTheme';
+import { scheduleApi } from '../lib/api';
 
 interface ContentMixData {
   type: string;
@@ -36,12 +37,12 @@ export const XContentMixTracker: React.FC = () => {
       const startDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
       // Fetch posted drafts with content type metadata
-      const result = await window.clawdbot?.xDraft?.list({ 
-        status: 'posted',
-      });
+      const allItems = await scheduleApi.getAll();
+      const result = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'draft' && item.status === 'posted');
 
-      if (result?.success) {
-        const drafts = (result?.drafts ?? []).filter((d: unknown) => {
+      {
+        const drafts = result.filter((d: unknown) => {
           const postedAt = (d as any).metadata ? JSON.parse((d as any).metadata).postedAt : 0;
           return postedAt >= startDate;
         });

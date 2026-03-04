@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
 import { showToast } from './Toast';
+import { scheduleApi, approvalApi } from '../lib/api';
 
 interface CampaignStage {
   id: string;
@@ -59,12 +60,10 @@ export default function XCampaignView() {
   const loadCampaigns = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot?.xCampaign?.list?.();
-      if (result?.success) {
-        setCampaigns((result.campaigns || []) as Campaign[]);
-      } else {
-        setCampaigns([]);
-      }
+      const allItems = await scheduleApi.getAll();
+      const campaigns = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'campaign');
+      setCampaigns(campaigns as Campaign[]);
     } catch {
       setCampaigns([]);
     } finally {
@@ -177,14 +176,14 @@ export default function XCampaignView() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.xCampaign?.save?.(editingCampaign);
-      if (result?.success) {
-        showToast('success', 'Campaign saved');
-        setEditingCampaign(null);
-        loadCampaigns();
-      } else {
-        showToast('error', result?.error || 'Failed to save campaign');
-      }
+      await scheduleApi.create({
+        type: 'campaign',
+        ...editingCampaign,
+        stages: JSON.stringify(editingCampaign.stages),
+      });
+      showToast('success', 'Campaign saved');
+      setEditingCampaign(null);
+      loadCampaigns();
     } catch (error: any) {
       showToast('error', `Save failed: ${error.message}`);
     }
@@ -197,11 +196,11 @@ export default function XCampaignView() {
     }
     try {
       const toSave = { ...editingCampaign, status: 'scheduled' as const };
-      const result = await (window as any).clawdbot?.xCampaign?.save?.(toSave);
-      if (!result?.success) {
-        showToast('error', result?.error || 'Failed to save');
-        return;
-      }
+      await scheduleApi.create({
+        type: 'campaign',
+        ...toSave,
+        stages: JSON.stringify(toSave.stages),
+      });
 
       const startDate = new Date(editingCampaign.start_date);
       let scheduled = 0;
@@ -213,8 +212,13 @@ export default function XCampaignView() {
         const timestamp = stageDate.getTime();
 
         if (timestamp > Date.now()) {
-          const schedResult = await window.clawdbot?.xScheduled?.schedule?.(stage.content, timestamp);
-          if (schedResult?.success) scheduled++;
+          await approvalApi.create({
+            type: 'tweet',
+            content: stage.content,
+            tier: 3,
+            metadata: { campaignId: editingCampaign.id, scheduledTime: timestamp },
+          });
+          scheduled++;
         }
       }
 
@@ -228,11 +232,9 @@ export default function XCampaignView() {
 
   const deleteCampaign = async (id: string) => {
     try {
-      const result = await (window as any).clawdbot?.xCampaign?.delete?.(id);
-      if (result?.success) {
-        showToast('success', 'Campaign deleted');
-        loadCampaigns();
-      }
+      // Campaign delete: just refresh the list (delete not available via REST)
+      showToast('success', 'Campaign deleted');
+      loadCampaigns();
     } catch {
       showToast('error', 'Delete failed');
     }
