@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 8 — Memory System
+**Current focus:** Phase 9 — Chat Rooms Dashboard UI
 
 ## Current Position
 
-Phase: 8 of 14 (Memory System)
+Phase: 9 of 14 (Chat Rooms)
 Plan: 0 of 2 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 7 (all 2 plans): 3 hooks — tiered approval, Clara review gate, session sync
+Last activity: 2026-03-04 — Completed Phase 8 (all 2 plans): vault structure, QMD scripts, agent memory seeds
 
-Progress: ██████████████░ 57%
+Progress: ████████████████░ 64%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 19
 - Average duration: 3 min
-- Total execution time: 0.65 hours
+- Total execution time: 0.75 hours
 
 **By Phase:**
 
@@ -34,6 +34,7 @@ Progress: ██████████████░ 57%
 | 5 (complete) | 2/2 | 6 min | 3 min |
 | 6 (complete) | 2/2 | 5 min | 2.5 min |
 | 7 (complete) | 2/2 | 5 min | 2.5 min |
+| 8 (complete) | 2/2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -49,6 +50,7 @@ Progress: ██████████████░ 57%
 - Phase 5: froggo-db MCP at tools/froggo-db-mcp/ (11 tools, StdioServerTransport); memory MCP at tools/memory-mcp/ (3 tools, QMD + grep fallback); VAULT_PATH default ~/froggo/memory/
 - Phase 6: .claude/settings.json uses froggo_db + memory MCP servers; hooks registered for Pre/Post/Stop; 13 agents defined
 - Phase 7: 3 hooks in tools/hooks/ — approval-hook.js (tier 0-3), review-gate.js (PostToolUse), session-sync.js (Stop → Obsidian vault)
+- Phase 8: Vault at ~/froggo/memory/ with agents/, sessions/, daily/, knowledge/, projects/; QMD setup scripts in tools/; architecture.md + task-lifecycle.md seeded
 
 ### Deferred Issues
 
@@ -64,5 +66,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 7 complete — starting Phase 8 (Memory System, 2 plans)
+Stopped at: Phase 8 complete — starting Phase 9 (Chat Rooms, 2 plans)
 Resume file: None
