@@ -17,7 +17,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [ ] **Phase 2: Database Layer** - Shared better-sqlite3 module, full schema (tasks, agents, messages, approvals, inbox, chat rooms)
 - [ ] **Phase 3: API Routes** - Convert all 20+ IPC handler files to Next.js `/api/*` REST routes
 - [ ] **Phase 4: Frontend Wiring** - Replace `window.clawdbot` IPC calls with fetch, wire Zustand stores, SSE for chat
-- [ ] **Phase 5: MCP Servers** - `froggo-db` MCP + memory MCP for agent tool access
+- [x] **Phase 5: MCP Servers** - `froggo-db` MCP + memory MCP for agent tool access ✓ COMPLETE
 - [ ] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
 - [ ] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
 - [ ] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
@@ -89,8 +89,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: Create `froggo-db` MCP server — tools: `get_tasks`, `update_task`, `create_task`, `get_agent_info`, `log_activity`
-- [ ] 05-02: Create memory MCP server — tools: `search_memory`, `add_memory`, `get_recent_context`; test both standalone with Claude Code
+- [x] 05-01: Create `froggo-db` MCP server — tools: `get_tasks`, `update_task`, `create_task`, `get_agent_info`, `log_activity` ✓ 2026-03-04
+- [x] 05-02: Create memory MCP server — tools: `search_memory`, `add_memory`, `get_recent_context`; test both standalone with Claude Code ✓ 2026-03-04
 
 ### Phase 6: Agent Definitions
 **Goal**: `.claude/` directory fully configured — all 13 agents have `SOUL.md`, `settings.json` controls permissions, `CLAUDE.md` provides shared context
@@ -99,8 +99,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: Create `.claude/` directory, `CLAUDE.md` shared context, `settings.json` with MCP server config and allowed tools per trust tier
-- [ ] 06-02: Create `SOUL.md` for all 13 agents: main, coder, researcher, writer, chief, hr, clara, social_media_manager, growth_director, lead_engineer, voice, designer, degen-frog
+- [x] 06-01: Create `.claude/` directory, `CLAUDE.md` shared context, `settings.json` with MCP server config and allowed tools per trust tier ✓ 2026-03-04
+- [x] 06-02: Create `SOUL.md` for all 13 agents: main, coder, researcher, writer, chief, hr, clara, social_media_manager, growth_director, lead_engineer, voice, designer, degen-frog ✓ 2026-03-04
 
 ### Phase 7: Permission & Hook System
 **Goal**: Tiered approval hooks active — Tier 1/2 auto-approved, Tier 3+ routed to dashboard for human review; Clara gate and session sync working
@@ -197,8 +197,8 @@ Plans:
 | 2. Database Layer | 2/2 | Complete | 2026-03-04 |
 | 3. API Routes | 4/4 | Complete | 2026-03-04 |
 | 4. Frontend Wiring | 2/2 | Complete | 2026-03-04 |
-| 5. MCP Servers | 0/2 | Not started | - |
-| 6. Agent Definitions | 0/2 | Not started | - |
+| 5. MCP Servers | 2/2 | Complete | 2026-03-04 |
+| 6. Agent Definitions | 2/2 | Complete | 2026-03-04 |
 | 7. Permission & Hook System | 0/2 | Not started | - |
 | 8. Memory System | 0/2 | Not started | - |
 | 9. Chat Rooms | 0/2 | Not started | - |
