@@ -8,6 +8,7 @@
 
 import { ServiceRegistry } from './ServiceRegistry';
 import { validateManifestSafe } from './manifestSchema';
+import { moduleApi } from '../lib/api';
 
 // ─── Manifest types ─────────────────────────────────────────────
 
@@ -134,11 +135,11 @@ class ModuleLoaderClass {
   async initAll(): Promise<void> {
     if (this.initialized) return;
 
-    // Load disabled module state from disk before initializing
+    // Load disabled module state via REST API before initializing
     let disabledModules: string[] = [];
     let knownModules: string[] = [];
     try {
-      const stateResult = await window.clawdbot?.modules?.invoke?.('module:state:load') as { disabled: string[]; known?: string[] } | undefined;
+      const stateResult = await moduleApi.getState() as { disabled?: string[]; known?: string[] } | undefined;
       if (stateResult?.disabled) {
         disabledModules = stateResult.disabled;
       }
@@ -162,16 +163,8 @@ class ModuleLoaderClass {
       if (reg.manifest.defaultDisabled && !reg.manifest.core && !knownModules.includes(reg.manifest.id)) {
         reg.status = 'disposed';
         console.debug(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
-        window.clawdbot?.modules?.invoke?.('module:state:save', reg.manifest.id, false)
-          .catch(() => { /* best-effort */ });
-        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
-          .catch(() => { /* best-effort */ });
+        moduleApi.setState(reg.manifest.id, false).catch(() => { /* best-effort */ });
         continue;
-      }
-      // Mark module as known (if not already) so defaultDisabled doesn't re-trigger
-      if (!knownModules.includes(reg.manifest.id)) {
-        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
-          .catch(() => { /* best-effort */ });
       }
       reg.status = 'initializing';
       try {
@@ -244,21 +237,8 @@ class ModuleLoaderClass {
     }
     this.dispose(moduleId);
 
-    // Remove IPC handlers registered by this module in the main process
-    // Always call — registerModuleHandler() tracking handles no-op if nothing tracked
-    window.clawdbot?.modules?.invoke?.('module:ipc:removeHandlers', moduleId)
-      .then((res: unknown) => {
-        const result = res as { success: boolean; removed: number };
-        if (result?.removed > 0) {
-          console.debug(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
-        }
-      })
-      .catch((_err: unknown) => {
-        // IPC removal is best-effort — module is already disposed
-      });
-
-    // Persist disabled state to disk
-    window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, false)
+    // Persist disabled state via REST API
+    moduleApi.setState(moduleId, false)
       .catch((_err: unknown) => { /* state persistence is best-effort */ });
 
     console.debug(`[ModuleLoader] Module "${moduleId}" disabled`);
@@ -288,18 +268,8 @@ class ModuleLoaderClass {
       delete reg.error;
       console.debug(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
 
-      // Re-register IPC handlers from stored factories (fire-and-forget)
-      window.clawdbot?.modules?.invoke?.('module:ipc:registerHandlers', moduleId)
-        .then((res: unknown) => {
-          const result = res as { success: boolean; registered: number };
-          if (result?.registered > 0) {
-            console.debug(`[ModuleLoader] Re-registered ${result.registered} IPC handler(s) for "${moduleId}"`);
-          }
-        })
-        .catch((_err: unknown) => { /* IPC re-registration is best-effort */ });
-
-      // Persist enabled state to disk (fire-and-forget)
-      window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, true)
+      // Persist enabled state via REST API (fire-and-forget)
+      moduleApi.setState(moduleId, true)
         .catch((_err: unknown) => { /* state persistence is best-effort */ });
     } catch (err) {
       reg.status = 'error';
