@@ -48,12 +48,12 @@ export default function PerformanceTable() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.getPerformanceReport(period);
+      const result = await fetch(`/api/analytics/performance?days=${period}`).then(r => r.ok ? r.json() : null).catch(() => null);
       if (result && !result.error) {
         setData(result.agents || []);
       }
     } catch (err) {
-      // 'Failed to load performance data:', err;
+      // Failed to load performance data
     } finally {
       setLoading(false);
     }
@@ -62,12 +62,12 @@ export default function PerformanceTable() {
   const loadAudit = async (agentId: string) => {
     setAuditLoading(true);
     try {
-      const result = await window.clawdbot?.getAgentAudit(agentId, period);
+      const result = await fetch(`/api/agents/${agentId}/audit?days=${period}`).then(r => r.ok ? r.json() : null).catch(() => null);
       if (result && !result.error) {
         setAuditData(result.timeline || []);
       }
     } catch (err) {
-      // 'Failed to load audit data:', err;
+      // Failed to load audit data
     } finally {
       setAuditLoading(false);
     }

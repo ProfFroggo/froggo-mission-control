@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { analyticsApi, taskApi, inboxApi, sessionApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
@@ -74,17 +75,19 @@ export default function AnalyticsOverview() {
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch real analytics data from froggo.db
-      const analyticsResult = await window.clawdbot?.analytics?.getData(timeRange).catch((err: any) => { logger.error('Failed to get analytics data:', err); return null; });
+      // Fetch analytics data from REST API
+      const analyticsResult = await analyticsApi.getTaskStats().catch((err: any) => { logger.error('Failed to get analytics data:', err); return null; });
 
       // Also get current stats
-      const sessionsResult = await window.clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
-      const sessionsCount = sessionsResult?.sessions?.length || 0;
-      const tasksResult = await window.clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
-      const tasksCount = tasksResult?.tasks?.length || 0;
-      const completedTasks = tasksResult?.tasks?.filter((t: any) => t.status === 'done')?.length || 0;
-      const inboxResult = await window.clawdbot?.inbox?.list().catch((err: any) => { logger.error('Failed to list inbox:', err); return null; });
-      const pendingApprovals = inboxResult?.items?.filter((i: any) => i.status === 'pending')?.length || 0;
+      const sessionsResult = await sessionApi.getAll().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
+      const sessionsCount = Array.isArray(sessionsResult) ? sessionsResult.length : 0;
+      const tasksResult = await taskApi.getAll().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
+      const tasksArr = Array.isArray(tasksResult) ? tasksResult : (tasksResult as any)?.tasks || [];
+      const tasksCount = tasksArr.length;
+      const completedTasks = tasksArr.filter((t: any) => t.status === 'done')?.length || 0;
+      const inboxResult = await inboxApi.getAll().catch((err: any) => { logger.error('Failed to list inbox:', err); return null; });
+      const inboxArr = Array.isArray(inboxResult) ? inboxResult : (inboxResult as any)?.items || [];
+      const pendingApprovals = inboxArr.filter((i: any) => i.status === 'pending')?.length || 0;
 
       if (analyticsResult?.success) {
         const days = analyticsResult.days || (timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90);

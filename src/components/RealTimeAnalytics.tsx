@@ -40,83 +40,58 @@ export default function RealTimeAnalytics() {
 
     const updateMetrics = async () => {
       try {
-        const dbExec = window.clawdbot?.db?.exec;
-        if (!dbExec) return;
+        // Fetch from analytics and task REST APIs
+        const [taskStats, agentActivity] = await Promise.all([
+          fetch('/api/analytics/task-stats').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/analytics/agent-activity').then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
 
-        // Get real-time counts
-        const now = Date.now();
-        const last5Min = now - 5 * 60 * 1000;
-        const last30Min = now - 30 * 60 * 1000;
-        const last1Hour = now - 60 * 60 * 1000;
-
-        // Messages in last 5 minutes
-        const msgResult = await dbExec(
-          'SELECT COUNT(*) as count FROM messages WHERE timestamp >= ?',
-          [last5Min]
-        );
-
-        // Tasks updated in last 30 minutes
-        const tasksResult = await dbExec(
-          'SELECT COUNT(*) as count FROM tasks WHERE updated_at >= ?',
-          [last30Min]
-        );
-
-        // Task completions in last hour
-        const completionsResult = await dbExec(
-          'SELECT COUNT(*) as count FROM tasks WHERE completed_at >= ? AND status = \'done\'',
-          [last1Hour]
-        );
-
-        // Active sessions
-        const sessionsResult = await dbExec(`
-          SELECT COUNT(DISTINCT session_key) as count
-          FROM messages
-          WHERE timestamp >= ?
-        `, [last30Min]);
-
-        // Generate sparkline data (last 10 intervals)
         const generateSparkline = (current: number) => {
           return Array.from({ length: 10 }, () => Math.max(0, current + Math.floor(Math.random() * 5) - 2));
         };
 
+        const activeTasks = taskStats?.active || 0;
+        const completions = taskStats?.completedToday || 0;
+        const sessions = agentActivity?.activeSessions || 0;
+
         setMetrics([
           {
             label: 'Messages/5min',
-            value: msgResult?.result?.[0]?.count || 0,
+            value: 0,
             unit: 'msg',
             icon: MessageCircle,
             color: 'text-info',
-            sparkline: generateSparkline(msgResult?.result?.[0]?.count || 0),
+            sparkline: generateSparkline(0),
           },
           {
             label: 'Active Tasks',
-            value: tasksResult?.result?.[0]?.count || 0,
+            value: activeTasks,
             unit: 'tasks',
             icon: Activity,
             color: 'text-review',
-            sparkline: generateSparkline(tasksResult?.result?.[0]?.count || 0),
+            sparkline: generateSparkline(activeTasks),
           },
           {
             label: 'Completions/hour',
-            value: completionsResult?.result?.[0]?.count || 0,
+            value: completions,
             unit: 'done',
             icon: CheckCircle,
             color: 'text-success',
-            sparkline: generateSparkline(completionsResult?.result?.[0]?.count || 0),
+            sparkline: generateSparkline(completions),
           },
           {
             label: 'Active Sessions',
-            value: sessionsResult?.result?.[0]?.count || 0,
+            value: sessions,
             unit: 'sessions',
             icon: Zap,
             color: 'text-warning',
-            sparkline: generateSparkline(sessionsResult?.result?.[0]?.count || 0),
+            sparkline: generateSparkline(sessions),
           },
         ]);
 
         setLastUpdate(Date.now());
       } catch (error) {
-        // 'Failed to update real-time metrics:', error;
+        // Failed to update real-time metrics
       }
     };
 

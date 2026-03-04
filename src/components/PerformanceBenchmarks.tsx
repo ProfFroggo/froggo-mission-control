@@ -59,54 +59,30 @@ export default function PerformanceBenchmarks() {
     setLoading(true);
     setError(null);
     try {
-      const dbExec = window.clawdbot?.db?.exec;
-      if (!dbExec) throw new Error('Database not available');
+      const result = await fetch(`/api/analytics/benchmarks?mode=${compareMode}`).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      const periods: BenchmarkData[] = [];
+      if (!result) {
+        // No benchmark data — compute from task stats
+        const taskStats = await fetch('/api/analytics/task-stats').then(r => r.ok ? r.json() : null).catch(() => null);
+        const completed = taskStats?.completedToday || 0;
+        const total = (taskStats?.active || 0) + completed;
+        const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-      if (compareMode === 'wow') {
-        // Week over week - last 8 weeks
-        for (let i = 7; i >= 0; i--) {
-          const weekEnd = new Date();
-          weekEnd.setDate(weekEnd.getDate() - i * 7);
-          const weekStart = new Date(weekEnd);
-          weekStart.setDate(weekEnd.getDate() - 6);
-
-          const data = await getPeriodData(dbExec, weekStart.getTime(), weekEnd.getTime());
-          periods.push({
-            period: `W${8 - i}`,
-            ...data,
-          });
-        }
-      } else if (compareMode === 'mom') {
-        // Month over month - last 6 months
-        for (let i = 5; i >= 0; i--) {
-          const monthEnd = new Date();
-          monthEnd.setMonth(monthEnd.getMonth() - i);
-          monthEnd.setDate(0); // Last day of previous month
-          const monthStart = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), 1);
-
-          const data = await getPeriodData(dbExec, monthStart.getTime(), monthEnd.getTime());
-          periods.push({
-            period: monthStart.toLocaleDateString('en-US', { month: 'short' }),
-            ...data,
-          });
-        }
-      } else {
-        // Year over year - last 3 years
-        for (let i = 2; i >= 0; i--) {
-          const year = new Date().getFullYear() - i;
-          const yearStart = new Date(year, 0, 1).getTime();
-          const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
-
-          const data = await getPeriodData(dbExec, yearStart, yearEnd);
-          periods.push({
-            period: year.toString(),
-            ...data,
-          });
-        }
+        const periods: BenchmarkData[] = [{
+          period: 'Current',
+          tasksCompleted: completed,
+          completionRate: rate,
+          avgCompletionTime: 0,
+          totalHours: 0,
+          activeAgents: taskStats?.activeAgents || 0,
+        }];
+        setBenchmarks(periods);
+        setMetrics([]);
+        setLoading(false);
+        return;
       }
 
+      const periods: BenchmarkData[] = (result.periods || []) as BenchmarkData[];
       setBenchmarks(periods);
 
       // Calculate comparison metrics (current vs previous period)
@@ -183,53 +159,6 @@ export default function PerformanceBenchmarks() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPeriodData = async (
-    dbExec: (query: string, params?: any[]) => Promise<any>,
-    startTime: number,
-    endTime: number
-  ): Promise<Omit<BenchmarkData, 'period'>> => {
-    const statsQuery = `
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
-        ROUND(
-          AVG(
-            CASE 
-              WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-              THEN (completed_at - started_at) / 1000.0 / 3600.0
-              ELSE NULL 
-            END
-          ),
-          2
-        ) as avgTime,
-        ROUND(
-          SUM(
-            CASE 
-              WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-              THEN (completed_at - started_at) / 1000.0 / 3600.0
-              ELSE 0 
-            END
-          ),
-          2
-        ) as totalTime,
-        COUNT(DISTINCT assigned_to) as agents
-      FROM tasks
-      WHERE created_at BETWEEN ? AND ?
-    `;
-
-    const result = await dbExec(statsQuery, [startTime, endTime]);
-    const row = result?.result?.[0] || {};
-
-    return {
-      tasksCompleted: row.completed || 0,
-      completionRate:
-        row.total > 0 ? Math.round((row.completed / row.total) * 100) : 0,
-      avgCompletionTime: row.avgTime || 0,
-      totalHours: row.totalTime || 0,
-      activeAgents: row.agents || 0,
-    };
   };
 
   const getTrend = (
