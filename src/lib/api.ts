@@ -72,6 +72,8 @@ export const agentApi = {
   readModels: (id: string) => apiCall(`/agents/${id}/models`),
   writeModels: (id: string, config: any) =>
     apiCall(`/agents/${id}/models`, { method: 'PUT', body: config }),
+  create: (agent: { id: string; name: string; role: string; emoji?: string; color?: string; capabilities?: string[]; personality?: string }) =>
+    apiCall('/agents', { method: 'POST', body: agent }),
 };
 
 // ──────────────────────────────────────────────────

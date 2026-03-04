@@ -192,16 +192,15 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationSteps(prev => prev.map(s => s.id === id ? { ...s, status, errorMsg } : s));
   };
 
-  const runStep = async (id: string, _cmd: string): Promise<boolean> => {
-    updateStep(id, 'running');
+  const runStep = async (stepId: string, fn: () => Promise<void>): Promise<boolean> => {
+    updateStep(stepId, 'running');
     try {
-      // Shell commands are not available in web mode — simulate success for provisioning steps
-      console.warn('Not implemented: exec.run for agent creation step', id);
-      updateStep(id, 'done');
+      await fn();
+      updateStep(stepId, 'done');
       return true;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      updateStep(id, 'error', msg.slice(0, 80));
+      updateStep(stepId, 'error', msg.slice(0, 80));
       return false;
     }
   };
@@ -213,52 +212,35 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationDone(false);
     setCreationError(null);
 
-    const home = '/Users/worker';
-    const agentDir = `${home}/agent-${cfg.id}`;
-    const ocDir = `${home}/.openclaw/agents/${cfg.id}`;
-    const templateDir = `${home}/.openclaw/agents/coder/agent`;
+    const soulContent = `# ${cfg.emoji} ${cfg.name} — Soul\n\n## Identity\nYou are ${cfg.name}, a ${cfg.role} agent on the Froggo team.\n\n## Personality\n${cfg.personality}\n\n## Core Rules\n- Always deliver quality work\n- Communicate blockers immediately\n- Update task status when done\n`;
 
-    const froggoShared = `${home}/froggo/shared-context`;
-    const soul = `# ${cfg.emoji} ${cfg.name} — SOUL\n\n## Identity\nYou are ${cfg.name}, a ${cfg.role} agent on the Froggo team.\n\n## Personality\n${cfg.personality}\n\n## Core Rules\n- Always deliver quality work\n- Communicate blockers immediately\n- Update task status when done\n`;
-    const identity = `# ${cfg.emoji} ${cfg.name}\n\n**Role:** ${cfg.role}\n**Agent ID:** ${cfg.id}\n**Status:** Active\n`;
-    const memory = `# ${cfg.name} Memory\n\n## Key Lessons\n\n## Important Context\n\n## Common Patterns\n`;
-    const heartbeat = `# ${cfg.name} Heartbeat\n\n**Agent:** ${cfg.id}\n**Status:** Starting up\n**Last seen:** —\n`;
-    const state = `# ${cfg.name} State\n\n**Current task:** None\n**Mood:** Ready\n`;
-
-    const profilesDir = `${home}/froggo-dashboard/public/agent-profiles`;
-    const headshotDest = `${profilesDir}/${cfg.id}.png`;
-    const headshotPrompt = `Generate a Pixar-style avatar headshot for a new team member named ${cfg.name}. Role: ${cfg.role}. Personality: ${cfg.personality}. Cute, round-faced, expressive, vibrant colours. Save the final image to ${headshotDest} and also copy it to ${agentDir}/headshot.png. Save visual concept notes to ${agentDir}/headshot-concept.md`;
-
-    const hrHandoffMsg = `New agent infrastructure is fully set up and live. Please complete onboarding for ${cfg.name} (ID: ${cfg.id}, Role: ${cfg.role}):\n1. Polish SOUL.md with full personality depth, working style, communication norms, and team context\n2. Create an onboarding kanban task with a detailed subtask checklist (verify tools access, test messaging, confirm capabilities, intro to team)\n3. Set up any agent-specific skills or config needed for their role\n4. Send Kevin a brief welcome message introducing ${cfg.name} to the team\nWorkspace: ${agentDir}`;
-
-    const steps_cmds = [
-      { id: 'workspace',    cmd: `mkdir -p "${agentDir}"` },
-      { id: 'config_dir',   cmd: `mkdir -p "${ocDir}/agent" "${ocDir}/sessions"` },
-      { id: 'auth',         cmd: `cp "${templateDir}/auth-profiles.json" "${ocDir}/agent/auth-profiles.json"` },
-      { id: 'models',       cmd: `cp "${templateDir}/models.json" "${ocDir}/agent/models.json"` },
-      { id: 'db',           cmd: `/opt/homebrew/bin/froggo-db agent-onboard --name "${cfg.id}" --role "${cfg.role}" --emoji "${cfg.emoji}" --capabilities "${cfg.capabilities.join(',')}"` },
-      { id: 'identity',     cmd: `printf '%s' ${JSON.stringify(soul)} > "${agentDir}/SOUL.md" && printf '%s' ${JSON.stringify(identity)} > "${agentDir}/IDENTITY.md" && printf '%s' ${JSON.stringify(memory)} > "${agentDir}/MEMORY.md" && printf '%s' ${JSON.stringify(heartbeat)} > "${agentDir}/HEARTBEAT.md" && printf '%s' ${JSON.stringify(state)} > "${agentDir}/STATE.md"` },
-      { id: 'symlinks',     cmd: `ln -sf "${froggoShared}/AGENTS.md" "${agentDir}/AGENTS.md" && ln -sf "${froggoShared}/TOOLS.md" "${agentDir}/TOOLS.md" && ln -sf "${froggoShared}/USER.md" "${agentDir}/USER.md"` },
-      { id: 'headshot',     cmd: `mkdir -p "${profilesDir}" && openclaw agent --agent hr --message ${JSON.stringify(headshotPrompt)} --json` },
-      { id: 'db_image',     cmd: `sqlite3 "${home}/froggo/data/froggo.db" "UPDATE agent_registry SET image_path='${cfg.id}.png' WHERE id='${cfg.id}'"` },
-      { id: 'openclaw',     cmd: `python3 -c "import json\npath='${home}/.openclaw/openclaw.json'\nwith open(path) as f: cfg=json.load(f)\nif not any(a['id']=='${cfg.id}' for a in cfg['agents']['list']):\n    cfg['agents']['list'].append({'id':'${cfg.id}','workspace':'${agentDir}'})\n    with open(path,'w') as f: json.dump(cfg,f,indent=2)\nprint('ok')\n"` },
-      { id: 'gateway',      cmd: `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway && sleep 2` },
-      { id: 'hr_handoff',   cmd: `openclaw agent --agent hr --message ${JSON.stringify(hrHandoffMsg)} --json` },
+    const stepFns: Array<{ id: string; fn: () => Promise<void> }> = [
+      {
+        id: 'db',
+        fn: () => agentApi.create({
+          id: cfg.id,
+          name: cfg.name,
+          role: cfg.role,
+          emoji: cfg.emoji,
+          color: cfg.color,
+          capabilities: cfg.capabilities,
+          personality: cfg.personality,
+        }),
+      },
+      {
+        id: 'soul',
+        fn: () => agentApi.writeSoul(cfg.id, soulContent),
+      },
+      {
+        id: 'activate',
+        fn: () => agentApi.updateStatus(cfg.id, 'idle'),
+      },
     ];
 
     let failed = false;
-    for (const { id, cmd } of steps_cmds) {
-      const ok = await runStep(id, cmd);
+    for (const { id, fn } of stepFns) {
+      const ok = await runStep(id, fn);
       if (!ok) { failed = true; break; }
-    }
-
-    // Register agent via REST API
-    if (!failed) {
-      try {
-        await agentApi.spawn(cfg.id);
-      } catch {
-        // Non-critical — agent may already be registered by steps
-      }
     }
 
     if (failed) {
