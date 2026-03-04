@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 2 — Database Layer
+**Current focus:** Phase 3 — API Routes
 
 ## Current Position
 
-Phase: 2 of 14 (Database Layer)
-Plan: 0 of 2 in current phase
+Phase: 3 of 14 (API Routes)
+Plan: 0 of 4 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 1 (all 3 plans): Electron stripped, Next.js 16 App Router, api.ts + bridge.ts, app loads at localhost:3000
+Last activity: 2026-03-04 — Completed Phase 2 (all 2 plans): database.ts created, 18 tables, 13 agents seeded, DB at ~/froggo/data/froggo.db
 
-Progress: ████░░░░░░ 14%
+Progress: ██████░░░░ 21%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 4 min
-- Total execution time: 0.20 hours
+- Total plans completed: 5
+- Average duration: 3 min
+- Total execution time: 0.25 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 (complete) | 3/3 | 12 min | 4 min |
+| 2 (complete) | 2/2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~3 min), 01-02 (~5 min), 01-03 (~4 min)
-- Trend: stable ~4 min/plan
+- Last 5 plans: 01-01 (~3 min), 01-02 (~5 min), 01-03 (~4 min), 02-01 (~3 min), 02-02 (~1 min)
+- Trend: ~3 min/plan, simple DB plans are fast
 
 ## Accumulated Context
 
@@ -51,6 +52,8 @@ Recent decisions affecting current work:
 - Phase 1-02: `serverExternalPackages` (not experimental) — Next.js 16 renamed this option
 - Phase 1-02: No webpack config needed — Next.js 16 uses Turbopack, reads @ alias from tsconfig
 - Phase 1-03: IPC_ROUTE_MAP covers all legacy `window.clawdbot` channels from Phase 0 audit
+- Phase 2-01: Single database.ts covers all 18 tables — no need to split across plans
+- Phase 2-01: `cron_jobs`/`skills` tables not in spec — Phase 11/13 use file-based approaches (schedule.json, .claude/skills/)
 
 ### Deferred Issues
 
@@ -67,5 +70,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 1 complete — starting Phase 2 (Database Layer)
+Stopped at: Phase 2 complete — starting Phase 3 (API Routes, 4 plans)
 Resume file: None
