@@ -32,9 +32,62 @@ interface VersionState {
   reset: () => void;
 }
 
-const bridge = () => window.clawdbot?.writing?.version;
+// ── localStorage helpers ──
 
-export const useVersionStore = create<VersionState>((set, get) => ({
+function versionsKey(projectId: string, chapterId: string): string {
+  return `version:${projectId}:${chapterId}:meta`;
+}
+
+function versionContentKey(projectId: string, chapterId: string, versionId: string): string {
+  return `version:${projectId}:${chapterId}:content:${versionId}`;
+}
+
+function currentContentKey(projectId: string, chapterId: string): string {
+  return `writing:${projectId}:content:${chapterId}`;
+}
+
+function loadVersionsMeta(projectId: string, chapterId: string): VersionMeta[] {
+  try {
+    const raw = localStorage.getItem(versionsKey(projectId, chapterId));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveVersionsMeta(projectId: string, chapterId: string, versions: VersionMeta[]): void {
+  localStorage.setItem(versionsKey(projectId, chapterId), JSON.stringify(versions));
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function countWords(text: string): number {
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
+// Simple diff: split by lines and compare
+function computeDiff(oldText: string, newText: string): DiffChange[] {
+  const oldLines = oldText.split('\n');
+  const newLines = newText.split('\n');
+  const changes: DiffChange[] = [];
+
+  const maxLen = Math.max(oldLines.length, newLines.length);
+  for (let i = 0; i < maxLen; i++) {
+    const oldLine = oldLines[i];
+    const newLine = newLines[i];
+    if (oldLine === newLine) {
+      if (oldLine !== undefined) changes.push({ value: oldLine + '\n' });
+    } else {
+      if (oldLine !== undefined) changes.push({ value: oldLine + '\n', removed: true });
+      if (newLine !== undefined) changes.push({ value: newLine + '\n', added: true });
+    }
+  }
+  return changes;
+}
+
+export const useVersionStore = create<VersionState>((set) => ({
   versions: [],
   loading: false,
   activeDiff: null,
@@ -43,49 +96,44 @@ export const useVersionStore = create<VersionState>((set, get) => ({
   loadVersions: async (projectId, chapterId) => {
     set({ loading: true });
     try {
-      const result = await bridge()?.list(projectId, chapterId);
-      if (result?.success) {
-        set({ versions: result.versions || [] });
-      }
-    } catch (err) {
-      // '[versionStore] loadVersions failed:', err;
+      set({ versions: loadVersionsMeta(projectId, chapterId) });
     } finally {
       set({ loading: false });
     }
   },
 
   saveVersion: async (projectId, chapterId, label?) => {
-    try {
-      const result = await bridge()?.save(projectId, chapterId, label);
-      if (result?.success) {
-        await get().loadVersions(projectId, chapterId);
-        return true;
-      }
-    } catch (err) {
-      // '[versionStore] saveVersion failed:', err;
-    }
-    return false;
+    const content = localStorage.getItem(currentContentKey(projectId, chapterId)) ?? '';
+    const id = generateId();
+    const version: VersionMeta = {
+      id,
+      chapterId,
+      label: label || `v${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      filename: `${chapterId}-${id}`,
+      wordCount: countWords(content),
+    };
+    // Save version content
+    localStorage.setItem(versionContentKey(projectId, chapterId, id), content);
+    // Update meta list
+    const versions = [...loadVersionsMeta(projectId, chapterId), version];
+    saveVersionsMeta(projectId, chapterId, versions);
+    set({ versions });
+    return true;
   },
 
   deleteVersion: async (projectId, chapterId, versionId) => {
-    try {
-      const result = await bridge()?.delete(projectId, chapterId, versionId);
-      if (result?.success) {
-        await get().loadVersions(projectId, chapterId);
-      }
-    } catch (err) {
-      // '[versionStore] deleteVersion failed:', err;
-    }
+    localStorage.removeItem(versionContentKey(projectId, chapterId, versionId));
+    const versions = loadVersionsMeta(projectId, chapterId).filter((v) => v.id !== versionId);
+    saveVersionsMeta(projectId, chapterId, versions);
+    set({ versions });
   },
 
   restoreVersion: async (projectId, chapterId, versionId) => {
-    try {
-      const result = await bridge()?.restore(projectId, chapterId, versionId);
-      if (result?.success) {
-        return true;
-      }
-    } catch (err) {
-      // '[versionStore] restoreVersion failed:', err;
+    const content = localStorage.getItem(versionContentKey(projectId, chapterId, versionId));
+    if (content !== null) {
+      localStorage.setItem(currentContentKey(projectId, chapterId), content);
+      return true;
     }
     return false;
   },
@@ -93,17 +141,16 @@ export const useVersionStore = create<VersionState>((set, get) => ({
   loadDiff: async (projectId, chapterId, versionId) => {
     set({ diffLoading: true });
     try {
-      const result = await bridge()?.diff(projectId, chapterId, versionId);
-      if (result?.success) {
-        set({
-          activeDiff: {
-            changes: result.changes || [],
-            versionLabel: result.versionLabel || '',
-          },
-        });
-      }
-    } catch (err) {
-      // '[versionStore] loadDiff failed:', err;
+      const versionContent = localStorage.getItem(versionContentKey(projectId, chapterId, versionId)) ?? '';
+      const currentContent = localStorage.getItem(currentContentKey(projectId, chapterId)) ?? '';
+      const versions = loadVersionsMeta(projectId, chapterId);
+      const version = versions.find((v) => v.id === versionId);
+      set({
+        activeDiff: {
+          changes: computeDiff(versionContent, currentContent),
+          versionLabel: version?.label || '',
+        },
+      });
     } finally {
       set({ diffLoading: false });
     }

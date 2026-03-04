@@ -41,7 +41,41 @@ interface ResearchState {
   loadAllFactLinks: (projectId: string, factIds: string[]) => Promise<void>;
 }
 
-const bridge = () => window.clawdbot?.writing?.research;
+// ── localStorage helpers ──
+
+function storageKey(projectId: string, kind: string): string {
+  return `research:${projectId}:${kind}`;
+}
+
+function loadFromStorage<T>(projectId: string, kind: string): T[] {
+  try {
+    const raw = localStorage.getItem(storageKey(projectId, kind));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveToStorage<T>(projectId: string, kind: string, data: T[]): void {
+  localStorage.setItem(storageKey(projectId, kind), JSON.stringify(data));
+}
+
+function loadLinksMap(projectId: string): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(storageKey(projectId, 'links'));
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLinksMap(projectId: string, map: Record<string, string[]>): void {
+  localStorage.setItem(storageKey(projectId, 'links'), JSON.stringify(map));
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export const useResearchStore = create<ResearchState>((set, get) => ({
   sources: [],
@@ -54,12 +88,8 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
   loadSources: async (projectId) => {
     set({ loading: true });
     try {
-      const result = await bridge()?.sources?.list(projectId);
-      if (result?.success) {
-        set({ sources: result.sources || [] });
-      }
-    } catch (err) {
-      // '[researchStore] loadSources failed:', err;
+      const sources = loadFromStorage<ResearchSource>(projectId, 'sources');
+      set({ sources });
     } finally {
       set({ loading: false });
     }
@@ -74,94 +104,64 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
   setEditingId: (id) => set({ editingId: id }),
 
   addSource: async (projectId, data) => {
-    try {
-      const result = await bridge()?.sources?.create(projectId, data);
-      if (result?.success) {
-        const listResult = await bridge()?.sources?.list(projectId);
-        if (listResult?.success) set({ sources: listResult.sources });
-      }
-    } catch (err) {
-      // '[researchStore] addSource failed:', err;
-    }
+    const now = new Date().toISOString();
+    const source: ResearchSource = { ...data, id: generateId(), created_at: now, updated_at: now };
+    const updated = [...get().sources, source];
+    saveToStorage(projectId, 'sources', updated);
+    set({ sources: updated });
   },
 
   updateSource: async (projectId, id, data) => {
-    try {
-      const result = await bridge()?.sources?.update(projectId, id, data);
-      if (result?.success) {
-        const listResult = await bridge()?.sources?.list(projectId);
-        if (listResult?.success) set({ sources: listResult.sources });
-      }
-    } catch (err) {
-      // '[researchStore] updateSource failed:', err;
-    }
+    const updated = get().sources.map((s) =>
+      s.id === id ? { ...s, ...data, updated_at: new Date().toISOString() } : s,
+    );
+    saveToStorage(projectId, 'sources', updated);
+    set({ sources: updated });
   },
 
   deleteSource: async (projectId, id) => {
-    try {
-      const result = await bridge()?.sources?.delete(projectId, id);
-      if (result?.success) {
-        const listResult = await bridge()?.sources?.list(projectId);
-        if (listResult?.success) set({ sources: listResult.sources });
-        if (get().editingId === id) set({ editingId: null });
-      }
-    } catch (err) {
-      // '[researchStore] deleteSource failed:', err;
-    }
+    const updated = get().sources.filter((s) => s.id !== id);
+    saveToStorage(projectId, 'sources', updated);
+    set({ sources: updated });
+    if (get().editingId === id) set({ editingId: null });
   },
 
   // ── Fact-source linking ──
 
   loadLinksForFact: async (projectId, factId) => {
-    try {
-      const result = await bridge()?.links?.forFact(projectId, factId);
-      if (result?.success) {
-        const sourceIds = (result.sources || []).map((s: any) => s.id);
-        set((state) => ({
-          factSourceMap: { ...state.factSourceMap, [factId]: sourceIds },
-        }));
-      }
-    } catch (err) {
-      // '[researchStore] loadLinksForFact failed:', err;
-    }
+    const map = loadLinksMap(projectId);
+    set((state) => ({
+      factSourceMap: { ...state.factSourceMap, [factId]: map[factId] || [] },
+    }));
   },
 
   linkSourceToFact: async (projectId, factId, sourceId) => {
-    try {
-      await bridge()?.links?.link(projectId, factId, sourceId);
-      await get().loadLinksForFact(projectId, factId);
-    } catch (err) {
-      // '[researchStore] linkSourceToFact failed:', err;
+    const map = loadLinksMap(projectId);
+    const existing = map[factId] || [];
+    if (!existing.includes(sourceId)) {
+      map[factId] = [...existing, sourceId];
+      saveLinksMap(projectId, map);
     }
+    set((state) => ({
+      factSourceMap: { ...state.factSourceMap, [factId]: map[factId] },
+    }));
   },
 
   unlinkSourceFromFact: async (projectId, factId, sourceId) => {
-    try {
-      await bridge()?.links?.unlink(projectId, factId, sourceId);
-      await get().loadLinksForFact(projectId, factId);
-    } catch (err) {
-      // '[researchStore] unlinkSourceFromFact failed:', err;
-    }
+    const map = loadLinksMap(projectId);
+    map[factId] = (map[factId] || []).filter((id) => id !== sourceId);
+    saveLinksMap(projectId, map);
+    set((state) => ({
+      factSourceMap: { ...state.factSourceMap, [factId]: map[factId] },
+    }));
   },
 
   loadAllFactLinks: async (projectId, factIds) => {
-    try {
-      const results = await Promise.all(
-        factIds.map(async (factId) => {
-          const result = await bridge()?.links?.forFact(projectId, factId);
-          const sourceIds = result?.success
-            ? (result.sources || []).map((s: any) => s.id)
-            : [];
-          return [factId, sourceIds] as const;
-        }),
-      );
-      const map: Record<string, string[]> = {};
-      for (const [factId, sourceIds] of results) {
-        map[factId] = sourceIds;
-      }
-      set({ factSourceMap: map });
-    } catch (err) {
-      // '[researchStore] loadAllFactLinks failed:', err;
+    const map = loadLinksMap(projectId);
+    const result: Record<string, string[]> = {};
+    for (const factId of factIds) {
+      result[factId] = map[factId] || [];
     }
+    set({ factSourceMap: result });
   },
 }));
