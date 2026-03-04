@@ -6,6 +6,7 @@ import { SkeletonList } from './Skeleton';
 import ErrorDisplay from './ErrorDisplay';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
+import { libraryApi } from '../lib/api';
 
 type FileCategory = 'marketing' | 'design' | 'dev' | 'research' | 'finance' | 'test-logs' | 'content' | 'social' | 'other';
 type ViewMode = 'grid' | 'list';
@@ -84,36 +85,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setLoading(true);
     setLoadError(null);
     try {
-      // Sync filesystem to database first
-      await window.clawdbot?.library?.sync();
-      
-      // Always fetch all files — category filtering happens in render
-      const libraryResult = await window.clawdbot?.library?.list();
-      const libraryFiles: LibraryFileItem[] = libraryResult?.success ? ((libraryResult.files || []) as unknown as LibraryFileItem[]) : [];
+      // Fetch files via REST API
+      const libraryResult = await libraryApi.getFiles();
+      const libraryFiles: LibraryFileItem[] = Array.isArray(libraryResult?.files) ? (libraryResult.files as unknown as LibraryFileItem[]) : [];
 
-      const attachmentsResult = await window.clawdbot?.tasks?.attachments?.listAll();
-      const taskAttachments = attachmentsResult?.success ? (attachmentsResult.attachments || []) : [];
-
-      const convertedAttachments: LibraryFileItem[] = taskAttachments.map((att: any) => ({
-        id: `attachment-${att.id}`,
-        name: att.filename || 'Unnamed',
-        path: att.file_path || '',
-        category: att.category || 'other',
-        size: att.file_size || 0,
-        mimeType: att.mime_type,
-        createdAt: att.uploaded_at || '',
-        updatedAt: att.uploaded_at || '',
-        linkedTasks: att.task_id ? [att.task_id] : [],
-        tags: [],
-        project: att.task_project || null,
-      }));
-
-      const allFiles = [...libraryFiles, ...convertedAttachments];
-      setFiles(allFiles);
+      setFiles(libraryFiles);
 
       // Seed project inputs from loaded files
       const projectMap: Record<string, string> = {};
-      for (const f of allFiles) {
+      for (const f of libraryFiles) {
         projectMap[f.id] = f.project || '';
       }
       setProjectInputs(projectMap);
@@ -129,15 +109,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   }, [loadFiles]);
 
   const handleUpload = async () => {
-    try {
-      const result = await window.clawdbot?.library?.upload();
-      if (result?.success) {
-        showToast('success', 'File uploaded', result.file?.name);
-        loadFiles();
-      }
-    } catch (error) {
-      showToast('error', 'Upload failed', String(error));
-    }
+    showToast('info', 'File upload not available in web mode');
   };
 
   const handleDelete = async (file: LibraryFileItem) => {
@@ -148,13 +120,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       type: 'danger',
     }, async () => {
       try {
-        let result;
-        if (file.id.startsWith('attachment-')) {
-          const numId = parseInt(file.id.replace('attachment-', ''), 10);
-          result = await window.clawdbot?.tasks?.attachments?.delete(numId);
-        } else {
-          result = await window.clawdbot?.library?.delete(file.id);
-        }
+        const result = await fetch('/api/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', id: file.id }),
+        }).then(r => r.ok ? r.json() : { success: false });
         if (result?.success) {
           showToast('success', 'File deleted');
           loadFiles();
@@ -174,7 +144,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       placeholder: 'task-1234567890',
       confirmLabel: 'Link',
     }, async (taskId: string) => {
-      const result = await window.clawdbot?.library?.link(file.id, taskId);
+      const result = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'link', fileId: file.id, taskId }),
+      }).then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         showToast('success', 'Linked to task');
         loadFiles();
@@ -189,27 +163,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setViewerOpen(true);
     setViewerLoading(true);
     try {
-      let result;
-      if (file.id.startsWith('attachment-')) {
-        // Task attachments aren't in the library table — read file directly via path
-        if (file.path) {
-          result = await window.clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null`);
-          const mimeType = file.mimeType || '';
-          if (mimeType.startsWith('image/')) {
-            // For images, use file:// protocol
-            const expandedPath = file.path.replace('~', await window.clawdbot?.exec?.run('echo $HOME').then((r: any) => r?.stdout?.trim()) || '');
-            result = { success: true, content: `file://${expandedPath}`, mimeType, name: file.name, path: file.path, viewType: 'image' };
-          } else if (result?.stdout) {
-            result = { success: true, content: result.stdout, mimeType, name: file.name, path: file.path, viewType: 'text' };
-          } else {
-            result = { success: true, mimeType, name: file.name, path: file.path, viewType: 'binary' };
-          }
-        } else {
-          result = { success: false, error: 'No file path for attachment' };
-        }
-      } else {
-        result = await window.clawdbot?.library?.view(file.id);
-      }
+      const result = await fetch(`/api/library?action=view&id=${encodeURIComponent(file.id)}`).then(r => r.ok ? r.json() : { success: false, error: 'Failed to load file' });
       if (result?.success) {
         setViewerContent(result);
       } else {
@@ -225,28 +179,21 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   };
 
   const handleDownloadFile = async (file: LibraryFileItem) => {
-    try {
-      const result = await window.clawdbot?.library?.download(file.id);
-      if (result?.success) {
-        showToast('success', 'File saved', result.path);
-      } else if (result?.error !== 'Cancelled') {
-        showToast('error', 'Download failed', result?.error || 'Unknown error');
-      }
-    } catch (error) {
-      showToast('error', 'Download failed', String(error));
-    }
+    showToast('info', 'File download not available in web mode');
   };
 
   const openInDefaultApp = () => {
-    if (viewerContent?.path) {
-      window.clawdbot?.shell?.openPath(viewerContent.path);
-    }
+    showToast('info', 'Open in default app not available in web mode');
   };
 
   // Inline editing handlers
   const handleCategoryChange = async (file: LibraryFileItem, newCategory: string) => {
     try {
-      await window.clawdbot?.library?.update(file.id, { category: newCategory });
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', id: file.id, category: newCategory }),
+      });
       loadFiles();
     } catch (_error) {
       showToast('error', 'Failed to update category');
@@ -256,7 +203,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const handleTagRemove = async (file: LibraryFileItem, tagToRemove: string) => {
     const updatedTags = (file.tags || []).filter(t => t !== tagToRemove);
     try {
-      await window.clawdbot?.library?.update(file.id, { tags: updatedTags });
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', id: file.id, tags: updatedTags }),
+      });
       loadFiles();
     } catch (_error) {
       showToast('error', 'Failed to remove tag');
@@ -271,7 +222,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     const updatedTags = [...existing, trimmed];
     setTagInputs(prev => ({ ...prev, [file.id]: '' }));
     try {
-      await window.clawdbot?.library?.update(file.id, { tags: updatedTags });
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', id: file.id, tags: updatedTags }),
+      });
       loadFiles();
     } catch (_error) {
       showToast('error', 'Failed to add tag');
@@ -281,7 +236,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const handleProjectSave = async (file: LibraryFileItem) => {
     const newProject = (projectInputs[file.id] || '').trim() || null;
     try {
-      await window.clawdbot?.library?.update(file.id, { project: newProject });
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', id: file.id, project: newProject }),
+      });
       loadFiles();
     } catch (_error) {
       showToast('error', 'Failed to update project');
@@ -318,26 +277,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length === 0) return;
 
-    for (const file of droppedFiles) {
-      showToast('info', 'Uploading', file.name);
-      try {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const result = await window.clawdbot?.library?.uploadBuffer({
-            name: file.name,
-            type: file.type,
-            buffer: reader.result,
-          });
-          if (result?.success) {
-            showToast('success', 'Uploaded', file.name);
-            loadFiles();
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } catch (_error) {
-        showToast('error', 'Upload failed', file.name);
-      }
-    }
+    showToast('info', 'File upload not available in web mode');
   };
 
   return (

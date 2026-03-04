@@ -44,18 +44,22 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
   const doSave = useCallback(() => {
     if (!isMountedRef.current) return;
     const flowState = flow.getState();
-    window.clawdbot.moduleBuilder?.save({
-      id: saved.id,
-      name: (spec.name as string) || '',
-      description: (spec.description as string) || '',
-      status: isComplete ? 'finished' : 'in-progress',
-      spec,
-      conversation: flowState.messages,
-      conversation_state: {
-        answeredQuestions: moduleSpec.answeredQuestionsArray,
-        flow: flowState,
-      },
-      overall_progress: overallProgress,
+    fetch(`/api/modules/${saved.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: saved.id,
+        name: (spec.name as string) || '',
+        description: (spec.description as string) || '',
+        status: isComplete ? 'finished' : 'in-progress',
+        spec,
+        conversation: flowState.messages,
+        conversation_state: {
+          answeredQuestions: moduleSpec.answeredQuestionsArray,
+          flow: flowState,
+        },
+        overall_progress: overallProgress,
+      }),
     }).catch(err => console.error('[ModuleBuilder] Auto-save failed:', err));
   }, [saved.id, spec, isComplete, overallProgress, flow, moduleSpec.answeredQuestionsArray]);
 
@@ -161,12 +165,17 @@ export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderVie
     let cancelled = false;
     (async () => {
       try {
-        const result = await window.clawdbot.moduleBuilder?.get(moduleId);
+        const res = await fetch(`/api/modules/${moduleId}`);
         if (cancelled) return;
-        if (result?.success && result.module) {
-          setSaved(result.module);
+        if (res.ok) {
+          const result = await res.json();
+          if (result?.module) {
+            setSaved(result.module);
+          } else {
+            setError('Module not found');
+          }
         } else {
-          setError(result?.error || 'Module not found');
+          setError('Module not found');
         }
       } catch (err: any) {
         if (!cancelled) setError(err.message);

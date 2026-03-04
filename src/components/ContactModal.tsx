@@ -339,11 +339,14 @@ Be thorough but only include real people, not generic references.`;
       const timestamp = new Date().toISOString().split('T')[0];
       const entry = formatContactEntry(contactData, timestamp);
 
-      // Append to file using IPC
-      const result = await window.clawdbot?.fs?.append(filePath, entry);
-      
-      if (!result?.success) {
-        throw new Error(result?.error || 'Failed to append to file');
+      // Append to file via REST API
+      const appendRes = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'append', path: filePath, content: entry }),
+      });
+      if (!appendRes.ok) {
+        throw new Error('Failed to append to file');
       }
 
       // Add to knowledge graph
@@ -392,10 +395,15 @@ Be thorough but only include real people, not generic references.`;
 
   const addToKnowledgeGraph = async (data: ExtractedContactData) => {
     try {
-      await window.clawdbot?.db?.exec(
-        `INSERT INTO knowledge_nodes (type, name, description) VALUES (?, ?, ?)`,
-        ['person', data.name, data.context || data.relationship || '']
-      );
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'db-exec',
+          sql: 'INSERT INTO knowledge_nodes (type, name, description) VALUES (?, ?, ?)',
+          params: ['person', data.name, data.context || data.relationship || ''],
+        }),
+      });
     } catch (error) {
       // '[ContactModal] Failed to add to knowledge graph:', error;
     }
@@ -404,10 +412,15 @@ Be thorough but only include real people, not generic references.`;
   const logContactFact = async (data: ExtractedContactData) => {
     try {
       const factText = `Contact: ${data.name}${data.relationship ? ` (${data.relationship})` : ''}${data.role ? ` - ${data.role}` : ''}${data.company ? ` at ${data.company}` : ''}`;
-      await window.clawdbot?.db?.exec(
-        `INSERT INTO facts (category, subject, content, source) VALUES (?, ?, ?, ?)`,
-        ['person', data.name, factText, 'contact-modal']
-      );
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'db-exec',
+          sql: 'INSERT INTO facts (category, subject, content, source) VALUES (?, ?, ?, ?)',
+          params: ['person', data.name, factText, 'contact-modal'],
+        }),
+      });
     } catch (error) {
       // '[ContactModal] Failed to log fact:', error;
     }

@@ -82,8 +82,8 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
       for (const account of googleAccounts) {
         // Try to fetch calendars for this account
         try {
-          const result = await window.clawdbot?.calendar?.listCalendars(account.email);
-          if (result?.success && result.calendars) {
+          const result = await fetch(`/api/calendar/calendars?account=${encodeURIComponent(account.email)}`).then(r => r.ok ? r.json() : null).catch(() => null);
+          if (result?.calendars) {
             // Add each calendar as a separate source
             result.calendars.forEach((cal: any) => {
               const sourceId = `google:${account.email}:${cal.id}`;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
+import { accountsApi } from '../lib/api';
 
 interface Props {
   onClose: () => void;
@@ -141,7 +142,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         appPassword: authMethod === 'app-password' ? appPassword : undefined,
       };
 
-      const result = await window.clawdbot?.accounts?.add(request as unknown as string);
+      const result = await accountsApi.add(request as unknown as Record<string, unknown>);
 
       if (result?.success) {
         setStep('success');

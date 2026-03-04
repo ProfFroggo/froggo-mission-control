@@ -26,7 +26,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   const loadFolders = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.folders.list();
+      const result = await fetch('/api/library?action=folders').then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         setFolders(result?.folders || []);
       } else {
@@ -51,7 +51,11 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     }
 
     try {
-      const result = await window.clawdbot?.folders.create(formData);
+      const result = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'folder-create', ...formData }),
+      }).then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         showToast('success', `Folder "${formData.name}" created`);
         setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
@@ -73,7 +77,11 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     }
 
     try {
-      const result = await window.clawdbot?.folders.update(folderId, formData);
+      const result = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'folder-update', id: folderId, ...formData }),
+      }).then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         showToast('success', 'Folder updated');
         setEditingId(null);
@@ -96,7 +104,11 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       type: 'danger',
     }, async () => {
       try {
-        const result = await window.clawdbot?.folders.delete(folderId);
+        const result = await fetch('/api/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'folder-delete', id: folderId }),
+        }).then(r => r.ok ? r.json() : { success: false });
         if (result?.success) {
           showToast('success', `Folder "${folderName}" deleted`);
           loadFolders();

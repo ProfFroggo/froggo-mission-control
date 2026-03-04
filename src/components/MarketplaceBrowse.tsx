@@ -1,17 +1,13 @@
 /**
  * MarketplaceBrowse — Marketplace browse page.
  *
- * Fetches the module registry from froggo.pro via IPC and displays:
+ * Fetches the module registry via REST API and displays:
  * - Module cards with Install / Update / Uninstall actions
  * - Category filter chips
  * - Search input
  * - Update-available badges (registry version > installed version)
  * - Restart-required banner after install/update
  * - Loading skeleton cards while fetching
- *
- * All IPC calls go through window.clawdbot.marketplace.* preload bridges.
- * Uninstall confirmation is handled by Electron's dialog.showMessageBox in the
- * main process — no ConfirmDialog import needed here.
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -49,6 +45,8 @@ import {
 } from 'lucide-react';
 import { Skeleton } from './LoadingStates';
 import AgentInstallModal from './AgentInstallModal';
+import { marketplaceApi } from '../lib/api';
+import { showToast } from './Toast';
 
 // ─── Icon mapping ──────────────────────────────────────────────────────────────
 
@@ -328,51 +326,30 @@ export default function MarketplaceBrowse() {
     setError(null);
 
     try {
-      const mp = (window as any).clawdbot.marketplace;
-      if (!mp) {
-        setError('Marketplace IPC bridge not available.');
-        return;
-      }
+      // 1. Fetch module and agent listings from REST API
+      const [modulesResult, agentsResult] = await Promise.all([
+        marketplaceApi.listModules().catch(() => ({ modules: [] })),
+        marketplaceApi.listAgents().catch(() => ({ agents: [] })),
+      ]);
 
-      // 1. Fetch registry
-      const registryResult = await mp.fetchRegistry();
-      if (!registryResult?.success) {
-        setError(registryResult?.error ?? 'Failed to load marketplace registry.');
-        return;
-      }
-
-      const mods: RegistryModule[] = registryResult.registry?.modules ?? [];
+      const mods: RegistryModule[] = [
+        ...(modulesResult?.modules || modulesResult || []),
+        ...(agentsResult?.agents || agentsResult || []),
+      ];
       setModules(mods);
 
-      // 2. Fetch status for each module in parallel
-      const statusEntries = await Promise.all(
-        mods.map(async (m: RegistryModule) => {
-          try {
-            const result = await mp.getModuleStatus(m.id);
-            return [
-              m.id,
-              {
-                installed: !!result?.installed,
-                builtin: !!result?.builtin,
-                module: result?.module ?? undefined,
-              } as InstalledInfo,
-            ] as const;
-          } catch {
-            return [m.id, { installed: false }] as const;
-          }
-        }),
-      );
+      // 2. Build installed map from the data returned
+      const statusEntries = mods.map((m: RegistryModule) => {
+        return [
+          m.id,
+          {
+            installed: !!(m as any).installed,
+            builtin: !!(m as any).builtin,
+            module: undefined,
+          } as InstalledInfo,
+        ] as const;
+      });
       setInstalledMap(Object.fromEntries(statusEntries));
-
-      // 3. Check for available updates
-      try {
-        const updatesResult = await mp.checkUpdates();
-        if (updatesResult?.success) {
-          setUpdates(updatesResult.updates ?? []);
-        }
-      } catch {
-        // Non-critical — just leave updates empty
-      }
     } catch (err: any) {
       setError(err?.message ?? 'Unexpected error loading marketplace.');
     } finally {
@@ -382,12 +359,6 @@ export default function MarketplaceBrowse() {
 
   useEffect(() => {
     loadData();
-
-    // Subscribe to restart-required events
-    const mp = (window as any).clawdbot?.marketplace;
-    if (!mp?.onRestartRequired) return;
-    const unsub = mp.onRestartRequired(() => setRestartBanner(true));
-    return unsub;
   }, [loadData]);
 
   // Auto-install from deep link
@@ -411,22 +382,16 @@ export default function MarketplaceBrowse() {
       return;
     }
 
-    const mp = (window as any).clawdbot?.marketplace;
-    if (!mp) return;
     setInstalling(mod.id);
     try {
-      const result = await mp.installModule(mod.id, mod.name, mod.version);
+      const result = await marketplaceApi.installModule(mod.id);
       if (result?.success) {
         if (result.restartRequired) setRestartBanner(true);
-        // Refresh status for this module
-        const statusResult = await mp.getModuleStatus(mod.id);
         setInstalledMap((prev) => ({
           ...prev,
-          [mod.id]: {
-            installed: !!statusResult?.installed,
-            module: statusResult?.module ?? undefined,
-          },
+          [mod.id]: { installed: true, module: undefined },
         }));
+        showToast('success', 'Installed', `${mod.name} installed successfully`);
       } else {
         setError(result?.error ?? `Failed to install ${mod.name}.`);
       }
@@ -438,24 +403,16 @@ export default function MarketplaceBrowse() {
   }
 
   async function handleUninstall(moduleId: string) {
-    const mp = (window as any).clawdbot?.marketplace;
-    if (!mp) return;
     try {
-      const result = await mp.uninstallModule(moduleId);
-      if (result?.success && result.uninstalled) {
-        // Refresh status
-        const statusResult = await mp.getModuleStatus(moduleId);
+      const result = await fetch(`/api/marketplace/modules/${moduleId}/uninstall`, { method: 'POST' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (result?.success) {
         setInstalledMap((prev) => ({
           ...prev,
-          [moduleId]: {
-            installed: !!statusResult?.installed,
-            module: statusResult?.module ?? undefined,
-          },
+          [moduleId]: { installed: false, module: undefined },
         }));
-        // Remove from updates list
         setUpdates((prev) => prev.filter((u) => u.moduleId !== moduleId));
+        showToast('success', 'Uninstalled', 'Module removed');
       }
-      // If result.uninstalled === false, user cancelled — no-op
     } catch (err: any) {
       setError(err?.message ?? `Error uninstalling module.`);
     }

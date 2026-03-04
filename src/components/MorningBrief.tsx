@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
+import { gateway } from '../lib/gateway';
 
 interface TwitterMention {
   id: string;
@@ -89,51 +90,43 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         greeting = 'Good night';
       }
 
-      // Fetch data - wait for Electron IPC to be ready with retry
+      // Fetch data via REST APIs
       let pendingApprovals = 0;
       let unreadMessages = 0;
       let upcomingEventsData: any[] = [];
       let weatherData: BriefData['weather'] = undefined;
       let overnightData: BriefData['overnightActivity'] = undefined;
-      
-      // Initial delay to ensure IPC is ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Retry up to 8 times with increasing delay
-      for (let attempt = 0; attempt < 8; attempt++) {
-        try {
-          if (window.clawdbot?.inbox?.list) {
-            const inboxResult = await window.clawdbot.inbox.list();
-            if (inboxResult?.success && Array.isArray(inboxResult?.items)) {
-              // Backend already filters to status='pending', no need to filter again
-              pendingApprovals = inboxResult.items.length;
-              break; // Got result, stop retrying
-            }
-          }
-        } catch (e) {
-          // '[MorningBrief] Inbox error attempt', attempt + 1, ':', e;
+
+      // Fetch pending approvals
+      try {
+        const res = await fetch('/api/inbox?status=pending');
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data) ? data : (data?.items || []);
+          pendingApprovals = items.length;
         }
-        // Wait before next attempt (longer delays)
-        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      } catch (e) {
+        // '[MorningBrief] Inbox error:', e;
       }
-      
+
       // Fetch unread messages count
       try {
-        const unreadResult = await window.clawdbot?.messages?.unread?.();
-        if (unreadResult?.success) {
-          unreadMessages = unreadResult.count || 0;
+        const res = await fetch('/api/notifications?unread=true');
+        if (res.ok) {
+          const data = await res.json();
+          const items = Array.isArray(data) ? data : (data?.notifications || []);
+          unreadMessages = items.length;
         }
       } catch (e) {
         // '[MorningBrief] Unread messages error:', e;
-        // Keep as 0 on error - not critical
       }
-      
-      // Fetch work calendar events (from user settings)
+
+      // Fetch work calendar events
       try {
-        const calAccount = (await import('../store/userSettings')).useUserSettings.getState().emailAccounts[0]?.email || '';
-        const calendarResult = calAccount ? await window.clawdbot?.calendar?.events(calAccount, 1) : null;
-        if (calendarResult?.events) {
-          upcomingEventsData = calendarResult.events;
+        const res = await fetch('/api/schedule');
+        if (res.ok) {
+          const data = await res.json();
+          upcomingEventsData = data?.events || data || [];
         }
       } catch (e) {
         // '[MorningBrief] Calendar error:', e;
@@ -167,22 +160,25 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         const overnightStart = yesterday.getTime();
 
         // Get completed tasks from overnight
-        const tasksResult = await window.clawdbot?.tasks?.list('done');
-        const overnightTasks = tasksResult?.tasks?.filter((t: any) => {
-          const updated = t.updated_at ? new Date(t.updated_at).getTime() : 0;
-          return updated >= overnightStart;
-        }) || [];
+        const tasksRes = await fetch('/api/tasks?status=done');
+        let overnightTasks: any[] = [];
+        if (tasksRes.ok) {
+          const tasksData = await tasksRes.json();
+          const allTasks = Array.isArray(tasksData) ? tasksData : (tasksData?.tasks || []);
+          overnightTasks = allTasks.filter((t: any) => {
+            const updated = t.updated_at ? new Date(t.updated_at).getTime() : 0;
+            return updated >= overnightStart;
+          });
+        }
 
-        // Get agent sessions
-        const sessionsResult = await window.clawdbot?.sessions?.list();
-        const agentSessions = sessionsResult?.sessions?.filter((s: any) => {
-          // Filter for agent sessions that were active overnight
+        // Get agent sessions via gateway
+        const sessions = gateway.getSessions?.() || [];
+        const agentSessions = sessions.filter((s: any) => {
           return s.key?.includes('agent:') && !s.key?.includes('discord');
         }).map((s: any) => {
-          // Extract agent name from session key
           const parts = s.key.split(':');
           return parts[parts.length - 1] || 'agent';
-        }) || [];
+        });
 
         // Build summary
         let summary = '';
@@ -208,9 +204,9 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch session stats
       let sessionStatsData: BriefData['sessionStats'] = undefined;
       try {
-        const sessionsResult = await window.clawdbot?.gateway?.sessionsList?.();
-        if (sessionsResult?.success && sessionsResult.sessions) {
-          const sessions = sessionsResult.sessions;
+        const gatewaySessions = gateway.getSessions?.() || [];
+        if (gatewaySessions.length > 0) {
+          const sessions = gatewaySessions;
           const now = Date.now();
           const activeThreshold = 30 * 60 * 1000; // 30 minutes
           
@@ -255,11 +251,13 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch agent stats
       let agentStatsData: BriefData['agentStats'] = undefined;
       try {
-        const sessionsResult = await window.clawdbot?.gateway?.sessionsList?.();
-        const tasksResult = await window.clawdbot?.tasks?.list('in-progress');
-        
-        if (sessionsResult?.success && sessionsResult.sessions) {
-          const sessions = sessionsResult.sessions;
+        const agentGatewaySessions = gateway.getSessions?.() || [];
+        const agentTasksRes = await fetch('/api/tasks?status=in-progress');
+        const agentTasksData = agentTasksRes.ok ? await agentTasksRes.json() : {};
+        const tasksResult = { tasks: Array.isArray(agentTasksData) ? agentTasksData : (agentTasksData?.tasks || []) };
+
+        if (agentGatewaySessions.length > 0) {
+          const sessions = agentGatewaySessions;
           const now = Date.now();
           const activeThreshold = 30 * 60 * 1000;
 
@@ -324,23 +322,25 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch Twitter mentions
       let mentionsData: TwitterMention[] | undefined = undefined;
       try {
-        const mentionsResult = await window.clawdbot?.twitter?.mentions();
-        if (mentionsResult?.success && Array.isArray(mentionsResult.mentions)) {
+        const mentionsRes = await fetch('/api/inbox?type=twitter');
+        if (mentionsRes.ok) {
+          const mentionsRaw = await mentionsRes.json();
+          const mentions = Array.isArray(mentionsRaw) ? mentionsRaw : (mentionsRaw?.items || mentionsRaw?.mentions || []);
           // Get recent mentions (last 24 hours)
           const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-          mentionsData = mentionsResult.mentions
+          mentionsData = mentions
             .filter((m: any) => {
               const mentionDate = new Date(m.createdAt).getTime();
               return mentionDate >= oneDayAgo;
             })
-            .slice(0, 5) // Show max 5 recent mentions
+            .slice(0, 5)
             .map((m: any) => ({
               id: m.id,
               text: m.text,
               createdAt: m.createdAt,
               author: {
-                username: m.author.username,
-                name: m.author.name,
+                username: m.author?.username || 'unknown',
+                name: m.author?.name || 'Unknown',
               },
               likeCount: m.likeCount,
               replyCount: m.replyCount,

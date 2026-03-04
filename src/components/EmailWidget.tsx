@@ -25,27 +25,20 @@ export default function EmailWidget() {
     setError(null);
     
     try {
-      // Fetch counts for each account via IPC
+      // Fetch counts for each account via REST API
       const results = await Promise.all(
         ACCOUNTS.map(async (acc) => {
-          // Fetch unread count
-          const unreadResult = await window.clawdbot?.email?.unread(acc.email);
-          const unreadCount = unreadResult?.emails?.threads?.length || unreadResult?.emails?.length || 0;
-          
-          // Fetch starred count
-          const starredResult = await window.clawdbot?.email?.starred(acc.email);
-          const starredCount = starredResult?.count || 0;
-          
-          // Fetch action count (important emails)
-          const actionResult = await window.clawdbot?.email?.action(acc.email);
-          const actionCount = actionResult?.count || 0;
-          
-          return {
-            ...acc,
-            unread: unreadCount,
-            action: actionCount,
-            starred: starredCount,
-          };
+          try {
+            const res = await fetch(`/api/email/counts?account=${encodeURIComponent(acc.email)}`).then(r => r.ok ? r.json() : null).catch(() => null);
+            return {
+              ...acc,
+              unread: res?.unread || 0,
+              action: res?.action || 0,
+              starred: res?.starred || 0,
+            };
+          } catch {
+            return { ...acc, unread: 0, action: 0, starred: 0 };
+          }
         })
       );
       

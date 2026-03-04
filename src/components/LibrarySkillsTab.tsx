@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, TrendingUp, Clock, CheckCircle, BookOpen, ChevronDown, ChevronRight, User } from 'lucide-react';
 import EmptyState from './EmptyState';
+import { libraryApi } from '../lib/api';
 
 interface Skill {
   agent_id: string;
@@ -62,9 +63,10 @@ export default function LibrarySkillsTab() {
   const loadSkills = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.skills?.list();
-      if (result?.success) {
-        setSkills(result.skills || []);
+      const res = await fetch('/api/library?action=skills');
+      if (res.ok) {
+        const result = await res.json();
+        setSkills(result?.skills || []);
       }
     } catch (_error) {
       // '[Skills] Load error:', error;

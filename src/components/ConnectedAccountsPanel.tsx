@@ -7,6 +7,7 @@ import {
 import { showToast } from './Toast';
 import { useConfirmDialog } from './ConfirmDialog';
 import { createLogger } from '../utils/logger';
+import { accountsApi } from '../lib/api';
 
 const logger = createLogger('ConnectedAccounts');
 
@@ -126,20 +127,15 @@ export default function ConnectedAccountsPanel() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      if (!window.clawdbot?.accounts?.list) {
-        // APIs not available (web mode) - show empty state instead of error
-        setAccounts([]);
-        return;
-      }
-      const result = await window.clawdbot.accounts.list();
-      if (result?.success) {
-        const normalized = (result.accounts || []).map(normalizeAccount);
+      const result = await accountsApi.getAll().catch(() => null);
+      if (result) {
+        const accountsList = Array.isArray(result) ? result : (result.accounts || []);
+        const normalized = accountsList.map(normalizeAccount);
         setAccounts(normalized);
-      } else if (result?.error) {
-        showToast('error', 'Failed to load accounts', result.error);
+      } else {
+        setAccounts([]);
       }
     } catch (err: unknown) {
-      // '[ConnectedAccounts] Failed to load accounts:', err;
       showToast('error', 'Failed to load accounts', err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
@@ -148,8 +144,8 @@ export default function ConnectedAccountsPanel() {
 
   const loadAvailableTypes = async () => {
     try {
-      const result = await window.clawdbot?.accounts?.getAvailableTypes();
-      if (result?.success) {
+      const result = await fetch('/api/accounts/types').then(r => r.ok ? r.json() : null).catch(() => null);
+      if (result?.types) {
         setAvailableTypes((result.types || []) as AccountTypeInfo[]);
       }
     } catch (err: unknown) {
@@ -159,23 +155,23 @@ export default function ConnectedAccountsPanel() {
 
   const handleAccountClick = async (account: ConnectedAccount) => {
     setSelectedAccount(account);
-    
+
     // Load permissions
     try {
-      const result = await window.clawdbot?.accounts?.getPermissions(account.id);
-      if (result?.success) {
+      const result = await fetch(`/api/accounts/${account.id}/permissions`).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (result?.permissions) {
         setSelectedAccountPermissions((result.permissions || []) as AccountPermission[]);
       }
     } catch (err: unknown) {
       // 'Failed to load permissions:', err;
     }
-    
+
     setShowDetailModal(true);
   };
 
   const handleRefresh = async (accountId: string) => {
     try {
-      const result = await window.clawdbot?.accounts?.refresh(accountId);
+      const result = await fetch(`/api/accounts/${accountId}/refresh`, { method: 'POST' }).then(r => r.ok ? r.json() : null).catch(() => null);
       if (result?.success) {
         showToast('success', 'Account refreshed', 'Connection verified successfully');
         loadAccounts();
@@ -198,7 +194,7 @@ export default function ConnectedAccountsPanel() {
       type: 'danger',
     }, async () => {
       try {
-        const result = await window.clawdbot?.accounts?.remove(accountId);
+        const result = await fetch(`/api/accounts/${accountId}`, { method: 'DELETE' }).then(r => r.ok ? r.json() : null).catch(() => null);
         if (result?.success) {
           showToast('success', 'Account removed', `${account.email} has been removed`);
           loadAccounts();
@@ -217,7 +213,7 @@ export default function ConnectedAccountsPanel() {
   const handleImportGoogle = async () => {
     setImportingGoogle(true);
     try {
-      const result = await window.clawdbot?.accounts?.importGoogle();
+      const result = await fetch('/api/accounts/import-google', { method: 'POST' }).then(r => r.ok ? r.json() : null).catch(() => null);
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
@@ -242,10 +238,11 @@ export default function ConnectedAccountsPanel() {
 
     setAddingAccount(true);
     try {
-      const result = await window.clawdbot?.accounts?.add(selectedType, {
-        conversational: true
+      const result = await accountsApi.add({
+        type: selectedType,
+        conversational: true,
       });
-      
+
       if (result?.success) {
         showToast('success', 'Account added', 'Account authenticated successfully');
         loadAccounts();
