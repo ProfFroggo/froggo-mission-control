@@ -522,14 +522,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     };
 
     // Log transcripts to gateway session
-    const logToGateway = (role: string, text: string) => {
-      try {
-        // Log voice transcripts via gateway (web mode: use gateway lib)
-        try {
-          const { gateway: gw } = await import('../lib/gateway');
-          gw.send({ type: 'chat.inject', sessionKey: 'web:dashboard', role, message: text });
-        } catch { /* ignore */ }
-      } catch { /* ignore */ }
+    const logToGateway = async (_role: string, _text: string) => {
+      // Voice transcript logging not available in web mode
+      // Gateway doesn't expose a raw send method for chat.inject
     };
 
     const unsubs = [
