@@ -1,0 +1,16 @@
+{
+  "name": "froggo-cron-mcp",
+  "version": "1.0.0",
+  "description": "Froggo cron scheduling MCP server",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
