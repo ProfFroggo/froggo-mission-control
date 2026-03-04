@@ -42,21 +42,17 @@ export function canLoadWidgets(trustTier: string | undefined): boolean {
  */
 export async function loadAgentWidgets(agentId: string): Promise<WidgetDefinition[]> {
   try {
-    // Use Electron IPC to securely read manifest from filesystem
-    const manifestData = await window.clawdbot?.widgetAPI?.scanManifest(agentId);
+    // Try loading widget manifest from static path
+    const resp = await fetch(`/agent-widgets/${agentId}/manifest.json`);
+    if (!resp.ok) return [];
 
-    if (!manifestData || manifestData.error) {
-      return [];
-    }
-
-    // Validate manifest schema
+    const manifestData = await resp.json();
     const manifest = WidgetManifestSchema.parse(manifestData);
 
     logger.debug(`Loaded ${manifest.widgets.length} widget(s) for ${agentId}`);
     return manifest.widgets;
 
-  } catch (err) {
-
+  } catch (_err) {
     return [];
   }
 }
@@ -69,8 +65,10 @@ export async function scanAllWidgets(): Promise<Map<string, WidgetDefinition[]>>
   const widgetMap = new Map<string, WidgetDefinition[]>();
 
   try {
-    // Get list of all agents from registry
-    const agents = await window.clawdbot?.getAgentRegistry();
+    // Get list of all agents from REST API
+    const { agentApi } = await import('./api');
+    const result = await agentApi.getAll();
+    const agents = result?.agents || (Array.isArray(result) ? result : []);
     if (!agents || !Array.isArray(agents)) {
       return widgetMap;
     }

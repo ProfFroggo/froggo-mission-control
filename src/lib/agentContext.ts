@@ -5,6 +5,7 @@
 
 import { gateway } from './gateway';
 import { createLogger } from '../utils/logger';
+import { agentApi, taskApi } from './api';
 
 const logger = createLogger('AgentContext');
 
@@ -59,26 +60,8 @@ let personalitiesData: Record<string, any> | null = null;
 
 async function loadPersonalities(): Promise<Record<string, any>> {
   if (personalitiesData) return personalitiesData;
-  
-  
-  // In Electron, try exec first (file:// fetch doesn't work)
-  const isElectron = !!window.clawdbot?.exec?.run;
-  
-  if (isElectron) {
-    try {
-      const r = await window.clawdbot.exec.run(
-        'cat ~/froggo-dashboard/dist/agent-profiles/personalities.json'
-      );
-      if (r.success && r.stdout) {
-        personalitiesData = JSON.parse(r.stdout);
-        return personalitiesData!;
-      }
-    } catch (_err) {
-      // Exec approach failed — fall through to fetch
-    }
-  }
-  
-  // Fallback: fetch (works in dev mode)
+
+  // Fetch from static JSON (works in web mode)
   try {
     const resp = await fetch('/agent-profiles/personalities.json');
     if (resp.ok) {
@@ -86,10 +69,10 @@ async function loadPersonalities(): Promise<Record<string, any>> {
       return personalitiesData!;
     }
   } catch (_err) {
-    // Both load paths failed
+    // Fetch failed
   }
-  
-  console.error('[AgentContext] ❌ Failed to load personalities');
+
+  console.error('[AgentContext] Failed to load personalities');
   return {};
 }
 
@@ -100,51 +83,19 @@ function isCleanAgentId(id: string): boolean {
 async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
   if (!isCleanAgentId(agentId)) return [];
   try {
-    if (window.clawdbot?.exec?.run) {
-      const r = await window.clawdbot.exec.run(
-        `froggo-db query "SELECT id, title, status, priority, assigned_to, created_at FROM tasks WHERE assigned_to='${agentId}' AND status IN ('todo', 'in-progress') ORDER BY priority DESC, created_at DESC LIMIT 20" --json 2>/dev/null`
-      );
-      if (r.success && r.stdout?.trim()) {
-        try {
-          const rows = JSON.parse(r.stdout);
-          return Array.isArray(rows) ? rows.map((row: any) => ({
-            id: row.id || row.task_id,
-            title: row.title || row.description,
-            status: row.status,
-            priority: row.priority,
-            assignedTo: row.assigned_to,
-            createdAt: row.created_at,
-          })) : [];
-        } catch {
-          // Try line-by-line parsing for non-JSON output
-          return [];
-        }
-      }
-    }
+    const result = await taskApi.getAll({ assigned_to: agentId, status: 'active' });
+    const tasksList = result?.tasks || (Array.isArray(result) ? result : []);
+    return tasksList.slice(0, 20).map((row: any) => ({
+      id: row.id || row.task_id,
+      title: row.title || row.description,
+      status: row.status,
+      priority: row.priority,
+      assignedTo: row.assigned_to || row.assignedTo,
+      createdAt: row.created_at || row.createdAt,
+    }));
   } catch (_e) {
-    // exec approach failed — fall through to gateway fallback
+    // Task load failed
   }
-  
-  // Fallback: try gateway froggo-db
-  try {
-    if (window.clawdbot?.db?.query) {
-      const result = await window.clawdbot.db.query(
-        `SELECT id, title, status, priority, assigned_to, created_at FROM tasks WHERE assigned_to=? AND status IN ('todo', 'in-progress') ORDER BY created_at DESC LIMIT 20`,
-        [agentId]
-      );
-      if (result?.rows) {
-        return result.rows.map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          status: row.status,
-          priority: row.priority,
-          assignedTo: row.assigned_to,
-          createdAt: row.created_at,
-        }));
-      }
-    }
-  } catch { /* ignore */ }
-  
   return [];
 }
 
@@ -172,52 +123,24 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
 }
 
 async function loadWorkspaceFiles(agentId: string): Promise<Record<string, string | null>> {
-  const exec = window.clawdbot?.exec?.run;
-  if (!exec || !isCleanAgentId(agentId)) return {};
+  if (!isCleanAgentId(agentId)) return {};
 
-  // Non-froggo agents live at ~/agent-<id>, froggo lives at ~/froggo
-  const base = (agentId === 'froggo' || agentId === 'main') ? '~/froggo' : `~/agent-${agentId}`;
-  const today = new Date().toISOString().split('T')[0];
+  // Try reading soul file via REST API
+  try {
+    const soulResult = await agentApi.readSoul(agentId);
+    const soulContent = typeof soulResult === 'string' ? soulResult : soulResult?.content || null;
+    return { soul: soulContent };
+  } catch {
+    // Workspace files not available via REST
+  }
 
-  const fileSpecs = [
-    { key: 'soul', path: `${base}/SOUL.md`, maxChars: 2000 },
-    { key: 'user', path: `${base}/USER.md`, maxChars: 1000 },
-    { key: 'identity', path: `${base}/IDENTITY.md`, maxChars: 500 },
-    { key: 'agents', path: `${base}/AGENTS.md`, maxChars: 2000 },
-    { key: 'tools', path: `${base}/TOOLS.md`, maxChars: 1000 },
-    { key: 'platform_context', path: `${base}/PLATFORM_CONTEXT.md`, maxChars: 1500 },
-    { key: 'memory_longterm', path: `${base}/MEMORY.md`, maxChars: 3000 },
-    { key: 'memory_today', path: `${base}/memory/${today}.md`, maxChars: 2000 },
-    { key: 'state', path: `${base}/STATE.md`, maxChars: 3000 },
-  ];
-
-  const results = await Promise.all(
-    fileSpecs.map(async (spec) => {
-      try {
-        const r = await exec(`head -c ${spec.maxChars} ${spec.path} 2>/dev/null || echo ""`);
-        return [spec.key, r.success && r.stdout?.trim() ? r.stdout.trim() : null] as [string, string | null];
-      } catch { return [spec.key, null] as [string, string | null]; }
-    })
-  );
-
-  return Object.fromEntries(results);
+  console.warn('Not implemented: workspace file loading for agent', agentId);
+  return {};
 }
 
-async function loadAgentMemory(agentId: string): Promise<string | null> {
-  if (!isCleanAgentId(agentId)) return null;
-  try {
-    if (window.clawdbot?.exec?.run) {
-      // Try reading the agent's daily memory
-      const today = new Date().toISOString().split('T')[0];
-      const memBase = (agentId === 'froggo' || agentId === 'main') ? '~/froggo' : `~/agent-${agentId}`;
-      const r = await window.clawdbot.exec.run(
-        `head -100 ${memBase}/memory/${today}.md 2>/dev/null || echo ""`
-      );
-      if (r.success && r.stdout?.trim()) {
-        return r.stdout.trim().slice(0, 2000); // Cap at 2000 chars
-      }
-    }
-  } catch { /* ignore */ }
+async function loadAgentMemory(_agentId: string): Promise<string | null> {
+  // Memory file reading requires filesystem access; not available in web mode
+  console.warn('Not implemented: agent memory loading (no filesystem access)');
   return null;
 }
 

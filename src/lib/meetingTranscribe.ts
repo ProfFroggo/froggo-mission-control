@@ -1,7 +1,7 @@
 /**
  * Meeting Transcription Service
  * Uses Gemini AI Transcribe API for real-time meeting transcription with speaker labels
- * Adapted for Froggo Dashboard (uses window.clawdbot.db IPC)
+ * Adapted for Froggo Dashboard (uses in-memory storage in web mode)
  */
 
 // @ts-expect-error - @google/genai types not yet available
@@ -46,56 +46,31 @@ export class MeetingTranscriber {
     this.onTranscriptCallback = callback;
   }
 
+  // In-memory storage for meetings since DB IPC is not available in web mode
+  private meetingsStore: Meeting[] = [];
+  private transcriptsStore: MeetingTranscript[] = [];
+  private transcriptIdCounter = 0;
+
   /**
-   * Execute SQL via Froggo Dashboard IPC
+   * Execute SQL — stubbed for web mode (uses in-memory storage)
    */
-  private async dbExec(sql: string, params: any[] = []): Promise<void> {
-    if (!window.clawdbot?.db?.exec) {
-      return;
-    }
-    await window.clawdbot.db.exec(sql, params);
+  private async dbExec(_sql: string, _params: any[] = []): Promise<void> {
+    console.warn('Not implemented: db.exec (using in-memory storage)');
   }
 
   /**
-   * Query SQL via Froggo Dashboard IPC
+   * Query SQL — stubbed for web mode (uses in-memory storage)
    */
-  private async dbQuery(sql: string, params: any[] = []): Promise<any[]> {
-    if (!window.clawdbot?.db?.query) {
-      return [];
-    }
-    try {
-      const result = await window.clawdbot.db.query(sql, params);
-      return (result?.rows || []) as any[];
-    } catch (error) {
-      // '[MeetingTranscriber] Query failed:', error;
-      return [];
-    }
+  private async dbQuery(_sql: string, _params: any[] = []): Promise<any[]> {
+    console.warn('Not implemented: db.query (using in-memory storage)');
+    return [];
   }
 
   /**
-   * Ensure database tables exist
+   * Ensure storage is ready (no-op for in-memory)
    */
   async ensureTables(): Promise<void> {
-    await this.dbExec(`
-      CREATE TABLE IF NOT EXISTS meetings (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        started_at INTEGER NOT NULL,
-        ended_at INTEGER,
-        participants TEXT DEFAULT '[]',
-        status TEXT DEFAULT 'active'
-      )
-    `);
-    await this.dbExec(`
-      CREATE TABLE IF NOT EXISTS meeting_transcripts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        meeting_id TEXT NOT NULL,
-        speaker TEXT NOT NULL,
-        text TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
-      )
-    `);
+    // In-memory storage is always ready
   }
 
   /**
@@ -115,10 +90,7 @@ export class MeetingTranscriber {
       status: 'active'
     };
 
-    await this.dbExec(
-      `INSERT INTO meetings (id, title, started_at, participants, status) VALUES (?, ?, ?, ?, ?)`,
-      [meetingId, title, meeting.started_at, JSON.stringify(participants), 'active']
-    );
+    this.meetingsStore.push(meeting);
 
     return meeting;
   }
@@ -237,14 +209,13 @@ Do not respond or engage - only transcribe what you hear.`,
    * Save a transcript segment to the database
    */
   async saveTranscript(meetingId: string, speaker: string, text: string): Promise<void> {
-    try {
-      await this.dbExec(
-        `INSERT INTO meeting_transcripts (meeting_id, speaker, text, timestamp) VALUES (?, ?, ?, ?)`,
-        [meetingId, speaker, text, Date.now()]
-      );
-    } catch (error) {
-      // '[MeetingTranscriber] Failed to save transcript:', error;
-    }
+    this.transcriptsStore.push({
+      id: ++this.transcriptIdCounter,
+      meeting_id: meetingId,
+      speaker,
+      text,
+      timestamp: Date.now(),
+    });
   }
 
   /**
@@ -258,10 +229,11 @@ Do not respond or engage - only transcribe what you hear.`,
       this.activeStream = null;
     }
 
-    await this.dbExec(
-      `UPDATE meetings SET ended_at = ?, status = 'ended' WHERE id = ?`,
-      [Date.now(), meetingId]
-    );
+    const meeting = this.meetingsStore.find(m => m.id === meetingId);
+    if (meeting) {
+      meeting.ended_at = Date.now();
+      meeting.status = 'ended';
+    }
 
   }
 
@@ -269,54 +241,39 @@ Do not respond or engage - only transcribe what you hear.`,
    * Get all transcripts for a meeting
    */
   async getMeetingTranscripts(meetingId: string): Promise<MeetingTranscript[]> {
-    return await this.dbQuery(
-      `SELECT * FROM meeting_transcripts WHERE meeting_id = ? ORDER BY timestamp ASC`,
-      [meetingId]
-    );
+    return this.transcriptsStore
+      .filter(t => t.meeting_id === meetingId)
+      .sort((a, b) => a.timestamp - b.timestamp);
   }
 
   /**
    * Get all meetings
    */
   async getAllMeetings(): Promise<Meeting[]> {
-    const rows = await this.dbQuery(`SELECT * FROM meetings ORDER BY started_at DESC`);
-    return rows.map(row => ({
-      ...row,
-      participants: row.participants ? JSON.parse(row.participants) : []
-    }));
+    return [...this.meetingsStore].sort((a, b) => b.started_at - a.started_at);
   }
 
   /**
    * Get active meeting
    */
   async getActiveMeeting(): Promise<Meeting | null> {
-    const rows = await this.dbQuery(`SELECT * FROM meetings WHERE status = 'active' LIMIT 1`);
-    if (rows.length === 0) return null;
-    return {
-      ...rows[0],
-      participants: rows[0].participants ? JSON.parse(rows[0].participants) : []
-    };
+    return this.meetingsStore.find(m => m.status === 'active') || null;
   }
 
   /**
    * Delete a meeting and all its transcripts
    */
   async deleteMeeting(meetingId: string): Promise<void> {
-    await this.dbExec(`DELETE FROM meeting_transcripts WHERE meeting_id = ?`, [meetingId]);
-    await this.dbExec(`DELETE FROM meetings WHERE id = ?`, [meetingId]);
+    this.transcriptsStore = this.transcriptsStore.filter(t => t.meeting_id !== meetingId);
+    this.meetingsStore = this.meetingsStore.filter(m => m.id !== meetingId);
   }
 
   /**
    * Export meeting transcript as text
    */
   async exportTranscript(meetingId: string): Promise<string> {
-    const rows = await this.dbQuery(`SELECT * FROM meetings WHERE id = ?`, [meetingId]);
-    if (rows.length === 0) throw new Error('Meeting not found');
-
-    const meeting: Meeting = {
-      ...rows[0],
-      participants: rows[0].participants ? JSON.parse(rows[0].participants) : []
-    };
+    const meeting = this.meetingsStore.find(m => m.id === meetingId);
+    if (!meeting) throw new Error('Meeting not found');
 
     const transcripts = await this.getMeetingTranscripts(meetingId);
 

@@ -1,10 +1,11 @@
 /**
  * Analytics Service
  * Provides comprehensive analytics data for tasks, agents, and productivity
- * 
- * Uses the existing IPC `analytics:getData` handler in the main process,
- * which queries froggo.db via sqlite3 CLI.
+ *
+ * Uses REST API endpoints via analyticsApi.
  */
+
+import { analyticsApi } from '../lib/api';
 
 export interface TaskCompletionTrend {
   date: string;
@@ -98,18 +99,27 @@ async function fetchAnalyticsData(days: number): Promise<IPCAnalyticsData> {
     return cachedData;
   }
 
-  const timeRange = days <= 7 ? '7d' : days <= 30 ? '30d' : '90d';
-  
   try {
-    const result = await window.clawdbot?.analytics?.getData(timeRange);
-    if (result?.success) {
-      cachedData = result;
-      cachedDays = days;
-      cacheTimestamp = now;
-      return result;
-    }
-  } catch (err) {
-    // 'analytics:getData IPC failed:', err;
+    const [taskStats, agentActivity] = await Promise.all([
+      analyticsApi.getTaskStats().catch(() => null),
+      analyticsApi.getAgentActivity().catch(() => null),
+    ]);
+
+    const result: IPCAnalyticsData = {
+      success: true,
+      days,
+      completions: taskStats?.completions || [],
+      created: taskStats?.created || [],
+      agents: agentActivity?.agents || [],
+      projects: taskStats?.projects || [],
+    };
+
+    cachedData = result;
+    cachedDays = days;
+    cacheTimestamp = now;
+    return result;
+  } catch (_err) {
+    // Analytics API fetch failed
   }
 
   // Return empty data on failure
@@ -198,25 +208,10 @@ export async function getAgentUtilization(): Promise<AgentUtilization[]> {
  * Get time tracking data for all tasks
  */
 export async function getTimeTrackingData(
-  projectFilter?: string
+  _projectFilter?: string
 ): Promise<TimeTrackingData[]> {
-  try {
-    const result = await window.clawdbot?.analytics?.timeTracking(projectFilter);
-    if (result?.success && result.data) {
-      return result.data.map((row: any) => ({
-        taskId: row.taskId,
-        taskTitle: row.taskTitle,
-        project: row.project,
-        agent: row.agent,
-        startTime: row.startTime,
-        endTime: row.endTime,
-        duration: row.duration,
-        status: row.status,
-      }));
-    }
-  } catch (err) {
-    // 'analytics:timeTracking IPC failed:', err;
-  }
+  // Time tracking not available via REST API — return empty
+  console.warn('Not implemented: analytics.timeTracking (no REST equivalent)');
   return [];
 }
 
@@ -224,21 +219,10 @@ export async function getTimeTrackingData(
  * Get productivity heatmap data
  */
 export async function getProductivityHeatmap(
-  days: number = 30
+  _days: number = 30
 ): Promise<ProductivityHeatmap[]> {
-  try {
-    const result = await window.clawdbot?.analytics?.heatmap(days);
-    if (result?.success && result.data) {
-      return result.data.map((row: any) => ({
-        date: row.date,
-        dayOfWeek: row.dayOfWeek,
-        hour: row.hour,
-        activityCount: row.activityCount,
-      }));
-    }
-  } catch (err) {
-    // 'analytics:heatmap IPC failed:', err;
-  }
+  // Heatmap not available via REST API — return empty
+  console.warn('Not implemented: analytics.heatmap (no REST equivalent)');
   return [];
 }
 
@@ -368,13 +352,7 @@ export async function getTaskVelocity(days: number = 30): Promise<{
  * Get subtask completion statistics
  */
 export async function getSubtaskStats(): Promise<any[]> {
-  try {
-    const result = await window.clawdbot?.analytics?.subtaskStats();
-    if (result?.success && result.data) {
-      return result.data;
-    }
-  } catch (err) {
-    // 'analytics:subtaskStats IPC failed:', err;
-  }
+  // Subtask stats not available via REST API — return empty
+  console.warn('Not implemented: analytics.subtaskStats (no REST equivalent)');
   return [];
 }

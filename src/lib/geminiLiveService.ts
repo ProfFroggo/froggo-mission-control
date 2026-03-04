@@ -796,66 +796,16 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 
     try {
       if (mode === 'camera') {
-        // Request camera permission via Electron IPC first
-        if (window.clawdbot?.media?.request) {
-          const granted = await window.clawdbot.media.request('camera');
-          if (!granted) {
-            throw new Error('Camera permission denied');
-          }
-        }
+        // Browser camera permission — getUserMedia will prompt if needed
         this.videoStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
         });
       } else if (mode === 'screen') {
-        logger.debug('[GeminiLive] Starting screen share, sourceId:', sourceId);
-        
-        // Check screen recording permission on macOS
-        if (window.clawdbot?.mediaPermissions?.check) {
-          try {
-            const perms = await window.clawdbot.mediaPermissions.check();
-            logger.debug('[GeminiLive] Screen permission status:', perms.screen);
-            if (perms.screen !== 'granted') {
-              logger.warn('[GeminiLive] Screen recording permission not granted, status:', perms.screen);
-              // On macOS, getDisplayMedia will prompt for permission automatically
-              // But we log this for debugging
-            }
-          } catch (permErr) {
-            logger.warn('[GeminiLive] Failed to check screen permissions:', permErr);
-          }
-        }
-        
-        if (sourceId) {
-          // Electron: use specific source from desktopCapturer
-          // Note: sourceId format from Electron desktopCapturer is like "screen:0:0" or "window:12345:0"
-          logger.debug('[GeminiLive] Using Electron desktopCapturer source, attempting getUserMedia with chromeMediaSource: desktop');
-          try {
-            this.videoStream = await navigator.mediaDevices.getUserMedia({
-              audio: false,
-              video: {
-                mandatory: {
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: sourceId,
-                  maxWidth: 1280,
-                  maxHeight: 720,
-                },
-              } as any,
-            });
-            logger.debug('[GeminiLive] Screen share stream obtained successfully');
-          } catch (getUserMediaErr: any) {
-            logger.error('[GeminiLive] getUserMedia failed for screen share:', getUserMediaErr);
-            // Try fallback to getDisplayMedia if Electron-specific approach fails
-            logger.debug('[GeminiLive] Falling back to getDisplayMedia');
-            this.videoStream = await (navigator.mediaDevices as any).getDisplayMedia({
-              video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            });
-          }
-        } else {
-          // Browser fallback: use getDisplayMedia (shows browser picker)
-          logger.debug('[GeminiLive] Using browser getDisplayMedia fallback');
-          this.videoStream = await (navigator.mediaDevices as any).getDisplayMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          });
-        }
+        logger.debug('[GeminiLive] Starting screen share');
+        // Browser: use getDisplayMedia (shows browser picker)
+        this.videoStream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
       }
 
       if (!this.videoStream) return;

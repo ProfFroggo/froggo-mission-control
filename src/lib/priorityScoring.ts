@@ -120,35 +120,17 @@ let vipCache: VipInfo[] | null = null;
 let vipCacheTime: number = 0;
 const VIP_CACHE_TTL = 60000; // 1 minute
 
-// Load VIPs from database (cached)
+// Load VIPs from REST API (cached)
 async function loadVips(): Promise<VipInfo[]> {
   const now = Date.now();
   if (vipCache && (now - vipCacheTime) < VIP_CACHE_TTL) {
     return vipCache;
   }
-  
-  try {
-    // Check if running in Electron with clawdbot API
-    if (window.clawdbot?.vip?.list) {
-      const vips: VIPContact[] = await window.clawdbot.vip.list();
-      // Convert to VipInfo format
-      const vipInfoList: VipInfo[] = vips.map(v => ({
-        id: typeof v.id === 'string' ? parseInt(v.id) || 0 : v.id,
-        identifier: v.identifier,
-        identifier_type: v.type,
-        label: v.label || '',
-        priority_boost: v.boost || 0,
-        category: v.category,
-        notes: v.notes,
-      }));
-      vipCache = vipInfoList;
-      vipCacheTime = now;
-      return vipInfoList;
-    }
-  } catch (_error) {
-    // VIP list load failed — score without VIP boosts
-  }
-  
+
+  // VIP list not available via REST API — return empty
+  // In the future, add a /api/vips endpoint
+  vipCache = [];
+  vipCacheTime = now;
   return [];
 }
 
