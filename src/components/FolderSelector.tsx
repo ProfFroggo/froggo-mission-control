@@ -17,8 +17,8 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
     setLoading(true);
     try {
       const [foldersResult, assignedResult] = await Promise.all([
-        window.clawdbot!.folders.list(),
-        window.clawdbot!.folders.forConversation(sessionKey),
+        fetch('/api/library?action=folders').then(r => r.ok ? r.json() : { success: false }),
+        fetch(`/api/library?action=folders-for-conversation&sessionKey=${encodeURIComponent(sessionKey)}`).then(r => r.ok ? r.json() : { success: false }),
       ]);
 
       if (foldersResult.success) {
@@ -51,7 +51,11 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
       
       if (assigned) {
         // Unassign
-        const result = await window.clawdbot!.folders.unassign(folderId, sessionKey);
+        const result = await fetch('/api/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'folder-unassign', folderId, sessionKey }),
+        }).then(r => r.ok ? r.json() : { success: false });
         if (result.success) {
           showToast('success', `Removed from "${folderName}"`);
           loadData();
@@ -60,7 +64,11 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
         }
       } else {
         // Assign
-        const result = await window.clawdbot!.folders.assign(folderId, sessionKey);
+        const result = await fetch('/api/library', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'folder-assign', folderId, sessionKey }),
+        }).then(r => r.ok ? r.json() : { success: false });
         if (result.success) {
           showToast('success', `Added to "${folderName}"`);
           loadData();

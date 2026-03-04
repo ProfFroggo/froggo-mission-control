@@ -103,7 +103,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
   const loadFolders = async () => {
     setFolderLoadError(null);
     try {
-      const result = await window.clawdbot?.folders.list();
+      const result = await fetch('/api/library?action=folders').then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         const sortedFolders = (result?.folders || []).sort((a: MessageFolder, b: MessageFolder) =>
           (a as any).sort_order - (b as any).sort_order
@@ -149,8 +149,10 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
       // Update sort order in database
       try {
         for (let i = 0; i < reorderedFolders.length; i++) {
-          await window.clawdbot?.folders.update(reorderedFolders[i].id, {
-            sort_order: i
+          await fetch('/api/library', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'folder-update', id: reorderedFolders[i].id, sort_order: i }),
           });
         }
       } catch {

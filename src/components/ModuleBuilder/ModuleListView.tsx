@@ -37,9 +37,10 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
   const loadModules = async () => {
     setLoadError(null);
     try {
-      const result = await window.clawdbot.moduleBuilder?.list();
-      if (result?.success && result.modules) {
-        setModules(result.modules);
+      const res = await fetch('/api/modules');
+      if (res.ok) {
+        const result = await res.json();
+        setModules(result?.modules || []);
       }
     } catch (err) {
       setLoadError(err instanceof Error ? err : new Error(String(err)));
@@ -54,7 +55,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
     e.stopPropagation();
     if (!confirm(`Delete "${name || 'Untitled module'}"?`)) return;
     try {
-      await window.clawdbot.moduleBuilder?.delete(id);
+      await fetch(`/api/modules/${id}`, { method: 'DELETE' });
       setModules(prev => prev.filter(m => m.id !== id));
     } catch (err) {
       showToast('error', 'Failed to delete module', String(err));

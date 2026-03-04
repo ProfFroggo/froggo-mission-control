@@ -29,34 +29,8 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
   const fetchSources = async () => {
     setLoading(true);
     setError(null);
-    try {
-      const api = window.clawdbot?.screenCapture;
-      if (!api?.getSources) {
-        // Fallback: use getDisplayMedia (browser will show its own picker)
-        console.warn('[ScreenSourcePicker] Electron screenCapture API not available, falling back to browser picker');
-        setError('no-electron');
-        setLoading(false);
-        return;
-      }
-      const result = await api.getSources({
-        types: ['screen', 'window'],
-        thumbnailSize: { width: 320, height: 180 },
-      });
-      const sources = result?.sources || [];
-      if (sources.length === 0) {
-        // Electron 28+ on macOS: desktopCapturer.getSources() returns empty
-        // even with permission granted (ad-hoc signing). Fall back to browser picker.
-        console.warn('[ScreenSourcePicker] No sources from Electron API, falling back to browser picker');
-        setError('no-electron');
-        setLoading(false);
-        return;
-      }
-      setSources(sources as ScreenSource[]);
-    } catch (e: unknown) {
-      const errMsg = e instanceof Error ? e.message : String(e);
-      console.error('[ScreenSourcePicker] Failed to get sources:', errMsg);
-      setError(errMsg || 'Failed to get sources');
-    }
+    // Web mode: always use browser's getDisplayMedia picker
+    setError('no-electron');
     setLoading(false);
   };
 
@@ -145,13 +119,10 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                 </ol>
               </div>
               <div className="flex gap-3">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
-                    // Open System Settings on macOS
-                    if (window.clawdbot?.shell?.openPath) {
-                      window.clawdbot.shell.openPath('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
-                    }
+                    // Not available in web mode — user must open System Settings manually
                   }}
                   className="px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm font-medium"
                 >

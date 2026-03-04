@@ -4,6 +4,7 @@
  */
 
 import type { ModuleSpec } from './types';
+import { taskApi } from '../../lib/api';
 
 interface GeneratedSubtask {
   title: string;
@@ -159,19 +160,14 @@ export function generateTaskPlan(spec: ModuleSpec): GeneratedTaskPlan {
   };
 }
 
-// ─── Execute via Electron IPC (window.clawdbot) ─────────────────────
+// ─── Execute via REST API ────────────────────────────────────────────
 
 export async function generateTasks(spec: ModuleSpec): Promise<{ taskId: string; subtaskIds: string[] }> {
-  const ipc = window.clawdbot;
-  if (!ipc?.tasks) {
-    throw new Error('Dashboard IPC not available.');
-  }
-
   const plan = generateTaskPlan(spec);
   const taskId = `task-${Date.now()}`;
 
-  // Create main task via tasks:sync (upserts into froggo-db)
-  await ipc.tasks.sync({
+  // Create main task via REST API
+  await taskApi.create({
     id: taskId,
     title: plan.title,
     status: 'todo',
@@ -183,7 +179,7 @@ export async function generateTasks(spec: ModuleSpec): Promise<{ taskId: string;
   // Create subtasks
   for (const subtask of plan.subtasks) {
     const subId = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    await ipc.tasks.subtasks.add(taskId, {
+    await taskApi.addSubtask(taskId, {
       id: subId,
       title: subtask.title,
       description: subtask.description,
