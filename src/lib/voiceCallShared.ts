@@ -91,23 +91,11 @@ function agentBasePath(agentId: string): string {
  * Returns a formatted string for system instruction context.
  */
 export async function loadRecentChatHistory(agentId: string, limit = 20): Promise<string> {
-  const exec = window.clawdbot?.exec?.run;
-  if (!exec) return '';
-
   const sections: string[] = [];
 
-  // 1. Load STATE.md (current working state — most important)
+  // 1. Load chat history from ALL matching gateway sessions via REST
   try {
-    const base = agentBasePath(agentId);
-    const r = await exec(`cat ${base}/STATE.md 2>/dev/null || echo ""`);
-    if (r.stdout?.trim() && r.stdout.trim() !== '') {
-      sections.push(`### Current State (STATE.md)\n${r.stdout.trim().slice(0, 2000)}`);
-    }
-  } catch { /* ignore error */ }
-
-  // 2. Load chat history from ALL matching gateway sessions
-  try {
-    const sessionRes = await fetch('http://localhost:18789/api/sessions?limit=50');
+    const sessionRes = await fetch('/api/sessions');
     if (sessionRes.ok) {
       const sessionData = await sessionRes.json();
       const allSessions = sessionData.sessions || sessionData || [];
@@ -115,16 +103,15 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
       const agentSessions = allSessions.filter((s: GatewaySession) => {
         const key = s.key || s.sessionKey || '';
         const label = s.label || '';
-        // Match by key patterns: agent:{id}:*, chat:{id}, or label containing the agent
-        return key.includes(`agent:${agentId}`) || key.includes(`chat:${agentId}`) 
+        return key.includes(`agent:${agentId}`) || key.includes(`chat:${agentId}`)
           || key === `agent:${agentId}:main` || key === `agent:${agentId}:dashboard`
           || s.agentId === agentId || label.includes(agentId);
-      }).slice(0, 5); // Top 5 sessions
+      }).slice(0, 5);
 
       for (const sess of agentSessions) {
         const key = sess.key || sess.sessionKey;
         try {
-          const histRes = await fetch(`http://localhost:18789/api/sessions/${encodeURIComponent(key)}/history?limit=${limit}`);
+          const histRes = await fetch(`/api/chat/sessions/${encodeURIComponent(key)}/messages?limit=${limit}`);
           if (histRes.ok) {
             const data = await histRes.json();
             const msgs = (data.messages || data || []);
@@ -146,16 +133,8 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
     }
   } catch { /* ignore error */ }
 
-  // 3. Load today's + yesterday's memory notes
-  try {
-    const base = agentBasePath(agentId);
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const r = await exec(`(cat ${base}/memory/${today}.md 2>/dev/null; echo ""; cat ${base}/memory/${yesterday}.md 2>/dev/null) | tail -80`);
-    if (r.stdout?.trim()) {
-      sections.push(`### Recent Memory Notes\n${r.stdout.trim().slice(0, 1500)}`);
-    }
-  } catch { /* ignore error */ }
+  // 2. Memory notes not available without filesystem access
+  // console.warn('Not implemented: memory file loading for voice context');
 
   if (sections.length === 0) return '';
   return sections.join('\n\n').slice(0, 6000);
@@ -427,8 +406,7 @@ export function buildAgentTools(): GeminiTool[] {
 // ── Tool call executor ──
 
 export async function executeToolCall(fnName: string, args: ToolCallArgs, currentAgent: AgentLike): Promise<ToolResult> {
-  const exec = window.clawdbot?.exec?.run;
-  if (!exec) return { error: 'Exec not available' };
+  const { taskApi: _taskApi, agentApi: _agentApi } = await import('./api');
 
   try {
     switch (fnName) {
@@ -438,38 +416,36 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
         const priority = args.priority || 'medium';
         const status = args.status || 'todo';
         const desc = args.description || '';
-        const r = await exec(`froggo-db task-add "${title.replace(/"/g, '\\"')}" --priority ${priority} --assign ${assignee} --status ${status} ${desc ? `--desc "${desc.replace(/"/g, '\\"')}"` : ''} 2>&1`);
+        await _taskApi.create({ title, assigned_to: assignee, priority, status, description: desc });
         invalidateAgentContext(assignee);
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim(), task_created: title };
+        return { success: true, output: `Task created: ${title}`, task_created: title };
       }
       case 'update_task': {
-        const parts = [`froggo-db task-update ${args.task_id}`];
-        if (args.status) parts.push(`--status ${args.status}`);
-        if (args.priority) parts.push(`--priority ${args.priority}`);
-        if (args.assigned_to) parts.push(`--assign ${args.assigned_to}`);
-        const r = await exec(parts.join(' ') + ' 2>&1');
+        const updates: Record<string, string> = {};
+        if (args.status) updates.status = args.status;
+        if (args.priority) updates.priority = args.priority;
+        if (args.assigned_to) updates.assigned_to = args.assigned_to;
+        await _taskApi.update(args.task_id || '', updates);
         invalidateAgentContext();
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+        return { success: true, output: `Task ${args.task_id} updated` };
       }
       case 'list_tasks': {
-        const parts = ['froggo-db task-list'];
-        if (args.status && args.status !== 'all') parts.push(`--status ${args.status}`);
-        if (args.agent_id) parts.push(`--agent ${args.agent_id}`);
-        const r = await exec(parts.join(' ') + ' 2>&1');
-        return { tasks: r.stdout?.trim() || 'No tasks found' };
+        const filters: Record<string, string> = {};
+        if (args.status && args.status !== 'all') filters.status = args.status;
+        if (args.agent_id) filters.assigned_to = args.agent_id;
+        const result = await _taskApi.getAll(filters);
+        const tasks = result?.tasks || (Array.isArray(result) ? result : []);
+        return { tasks: tasks.map((t: any) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority || '' })) };
       }
       case 'spawn_agent': {
-        // Sanitize: Gemini sometimes swaps arg order
         const agentId = (args.agent_id || '').trim();
-        const msg = (args.message || '').replace(/"/g, '\\"').replace(/\n/g, ' ');
         if (!agentId) return { error: 'Missing agent_id' };
         if (args.task_title) {
-          await exec(`froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${agentId} --priority high --status todo 2>&1`);
+          await _taskApi.create({ title: args.task_title, assigned_to: agentId, priority: 'high', status: 'todo' });
         }
-        // Fire-and-forget: send message to agent without waiting for full turn (avoids 30s timeout)
-        await exec(`nohup openclaw agent --agent ${agentId} --message "${msg}" >/dev/null 2>&1 &`);
+        await _agentApi.spawn(agentId);
         invalidateAgentContext(agentId);
-        return { success: true, output: `Message sent to ${agentId}`, agent_spawned: agentId };
+        return { success: true, output: `Agent ${agentId} spawned`, agent_spawned: agentId };
       }
       case 'get_agent_status': {
         const ctx = await loadAgentContext(args.agent_id || '');
@@ -481,112 +457,72 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
         };
       }
       case 'read_file': {
-        const maxLines = args.max_lines || 100;
-        const r = await exec(`head -n ${maxLines} ${args.path} 2>&1`);
-        return { content: r.stdout || r.stderr || 'File not found' };
+        console.warn('Not implemented: read_file (no filesystem access in web mode)');
+        return { content: 'File reading not available in web mode' };
       }
       case 'run_command': {
-        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'openclaw', 'date', 'echo', 'wc', 'which', 'node', 'npx', 'python3', 'curl', 'df', 'uptime', 'ps', 'who'];
-        const cmd = (args.command || '').trim().split(/\s+/)[0];
-        if (!allowed.includes(cmd)) {
-          return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
-        }
-        const r = await exec((args.command || '') + ' 2>&1');
-        return { stdout: r.stdout, stderr: r.stderr };
+        console.warn('Not implemented: run_command (no shell access in web mode)', args.command);
+        return { error: 'Shell commands not available in web mode' };
       }
       case 'send_message': {
-        const escapedMsg = (args.message || '').replace(/"/g, '\\"');
-        const r = await exec(`clawdbot gateway sessions-send --label discord --message "${escapedMsg}" 2>&1`);
-        return { success: r.success, output: r.stdout?.trim() };
+        console.warn('Not implemented: send_message via CLI (use gateway.sendToSession instead)');
+        return { error: 'Direct message sending not available in web mode' };
       }
       case 'search_workspace': {
-        const escapedQuery = (args.query || '').replace(/"/g, '\\"');
-        const r = await exec(`grep -rl "${escapedQuery}" ~/froggo/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
-        return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
+        console.warn('Not implemented: search_workspace (no filesystem access in web mode)');
+        return { files: [] };
       }
       case 'web_search': {
-        const q = encodeURIComponent(args.query || '');
-        const r = await exec(`curl -s "https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&t=froggo" 2>&1`);
-        try {
-          const data = JSON.parse(r.stdout || '{}');
-          const results = (data.RelatedTopics || []).slice(0, 5).map((t: DuckDuckGoResult) => t.Text || t.FirstURL).filter(Boolean);
-          return { query: args.query, results: results.length ? results : [data.Abstract || 'No results found'] };
-        } catch { return { query: args.query, raw: r.stdout?.trim()?.slice(0, 1500) || 'Search failed' }; }
+        console.warn('Not implemented: web_search (no shell access in web mode)');
+        return { query: args.query, results: ['Web search not available in web mode'] };
       }
       case 'check_calendar': {
-        const days = args.days || 1;
-        const r = await exec(`gog calendar events --days ${days} --all --account kevin.macarthur@bitso.com --plain 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || 'No events found' };
+        console.warn('Not implemented: check_calendar (no CLI access in web mode)');
+        return { output: 'Calendar not available in web mode' };
       }
       case 'memory_search': {
-        const agent = args.agent_id || 'froggo';
-        const memBase = agentBasePath(agent);
-        const q = (args.query || '').replace(/"/g, '\\"');
-        const r = await exec(`grep -rli "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
-        return { results: (r.stdout?.trim() || 'No matches found').split('\n').filter(Boolean) };
+        console.warn('Not implemented: memory_search (no filesystem access in web mode)');
+        return { results: ['Memory search not available in web mode'] };
       }
       case 'write_memory': {
-        const agent = args.agent_id || 'voice';
-        const memBase = agentBasePath(agent);
-        const today = new Date().toISOString().split('T')[0];
-        const note = (args.note || '').replace(/"/g, '\\"');
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        await exec(`mkdir -p ${memBase}/memory && echo "\\n## ${time}\\n${note}" >> ${memBase}/memory/${today}.md`);
-        return { success: true, message: `Note saved to ${agent}'s memory` };
+        console.warn('Not implemented: write_memory (no filesystem access in web mode)');
+        return { success: false, message: 'Memory writing not available in web mode' };
       }
       case 'update_state': {
-        const base = agentBasePath(currentAgent.id);
-        const content = (args.content || '').replace(/'/g, "'\\''");
-        const timestamp = new Date().toLocaleString();
-        await exec(`cat > ${base}/STATE.md << 'STATEEOF'\n# Agent State — ${currentAgent.id}\n_Last updated: ${timestamp}_\n\n${content}\nSTATEEOF`);
-        return { success: true, message: `Updated ${currentAgent.id}'s STATE.md` };
+        console.warn('Not implemented: update_state (no filesystem access in web mode)');
+        return { success: false, message: 'State update not available in web mode' };
       }
       case 'read_state': {
-        const agent = args.agent_id || currentAgent.id;
-        const base = agentBasePath(agent);
-        const r = await exec(`cat ${base}/STATE.md 2>/dev/null || echo "No STATE.md found for ${agent}"`);
-        return { content: (r.stdout || '').slice(0, 3000) };
+        console.warn('Not implemented: read_state (no filesystem access in web mode)');
+        return { content: 'State not available in web mode' };
       }
       case 'read_team_state': {
-        const r = await exec(`cat ~/froggo/TEAM_STATE.md 2>/dev/null || echo "No TEAM_STATE.md yet"`);
-        return { content: (r.stdout || '').slice(0, 5000) };
+        console.warn('Not implemented: read_team_state (no filesystem access in web mode)');
+        return { content: 'Team state not available in web mode' };
       }
       case 'update_team_state': {
-        const content = (args.content || '').replace(/'/g, "'\\''");
-        const timestamp = new Date().toLocaleString();
-        await exec(`cat > ~/froggo/TEAM_STATE.md << 'TEAMEOF'\n# Team State — All Agents\n_Last updated: ${timestamp}_\n\n${content}\nTEAMEOF`);
-        return { success: true, message: 'Updated TEAM_STATE.md' };
+        console.warn('Not implemented: update_team_state (no filesystem access in web mode)');
+        return { success: false, message: 'Team state update not available in web mode' };
       }
       case 'update_memory_md': {
-        const agent = args.agent_id || currentAgent.id;
-        const memBase = agentBasePath(agent);
-        const content = (args.content || '').replace(/"/g, '\\"').replace(/`/g, '\\`');
-        const timestamp = new Date().toLocaleString();
-        await exec(`echo "\n\n## ${timestamp}\n${content}" >> ${memBase}/MEMORY.md`);
-        return { success: true, message: `Updated ${agent}'s MEMORY.md` };
+        console.warn('Not implemented: update_memory_md (no filesystem access in web mode)');
+        return { success: false, message: 'Memory update not available in web mode' };
       }
       case 'read_memory_md': {
-        const agent = args.agent_id || currentAgent.id;
-        const memBase = agentBasePath(agent);
-        const r = await exec(`cat ${memBase}/MEMORY.md 2>/dev/null || echo "No MEMORY.md found"`);
-        return { content: (r.stdout || '').slice(0, 3000) };
+        console.warn('Not implemented: read_memory_md (no filesystem access in web mode)');
+        return { content: 'Memory not available in web mode' };
       }
       case 'send_whatsapp': {
-        const to = String(args.to || '').replace(/"/g, '\\"');
-        const msg = String(args.message || '').replace(/"/g, '\\"');
-        const r = await exec(`openclaw message --action send --channel whatsapp --target "${to}" --message "${msg}" 2>&1`);
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+        console.warn('Not implemented: send_whatsapp (no CLI access in web mode)');
+        return { error: 'WhatsApp sending not available in web mode' };
       }
       case 'onboard_agent': {
-        const { agent_id, name, role, emoji, color, personality, voice } = args;
-        const voiceArg = voice || 'Puck';
-        const r = await exec(`bash ~/froggo/scripts/agent-onboard-full.sh "${agent_id}" "${name}" "${role}" "${emoji}" "${color}" "${personality}" "${voiceArg}" 2>&1`);
-        return { success: r.success, output: (r.stdout || r.stderr || '').slice(0, 2000), note: 'Dashboard rebuild needed: cd ~/froggo-dashboard && npm run build:dev' };
+        console.warn('Not implemented: onboard_agent (no shell access in web mode)');
+        return { error: 'Agent onboarding not available in web mode' };
       }
       case 'check_email': {
-        const count = args.count || 5;
-        const r = await exec(`gog gmail messages search "is:inbox" --max ${count} --account kevin.macarthur@bitso.com --plain 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || 'No emails found' };
+        console.warn('Not implemented: check_email (no CLI access in web mode)');
+        return { output: 'Email not available in web mode' };
       }
       default:
         return { error: `Unknown tool: ${fnName}` };

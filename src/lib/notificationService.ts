@@ -1,10 +1,11 @@
 /**
  * Notification Service
- * Fetches real notifications from froggo-db (comms cache, tasks, read states)
- * via the Electron bridge (window.clawdbot)
+ * Fetches real notifications from REST API endpoints
+ * and uses Browser Notifications API for desktop alerts
  */
 
 import { gateway } from './gateway';
+import { notificationsApi, approvalApi, taskApi } from './api';
 
 export interface Notification {
   id: string;
@@ -118,15 +119,9 @@ class NotificationService {
       this.refresh();
     }, 300000); // 5 minutes
 
-    // Also listen for Electron notification events if available
-    if (window.clawdbot?.notifications?.onReceived) {
-      window.clawdbot.notifications.onReceived((notif: any) => {
-        const mapped = this.mapElectronNotification(notif);
-        if (mapped && !this.dismissedIds.has(mapped.id)) {
-          this.listeners.forEach(l => l(mapped));
-          this.refresh();
-        }
-      });
+    // Browser Notifications API — request permission for desktop notifications
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => { /* ignore */ });
     }
   }
 
@@ -289,208 +284,125 @@ class NotificationService {
   }
 
   /**
-   * Fetch unread messages from comms_cache via froggo-db
+   * Fetch unread messages via REST API
    */
   private async fetchUnreadMessages(): Promise<Notification[]> {
     const notifications: Notification[] = [];
 
     try {
-      // Try froggo.query for direct DB access
-      if (window.clawdbot?.froggo?.query) {
-        const result = await window.clawdbot.froggo.query(
-          `SELECT id, platform, external_id, sender, sender_name, preview, timestamp, is_urgent, is_read, metadata
-           FROM comms_cache
-           WHERE is_read = 0
-           ORDER BY timestamp DESC
-           LIMIT 50`
-        );
-        if (result.success && result.rows) {
-          for (const row of result.rows as Record<string, any>[]) {
-            const ts = new Date(row.timestamp).getTime();
-            const platform = row.platform || 'unknown';
-            const senderDisplay = row.sender_name || row.sender || 'Unknown';
-            const platformLabel = platformLabels[platform] || platform;
+      const result = await notificationsApi.getAll();
+      const items = result?.notifications || (Array.isArray(result) ? result : []);
+      for (const item of items) {
+        if (item.type === 'message_arrival' || item.source === 'message') {
+          const ts = item.created_at || item.timestamp || Date.now();
+          const platform = item.channel || item.data?.platform || 'unknown';
+          const platformLabel = platformLabels[platform] || platform;
 
-            notifications.push({
-              id: `msg-${platform}-${row.id}`,
-              created_at: ts,
-              updated_at: ts,
-              type: 'message_arrival',
-              priority: row.is_urgent ? 'high' : 'normal',
-              title: `${senderDisplay}`,
-              message: row.preview || '(no preview)',
-              description: undefined,
-              source: 'message',
-              source_id: row.external_id,
-              channel: platformLabel,
-              read: false,
-              dismissed: false,
-              actionable: false,
-              action_url: undefined,
-              desktop_shown: false,
-              data: { platform, sender: row.sender, metadata: row.metadata },
-              group_key: `msg-${platform}-${row.external_id}`,
-            });
-          }
-        }
-      } else if (window.clawdbot?.messages?.recent) {
-        // Fallback: use messages.recent()
-        const result = await window.clawdbot.messages.recent(30);
-        if (result.success && result.chats) {
-          for (const chat of result.chats) {
-            const ts = chat.timestamp ? new Date(chat.timestamp).getTime() : Date.now();
-            notifications.push({
-              id: `msg-wa-${chat.id || ts}`,
-              created_at: ts,
-              updated_at: ts,
-              type: 'message_arrival',
-              priority: 'normal',
-              title: chat.name || (chat as any).sender || 'WhatsApp',
-              message: (chat as any).preview || (chat as any).lastMessage || '(no preview)',
-              source: 'message',
-              source_id: chat.id,
-              channel: 'WhatsApp',
-              read: false,
-              dismissed: false,
-              actionable: false,
-              desktop_shown: false,
-            });
-          }
+          notifications.push({
+            id: `msg-${platform}-${item.id || ts}`,
+            created_at: ts,
+            updated_at: ts,
+            type: 'message_arrival',
+            priority: item.priority || 'normal',
+            title: item.title || item.sender || 'Message',
+            message: item.message || item.preview || '(no preview)',
+            description: undefined,
+            source: 'message',
+            source_id: item.source_id,
+            channel: platformLabel,
+            read: item.read || false,
+            dismissed: false,
+            actionable: false,
+            action_url: undefined,
+            desktop_shown: false,
+            data: item.data || { platform },
+            group_key: `msg-${platform}-${item.source_id || item.id}`,
+          });
         }
       }
-    } catch (e) {
-      // '[NotificationService] Failed to fetch messages:', e;
+    } catch (_e) {
+      // Fetch messages failed
     }
 
     return notifications;
   }
 
   /**
-   * Fetch task-related notifications from froggo-db
+   * Fetch task-related notifications via REST API
    */
   private async fetchTaskNotifications(): Promise<Notification[]> {
     const notifications: Notification[] = [];
 
     try {
-      if (!window.clawdbot?.froggo?.query) return notifications;
-
-      // Recent task activity (completions, agent updates, etc.)
-      const result = await window.clawdbot.froggo.query(
-        `SELECT ta.id, ta.task_id, ta.action, ta.message, ta.agent_id, ta.timestamp, t.title as task_title, t.status
-         FROM task_activity ta
-         LEFT JOIN tasks t ON t.id = ta.task_id
-         WHERE ta.timestamp > ?
-         ORDER BY ta.timestamp DESC
-         LIMIT 30`,
-        [Date.now() - 86400000 * 2] // Last 2 days
-      );
-
-      if (result.success && result.rows) {
-        for (const row of result.rows as Record<string, any>[]) {
-          const ts = typeof row.timestamp === 'number' ? row.timestamp : new Date(row.timestamp).getTime();
-          let type: Notification['type'] = 'agent_update';
-          let priority: Notification['priority'] = 'normal';
-
-          if (row.action === 'completed' || row.status === 'done') {
-            type = 'task_complete';
-          } else if (row.action === 'error' || row.action === 'failed') {
-            type = 'error';
-            priority = 'high';
-          } else if (row.action === 'review' || row.action === 'approval') {
-            type = 'approval_pending';
-            priority = 'high';
-          }
-
+      const result = await notificationsApi.getAll();
+      const items = result?.notifications || (Array.isArray(result) ? result : []);
+      for (const item of items) {
+        if (item.type === 'task_complete' || item.type === 'agent_update' || item.type === 'error' || item.source === 'task' || item.source === 'agent') {
+          const ts = item.created_at || item.timestamp || Date.now();
           notifications.push({
-            id: `task-act-${row.id}`,
+            id: `task-act-${item.id || ts}`,
             created_at: ts,
             updated_at: ts,
-            type,
-            priority,
-            title: row.task_title || `Task ${row.task_id}`,
-            message: row.message || `${row.action} by ${row.agent_id || 'system'}`,
-            source: row.agent_id ? 'agent' : 'task',
-            source_id: row.task_id,
-            channel: row.agent_id || undefined,
-            read: false,
+            type: item.type || 'agent_update',
+            priority: item.priority || 'normal',
+            title: item.title || 'Task Update',
+            message: item.message || '',
+            source: item.source || 'task',
+            source_id: item.source_id,
+            channel: item.channel || undefined,
+            read: item.read || false,
             dismissed: false,
-            actionable: type === 'approval_pending',
-            action_url: type === 'approval_pending' ? `kanban?task=${row.task_id}` : undefined,
+            actionable: item.type === 'approval_pending',
+            action_url: item.type === 'approval_pending' ? `kanban?task=${item.source_id}` : undefined,
             desktop_shown: false,
-            data: { taskId: row.task_id, action: row.action, agent: row.agent_id },
+            data: item.data || {},
           });
         }
       }
-    } catch (e) {
-      // '[NotificationService] Failed to fetch task notifications:', e;
+    } catch (_e) {
+      // Task notifications fetch failed
     }
 
     return notifications;
   }
 
   /**
-   * Fetch approval notifications from froggo.db inbox
+   * Fetch approval notifications via REST API
    */
   private async fetchApprovalNotifications(): Promise<Notification[]> {
     const notifications: Notification[] = [];
 
     try {
-      if (!window.clawdbot?.inbox?.list) return notifications;
+      const result = await approvalApi.getAll('pending');
+      const items = result?.approvals || result?.items || (Array.isArray(result) ? result : []);
+      for (const item of items) {
+        if (item.status !== 'pending') continue;
 
-      const result = await window.clawdbot.inbox.list();
-      if (result?.items) {
-        for (const item of result.items) {
-          // Only include pending items
-          if (item.status !== 'pending') continue;
-
-          const ts = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
-          notifications.push({
-            id: `approval-${item.id || ts}`,
-            created_at: ts,
-            updated_at: ts,
-            type: 'approval_pending',
-            priority: 'high',
-            title: item.title || 'Approval Required',
-            message: item.content || 'Pending your review',
-            source: 'inbox',
-            source_id: String(item.id),
-            channel: item.channel || undefined,
-            read: false,
-            dismissed: false,
-            actionable: true,
-            action_url: 'approvals',
-            desktop_shown: false,
-            data: item,
-          });
-        }
+        const ts = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
+        notifications.push({
+          id: `approval-${item.id || ts}`,
+          created_at: ts,
+          updated_at: ts,
+          type: 'approval_pending',
+          priority: 'high',
+          title: item.title || 'Approval Required',
+          message: item.content || 'Pending your review',
+          source: 'inbox',
+          source_id: String(item.id),
+          channel: item.channel || undefined,
+          read: false,
+          dismissed: false,
+          actionable: true,
+          action_url: 'approvals',
+          desktop_shown: false,
+          data: item,
+        });
       }
-    } catch (e) {
-      // '[NotificationService] Failed to fetch approvals:', e;
+    } catch (_e) {
+      // Approval notifications fetch failed
     }
 
     return notifications;
-  }
-
-  /**
-   * Map Electron notification event to our format
-   */
-  private mapElectronNotification(notif: any): Notification | null {
-    if (!notif) return null;
-    const ts = notif.timestamp ? new Date(notif.timestamp).getTime() : Date.now();
-    return {
-      id: `electron-${notif.id || ts}`,
-      created_at: ts,
-      updated_at: ts,
-      type: notif.type || 'system_alert',
-      priority: notif.priority || 'normal',
-      title: notif.title || 'System Notification',
-      message: notif.body || notif.message || '',
-      source: 'system',
-      read: false,
-      dismissed: false,
-      actionable: false,
-      desktop_shown: false,
-    };
   }
 
   /**
@@ -566,17 +478,9 @@ class NotificationService {
     this.readIds.add(id);
     this.saveDismissedState();
 
-    // If it's a message notification, also mark read in DB
-    const notif = this.cachedNotifications.find(n => n.id === id);
-    if (notif?.data?.platform && window.clawdbot?.froggo?.query) {
-      const dbId = id.replace(/^msg-\w+-/, '');
-      try {
-        await window.clawdbot.froggo.query(
-          'UPDATE comms_cache SET is_read = 1 WHERE id = ?',
-          [parseInt(dbId) || 0]
-        );
-      } catch { /* best effort */ }
-    }
+    // Mark read via REST API if it's a tracked notification
+    const _notif = this.cachedNotifications.find(n => n.id === id);
+    // Best-effort — REST API doesn't have individual notification read endpoint yet
 
     this.cachedNotifications = this.cachedNotifications.map(n =>
       n.id === id ? { ...n, read: true } : n
