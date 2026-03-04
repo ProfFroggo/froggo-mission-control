@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 10 — Session Management
+**Current focus:** Phase 11 — Cron & Automation
 
 ## Current Position
 
-Phase: 10 of 14 (Session Management)
+Phase: 11 of 14 (Cron & Automation)
 Plan: 0 of 2 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 9 (all 2 plans): ChatRoomsPanel module, verified API routes
+Last activity: 2026-03-04 — Completed Phase 10 (all 2 plans): session API, sessions listing, sessionApi client
 
-Progress: █████████████████░ 71%
+Progress: ██████████████████░ 79%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 23
 - Average duration: 3 min
 - Total execution time: 0.75 hours
 
@@ -36,6 +36,7 @@ Progress: █████████████████░ 71%
 | 7 (complete) | 2/2 | 5 min | 2.5 min |
 | 8 (complete) | 2/2 | 5 min | 2.5 min |
 | 9 (complete) | 2/2 | 5 min | 2.5 min |
+| 10 (complete) | 2/2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -53,6 +54,7 @@ Progress: █████████████████░ 71%
 - Phase 7: 3 hooks in tools/hooks/ — approval-hook.js (tier 0-3), review-gate.js (PostToolUse), session-sync.js (Stop → Obsidian vault)
 - Phase 8: Vault at ~/froggo/memory/ with agents/, sessions/, daily/, knowledge/, projects/; QMD setup scripts in tools/; architecture.md + task-lifecycle.md seeded
 - Phase 9: ChatRoomsPanel module at src/modules/chat-rooms/ with room list, message thread, 5s polling; API routes verified from Phase 3
+- Phase 10: Session CRUD API at /api/agents/[id]/session; spawn resumes existing sessions; /api/sessions listing; sessionApi client
 
 ### Deferred Issues
 
@@ -68,5 +70,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 9 complete — starting Phase 10 (Session Management, 2 plans)
+Stopped at: Phase 10 complete — starting Phase 11 (Cron & Automation, 2 plans)
 Resume file: None

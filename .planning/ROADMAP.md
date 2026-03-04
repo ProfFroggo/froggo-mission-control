@@ -22,7 +22,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
 - [x] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
 - [x] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
-- [ ] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
+- [x] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
 - [ ] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
 - [ ] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
 - [ ] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
@@ -141,8 +141,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: Session management table + API — `/api/sessions`, `/api/sessions/[key]`, session CRUD operations
-- [ ] 10-02: Wire spawn API (`/api/agents/[id]/spawn`) to create session records; add session list to dashboard; test persistence across restart
+- [x] 10-01: Session management API — `/api/agents/[id]/session` GET/POST/DELETE, spawn resumes existing sessions ✓ 2026-03-04
+- [x] 10-02: Sessions list API + sessionApi typed client ✓ 2026-03-04
 
 ### Phase 11: Cron & Automation
 **Goal**: Scheduled tasks running — cron daemon active, agents schedule work via MCP tools, dashboard shows cron status
@@ -202,7 +202,7 @@ Plans:
 | 7. Permission & Hook System | 2/2 | Complete | 2026-03-04 |
 | 8. Memory System | 2/2 | Complete | 2026-03-04 |
 | 9. Chat Rooms | 2/2 | Complete | 2026-03-04 |
-| 10. Session Management | 0/2 | Not started | - |
+| 10. Session Management | 2/2 | Complete | 2026-03-04 |
 | 11. Cron & Automation | 0/2 | Not started | - |
 | 12. SSE Streaming | 0/2 | Not started | - |
 | 13. Skills | 0/1 | Not started | - |
