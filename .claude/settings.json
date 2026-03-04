@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "Read", "Glob", "Grep", "Edit", "Write",
+      "Bash(npm run *)", "Bash(npm test *)", "Bash(npx vitest *)",
+      "Bash(npx playwright *)", "Bash(tsc *)", "Bash(node *)",
+      "Bash(git status)", "Bash(git diff *)", "Bash(git add *)",
+      "Bash(git commit *)", "Bash(git log *)", "Bash(git branch *)",
+      "Bash(git checkout *)", "Bash(git stash *)",
+      "Bash(cat *)", "Bash(ls *)", "Bash(mkdir *)", "Bash(cp *)",
+      "Bash(mv *)", "Bash(head *)", "Bash(tail *)", "Bash(wc *)",
+      "Bash(grep *)", "Bash(find *)", "Bash(echo *)",
+      "Bash(qmd *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)", "Bash(sudo *)", "Bash(curl *)", "Bash(wget *)",
+      "Bash(git push --force *)", "Bash(git reset --hard *)",
+      "Bash(chmod *)", "Bash(chown *)", "Bash(kill *)", "Bash(pkill *)"
+    ]
+  },
+  "mcpServers": {
+    "froggo_db": {
+      "command": "node",
+      "args": ["./tools/froggo-db-mcp/dist/index.js"],
+      "env": { "DB_PATH": "~/froggo/data/froggo.db" }
+    },
+    "memory": {
+      "command": "node",
+      "args": ["./tools/memory-mcp/dist/index.js"],
+      "env": { "VAULT_PATH": "~/froggo/memory", "QMD_BIN": "qmd" }
+    }
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node ./tools/hooks/approval-hook.js",
+        "timeout": 5000
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__froggo_db__task_update",
+        "type": "command",
+        "command": "node ./tools/hooks/review-gate.js"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node ./tools/hooks/session-sync.js"
+      }
+    ]
+  }
+}
