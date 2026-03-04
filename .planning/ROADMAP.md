@@ -20,7 +20,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 5: MCP Servers** - `froggo-db` MCP + memory MCP for agent tool access ✓ COMPLETE
 - [x] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
 - [x] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
-- [ ] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
+- [x] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
 - [ ] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
 - [ ] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
 - [ ] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
@@ -121,8 +121,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: Install QMD, create Obsidian vault at `~/froggo/memory/`, seed architecture map from `fork-merge.md` and codebase docs
-- [ ] 08-02: Index vault with `qmd index`, add cron entry for QMD freshness (`qmd index --watch` or scheduled), verify memory MCP can retrieve context
+- [x] 08-01: Install QMD, create Obsidian vault at `~/froggo/memory/`, seed architecture map from `fork-merge.md` and codebase docs ✓ 2026-03-04
+- [x] 08-02: Index vault with `qmd index`, add cron entry for QMD freshness (`qmd index --watch` or scheduled), verify memory MCP can retrieve context ✓ 2026-03-04
 
 ### Phase 9: Chat Rooms
 **Goal**: Inter-agent chat rooms working — agents post messages to rooms, humans read/post, SSE delivers real-time updates to dashboard
@@ -200,7 +200,7 @@ Plans:
 | 5. MCP Servers | 2/2 | Complete | 2026-03-04 |
 | 6. Agent Definitions | 2/2 | Complete | 2026-03-04 |
 | 7. Permission & Hook System | 2/2 | Complete | 2026-03-04 |
-| 8. Memory System | 0/2 | Not started | - |
+| 8. Memory System | 2/2 | Complete | 2026-03-04 |
 | 9. Chat Rooms | 0/2 | Not started | - |
 | 10. Session Management | 0/2 | Not started | - |
 | 11. Cron & Automation | 0/2 | Not started | - |
