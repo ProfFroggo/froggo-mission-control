@@ -769,16 +769,16 @@ export default function InboxPanel() {
           setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
           try {
             // FIX: Update BOTH reviewStatus (mark as rejected) AND status (send back to in-progress)
-            await window.clawdbot?.tasks.update(meta.taskId, { 
+            await taskApi.update(meta.taskId, {
               reviewStatus: 'rejected',
-              status: 'in-progress' 
+              status: 'in-progress'
             });
           } catch (updateErr) {
             // '[Inbox] Failed to update task status on reject, retrying...', updateErr;
             // Retry once after a short delay
             setTimeout(async () => {
               try {
-                await window.clawdbot?.tasks.update(meta.taskId, {
+                await taskApi.update(meta.taskId, {
                   reviewStatus: 'rejected',
                   status: 'in-progress'
                 });
@@ -791,18 +791,20 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot?.inbox.update(Number(item.id), { 
+        await inboxApi.update(Number(item.id), {
           status: 'rejected',
-          feedback: reason 
+          feedback: reason
         });
       }
-      
-      await window.clawdbot?.rejections.log({
-        type: item.type,
-        title: item.title,
-        content: item.content,
-        reason: reason,
-      });
+
+      // Log rejection (best-effort via settings)
+      try {
+        await fetch('/api/inbox/rejections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: item.type, title: item.title, content: item.content, reason }),
+        });
+      } catch (_e) { /* non-critical */ }
     } catch (error) {
       // 'Reject error:', error;
     } finally {
@@ -843,12 +845,12 @@ export default function InboxPanel() {
           recentlyRejectedTaskIds.current.add(meta.taskId);
           setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
           try {
-            await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+            await taskApi.update(meta.taskId, { status: 'in-progress' });
           } catch (updateErr) {
             // '[Inbox] Failed to update task status on reject, retrying...', updateErr;
             setTimeout(async () => {
               try {
-                await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+                await taskApi.update(meta.taskId, { status: 'in-progress' });
               } catch (retryErr) {
                 // '[Inbox] Retry also failed:', retryErr;
               }
@@ -859,18 +861,20 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot?.inbox.update(Number(item.id), { 
+        await inboxApi.update(Number(item.id), {
           status: 'rejected',
-          feedback: reason 
+          feedback: reason
         });
       }
-      
-      await window.clawdbot?.rejections.log({
-        type: item.type,
-        title: item.title,
-        content: item.content,
-        reason: reason,
-      });
+
+      // Log rejection (best-effort)
+      try {
+        await fetch('/api/inbox/rejections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: item.type, title: item.title, content: item.content, reason }),
+        });
+      } catch (_e) { /* non-critical */ }
       
       if (reason !== "No reason provided") {
         gateway.sendToMain(`[REJECTION_LESSON] ${item.type}: "${item.title}"\nReason: ${reason}\n\nLearn from this.`);
@@ -896,36 +900,36 @@ export default function InboxPanel() {
       let meta: Record<string, any> = {};
       try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata; } catch { /* malformed JSON */ }
       if (meta.taskId) {
-        await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+        await taskApi.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
         gateway.sendToMain(`[TASK_FEEDBACK] Task "${item.title}" needs revision.\nFeedback: ${feedbackText}`);
         showToast('success', 'Feedback sent', 'Task moved back to In Progress');
       }
     } else {
       // Regular inbox item - update status and create revision task
-      await window.clawdbot?.inbox.update(Number(item.id), { 
-        status: 'needs-revision', 
-        feedback: feedbackText 
+      await inboxApi.update(Number(item.id), {
+        status: 'needs-revision',
+        feedback: feedbackText
       });
-      
+
       // Create a TASK in Kanban for the revision
       const taskData = {
         id: `task-${Date.now()}`,
         title: `Revise: ${item.title}`,
         description: `Original:\n${item.content}\n\nFeedback:\n${feedbackText}\n\n[Inbox ID: ${item.id}]`,
         status: 'in-progress',
-        project: item.type === 'tweet' || item.type === 'reply' ? 'X' : 
+        project: item.type === 'tweet' || item.type === 'reply' ? 'X' :
                  item.type === 'email' ? 'Email' : 'Revisions',
         assignedTo: matchTaskToAgent(item.title, `${item.type} ${item.content || ''}`),
       };
-      
-      const result = await window.clawdbot?.tasks.sync(taskData);
-      if (result?.success) {
+
+      const result = await taskApi.create(taskData);
+      if (result) {
         showToast('success', 'Revision task created', 'Check Tasks tab');
-        await window.clawdbot?.tasks.update?.(taskData.id, { status: 'in-progress' });
+        try { await taskApi.update(taskData.id, { status: 'in-progress' }); } catch (_e) { /* best-effort */ }
       } else {
         logger.error('Task creation failed:', result);
-        showToast('error', 'Revision task failed', result?.error || 'Unknown error');
+        showToast('error', 'Revision task failed', 'Unknown error');
       }
     }
     
@@ -1738,15 +1742,14 @@ export default function InboxPanel() {
                         showToast('info', 'Sending email...', `To: ${recipient}`);
                         
                         try {
-                          const result = await window.clawdbot?.email.send({
-                            to: recipient,
-                            subject,
-                            body: item.content,
-                            account,
-                          });
-                          
+                          const result = await fetch('/api/inbox/send-email', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ to: recipient, subject, body: item.content, account }),
+                          }).then(r => r.json());
+
                           if (result?.success) {
-                            await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
+                            await inboxApi.update(Number(item.id), { status: 'approved' });
                             showToast('success', 'Email sent ✓', `To: ${recipient}`);
                           } else {
                             showToast('error', 'Email failed', result?.error);
@@ -1804,7 +1807,7 @@ export default function InboxPanel() {
                       
                       // Add to schedule
                       try {
-                        const result = await window.clawdbot?.schedule.add({
+                        const result = await scheduleApi.create({
                           type: item.type,
                           content: item.content,
                           scheduledFor,
@@ -1814,11 +1817,11 @@ export default function InboxPanel() {
                             originalInboxId: item.id,
                           },
                         });
-                        
-                        if (result?.success) {
+
+                        if (result) {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
-                          await window.clawdbot?.inbox.update(Number(item.id), { status: 'scheduled' });
+                          await inboxApi.update(Number(item.id), { status: 'scheduled' });
                           
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',
@@ -2018,9 +2021,11 @@ export default function InboxPanel() {
                   setAbortingAgent(true);
                   try {
                     // Kill the agent session
-                    const result = await window.clawdbot?.exec.run(
-                      `openclaw sessions kill ${activeAgentSession.sessionId}`
-                    );
+                    const result = await fetch('/api/agents/exec', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ command: `openclaw sessions kill ${activeAgentSession.sessionId}` }),
+                    }).then(r => r.json());
                     
                     if (result?.success) {
                       showToast('success', 'Agent aborted', 'Proceeding with approval...');
@@ -2034,7 +2039,7 @@ export default function InboxPanel() {
                         : pendingApprovalItem.metadata;
                       
                       if (meta.taskId) {
-                        await window.clawdbot?.tasks.update(meta.taskId, { status: 'done' });
+                        await taskApi.update(meta.taskId, { status: 'done' });
                         setItems(prev => prev.filter(i => i.id !== pendingApprovalItem.id));
                         showToast('success', 'Task approved and completed ✓');
                       }
