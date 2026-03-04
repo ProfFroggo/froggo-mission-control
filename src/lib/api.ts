@@ -249,6 +249,58 @@ export const marketplaceApi = {
 // Maps old IPC channel names to the new API calls.
 // Use ONLY during migration. Refactor components to use typed APIs above in Phase 4.
 
+// ──────────────────────────────────────────────────
+// Finance
+// ──────────────────────────────────────────────────
+export const financeApi = {
+  getAccounts: () => apiCall('/finance/accounts'),
+  getTransactions: (params?: Record<string, string>) =>
+    apiCall(`/finance/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
+  getBudget: () => apiCall('/finance/budget'),
+};
+
+// ──────────────────────────────────────────────────
+// Accounts (connected social accounts)
+// ──────────────────────────────────────────────────
+export const accountsApi = {
+  getAll: () => apiCall('/accounts'),
+  add: (data: Record<string, unknown>) =>
+    apiCall('/accounts', { method: 'POST', body: data }),
+};
+
+// ──────────────────────────────────────────────────
+// Notifications
+// ──────────────────────────────────────────────────
+export const notificationsApi = {
+  getAll: (since?: number) =>
+    apiCall(`/notifications${since ? '?since=' + since : ''}`),
+  create: (title: string, body: string, agentId?: string) =>
+    apiCall('/notifications', { method: 'POST', body: { title, body, agentId } }),
+};
+
+// ──────────────────────────────────────────────────
+// Schedule
+// ──────────────────────────────────────────────────
+export const scheduleApi = {
+  getAll: () => apiCall('/schedule'),
+  create: (data: Record<string, unknown>) =>
+    apiCall('/schedule', { method: 'POST', body: data }),
+};
+
+// ──────────────────────────────────────────────────
+// Library
+// ──────────────────────────────────────────────────
+export const libraryApi = {
+  getFiles: () => apiCall('/library/files'),
+  getSkills: () => apiCall('/library/skills'),
+};
+
+// ──────────────────────────────────────────────────
+// Compatibility shim — drop-in replacement for window.clawdbot
+// ──────────────────────────────────────────────────
+// Maps old IPC channel names to the new API calls.
+// Use ONLY during migration. Refactor components to use typed APIs above in Phase 4.
+
 const IPC_ROUTE_MAP: Record<string, (...args: any[]) => Promise<any>> = {
   'task:getAll': (filters?: any) => taskApi.getAll(filters),
   'task:getById': (id: string) => taskApi.getById(id),
