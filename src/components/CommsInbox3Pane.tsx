@@ -26,6 +26,7 @@ import { gateway } from '../lib/gateway';
 import { sanitizeHtml } from '../utils/sanitize';
 import { useStore, Activity } from '../store/store';
 import MarkdownMessage from './MarkdownMessage';
+import { inboxApi, taskApi, scheduleApi, chatApi, accountsApi } from '../lib/api';
 
 // X logo
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -979,13 +980,17 @@ function RightPane({
     if (intentOverride) {
       threadMessages.push({ role: 'user-intent', content: `User wants to say: ${intentOverride}` });
     }
-    const result = await window.clawdbot?.ai?.generateReply({
-      threadMessages,
-      platform: conversation?.platform,
-      recipientName: conversation?.name || conversation?.from,
-      subject: conversation?.subject,
-      tone,
-    });
+    const result = await fetch('/api/chat/generate-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        threadMessages,
+        platform: conversation?.platform,
+        recipientName: conversation?.name || conversation?.from,
+        subject: conversation?.subject,
+        tone,
+      }),
+    }).then(r => r.json()).catch(() => ({ success: false }));
     return result;
   };
 
@@ -1454,15 +1459,16 @@ export default function CommsInbox3Pane() {
       try {
         // Fetch email accounts (from gog auth) and gateway channels in parallel
         const [emailResult, channelsResult] = await Promise.all([
-          window.clawdbot?.email?.accounts?.()
+          accountsApi.getAll()
             .catch((err: any) => { console.error('[CommsInbox] Failed to get email accounts:', err); return null; }),
           gateway.getChannelsStatus().catch((err) => { console.error('[CommsInbox] Failed to get channels status:', err); return null; }),
         ]);
 
         if (cancelled) return;
 
-        const emailAccounts = emailResult?.success && (emailResult.accounts?.length ?? 0) > 0
-          ? (emailResult.accounts ?? []).map(a => typeof a === 'string' ? { email: a, label: a } : a as { email: string; label: string })
+        const emailResultAccounts = Array.isArray(emailResult) ? emailResult : (emailResult?.accounts || []);
+        const emailAccounts = emailResultAccounts.length > 0
+          ? emailResultAccounts.map((a: any) => typeof a === 'string' ? { email: a, label: a } : a as { email: string; label: string })
           : DEFAULT_EMAIL_ACCOUNTS.map(a => ({ email: a.address!, label: a.label }));
 
         const channelAccounts = channelsResult?.channelAccounts || {};
@@ -1628,9 +1634,10 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      const result = await window.clawdbot?.messages?.recent(messageLimit, showArchived);
-      if (result?.success && result.chats && isMounted.current) {
-        const msgs = (result.chats as unknown as ConversationItem[]).map(m => {
+      const result = await inboxApi.getAll({ limit: String(messageLimit), archived: String(showArchived) });
+      const chats = Array.isArray(result) ? result : (result?.chats || result?.items || []);
+      if (chats.length >= 0 && isMounted.current) {
+        const msgs = (chats as unknown as ConversationItem[]).map(m => {
           if (!m.timestamp) return m;
           const diffMs = Date.now() - new Date(m.timestamp).getTime();
           const diffMins = Math.floor(diffMs / 60000);
@@ -1686,12 +1693,7 @@ export default function CommsInbox3Pane() {
     isMounted.current = true;
     loadMessages();
 
-    // Listen for comms-updated events from background polling
-    const cleanup = window.clawdbot?.messages?.onUpdate?.((_data: any) => {
-      if (isMounted.current) {
-        loadMessages(true);
-      }
-    });
+    // No event-driven refresh in web mode; rely on polling
 
     // 60s safety-net fallback
     const interval = setInterval(() => {
@@ -1701,7 +1703,6 @@ export default function CommsInbox3Pane() {
     return () => {
       isMounted.current = false;
       clearInterval(interval);
-      cleanup?.();
     };
   }, [loadMessages]);
 
@@ -1722,7 +1723,7 @@ export default function CommsInbox3Pane() {
         setLoadingBody(true);
         try {
           const emailId = selectedConversation.id.replace('email-', '');
-          const result = await window.clawdbot?.email?.body(emailId, selectedConversation.account);
+          const result = await fetch(`/api/inbox/${emailId}/body?account=${encodeURIComponent(selectedConversation.account || '')}`).then(r => r.json()).catch(() => ({ success: false }));
           if (result?.success && result.body) {
             const { body, metadata } = parseEmailBodyAndMeta(result.body);
             setEmailBody(body);
@@ -1741,9 +1742,7 @@ export default function CommsInbox3Pane() {
       } else {
         setLoadingThread(true);
         try {
-          const result = await window.clawdbot?.messages?.context(
-            selectedConversation.id, selectedConversation.platform, 20
-          );
+          const result = await fetch(`/api/inbox/${selectedConversation.id}/context?platform=${encodeURIComponent(selectedConversation.platform)}&limit=20`).then(r => r.json()).catch(() => ({ success: false, messages: [] }));
           if (result?.success && result.messages) {
             // Backend returns oldest-first (chat-style) — use as-is
             setThread(result.messages as ThreadMessage[]);
@@ -1760,7 +1759,7 @@ export default function CommsInbox3Pane() {
 
       // Mark as read
       try {
-        await window.clawdbot?.inbox?.markRead?.(selectedConversation.id, true);
+        await inboxApi.markRead(Number(selectedConversation.id) || 0).catch(() => {});
         setAllMessages(prev => prev.map(m =>
           m.id === selectedConversation.id ? { ...m, is_read: true } : m
         ));
@@ -1769,7 +1768,7 @@ export default function CommsInbox3Pane() {
       // Trigger AI analysis
       if (selectedConversation.platform !== 'system') {
         try {
-          const cached = await window.clawdbot?.ai?.getAnalysis?.(selectedConversation.id, selectedConversation.platform);
+          const cached = await fetch(`/api/inbox/${selectedConversation.id}/analysis?platform=${encodeURIComponent(selectedConversation.platform)}`).then(r => r.json()).catch(() => ({ success: false }));
           if (cached?.success && cached.analysis) {
             setAiAnalyses(prev => new Map(prev).set(selectedConversation.id, cached.analysis));
           } else {
@@ -1793,7 +1792,7 @@ export default function CommsInbox3Pane() {
     try {
       const ids = Array.from(analysisBatchRef.current).slice(0, 10);
       analysisBatchRef.current.clear();
-      const result = await window.clawdbot?.ai?.analyzeMessages?.(ids);
+      const result = await fetch('/api/inbox/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).then(r => r.json()).catch(() => ({ success: false }));
       if (result?.success && result.analysis) {
         setAiAnalyses(prev => {
           const next = new Map(prev);
@@ -1827,7 +1826,7 @@ export default function CommsInbox3Pane() {
   // Create task/event handlers
   const handleCreateDetectedTask = async (task: { title: string; description: string }) => {
     try {
-      const result = await window.clawdbot?.ai?.createDetectedTask?.(task);
+      const result = await taskApi.create({ title: task.title, description: task.description, status: 'todo' });
       if (result?.success) {
         showToast('success', 'Task Created', task.title);
       } else {
@@ -1840,7 +1839,7 @@ export default function CommsInbox3Pane() {
 
   const handleCreateDetectedEvent = async (event: { title: string; date: string; time?: string; duration?: string; location?: string }) => {
     try {
-      const result = await window.clawdbot?.ai?.createDetectedEvent?.(event);
+      const result = await scheduleApi.create(event);
       if (result?.success) {
         showToast('success', 'Event Created', event.title);
       } else {
@@ -1884,7 +1883,7 @@ export default function CommsInbox3Pane() {
   const handleArchive = async (conv: ConversationItem) => {
     const sessionKey = `${conv.platform}:${conv.from || conv.name || ''}`;
     try {
-      await window.clawdbot?.conversations?.archive?.(sessionKey);
+      await fetch(`/api/inbox/${conv.id}/archive`, { method: 'POST' }).catch(() => {});
       setAllMessages(prev => prev.filter(m => m.id !== conv.id));
       if (selectedConversation?.id === conv.id) {
         setSelectedConversation(null);
@@ -1899,7 +1898,7 @@ export default function CommsInbox3Pane() {
   const handleToggleRead = async (conv: ConversationItem) => {
     const newReadState = !conv.is_read;
     try {
-      await window.clawdbot?.inbox?.markRead?.(conv.id, newReadState);
+      await inboxApi.markRead(Number(conv.id) || 0).catch(() => {});
       setAllMessages(prev => prev.map(m =>
         m.id === conv.id ? { ...m, is_read: newReadState } : m
       ));
@@ -1911,10 +1910,12 @@ export default function CommsInbox3Pane() {
   // Toggle star
   const handleToggleStar = async (id: string) => {
     try {
-      const result = await window.clawdbot?.inbox?.toggleStar?.(id);
-      if (result?.success) {
+      const currentMsg = allMessages.find(m => m.id === id);
+      const newStarred = !(currentMsg as any)?.is_starred;
+      const result = await inboxApi.star(Number(id) || 0, newStarred);
+      if (result) {
         setAllMessages(prev => prev.map(m =>
-          m.id === id ? { ...m, is_starred: result.is_starred } : m
+          m.id === id ? { ...m, is_starred: newStarred } : m
         ));
       }
     } catch (e) {
@@ -1927,9 +1928,11 @@ export default function CommsInbox3Pane() {
     if (!selectedConversation) return;
     const recipient = selectedConversation.from || selectedConversation.name || '';
     try {
-      const result = await window.clawdbot?.messages?.send?.(
-        selectedConversation.platform, recipient, text
-      );
+      const result = await fetch('/api/inbox/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: selectedConversation.platform, recipient, text }),
+      }).then(r => r.json()).catch(() => ({ success: false }));
       if (result?.success) {
         setThread(prev => [...prev, {
           id: `sent-${Date.now()}`,
