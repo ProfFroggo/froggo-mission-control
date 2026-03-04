@@ -21,7 +21,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
 - [x] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
 - [x] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
-- [ ] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
+- [x] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
 - [ ] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
 - [ ] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
 - [ ] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
@@ -131,8 +131,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: Chat rooms DB tables + API routes — `/api/chat-rooms`, `/api/chat-rooms/[id]/messages` + SSE stream endpoint
-- [ ] 09-02: Dashboard chat room UI component — room list sidebar, message thread, post input; wire to API
+- [x] 09-01: ChatRoomsPanel module — room list sidebar, message thread, send input, 5s polling ✓ 2026-03-04
+- [x] 09-02: Verified chat rooms API routes from Phase 3 — GET rooms, GET/POST messages ✓ 2026-03-04
 
 ### Phase 10: Session Management
 **Goal**: Persistent session tracking — spawn API creates sessions, sessions survive restart, session list visible in dashboard
@@ -201,7 +201,7 @@ Plans:
 | 6. Agent Definitions | 2/2 | Complete | 2026-03-04 |
 | 7. Permission & Hook System | 2/2 | Complete | 2026-03-04 |
 | 8. Memory System | 2/2 | Complete | 2026-03-04 |
-| 9. Chat Rooms | 0/2 | Not started | - |
+| 9. Chat Rooms | 2/2 | Complete | 2026-03-04 |
 | 10. Session Management | 0/2 | Not started | - |
 | 11. Cron & Automation | 0/2 | Not started | - |
 | 12. SSE Streaming | 0/2 | Not started | - |
