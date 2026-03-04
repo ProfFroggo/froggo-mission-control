@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-04)
 
 **Core value:** Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working.
-**Current focus:** Phase 6 — Agent Definitions
+**Current focus:** Phase 7 — Permission & Hook System
 
 ## Current Position
 
-Phase: 6 of 14 (Agent Definitions)
+Phase: 7 of 14 (Permission & Hook System)
 Plan: 0 of 2 in current phase
 Status: Starting
-Last activity: 2026-03-04 — Completed Phase 5 (all 2 plans): froggo-db MCP (11 tools) + memory MCP (3 tools) standalone and tested
+Last activity: 2026-03-04 — Completed Phase 6 (all 2 plans): 13 agent definitions + .claude/ directory
 
-Progress: ████████████░░ 43%
+Progress: ████████████░░ 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 15
 - Average duration: 3 min
 - Total execution time: 0.65 hours
 
@@ -32,6 +32,7 @@ Progress: ████████████░░ 43%
 | 3 (complete) | 4/4 | 12 min | 3 min |
 | 4 (complete) | 2/2 | 5 min | 2.5 min |
 | 5 (complete) | 2/2 | 6 min | 3 min |
+| 6 (complete) | 2/2 | 5 min | 2.5 min |
 
 ## Accumulated Context
 
@@ -45,6 +46,7 @@ Progress: ████████████░░ 43%
 - Phase 4: taskApi.getSubtasks() added; chatApi.saveMessage() added; starred/whisper/fs no web equivalent
 - Phase 4: onNotification + onBroadcast listeners removed (no REST equivalent; Phase 12 will add polling)
 - Phase 5: froggo-db MCP at tools/froggo-db-mcp/ (11 tools, StdioServerTransport); memory MCP at tools/memory-mcp/ (3 tools, QMD + grep fallback); VAULT_PATH default ~/froggo/memory/
+- Phase 6: .claude/settings.json uses froggo_db + memory MCP servers; hooks registered for Pre/Post/Stop; 13 agents defined
 
 ### Deferred Issues
 
@@ -60,5 +62,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Phase 5 complete — starting Phase 6 (Agent Definitions, 2 plans)
+Stopped at: Phase 6 complete — starting Phase 7 (Permission & Hook System, 2 plans)
 Resume file: None
