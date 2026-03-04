@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, RefreshCw } from 'lucide-react';
 import EpicCalendar from './EpicCalendar';
 import ContentScheduler from './ContentScheduler';
+import CronTab from './CronTab';
 import { Spinner } from './LoadingStates';
 import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
 
-type ScheduleTab = 'calendar' | 'scheduler';
+type ScheduleTab = 'calendar' | 'scheduler' | 'crons';
 
 export default function SchedulePanel() {
   const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
@@ -88,6 +89,17 @@ export default function SchedulePanel() {
             <Clock size={16} />
             Content Scheduler
           </button>
+          <button
+            onClick={() => setActiveTab('crons')}
+            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+              activeTab === 'crons'
+                ? 'text-clawd-accent border-clawd-accent'
+                : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
+            }`}
+          >
+            <RefreshCw size={16} />
+            Cron Jobs
+          </button>
         </div>
       </div>
 
@@ -96,6 +108,7 @@ export default function SchedulePanel() {
         <ErrorBoundary componentName={`Schedule-${activeTab}`}>
           {activeTab === 'calendar' && <EpicCalendar />}
           {activeTab === 'scheduler' && <ContentScheduler />}
+          {activeTab === 'crons' && <CronTab />}
         </ErrorBoundary>
       </div>
     </div>
