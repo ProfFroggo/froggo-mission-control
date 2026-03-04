@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { gateway } from '@/lib/gateway';
+import { agentApi } from '@/lib/api';
 
 // AgentInfo type for legacy useAgents hook (being deprecated)
 export interface AgentInfo {
@@ -28,7 +29,7 @@ export interface AgentInfo {
   lastSeen?: string;
 }
 
-const api = () => window.clawdbot;
+// agentApi imported from @/lib/api replaces window.clawdbot.agents
 
 /** Threshold in ms — sessions updated within this window are considered active */
 const ACTIVE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
@@ -80,30 +81,23 @@ function formatLastSeen(ts?: number): string | undefined {
 
 /** Fetch and merge agent data from gateway sessions + agent metrics */
 async function fetchAgents(): Promise<AgentInfo[]> {
-  const clawdbot = api();
-  if (!clawdbot) return [];
-
   const agentMap = new Map<string, AgentInfo>();
 
-  // 0. Agent list from gateway — baseline list of ALL configured agents
-  //    This ensures agents appear even when they have no active sessions.
-  //    Uses 'clawdbot agents list' via IPC instead of the old registry JSON.
+  // 0. Agent list from REST API — baseline list of ALL configured agents
   try {
-    if (clawdbot.agents?.list) {
-      const result = await clawdbot.agents.list();
-      if (result?.success && Array.isArray(result.agents)) {
-        for (const agent of result.agents) {
-          agentMap.set(agent.id, {
-            id: agent.id,
-            name: agent.name || agent.id,
-            role: agent.description || 'Agent',
-            status: 'offline',
-            stats: {
-              tasksCompleted: 0,
-              tasksInProgress: 0,
-            },
-          });
-        }
+    const result = await agentApi.getAll();
+    if (Array.isArray(result)) {
+      for (const agent of result) {
+        agentMap.set(agent.id, {
+          id: agent.id,
+          name: agent.name || agent.id,
+          role: agent.description || 'Agent',
+          status: 'offline',
+          stats: {
+            tasksCompleted: 0,
+            tasksInProgress: 0,
+          },
+        });
       }
     }
   } catch {
@@ -208,54 +202,8 @@ async function fetchAgents(): Promise<AgentInfo[]> {
     // gateway may not be available
   }
 
-  // 2. Agent metrics — enrich with performance data
-  try {
-    if (clawdbot.agents) {
-      const metricsRes = await clawdbot.agents.getMetrics();
-      // Handle both wrapped { metrics: {...} } and direct metrics object from Electron IPC
-      const metrics: Record<string, any> = metricsRes?.metrics ?? metricsRes ?? {};
-      // Map metric agent IDs to session agent names (and vice versa)
-      const agentIdAliases: Record<string, string[]> = {
-        main: ['main', 'froggo'],
-        froggo: ['main', 'froggo'],
-      };
-
-      for (const [agentId, data] of Object.entries(metrics)) {
-        const d = data as any;
-        // Try to find existing agent entry by ID or aliases
-        const aliases = agentIdAliases[agentId] || [agentId];
-        const existing = agentMap.get(agentId) || aliases.reduce<AgentInfo | undefined>((found, alias) => found || agentMap.get(alias), undefined);
-        const completedCount = d.completedTasks ?? d.tasksCompleted ?? 0;
-        const inProgressCount = d.inProgressTasks ?? d.tasksActive ?? d.tasksInProgress ?? 0;
-        const avgMins = d.avgTaskTimeHours ? Math.round(d.avgTaskTimeHours * 60) : d.avgCompletionMinutes;
-
-        if (existing) {
-          // Merge metrics into existing entry
-          existing.stats = {
-            tasksCompleted: completedCount || existing.stats?.tasksCompleted || 0,
-            tasksInProgress: inProgressCount || existing.stats?.tasksInProgress || 0,
-            avgCompletionMinutes: avgMins ?? existing.stats?.avgCompletionMinutes,
-          };
-        } else {
-          // New agent from metrics only
-          agentMap.set(agentId, {
-            id: agentId,
-            name: d.name ?? agentId,
-            role: d.role ?? 'Agent',
-            status: normalizeStatus(d.status),
-            stats: {
-              tasksCompleted: completedCount,
-              tasksInProgress: inProgressCount,
-              avgCompletionMinutes: avgMins,
-            },
-            lastSeen: d.lastSeen,
-          });
-        }
-      }
-    }
-  } catch {
-    // agents API optional
-  }
+  // 2. Agent metrics — enrich with performance data from REST API
+  // (metrics endpoint not yet available — will be added in a future iteration)
 
   return Array.from(agentMap.values());
 }

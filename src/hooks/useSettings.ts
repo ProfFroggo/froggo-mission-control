@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { settingsApi } from '../lib/api';
 
 export interface AppSettings {
   externalActionsEnabled?: boolean;
@@ -24,11 +25,11 @@ function notifyListeners() {
 
 export async function loadSettings(): Promise<AppSettings> {
   try {
-    const resp = await window.clawdbot?.settings?.get();
-    if (resp?.success) {
-      cachedSettings = resp.settings || {};
+    const resp = await settingsApi.getAll();
+    if (resp) {
+      cachedSettings = resp as AppSettings;
       notifyListeners();
-      return cachedSettings!;
+      return cachedSettings;
     }
   } catch (_e) {
     // Settings load failed — return cached or empty
