@@ -56,8 +56,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Create `src/lib/database.ts` with `getDb()`, WAL mode, schema: tasks, subtasks, task_activity, task_labels, task_attachments, agents, sessions, messages, approvals, inbox
-- [ ] 02-02: Extend schema: chat_rooms, chat_room_messages, analytics_events, cron_jobs, skills tables; verify DB creates at `~/froggo/data/froggo.db`
+- [x] 02-01: Create `src/lib/database.ts` with `getDb()`, WAL mode, schema: tasks, subtasks, task_activity, task_labels, task_attachments, agents, sessions, messages, approvals, inbox ✓ 2026-03-04
+- [x] 02-02: Extend schema: chat_rooms, chat_room_messages, analytics_events, cron_jobs, skills tables; verify DB creates at `~/froggo/data/froggo.db` ✓ 2026-03-04
 
 ### Phase 3: API Routes
 **Goal**: All IPC handler files converted to Next.js API routes — every `window.clawdbot` channel has a `/api/*` equivalent
@@ -194,7 +194,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 0. Setup & Audit | — | Complete | 2026-03-04 |
 | 1. Electron Strip + Next.js Scaffold | 3/3 | Complete | 2026-03-04 |
-| 2. Database Layer | 0/2 | Not started | - |
+| 2. Database Layer | 2/2 | Complete | 2026-03-04 |
 | 3. API Routes | 0/4 | Not started | - |
 | 4. Frontend Wiring | 0/2 | Not started | - |
 | 5. MCP Servers | 0/2 | Not started | - |
