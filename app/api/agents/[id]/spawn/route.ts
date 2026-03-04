@@ -6,30 +6,47 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: agentId } = await params;
+    const { id } = await params;
     const db = getDb();
     const body = await request.json().catch(() => ({}));
 
+    // Check for existing active session
+    const existing = db.prepare(
+      'SELECT sessionId FROM agent_sessions WHERE agentId = ? AND status = ?'
+    ).get(id, 'active') as { sessionId: string } | undefined;
+
+    let command: string;
+    let resumed = false;
+    if (existing?.sessionId) {
+      command = `claude --resume ${existing.sessionId} --agents ${id}`;
+      resumed = true;
+    } else {
+      command = `claude --agents ${id}`;
+    }
+
     const now = Date.now();
-    const sessionId = crypto.randomUUID();
-    const model = body.model ?? null;
 
-    // Upsert agent_sessions record
-    db.prepare(`
-      INSERT INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
-      VALUES (?, ?, ?, ?, ?, 'active')
-      ON CONFLICT (agentId) DO UPDATE SET
-        sessionId = excluded.sessionId,
-        model = excluded.model,
-        lastActivity = excluded.lastActivity,
-        status = 'active'
-    `).run(agentId, sessionId, model, now, now);
+    if (!resumed) {
+      const sessionId = crypto.randomUUID();
+      const model = body.model ?? null;
+      db.prepare(`
+        INSERT INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
+        VALUES (?, ?, ?, ?, ?, 'active')
+        ON CONFLICT (agentId) DO UPDATE SET
+          sessionId = excluded.sessionId,
+          model = excluded.model,
+          lastActivity = excluded.lastActivity,
+          status = 'active'
+      `).run(id, sessionId, model, now, now);
+    } else {
+      db.prepare('UPDATE agent_sessions SET lastActivity = ? WHERE agentId = ?')
+        .run(now, id);
+    }
 
-    // Update agent status to active
     db.prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?')
-      .run('active', now, agentId);
+      .run('active', now, id);
 
-    return NextResponse.json({ success: true, agentId, sessionId });
+    return NextResponse.json({ success: true, command, resumed });
   } catch (error) {
     console.error('POST /api/agents/[id]/spawn error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
