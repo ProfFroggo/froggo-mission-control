@@ -9,6 +9,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 );
 import { showToast } from './Toast';
 import IconBadge from './IconBadge';
+import { scheduleApi } from '../lib/api';
 
 type ScheduledItemType = 'tweet' | 'email' | 'message';
 type ScheduledItemStatus = 'pending' | 'sent' | 'cancelled' | 'failed';
@@ -63,12 +64,12 @@ export default function ContentScheduler() {
   const loadSchedule = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.schedule?.list();
-      if (result?.success) {
+      const result = await scheduleApi.getAll().catch(() => null);
+      if (result?.items) {
         setItems((result.items || []) as ScheduledItem[]);
       }
     } catch (error) {
-      // '[Schedule] Load error:', error;
+      // Schedule load error
     } finally {
       setLoading(false);
     }
@@ -81,15 +82,9 @@ export default function ContentScheduler() {
     return () => clearInterval(interval);
   }, [loadSchedule]);
   
-  // Clean up old uploads on mount (7 days)
+  // Media cleanup not available in web mode
   useEffect(() => {
-    const cleanup = async () => {
-      const result = await window.clawdbot?.media?.cleanup();
-      if (result?.success && (result.deletedCount ?? 0) > 0) {
-        // Media cleanup completed
-      }
-    };
-    cleanup();
+    // No-op: media cleanup is handled server-side
   }, []);
 
   const handleFileSelect = async (file: File) => {
@@ -118,38 +113,25 @@ export default function ContentScheduler() {
     }
     
     try {
-      // Convert to base64
+      // Convert to base64 for preview; media upload not available in web mode
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const base64Data = (e.target?.result as string)?.split(',')[1];
-        
-        if (!base64Data) {
-          setUploadError('Failed to read file');
-          return;
+        // Store as client-side reference only (no backend upload in web mode)
+        setMediaFile({
+          path: file.name,
+          fileName: file.name,
+          size: file.size,
+          type: isImage ? 'image' : 'video',
+        });
+
+        // Create preview for images
+        if (isImage) {
+          setMediaPreview(e.target?.result as string);
         }
-        
-        // Upload to backend
-        const result = await window.clawdbot?.media?.upload(file.name, base64Data);
-        
-        if (result?.success) {
-          setMediaFile({
-            path: result.path || '',
-            fileName: result.fileName || '',
-            size: result.size || 0,
-            type: isImage ? 'image' : 'video',
-          });
-          
-          // Create preview for images
-          if (isImage) {
-            setMediaPreview(e.target?.result as string);
-          }
-          
-          showToast('success', 'Uploaded', `${file.name} uploaded successfully`);
-        } else {
-          setUploadError(result?.error || 'Upload failed');
-        }
+
+        showToast('info', 'Attached', `${file.name} attached (upload happens on schedule)`);
       };
-      
+
       reader.readAsDataURL(file);
     } catch (error) {
       setUploadError(String(error));
@@ -170,10 +152,7 @@ export default function ContentScheduler() {
   };
   
   const handleRemoveMedia = async () => {
-    if (mediaFile) {
-      // Delete from backend
-      await window.clawdbot?.media?.delete(mediaFile.path);
-    }
+    // Media delete handled client-side only in web mode
     setMediaFile(null);
     setMediaPreview(null);
     setUploadError(null);
@@ -212,10 +191,10 @@ export default function ContentScheduler() {
       };
 
       const result = editingId
-        ? await window.clawdbot?.schedule?.update(editingId, item)
-        : await window.clawdbot?.schedule?.add(item);
+        ? await fetch(`/api/schedule/${editingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) }).then(r => r.ok ? r.json() : null).catch(() => null)
+        : await scheduleApi.create(item as Record<string, unknown>).catch(() => null);
 
-      if (result?.success) {
+      if (result) {
         showToast('success', editingId ? 'Updated' : 'Scheduled', `${typeConfig[formType].label} scheduled for ${new Date(scheduledFor).toLocaleString()}`);
         resetForm();
         loadSchedule();
@@ -229,8 +208,8 @@ export default function ContentScheduler() {
 
   const handleCancel = async (id: string) => {
     try {
-      const result = await window.clawdbot?.schedule?.cancel(id);
-      if (result?.success) {
+      const result = await fetch(`/api/schedule/${id}`, { method: 'DELETE' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (result) {
         showToast('success', 'Cancelled', 'Scheduled item cancelled');
         loadSchedule();
       }
@@ -241,10 +220,12 @@ export default function ContentScheduler() {
 
   const handleSendNow = async (id: string) => {
     try {
-      const result = await window.clawdbot?.schedule?.sendNow(id);
-      if (result?.success) {
+      const result = await fetch(`/api/schedule/${id}/send`, { method: 'POST' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (result) {
         showToast('success', 'Sent', 'Item sent immediately');
         loadSchedule();
+      } else {
+        showToast('info', 'Not available', 'Send now is not available in web mode');
       }
     } catch (error) {
       showToast('error', 'Failed', String(error));

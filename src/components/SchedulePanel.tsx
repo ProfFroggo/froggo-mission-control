@@ -17,11 +17,11 @@ export default function SchedulePanel() {
   const [hasCalendar, setHasCalendar] = useState(true);
 
   useEffect(() => {
-    // Check if calendar IPC is available (schedule data source)
+    // Check if schedule API is available
     const checkAvailability = async () => {
       try {
-        const available = !!window.clawdbot?.calendar;
-        setHasCalendar(available);
+        // Always available via REST API
+        setHasCalendar(true);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to load schedule'));

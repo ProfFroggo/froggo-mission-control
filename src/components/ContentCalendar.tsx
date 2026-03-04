@@ -8,9 +8,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 import { showToast } from './Toast';
-import { createLogger } from '../utils/logger';
-
-const logger = createLogger('ContentCalendar');
+import { scheduleApi } from '../lib/api';
 
 interface ScheduledItem {
   id: string;
@@ -39,7 +37,7 @@ export default function ContentCalendar() {
   const loadScheduledItems = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.schedule?.list().catch((err: any) => { logger.error('Failed to list schedule:', err); return null; });
+      const result = await scheduleApi.getAll().catch(() => null);
       if (result?.items) {
         setItems(result.items.map((item: any) => ({
           ...item,
@@ -47,7 +45,7 @@ export default function ContentCalendar() {
         })));
       }
     } catch (e) {
-      // 'Failed to load schedule:', e;
+      // Failed to load schedule
     } finally {
       setLoading(false);
     }

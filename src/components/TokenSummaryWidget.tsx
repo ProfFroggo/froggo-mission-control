@@ -21,10 +21,10 @@ export default function TokenSummaryWidget() {
 
   const loadTokenSummary = async () => {
     try {
-      const result = await window.clawdbot.tokens.summary({ period: 'day' });
-      
-      if (result.error) {
-        setError(result.error);
+      const result = await fetch('/api/analytics/token-usage?period=day').then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (!result || result.error) {
+        setError(result?.error || 'Token data not available');
         setLoading(false);
         return;
       }
@@ -32,8 +32,7 @@ export default function TokenSummaryWidget() {
       if (result.by_agent && result.by_agent.length > 0) {
         const totalTokens = result.by_agent.reduce((sum: number, agent: any) => sum + agent.total_all, 0);
         const totalCost = result.by_agent.reduce((sum: number, agent: any) => sum + (agent.total_cost || 0), 0);
-        
-        // Find top agent by token usage
+
         const sorted = [...result.by_agent].sort((a: any, b: any) => b.total_all - a.total_all);
         const topAgent = sorted[0];
 
@@ -49,11 +48,10 @@ export default function TokenSummaryWidget() {
           totalCost: 0,
         });
       }
-      
+
       setLoading(false);
       setError(null);
     } catch (err: unknown) {
-      // 'Failed to load token summary:', err;
       setError(err instanceof Error ? err.message : 'Failed to load');
       setLoading(false);
     }

@@ -86,20 +86,24 @@ export default function EpicCalendar({
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      const gogAccount = formData.account || accounts[0] || '';
-      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
-      
-      if (description) {
-        command += ` --description "${description.replace(/"/g, '\\"')}"`;
-      }
-      if (location) {
-        command += ` --location "${location.replace(/"/g, '\\"')}"`;
-      }
+      const eventData = {
+        summary,
+        start: startISO,
+        end: endISO,
+        description,
+        location,
+        isAllDay,
+        account: formData.account || accounts[0] || '',
+      };
 
-      const response = await window.clawdbot?.exec?.run(command);
-      
-      if (!response?.success) {
-        throw new Error(response?.reason || response?.stderr || 'Failed to create event');
+      const response = await fetch('/api/calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData),
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (!response) {
+        throw new Error('Failed to create event');
       }
 
       // Refresh events after successful creation
@@ -126,20 +130,24 @@ export default function EpicCalendar({
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      const gogAccount = formData.account || accounts[0] || '';
-      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
-      
-      if (description) {
-        command += ` --description "${description.replace(/"/g, '\\"')}"`;
-      }
-      if (location) {
-        command += ` --location "${location.replace(/"/g, '\\"')}"`;
-      }
+      const eventData = {
+        summary,
+        start: startISO,
+        end: endISO,
+        description,
+        location,
+        isAllDay,
+        account: formData.account || accounts[0] || '',
+      };
 
-      const response = await window.clawdbot?.exec?.run(command);
-      
-      if (!response?.success) {
-        throw new Error(response?.reason || response?.stderr || 'Failed to update event');
+      const response = await fetch(`/api/calendar/events/${eventId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData),
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (!response) {
+        throw new Error('Failed to update event');
       }
 
       // Optimistic update - update local state immediately
@@ -171,14 +179,15 @@ export default function EpicCalendar({
     }
   };
 
-  // Delete event via gog CLI
+  // Delete event via REST API
   const deleteEvent = async (eventId: string, account: string): Promise<boolean> => {
     try {
-      const command = `GOG_ACCOUNT=${account} gog calendar events delete --event-id "${eventId}"`;
-      const response = await window.clawdbot?.exec?.run(command);
-      
-      if (!response?.success) {
-        throw new Error(response?.reason || response?.stderr || 'Failed to delete event');
+      const response = await fetch(`/api/calendar/events/${eventId}?account=${encodeURIComponent(account)}`, {
+        method: 'DELETE',
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (!response) {
+        throw new Error('Failed to delete event');
       }
 
       // Optimistic update - remove from local state immediately
@@ -278,12 +287,20 @@ export default function EpicCalendar({
         ? newEnd.toISOString().split('T')[0]
         : newEnd.toISOString();
 
-      const command = `GOG_ACCOUNT=${event.account} gog calendar events update --event-id "${event.id}" --summary "${event.summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
-      
-      const response = await window.clawdbot?.exec?.run(command);
-      
-      if (!response?.success) {
-        throw new Error(response?.reason || response?.stderr || 'Failed to reschedule event');
+      const response = await fetch(`/api/calendar/events/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: event.summary,
+          start: startISO,
+          end: endISO,
+          account: event.account,
+          isAllDay,
+        }),
+      }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      if (!response) {
+        throw new Error('Failed to reschedule event');
       }
 
       // Optimistic update
@@ -327,20 +344,14 @@ export default function EpicCalendar({
     setError(null);
     setPartialError(null);
     try {
-      // Use the new calendar aggregation service
-      if (!window.clawdbot?.calendar?.aggregate) {
-        throw new Error('Calendar service not available — running outside Electron?');
+      // Fetch calendar events from REST API
+      const params = new URLSearchParams({ days: '30' });
+      if (accounts.length > 0) {
+        params.set('accounts', accounts.join(','));
       }
-      const response = await window.clawdbot?.calendar?.aggregate({
-        days: 30,
-        includeGoogle: true,
-        includeMissionControl: true,
-        // Only pass accounts if user has configured them; otherwise let backend
-        // use its own discovered accounts from gog auth list
-        ...(accounts.length > 0 ? { accounts } : {})
-      });
+      const response = await fetch(`/api/calendar/events?${params}`).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      if (response.success) {
+      if (response) {
         // Track partial errors separately - events should still render
         if (response.errors && response.errors.length > 0) {
           setPartialError(`${response.errors.length} calendar(s) failed to load`);
@@ -348,7 +359,7 @@ export default function EpicCalendar({
 
         setEvents(response.events || []);
       } else {
-        throw new Error(response.error || 'Failed to aggregate events');
+        throw new Error('Failed to fetch calendar events');
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to fetch calendar events';

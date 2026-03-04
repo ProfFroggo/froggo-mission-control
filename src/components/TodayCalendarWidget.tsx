@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
-import { createLogger } from '../utils/logger';
-
-const logger = createLogger('TodayCalendarWidget');
 
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
@@ -17,14 +14,9 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
     setLoading(true);
     setError(null);
     try {
-      if (!window.clawdbot?.calendar?.today) {
-        logger.debug('calendar.today() not available');
-        setEvents([]);
-        return;
-      }
+      const result = await fetch('/api/calendar/today').then(r => r.ok ? r.json() : null).catch(() => null);
 
-      const result = await window.clawdbot.calendar.today();
-      if (result?.success && result.events) {
+      if (result?.events) {
         // Sort by start time
         const sorted = result.events.sort((a: CalendarEvent, b: CalendarEvent) => {
           const aTime = a.start.dateTime || a.start.date || '';
@@ -36,7 +28,6 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
         setEvents([]);
       }
     } catch (e) {
-      // '[TodayCalendar] Failed to load events:', e;
       setError('Failed to load calendar');
       setEvents([]);
     } finally {

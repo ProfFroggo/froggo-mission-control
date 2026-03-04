@@ -39,100 +39,34 @@ export default function UsageStatsPanel() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const dbExec = window.clawdbot?.db?.exec;
-      if (!dbExec) throw new Error('Database not available');
+      const result = await fetch(`/api/analytics/usage-stats?days=${timeRange}`).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      const cutoffDate = Date.now() - timeRange * 24 * 60 * 60 * 1000;
-
-      // Total messages
-      const msgResult = await dbExec(
-        'SELECT COUNT(*) as count FROM messages WHERE timestamp >= ?',
-        [cutoffDate]
-      );
-
-      // Messages per day
-      const dailyResult = await dbExec(`
-        SELECT 
-          date(timestamp / 1000, 'unixepoch') as date,
-          COUNT(*) as count
-        FROM messages
-        WHERE timestamp >= ?
-        GROUP BY date
-        ORDER BY date
-      `, [cutoffDate]);
-
-      // Channel breakdown
-      const channelResult = await dbExec(`
-        SELECT 
-          CASE 
-            WHEN session_key LIKE '%whatsapp%' THEN 'WhatsApp'
-            WHEN session_key LIKE '%telegram%' THEN 'Telegram'
-            WHEN session_key LIKE '%discord%' THEN 'Discord'
-            WHEN session_key LIKE '%webchat%' THEN 'Web Chat'
-            ELSE 'Other'
-          END as channel,
-          COUNT(*) as count
-        FROM messages
-        WHERE timestamp >= ?
-        GROUP BY channel
-      `, [cutoffDate]);
-
-      // Peak hours
-      const hoursResult = await dbExec(`
-        SELECT 
-          CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour,
-          COUNT(*) as count
-        FROM messages
-        WHERE timestamp >= ?
-        GROUP BY hour
-        ORDER BY hour
-      `, [cutoffDate]);
-
-      // Total sessions
-      const sessionsResult = await dbExec(
-        'SELECT COUNT(DISTINCT session_key) as count FROM messages WHERE timestamp >= ?',
-        [cutoffDate]
-      );
-
-      // Active channels
-      const activeChannelsResult = await dbExec(`
-        SELECT COUNT(DISTINCT 
-          CASE 
-            WHEN session_key LIKE '%whatsapp%' THEN 'WhatsApp'
-            WHEN session_key LIKE '%telegram%' THEN 'Telegram'
-            WHEN session_key LIKE '%discord%' THEN 'Discord'
-            WHEN session_key LIKE '%webchat%' THEN 'Web Chat'
-            ELSE 'Other'
-          END
-        ) as count
-        FROM messages
-        WHERE timestamp >= ?
-      `, [cutoffDate]);
-
-      // Avg response time (simplified - time between consecutive messages)
-      const responseTimeResult = await dbExec(`
-        SELECT AVG(time_diff) as avg
-        FROM (
-          SELECT 
-            (timestamp - LAG(timestamp) OVER (PARTITION BY session_key ORDER BY timestamp)) / 1000.0 / 60.0 as time_diff
-          FROM messages
-          WHERE timestamp >= ?
-        )
-        WHERE time_diff IS NOT NULL AND time_diff < 60
-      `, [cutoffDate]);
-
-      setStats({
-        totalMessages: msgResult?.result?.[0]?.count || 0,
-        totalSessions: sessionsResult?.result?.[0]?.count || 0,
-        activeChannels: activeChannelsResult?.result?.[0]?.count || 0,
-        messagesPerDay: (dailyResult?.result || []) as { date: string; count: number }[],
-        channelBreakdown: (channelResult?.result || []) as { channel: string; count: number }[],
-        peakHours: (hoursResult?.result || []) as { hour: number; count: number }[],
-        avgResponseTime: responseTimeResult?.result?.[0]?.avg || 0,
-        totalConversations: sessionsResult?.result?.[0]?.count || 0,
-      });
+      if (result) {
+        setStats({
+          totalMessages: result.totalMessages || 0,
+          totalSessions: result.totalSessions || 0,
+          activeChannels: result.activeChannels || 0,
+          messagesPerDay: (result.messagesPerDay || []) as { date: string; count: number }[],
+          channelBreakdown: (result.channelBreakdown || []) as { channel: string; count: number }[],
+          peakHours: (result.peakHours || []) as { hour: number; count: number }[],
+          avgResponseTime: result.avgResponseTime || 0,
+          totalConversations: result.totalSessions || 0,
+        });
+      } else {
+        // No data available - set empty defaults
+        setStats({
+          totalMessages: 0,
+          totalSessions: 0,
+          activeChannels: 0,
+          messagesPerDay: [],
+          channelBreakdown: [],
+          peakHours: [],
+          avgResponseTime: 0,
+          totalConversations: 0,
+        });
+      }
     } catch (error) {
-      // 'Failed to load usage stats:', error;
+      // Failed to load usage stats
     } finally {
       setLoading(false);
     }

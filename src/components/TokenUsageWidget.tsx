@@ -69,17 +69,15 @@ export default function TokenUsageWidget() {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (!window.clawdbot?.tokens) {
-        setLoading(false);
-        return; // IPC not available (web mode)
-      }
-      // Map UI period names to froggo-db period names
       const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
-      const summary = await window.clawdbot.tokens.summary({ period: periodMap[period] || period });
-      setSummaryData(summary as unknown as TokenSummaryResponse);
+      const summary = await fetch(`/api/analytics/token-usage?period=${periodMap[period] || period}`).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (!summary) {
+        setLoading(false);
+        return;
+      }
+      setSummaryData(summary as TokenSummaryResponse);
 
       if (!summary.error && summary.by_agent) {
-        // Transform data for chart
         const chartData = summary.by_agent
           .filter((item: any) => item.agent !== 'unknown')
           .map((item: any) => ({
@@ -91,21 +89,9 @@ export default function TokenUsageWidget() {
             cost: item.total_cost,
           }));
         setChartData(chartData);
-
-        // Fetch budget for each agent
-        const budgets = new Map<string, BudgetResponse>();
-        for (const item of summary.by_agent) {
-          if (item.agent !== 'unknown') {
-            const budget = await window.clawdbot.tokens.budget(item.agent);
-            if (!budget.error) {
-              budgets.set(item.agent, budget);
-            }
-          }
-        }
-        setBudgetData(budgets);
       }
     } catch (error) {
-      // 'Failed to load token data:', error;
+      // Failed to load token data
     } finally {
       setLoading(false);
     }
