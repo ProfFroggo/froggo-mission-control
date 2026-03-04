@@ -110,7 +110,7 @@ export function useArtifactExtraction(
       if (!message) return [];
 
       const extracted = extractAllArtifacts(message.content);
-      const addedArtifacts = [];
+      const addedArtifacts: any[] = [];
 
       for (const artifact of extracted) {
         const title = generateArtifactTitle(artifact);

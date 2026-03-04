@@ -149,7 +149,7 @@ export default function ChatPanel() {
       if (!selectedAgent || !window.clawdbot?.starred?.list) return;
       const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
       if (result?.success && result.starred) {
-        const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
+        const ids = new Set<string>(result.starred.map((s: any) => s.message_id.toString()));
         setStarredMessageIds(ids);
       }
     };
