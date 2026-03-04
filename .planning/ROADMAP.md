@@ -18,8 +18,8 @@ None (no ~/.claude/skills/expertise/ available)
 - [ ] **Phase 3: API Routes** - Convert all 20+ IPC handler files to Next.js `/api/*` REST routes
 - [ ] **Phase 4: Frontend Wiring** - Replace `window.clawdbot` IPC calls with fetch, wire Zustand stores, SSE for chat
 - [x] **Phase 5: MCP Servers** - `froggo-db` MCP + memory MCP for agent tool access ✓ COMPLETE
-- [ ] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
-- [ ] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
+- [x] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
+- [x] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
 - [ ] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
 - [ ] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
 - [ ] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
@@ -110,8 +110,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Create `hooks/` directory + tiered approval hook (`hooks/tier-approval.js`) — Tier 1 auto-approve, Tier 2 log, Tier 3 block + create approval record, Tier 4 reject
-- [ ] 07-02: Create Clara review gate hook (`hooks/clara-review.js`) + session sync hook (`hooks/session-sync.js`), register all hooks in `settings.json`
+- [x] 07-01: Create hooks/ directory + tiered approval hook ✓ 2026-03-04
+- [x] 07-02: Create Clara review gate hook + session sync hook, register all hooks in settings.json ✓ 2026-03-04
 
 ### Phase 8: Memory System
 **Goal**: Obsidian vault structure created, QMD indexed, architecture map seeded — agents can recall project context via memory MCP
@@ -199,7 +199,7 @@ Plans:
 | 4. Frontend Wiring | 2/2 | Complete | 2026-03-04 |
 | 5. MCP Servers | 2/2 | Complete | 2026-03-04 |
 | 6. Agent Definitions | 2/2 | Complete | 2026-03-04 |
-| 7. Permission & Hook System | 0/2 | Not started | - |
+| 7. Permission & Hook System | 2/2 | Complete | 2026-03-04 |
 | 8. Memory System | 0/2 | Not started | - |
 | 9. Chat Rooms | 0/2 | Not started | - |
 | 10. Session Management | 0/2 | Not started | - |
