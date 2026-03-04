@@ -110,7 +110,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       database: 'checking',
     });
     try {
-      const result = await window.clawdbot?.onboarding?.checkDependencies();
+      const res = await fetch('/api/health');
+      const result = res.ok ? await res.json() : null;
       if (result) {
         setDepStatus({
           cli: result.cli ? 'ok' : 'fail',
@@ -120,23 +121,29 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         });
       }
     } catch {
-      // IPC not available -- leave as checking
+      // API not available -- leave as checking
     }
   }, []);
 
-  // --- Permission Check ---
+  // --- Permission Check (Browser Permissions API) ---
   const checkPermissions = useCallback(async () => {
     try {
-      const result = await window.clawdbot?.onboarding?.checkPermissions();
-      if (result) {
-        setPermStatus({
-          microphone: result.microphone === 'granted' ? 'granted' : 'denied',
-          camera: result.camera === 'granted' ? 'granted' : 'denied',
-          screen: result.screen === 'granted' ? 'granted' : 'denied',
-        });
-      }
+      const checkPerm = async (name: string): Promise<PermStatus> => {
+        try {
+          const status = await navigator.permissions.query({ name: name as PermissionName });
+          return status.state === 'granted' ? 'granted' : 'denied';
+        } catch {
+          return 'unknown';
+        }
+      };
+      const [microphone, camera] = await Promise.all([
+        checkPerm('microphone'),
+        checkPerm('camera'),
+      ]);
+      // Screen capture permission can't be queried via Permissions API
+      setPermStatus({ microphone, camera, screen: 'unknown' });
     } catch {
-      // IPC not available
+      // Permissions API not available
     }
   }, []);
 
@@ -145,8 +152,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     setGatewayStatus('testing');
     setGatewayError('');
     try {
-      const result = await window.clawdbot?.onboarding?.testGatewayConnection();
-      if (result?.reachable) {
+      const res = await fetch('/api/health');
+      const result = res.ok ? await res.json() : null;
+      if (result?.gateway) {
         setGatewayStatus('connected');
       } else {
         setGatewayStatus('error');
@@ -154,7 +162,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       }
     } catch {
       setGatewayStatus('error');
-      setGatewayError('IPC not available');
+      setGatewayError('API not reachable');
     }
   }, []);
 
@@ -162,7 +170,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const populateSampleData = useCallback(async () => {
     setSampleDataStatus('loading');
     try {
-      const result = await window.clawdbot?.onboarding?.populateSampleData();
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'populate-sample-data' }),
+      });
+      const result = res.ok ? await res.json() : null;
       setSampleDataCount(result?.inserted ?? 0);
       setSampleDataStatus('done');
     } catch {
@@ -193,14 +206,16 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const requestPermission = async (type: 'microphone' | 'camera' | 'screen') => {
     try {
-      // IPC only supports camera and microphone; screen recording is system-level
+      // Screen recording permission is system-level, can't be requested via browser
       if (type === 'screen') return;
-      const result = await window.clawdbot?.onboarding?.requestPermission(type);
-      if (result?.granted) {
-        setPermStatus(prev => ({ ...prev, [type]: 'granted' }));
-      }
+      // Request via getUserMedia to trigger browser permission prompt
+      const constraints = type === 'microphone' ? { audio: true } : { video: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      // Stop tracks immediately — we only needed the permission grant
+      stream.getTracks().forEach(t => t.stop());
+      setPermStatus(prev => ({ ...prev, [type]: 'granted' }));
     } catch {
-      // IPC not available
+      // Permission denied or API not available
     }
   };
 

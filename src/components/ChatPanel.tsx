@@ -147,13 +147,13 @@ export default function ChatPanel() {
   }, [selectedAgent, messages]);
 
   // Load starred message IDs
-  // TODO Phase 4: migrate — window.clawdbot.starred not available in web; no REST equivalent yet
+  // TODO Phase 4: migrate — [web-not-available] not available in web; no REST equivalent yet
   useEffect(() => {
     // Starred messages not yet supported in web version
   }, [selectedAgent]);
 
   // Toggle star on a message
-  // TODO Phase 4: migrate — window.clawdbot.starred not available in web; no REST equivalent yet
+  // TODO Phase 4: migrate — [web-not-available] not available in web; no REST equivalent yet
   const handleToggleStar = async (msg: StructuredChatMessage, e: React.MouseEvent) => {
     e.stopPropagation();
     showToast('Starred messages not available', 'error');
@@ -642,7 +642,7 @@ export default function ChatPanel() {
           : msg.content.filter(b => b.type === 'text').map(b => b.text ?? '').join(''),
       }));
       
-      // TODO Phase 4: migrate — window.clawdbot.chat.suggestReplies not available in web
+      // TODO Phase 4: migrate — [web-not-available] not available in web
       showToast('error', 'Not available', 'Suggestion feature not available in web version');
     } catch (error: unknown) {
       // '[Chat] Suggestion error:', error;
@@ -685,19 +685,19 @@ export default function ChatPanel() {
           }
         } else if (att.type.startsWith('image/')) {
           // Image: Include base64 data URL (fs.writeBase64 not available in web)
-          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          // TODO Phase 4: migrate — [web-not-available] not available in web
           fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
         } else if (att.type === 'application/pdf') {
           // PDF: fs.writeBase64 not available in web — inform user
-          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          // TODO Phase 4: migrate — [web-not-available] not available in web
           fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
         } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
           // Audio file: whisper transcription not available in web version
-          // TODO Phase 4: migrate — window.clawdbot.whisper not available in web
+          // TODO Phase 4: migrate — [web-not-available] not available in web
           fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Audio transcription not available in web version]`);
         } else {
           // Other files: fs.writeBase64 not available in web — include metadata only
-          // TODO Phase 4: migrate — window.clawdbot.fs not available in web
+          // TODO Phase 4: migrate — [web-not-available] not available in web
           fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
         }
       }
