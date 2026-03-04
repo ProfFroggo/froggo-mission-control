@@ -28,6 +28,11 @@
       "command": "node",
       "args": ["./tools/memory-mcp/dist/index.js"],
       "env": { "VAULT_PATH": "~/froggo/memory", "QMD_BIN": "qmd" }
+    },
+    "cron": {
+      "command": "node",
+      "args": ["./tools/cron-mcp/dist/index.js"],
+      "env": { "SCHEDULE_PATH": "~/froggo/data/schedule.json" }
     }
   },
   "env": {
