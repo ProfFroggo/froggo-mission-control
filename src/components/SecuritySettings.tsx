@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Shield, Key, Lock, AlertTriangle, CheckCircle, XCircle, Play, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus } from 'lucide-react';
 import { showToast } from './Toast';
+import { settingsApi } from '../lib/api';
 
 interface APIKey {
   id: string;
@@ -48,13 +49,12 @@ export default function SecuritySettings() {
     loadAlerts();
   }, []);
 
-  // Load API keys from secure storage
+  // Load API keys from settings
   const loadAPIKeys = async () => {
     try {
-      const result = await window.clawdbot?.security?.listKeys();
-      if (result?.success) {
-        setApiKeys((result.keys || []) as APIKey[]);
-      }
+      const result = await settingsApi.get('security.keys');
+      const keys = result?.value || result?.keys || [];
+      setApiKeys((Array.isArray(keys) ? keys : []) as APIKey[]);
     } catch (e) {
       // '[Security] Failed to load API keys:', e;
     }
@@ -63,10 +63,9 @@ export default function SecuritySettings() {
   // Load audit logs
   const loadAuditLogs = async () => {
     try {
-      const result = await window.clawdbot?.security?.listAuditLogs();
-      if (result?.success) {
-        setAuditLogs((result.logs || []) as AuditLog[]);
-      }
+      const result = await settingsApi.get('security.auditLogs');
+      const logs = result?.value || result?.logs || [];
+      setAuditLogs((Array.isArray(logs) ? logs : []) as AuditLog[]);
     } catch (e) {
       // '[Security] Failed to load audit logs:', e;
     }
@@ -75,10 +74,9 @@ export default function SecuritySettings() {
   // Load security alerts
   const loadAlerts = async () => {
     try {
-      const result = await window.clawdbot?.security?.listAlerts();
-      if (result?.success) {
-        setAlerts((result.alerts || []) as SecurityAlert[]);
-      }
+      const result = await settingsApi.get('security.alerts');
+      const alerts = result?.value || result?.alerts || [];
+      setAlerts((Array.isArray(alerts) ? alerts : []) as SecurityAlert[]);
     } catch (e) {
       // '[Security] Failed to load alerts:', e;
     }
@@ -106,7 +104,7 @@ export default function SecuritySettings() {
       setAuditProgress('Generating AI recommendations...');
       
       // Call backend to run AI-powered audit
-      const result = await window.clawdbot?.security?.runAudit();
+      const result = await settingsApi.set('security.runAudit', { timestamp: Date.now() });
       
       if (result?.success) {
         showToast('success', 'Security Audit Complete', `Found ${(result.findings ?? []).length} items`);
@@ -133,7 +131,7 @@ export default function SecuritySettings() {
     }
 
     try {
-      const result = await window.clawdbot?.security?.addKey(newKey);
+      const result = await settingsApi.set('security.addKey', newKey);
       if (result?.success) {
         showToast('success', 'Key Added', `${newKey.name} has been securely stored`);
         setAddKeyModal(false);
@@ -154,7 +152,7 @@ export default function SecuritySettings() {
     }
 
     try {
-      const result = await window.clawdbot?.security?.deleteKey(keyId);
+      const result = await settingsApi.set('security.deleteKey', { keyId });
       if (result?.success) {
         showToast('success', 'Key Deleted', 'API key has been removed');
         loadAPIKeys();
@@ -169,7 +167,7 @@ export default function SecuritySettings() {
   // Update audit log status
   const updateAuditStatus = async (logId: string, status: 'acknowledged' | 'resolved') => {
     try {
-      const result = await window.clawdbot?.security?.updateAuditLog(logId, { status });
+      const result = await settingsApi.set('security.updateAuditLog', { logId, status });
       if (result?.success) {
         loadAuditLogs();
       }
@@ -181,7 +179,7 @@ export default function SecuritySettings() {
   // Dismiss alert
   const dismissAlert = async (alertId: string) => {
     try {
-      const result = await window.clawdbot?.security?.dismissAlert(alertId);
+      const result = await settingsApi.set('security.dismissAlert', { alertId });
       if (result?.success) {
         loadAlerts();
       }

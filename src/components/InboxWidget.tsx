@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Inbox, AlertCircle } from 'lucide-react';
 import WidgetLoading from './WidgetLoading';
+import { inboxApi } from '../lib/api';
 
 
 export default function InboxWidget() {
@@ -12,11 +13,16 @@ export default function InboxWidget() {
     setLoading(true);
     setError(null);
     try {
-      const result = await window.clawdbot?.inbox?.list();
-      if (result?.success && Array.isArray(result.items)) {
+      const result = await inboxApi.getAll();
+      if (Array.isArray(result)) {
         // Count pending/unread items
+        const pending = result.filter(
+          (item: any) => item.status === 'pending'
+        );
+        setUnreadCount(pending.length);
+      } else if (result?.items && Array.isArray(result.items)) {
         const pending = result.items.filter(
-          (item) => item.status === 'pending'
+          (item: any) => item.status === 'pending'
         );
         setUnreadCount(pending.length);
       } else {

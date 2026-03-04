@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, X, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
 import { showToast } from './Toast';
+import { chatApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('FinanceChat');
+
+const FINANCE_SESSION_KEY = 'finance-agent';
 
 interface ChatMessage {
   id: string;
@@ -59,25 +62,18 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const loadChatHistory = async () => {
     try {
       setInitializing(true);
-      
-      // Check if finance agent is available
-      if (!window.clawdbot?.financeAgent) {
-        logger.warn('Finance agent not available - running in web mode or IPC not initialized');
-        setInitializing(false);
-        return;
-      }
-      
-      const result = await window.clawdbot.financeAgent.getChatHistory();
-      
-      if (result?.success) {
-        setMessages((result.messages || []) as ChatMessage[]);
-      } else {
-        logger.error('Error loading history:', result?.error);
-        // Don't set error state for history load failures - just show empty chat
+
+      const msgs = await chatApi.getMessages(FINANCE_SESSION_KEY);
+      if (Array.isArray(msgs)) {
+        setMessages(msgs.map((m: any) => ({
+          id: m.id || `msg-${m.timestamp}`,
+          role: m.role === 'user' ? 'user' : 'agent',
+          content: m.content,
+          timestamp: m.timestamp || Date.now(),
+        })));
       }
     } catch (error) {
       logger.error('Load history error:', error);
-      // Silently handle - show empty chat instead of error
     } finally {
       setInitializing(false);
     }
@@ -86,12 +82,6 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const sendMessageDirect = async (directMessage: string) => {
     const message = directMessage.trim();
     if (!message || loading) return;
-
-    if (!window.clawdbot?.financeAgent) {
-      setError('Finance Manager is not available. Please ensure the Electron app is running.');
-      showToast('error', 'Finance Manager not available');
-      return;
-    }
 
     try {
       setLoading(true);
@@ -106,24 +96,27 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
       setMessages(prev => [...prev, userMessage]);
       setInputMessage('');
 
-      const result = await window.clawdbot.financeAgent.sendMessage(message);
+      // Save user message
+      await chatApi.saveMessage(FINANCE_SESSION_KEY, {
+        role: 'user',
+        content: message,
+        timestamp: Date.now(),
+        channel: 'finance',
+      });
 
-      if (result?.success && result.message) {
-        const agentMessage: ChatMessage = {
-          id: `msg-${Date.now()}-agent`,
-          role: 'agent',
-          content: result.message,
-          timestamp: Date.now()
-        };
-        setMessages(prev => [...prev, agentMessage]);
-      } else {
-        throw new Error(result?.error || 'Failed to get response from Finance Manager');
-      }
+      // For now, the finance agent is not available in web mode
+      const agentMessage: ChatMessage = {
+        id: `msg-${Date.now()}-agent`,
+        role: 'agent',
+        content: 'Finance Manager is running in web mode. AI responses require the backend agent to be configured.',
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, agentMessage]);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
       logger.error('Send message error:', errorMessage);
       setError(errorMessage);
-      showToast('error', 'Failed to send message to Finance Manager');
+      showToast('error', 'Failed to send message');
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -146,20 +139,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const clearHistory = async () => {
     if (!confirm('Clear all chat history? This cannot be undone.')) return;
 
-    // Check if finance agent is available
-    if (!window.clawdbot?.financeAgent) {
-      setMessages([]);
-      return;
-    }
-
     try {
-      const result = await window.clawdbot.financeAgent.clearHistory();
-      if (result?.success) {
-        setMessages([]);
-        showToast('success', 'Chat history cleared');
-      } else {
-        throw new Error(result?.error || 'Failed to clear history');
-      }
+      await chatApi.deleteSession(FINANCE_SESSION_KEY);
+      setMessages([]);
+      showToast('success', 'Chat history cleared');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to clear history';
       logger.error('Clear history error:', errorMessage);

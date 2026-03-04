@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '@/lib/gateway';
+import { chatApi } from '@/lib/api';
 
 interface AgentProgressQueryProps {
   taskId: string;
@@ -74,17 +75,21 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Fetch recent chat messages to get agent's response
-      const chatResult = await window.clawdbot?.chat?.recent?.(1);
-
-      if (chatResult?.success && chatResult.messages && chatResult.messages.length > 0) {
-        const lastMessage = chatResult.messages[0];
-        if (lastMessage.role === 'assistant') {
-          setResponse(lastMessage.content);
-          showToast('success', 'Progress received', 'Agent responded with status update');
+      try {
+        const messages = await chatApi.getMessages(sessionKey);
+        const msgList = Array.isArray(messages) ? messages : [];
+        if (msgList.length > 0) {
+          const lastMessage = msgList[msgList.length - 1];
+          if (lastMessage.role === 'assistant') {
+            setResponse(lastMessage.content);
+            showToast('success', 'Progress received', 'Agent responded with status update');
+          } else {
+            setError('Agent did not respond yet. Check Sessions panel for response.');
+          }
         } else {
-          setError('Agent did not respond yet. Check Sessions panel for response.');
+          setError('Could not fetch agent response. Check Sessions panel.');
         }
-      } else {
+      } catch {
         setError('Could not fetch agent response. Check Sessions panel.');
       }
     } catch (err: unknown) {

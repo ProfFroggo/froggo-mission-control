@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingDown, Loader2 } from 'lucide-react';
+import { financeApi } from '../lib/api';
 
 interface Props {
   selectedAccountId: string | null;
@@ -56,22 +57,27 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
   const loadBreakdown = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.finance?.category?.getBreakdown({
-        accountId: selectedAccountId || undefined,
-        days: selectedDays,
-      });
-      if (result?.success && result.breakdown) {
-        const rows: BreakdownRow[] = (result.breakdown as FinanceCategoryBreakdownRow[]).map(
-          (row, idx) => ({
-            ...row,
-            total: Math.abs(row.total),
-            color: getCategoryColor(row.category, idx),
-          })
-        );
-        setBreakdown(rows);
-      } else {
-        setBreakdown([]);
+      const params: Record<string, string> = { days: String(selectedDays) };
+      if (selectedAccountId) params.accountId = selectedAccountId;
+      const transactions: any[] = await financeApi.getTransactions(params);
+      // Compute category breakdown from transactions locally
+      const categoryMap = new Map<string, { total: number; count: number }>();
+      for (const tx of (Array.isArray(transactions) ? transactions : [])) {
+        const cat = tx.category || 'other';
+        const existing = categoryMap.get(cat) || { total: 0, count: 0 };
+        existing.total += Math.abs(tx.amount || 0);
+        existing.count += 1;
+        categoryMap.set(cat, existing);
       }
+      const rows: BreakdownRow[] = Array.from(categoryMap.entries())
+        .map(([category, { total, count }], idx) => ({
+          category,
+          total,
+          count,
+          color: getCategoryColor(category, idx),
+        }))
+        .sort((a, b) => b.total - a.total);
+      setBreakdown(rows);
     } catch {
       setBreakdown([]);
     } finally {

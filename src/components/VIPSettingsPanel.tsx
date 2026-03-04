@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { settingsApi } from '../lib/api';
 
 interface VipSender {
   id: number;
@@ -65,8 +66,13 @@ export default function VIPSettingsPanel() {
   const loadVips = async () => {
     setLoading(true);
     try {
-      const data = await window.clawdbot?.vip.list(categoryFilter || undefined);
-      setVips((data || []) as unknown as VipSender[]);
+      const result = await settingsApi.get('vip');
+      let data = result?.value || result || [];
+      if (!Array.isArray(data)) data = [];
+      if (categoryFilter) {
+        data = data.filter((v: any) => v.category === categoryFilter);
+      }
+      setVips(data as unknown as VipSender[]);
     } catch (error) {
       // '[VIP] Load error:', error;
       showToast('error', 'Failed to load VIPs');
@@ -82,14 +88,16 @@ export default function VIPSettingsPanel() {
     }
 
     try {
-      const result = await window.clawdbot?.vip.add({
+      const newVip = {
         identifier: formData.identifier,
         label: formData.label,
         type: formData.type,
         category: formData.category,
         boost: formData.boost,
         notes: formData.notes || undefined,
-      });
+      };
+      const allVips = [...vips, { ...newVip, id: Date.now(), identifier_type: newVip.type, priority_boost: newVip.boost, added_at: new Date().toISOString(), added_by: 'user', message_count: 0, auto_detected: 0 }];
+      const result = await settingsApi.set('vip', allVips);
 
       if (result?.success) {
         showToast('success', `VIP added: ${formData.label}`);
@@ -110,12 +118,8 @@ export default function VIPSettingsPanel() {
     if (!vip) return;
 
     try {
-      const result = await window.clawdbot?.vip.update(id, {
-        label: formData.label,
-        boost: formData.boost,
-        category: formData.category,
-        notes: formData.notes || undefined,
-      });
+      const updatedVips = vips.map(v => v.id === id ? { ...v, label: formData.label, priority_boost: formData.boost, category: formData.category, notes: formData.notes || undefined } : v);
+      const result = await settingsApi.set('vip', updatedVips);
 
       if (result?.success) {
         showToast('success', `VIP updated: ${formData.label}`);
@@ -139,7 +143,8 @@ export default function VIPSettingsPanel() {
       type: 'warning',
     }, async () => {
       try {
-        const result = await window.clawdbot?.vip.remove(id);
+        const updatedVips = vips.filter(v => v.id !== id);
+        const result = await settingsApi.set('vip', updatedVips);
 
         if (result?.success) {
           showToast('success', `VIP removed: ${label}`);

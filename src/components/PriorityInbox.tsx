@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star } from 'lucide-react';
+import { settingsApi } from '../lib/api';
 
 // Priority indicator component
 export function PriorityIndicator({ 
@@ -286,9 +287,10 @@ export function usePriorityData() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const result = await window.clawdbot?.priority?.stats();
-      if (result?.success) {
-        setStats(result.stats);
+      const result = await settingsApi.get('priority.stats');
+      const stats = result?.value || result?.stats;
+      if (stats) {
+        setStats(stats);
       }
     } catch (e) {
       // 'Failed to fetch priority stats:', e;
@@ -297,9 +299,10 @@ export function usePriorityData() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const result = await window.clawdbot?.priority?.config();
-      if (result?.success) {
-        setConfig(result.config);
+      const result = await settingsApi.get('priority.config');
+      const cfg = result?.value || result?.config;
+      if (cfg) {
+        setConfig(cfg);
       }
     } catch (e) {
       // 'Failed to fetch priority config:', e;
@@ -308,18 +311,18 @@ export function usePriorityData() {
 
   const updateConfig = useCallback(async (key: string, value: number) => {
     try {
-      const result = await window.clawdbot?.priority?.updateConfig(key, value);
-      if (result?.success) {
+      const result = await settingsApi.set('priority.config', { ...config, [key]: value });
+      if (result) {
         setConfig((prev: any) => ({ ...prev, [key]: value }));
       }
     } catch (e) {
       // 'Failed to update config:', e;
     }
-  }, []);
+  }, [config]);
 
-  const recalculate = useCallback(async (limit = 100) => {
+  const recalculate = useCallback(async (_limit = 100) => {
     try {
-      await window.clawdbot?.priority?.recalculate(limit);
+      await settingsApi.set('priority.recalculate', { limit: _limit });
       await fetchStats();
     } catch (e) {
       // 'Failed to recalculate priorities:', e;

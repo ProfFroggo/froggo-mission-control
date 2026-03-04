@@ -3,6 +3,7 @@ import { Send, Loader2, Users, AlertCircle } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 import { gateway } from '../lib/gateway';
 import MarkdownMessage from './MarkdownMessage';
+import { chatApi } from '../lib/api';
 
 interface XAgentChatPaneProps {
   tab: XTab;
@@ -157,10 +158,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     const loadFromDb = async () => {
       setHistoryLoaded(false);
       try {
-        const result = await window.clawdbot?.chat?.loadMessages(30, sessionKey, 'xtwitter');
-        if (result?.success && result.messages?.length > 0) {
-          setMessages(result.messages as ChatMessage[]);
-          tabMessagesRef.current[validTab] = result.messages as ChatMessage[];
+        const result = await chatApi.getMessages(sessionKey);
+        const msgs = Array.isArray(result) ? result : [];
+        if (msgs.length > 0) {
+          setMessages(msgs.slice(-30) as ChatMessage[]);
+          tabMessagesRef.current[validTab] = msgs.slice(-30) as ChatMessage[];
         } else {
           setMessages(tabMessagesRef.current[validTab] || []);
         }
@@ -213,12 +215,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     setInput('');
     setLoading(true);
 
-    // Persist user message to SQLite
-    window.clawdbot?.chat?.saveMessage({
+    // Persist user message via REST API
+    chatApi.saveMessage(sessionKey, {
       role: 'user',
       content: userMessage.content,
       timestamp: userMessage.timestamp,
-      sessionKey,
       channel: 'xtwitter',
     });
 
@@ -274,13 +275,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 : msg
             )
           );
-          // Persist final assistant message to SQLite
+          // Persist final assistant message via REST API
           if (agentContent) {
-            window.clawdbot?.chat?.saveMessage({
+            chatApi.saveMessage(sessionKey, {
               role: 'assistant',
               content: agentContent,
               timestamp: Date.now(),
-              sessionKey,
               channel: 'xtwitter',
             });
             // Extract campaign JSON from agent response and dispatch to middle pane

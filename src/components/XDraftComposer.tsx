@@ -3,6 +3,7 @@ import { FileText, Send, Plus, Trash2, Eye } from 'lucide-react';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import { XImageAttachButton } from './XImageAttachment';
+import { scheduleApi, approvalApi } from '../lib/api';
 
 interface ContentPlan {
   id: string;
@@ -42,14 +43,10 @@ export default function XDraftComposer() {
   const loadApprovedPlans = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xPlan?.list({
-        status: 'approved',
-        limit: 50
-      });
-      
-      if (result?.success) {
-        setContentPlans((result.plans || []) as ContentPlan[]);
-      }
+      const result = await scheduleApi.getAll();
+      const plans = (Array.isArray(result) ? result : [])
+        .filter((item: any) => item.type === 'plan' && item.status === 'approved');
+      setContentPlans(plans as ContentPlan[]);
     } catch (error) {
       // '[XDraftComposer] Load plans error:', error;
     } finally {
@@ -105,24 +102,29 @@ export default function XDraftComposer() {
         tweets: tweets.filter(t => t.trim())
       });
       
-      const result = await window.clawdbot?.xDraft?.create({
-        planId: selectedPlanId,
-        version,
+      // Save as schedule item + create approval
+      await scheduleApi.create({
+        type: 'draft',
         content,
+        platform: 'twitter',
+        planId: selectedPlanId || undefined,
+        version,
         mediaUrls: mediaPaths.length > 0 ? mediaPaths : undefined,
         proposedBy: getCurrentUserName(),
       });
+      await approvalApi.create({
+        type: 'tweet',
+        content,
+        tier: 3,
+        metadata: { planId: selectedPlanId, version },
+      });
 
-      if (result?.success) {
-        showToast('success', `Draft ${version} submitted for approval`);
-        // Reset form
-        setSelectedPlanId('');
-        setVersion('A');
-        setTweets(['']);
-        setMediaPaths([]);
-      } else {
-        throw new Error(result?.error || 'Failed to create draft');
-      }
+      showToast('success', `Draft ${version} submitted for approval`);
+      // Reset form
+      setSelectedPlanId('');
+      setVersion('A');
+      setTweets(['']);
+      setMediaPaths([]);
     } catch (error: unknown) {
       // '[XDraftComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error instanceof Error ? error.message : String(error)}`);
@@ -154,15 +156,16 @@ export default function XDraftComposer() {
       const content = tweets.join('\n\n---\n\n');
       const timestamp = new Date(scheduledTime).getTime();
       
-      const result = await window.clawdbot?.x?.schedule(content, timestamp);
-      
-      if (result?.success) {
-        showToast('success', 'Tweet scheduled!');
-        setTweets(['']);
-        setScheduledTime('');
-      } else {
-        showToast('error', result?.error || 'Failed to schedule');
-      }
+      await scheduleApi.create({
+        type: 'draft',
+        content,
+        platform: 'twitter',
+        scheduledTime: timestamp,
+      });
+
+      showToast('success', 'Tweet scheduled!');
+      setTweets(['']);
+      setScheduledTime('');
     } catch (error: unknown) {
       showToast('error', `Failed to schedule: ${error instanceof Error ? error.message : String(error)}`);
     } finally {

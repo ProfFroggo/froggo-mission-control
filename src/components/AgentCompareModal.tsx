@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
+import { agentApi } from '../lib/api';
 
 interface AgentCompareModalProps {
   agentIds: string[];
@@ -63,13 +64,17 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
   const loadComparisonData = useCallback(async () => {
     setLoading(true);
     try {
+      const detailsArray = await Promise.all(
+        agentIds.map(id => agentApi.getById(id).catch(() => null))
+      );
       const results: ComparisonData = {};
-      
-      for (const agentId of agentIds) {
+
+      for (let i = 0; i < agentIds.length; i++) {
+        const agentId = agentIds[i];
         const agent = agents.find(a => a.id === agentId);
         if (!agent) continue;
+        const details = detailsArray[i] || {};
 
-        const details = await window.clawdbot.agents.getDetails(agentId);
         results[agentId] = {
           name: agent.name,
           avatar: agent.avatar || '',
