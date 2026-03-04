@@ -608,7 +608,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       });
 
       // Transcribe using Gemini API directly in browser
-      const { default: _blobResult } = await import('../lib/api');
       // Use Gemini API directly with the base64 data
       const apiKey = await getGeminiApiKey();
       if (!apiKey) throw new Error('Gemini API key not configured');

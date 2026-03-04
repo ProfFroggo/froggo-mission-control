@@ -172,7 +172,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         }
 
         // Get agent sessions via gateway
-        const sessions = gateway.getSessions?.() || [];
+        const sessionsResult = await gateway.getSessions?.() || { sessions: [] };
+        const sessions = sessionsResult.sessions || [];
         const agentSessions = sessions.filter((s: any) => {
           return s.key?.includes('agent:') && !s.key?.includes('discord');
         }).map((s: any) => {
@@ -204,7 +205,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch session stats
       let sessionStatsData: BriefData['sessionStats'] = undefined;
       try {
-        const gatewaySessions = gateway.getSessions?.() || [];
+        const gatewayResult = await gateway.getSessions?.() || { sessions: [] };
+        const gatewaySessions = gatewayResult.sessions || [];
         if (gatewaySessions.length > 0) {
           const sessions = gatewaySessions;
           const now = Date.now();
@@ -251,7 +253,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch agent stats
       let agentStatsData: BriefData['agentStats'] = undefined;
       try {
-        const agentGatewaySessions = gateway.getSessions?.() || [];
+        const agentGatewayResult = await gateway.getSessions?.() || { sessions: [] };
+        const agentGatewaySessions = agentGatewayResult.sessions || [];
         const agentTasksRes = await fetch('/api/tasks?status=in-progress');
         const agentTasksData = agentTasksRes.ok ? await agentTasksRes.json() : {};
         const tasksResult = { tasks: Array.isArray(agentTasksData) ? agentTasksData : (agentTasksData?.tasks || []) };

@@ -1533,26 +1533,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   setAbortingAgent(true);
                   try {
                     // Agent abort not available in web mode (requires exec)
-                    showToast('info', 'Agent abort not available in web mode');
-                    setAbortingAgent(false);
                     // Proceed with approval directly
-                    {
-                      showToast('success', 'Proceeding with approval...');
-                      await logTaskActivity(task.id, 'agent_aborted', `Agent session ${activeAgentInfo.displayName} abort requested`);
-                      
-                      // Wait a moment for session to fully terminate
-                      await new Promise(resolve => setTimeout(resolve, 1000));
-                      
-                      // Now approve the task
-                      await updateTask(task.id, { status: 'done' });
-                      await logTaskActivity(task.id, 'task_completed', 'Task marked as done (agent aborted first)');
-                      
-                      setShowAgentActiveModal(false);
-                      setActiveAgentInfo(null);
-                      showToast('success', 'Task completed ✓');
-                    } else {
-                      showToast('error', 'Failed to abort agent', result.stderr || result.error || 'Unknown error');
-                    }
+                    showToast('success', 'Proceeding with approval...');
+                    await logTaskActivity(task.id, 'agent_aborted', `Agent session ${activeAgentInfo.displayName} abort requested`);
+
+                    // Wait a moment for session to fully terminate
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
+                    // Now approve the task
+                    await updateTask(task.id, { status: 'done' });
+                    await logTaskActivity(task.id, 'task_completed', 'Task marked as done (agent aborted first)');
+
+                    setShowAgentActiveModal(false);
+                    setActiveAgentInfo(null);
+                    showToast('success', 'Task completed ✓');
                   } catch (err: unknown) {
                     showToast('error', 'Abort failed', (err as Error).message);
                   } finally {
