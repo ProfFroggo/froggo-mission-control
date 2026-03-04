@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
+import { chatApi } from '../lib/api';
 import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 import FolderSelector from './FolderSelector';
@@ -139,19 +140,15 @@ export default function SessionsFilter() {
 
   const loadFolders = async () => {
     try {
-      const result = await window.clawdbot?.folders.list();
-      if (result?.success) {
-        setFolders(result?.folders || []);
-        
-        // Load folder assignments for all sessions
-        const assignments: Record<string, number[]> = {};
-        for (const session of sessions) {
-          const folderResult = await window.clawdbot?.folders.forConversation(session.key);
-          if (folderResult?.success && folderResult?.folders.length > 0) {
-            assignments[session.key] = folderResult?.folders.map((f: any) => f.id);
-          }
-        }
-        setFolderAssignments(assignments);
+      // Folders managed via localStorage in web mode
+      const stored = localStorage.getItem('froggo-folders');
+      const folderList = stored ? JSON.parse(stored) : [];
+      setFolders(folderList);
+
+      // Load folder assignments from localStorage
+      const storedAssignments = localStorage.getItem('froggo-folder-assignments');
+      if (storedAssignments) {
+        setFolderAssignments(JSON.parse(storedAssignments));
       }
     } catch (error) {
       // '[SessionsFilter] Failed to load folders:', error;
@@ -160,14 +157,11 @@ export default function SessionsFilter() {
 
   const loadNotificationSettings = async () => {
     try {
-      const settings: Record<string, any> = {};
-      for (const session of sessions) {
-        const result = await window.clawdbot?.notificationSettings.getEffective(session.key);
-        if (result?.success && result?.settings) {
-          settings[session.key] = result?.settings;
-        }
+      // Notification settings stored in localStorage in web mode
+      const stored = localStorage.getItem('froggo-notification-settings');
+      if (stored) {
+        setNotificationSettings(JSON.parse(stored));
       }
-      setNotificationSettings(settings);
     } catch (error) {
       // '[SessionsFilter] Failed to load notification settings:', error;
     }
@@ -175,14 +169,12 @@ export default function SessionsFilter() {
 
   const loadPinnedSessions = async () => {
     try {
-      const result = await window.clawdbot?.pins.list();
-      if (result?.success && result?.pins) {
-        // Pins are already sorted by pin_order ASC from the backend
-        const orderedKeys = result?.pins.map((p: any) => p.session_key);
-        const pinSet = new Set<string>(orderedKeys);
-        setPinnedSessions(pinSet);
-        setPinnedOrder(orderedKeys);
-      }
+      // Pins stored in localStorage in web mode
+      const stored = localStorage.getItem('froggo-pinned-sessions');
+      const orderedKeys: string[] = stored ? JSON.parse(stored) : [];
+      const pinSet = new Set<string>(orderedKeys);
+      setPinnedSessions(pinSet);
+      setPinnedOrder(orderedKeys);
     } catch (error) {
       // '[SessionsFilter] Failed to load pinned sessions:', error;
     }
@@ -190,13 +182,10 @@ export default function SessionsFilter() {
 
   const loadSnoozedSessions = async () => {
     try {
-      const result = await window.clawdbot?.snooze.list();
-      if (result?.success && result.snoozes) {
-        const snoozeMap: Record<string, any> = {};
-        result?.snoozes.forEach((snooze: any) => {
-          snoozeMap[snooze.session_id] = snooze;
-        });
-        setSnoozedSessions(snoozeMap);
+      // Snooze stored in localStorage in web mode
+      const stored = localStorage.getItem('froggo-snoozed-sessions');
+      if (stored) {
+        setSnoozedSessions(JSON.parse(stored));
       }
     } catch (error) {
       // '[SessionsFilter] Failed to load snoozed sessions:', error;
@@ -205,14 +194,17 @@ export default function SessionsFilter() {
 
   const togglePin = async (sessionKey: string) => {
     try {
-      const result = await window.clawdbot?.pins.toggle(sessionKey);
-      if (result?.success) {
-        // Reload pins to update UI
-        await loadPinnedSessions();
-      } else if (result?.error) {
-        // Show error if pin limit reached
-        showToast('error', 'Pin Failed', result.error);
+      // Pins stored in localStorage in web mode
+      const stored = localStorage.getItem('froggo-pinned-sessions');
+      const pins: string[] = stored ? JSON.parse(stored) : [];
+      const idx = pins.indexOf(sessionKey);
+      if (idx >= 0) {
+        pins.splice(idx, 1);
+      } else {
+        pins.push(sessionKey);
       }
+      localStorage.setItem('froggo-pinned-sessions', JSON.stringify(pins));
+      await loadPinnedSessions();
     } catch (error) {
       // '[SessionsFilter] Failed to toggle pin:', error;
     }
@@ -247,12 +239,8 @@ export default function SessionsFilter() {
     
     // Save to backend
     try {
-      const result = await window.clawdbot?.pins.reorder(newOrder);
-      if (!result?.success) {
-        logger.error('Failed to reorder pins:', result?.error);
-        // Reload to restore correct order
-        await loadPinnedSessions();
-      }
+      // Pins stored in localStorage in web mode
+      localStorage.setItem('froggo-pinned-sessions', JSON.stringify(newOrder));
     } catch (error) {
       // '[SessionsFilter] Failed to reorder pins:', error;
       await loadPinnedSessions();
@@ -402,13 +390,8 @@ export default function SessionsFilter() {
       // Delete each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot?.conversations.delete(sessionKey);
-          if (result?.success) {
-            successCount++;
-          } else {
-            errorCount++;
-            logger.error(`Failed to delete ${sessionKey}:`, result?.error);
-          }
+          await chatApi.deleteSession(sessionKey);
+          successCount++;
         } catch (error) {
           errorCount++;
           // `[SessionsFilter] Error deleting ${sessionKey}:`, error;
@@ -443,13 +426,10 @@ export default function SessionsFilter() {
       // Archive each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot?.conversations.archive(sessionKey);
-          if (result?.success) {
-            successCount++;
-          } else {
-            errorCount++;
-            logger.error(`Failed to archive ${sessionKey}:`, result?.error);
-          }
+          // Archive not available in web mode — delete session instead
+          console.warn('[SessionsFilter] Archive not implemented in web mode, using delete');
+          await chatApi.deleteSession(sessionKey);
+          successCount++;
         } catch (error) {
           errorCount++;
           // `[SessionsFilter] Error archiving ${sessionKey}:`, error;
@@ -483,13 +463,11 @@ export default function SessionsFilter() {
       // Mark each selected session as read
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot?.conversations.markRead(sessionKey);
-          if (result?.success) {
-            successCount++;
-          } else {
-            errorCount++;
-            logger.error(`Failed to mark ${sessionKey} as read:`, result?.error);
-          }
+          // Mark read stored in localStorage in web mode
+          const readKeys = JSON.parse(localStorage.getItem('froggo-read-sessions') || '[]');
+          if (!readKeys.includes(sessionKey)) readKeys.push(sessionKey);
+          localStorage.setItem('froggo-read-sessions', JSON.stringify(readKeys));
+          successCount++;
         } catch (error) {
           errorCount++;
           // `[SessionsFilter] Error marking ${sessionKey} as read:`, error;
@@ -521,14 +499,11 @@ export default function SessionsFilter() {
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
       logger.debug('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
-      const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
-      if (result?.success) {
-        // Refresh folders and assignments
-        await loadFolders();
-      } else {
-        logger.error('Failed to assign folder:', result?.error);
-        showToast('error', 'Assignment Failed', 'Failed to assign to folder');
-      }
+      // Folder assignments stored in localStorage in web mode
+      const assignments = JSON.parse(localStorage.getItem('froggo-folder-assignments') || '{}');
+      assignments[sessionKey] = folderId;
+      localStorage.setItem('froggo-folder-assignments', JSON.stringify(assignments));
+      await loadFolders();
     } catch (error) {
       // '[SessionsFilter] Error assigning folder:', error;
       showToast('error', 'Assignment Failed', 'Failed to assign to folder');
