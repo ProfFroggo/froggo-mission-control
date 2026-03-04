@@ -25,7 +25,7 @@ None (no ~/.claude/skills/expertise/ available)
 - [x] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
 - [x] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
 - [x] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
-- [ ] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
+- [x] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
 - [ ] **Phase 14: Final Integration & Testing** - E2E smoke test, approval flow, inter-agent comms, memory recall, cleanup
 
 ## Phase Details
@@ -172,7 +172,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 13-01: Create `froggo-db` skill + coding standards skill; register both in `.claude/settings.json`; verify invocation from agent session
+- [x] 13-01: Create 6 Claude Code skills — coding standards, testing, review, decomposition, routing, security ✓ 2026-03-04
 
 ### Phase 14: Final Integration & Testing
 **Goal**: Full E2E verification — all 6 test scenarios pass, zero Electron remnants, production `npm run build` succeeds
@@ -205,5 +205,5 @@ Plans:
 | 10. Session Management | 2/2 | Complete | 2026-03-04 |
 | 11. Cron & Automation | 2/2 | Complete | 2026-03-04 |
 | 12. SSE Streaming | 2/2 | Complete | 2026-03-04 |
-| 13. Skills | 0/1 | Not started | - |
+| 13. Skills | 1/1 | Complete | 2026-03-04 |
 | 14. Final Integration & Testing | 0/2 | Not started | - |
