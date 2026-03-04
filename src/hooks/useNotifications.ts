@@ -5,7 +5,7 @@
 
 /**
  * useNotifications Hook
- * Handles system notifications, action buttons, and navigation from notifications
+ * Handles system notifications using browser Notifications API and REST polling
  */
 
 import { useEffect, useCallback, useState } from 'react';
@@ -36,29 +36,72 @@ export interface NotificationPreferences {
   showPreviews: boolean;
 }
 
+const DEFAULT_PREFS: NotificationPreferences = {
+  enabled: true,
+  taskCompletions: true,
+  agentFailures: true,
+  approvalRequests: true,
+  chatMentions: true,
+  sound: true,
+  showPreviews: true,
+};
+
 export function useNotifications() {
   const navigate = (path: string) => { logger.debug('Navigate:', path); };
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [recentNotifications, setRecentNotifications] = useState<SystemNotification[]>([]);
 
-  // Load preferences on mount
+  // Load preferences from localStorage on mount
   useEffect(() => {
     loadPreferences();
   }, []);
 
+  // Poll for new notifications every 10 seconds
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.notifications)) {
+            setRecentNotifications(prev => {
+              const existing = new Set(prev.map(n => `${n.type}-${n.timestamp}`));
+              const newOnes = (data.notifications as SystemNotification[]).filter(
+                n => !existing.has(`${n.type}-${n.timestamp}`)
+              );
+              if (newOnes.length === 0) return prev;
+              return [...newOnes, ...prev].slice(0, 50);
+            });
+          }
+        }
+      } catch {
+        // Polling failure is non-fatal
+      }
+    };
+
+    poll(); // Initial fetch
+    const timer = setInterval(poll, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   const loadPreferences = useCallback(async () => {
     try {
-      const prefs = await window.clawdbot?.notifications.getPrefs();
-      setPreferences((prefs as unknown as NotificationPreferences) || null);
-    } catch (error) {
-      // '[useNotifications] Failed to load preferences:', error;
+      const stored = localStorage.getItem('notification-preferences');
+      if (stored) {
+        setPreferences(JSON.parse(stored));
+      } else {
+        setPreferences(DEFAULT_PREFS);
+      }
+    } catch {
+      setPreferences(DEFAULT_PREFS);
     }
   }, []);
 
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
-    await window.clawdbot?.notifications.updatePrefs(updates);
-    await loadPreferences();
-  }, [loadPreferences]);
+    const merged = { ...(preferences || DEFAULT_PREFS), ...updates };
+    setPreferences(merged);
+    localStorage.setItem('notification-preferences', JSON.stringify(merged));
+  }, [preferences]);
 
   const sendNotification = useCallback(async (options: {
     type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
@@ -69,79 +112,65 @@ export function useNotifications() {
     actions?: { type: string; text: string }[];
     data?: any;
   }) => {
-    await window.clawdbot?.notifications.send(options as unknown as Notification);
+    // Use browser Notifications API
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(options.title, {
+        body: options.body,
+        silent: options.silent,
+      });
+    } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        new Notification(options.title, {
+          body: options.body,
+          silent: options.silent,
+        });
+      }
+    }
+
+    // Add to recent notifications
+    setRecentNotifications(prev => [{
+      type: options.type,
+      title: options.title,
+      body: options.body,
+      timestamp: Date.now(),
+      data: options.data,
+    }, ...prev].slice(0, 50));
   }, []);
 
   const testNotification = useCallback(async () => {
-    await window.clawdbot?.notifications.test();
-  }, []);
-
-  // Handle incoming notifications
-  useEffect(() => {
-    const unsubscribe = window.clawdbot?.notifications.onReceived((notification: unknown) => {
-      
-      // Add to recent notifications
-      setRecentNotifications(prev => {
-        const updated = [notification as SystemNotification, ...prev];
-        // Keep last 50 notifications
-        return updated.slice(0, 50);
-      });
-
-      // Could trigger in-app toast notification here
+    await sendNotification({
+      type: 'info',
+      title: 'Test Notification',
+      body: 'This is a test notification from Froggo.',
     });
-
-    return unsubscribe;
-  }, []);
-
-  // Handle notification actions (from action buttons)
-  useEffect(() => {
-    const unsubscribe = window.clawdbot?.notifications.onAction((action: unknown) => {
-      handleNotificationAction(action as NotificationAction);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  // Handle navigation requests from notifications
-  useEffect(() => {
-    const unsubscribe = window.clawdbot?.onNavigate((view: string, data?: any) => {
-      handleNavigationFromNotification(view, data);
-    });
-
-    return unsubscribe;
-  }, [navigate]);
+  }, [sendNotification]);
 
   // Handle notification action
   const handleNotificationAction = useCallback((action: NotificationAction) => {
     switch (action.actionType) {
       case 'approve':
-        // Approve approval request
         if (action.data?.itemId) {
-          // Navigate to inbox and auto-approve
           navigate(`/inbox?action=approve&id=${action.data.itemId}`);
         }
         break;
 
       case 'dismiss':
-        // Dismiss notification
         break;
 
       case 'view-task':
-        // View task details
         if (action.data?.taskId) {
           navigate(`/tasks?id=${action.data.taskId}`);
         }
         break;
 
       case 'view-chat':
-        // View chat session
         if (action.data?.sessionId) {
           navigate(`/chat?session=${action.data.sessionId}`);
         }
         break;
 
       case 'view-agent':
-        // View agent details
         if (action.data?.agentName) {
           navigate(`/agents?agent=${action.data.agentName}`);
         }
@@ -155,37 +184,17 @@ export function useNotifications() {
   const handleNavigationFromNotification = useCallback((view: string, data?: any) => {
     switch (view) {
       case 'tasks':
-        if (data?.taskId) {
-          navigate(`/tasks?id=${data.taskId}`);
-        } else {
-          navigate('/tasks');
-        }
+        navigate(data?.taskId ? `/tasks?id=${data.taskId}` : '/tasks');
         break;
-
       case 'agents':
-        if (data?.agentName) {
-          navigate(`/agents?agent=${data.agentName}`);
-        } else {
-          navigate('/agents');
-        }
+        navigate(data?.agentName ? `/agents?agent=${data.agentName}` : '/agents');
         break;
-
       case 'inbox':
-        if (data?.itemId) {
-          navigate(`/inbox?id=${data.itemId}`);
-        } else {
-          navigate('/inbox');
-        }
+        navigate(data?.itemId ? `/inbox?id=${data.itemId}` : '/inbox');
         break;
-
       case 'chat':
-        if (data?.sessionId) {
-          navigate(`/chat?session=${data.sessionId}`);
-        } else {
-          navigate('/chat');
-        }
+        navigate(data?.sessionId ? `/chat?session=${data.sessionId}` : '/chat');
         break;
-
       default:
     }
   }, [navigate]);
@@ -194,7 +203,7 @@ export function useNotifications() {
   const notifyTaskCompleted = useCallback(async (taskTitle: string, taskId: string) => {
     await sendNotification({
       type: 'task-completed',
-      title: '✅ Task Completed',
+      title: 'Task Completed',
       body: taskTitle,
       urgency: 'normal',
       data: { taskId },
@@ -204,7 +213,7 @@ export function useNotifications() {
   const notifyAgentFailed = useCallback(async (agentName: string, taskTitle: string, reason: string, taskId?: string) => {
     await sendNotification({
       type: 'agent-failure',
-      title: `⚠️ ${agentName} Blocked`,
+      title: `${agentName} Blocked`,
       body: `${taskTitle}\n${reason}`,
       urgency: 'critical',
       data: { taskId, agentName, reason },
@@ -214,7 +223,7 @@ export function useNotifications() {
   const notifyApprovalNeeded = useCallback(async (itemTitle: string, itemId: string) => {
     await sendNotification({
       type: 'approval-request',
-      title: '🔔 Approval Needed',
+      title: 'Approval Needed',
       body: itemTitle,
       urgency: 'normal',
       actions: [
@@ -228,7 +237,7 @@ export function useNotifications() {
   const notifyChatMention = useCallback(async (from: string, preview: string, sessionId?: string) => {
     await sendNotification({
       type: 'chat-mention',
-      title: `💬 ${from} mentioned you`,
+      title: `${from} mentioned you`,
       body: preview,
       urgency: 'normal',
       data: { from, sessionId },
@@ -239,13 +248,13 @@ export function useNotifications() {
     // State
     preferences,
     recentNotifications,
-    
+
     // Actions
     loadPreferences,
     updatePreferences,
     sendNotification,
     testNotification,
-    
+
     // Convenience methods
     notifyTaskCompleted,
     notifyAgentFailed,
