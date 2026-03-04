@@ -42,6 +42,8 @@ export const taskApi = {
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'PATCH', body: updates }),
   deleteSubtask: (taskId: string, subtaskId: string) =>
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'DELETE' }),
+  getSubtasks: (taskId: string) =>
+    apiCall(`/tasks/${taskId}/subtasks`),
   getActivity: (taskId: string) =>
     apiCall(`/tasks/${taskId}/activity`),
   addActivity: (taskId: string, activity: any) =>
@@ -83,6 +85,8 @@ export const chatApi = {
     apiCall('/chat/sessions', { method: 'POST', body: { agentId } }),
   deleteSession: (sessionKey: string) =>
     apiCall(`/chat/sessions/${encodeURIComponent(sessionKey)}`, { method: 'DELETE' }),
+  saveMessage: (sessionKey: string, msg: { role: string; content: string; timestamp: number; channel?: string }) =>
+    apiCall(`/chat/sessions/${encodeURIComponent(sessionKey)}/messages`, { method: 'POST', body: msg }),
 };
 
 // SSE streaming for chat
