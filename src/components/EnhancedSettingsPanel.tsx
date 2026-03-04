@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
-import { reconnectGateway } from '../lib/gateway';
+import { settingsApi } from '../lib/api';
 import { showToast } from './Toast';
 import { safeStorage } from '../utils/safeStorage';
 import SecuritySettings from './SecuritySettings';
@@ -334,7 +334,7 @@ export default function EnhancedSettingsPanel() {
     safeStorage.setItem('froggo-settings', JSON.stringify(settings));
 
     try {
-      await window.clawdbot?.settings?.save({
+      await settingsApi.set('automation', {
         externalActionsEnabled: settings.externalActionsEnabled,
         rateLimitTweets: settings.rateLimitTweets,
         rateLimitEmails: settings.rateLimitEmails,
@@ -348,8 +348,6 @@ export default function EnhancedSettingsPanel() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2002);
     showToast('success', 'Settings saved', 'Your preferences have been updated');
-
-    reconnectGateway();
   };
 
   const handleReset = () => {
@@ -590,41 +588,19 @@ export default function EnhancedSettingsPanel() {
         {/* GENERAL TAB */}
         {(activeTab === 'general' || searchQuery) && (
           <div className="space-y-6">
-            {settingsMatch('connection gateway url token') && (
-              <CollapsibleSection 
-                title="Connection" 
+            {settingsMatch('connection system status') && (
+              <CollapsibleSection
+                title="System Status"
                 icon={<Wifi size={16} />}
-                description="Configure connection to Clawdbot gateway"
+                description="Claude Code system overview"
               >
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label htmlFor="gateway-url" className="block text-sm text-clawd-text-dim">Gateway URL</label>
-                      <Tooltip text="WebSocket endpoint for Clawdbot gateway" />
-                    </div>
-                    <input
-                      id="gateway-url"
-                      type="text"
-                      aria-label="Gateway URL input"
-                      value={settings.gatewayUrl}
-                      onChange={(e) => setSettings(s => ({ ...s, gatewayUrl: e.target.value }))}
-                      className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <label htmlFor="gateway-token" className="block text-sm text-clawd-text-dim">Authentication Token</label>
-                      <Tooltip text="Optional token for secured connections" />
-                    </div>
-                    <input
-                      id="gateway-token"
-                      type="password"
-                      aria-label="Authentication token input"
-                      value={settings.gatewayToken}
-                      onChange={(e) => setSettings(s => ({ ...s, gatewayToken: e.target.value }))}
-                      placeholder="Leave empty to use default"
-                      className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                    />
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
+                  <div className="text-sm text-gray-400 space-y-1">
+                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">froggo-db &middot; memory &middot; cron</span></div>
+                    <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
+                    <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
+                    <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/froggo/memory/</span></div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
                     <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
