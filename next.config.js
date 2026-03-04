@@ -1,15 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['better-sqlite3'],
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': require('path').resolve(__dirname, 'src'),
-    };
-    return config;
-  },
+  // better-sqlite3 is server-only — prevents bundling into client chunks
+  serverExternalPackages: ['better-sqlite3'],
+  // @ path alias is picked up automatically from tsconfig paths
 };
 
 module.exports = nextConfig;
