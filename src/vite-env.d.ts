@@ -6,7 +6,3 @@ interface ImportMeta {
   readonly env: Record<string, string | undefined>;
 }
 
-// window.clawdbot compat — polyfilled by src/lib/bridge.ts
-interface Window {
-  clawdbot?: any;
-}
