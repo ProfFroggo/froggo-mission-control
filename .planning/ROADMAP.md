@@ -47,7 +47,7 @@ None (no ~/.claude/skills/expertise/ available)
 Plans:
 - [x] 01-01: Remove Electron deps (`npm uninstall electron electron-builder ...`), install Next.js, create `next.config.js`, update `tsconfig.json` and `package.json` scripts ✓ 2026-03-04
 - [x] 01-02: Create App Router structure (`app/layout.tsx`, `app/page.tsx`), verify TypeScript compiles ✓ 2026-03-04
-- [ ] 01-03: Create `src/lib/api.ts` (typed API clients) + `src/lib/bridge.ts` (`window.clawdbot` polyfill), verify app loads at `localhost:3000`
+- [x] 01-03: Create `src/lib/api.ts` (typed API clients) + `src/lib/bridge.ts` (`window.clawdbot` polyfill), verify app loads at `localhost:3000` ✓ 2026-03-04
 
 ### Phase 2: Database Layer
 **Goal**: Shared `getDb()` module with full schema — all tables created on first run, no migration needed from existing `froggo.db`
@@ -193,7 +193,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Setup & Audit | — | Complete | 2026-03-04 |
-| 1. Electron Strip + Next.js Scaffold | 2/3 | In progress | - |
+| 1. Electron Strip + Next.js Scaffold | 3/3 | Complete | 2026-03-04 |
 | 2. Database Layer | 0/2 | Not started | - |
 | 3. API Routes | 0/4 | Not started | - |
 | 4. Frontend Wiring | 0/2 | Not started | - |
