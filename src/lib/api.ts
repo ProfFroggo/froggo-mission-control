@@ -189,6 +189,18 @@ export const chatRoomApi = {
 };
 
 // ──────────────────────────────────────────────────
+// Sessions
+// ──────────────────────────────────────────────────
+export const sessionApi = {
+  getAll: () => apiCall('/sessions'),
+  getForAgent: (agentId: string) => apiCall(`/agents/${agentId}/session`),
+  create: (agentId: string, sessionId: string, model?: string) =>
+    apiCall(`/agents/${agentId}/session`, { method: 'POST', body: { sessionId, model } }),
+  delete: (agentId: string) =>
+    apiCall(`/agents/${agentId}/session`, { method: 'DELETE' }),
+};
+
+// ──────────────────────────────────────────────────
 // Analytics
 // ──────────────────────────────────────────────────
 export const analyticsApi = {
