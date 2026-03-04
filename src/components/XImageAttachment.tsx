@@ -7,15 +7,19 @@ interface XImageAttachButtonProps {
 }
 
 export function XImageAttachButton({ onImagesSelected, existingImages, disabled }: XImageAttachButtonProps) {
-  const handleClick = async () => {
-    try {
-      const result = await window.clawdbot?.xDraft?.pickImage();
-      if (result?.success && result.filePaths?.length > 0) {
-        onImagesSelected(result.filePaths);
+  const handleClick = () => {
+    // Use browser File API instead of Electron dialog
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = () => {
+      if (input.files && input.files.length > 0) {
+        const urls = Array.from(input.files).map(f => URL.createObjectURL(f));
+        onImagesSelected(urls);
       }
-    } catch {
-      // Silently fail — user can retry
-    }
+    };
+    input.click();
   };
 
   return (
@@ -50,7 +54,7 @@ export function XImageThumbnails({ paths, maxDisplay = 4 }: XImageThumbnailsProp
       {displayPaths.map((filePath, idx) => (
         <img
           key={idx}
-          src={`file://${filePath}`}
+          src={filePath.startsWith('blob:') || filePath.startsWith('data:') ? filePath : `file://${filePath}`}
           alt={`Attachment ${idx + 1}`}
           className="w-16 h-16 object-cover rounded-lg border border-clawd-border"
         />

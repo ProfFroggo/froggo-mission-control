@@ -16,6 +16,7 @@ import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
+import { chatApi, streamMessage } from '../lib/api';
 import { gateway } from '../lib/gateway';
 
 interface PokeModalProps {
@@ -56,7 +57,8 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         return;
       }
       try {
-        const result = await window.clawdbot?.chat?.loadMessages(20, `poke:${taskId}`, 'poke');
+        const chatRes = await fetch(`/api/chat?sessionKey=${encodeURIComponent(`poke:${taskId}`)}&channel=poke&limit=20`);
+        const result = chatRes.ok ? await chatRes.json() : { success: false };
         if (result?.success && result.messages?.length > 0) {
           setMessages(result.messages.map((m: { role: string; content: string; timestamp?: number }) => ({
             role: m.role as 'user' | 'assistant' | 'system',
@@ -104,73 +106,56 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     }]);
 
     try {
-      const ipc = window.clawdbot;
+      // Use REST API for poke
+      const pokeRes = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'poke', taskId, taskTitle }),
+      });
+      const result = pokeRes.ok ? await pokeRes.json() : { success: false, error: 'Request failed' };
 
-      // Use the new internal poke handler
-      if (ipc?.tasks?.pokeInternal) {
-        const result = await ipc.tasks.pokeInternal(taskId, taskTitle);
+      if (result.success) {
+        setSessionKey(result.sessionKey || null);
 
-        if (result.success) {
-          setSessionKey(result.sessionKey || null);
-
-          // Show the initial poke response
-          const userMsg: PokeMessage = {
-            role: 'user',
-            content: `🫵 What's the status of "${taskTitle}"?`,
-            timestamp: Date.now() - 1000,
-          };
-          const responseMessages: PokeMessage[] = [userMsg];
-
-          // Persist user message
-          window.clawdbot?.chat?.saveMessage({
-            role: 'user', content: userMsg.content, timestamp: userMsg.timestamp,
-            sessionKey: `poke:${taskId}`, channel: 'poke',
-          });
-
-          if (result.response) {
-            const assistantMsg: PokeMessage = {
-              role: 'assistant',
-              content: result.response,
-              timestamp: Date.now(),
-            };
-            responseMessages.push(assistantMsg);
-            // Persist assistant response
-            window.clawdbot?.chat?.saveMessage({
-              role: 'assistant', content: assistantMsg.content, timestamp: assistantMsg.timestamp,
-              sessionKey: `poke:${taskId}`, channel: 'poke',
-            });
-          }
-
-          setMessages(responseMessages);
-          await logTaskActivity(taskId, 'poked', 'Task poked (internal modal)');
-        } else {
-          throw new Error(result.error || 'Poke failed');
-        }
-      } else {
-        // Fallback: use old poke but show in modal
-        const result = await ipc?.tasks?.poke(taskId, taskTitle);
         const userMsg: PokeMessage = {
           role: 'user',
           content: `🫵 What's the status of "${taskTitle}"?`,
           timestamp: Date.now() - 1000,
         };
-        const assistantMsg: PokeMessage = {
-          role: 'assistant',
-          content: result?.success
-            ? "Yo, poke sent! Waiting on a response... might take a sec 🐸"
-            : `😬 Couldn't reach the agent: ${result?.error || 'Unknown error'}`,
-          timestamp: Date.now(),
-        };
-        setMessages([userMsg, assistantMsg]);
-        // Persist fallback messages
-        window.clawdbot?.chat?.saveMessage({
-          role: 'user', content: userMsg.content, timestamp: userMsg.timestamp,
-          sessionKey: `poke:${taskId}`, channel: 'poke',
+        const responseMessages: PokeMessage[] = [userMsg];
+
+        // Persist user message
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save', role: 'user', content: userMsg.content, timestamp: userMsg.timestamp,
+            sessionKey: `poke:${taskId}`, channel: 'poke',
+          }),
         });
-        window.clawdbot?.chat?.saveMessage({
-          role: 'assistant', content: assistantMsg.content, timestamp: assistantMsg.timestamp,
-          sessionKey: `poke:${taskId}`, channel: 'poke',
-        });
+
+        if (result.response) {
+          const assistantMsg: PokeMessage = {
+            role: 'assistant',
+            content: result.response,
+            timestamp: Date.now(),
+          };
+          responseMessages.push(assistantMsg);
+          // Persist assistant response
+          fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save', role: 'assistant', content: assistantMsg.content, timestamp: assistantMsg.timestamp,
+              sessionKey: `poke:${taskId}`, channel: 'poke',
+            }),
+          });
+        }
+
+        setMessages(responseMessages);
+        await logTaskActivity(taskId, 'poked', 'Task poked (internal modal)');
+      } else {
+        throw new Error(result.error || 'Poke failed');
       }
     } catch (e: unknown) {
       setMessages([{
@@ -197,15 +182,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     setStreamingContent('');
 
     // Persist user message
-    window.clawdbot?.chat?.saveMessage({
-      role: 'user', content: userText, timestamp: userTimestamp,
-      sessionKey: `poke:${taskId}`, channel: 'poke',
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save', role: 'user', content: userText, timestamp: userTimestamp,
+        sessionKey: `poke:${taskId}`, channel: 'poke',
+      }),
     });
 
     try {
-      const ipc = window.clawdbot?.agents;
-
-      if (sessionKey && ipc?.chat) {
+      if (sessionKey) {
         // Stream listener
         let fullResponse = '';
         streamCleanupRef.current?.();
@@ -228,9 +215,13 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 timestamp: ts,
               }]);
               // Persist assistant reply
-              window.clawdbot?.chat?.saveMessage({
-                role: 'assistant', content: finalContent, timestamp: ts,
-                sessionKey: `poke:${taskId}`, channel: 'poke',
+              fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'save', role: 'assistant', content: finalContent, timestamp: ts,
+                  sessionKey: `poke:${taskId}`, channel: 'poke',
+                }),
               });
             }
             setStreamingContent('');
@@ -252,7 +243,12 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         });
         streamCleanupRef.current = unsub;
 
-        const result = await ipc.chat(sessionKey, userText);
+        const agentChatRes = await fetch('/api/agents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'chat', sessionKey, message: userText }),
+        });
+        const result = agentChatRes.ok ? await agentChatRes.json() : {};
 
         // If no streaming happened, use direct result
         if (!fullResponse && result?.response) {
@@ -263,9 +259,13 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             timestamp: ts,
           }] as PokeMessage[]);
           // Persist direct reply
-          window.clawdbot?.chat?.saveMessage({
-            role: 'assistant', content: result.response, timestamp: ts,
-            sessionKey: `poke:${taskId}`, channel: 'poke',
+          fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save', role: 'assistant', content: result.response, timestamp: ts,
+              sessionKey: `poke:${taskId}`, channel: 'poke',
+            }),
           });
           setStreamingContent('');
           setSending(false);
@@ -281,24 +281,30 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           }
         }, 60000);
       } else {
-        // No session - use pokeInternal for one-shot
-        const ipcTasks = window.clawdbot?.tasks;
-        if (ipcTasks?.pokeInternal) {
-          const result = await ipcTasks.pokeInternal(taskId, `${taskTitle}\n\nUser follow-up: ${userText}`);
-          const reply = result.response || "Hmm, didn't get a response back. Try again? 🤷";
-          const ts = Date.now();
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: reply,
-            timestamp: ts,
-          }]);
-          // Persist assistant reply
-          window.clawdbot?.chat?.saveMessage({
-            role: 'assistant', content: reply, timestamp: ts,
+        // No session - use poke for one-shot
+        const pokeFollowRes = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'poke', taskId, taskTitle: `${taskTitle}\n\nUser follow-up: ${userText}` }),
+        });
+        const pokeResult = pokeFollowRes.ok ? await pokeFollowRes.json() : {};
+        const reply = pokeResult.response || "Hmm, didn't get a response back. Try again?";
+        const ts = Date.now();
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: reply,
+          timestamp: ts,
+        }]);
+        // Persist assistant reply
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save', role: 'assistant', content: reply, timestamp: ts,
             sessionKey: `poke:${taskId}`, channel: 'poke',
-          });
-          if (result.sessionKey) setSessionKey(result.sessionKey);
-        }
+          }),
+        });
+        if (pokeResult.sessionKey) setSessionKey(pokeResult.sessionKey);
         setSending(false);
       }
     } catch (e: unknown) {

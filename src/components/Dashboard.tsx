@@ -388,14 +388,11 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
 
   const loadEvents = async () => {
     try {
-      if (!window.clawdbot?.calendar?.today) {
-        setEvents([]);
-        setLoading(false);
-        return;
-      }
-      const result = await window.clawdbot.calendar.today();
-      if (result?.success && result.events) {
-        const sorted = result.events.sort((a: CalendarEvent, b: CalendarEvent) => {
+      const res = await fetch('/api/schedule');
+      if (res.ok) {
+        const data = await res.json();
+        const todayEvents = (data?.events || data || []) as CalendarEvent[];
+        const sorted = todayEvents.sort((a: CalendarEvent, b: CalendarEvent) => {
           const aTime = a.start.dateTime || a.start.date || '';
           const bTime = b.start.dateTime || b.start.date || '';
           return aTime.localeCompare(bTime);
@@ -559,30 +556,39 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
   const loadAll = async () => {
     // System status
     try {
-      const result = await window.clawdbot?.system?.status();
-      if (result?.success && result.status) {
-        setSysStatus(result.status as unknown as SystemStatus);
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        const s: SystemStatus = {
+          watcherRunning: data?.watcherRunning ?? true,
+          killSwitchOn: data?.killSwitchOn ?? false,
+          inProgressTasks: data?.inProgressTasks ?? 0,
+        };
+        setSysStatus(s);
       }
     } catch { /* ignore */ }
 
     // Token summary
     try {
-      const result = await window.clawdbot?.tokens?.summary({ period: 'day' });
-      if (result?.by_agent && result.by_agent.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalTokens = result.by_agent.reduce((sum: number, a: any) => sum + a.total_all, 0);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalCost = result.by_agent.reduce((sum: number, a: any) => sum + (a.total_cost || 0), 0);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const sorted = [...result.by_agent].sort((a: any, b: any) => b.total_all - a.total_all);
-        setTokenSummary({
-          totalTokens,
-          totalCost,
-          topAgent: sorted[0]?.agent,
-          topAgentTokens: sorted[0]?.total_all,
-        });
-      } else {
-        setTokenSummary({ totalTokens: 0, totalCost: 0 });
+      const res = await fetch('/api/analytics/token-usage?period=day');
+      if (res.ok) {
+        const result = await res.json();
+        if (result?.by_agent && result.by_agent.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const totalTokens = result.by_agent.reduce((sum: number, a: any) => sum + a.total_all, 0);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const totalCost = result.by_agent.reduce((sum: number, a: any) => sum + (a.total_cost || 0), 0);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sorted = [...result.by_agent].sort((a: any, b: any) => b.total_all - a.total_all);
+          setTokenSummary({
+            totalTokens,
+            totalCost,
+            topAgent: sorted[0]?.agent,
+            topAgentTokens: sorted[0]?.total_all,
+          });
+        } else {
+          setTokenSummary({ totalTokens: 0, totalCost: 0 });
+        }
       }
     } catch { /* ignore */ }
   };

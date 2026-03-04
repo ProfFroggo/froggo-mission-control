@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Send, FileText } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import { scheduleApi } from '../lib/api';
 
 export default function XResearchIdeaEditor() {
   const [title, setTitle] = useState('');
@@ -50,22 +51,23 @@ export default function XResearchIdeaEditor() {
     try {
       setSubmitting(true);
       
-      const result = await window.clawdbot?.xResearch?.propose({
-        title: title.trim(),
-        description: description.trim(),
-        citations: validCitations,
-        proposedBy,
+      await scheduleApi.create({
+        type: 'research',
+        content: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          citations: validCitations,
+        }),
+        platform: 'twitter',
+        status: 'pending',
+        metadata: { proposedBy },
       });
 
-      if (result?.success) {
-        showToast('success', 'Research idea submitted for approval');
-        // Reset form
-        setTitle('');
-        setDescription('');
-        setCitations(['']);
-      } else {
-        throw new Error(result?.error || 'Failed to submit research idea');
-      }
+      showToast('success', 'Research idea submitted for approval');
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setCitations(['']);
     } catch (error: unknown) {
       // '[XResearchEditor] Submit error:', error;
       showToast('error', `Failed to submit: ${error instanceof Error ? error.message : String(error)}`);

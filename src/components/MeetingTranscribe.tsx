@@ -23,10 +23,11 @@ async function getApiKey(): Promise<string> {
   // 1. Try Vite env var first (from .env file)
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
-  // 2. Try IPC to main process secret store
+  // 2. Try settings API
   try {
-    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
-    if (key) return key;
+    const { settingsApi } = await import('../lib/api');
+    const result = await settingsApi.get('gemini_api_key');
+    if (result?.value) return result.value;
   } catch { /* ignore */ }
   // 3. Try localStorage
   const storedKey = localStorage.getItem('gemini_api_key');

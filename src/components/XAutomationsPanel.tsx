@@ -5,6 +5,7 @@ import {
   MessageCircle, Hash, Calendar as CalendarIcon, Users, Mail
 } from 'lucide-react';
 import { showToast } from './Toast';
+import { settingsApi } from '../lib/api';
 
 // Automation types
 export interface XAutomationTrigger {
@@ -80,7 +81,7 @@ export default function XAutomationsPanel() {
   const loadAutomations = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.xAutomations?.list();
+      const result = await settingsApi.get('xAutomations') as any;
       if (result?.success && result.automations) {
         setAutomations(result.automations);
       }
@@ -93,8 +94,8 @@ export default function XAutomationsPanel() {
   
   const toggleAutomation = async (id: string, enabled: boolean) => {
     try {
-      const result = await window.clawdbot?.xAutomations?.toggle(id, enabled);
-      if (result?.success) {
+      await settingsApi.set('xAutomationToggle', { id, enabled });
+      {
         loadAutomations();
       }
     } catch (e) {
@@ -106,8 +107,8 @@ export default function XAutomationsPanel() {
     if (!confirm('Are you sure you want to delete this automation?')) return;
     
     try {
-      const result = await window.clawdbot?.xAutomations?.delete(id);
-      if (result?.success) {
+      await settingsApi.set('xAutomationDelete', { id });
+      {
         loadAutomations();
       }
     } catch (e) {
@@ -369,11 +370,8 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         max_executions_per_day: maxPerDay,
       };
       
-      const result = automation
-        ? await window.clawdbot?.xAutomations?.update(automation.id, payload)
-        : await window.clawdbot?.xAutomations?.create(payload);
-      
-      if (result?.success) {
+      const result = await settingsApi.set('xAutomation', { ...(automation ? { id: automation.id } : {}), ...payload }) as any;
+      if (result) {
         onSave();
       } else {
         showToast(`Failed to save: ${result?.error || 'Unknown error'}`, 'error');

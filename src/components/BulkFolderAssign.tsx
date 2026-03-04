@@ -23,7 +23,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
   const loadFolders = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot!.folders.list();
+      const result = await fetch('/api/library?action=folders').then(r => r.ok ? r.json() : { success: false });
       if (result.success && result.folders) {
         setFolders(result.folders);
       }
@@ -56,11 +56,11 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       // Assign each session to selected folders
       for (const sessionKey of sessionKeys) {
         for (const folderId of selectedFolders) {
-          const result = await window.clawdbot!.folders.assign(
-            folderId,
-            sessionKey,
-            'Bulk assignment'
-          );
+          const result = await fetch('/api/library', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'folder-assign', folderId, sessionKey, note: 'Bulk assignment' }),
+          }).then(r => r.ok ? r.json() : { success: false });
           
           if (!result.success) {
             logger.error(`Failed to assign ${sessionKey} to folder ${folderId}:`, result.error);

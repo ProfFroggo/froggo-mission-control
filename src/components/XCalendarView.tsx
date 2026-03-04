@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import EpicCalendar from './EpicCalendar';
+import { scheduleApi } from '../lib/api';
 
 function eventColorResolver(event: CalendarEvent): string | undefined {
   const colorId = (event as any).colorId || '';
@@ -116,22 +117,25 @@ export function XCalendarView() {
 
   const loadPipelineAsEvents = useCallback(async () => {
     try {
-      const [researchResult, planResult, draftResult, scheduleResult, directScheduled] = await Promise.all([
-        window.clawdbot?.xResearch?.list({}),
-        window.clawdbot?.xPlan?.list({}),
-        window.clawdbot?.xDraft?.list({}),
-        window.clawdbot?.xSchedule?.list({}),
-        (window as any).clawdbot?.xPublish?.scheduledList?.(),
-      ]);
+      const allItems = await scheduleApi.getAll();
+      const items = Array.isArray(allItems) ? allItems : [];
 
-      const directPosts = (directScheduled as any)?.scheduled ?? (Array.isArray(directScheduled) ? directScheduled : []);
+      const research = items.filter((i: any) => i.type === 'research');
+      const plans = items.filter((i: any) => i.type === 'plan');
+      const drafts = items.filter((i: any) => i.type === 'draft' && !i.scheduledTime);
+      const scheduled = items.filter((i: any) => i.scheduledTime && i.platform === 'twitter');
 
       const mapped: CalendarEvent[] = [
-        ...mapResearchToEvents((researchResult as any)?.ideas || []),
-        ...mapPlansToEvents((planResult as any)?.plans || []),
-        ...mapDraftsToEvents((draftResult as any)?.drafts || []),
-        ...mapScheduledToEvents((scheduleResult as any)?.scheduled || []),
-        ...mapDirectScheduledToEvents(directPosts),
+        ...mapResearchToEvents(research),
+        ...mapPlansToEvents(plans),
+        ...mapDraftsToEvents(drafts),
+        ...mapDirectScheduledToEvents(scheduled.map((s: any) => ({
+          id: s.id,
+          scheduled_time: s.scheduledTime,
+          content: s.content,
+          status: s.status || 'pending',
+          metadata: s.metadata ? JSON.stringify(s.metadata) : '{}',
+        }))),
       ];
 
       setEvents(mapped);
@@ -155,15 +159,8 @@ export function XCalendarView() {
   ): Promise<boolean> => {
     if ((event as any).colorId !== 'scheduled') return false;
     try {
-      const realId = event.id.replace('scheduled-', '');
-      const result = await window.clawdbot?.xSchedule?.update({
-        id: realId,
-        scheduledFor: newStart.getTime(),
-      });
-      if ((result as any)?.success) {
-        await loadPipelineAsEvents();
-        return true;
-      }
+      // Schedule update not available via REST — refresh events
+      await loadPipelineAsEvents();
       return false;
     } catch {
       return false;

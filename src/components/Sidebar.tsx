@@ -68,30 +68,27 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     localStorage.setItem('sidebarExpanded', String(expanded));
   }, [expanded]);
   
-  // Load inbox count from froggo-db
+  // Load inbox count via REST API
   const loadInboxCount = async () => {
     try {
-      // Check if running in Electron with clawdbot API
-      if (!window.clawdbot?.inbox?.list) {
-        // Web mode - skip inbox loading
-        return;
+      const res = await fetch('/api/inbox?status=pending');
+      if (res.ok) {
+        const data = await res.json();
+        setInboxCount(Array.isArray(data) ? data.length : (data?.items?.length || 0));
       }
-      const result = await window.clawdbot.inbox.list('pending');
-      if (result.success) {
-        setInboxCount(result.items?.length || 0);
-      }
-    } catch (error) {
-      // 'Failed to load inbox count:', error;
+    } catch {
+      // Failed to load inbox count
     }
   };
-  
+
   // Load unread message count for comms inbox badge
   const loadUnreadMsgCount = async () => {
     try {
-      const result = await window.clawdbot?.messages?.recent(50);
-      if (result?.success && result.chats) {
-        const unread = result.chats.filter((c: any) => !c.is_read).length;
-        setUnreadMsgCount(unread);
+      const res = await fetch('/api/notifications?unread=true');
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.notifications || []);
+        setUnreadMsgCount(items.length);
       }
     } catch { /* ignore */ }
   };

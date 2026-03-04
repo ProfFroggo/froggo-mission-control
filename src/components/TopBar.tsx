@@ -74,12 +74,17 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const result = await window.clawdbot?.system?.status();
-        if (result?.success) {
-          setStatus(result.status as unknown as SystemStatus);
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          setStatus({
+            watcherRunning: data?.watcherRunning ?? true,
+            killSwitchOn: data?.killSwitchOn ?? false,
+            inProgressTasks: data?.inProgressTasks ?? 0,
+          } as unknown as SystemStatus);
         }
-      } catch (e) {
-        // '[TopBar] Status check failed:', e;
+      } catch {
+        // Status check failed
       }
     };
     checkStatus();

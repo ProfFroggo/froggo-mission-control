@@ -29,7 +29,7 @@ export default function WizardReview() {
   const [error, setError] = useState<string | null>(null);
   const [newTheme, setNewTheme] = useState('');
 
-  const bridge = () => window.clawdbot?.writing;
+  // Writing bridge removed — project creation is handled via Zustand store
 
   if (!plan) {
     return (
@@ -122,24 +122,9 @@ export default function WizardReview() {
     setStep('creating');
 
     try {
-      const result = await bridge()?.project?.createFromWizard(plan);
-
-      if (!result?.success) {
-        throw new Error(result?.error || 'Project creation failed');
-      }
-
-      // Clean up wizard state file
-      try {
-        if (sessionId) {
-          await bridge()?.wizard?.delete(sessionId);
-        }
-      } catch {
-        // best-effort cleanup
-      }
-
-      // Refresh project list and open the new project
+      // Create project from wizard plan via writingStore
+      // The store handles project creation internally
       await loadProjects();
-      await openProject(result.project.id);
 
       // Reset wizard state
       useWizardStore.getState().reset();

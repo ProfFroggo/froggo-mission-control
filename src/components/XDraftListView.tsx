@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Plus, ArrowLeft } from 'lucide-react';
 import XDraftComposer from './XDraftComposer';
 import { XImageThumbnails } from './XImageAttachment';
+import { scheduleApi } from '../lib/api';
 
 interface Draft {
   id: string;
@@ -26,10 +27,10 @@ export default function XDraftListView() {
   const loadDrafts = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xDraft?.list({ limit: 50 });
-      if (result?.success) {
-        setDrafts((result.drafts || []) as Draft[]);
-      }
+      const allItems = await scheduleApi.getAll();
+      const drafts = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'draft');
+      setDrafts(drafts as Draft[]);
     } catch {
       setDrafts([]);
     } finally {

@@ -6,7 +6,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
+import { taskApi } from '../lib/api';
 import { gateway } from '../lib/gateway';
+import { showToast } from './Toast';
 import BaseModal, { BaseModalBody } from './BaseModal';
 import AgentAvatar from './AgentAvatar';
 
@@ -205,52 +207,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
     addTask(newTask);
 
-    // Attach files if any were selected (background operation, don't block modal close)
-    if (selectedFiles.length > 0 && window.clawdbot?.exec && window.clawdbot?.fs && window.clawdbot?.tasks?.attachments) {
-      // Do file uploads in background
-      (async () => {
-        const deliverablePath = `~/froggo/deliverables/${taskId}`;
-        
-        // Create directory
-        try {
-          await window.clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
-        } catch (err) {
-          // 'Failed to create deliverables directory:', err;
-          return;
-        }
-
-        // Upload each file
-        for (const file of selectedFiles) {
-          try {
-            const filePath = `${deliverablePath}/${file.name}`;
-            
-            // Read file as base64
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                const result = event.target?.result as string;
-                const base64Data = result.split(',')[1];
-                resolve(base64Data);
-              };
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-
-            // Write file
-            await window.clawdbot.fs.writeBase64(filePath, base64);
-
-            // Add attachment record
-            await window.clawdbot.tasks.attachments?.add(
-              taskId,
-              filePath,
-              'deliverable',
-              'user'
-            );
-          } catch (error) {
-            // `Error uploading file ${file.name}:`, error;
-          }
-        }
-      })();
+    // File attachments not available in web mode (requires Electron fs/exec)
+    if (selectedFiles.length > 0) {
+      showToast('info', 'File attachments not available in web mode');
     }
 
     // Trigger post-creation review
@@ -380,7 +339,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const triggerOrchestratorReview = async (task: any) => {
     try {
       // Log task creation activity to DB for orchestrator to pick up
-      await window.clawdbot?.tasks?.activity?.add(task.id || `task-${Date.now()}`, {
+      await taskApi.addActivity(task.id || `task-${Date.now()}`, {
         action: 'created',
         message: `Task created via ${mode} mode`,
         agentId: 'main',

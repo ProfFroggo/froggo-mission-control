@@ -27,10 +27,17 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
 
   const loadEntries = async () => {
     try {
-      const dbExec = window.clawdbot?.db?.exec;
-      if (dbExec) {
-        const res = await dbExec('SELECT * FROM agent_training_log ORDER BY created_at DESC LIMIT 50');
-        setEntries((res?.result || []) as TrainingEntry[]);
+      const res = await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'db-exec',
+          sql: 'SELECT * FROM agent_training_log ORDER BY created_at DESC LIMIT 50',
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEntries((data?.result || []) as TrainingEntry[]);
       }
     } catch (e) {
       // 'Failed to load training log:', e;

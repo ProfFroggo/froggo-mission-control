@@ -6,7 +6,7 @@ import ProjectSelector from './ProjectSelector';
 import ProjectEditor from './ProjectEditor';
 import SetupWizard from './SetupWizard';
 
-const bridge = () => window.clawdbot?.writing?.wizard;
+// Wizard bridge removed — state is managed in the Zustand store
 
 interface PendingWizard {
   sessionId: string;
@@ -37,20 +37,8 @@ export default function WritingWorkspace() {
   useEffect(() => {
     if (wizardStep !== 'idle' || activeProjectId) return;
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await bridge()?.list();
-        if (cancelled) return;
-        if (result?.success && (result.wizards?.length ?? 0) > 0) {
-          setPendingWizard(result.wizards![0]);
-          setShowResumePrompt(true);
-        }
-      } catch {
-        // Silent — no pending wizards
-      }
-    })();
-    return () => { cancelled = true; };
+    // Wizard list not available via web — no pending wizards to detect
+    return () => {};
   }, [wizardStep, activeProjectId]);
 
   const handleResume = () => {
@@ -68,13 +56,7 @@ export default function WritingWorkspace() {
   };
 
   const handleDiscard = async () => {
-    if (pendingWizard?.sessionId) {
-      try {
-        await bridge()?.delete(pendingWizard.sessionId);
-      } catch {
-        // best-effort
-      }
-    }
+    // Wizard state cleanup — no IPC needed
     setShowResumePrompt(false);
     setPendingWizard(null);
   };

@@ -11,6 +11,7 @@ import TaskDetailPanel from './TaskDetailPanel';
 import PokeModal from './PokeModal';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
+import { taskApi, sessionApi } from '../lib/api';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
@@ -128,11 +129,11 @@ export default function Kanban() {
   useEffect(() => {
     const pollActiveSessions = async () => {
       try {
-        const result = await window.clawdbot?.agents?.getActiveSessions();
-        if (result?.success && result.sessions) {
+        const result = await sessionApi.getAll();
+        if (Array.isArray(result)) {
           const activeMap: Record<string, boolean> = {};
-          result.sessions.forEach((s: any) => {
-            activeMap[s.agentId] = true;
+          result.forEach((s: any) => {
+            if (s.agentId) activeMap[s.agentId] = true;
           });
           setActiveSessions(activeMap);
         }
@@ -483,13 +484,17 @@ export default function Kanban() {
     setShowArchiveConfirm(false);
     setIsArchiving(true);
     try {
-      const result = await window.clawdbot?.tasks?.archiveDone();
-      if (result?.success) {
-        showToast('success', `Archived ${result.count || 0} done tasks`);
-        await loadTasksFromDB(); // Refresh to remove archived tasks
-      } else {
-        showToast('error', 'Failed to archive tasks');
+      // Archive done tasks via REST API
+      const doneTasks = tasks.filter(t => t.status === 'done');
+      let archivedCount = 0;
+      for (const t of doneTasks) {
+        try {
+          await taskApi.update(t.id, { status: 'archived' });
+          archivedCount++;
+        } catch { /* skip failed */ }
       }
+      showToast('success', `Archived ${archivedCount} done tasks`);
+      await loadTasksFromDB();
     } catch (_error) {
       showToast('error', 'Failed to archive tasks');
     } finally {

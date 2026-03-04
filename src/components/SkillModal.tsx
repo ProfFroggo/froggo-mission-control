@@ -191,14 +191,15 @@ export default function SkillModal({ isOpen, onClose }: SkillModalProps) {
   const loadSuggestions = async () => {
     setLoadingSuggestions(true);
     try {
-      // Analyze recent tasks from froggo-db to detect patterns
-      const result = await window.clawdbot?.exec?.run('froggo-db task-list --status done --limit 20');
-      const tasks = result?.output ? JSON.parse(result.output) : [];
+      // Analyze recent tasks via REST API
+      const tasksRes = await fetch('/api/tasks?status=done&limit=20');
+      const tasks = tasksRes.ok ? await tasksRes.json() : [];
+      const tasksList = Array.isArray(tasks) ? tasks : (tasks?.tasks || []);
 
       // Send to AI for pattern analysis
       const prompt = `Analyze these recent completed tasks and suggest 3-5 new skills that would be valuable:
 
-${JSON.stringify(tasks, null, 2)}
+${JSON.stringify(tasksList, null, 2)}
 
 Detect patterns in:
 - Repetitive workflows that could be automated
@@ -410,28 +411,37 @@ Format as markdown with proper headings.`;
     if (!skillData.name || !skillData.instructions) return;
 
     try {
-      // 1. Create skill directory
+      // 1. Create skill via REST API
       const skillSlug = skillData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const skillPath = `/opt/homebrew/lib/node_modules/openclaw/skills/${skillSlug}`;
-      await window.clawdbot?.exec?.run(`mkdir -p ${skillPath}`);
-
-      // 2. Create SKILL.md
       const skillMd = generateSkillMd(skillData);
-      await window.clawdbot?.exec?.run(`echo ${JSON.stringify(skillMd)} | cat > ${skillPath}/SKILL.md`);
 
-      // 3. Track in skill_evolution table
-      await window.clawdbot?.exec?.run(
-        `sqlite3 ~/froggo/data/froggo.db "INSERT OR REPLACE INTO skill_evolution (skill_name, proficiency, notes) VALUES ('${skillData.name.replace(/'/g, "''")}', 0.1, 'Auto-created via Skills Add Flow')"`
-      );
+      await fetch('/api/library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create-skill',
+          slug: skillSlug,
+          content: skillMd,
+          name: skillData.name,
+        }),
+      });
 
-      // 4. Auto-create Kanban implementation task
+      // 2. Auto-create Kanban implementation task
       const assignedAgent = assignAgentForSkill(skillData.skillType || 'general');
       const taskTitle = `Implement skill: ${skillData.name}`;
-      const taskDesc = `${skillData.description || skillData.reason || ''}\n\nSkill location: ${skillPath}/SKILL.md\nReview instructions and implement the skill as described.`;
-      
-      await window.clawdbot?.exec?.run(
-        `froggo-db task-add "${taskTitle}" --project "Skills" --status todo --assigned-to ${assignedAgent} --description "${taskDesc.replace(/"/g, '\\"')}"`
-      );
+      const taskDesc = `${skillData.description || skillData.reason || ''}\n\nReview instructions and implement the skill as described.`;
+
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: taskTitle,
+          project: 'Skills',
+          status: 'todo',
+          assignedTo: assignedAgent,
+          description: taskDesc,
+        }),
+      });
 
       // 5. Show success notification
       showToast('success', 'Skill Created!', `${skillData.name} added and task assigned to ${assignedAgent}`);

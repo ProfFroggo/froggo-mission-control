@@ -33,12 +33,12 @@ async function loadApiKey(): Promise<string> {
   // 1. Check Vite env vars (dev mode)
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
-  // 2. Try IPC to main process secret store
+  // 2. Try settings API
   try {
-    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
-    if (key) return key;
-  } catch (err) {
-    // '[VoiceChatPanel] Failed to load API key from settings:', err;
+    const result = await import('../lib/api').then(m => m.settingsApi.get('gemini_api_key'));
+    if (result?.value) return result.value;
+  } catch {
+    // Settings API not available
   }
   // 3. Check localStorage settings
   try {
@@ -64,11 +64,12 @@ interface VoiceChatPanelProps {
 
 async function loadVoiceHistory(agentId: string): Promise<VoiceChatMessage[]> {
   try {
-    const result = await window.clawdbot?.chat?.loadMessages(100, `voice:${agentId}`, 'voice');
-    if (!result?.success || !result.messages) return [];
-    return result.messages
-      .filter((m: { role: string; content: string; timestamp: number }) => m.role !== 'system')
-      .map((m: { role: string; content: string; timestamp: number; id?: string }) => ({
+    const { chatApi } = await import('../lib/api');
+    const messages = await chatApi.getMessages(`voice:${agentId}`);
+    if (!Array.isArray(messages)) return [];
+    return messages
+      .filter((m: any) => m.role !== 'system')
+      .map((m: any) => ({
         id: m.id || `db-${m.timestamp}`,
         role: m.role as 'user' | 'assistant',
         content: m.content,
@@ -81,13 +82,14 @@ async function loadVoiceHistory(agentId: string): Promise<VoiceChatMessage[]> {
 
 function saveVoiceMessage(agentId: string, msg: VoiceChatMessage) {
   if (msg.role === 'system') return;
-  window.clawdbot?.chat?.saveMessage({
-    role: msg.role,
-    content: msg.content,
-    timestamp: msg.timestamp || Date.now(),
-    sessionKey: `voice:${agentId}`,
-    channel: 'voice',
-  });
+  import('../lib/api').then(({ chatApi }) => {
+    chatApi.saveMessage(`voice:${agentId}`, {
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp || Date.now(),
+      channel: 'voice',
+    });
+  }).catch(() => { /* non-critical */ });
 }
 
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
@@ -499,7 +501,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   const clearHistory = () => {
     setMessages([]);
-    window.clawdbot?.chat?.clearMessages(`voice:${selectedAgent.id}`, 'voice');
+    import('../lib/api').then(({ chatApi }) => chatApi.deleteSession(`voice:${selectedAgent.id}`)).catch(() => {});
   };
   
   const handleAgentSwitch = async (agent: ChatAgent) => {
@@ -984,8 +986,9 @@ function isCleanId(id: unknown): boolean {
 
 // ── Tool call executor ──
 async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: ChatAgent): Promise<any> {
-  const exec = window.clawdbot?.exec?.run;
-  if (!exec) return { error: 'Exec not available' };
+  // exec.run not available in web mode — use REST APIs instead
+  const exec = null as any;
+  if (!exec) return { error: 'Not available in web mode' };
 
   try {
     switch (fnName) {

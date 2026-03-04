@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Send } from 'lucide-react';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
+import { scheduleApi } from '../lib/api';
 
 interface ResearchIdea {
   id: string;
@@ -42,14 +43,10 @@ export default function XPlanThreadComposer() {
   const loadApprovedResearch = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot?.xResearch?.list({ 
-        status: 'approved', 
-        limit: 50 
-      });
-      
-      if (result?.success) {
-        setResearchIdeas((result.ideas || []) as ResearchIdea[]);
-      }
+      const allItems = await scheduleApi.getAll();
+      const ideas = (Array.isArray(allItems) ? allItems : [])
+        .filter((item: any) => item.type === 'research' && item.status === 'approved');
+      setResearchIdeas(ideas as ResearchIdea[]);
     } catch (error) {
       // Silently fail - user can still create plan without research
     } finally {
@@ -72,26 +69,27 @@ export default function XPlanThreadComposer() {
     try {
       setSubmitting(true);
       
-      const result = await window.clawdbot?.xPlan?.create({
-        researchIdeaId: selectedResearchId,
-        title: title.trim(),
-        contentType,
-        threadLength,
-        description: description.trim(),
-        proposedBy: getCurrentUserName(),
+      await scheduleApi.create({
+        type: 'plan',
+        content: JSON.stringify({
+          researchIdeaId: selectedResearchId,
+          title: title.trim(),
+          contentType,
+          threadLength,
+          description: description.trim(),
+        }),
+        platform: 'twitter',
+        status: 'pending',
+        metadata: { proposedBy: getCurrentUserName() },
       });
 
-      if (result?.success) {
-        showToast('success', 'Content plan submitted for approval');
-        // Reset form
-        setSelectedResearchId('');
-        setTitle('');
-        setContentType('educational');
-        setThreadLength(1);
-        setDescription('');
-      } else {
-        showToast('error', 'Failed to create content plan. Please try again.');
-      }
+      showToast('success', 'Content plan submitted for approval');
+      // Reset form
+      setSelectedResearchId('');
+      setTitle('');
+      setContentType('educational');
+      setThreadLength(1);
+      setDescription('');
     } catch (error: unknown) {
       // '[XPlanComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error instanceof Error ? error.message : String(error)}`);

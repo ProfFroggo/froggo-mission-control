@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Power, Trash2, Edit, Play, Zap, Clock, Hash, UserPlus, MessageSquare, Heart, Repeat, Send, List } from 'lucide-react';
 import { showToast } from './Toast';
+import { settingsApi } from '../lib/api';
 
 interface Automation {
   id: string;
@@ -69,7 +70,7 @@ export default function XAutomationsTab() {
   const loadAutomations = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot?.xAutomations?.list();
+      const result = await settingsApi.get('xAutomations') as any;
       if (result?.automations) {
         const parsed = result.automations.map((row: any) => ({
           ...row,
@@ -89,7 +90,7 @@ export default function XAutomationsTab() {
 
   const toggleAutomation = async (id: string, currentState: boolean) => {
     try {
-      await window.clawdbot?.xAutomations?.toggle(id, !currentState);
+      await settingsApi.set('xAutomationToggle', { id, enabled: !currentState });
       await loadAutomations();
     } catch (error) {
       // 'Failed to toggle automation:', error;
@@ -100,29 +101,16 @@ export default function XAutomationsTab() {
     if (!confirm('Are you sure you want to delete this automation?')) return;
     
     try {
-      await window.clawdbot?.xAutomations?.delete(id);
+      await settingsApi.set('xAutomationDelete', { id });
       await loadAutomations();
     } catch (error) {
       // 'Failed to delete automation:', error;
     }
   };
 
-  const testAutomation = async (id: string) => {
-    try {
-      // Call the automation engine to test this automation
-      const result = await window.clawdbot?.exec?.run(
-        `~/froggo/scripts/x-automation-engine.sh test ${id}`
-      );
-      
-      if (result?.success) {
-        showToast('success', 'Test Triggered', 'Automation test triggered! Check logs for results.');
-      } else {
-        showToast('error', 'Test Failed', result?.error || 'Unknown error');
-      }
-    } catch (error) {
-      // 'Failed to test automation:', error;
-      showToast('error', 'Test Failed', String(error));
-    }
+  const testAutomation = async (_id: string) => {
+    // exec.run is not available in web — test requires server-side automation engine
+    showToast('info', 'Not Available', 'Automation testing requires the server-side engine.');
   };
 
   const openBuilder = (automation?: Automation) => {
@@ -171,9 +159,9 @@ export default function XAutomationsTab() {
       };
 
       if (editingAutomation) {
-        await window.clawdbot?.xAutomations?.update(editingAutomation.id, automationData);
+        await settingsApi.set('xAutomation', { id: editingAutomation.id, ...automationData });
       } else {
-        await window.clawdbot?.xAutomations?.create(automationData);
+        await settingsApi.set('xAutomation', automationData);
       }
 
       await loadAutomations();
