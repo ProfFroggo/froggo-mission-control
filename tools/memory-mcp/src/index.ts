@@ -13,16 +13,27 @@ import os from 'os';
 const execFileAsync = promisify(execFile);
 
 const VAULT_PATH = process.env.VAULT_PATH ||
-  path.join(os.homedir(), 'froggo', 'memory');
+  path.join(os.homedir(), 'mission-control', 'memory');
 
-function ensureVaultDir() {
-  if (!fs.existsSync(VAULT_PATH)) {
-    fs.mkdirSync(VAULT_PATH, { recursive: true });
-  }
+const QMD_BIN = process.env.QMD_BIN || '/opt/homebrew/bin/qmd';
+const AGENT_ID = process.env.CLAUDE_CODE_AGENT_ID || process.env.AGENT_ID || 'unknown';
+
+function ensureDir(p: string) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
 
+// Category → vault subfolder routing
+const CATEGORY_FOLDER: Record<string, string> = {
+  decision: 'knowledge',
+  gotcha:   'knowledge',
+  pattern:  'knowledge',
+  daily:    'daily',
+  review:   'sessions',
+  agent:    'agents',
+};
+
 const server = new Server(
-  { name: 'memory', version: '1.0.0' },
+  { name: 'memory', version: '3.0.0' },
   { capabilities: { tools: {} } }
 );
 
@@ -30,39 +41,53 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'memory_search',
-      description: 'Search memory vault for relevant notes using keyword search',
+      description: 'Search the Obsidian memory vault using QMD BM25, vector, or hybrid search. Falls back to grep if QMD unavailable.',
       inputSchema: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'Search query' },
-          limit: { type: 'number', description: 'Max results (default 10)' },
+          query: { type: 'string',  description: 'Search query' },
+          mode:  { type: 'string',  enum: ['bm25', 'vector', 'hybrid'], description: 'Search mode (default: hybrid)' },
+          limit: { type: 'number',  description: 'Max results (default 10)' },
         },
         required: ['query'],
       },
     },
     {
       name: 'memory_recall',
-      description: 'Semantic search of memory vault using vector similarity',
+      description: 'Recall memories by topic, recency, or agent. Returns recent notes and context.',
       inputSchema: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'Query to find semantically similar content' },
-          limit: { type: 'number', description: 'Max results (default 5)' },
+          topic: { type: 'string', description: 'Topic or agent name to recall' },
+          days:  { type: 'number', description: 'How many days back to look (default 7)' },
+          limit: { type: 'number', description: 'Max files to return (default 5)' },
         },
-        required: ['query'],
+        required: [],
       },
     },
     {
       name: 'memory_write',
-      description: 'Write a note to the memory vault',
+      description: 'Write a memory note to the Obsidian vault. Routes to correct subfolder by category.',
       inputSchema: {
         type: 'object',
         properties: {
-          filename: { type: 'string', description: 'Note filename (without .md extension)' },
-          content: { type: 'string', description: 'Markdown content to write' },
-          append: { type: 'boolean', description: 'Append to existing file instead of overwrite (default false)' },
+          content:  { type: 'string', description: 'Content to write' },
+          category: { type: 'string', enum: ['decision', 'gotcha', 'pattern', 'daily', 'review', 'agent'], description: 'Memory category' },
+          title:    { type: 'string', description: 'Note title (used as filename)' },
+          agent:    { type: 'string', description: 'Agent name if category=agent' },
         },
-        required: ['filename', 'content'],
+        required: ['content', 'category', 'title'],
+      },
+    },
+    {
+      name: 'memory_read',
+      description: 'Read a specific file from the Obsidian vault by relative path.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Relative path within vault (e.g., "knowledge/architecture.md")' },
+        },
+        required: ['path'],
       },
     },
   ],
@@ -73,58 +98,152 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+
       case 'memory_search': {
-        const query = args?.query as string;
-        const limit = (args?.limit as number) || 10;
+        const query  = args?.query as string;
+        const mode   = (args?.mode as string) || 'hybrid';
+        const limit  = (args?.limit as number) || 10;
+
         try {
-          const { stdout } = await execFileAsync('qmd', ['search', query, '--limit', String(limit)], {
-            timeout: 10000,
-            env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
-          });
+          const { stdout } = await execFileAsync(
+            QMD_BIN,
+            ['search', query, '--mode', mode, '--limit', String(limit)],
+            {
+              cwd: VAULT_PATH,
+              timeout: 10000,
+              env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
+            }
+          );
           return { content: [{ type: 'text', text: stdout || 'No results found.' }] };
         } catch (e: any) {
-          // Fallback: grep the vault directory
-          ensureVaultDir();
-          const files = fs.readdirSync(VAULT_PATH).filter(f => f.endsWith('.md'));
+          // Fallback: recursive grep through vault
+          ensureDir(VAULT_PATH);
           const results: string[] = [];
-          for (const file of files.slice(0, 50)) {
+          function grepDir(dir: string) {
+            if (results.length >= limit) return;
             try {
-              const content = fs.readFileSync(path.join(VAULT_PATH, file), 'utf-8');
-              if (content.toLowerCase().includes(query.toLowerCase())) {
-                results.push(`## ${file}\n${content.slice(0, 300)}...`);
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (results.length >= limit) break;
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  grepDir(fullPath);
+                } else if (entry.name.endsWith('.md')) {
+                  try {
+                    const content = fs.readFileSync(fullPath, 'utf-8');
+                    if (content.toLowerCase().includes(query.toLowerCase())) {
+                      const relPath = path.relative(VAULT_PATH, fullPath);
+                      results.push(`## ${relPath}\n${content.slice(0, 400)}...`);
+                    }
+                  } catch {}
+                }
               }
             } catch {}
-            if (results.length >= limit) break;
           }
-          return { content: [{ type: 'text', text: results.length > 0 ? results.join('\n\n') : `No results for "${query}". (qmd not available: ${e.message})` }] };
+          grepDir(VAULT_PATH);
+          return {
+            content: [{
+              type: 'text',
+              text: results.length > 0
+                ? results.join('\n\n')
+                : `No results for "${query}". (QMD unavailable: ${e.message})`,
+            }],
+          };
         }
       }
 
       case 'memory_recall': {
-        const query = args?.query as string;
+        const topic = (args?.topic as string) || '';
+        const days  = (args?.days  as number) || 7;
         const limit = (args?.limit as number) || 5;
-        try {
-          const { stdout } = await execFileAsync('qmd', ['vsearch', query, '--limit', String(limit)], {
-            timeout: 15000,
-            env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
-          });
-          return { content: [{ type: 'text', text: stdout || 'No results found.' }] };
-        } catch (e: any) {
-          return { content: [{ type: 'text', text: `Semantic search unavailable (qmd not installed or not indexed): ${e.message}. Use memory_search for keyword search.` }] };
+
+        ensureDir(VAULT_PATH);
+        const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+        const results: string[] = [];
+
+        function findRecent(dir: string) {
+          if (results.length >= limit) return;
+          try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (results.length >= limit) break;
+              const fullPath = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                findRecent(fullPath);
+              } else if (entry.name.endsWith('.md')) {
+                try {
+                  const stat = fs.statSync(fullPath);
+                  if (stat.mtimeMs >= cutoff) {
+                    const content = fs.readFileSync(fullPath, 'utf-8');
+                    const matches = !topic || content.toLowerCase().includes(topic.toLowerCase()) || entry.name.toLowerCase().includes(topic.toLowerCase());
+                    if (matches) {
+                      const relPath = path.relative(VAULT_PATH, fullPath);
+                      results.push(`## ${relPath} (modified ${stat.mtime.toISOString().slice(0, 10)})\n${content.slice(0, 600)}...`);
+                    }
+                  }
+                } catch {}
+              }
+            }
+          } catch {}
         }
+
+        findRecent(VAULT_PATH);
+        return {
+          content: [{
+            type: 'text',
+            text: results.length > 0
+              ? results.join('\n\n')
+              : `No memories found${topic ? ` for topic "${topic}"` : ''} in the last ${days} day(s).`,
+          }],
+        };
       }
 
       case 'memory_write': {
-        ensureVaultDir();
-        const filename = (args?.filename as string).replace(/[^a-zA-Z0-9\-_]/g, '-');
-        const filePath = path.join(VAULT_PATH, `${filename}.md`);
-        const content = args?.content as string;
-        if (args?.append && fs.existsSync(filePath)) {
-          fs.appendFileSync(filePath, `\n\n${content}`);
-        } else {
-          fs.writeFileSync(filePath, content);
+        const content  = args?.content  as string;
+        const category = args?.category as string;
+        const title    = (args?.title as string).replace(/[^a-zA-Z0-9\-_ ]/g, '-').trim().replace(/\s+/g, '-');
+        const agent    = (args?.agent  as string) || AGENT_ID;
+
+        // Resolve destination folder
+        let folder = CATEGORY_FOLDER[category] || 'knowledge';
+        if (category === 'agent') {
+          folder = path.join('agents', agent);
         }
-        return { content: [{ type: 'text', text: JSON.stringify({ success: true, path: filePath }) }] };
+
+        const destDir = path.join(VAULT_PATH, folder);
+        ensureDir(destDir);
+
+        const filePath = path.join(destDir, `${title}.md`);
+        fs.writeFileSync(filePath, content, 'utf-8');
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ success: true, path: filePath, folder }),
+          }],
+        };
+      }
+
+      case 'memory_read': {
+        const relPath  = args?.path as string;
+        const filePath = path.join(VAULT_PATH, relPath);
+
+        // Safety: ensure the resolved path stays within the vault
+        if (!filePath.startsWith(VAULT_PATH)) {
+          return {
+            content: [{ type: 'text', text: 'Error: path traversal detected.' }],
+            isError: true,
+          };
+        }
+
+        if (!fs.existsSync(filePath)) {
+          return {
+            content: [{ type: 'text', text: `File not found: ${relPath}` }],
+          };
+        }
+
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return { content: [{ type: 'text', text: content }] };
       }
 
       default:
@@ -138,7 +257,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('memory MCP server running on stdio');
+  console.error(`memory MCP server v3 running. Agent: ${AGENT_ID}, Vault: ${VAULT_PATH}`);
 }
 
 main().catch(console.error);
