@@ -10,7 +10,8 @@
       "Bash(cat *)", "Bash(ls *)", "Bash(mkdir *)", "Bash(cp *)",
       "Bash(mv *)", "Bash(head *)", "Bash(tail *)", "Bash(wc *)",
       "Bash(grep *)", "Bash(find *)", "Bash(echo *)",
-      "Bash(qmd *)"
+      "Bash(qmd *)", "Bash(sqlite3 *)", "Bash(tmux *)",
+      "Bash(bash tools/*)", "Bash(sh tools/*)"
     ],
     "deny": [
       "Bash(rm -rf *)", "Bash(sudo *)", "Bash(curl *)", "Bash(wget *)",
@@ -18,45 +19,41 @@
       "Bash(chmod *)", "Bash(chown *)", "Bash(kill *)", "Bash(pkill *)"
     ]
   },
-  "mcpServers": {
-    "froggo_db": {
-      "command": "node",
-      "args": ["./tools/froggo-db-mcp/dist/index.js"],
-      "env": { "DB_PATH": "~/froggo/data/froggo.db" }
-    },
-    "memory": {
-      "command": "node",
-      "args": ["./tools/memory-mcp/dist/index.js"],
-      "env": { "VAULT_PATH": "~/froggo/memory", "QMD_BIN": "qmd" }
-    },
-    "cron": {
-      "command": "node",
-      "args": ["./tools/cron-mcp/dist/index.js"],
-      "env": { "SCHEDULE_PATH": "~/froggo/data/schedule.json" }
-    }
-  },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "type": "command",
-        "command": "node ./tools/hooks/approval-hook.js",
-        "timeout": 5000
+  "mcpServers": {
+    "mission-control_db": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/Users/kevin.macarthur/git/mission-control-nextjs/tools/mission-control-db-mcp/dist/index.js"],
+      "env": {
+        "MC_DB_PATH": "/Users/kevin.macarthur/mission-control/data/mission-control.db"
       }
-    ],
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/Users/kevin.macarthur/git/mission-control-nextjs/tools/memory-mcp/dist/index.js"],
+      "env": {
+        "VAULT_PATH": "/Users/kevin.macarthur/mission-control/memory",
+        "QMD_BIN": "/opt/homebrew/bin/qmd",
+        "LOG_DIR": "/Users/kevin.macarthur/mission-control/logs"
+      }
+    }
+  },
+  "hooks": {
     "PostToolUse": [
       {
-        "matcher": "mcp__froggo_db__task_update",
+        "matcher": "mcp__mission-control-db__task_update",
         "type": "command",
-        "command": "node ./tools/hooks/review-gate.js"
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/review-gate.js"
       }
     ],
     "Stop": [
       {
         "type": "command",
-        "command": "node ./tools/hooks/session-sync.js"
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/session-sync.js"
       }
     ]
   }
