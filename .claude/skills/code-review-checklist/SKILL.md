@@ -1,6 +1,6 @@
 ---
 name: code-review-checklist
-description: Standard code review checklist for Clara and lead_engineer
+description: Standard code review checklist for Clara and senior-coder
 ---
 
 # Code Review Checklist
@@ -25,6 +25,12 @@ description: Standard code review checklist for Clara and lead_engineer
 - [ ] No N+1 queries (use JOINs)
 - [ ] Large lists paginated
 - [ ] Expensive operations not in render loops
+
+## Mission Control Specifics
+- [ ] DB schema changes run via `npx tsx tools/migrate-db.js` (never raw sqlite3 CLI)
+- [ ] ENV values imported via `src/lib/env.ts` not `process.env` directly
+- [ ] New output files written to `~/mission-control/library/` (correct subfolder)
+- [ ] External actions (tweets, emails, deploys) use `approval_create` MCP tool
 
 ## Verdict
 - **APPROVED**: All boxes checked or minor issues noted
