@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { spawn, execSync } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 
 export async function POST(
   request: NextRequest,
@@ -45,6 +49,32 @@ export async function POST(
 
     db.prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?')
       .run('active', now, id);
+
+    // Actually spawn the agent process (detached, non-blocking)
+    try {
+      const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+      const agentCwd = join(homedir(), `agent-${id}`);
+      const spawnArgs = resumed
+        ? ['--resume', existing!.sessionId, '--agents', id]
+        : ['--agents', id];
+      const proc = spawn('/Users/kevin.macarthur/.npm-global/bin/claude', spawnArgs, {
+        cwd: existsSync(agentCwd) ? agentCwd : homedir(),
+        env: { ...cleanEnv } as NodeJS.ProcessEnv,
+        detached: true,
+        stdio: ['ignore', 'ignore', 'ignore'],
+      });
+      proc.unref();
+    } catch { /* non-blocking — do not fail the request */ }
+
+    // Attempt tmux spawn if tmux session is running
+    try {
+      const scriptPath = join(process.cwd(), 'tools', 'agent-start.sh');
+      if (existsSync(scriptPath)) {
+        execSync(`bash "${scriptPath}" "${id}"`, { timeout: 5000 });
+      }
+    } catch {
+      // tmux not available or agent already running — not fatal
+    }
 
     return NextResponse.json({ success: true, command, resumed });
   } catch (error) {
