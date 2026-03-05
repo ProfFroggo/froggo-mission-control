@@ -1,83 +1,74 @@
 #!/usr/bin/env node
-/**
- * Froggo Session Sync Hook (Stop)
- *
- * Fires at the end of every Claude Code session.
- * Exports session summary to Obsidian vault, logs to analytics.
- */
+// tools/hooks/session-sync.js
+// Claude Code Stop hook — exports session context to Obsidian vault, refreshes QMD index.
 
+const { execSync, spawnSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const fs = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'froggo/data/froggo.db');
-const VAULT_PATH = process.env.VAULT_PATH || path.join(os.homedir(), 'froggo/memory');
+const VAULT_PATH = process.env.VAULT_PATH || path.join(os.homedir(), 'mission-control', 'memory');
+const DB_PATH = process.env.MC_DB_PATH || path.join(os.homedir(), 'mission-control', 'data', 'mission-control.db');
+const QMD_BIN = process.env.QMD_BIN || '/opt/homebrew/bin/qmd';
 
-async function main() {
-  let input = '';
-  process.stdin.setEncoding('utf8');
-
-  for await (const chunk of process.stdin) {
-    input += chunk;
-  }
-
-  let sessionData = {};
+// Read hook input from stdin
+let hookInput = '';
+process.stdin.on('data', chunk => { hookInput += chunk; });
+process.stdin.on('end', () => {
   try {
-    sessionData = JSON.parse(input);
-  } catch (e) {
-    // No session data — still proceed
+    const data = hookInput.trim() ? JSON.parse(hookInput) : {};
+    syncSession(data);
+  } catch {
+    syncSession({});
   }
-
-  const timestamp = Date.now();
-  const date = new Date(timestamp).toISOString().split('T')[0];
-  const sessionId = sessionData.sessionId || `session-${timestamp}`;
-  const agentId = sessionData.agentId || 'unknown';
-
-  // Write session summary to Obsidian vault
-  try {
-    const sessionsDir = path.join(VAULT_PATH, 'sessions');
-    fs.mkdirSync(sessionsDir, { recursive: true });
-
-    const sessionFile = path.join(sessionsDir, `${date}-${agentId}-${sessionId.slice(-8)}.md`);
-    const content = `# Session: ${agentId} — ${date}
-
-## Metadata
-- Agent: ${agentId}
-- Session ID: ${sessionId}
-- Timestamp: ${new Date(timestamp).toISOString()}
-
-## Summary
-${sessionData.summary || 'No summary available'}
-
-## Tool Usage
-${JSON.stringify(sessionData.toolUsage || {}, null, 2)}
-`;
-    fs.writeFileSync(sessionFile, content);
-  } catch (e) {
-    // Silently ignore filesystem errors
-  }
-
-  // Log to analytics
-  try {
-    const Database = require('better-sqlite3');
-    const db = new Database(DB_PATH);
-    db.prepare(`
-      INSERT INTO analytics_events (type, agentId, data, timestamp)
-      VALUES ('session_end', ?, ?, ?)
-    `).run(agentId, JSON.stringify({ sessionId, summary: sessionData.summary }), timestamp);
-
-    // Update agent session status if tracked
-    db.prepare(`
-      UPDATE agent_sessions SET status = 'inactive', lastActivity = ?
-      WHERE agentId = ? AND status = 'active'
-    `).run(timestamp, agentId);
-  } catch (e) {
-    // Silently ignore DB errors
-  }
-
-  process.stdout.write(JSON.stringify({ success: true }));
-}
-
-main().catch(() => {
-  process.stdout.write(JSON.stringify({ success: true }));
 });
+
+function syncSession(data) {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 16);
+  const dateStr = now.toISOString().slice(0, 10);
+
+  // Build session summary
+  const agentId = data.agent_id || data.agentId || process.env.CLAUDE_CODE_AGENT_ID || process.env.AGENT_ID || 'unknown';
+  const sessionId = data.session_id || data.sessionId || process.env.CLAUDE_CODE_SESSION_ID || '';
+  const summary = [
+    `# Session Sync — ${timestamp}`,
+    '',
+    `**Agent**: ${agentId}`,
+    `**Date**: ${dateStr}`,
+    sessionId ? `**Session ID**: ${sessionId}` : '',
+    '',
+    '## Context',
+    data.summary || data.context || '_No summary provided_',
+    '',
+  ].filter(line => line !== undefined).join('\n');
+
+  // Write to vault sessions folder
+  const sessionsDir = path.join(VAULT_PATH, 'sessions');
+  if (!fs.existsSync(sessionsDir)) {
+    fs.mkdirSync(sessionsDir, { recursive: true });
+  }
+  const outFile = path.join(sessionsDir, `${timestamp}.md`);
+  try {
+    fs.writeFileSync(outFile, summary, 'utf8');
+  } catch (e) {
+    // vault may not exist yet — not fatal
+  }
+
+  // Refresh QMD index (non-blocking, non-fatal)
+  if (fs.existsSync(QMD_BIN)) {
+    spawnSync(QMD_BIN, ['index', VAULT_PATH], { timeout: 30000 });
+  }
+
+  // Log analytics event to DB (non-fatal)
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const eventJson = JSON.stringify({ agent_id: agentId, session_id: sessionId, timestamp: now.toISOString() });
+      execSync(`sqlite3 "${DB_PATH}" "INSERT INTO analytics_events (id, event_type, agent_id, metadata, created_at) VALUES ('$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo ${Date.now()})', 'session_sync', '${agentId}', '${eventJson.replace(/'/g, "''")}', '${now.toISOString()}');"`, { timeout: 5000 });
+    }
+  } catch {
+    // DB may not exist yet — not fatal
+  }
+
+  process.exit(0);
+}
