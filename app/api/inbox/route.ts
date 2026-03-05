@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { spawn } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 
 function parseInboxItem(row: Record<string, unknown>) {
   if (!row) return row;
@@ -67,6 +71,20 @@ export async function POST(request: NextRequest) {
     `).run(type, title, content, context ?? null, channel ?? null, source_channel ?? null, status ?? null, now, JSON.stringify(metadata), JSON.stringify(tags), project ?? null);
 
     const item = db.prepare('SELECT * FROM inbox WHERE id = ?').get(result.lastInsertRowid) as Record<string, unknown>;
+
+    // Fire-and-forget: wake inbox agent to triage the new item
+    try {
+      const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+      const inboxCwd = join(homedir(), 'mission-control', 'agents', 'inbox');
+      const triggerMsg = `New inbox item received. Title: "${title}". Type: ${type || 'unknown'}. Channel: ${channel || 'unknown'}. Please triage this item, assign priority, and update its status.`;
+      const proc = spawn(
+        '/Users/kevin.macarthur/.npm-global/bin/claude',
+        ['--print', '--model', 'claude-haiku-4-5-20251001', '--dangerously-skip-permissions', triggerMsg],
+        { cwd: existsSync(inboxCwd) ? inboxCwd : homedir(), env: { ...cleanEnv } as NodeJS.ProcessEnv, detached: true, stdio: ['ignore', 'ignore', 'ignore'] }
+      );
+      proc.unref();
+    } catch { /* fire-and-forget — never fail the request */ }
+
     return NextResponse.json(parseInboxItem(item), { status: 201 });
   } catch (error) {
     console.error('POST /api/inbox error:', error);

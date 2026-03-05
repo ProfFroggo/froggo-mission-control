@@ -30,8 +30,11 @@ const logger = createLogger('VoiceChat');
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function loadApiKey(): Promise<string> {
-  // 1. Check Vite env vars (dev mode)
-  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  // 1. Check Next.js public env vars (client-side, NEXT_PUBLIC_ prefix required)
+  const nextKey = import.meta?.env?.NEXT_PUBLIC_GEMINI_API_KEY || (process as any)?.env?.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (nextKey && nextKey !== 'your_key_here') return nextKey;
+  // 2. Check Vite env vars (legacy / dev compat)
+  const viteKey = import.meta?.env?.VITE_GEMINI_API_KEY || import.meta?.env?.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
   // 2. Try settings API
   try {
@@ -42,7 +45,7 @@ async function loadApiKey(): Promise<string> {
   }
   // 3. Check localStorage settings
   try {
-    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    const s = JSON.parse(localStorage.getItem('mission-control-settings') || '{}');
     if (s.geminiApiKey) return s.geminiApiKey;
   } catch { /* ignore */ }
   return '';
@@ -545,7 +548,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   }
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg">
+    <div className="flex flex-col h-full bg-mission-control-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
         <div className="bg-error-subtle border-b border-error-border px-4 py-3 text-center">
@@ -555,7 +558,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-clawd-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center gap-3">
           {embedded ? (
             <div className="flex items-center gap-2">
@@ -564,8 +567,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 {speaking && <div className="absolute inset-0 rounded-full border-2 border-green-400 animate-ping opacity-40" />}
               </div>
               <div>
-                <span className="text-sm font-medium text-clawd-text">{selectedAgent.name}</span>
-                <span className="text-xs text-clawd-text-dim ml-2">⚡ Gemini Live</span>
+                <span className="text-sm font-medium text-mission-control-text">{selectedAgent.name}</span>
+                <span className="text-xs text-mission-control-text-dim ml-2">⚡ Gemini Live</span>
               </div>
             </div>
           ) : (
@@ -577,7 +580,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs text-success">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
-                <span className="text-[10px] text-clawd-text-dim bg-clawd-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
+                <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
                   🧠 {agentContext.tasks.length}
                 </span>
               )}
@@ -588,20 +591,20 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         
         <div className="flex items-center gap-2">
           {onSwitchToText && (
-            <button onClick={onSwitchToText} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Switch to text chat">
+            <button onClick={onSwitchToText} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors" title="Switch to text chat">
               <MessageSquare size={16} />
             </button>
           )}
           
-          <button data-voice-settings onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Settings">
+          <button data-voice-settings onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors" title="Settings">
             <Settings size={16} />
           </button>
           
-          <button onClick={() => setMuted(!muted)} className={`p-2 rounded-lg transition-colors ${muted ? 'bg-error-subtle text-error' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'}`} title={muted ? 'Unmute' : 'Mute'}>
+          <button onClick={() => setMuted(!muted)} className={`p-2 rounded-lg transition-colors ${muted ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`} title={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
           
-          <button onClick={clearHistory} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-error transition-colors" title="Clear history">
+          <button onClick={clearHistory} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-error transition-colors" title="Clear history">
             <Trash2 size={16} />
           </button>
         </div>
@@ -609,19 +612,19 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Settings panel */}
       {showSettings && !callActive && (
-        <div className="px-4 py-3 border-b border-clawd-border bg-clawd-surface">
+        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label htmlFor="video-mode-select" className="text-xs font-medium text-clawd-text-dim mb-1 block">Video Mode</label>
+              <label htmlFor="video-mode-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Video Mode</label>
               <select id="video-mode-select" value={videoMode} onChange={(e) => setVideoMode(e.target.value as VideoMode)}
-                className="w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm">
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm">
                 <option value="none">🎙️ Audio only</option>
                 <option value="camera">📹 Camera</option>
                 <option value="screen">🖥️ Screen share</option>
               </select>
             </div>
           </div>
-          <p className="text-xs text-clawd-text-dim mt-2">💡 Video mode is set before connecting. Camera/screen can also be toggled during call.</p>
+          <p className="text-xs text-mission-control-text-dim mt-2">💡 Video mode is set before connecting. Camera/screen can also be toggled during call.</p>
         </div>
       )}
       
@@ -647,7 +650,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {/* Messages */}
       <div data-voice-transcript className="flex-1 overflow-y-auto p-4 space-y-3">
         {!historyLoaded && (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
             <Loader2 className="w-6 h-6 animate-spin mb-2" />
             <p className="text-sm">Loading history...</p>
           </div>
@@ -677,9 +680,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             )}
             
             <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-              msg.role === 'user' ? 'bg-clawd-accent/50 text-white'
-                : msg.role === 'system' ? 'bg-clawd-border/50 text-clawd-text-dim text-xs italic px-3 py-1.5'
-                : 'bg-clawd-card text-clawd-text border border-clawd-border'
+              msg.role === 'user' ? 'bg-mission-control-accent/50 text-white'
+                : msg.role === 'system' ? 'bg-mission-control-border/50 text-mission-control-text-dim text-xs italic px-3 py-1.5'
+                : 'bg-mission-control-card text-mission-control-text border border-mission-control-border'
             }`}>
               {msg.role === 'assistant' && msg.content ? (
                 <MarkdownMessage content={msg.content} />
@@ -692,8 +695,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </div>
             
             {msg.role === 'user' && (
-              <div className="w-6 h-6 rounded-full bg-clawd-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <Mic size={12} className="text-clawd-accent" />
+              <div className="w-6 h-6 rounded-full bg-mission-control-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <Mic size={12} className="text-mission-control-accent" />
               </div>
             )}
           </div>
@@ -706,7 +709,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {callActive && audioState === 'suspended' && (
         <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
           <button onClick={handleEnableAudio}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-clawd-bg font-medium transition-colors">
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-mission-control-bg font-medium transition-colors">
             <Volume2 size={18} />
             Enable Audio
           </button>
@@ -716,7 +719,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Audio visualizer */}
       {callActive && (
-        <div className="px-4 py-3 border-t border-clawd-border bg-clawd-surface/50">
+        <div className="px-4 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
           <div className="flex items-center justify-center h-12">
             {listening && !speaking && (
               <div className="flex items-center gap-3">
@@ -730,21 +733,21 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 <Waveform level={speakLevel} color="var(--color-success)" bars={12} height={40} />
               </div>
             )}
-            {!listening && !speaking && <span className="text-xs text-clawd-text-dim">Tap mic to speak</span>}
+            {!listening && !speaking && <span className="text-xs text-mission-control-text-dim">Tap mic to speak</span>}
           </div>
         </div>
       )}
       
       {/* Text input (during call) */}
       {callActive && (
-        <div className="px-4 py-3 border-t border-clawd-border">
+        <div className="px-4 py-3 border-t border-mission-control-border">
           <div className="flex gap-2">
             <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
               placeholder="Type a message (optional)…"
-              className="flex-1 px-4 py-2 rounded-lg bg-clawd-card border border-clawd-border text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent" />
+              className="flex-1 px-4 py-2 rounded-lg bg-mission-control-card border border-mission-control-border text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent" />
             <button onClick={handleSendText} disabled={!textInput.trim()}
-              className="p-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-40" title="Send text">
+              className="p-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40" title="Send text">
               <Send size={20} />
             </button>
           </div>
@@ -752,11 +755,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       )}
       
       {/* Call controls */}
-      <div className="border-t border-clawd-border p-4">
+      <div className="border-t border-mission-control-border p-4">
         <div className="flex items-center justify-center gap-4">
           {callActive && (
             <button data-voice-meeting onClick={toggleMic} disabled={speaking}
-              className={`p-4 rounded-full transition-all ${listening ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'} disabled:opacity-40`}
+              className={`p-4 rounded-full transition-all ${listening ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'} disabled:opacity-40`}
               title={listening ? 'Pause mic' : 'Resume mic'}>
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
             </button>
@@ -771,12 +774,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           {callActive && (
             <>
               <button onClick={toggleScreenShare}
-                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'screen' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'}`}
+                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'screen' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'}`}
                 title="Screen share">
                 {videoActive && geminiLive.videoMode === 'screen' ? <MonitorOff size={22} /> : <Monitor size={22} />}
               </button>
               <button onClick={toggleVideo}
-                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'camera' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'}`}
+                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'camera' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'}`}
                 title="Camera">
                 {videoActive && geminiLive.videoMode === 'camera' ? <VideoOff size={22} /> : <Video size={22} />}
               </button>
@@ -785,7 +788,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         </div>
         
         {!callActive && !connecting && (
-          <p className="text-center text-xs text-clawd-text-dim mt-3">Press call to connect via Gemini Live</p>
+          <p className="text-center text-xs text-mission-control-text-dim mt-3">Press call to connect via Gemini Live</p>
         )}
       </div>
     </div>
@@ -865,7 +868,7 @@ function buildAgentTools(): GeminiTool[] {
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'File path (e.g., ~/froggo/SOUL.md)' },
+          path: { type: 'string', description: 'File path (e.g., ~/mission-control/SOUL.md)' },
           max_lines: { type: 'number', description: 'Max lines to read (default 100)' },
         },
         required: ['path'],
@@ -873,7 +876,7 @@ function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'run_command',
-      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git, openclaw, date, echo, wc, which, node, npx, python3, curl, df, uptime, ps, who).',
+      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, git, date, echo, wc, which, node, npx, python3, curl, df, uptime, ps, who).',
       parameters: {
         type: 'object',
         properties: {
@@ -933,7 +936,7 @@ function buildAgentTools(): GeminiTool[] {
         type: 'object',
         properties: {
           query: { type: 'string', description: 'What to search for in memory' },
-          agent_id: { type: 'string', description: 'Agent whose memory to search (default: froggo)' },
+          agent_id: { type: 'string', description: 'Agent whose memory to search (default: mission-control)' },
         },
         required: ['query'],
       },
@@ -986,50 +989,56 @@ function isCleanId(id: unknown): boolean {
 
 // ── Tool call executor ──
 async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: ChatAgent): Promise<any> {
-  // exec.run not available in web mode — use REST APIs instead
-  const exec = null as any;
-  if (!exec) return { error: 'Not available in web mode' };
-
   try {
     switch (fnName) {
       case 'create_task': {
-        const title = shellSafe(args.title || 'Untitled task');
+        const title = args.title || 'Untitled task';
         const assignee = isCleanId(args.assigned_to) ? args.assigned_to : currentAgent.id;
-        const priority = isCleanId(args.priority) ? args.priority : 'medium';
-        const status = isCleanId(args.status) ? args.status : 'todo';
-        const desc = shellSafe(args.description || '');
-        const r = await exec(`froggo-db task-add "${title}" --priority ${priority} --assign ${assignee} --status ${status} ${desc ? `--desc "${desc}"` : ''} 2>&1`);
+        const r = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, assigned_to: assignee, priority: args.priority || 'medium', status: args.status || 'todo', description: args.description }),
+        }).then(res => res.json());
         invalidateAgentContext(assignee);
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim(), task_created: title };
+        return { success: true, task_created: title, id: r.id };
       }
       case 'update_task': {
         if (!isCleanId(args.task_id)) return { error: 'Invalid task ID' };
-        const parts = [`froggo-db task-update ${args.task_id}`];
-        if (args.status && isCleanId(args.status)) parts.push(`--status ${args.status}`);
-        if (args.priority && isCleanId(args.priority)) parts.push(`--priority ${args.priority}`);
-        if (args.assigned_to && isCleanId(args.assigned_to)) parts.push(`--assign ${args.assigned_to}`);
-        const r = await exec(parts.join(' ') + ' 2>&1');
+        const updates: Record<string, unknown> = {};
+        if (args.status && isCleanId(args.status)) updates.status = args.status;
+        if (args.priority && isCleanId(args.priority)) updates.priority = args.priority;
+        if (args.assigned_to && isCleanId(args.assigned_to)) updates.assigned_to = args.assigned_to;
+        await fetch(`/api/tasks/${args.task_id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
         invalidateAgentContext();
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+        return { success: true };
       }
       case 'list_tasks': {
-        const where: string[] = [];
-        if (args.agent_id && isCleanId(args.agent_id)) where.push(`assigned_to='${args.agent_id}'`);
-        if (args.status && args.status !== 'all' && isCleanId(args.status)) where.push(`status='${args.status}'`);
-        const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
-        const r = await exec(`froggo-db query "SELECT id, title, status, priority, assigned_to FROM tasks ${whereClause} ORDER BY created_at DESC LIMIT 15" --json 2>&1`);
-        try { return { tasks: JSON.parse(r.stdout) }; } catch { return { tasks: [], raw: r.stdout?.trim() }; }
+        const params = new URLSearchParams();
+        if (args.agent_id && isCleanId(args.agent_id)) params.set('assigned_to', args.agent_id);
+        if (args.status && args.status !== 'all' && isCleanId(args.status)) params.set('status', args.status);
+        params.set('limit', '15');
+        const tasks = await fetch(`/api/tasks?${params}`).then(r => r.json()).catch(() => []);
+        return { tasks: Array.isArray(tasks) ? tasks : [] };
       }
       case 'spawn_agent': {
         if (!isCleanId(args.agent_id)) return { error: 'Invalid agent ID' };
         if (args.task_title) {
-          const safeTitle = shellSafe(args.task_title);
-          await exec(`froggo-db task-add "${safeTitle}" --assign ${args.agent_id} --priority high --status todo 2>&1`);
+          await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: args.task_title, assigned_to: args.agent_id, priority: 'high', status: 'todo' }),
+          });
         }
-        const safeMsg = shellSafe(args.message);
-        const r = await exec(`openclaw gateway sessions-send --target "agent:${args.agent_id}:main" --message "${safeMsg}" 2>&1`);
+        await fetch(`/api/agents/${args.agent_id}/spawn`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: args.message }),
+        }).catch(() => {});
         invalidateAgentContext(args.agent_id);
-        return { success: r.success, output: r.stdout?.trim(), agent_spawned: args.agent_id };
+        return { success: true, agent_spawned: args.agent_id };
       }
       case 'get_agent_status': {
         if (!isCleanId(args.agent_id)) return { error: 'Invalid agent ID' };
@@ -1042,39 +1051,34 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         };
       }
       case 'read_file': {
-        const maxLines = Math.min(Math.max(parseInt(args.max_lines) || 100, 1), 500);
-        const safePath = shellSafe(args.path);
-        if (safePath.includes('..')) return { error: 'Path traversal not allowed' };
-        const r = await exec(`head -n ${maxLines} ${safePath} 2>&1`);
-        return { content: r.stdout || r.stderr || 'File not found' };
+        // File reading not available in web mode
+        return { error: 'read_file not available in web mode — use memory_search instead' };
       }
       case 'run_command': {
-        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'openclaw', 'date', 'echo', 'wc', 'which', 'node', 'npx', 'python3', 'curl', 'df', 'uptime', 'ps', 'who'];
-        const safeCmd = shellSafe(args.command);
-        const firstWord = safeCmd.trim().split(/\s+/)[0];
-        if (!allowed.includes(firstWord)) {
-          return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
-        }
-        const r = await exec(safeCmd + ' 2>&1');
-        return { stdout: r.stdout, stderr: r.stderr };
+        // Shell execution not available in web mode
+        return { error: 'run_command not available in web mode' };
       }
       case 'send_message': {
-        const safeMsg = shellSafe(args.message);
-        const r = await exec(`openclaw gateway sessions-send --label discord --message "${safeMsg}" 2>&1`);
-        return { success: r.success, output: r.stdout?.trim() };
+        // Inter-agent messaging via chat rooms API
+        const r = await fetch('/api/chat-rooms/general/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId: currentAgent.id, content: args.message }),
+        }).then(res => res.json()).catch(() => ({ success: false }));
+        return { success: !!r, message_sent: args.message };
       }
       case 'search_workspace': {
-        const safeQuery = shellSafe(args.query);
-        const r = await exec(`grep -rl "${safeQuery}" ~/froggo/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
-        return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
+        const results = await fetch(`/api/library/files?q=${encodeURIComponent(args.query || '')}`)
+          .then(r => r.json()).catch(() => []);
+        return { files: Array.isArray(results) ? results.map((f: any) => f.path || f.name) : [] };
       }
       case 'web_search': {
         const query = args.query || '';
         const encodedQuery = encodeURIComponent(query);
-        
+
         try {
-          // Use DuckDuckGo Instant Answer API directly (no agent dependency)
-          const r = await exec(`curl -s "https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1"`);
+          const r = await fetch(`https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1`)
+            .then(res => res.json()).then(data => ({ stdout: JSON.stringify(data) })).catch(() => ({ stdout: '' }));
           
           if (!r.stdout) {
             return { output: 'Search failed - no response from DuckDuckGo' };
@@ -1131,36 +1135,31 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         }
       }
       case 'check_calendar': {
-        const days = args.days || 1;
-        const r = await exec(`gog calendar events --days ${days} --all --account kevin.macarthur@bitso.com --plain 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || 'No events found' };
+        // Calendar integration not available in web mode
+        return { output: 'Calendar not available in web mode' };
       }
       case 'memory_search': {
-        const agent = isCleanId(args.agent_id) ? args.agent_id : 'froggo';
-        const memBase = agent === 'froggo' ? '~/froggo' : `~/agent-${agent}`;
-        const safeQ = shellSafe(args.query || '');
-        const r = await exec(`grep -rli "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
-        return { results: r.stdout?.trim() || 'No matches found' };
+        const results = await fetch(`/api/library/files?q=${encodeURIComponent(args.query || '')}`)
+          .then(r => r.json()).catch(() => []);
+        return { results: Array.isArray(results) ? results.slice(0, 10).map((f: any) => f.name || f.path).join('\n') : 'No matches found' };
       }
       case 'write_memory': {
-        const agent = args.agent_id || 'voice';
-        const memBase = agent === 'froggo' ? '~/froggo' : `~/agent-${agent}`;
         const today = new Date().toISOString().split('T')[0];
-        const note = (args.note || '').replace(/"/g, '\\"');
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        await exec(`mkdir -p ${memBase}/memory && echo "\\n## ${time}\\n${note}" >> ${memBase}/memory/${today}.md`);
-        return { success: true, message: `Note saved to ${agent}'s memory` };
+        await fetch('/api/library/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: `memory-${today}.md`, content: `\n## ${time}\n${args.note || ''}`, agentId: args.agent_id || 'voice' }),
+        }).catch(() => {});
+        return { success: true, message: `Note saved` };
       }
       case 'send_whatsapp': {
-        const to = (args.to || '').replace(/"/g, '\\"');
-        const msg = (args.message || '').replace(/"/g, '\\"');
-        const r = await exec(`openclaw message --action send --channel whatsapp --target "${to}" --message "${msg}" 2>&1`);
-        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+        // WhatsApp not available in web mode
+        return { success: false, error: 'WhatsApp sending not available in web mode' };
       }
       case 'check_email': {
-        const count = args.count || 5;
-        const r = await exec(`gog gmail messages search "is:inbox" --max ${count} --account kevin.macarthur@bitso.com --plain 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || 'No emails found' };
+        // Email integration not available in web mode
+        return { output: 'Email not available in web mode' };
       }
       default:
         return { error: `Unknown tool: ${fnName}` };
@@ -1202,7 +1201,7 @@ Use these proactively when needed:
 **Memory & Database:**
 - memory_search — Search your memory files for context, past work, decisions
 - read_file — Read SOUL.md, AGENTS.md, MEMORY.md, or any workspace file
-- run_command — Execute froggo-db for tasks (task-list, task-get, task-add, subtask-list, etc.)
+- run_command — Execute shell commands (git, grep, ls, etc.)
 
 **Task Management:**
 - create_task, update_task, list_tasks — Manage Kanban tasks
@@ -1220,10 +1219,10 @@ Use these proactively when needed:
 
 **CRITICAL:** When you don't know something (agent details, past work, workflow rules), USE TOOLS to look it up:
 - memory_search for "what did I do with [topic]"
-- read_file ~/froggo/SOUL.md for your full personality
-- read_file ~/froggo/AGENTS.md for workflow rules
-- run_command froggo-db task-list for current work
-- read_file ~/agent-{agent}/SOUL.md for other agents' details
+- read_file ~/mission-control/SOUL.md for your full personality
+- read_file ~/mission-control/AGENTS.md for workflow rules
+- list_tasks to see current work
+- read_file ~/mission-control/agents/{agent}/SOUL.md for other agents' details
 
 Don't say "I don't have access to that info" — use tools to GET the info.`);
 
