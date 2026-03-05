@@ -75,15 +75,26 @@ blocked → todo → in-progress → internal-review → review → human-review
 - External actions (tweets, emails, deploys) MUST go through approval_create
 - P0/P1 tasks always need Clara review before done
 
-## Skills
+## Skills Protocol
 
-Available skills (invoke with `/skill-name`):
-- `agent-routing` — Which agent handles which work type
-- `code-review-checklist` — Pre-merge code review checklist
-- `froggo-coding-standards` — TypeScript, API, and styling standards
-- `froggo-testing-patterns` — Vitest patterns and test setup
-- `security-checklist` — Security review before shipping
-- `task-decomposition` — Breaking work into Mission Control tasks
-- `x-twitter-strategy` — X/Twitter content approval workflow
-- `nextjs-patterns` — App Router route and component patterns
-- `git-workflow` — Branching, commits, and PR conventions
+**Before starting any task, check if a relevant skill exists and read it.**
+
+```
+Read .claude/skills/{skill-name}/SKILL.md
+```
+
+Match your task to a skill:
+
+| If you're doing... | Read this skill |
+|--------------------|----------------|
+| Writing or reviewing code | `froggo-coding-standards` |
+| Writing tests | `froggo-testing-patterns` |
+| Reviewing someone's code | `code-review-checklist` |
+| Security review | `security-checklist` |
+| Routing work to another agent | `agent-routing` |
+| Breaking work into tasks | `task-decomposition` |
+| Writing Next.js routes/components | `nextjs-patterns` |
+| Git commits, branches, PRs | `git-workflow` |
+| Social media / X content | `x-twitter-strategy` |
+
+Skills are at `.claude/skills/{name}/SKILL.md`. Read the file — don't guess the content.
