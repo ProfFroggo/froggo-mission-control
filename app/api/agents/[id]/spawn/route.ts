@@ -53,7 +53,7 @@ export async function POST(
     // Actually spawn the agent process (detached, non-blocking)
     try {
       const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
-      const agentCwd = join(homedir(), `agent-${id}`);
+      const agentCwd = join(homedir(), 'mission-control', 'agents', id);
       const spawnArgs = resumed
         ? ['--resume', existing!.sessionId, '--agents', id]
         : ['--agents', id];

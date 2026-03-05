@@ -123,17 +123,17 @@ export default function AgentInstallModal({
         ariaLabel={`Install agent: ${entry.name}`}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-clawd-border">
-          <div className="w-9 h-9 rounded-lg bg-clawd-accent/10 flex items-center justify-center flex-shrink-0">
-            <Bot size={18} className="text-clawd-accent" />
+        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
+          <div className="w-9 h-9 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
+            <Bot size={18} className="text-mission-control-accent" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-clawd-text">Install Agent: {entry.name}</h2>
-            <span className="text-xs text-clawd-text-dim">v{entry.version}</span>
+            <h2 className="text-lg font-semibold text-mission-control-text">Install Agent: {entry.name}</h2>
+            <span className="text-xs text-mission-control-text-dim">v{entry.version}</span>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors text-clawd-text-dim hover:text-clawd-text flex-shrink-0"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
             type="button"
             aria-label="Cancel"
           >
@@ -147,19 +147,19 @@ export default function AgentInstallModal({
         <BaseModalBody maxHeight="60vh">
           <div className="space-y-4">
             {/* Workspace path info */}
-            <p className="text-sm text-clawd-text-dim">
+            <p className="text-sm text-mission-control-text-dim">
               This will create{' '}
-              <code className="text-clawd-accent bg-clawd-accent/10 px-1.5 py-0.5 rounded text-xs font-mono">
-                ~/agent-{entry.agent.agentId}/
+              <code className="text-mission-control-accent bg-mission-control-accent/10 px-1.5 py-0.5 rounded text-xs font-mono">
+                ~/mission-control/agents/{entry.agent.agentId}/
               </code>
             </p>
 
             {/* SOUL.md preview box */}
-            <div className="rounded-lg border border-clawd-border bg-clawd-bg overflow-hidden">
-              <div className="px-3 py-2 text-xs text-clawd-text-dim border-b border-clawd-border bg-clawd-surface">
+            <div className="rounded-lg border border-mission-control-border bg-mission-control-bg overflow-hidden">
+              <div className="px-3 py-2 text-xs text-mission-control-text-dim border-b border-mission-control-border bg-mission-control-surface">
                 SOUL.md Preview
               </div>
-              <pre className="p-3 text-xs text-clawd-text-dim overflow-y-auto max-h-48 whitespace-pre-wrap font-mono leading-relaxed">
+              <pre className="p-3 text-xs text-mission-control-text-dim overflow-y-auto max-h-48 whitespace-pre-wrap font-mono leading-relaxed">
                 {entry.agent.soulPreview}
               </pre>
             </div>
@@ -179,7 +179,7 @@ export default function AgentInstallModal({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border rounded-lg transition-colors"
+            className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -213,8 +213,8 @@ export default function AgentInstallModal({
           <div className="flex flex-col items-center gap-4 py-4">
             <Spinner size={28} />
             <div className="text-center">
-              <p className="text-base font-semibold text-clawd-text">Installing {entry.name}...</p>
-              <p className="text-sm text-clawd-text-dim mt-1">Provisioning agent workspace…</p>
+              <p className="text-base font-semibold text-mission-control-text">Installing {entry.name}...</p>
+              <p className="text-sm text-mission-control-text-dim mt-1">Provisioning agent workspace…</p>
             </div>
           </div>
         </BaseModalBody>
@@ -234,29 +234,29 @@ export default function AgentInstallModal({
         ariaLabel="Agent installed"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-clawd-border">
+        <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
           <CheckCircle size={20} className="text-green-400 flex-shrink-0" />
-          <h2 className="text-lg font-semibold text-clawd-text">Agent Installed</h2>
+          <h2 className="text-lg font-semibold text-mission-control-text">Agent Installed</h2>
         </div>
 
         {/* Body */}
         <BaseModalBody>
           <div className="space-y-4">
             {/* Success message */}
-            <p className="text-sm text-clawd-text">
+            <p className="text-sm text-mission-control-text">
               <span className="font-medium text-green-400">{entry.name}</span> installed successfully.
             </p>
 
             {/* Workspace path */}
-            <div className="px-3 py-2.5 rounded-lg bg-clawd-surface border border-clawd-border text-sm text-clawd-text-dim">
+            <div className="px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text-dim">
               Workspace created at{' '}
-              <code className="text-clawd-text font-mono text-xs">~/agent-{entry.agent.agentId}/</code>
+              <code className="text-mission-control-text font-mono text-xs">~/mission-control/agents/{entry.agent.agentId}/</code>
             </div>
 
             {/* Gateway restart advisory */}
             <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
               <RefreshCw size={15} className="flex-shrink-0 mt-0.5" />
-              <span>Restart the OpenClaw gateway for the new agent to appear in session lists.</span>
+              <span>Reload the page for the new agent to appear in the agent list.</span>
             </div>
           </div>
         </BaseModalBody>
@@ -266,7 +266,7 @@ export default function AgentInstallModal({
           <button
             type="button"
             onClick={onInstalled}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-colors"
           >
             Done
           </button>
@@ -286,9 +286,9 @@ export default function AgentInstallModal({
       ariaLabel="Installation failed"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-clawd-border">
+      <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-mission-control-border">
         <AlertTriangle size={20} className="text-red-400 flex-shrink-0" />
-        <h2 className="text-lg font-semibold text-clawd-text">Installation Failed</h2>
+        <h2 className="text-lg font-semibold text-mission-control-text">Installation Failed</h2>
       </div>
 
       {/* Body */}
@@ -303,7 +303,7 @@ export default function AgentInstallModal({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border rounded-lg transition-colors"
+          className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
         >
           Close
         </button>

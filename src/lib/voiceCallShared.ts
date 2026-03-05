@@ -74,10 +74,10 @@ interface DuckDuckGoResult {
 
 type VideoMode = 'camera' | 'screen' | 'none';
 
-/** Resolve agent workspace base path. froggo/main share ~/froggo, others get ~/agent-{id} */
+/** Resolve agent workspace base path. mission-control/main share ~/mission-control, others get ~/mission-control/agents/{id} */
 function agentBasePath(agentId: string): string {
-  if (agentId === 'froggo' || agentId === 'main') return '~/froggo';
-  return `~/agent-${agentId}`;
+  if (agentId === 'mission-control' || agentId === 'main') return '~/mission-control';
+  return `~/mission-control/agents/${agentId}`;
 }
 
 /**
@@ -214,7 +214,7 @@ export function buildAgentTools(): GeminiTool[] {
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'File path (e.g., ~/froggo/SOUL.md)' },
+          path: { type: 'string', description: 'File path (e.g., ~/mission-control/SOUL.md)' },
           max_lines: { type: 'number', description: 'Max lines to read (default 100)' },
         },
         required: ['path'],
@@ -222,7 +222,7 @@ export function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'run_command',
-      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git, openclaw, date, echo, wc, which, node, npx, python3, curl, df, uptime, ps, who).',
+      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, git, date, echo, wc, which, node, npx, python3, curl, df, uptime, ps, who).',
       parameters: {
         type: 'object',
         properties: {
@@ -282,7 +282,7 @@ export function buildAgentTools(): GeminiTool[] {
         type: 'object',
         properties: {
           query: { type: 'string', description: 'What to search for in memory' },
-          agent_id: { type: 'string', description: 'Agent whose memory to search (default: froggo)' },
+          agent_id: { type: 'string', description: 'Agent whose memory to search (default: mission-control)' },
         },
         required: ['query'],
       },
@@ -334,7 +334,7 @@ export function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'read_team_state',
-      description: 'Read TEAM_STATE.md — the master view of what ALL agents are working on. Maintained by Froggo.',
+      description: 'Read TEAM_STATE.md — the master view of what ALL agents are working on. Maintained by Mission Control.',
       parameters: {
         type: 'object',
         properties: {},
@@ -342,7 +342,7 @@ export function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'update_team_state',
-      description: 'Update TEAM_STATE.md — the master view of all agent states. Froggo aggregates all individual STATE.md files here. Only the orchestrator should call this.',
+      description: 'Update TEAM_STATE.md — the master view of all agent states. Mission Control aggregates all individual STATE.md files here. Only the orchestrator should call this.',
       parameters: {
         type: 'object',
         properties: {
@@ -571,7 +571,7 @@ Don't narrate tool usage — just do it and report the result naturally.`);
 You have access to tools for task management, file reading, shell commands, web search, messaging, calendar, email, and memory.
 You can read and update your MEMORY.md (long-term memory) — use it to remember important decisions, lessons, and context across sessions.
 You have a STATE.md file — YOUR single source of truth for everything YOU are working on across ALL your sessions. When you start work, finish a task, hit a blocker, or make a decision — update STATE.md. Write the full state each time (overwrite, not append). This is how your other sessions pick up where you left off, and how other agents know what you're doing.
-There is also a TEAM_STATE.md at ~/froggo/ that Froggo maintains — a master view of what ALL agents are working on. You can read it with read_team_state.
+There is also a TEAM_STATE.md at ~/mission-control/ that Mission Control maintains — a master view of what ALL agents are working on. You can read it with read_team_state.
 Use tools proactively when the user asks you to do something. Don't ask for confirmation unless the action is destructive.
 When you learn something important or the user asks you to remember something, update your MEMORY.md.
 Report results naturally in conversation.`);
