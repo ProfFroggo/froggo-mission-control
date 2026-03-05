@@ -1,14 +1,14 @@
 // src/lib/database.ts
 // Shared database module — used by ALL API routes.
-// Creates ~/froggo/data/froggo.db on first use, WAL mode, full schema.
+// Creates ~/mission-control/data/mission-control.db on first use, WAL mode, full schema.
 
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { ENV } from './env';
 
-// Database location — configurable via env var
-const DB_PATH = process.env.FROGGO_DB_PATH
-  || path.join(process.env.HOME || '/tmp', 'froggo', 'data', 'froggo.db');
+// Database location — single source of truth via ENV wrapper
+const DB_PATH = ENV.DB_PATH;
 
 // Ensure directory exists
 const dbDir = path.dirname(DB_PATH);
@@ -310,12 +310,25 @@ function initSchema(db: Database.Database) {
       ('incidents', 'Incidents', 'Bug reports and production issues');
   `);
 
+  // Add new columns to existing tables — safe to run on every startup
+  const columnMigrations = [
+    `ALTER TABLE chat_rooms ADD COLUMN agents TEXT DEFAULT '[]'`,
+    `ALTER TABLE chat_rooms ADD COLUMN sessionKeys TEXT DEFAULT '{}'`,
+    `ALTER TABLE chat_rooms ADD COLUMN updatedAt INTEGER DEFAULT (unixepoch() * 1000)`,
+    `ALTER TABLE chat_room_messages ADD COLUMN role TEXT DEFAULT 'agent'`,
+    `ALTER TABLE chat_room_messages ADD COLUMN mentionedAgents TEXT DEFAULT '[]'`,
+    `ALTER TABLE chat_room_messages ADD COLUMN messageId TEXT`,
+  ];
+  for (const sql of columnMigrations) {
+    try { db.exec(sql); } catch { /* column already exists */ }
+  }
+
   seedAgents(db);
 }
 
 function seedAgents(db: Database.Database) {
   const agents = [
-    { id: 'froggo',              name: 'Froggo',               description: 'Main orchestrator',        capabilities: '["coordination","task-management","delegation"]',          model: 'opus'   },
+    { id: 'mission-control',              name: 'Mission Control',               description: 'Main orchestrator',        capabilities: '["coordination","task-management","delegation"]',          model: 'opus'   },
     { id: 'coder',               name: 'Coder',                description: 'Software engineer',        capabilities: '["coding","debugging","typescript","python"]',              model: 'sonnet' },
     { id: 'researcher',          name: 'Researcher',           description: 'Research & analysis',      capabilities: '["research","analysis","web-search"]',                      model: 'sonnet' },
     { id: 'writer',              name: 'Writer',               description: 'Content creation',         capabilities: '["writing","editing","documentation"]',                     model: 'sonnet' },
