@@ -1,211 +1,167 @@
-# Roadmap: Froggo Next.js Migration
+# Roadmap: Mission Control — Froggo Platform
 
 ## Overview
 
-Migrate the Froggo AI multi-agent dashboard from Electron + OpenClaw to Next.js + Claude Code SDK. Each phase strips one Electron concern and replaces it with a web-native equivalent, delivering a fully browser-based agent orchestration platform with no native dependencies.
+Multi-agent AI orchestration platform. v1.0 migrated from Electron/OpenClaw to Next.js/Claude Code. v2.0 (Froggo Platform) adds operational infrastructure: tmux orchestration, enhanced memory, voice layer, per-agent capability configs, and git worktrees.
 
-Phase 0 (setup & audit) is complete. Phases 1–14 cover the full migration from scaffolding through final E2E verification. Spec source: `/Users/kevin.macarthur/Downloads/fork-merge.md`.
+Spec sources:
+- v1.0: `/Users/kevin.macarthur/Downloads/fork-merge.md`
+- v2.0: `FROGGO-MIGRATION-ADDENDUM.pdf`, `FROGGO-AGENT-CAPABILITY-MATRIX.pdf`, `FROGGO-VOICE-INTEGRATION.pdf`, `FROGGO-MIGRATION-EXECUTION-PLAN.pdf`
 
-## Domain Expertise
+## Milestones
 
-None (no ~/.claude/skills/expertise/ available)
-
-## Phases
-
-- [x] **Phase 0: Setup & Audit** - Clone, branch, full IPC/gateway/preload audit ✓ COMPLETE
-- [x] **Phase 1: Electron Strip + Next.js Scaffold** - Remove Electron, install Next.js App Router, create compatibility bridge
-- [x] **Phase 2: Database Layer** - Shared better-sqlite3 module, full schema (tasks, agents, messages, approvals, inbox, chat rooms)
-- [x] **Phase 3: API Routes** - Convert all 20+ IPC handler files to Next.js `/api/*` REST routes
-- [x] **Phase 4: Frontend Wiring** - Replace `window.clawdbot` IPC calls with fetch, wire Zustand stores, SSE for chat
-- [x] **Phase 5: MCP Servers** - `froggo-db` MCP + memory MCP for agent tool access ✓ COMPLETE
-- [x] **Phase 6: Agent Definitions** - `.claude/` directory, `SOUL.md` per agent, `settings.json`, shared `CLAUDE.md`
-- [x] **Phase 7: Permission & Hook System** - Tiered approval hooks, Clara review gate, session sync hook
-- [x] **Phase 8: Memory System** - Obsidian vault structure, QMD indexing, architecture map seeded
-- [x] **Phase 9: Chat Rooms** - Inter-agent communication tables, API routes, dashboard UI, SSE
-- [x] **Phase 10: Session Management** - Persistent session table, session management API, spawn integration
-- [x] **Phase 11: Cron & Automation** - Cron entries, cron MCP tools, cron daemon
-- [x] **Phase 12: SSE Streaming** - `/api/agents/:id/stream` endpoint, dashboard real-time polling
-- [x] **Phase 13: Skills** - Project-specific Claude Code skills (froggo-db, coding standards)
-- [x] **Phase 14: Final Integration & Testing** - E2E smoke test, approval flow, inter-agent comms, memory recall, cleanup
-
-## Phase Details
-
-### Phase 0: Setup & Audit ✓ COMPLETE
-**Goal**: Cloned repo to `~/git/froggo-nextjs`, created `migration/nextjs-claude-code` branch, audited all 20+ IPC handlers, `gateway.ts`, `preload.ts`, `agent-registry.json`, and database schema
-**Depends on**: Nothing
-**Research**: Unlikely (audit task)
-**Plans**: Complete — 2026-03-04
+- ✅ [v1.0 Migration](v1.0-migration-ARCHIVE.md) — Phases 0–14 — SHIPPED 2026-03-04
+- 🚧 **v2.0 Froggo Platform** — Phases 15–22 (in progress)
 
 ---
 
-### Phase 1: Electron Strip + Next.js Scaffold
-**Goal**: Working Next.js app that renders the existing React UI in a browser — Electron and OpenClaw fully removed, compatibility bridge in place
-**Depends on**: Phase 0
-**Research**: Unlikely (migration steps fully specified in fork-merge.md §1.1–1.9)
-**Plans**: 3 plans
+## Completed
 
-Plans:
-- [x] 01-01: Remove Electron deps (`npm uninstall electron electron-builder ...`), install Next.js, create `next.config.js`, update `tsconfig.json` and `package.json` scripts ✓ 2026-03-04
-- [x] 01-02: Create App Router structure (`app/layout.tsx`, `app/page.tsx`), verify TypeScript compiles ✓ 2026-03-04
-- [x] 01-03: Create `src/lib/api.ts` (typed API clients) + `src/lib/bridge.ts` (`window.clawdbot` polyfill), verify app loads at `localhost:3000` ✓ 2026-03-04
+<details>
+<summary>✅ v1.0 Migration (Phases 0–14) — SHIPPED 2026-03-04</summary>
 
-### Phase 2: Database Layer
-**Goal**: Shared `getDb()` module with full schema — all tables created on first run, no migration needed from existing `froggo.db`
-**Depends on**: Phase 1
-**Research**: Unlikely (better-sqlite3 already in codebase, full schema in fork-merge.md §2.1)
-**Plans**: 2 plans
+- [x] Phase 0: Setup & Audit — 2026-03-04
+- [x] Phase 1: Electron Strip + Next.js Scaffold (3/3 plans) — 2026-03-04
+- [x] Phase 2: Database Layer (2/2 plans) — 2026-03-04
+- [x] Phase 3: API Routes (4/4 plans) — 2026-03-04
+- [x] Phase 4: Frontend Wiring (2/2 plans) — 2026-03-04
+- [x] Phase 5: MCP Servers (2/2 plans) — 2026-03-04
+- [x] Phase 6: Agent Definitions (2/2 plans) — 2026-03-04
+- [x] Phase 7: Permission & Hook System (2/2 plans) — 2026-03-04
+- [x] Phase 8: Memory System (2/2 plans) — 2026-03-04
+- [x] Phase 9: Chat Rooms (2/2 plans) — 2026-03-04
+- [x] Phase 10: Session Management (2/2 plans) — 2026-03-04
+- [x] Phase 11: Cron & Automation (2/2 plans) — 2026-03-04
+- [x] Phase 12: SSE Streaming (2/2 plans) — 2026-03-04
+- [x] Phase 13: Skills (1/1 plan) — 2026-03-04
+- [x] Phase 14: Final Integration & Testing (2/2 plans) — 2026-03-04
 
-Plans:
-- [x] 02-01: Create `src/lib/database.ts` with `getDb()`, WAL mode, schema: tasks, subtasks, task_activity, task_labels, task_attachments, agents, sessions, messages, approvals, inbox ✓ 2026-03-04
-- [x] 02-02: Extend schema: chat_rooms, chat_room_messages, analytics_events, cron_jobs, skills tables; verify DB creates at `~/froggo/data/froggo.db` ✓ 2026-03-04
+See full details: [v1.0-migration-ARCHIVE.md](v1.0-migration-ARCHIVE.md)
 
-### Phase 3: API Routes
-**Goal**: All IPC handler files converted to Next.js API routes — every `window.clawdbot` channel has a `/api/*` equivalent
-**Depends on**: Phase 2
-**Research**: Unlikely (mechanical IPC→REST mapping, all patterns in fork-merge.md §3.1–3.3 and `src/lib/api.ts`)
-**Plans**: 4 plans
+</details>
 
-Plans:
-- [x] 03-01: Tasks API — `/api/tasks`, `/api/tasks/[id]`, subtasks, activity, attachments routes ✓ 2026-03-04
-- [x] 03-02: Agents + chat sessions API — `/api/agents`, `/api/agents/[id]`, `/api/chat/sessions` ✓ 2026-03-04
-- [x] 03-03: Approvals + inbox + settings + modules API — `/api/approvals`, `/api/inbox`, `/api/settings`, `/api/modules` ✓ 2026-03-04
-- [x] 03-04: Analytics + marketplace + schedule API; verify all routes respond correctly ✓ 2026-03-04
+---
 
-### Phase 4: Frontend Wiring
-**Goal**: Dashboard fully functional — no 404s, Zustand stores use typed API clients, chat uses SSE
-**Depends on**: Phase 3
-**Research**: Unlikely (following patterns established in Phases 1–3)
-**Plans**: 2 plans
+## 🚧 v2.0 Froggo Platform (In Progress)
 
-Plans:
-- [x] 04-01: Update Zustand stores to call typed API methods (`taskApi.*`, `agentApi.*`, etc.), strip all IPC store calls ✓ 2026-03-04
-- [x] 04-02: Wire `ChatPanel.tsx` to SSE stream endpoint, remove all `window.clawdbot.gateway.*` references, verify dashboard renders without errors ✓ 2026-03-04
-
-### Phase 5: MCP Servers
-**Goal**: `froggo-db` MCP and memory MCP running standalone — agents can query DB and read memory through tool calls
-**Depends on**: Phase 2
-**Research**: Likely (Claude Code MCP server API — current registration patterns needed)
-**Research topics**: Claude Code MCP SDK current API, tool registration format, stdio transport setup, how agents discover/configure MCP servers in `settings.json`
-**Plans**: 2 plans
-
-Plans:
-- [x] 05-01: Create `froggo-db` MCP server — tools: `get_tasks`, `update_task`, `create_task`, `get_agent_info`, `log_activity` ✓ 2026-03-04
-- [x] 05-02: Create memory MCP server — tools: `search_memory`, `add_memory`, `get_recent_context`; test both standalone with Claude Code ✓ 2026-03-04
-
-### Phase 6: Agent Definitions
-**Goal**: `.claude/` directory fully configured — all 13 agents have `SOUL.md`, `settings.json` controls permissions, `CLAUDE.md` provides shared context
-**Depends on**: Phase 5
-**Research**: Unlikely (config file creation, patterns in fork-merge.md §6.1–6.4 and `agent-registry.json`)
-**Plans**: 2 plans
-
-Plans:
-- [x] 06-01: Create `.claude/` directory, `CLAUDE.md` shared context, `settings.json` with MCP server config and allowed tools per trust tier ✓ 2026-03-04
-- [x] 06-02: Create `SOUL.md` for all 13 agents: main, coder, researcher, writer, chief, hr, clara, social_media_manager, growth_director, lead_engineer, voice, designer, degen-frog ✓ 2026-03-04
-
-### Phase 7: Permission & Hook System
-**Goal**: Tiered approval hooks active — Tier 1/2 auto-approved, Tier 3+ routed to dashboard for human review; Clara gate and session sync working
-**Depends on**: Phase 6
-**Research**: Likely (Claude Code hooks system — current hook API and intercept patterns)
-**Research topics**: Claude Code hooks API format, pre-tool-use hook structure, how hooks read/write approval state to DB, session sync hook patterns
-**Plans**: 2 plans
-
-Plans:
-- [x] 07-01: Create hooks/ directory + tiered approval hook ✓ 2026-03-04
-- [x] 07-02: Create Clara review gate hook + session sync hook, register all hooks in settings.json ✓ 2026-03-04
-
-### Phase 8: Memory System
-**Goal**: Obsidian vault structure created, QMD indexed, architecture map seeded — agents can recall project context via memory MCP
-**Depends on**: Phase 6
-**Research**: Likely (QMD CLI tool — install and index patterns)
-**Research topics**: QMD install and CLI usage, `qmd index` command format, Obsidian vault structure for agent memory, directory conventions
-**Plans**: 2 plans
-
-Plans:
-- [x] 08-01: Install QMD, create Obsidian vault at `~/froggo/memory/`, seed architecture map from `fork-merge.md` and codebase docs ✓ 2026-03-04
-- [x] 08-02: Index vault with `qmd index`, add cron entry for QMD freshness (`qmd index --watch` or scheduled), verify memory MCP can retrieve context ✓ 2026-03-04
-
-### Phase 9: Chat Rooms
-**Goal**: Inter-agent chat rooms working — agents post messages to rooms, humans read/post, SSE delivers real-time updates to dashboard
-**Depends on**: Phases 4, 8
-**Research**: Unlikely (SQL + REST API + SSE — all patterns from prior phases)
-**Plans**: 2 plans
-
-Plans:
-- [x] 09-01: ChatRoomsPanel module — room list sidebar, message thread, send input, 5s polling ✓ 2026-03-04
-- [x] 09-02: Verified chat rooms API routes from Phase 3 — GET rooms, GET/POST messages ✓ 2026-03-04
-
-### Phase 10: Session Management
-**Goal**: Persistent session tracking — spawn API creates sessions, sessions survive restart, session list visible in dashboard
-**Depends on**: Phase 4
-**Research**: Unlikely (SQL + REST, same patterns as Phase 3)
-**Plans**: 2 plans
-
-Plans:
-- [x] 10-01: Session management API — `/api/agents/[id]/session` GET/POST/DELETE, spawn resumes existing sessions ✓ 2026-03-04
-- [x] 10-02: Sessions list API + sessionApi typed client ✓ 2026-03-04
-
-### Phase 11: Cron & Automation
-**Goal**: Scheduled tasks running — cron daemon active, agents schedule work via MCP tools, dashboard shows cron status
-**Depends on**: Phase 5
-**Research**: Unlikely (node-cron or similar, patterns clear from fork-merge.md §11.1–11.3)
-**Plans**: 2 plans
-
-Plans:
-- [x] 11-01: Cron daemon + cron-setup.sh with 6 scheduled jobs ✓ 2026-03-04
-- [x] 11-02: Cron MCP server — schedule_task, list_jobs, cancel_job; registered in settings.json ✓ 2026-03-04
-
-### Phase 12: SSE Streaming
-**Goal**: Full streaming pipeline — chat messages stream token-by-token via SSE, dashboard shows live typing indicator
-**Depends on**: Phase 4
-**Research**: Unlikely (Next.js streaming response + Claude Code SDK streaming — patterns in fork-merge.md §12.1–12.2)
-**Plans**: 2 plans
-
-Plans:
-- [x] 12-01: Real SSE streaming — spawns claude CLI, pipes stream-json output as SSE data events ✓ 2026-03-04
-- [x] 12-02: Events polling endpoint + useRealtimeUpdates hook for dashboard real-time updates ✓ 2026-03-04
-
-### Phase 13: Skills
-**Goal**: Project-specific Claude Code skills installed — agents invoke `froggo-db` skill and coding standards skill without manual setup
-**Depends on**: Phase 6
-**Research**: Likely (Claude Code skills API — registration and invocation format)
-**Research topics**: Claude Code skills format (YAML/JSON), how skills registered in `settings.json`, skill invocation from agent SOUL.md or tools
+### Phase 15: Environment & Configuration
+**Goal**: Single `.env` file as source of truth for all paths + model strategy; typed `src/lib/env.ts` wrapper; `COST_STRATEGY.md` documented
+**Depends on**: Phase 14
+**Research**: Unlikely
 **Plans**: 1 plan
 
 Plans:
-- [x] 13-01: Create 6 Claude Code skills — coding standards, testing, review, decomposition, routing, security ✓ 2026-03-04
+- [ ] 15-01: Create `.env` (FROGGO_DB_PATH, VAULT_PATH, PROJECT_DIR, QMD_BIN, LOG_DIR, model tiers), `src/lib/env.ts` typed wrapper, `COST_STRATEGY.md`
 
-### Phase 14: Final Integration & Testing
-**Goal**: Full E2E verification — all 6 test scenarios pass, zero Electron remnants, production `npm run build` succeeds
-**Depends on**: All prior phases
-**Research**: Unlikely (verification and cleanup)
+---
+
+### Phase 16: Tmux Orchestration
+**Goal**: `tools/tmux-setup.sh` creates named `froggo-agents` session with per-agent panes; `tools/agent-start.sh` resumes existing sessions by ID or starts new; dashboard spawn API wired to tmux panes
+**Depends on**: Phase 15
+**Research**: Unlikely
 **Plans**: 2 plans
 
 Plans:
-- [x] 14-01: E2E audit — TypeScript clean, all key files verified, Electron remnants assessed ✓ 2026-03-04
-- [x] 14-02: Removed electron/ (73 files), fixed SSR window errors, npm run build SUCCESS ✓ 2026-03-04
+- [ ] 16-01: `tools/tmux-setup.sh` — session `froggo-agents`, window 0 (panes: froggo/coder/clara/on-demand), window 1 (log monitoring), window 2 (Next.js dev server)
+- [ ] 16-02: `tools/agent-start.sh` (check DB for session ID → `claude --resume` or new); update `/api/agents/[id]/spawn` to call agent-start.sh via tmux pane mapping
+
+---
+
+### Phase 17: Enhanced Memory MCP
+**Goal**: Upgrade memory MCP from 3 tools to 4 tools with QMD BM25/vector/hybrid search; session sync hook exports to Obsidian + updates QMD index
+**Depends on**: Phase 15
+**Research**: Unlikely (memory MCP already exists at tools/memory-mcp/)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 17-01: Upgrade `tools/memory-mcp/src/index.ts` — add `memory_recall` (temporal/topic/graph), upgrade `memory_search` to QMD BM25/vector/hybrid, upgrade `memory_write` to category routing (decision/gotcha/pattern/daily/review)
+- [ ] 17-02: Upgrade `tools/hooks/session-sync.js` — POST to `/api/sync-claude-sessions`, update QMD indexes, log analytics event
+
+---
+
+### Phase 18: APPROVAL_RULES + Git Worktrees
+**Goal**: `APPROVAL_RULES.md` documents Tier 0–3 with explicit examples per agent action; git worktrees created for coder/designer/chief agents
+**Depends on**: Phase 15
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 18-01: Create `APPROVAL_RULES.md` (Tier 0: auto-approve, Tier 1: soft/logged, Tier 2: review required, Tier 3: explicit human); `tools/worktree-setup.sh` creates `~/mission-control-worktrees/{coder,designer,chief}` on branches `agent/{name}`
+
+---
+
+### Phase 19: Per-Agent Capability Configs
+**Goal**: All 13 agent SOUL.md files upgraded with full frontmatter (model tier, mode, maxTurns, allowed tools, worktree path) and real personality content
+**Depends on**: Phases 15, 18
+**Research**: Unlikely (full spec in FROGGO-AGENT-CAPABILITY-MATRIX.pdf)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 19-01: Update `.claude/settings.json` — per-agent model config, maxTurns, tool allowlists; update `CLAUDE.md` shared context with library routing table
+- [ ] 19-02: Enrich all 13 SOUL.md files — real personality, role context, constraints, output routing; add `froggo-db-mcp` + `memory` MCP to all agent configs
+
+---
+
+### Phase 20: Agent Skill Enrichment
+**Goal**: Existing 6 skills enriched with Froggo-specific context; new skills added per capability matrix
+**Depends on**: Phase 19
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 20-01: Update existing 6 skills with Froggo paths/conventions; add: `x-twitter-strategy`, `nextjs-patterns`, `git-workflow`; register all in `settings.json`
+
+---
+
+### Phase 21: Voice Bridge
+**Goal**: Gemini Live API voice bridge running — voice input → Gemini → Claude Code → response streamed back; per-agent voice personalities; `switch_agent` function call
+**Depends on**: Phase 19
+**Research**: Likely (Gemini Live API `gemini-2.5-flash-native-audio-preview` current SDK patterns)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 21-01: Create `tools/voice-bridge/` — `src/index.ts` (Gemini Live session + function call handler), `src/personality.ts` (loads agent SOUL.md → Gemini system_instruction, VOICE_MAP per agent)
+- [ ] 21-02: `src/tools.ts` (Gemini FunctionDeclarations mirroring all MCP tools + `delegate_to_claude` + `switch_agent`); `/api/voice/status` endpoint; voice bridge start/stop from dashboard
+
+---
+
+### Phase 22: E2E Verification v2.0
+**Goal**: All v2.0 components verified end-to-end — tmux sessions start, agents resume, memory search works, approval tiers fire correctly, voice bridge connects
+**Depends on**: All v2.0 phases
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 22-01: E2E smoke test — tmux session start, agent spawn/resume, memory write/search, Tier 1 approval auto-approve, Tier 3 approval queues for human, voice bridge handshake
 
 ---
 
 ## Progress
 
-**Execution Order:** 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 0. Setup & Audit | v1.0 | — | Complete | 2026-03-04 |
+| 1. Electron Strip | v1.0 | 3/3 | Complete | 2026-03-04 |
+| 2. Database Layer | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 3. API Routes | v1.0 | 4/4 | Complete | 2026-03-04 |
+| 4. Frontend Wiring | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 5. MCP Servers | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 6. Agent Definitions | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 7. Permission & Hooks | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 8. Memory System | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 9. Chat Rooms | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 10. Session Management | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 11. Cron & Automation | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 12. SSE Streaming | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 13. Skills | v1.0 | 1/1 | Complete | 2026-03-04 |
+| 14. Final Integration | v1.0 | 2/2 | Complete | 2026-03-04 |
+| 15. Env & Config | v2.0 | 0/1 | Not started | — |
+| 16. Tmux Orchestration | v2.0 | 0/2 | Not started | — |
+| 17. Enhanced Memory MCP | v2.0 | 0/2 | Not started | — |
+| 18. Approval Rules + Worktrees | v2.0 | 0/1 | Not started | — |
+| 19. Per-Agent Capabilities | v2.0 | 0/2 | Not started | — |
+| 20. Skill Enrichment | v2.0 | 0/1 | Not started | — |
+| 21. Voice Bridge | v2.0 | 0/2 | Not started | — |
+| 22. E2E Verification v2.0 | v2.0 | 0/1 | Not started | — |
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 0. Setup & Audit | — | Complete | 2026-03-04 |
-| 1. Electron Strip + Next.js Scaffold | 3/3 | Complete | 2026-03-04 |
-| 2. Database Layer | 2/2 | Complete | 2026-03-04 |
-| 3. API Routes | 4/4 | Complete | 2026-03-04 |
-| 4. Frontend Wiring | 2/2 | Complete | 2026-03-04 |
-| 5. MCP Servers | 2/2 | Complete | 2026-03-04 |
-| 6. Agent Definitions | 2/2 | Complete | 2026-03-04 |
-| 7. Permission & Hook System | 2/2 | Complete | 2026-03-04 |
-| 8. Memory System | 2/2 | Complete | 2026-03-04 |
-| 9. Chat Rooms | 2/2 | Complete | 2026-03-04 |
-| 10. Session Management | 2/2 | Complete | 2026-03-04 |
-| 11. Cron & Automation | 2/2 | Complete | 2026-03-04 |
-| 12. SSE Streaming | 2/2 | Complete | 2026-03-04 |
-| 13. Skills | 1/1 | Complete | 2026-03-04 |
-| 14. Final Integration & Testing | 2/2 | Complete | 2026-03-04 |
-
-**Migration Status: COMPLETE as of 2026-03-04**
+**Migration Status: v1.0 COMPLETE — v2.0 READY TO START**

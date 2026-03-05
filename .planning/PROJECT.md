@@ -1,76 +1,106 @@
-# Froggo AI Dashboard — Next.js Migration
+# Mission Control — Froggo Platform
 
 ## What This Is
 
-Froggo is a multi-agent AI orchestration dashboard. This project migrates it from an Electron/OpenClaw desktop app to a Next.js web app backed by Claude Code agents via the Claude Code SDK. The result is a browser-based dashboard with no Electron, no OpenClaw, no third-party services.
+Mission Control is a multi-agent AI orchestration platform running in the browser. Agents (coder, researcher, writer, chief, clara, designer, etc.) are orchestrated via Claude Code CLI, communicate through a shared SQLite database and Obsidian memory vault, and are controlled through a Next.js dashboard. The v1.0 migration from Electron is complete — the platform now runs fully in the browser with no native dependencies.
 
 ## Core Value
 
-Agents talking end-to-end — messages in, streaming responses out, human-in-the-loop approvals working. Everything else is scaffolding.
+Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
 
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
-- ✓ Repo cloned to `~/git/froggo-nextjs` — existing
-- ✓ Migration branch `migration/nextjs-claude-code` created — existing
-- ✓ Codebase audited (20+ IPC handler files, gateway.ts, preload.ts, agent-registry.json) — existing
+- ✓ Electron removed, Next.js App Router scaffolded — v1.0
+- ✓ 18-table SQLite schema with `getDb()` singleton — v1.0
+- ✓ 36 API routes covering all former IPC channels — v1.0
+- ✓ All Zustand stores using typed REST API clients — v1.0
+- ✓ `mission-control-db` MCP server (11 tools) for agent DB access — v1.0
+- ✓ memory MCP server (3 tools) for Obsidian vault access — v1.0
+- ✓ 13 agent SOUL.md configs in `.claude/agents/` — v1.0
+- ✓ Tiered approval hook system (Tier 0–3) — v1.0
+- ✓ Session sync hook → Obsidian vault — v1.0
+- ✓ Obsidian vault at `~/mission-control/memory/` with QMD indexing — v1.0
+- ✓ Chat rooms with 5s polling UI — v1.0
+- ✓ Session management API (persist + resume sessions) — v1.0
+- ✓ Cron daemon + cron MCP server (3 tools) — v1.0
+- ✓ Real SSE streaming via claude CLI `stream-json` — v1.0
+- ✓ 6 Claude Code skills in `.claude/skills/` — v1.0
+- ✓ `npm run build` PASS, TypeScript clean — v1.0
 
-### Active
+### Active (v2.0 — Froggo Platform)
 
-- [ ] Strip Electron, scaffold Next.js App Router — Phase 1
-- [ ] Database layer: better-sqlite3, full schema from existing Electron DB — Phase 2
-- [ ] API routes: all IPC handler files → Next.js `/api/*` routes — Phase 3
-- [ ] Frontend wiring: replace `window.clawdbot` IPC calls with fetch, SSE for chat — Phase 4
-- [ ] MCP servers: `froggo-db` + memory MCP for agent tool access — Phase 5
-- [ ] Agent definitions: `.claude/` directory, `SOUL.md` files, `settings.json` — Phase 6
-- [ ] Permission & hook system: tiered approvals, Clara review gate, session sync — Phase 7
-- [ ] Memory system: Obsidian vault + QMD indexing — Phase 8
-- [ ] Chat rooms: inter-agent communication tables, API, UI — Phase 9
-- [ ] Session management: persistent session table, spawn API — Phase 10
-- [ ] Cron & automation: scheduled tasks, cron MCP, daemon — Phase 11
-- [ ] SSE streaming: `/api/agents/:id/stream` endpoint, dashboard polling — Phase 12
-- [ ] Skills: project-specific Claude Code skills — Phase 13
-- [ ] Final integration & E2E testing — Phase 14
+- [ ] Env & config: `.env` file, typed `src/lib/env.ts` wrapper, `COST_STRATEGY.md`
+- [ ] Tmux orchestration: `tools/tmux-setup.sh` named session `froggo-agents`, per-agent panes
+- [ ] Agent start/resume script: `tools/agent-start.sh` (resume by session ID or start new)
+- [ ] Dashboard spawn API: `/api/agents/[id]/spawn` maps agent IDs to tmux panes
+- [ ] Enhanced memory MCP: 4 tools (memory_search, memory_recall, memory_write, memory_read) with QMD BM25/vector/hybrid
+- [ ] Session sync hook: exports to Obsidian, updates QMD index, logs analytics
+- [ ] APPROVAL_RULES.md: Tier 0–3 with explicit examples per agent action
+- [ ] Git worktrees: `tools/worktree-setup.sh` for coder, designer, chief agents
+- [ ] Voice bridge: Gemini Live API (`gemini-2.5-flash-native-audio-preview`) as voice skin, Claude Code as brain
+- [ ] Per-agent capability configs: frontmatter with model, mode, maxTurns, tools, worktree
+- [ ] Agent soul enrichment: real personality, context, and constraints in each SOUL.md
+- [ ] Three-tier model strategy: Opus (lead), Sonnet (worker), Haiku (trivial)
 
 ### Out of Scope
 
 - Electron / electron-builder — permanently removed, MDM blocks unsigned Electron on Bitso device
 - OpenClaw gateway — replaced by Claude Code SDK direct integration
-- Third-party services (no Slack, no external APIs not already in codebase) — per constraint
-- `--dangerously-skip-permissions` — explicitly excluded by migration spec
-- Twitter/X automation features — low priority, deferred post-v1
-- Finance module (external API dependencies) — deferred post-v1
+- `--dangerously-skip-permissions` — agents use proper approval flow
+- Twitter/X automation — deferred (no external API keys in scope)
+- Finance module — deferred (external API dependencies)
+- Supabase / remote DB — SQLite is intentional for local-first operation
 
 ## Context
 
-- **Source**: [ProfFroggo/Froggo-AI](https://github.com/ProfFroggo/Froggo-AI.git) — Electron app using OpenClaw gateway (WebSocket at `ws://127.0.0.1:18789`)
-- **Stack carried over**: Vite → Next.js, React 18, TypeScript, Tailwind CSS, Zustand, better-sqlite3, @dnd-kit, lucide-react, @tiptap
-- **IPC surface**: 20+ handler files in `electron/handlers/`, all become API routes under `/api/`
-- **Preload bridge**: `window.clawdbot.modules.invoke(channel, ...args)` — wrapped by `src/lib/api.ts` + `src/lib/bridge.ts` compatibility shim during migration
-- **Agents defined**: 13 agents in `electron/agent-registry.json` (main, coder, researcher, writer, chief, hr, clara, social_media_manager, growth_director, lead_engineer, voice, designer, degen-frog)
-- **DB**: `~/froggo/data/froggo.db` (better-sqlite3 WAL mode) — same path, schema extended not replaced
-- **Migration plan**: `/Users/kevin.macarthur/Downloads/fork-merge.md` — primary spec, all phase details
+**Current state (post v1.0):**
+- Stack: Next.js 15 App Router, TypeScript, Tailwind CSS, Zustand, better-sqlite3, lucide-react
+- DB: `~/mission-control/data/mission-control.db` (18 tables, WAL mode)
+- Memory: `~/mission-control/memory/` (Obsidian vault, QMD indexed)
+- Library: `~/mission-control/library/` (agent output files)
+- MCP: `mission-control-db` (11 tools) + `memory` (3 tools)
+- Agents: 13 defined in `.claude/agents/` with SOUL.md
+- Build: `npm run build` PASS, 19 pages, TypeScript clean
+- LOC: ~117,000 TypeScript/TSX
+
+**Technical debt from v1.0:**
+- 531 `window.clawdbot` references still routed via bridge.ts shim — direct migration per component not yet done
+- Agent SOUL.md files are skeletal — need real personality content
+- Memory MCP uses grep fallback (QMD binary install not verified)
+
+**Path mapping (PDF specs → actual):**
+| Spec path | Actual path |
+|-----------|-------------|
+| `~/froggo-nextjs/` | `~/git/mission-control-nextjs/` |
+| `~/froggo/data/froggo.db` | `~/mission-control/data/mission-control.db` |
+| `~/obsidian-vault/` | `~/mission-control/memory/` |
+| `froggo-agents` tmux session | `froggo-agents` (same) |
 
 ## Constraints
 
-- **No Electron**: Kandji MDM (installed Feb 2026) blocks unsigned Electron apps with SIGKILL — web-only
-- **No OpenClaw**: Entire gateway replaced by Claude Code SDK + Next.js API routes
-- **No --dangerously-skip-permissions**: Agent hooks must use proper approval flow
-- **No third-party services**: All agent backends must be self-hosted or Claude Code
-- **Tech stack**: Next.js App Router, TypeScript strict mode, better-sqlite3 (server-side only), Tailwind CSS
-- **Target path**: `~/git/froggo-nextjs` (already cloned, branch: `migration/nextjs-claude-code`)
+- **No Electron**: Kandji MDM (installed Feb 2026) blocks unsigned Electron apps with SIGKILL
+- **No OpenClaw**: Replaced by Claude Code SDK + Next.js API routes
+- **No --dangerously-skip-permissions**: Agents use proper approval flow
+- **Local-first**: SQLite, Obsidian vault, no external database
+- **Tech stack**: Next.js App Router, TypeScript, better-sqlite3 (server-side), Tailwind CSS
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js App Router (not Pages) | Modern, SSR + API routes in one, edge-ready | — Pending |
-| `better-sqlite3` kept (not Postgres) | Same DB file, zero migration needed, simpler ops | — Pending |
-| `window.clawdbot` compat shim | Migrate incrementally — shim routes IPC to fetch, refactor components as you go | — Pending |
-| Claude Code SDK (not custom agent runner) | No OpenClaw dependency, uses existing Claude Code ecosystem | — Pending |
-| SSE for streaming (not WebSocket) | Simpler, no extra server, works with Next.js API routes | — Pending |
-| Phase 0 done in session | Repo cloned, branch created, full audit completed | ✓ Good |
+| Next.js App Router (not Pages) | Modern SSR + API routes, edge-ready | ✓ Good |
+| `better-sqlite3` (not Postgres) | Same DB file, zero migration, simpler ops | ✓ Good |
+| `window.clawdbot` compat shim | Incremental migration without breaking all components at once | ✓ Good |
+| Claude Code SDK (not custom runner) | No OpenClaw dependency, native ecosystem | ✓ Good |
+| SSE for streaming (not WebSocket) | Simpler, works with Next.js routes natively | ✓ Good |
+| `noImplicitAny: false` in tsconfig | Electron codebase used implicit any throughout | ✓ Good |
+| Obsidian vault for memory | Human-readable, QMD-searchable, works offline | ✓ Good |
+| StdioServerTransport for MCP | Standard pattern, no extra server port needed | ✓ Good |
+| Tmux for agent orchestration | Terminal multiplexer, persistent sessions, easy pane management | — v2.0 |
+| Gemini Live for voice layer | Native audio I/O, personality transfer via system_instruction | — v2.0 |
+| Three-tier model strategy | Cost/capability tradeoff per agent role | — v2.0 |
 
 ---
-*Last updated: 2026-03-04 after initialization*
+*Last updated: 2026-03-05 after v1.0 milestone*
