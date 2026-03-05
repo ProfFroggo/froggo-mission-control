@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-$HOME/git/mission-control-nextjs}"
-WORKTREE_BASE="${WORKTREE_BASE:-$HOME/mission-control-worktrees}"
+WORKTREE_BASE="${WORKTREE_BASE:-$HOME/mission-control/worktrees}"
 
 AGENTS=("coder" "designer" "chief")
 

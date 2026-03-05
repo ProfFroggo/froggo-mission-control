@@ -36,7 +36,7 @@ fix(api): correct pagination offset in tasks route
 4. No console.log in production code
 
 ## Worktree Usage
-Agent worktrees at `~/mission-control-worktrees/{coder,designer,chief}`:
+Agent worktrees at `~/mission-control/worktrees/{coder,designer,chief}`:
 - Each on branch `agent/{name}`
 - Run `tools/worktree-setup.sh` to initialize
 - Agent works in worktree; merge to main via PR

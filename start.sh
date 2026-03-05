@@ -22,7 +22,7 @@ else
 fi
 
 # ── 2. Worktrees ─────────────────────────────────────────────────────────────
-WORKTREE_BASE="$HOME/mission-control-worktrees"
+WORKTREE_BASE="$HOME/mission-control/worktrees"
 if [[ -d "$WORKTREE_BASE/coder" ]] && [[ -d "$WORKTREE_BASE/designer" ]] && [[ -d "$WORKTREE_BASE/chief" ]]; then
   echo "  ✓ worktrees: already initialized"
 else

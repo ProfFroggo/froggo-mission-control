@@ -5,7 +5,7 @@ model: claude-sonnet-4-6
 mode: acceptEdits
 enableFileCheckpointing: true
 maxTurns: 20
-worktreePath: ~/mission-control-worktrees/designer
+worktreePath: ~/mission-control/worktrees/designer
 tools:
   - Read
   - Glob

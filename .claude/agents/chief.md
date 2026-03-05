@@ -5,7 +5,7 @@ model: claude-opus-4-6
 mode: plan
 enableFileCheckpointing: true
 maxTurns: 30
-worktreePath: ~/mission-control-worktrees/chief
+worktreePath: ~/mission-control/worktrees/chief
 tools:
   - Read
   - Glob
