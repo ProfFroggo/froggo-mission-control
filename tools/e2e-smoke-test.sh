@@ -119,9 +119,9 @@ done
   && check "tools/worktree-setup.sh exists" "ok" \
   || check "tools/worktree-setup.sh exists" "file not found"
 
-grep -q "mission-control-worktrees" "$REPO/tools/worktree-setup.sh" 2>/dev/null \
-  && check "worktree-setup.sh: uses ~/mission-control-worktrees" "ok" \
-  || check "worktree-setup.sh: uses ~/mission-control-worktrees" "path not found"
+grep -q "mission-control/worktrees" "$REPO/tools/worktree-setup.sh" 2>/dev/null \
+  && check "worktree-setup.sh: uses ~/mission-control/worktrees" "ok" \
+  || check "worktree-setup.sh: uses ~/mission-control/worktrees" "path not found"
 
 echo ""
 

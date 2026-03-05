@@ -5,7 +5,7 @@ model: claude-opus-4-6
 mode: acceptEdits
 enableFileCheckpointing: true
 maxTurns: 50
-worktreePath: ~/mission-control-worktrees/coder
+worktreePath: ~/mission-control/worktrees/coder
 tools:
   - Read
   - Glob
