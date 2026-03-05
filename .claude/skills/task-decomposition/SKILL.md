@@ -1,6 +1,6 @@
 ---
 name: task-decomposition
-description: How to break down work into tasks for the Froggo task board
+description: How to break down work into tasks for the Mission Control task board
 ---
 
 # Task Decomposition
@@ -18,9 +18,24 @@ description: How to break down work into tasks for the Froggo task board
 - **Assigned**: Specific agent ID
 - **Acceptance criteria**: Bulleted list in description
 
+## Task Lifecycle (Mission Control)
+Tasks move through these states on the task board:
+```
+blocked → todo → in-progress → internal-review → review → human-review → done
+```
+- `blocked`: waiting on dependency or decision
+- `todo`: ready to start, all dependencies met
+- `in-progress`: actively being worked
+- `internal-review`: agent self-review or peer agent check
+- `review`: awaiting Clara (P0/P1) or senior-coder review
+- `human-review`: requires human sign-off before completing
+- `done`: accepted, output saved to library
+
 ## Decomposition Steps
 1. Identify the end state (what does done look like?)
 2. List all work items needed to reach that state
 3. Check dependencies between items
 4. Assign priorities
 5. Create tasks in smallest committable units
+6. Post tasks to the Mission Control task board via MCP tool
+7. Link output artifacts to `~/mission-control/library/` in task description

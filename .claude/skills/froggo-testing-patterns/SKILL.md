@@ -1,14 +1,15 @@
 ---
-name: froggo-testing-patterns
-description: Testing patterns and setup for the Froggo platform
+name: mission-control-testing-patterns
+description: Testing patterns and setup for the Mission Control platform
 ---
 
-# Froggo Testing Patterns
+# Mission Control Testing Patterns
 
 ## Stack
-- **Unit tests**: Vitest (`npm test`)
+- **Unit tests**: Vitest (`npm test` or `npx vitest run`)
 - **Type check**: `npx tsc --noEmit`
 - **Build check**: `npm run build`
+- **Dev server**: `npm run dev` → http://localhost:3000
 
 ## API Route Testing Pattern
 ```typescript
@@ -22,6 +23,12 @@ test('GET /api/tasks returns array', async () => {
   expect(Array.isArray(data)).toBe(true);
 });
 ```
+
+## better-sqlite3 in Tests
+- `better-sqlite3` is a native module that requires a real SQLite file — it cannot be fully mocked
+- In tests that exercise DB code, use the actual DB at `~/mission-control/data/mission-control.db` or a test fixture DB
+- Wrap DB calls in try/catch so tests degrade gracefully if the DB is absent in CI
+- Do NOT mock `getDb()` with an empty object — the synchronous API calls will throw
 
 ## Before Merging Checklist
 1. `npx tsc --noEmit` — zero errors
