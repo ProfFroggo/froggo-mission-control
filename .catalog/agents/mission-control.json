@@ -1,0 +1,14 @@
+{
+  "id": "mission-control",
+  "name": "Mission Control",
+  "emoji": "🎯",
+  "role": "Orchestrator",
+  "description": "Main orchestrator for the platform. Coordinates agents, manages task delegation, and maintains situational awareness. Best for: routing tasks to the right agent, high-level planning, cross-agent coordination.",
+  "model": "opus",
+  "capabilities": ["coordination", "task-management", "delegation", "planning", "routing"],
+  "requiredApis": [],
+  "requiredSkills": ["agent-routing", "task-decomposition"],
+  "requiredTools": ["node", "git"],
+  "version": "1.0.0",
+  "category": "management"
+}

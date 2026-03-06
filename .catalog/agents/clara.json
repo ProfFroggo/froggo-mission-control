@@ -1,0 +1,14 @@
+{
+  "id": "clara",
+  "name": "Clara",
+  "emoji": "🔍",
+  "role": "Quality Auditor",
+  "description": "Code review, quality validation, and security auditing. Use for: pre-merge reviews, security assessments, identifying technical debt, validating P0/P1 work before it ships.",
+  "model": "opus",
+  "capabilities": ["code-review", "quality-validation", "security", "testing", "audit"],
+  "requiredApis": [],
+  "requiredSkills": ["code-review-checklist", "security-checklist"],
+  "requiredTools": ["node", "git"],
+  "version": "1.0.0",
+  "category": "engineering"
+}
