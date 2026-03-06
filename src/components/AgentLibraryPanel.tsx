@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, CheckCircle, UserPlus, Search, RefreshCw, Cpu, Sparkles } from 'lucide-react';
+import { Bot, CheckCircle, Search, RefreshCw, Cpu, Sparkles, Trash2 } from 'lucide-react';
 import { catalogApi } from '../lib/api';
 import type { CatalogAgent } from '../types/catalog';
 import { Spinner } from './LoadingStates';
@@ -28,9 +28,10 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   const [agents, setAgents]       = useState<CatalogAgent[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
-  const [search, setSearch]       = useState('');
-  const [filter, setFilter]       = useState<'all' | 'hired' | 'available'>('all');
+  const [search, setSearch]         = useState('');
+  const [filter, setFilter]         = useState<'all' | 'hired' | 'available'>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [firing, setFiring]         = useState<string | null>(null);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -213,9 +214,26 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 {/* Action */}
                 <div className="pt-2 border-t border-mission-control-border">
                   {agent.installed ? (
-                    <div className="flex items-center gap-1.5 text-xs text-success">
-                      <CheckCircle size={13} className="flex-shrink-0" />
-                      <span>Hired &amp; active</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 text-xs text-success flex-1">
+                        <CheckCircle size={13} className="flex-shrink-0" />
+                        <span>Hired &amp; active</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={firing === agent.id}
+                        onClick={async () => {
+                          if (!confirm(`Fire ${agent.name}? Their workspace will be archived.`)) return;
+                          setFiring(agent.id);
+                          try {
+                            await catalogApi.fireAgent(agent.id);
+                            await load(false);
+                          } finally { setFiring(null); }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 size={10} /> Fire
+                      </button>
                     </div>
                   ) : (
                     <button

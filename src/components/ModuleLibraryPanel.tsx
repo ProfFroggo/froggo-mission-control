@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package } from 'lucide-react';
+import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package, Trash2 } from 'lucide-react';
 import { catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
 import { Spinner } from './LoadingStates';
@@ -28,9 +28,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [search, setSearch]         = useState('');
-  const [filter, setFilter]         = useState<'all' | 'installed' | 'available'>('all');
-  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter]             = useState<'all' | 'installed' | 'available'>('all');
+  const [refreshing, setRefreshing]     = useState(false);
   const [installTarget, setInstallTarget] = useState<CatalogModule | null>(null);
+  const [uninstalling, setUninstalling] = useState<string | null>(null);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -230,9 +231,26 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       <span>Core module — always active</span>
                     </div>
                   ) : module.installed ? (
-                    <div className="flex items-center gap-1.5 text-xs text-success">
-                      <CheckCircle size={12} className="flex-shrink-0" />
-                      <span>Installed{module.enabled ? ' & enabled' : ' (disabled)'}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 text-xs text-success flex-1">
+                        <CheckCircle size={12} className="flex-shrink-0" />
+                        <span>Installed{module.enabled ? ' & enabled' : ' (disabled)'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={uninstalling === module.id}
+                        onClick={async () => {
+                          if (!confirm(`Uninstall ${module.name}? It will be disabled.`)) return;
+                          setUninstalling(module.id);
+                          try {
+                            await catalogApi.uninstallModule(module.id);
+                            await load(false);
+                          } finally { setUninstalling(null); }
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 size={10} /> Uninstall
+                      </button>
                     </div>
                   ) : (
                     <button

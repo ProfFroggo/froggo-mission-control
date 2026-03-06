@@ -60,3 +60,28 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// DELETE /api/catalog/modules/[id]
+// Uninstall a module: marks installed=0, enabled=0 in catalog_modules and module_state.
+// Core modules cannot be uninstalled (403).
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const db = getDb();
+
+    const row = db.prepare('SELECT * FROM catalog_modules WHERE id = ?').get(id) as CatalogModuleRow | undefined;
+    if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (row.core === 1) return NextResponse.json({ error: 'Core modules cannot be uninstalled' }, { status: 403 });
+
+    // Mark uninstalled in catalog
+    db.prepare('UPDATE catalog_modules SET installed = 0, enabled = 0, updated_at = ? WHERE id = ?').run(Date.now(), id);
+
+    // Disable in module_state
+    db.prepare('UPDATE module_state SET enabled = 0 WHERE module_id = ?').run(id);
+
+    return NextResponse.json({ id, uninstalled: true });
+  } catch (error) {
+    console.error('DELETE /api/catalog/modules/[id] error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
