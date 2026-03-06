@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Current Position
 
-Phase: 33 of 39 (agent-library-ui)
+Phase: 34 of 39 (agent-hire-wizard)
 Plan: Not started
-Status: Phase 32 complete — ready to plan Phase 33
-Last activity: 2026-03-06 — Phase 32 complete (1/1 plans: catalog REST API 4 routes + catalogApi)
+Status: Phases 33 + 33.1 complete — ready for Phase 34
+Last activity: 2026-03-06 — Phases 33 + 33.1 complete (AgentLibraryPanel, HR/stream endpoint, v3.0 soul template, catalog registration)
 
-Progress: ██░░░░░░░░ 22% (v4.0 — 2/9 phases)
+Progress: ████░░░░░░ 44% (v4.0 — 4/9 phases)
 
 ## Performance Metrics
 
@@ -98,5 +98,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Phase 32 complete. 1/1 plans executed. catalog REST API (4 routes: GET+PATCH agents/[id], modules/[id]) + catalogApi in api.ts. All routes verified in build output.
+Stopped at: Phases 33 + 33.1 complete. AgentLibraryPanel (tab in AgentPanel), POST /api/agents/hr/stream (HR chat), POST /api/catalog/agents (custom agent catalog registration), v3.0 soul template in HRAgentCreationModal.
 Resume file: None
