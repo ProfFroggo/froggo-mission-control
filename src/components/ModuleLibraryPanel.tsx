@@ -3,6 +3,7 @@ import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Pac
 import { catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
 import { Spinner } from './LoadingStates';
+import ModuleInstallModal from './ModuleInstallModal';
 
 const CATEGORY_COLORS: Record<string, string> = {
   core:           'text-review border-review-border bg-review-subtle',
@@ -23,12 +24,13 @@ interface ModuleLibraryPanelProps {
 }
 
 export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProps) {
-  const [modules, setModules]     = useState<CatalogModule[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
-  const [search, setSearch]       = useState('');
-  const [filter, setFilter]       = useState<'all' | 'installed' | 'available'>('all');
+  const [modules, setModules]       = useState<CatalogModule[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
+  const [search, setSearch]         = useState('');
+  const [filter, setFilter]         = useState<'all' | 'installed' | 'available'>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [installTarget, setInstallTarget] = useState<CatalogModule | null>(null);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -235,7 +237,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onInstall?.(module)}
+                      onClick={() => { setInstallTarget(module); onInstall?.(module); }}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
                     >
                       <Download size={12} />
@@ -247,6 +249,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             );
           })}
         </div>
+      )}
+
+      {installTarget && (
+        <ModuleInstallModal
+          module={installTarget}
+          onClose={() => setInstallTarget(null)}
+          onInstalled={() => {
+            setInstallTarget(null);
+            load(false);
+          }}
+        />
       )}
     </div>
   );
