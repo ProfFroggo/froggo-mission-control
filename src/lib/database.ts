@@ -302,6 +302,50 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- CATALOG: AGENTS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS catalog_agents (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      emoji TEXT DEFAULT '🤖',
+      role TEXT,
+      description TEXT,
+      model TEXT DEFAULT 'sonnet',
+      capabilities TEXT DEFAULT '[]',
+      requiredApis TEXT DEFAULT '[]',
+      requiredSkills TEXT DEFAULT '[]',
+      requiredTools TEXT DEFAULT '[]',
+      version TEXT DEFAULT '1.0.0',
+      category TEXT DEFAULT 'general',
+      installed INTEGER DEFAULT 0,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
+    -- CATALOG: MODULES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS catalog_modules (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      version TEXT DEFAULT '1.0.0',
+      category TEXT DEFAULT 'general',
+      icon TEXT DEFAULT '📦',
+      responsibleAgent TEXT,
+      requiredAgents TEXT DEFAULT '[]',
+      requiredNpm TEXT DEFAULT '[]',
+      requiredApis TEXT DEFAULT '[]',
+      requiredSkills TEXT DEFAULT '[]',
+      requiredCli TEXT DEFAULT '[]',
+      installed INTEGER DEFAULT 0,
+      enabled INTEGER DEFAULT 1,
+      core INTEGER DEFAULT 0,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -318,6 +362,10 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_token_usage_agentId ON token_usage(agentId);
     CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp);
     CREATE INDEX IF NOT EXISTS idx_token_usage_taskId ON token_usage(taskId);
+    CREATE INDEX IF NOT EXISTS idx_catalog_agents_installed ON catalog_agents(installed);
+    CREATE INDEX IF NOT EXISTS idx_catalog_agents_category ON catalog_agents(category);
+    CREATE INDEX IF NOT EXISTS idx_catalog_modules_installed ON catalog_modules(installed);
+    CREATE INDEX IF NOT EXISTS idx_catalog_modules_category ON catalog_modules(category);
 
     -- ══════════════════════════════════════════
     -- SEED DATA
