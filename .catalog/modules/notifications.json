@@ -1,0 +1,15 @@
+{
+  "id": "notifications",
+  "name": "Notifications",
+  "description": "Platform notification system. Agents post activity updates, alerts, and completion events. Core module — cannot be uninstalled.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "icon": "🔔",
+  "responsibleAgent": "mission-control",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": true
+}

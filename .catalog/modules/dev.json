@@ -1,0 +1,15 @@
+{
+  "id": "dev",
+  "name": "Dev",
+  "description": "Developer tools, debugging utilities, and platform internals. Inspect DB state, view logs, manage agent sessions.",
+  "version": "1.0.0",
+  "category": "agent",
+  "icon": "🛠️",
+  "responsibleAgent": "coder",
+  "requiredAgents": ["coder"],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": false
+}

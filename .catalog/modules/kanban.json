@@ -1,0 +1,15 @@
+{
+  "id": "kanban",
+  "name": "Tasks",
+  "description": "Kanban task board for project management. Create, assign, track, and complete tasks across the team. Core module — cannot be uninstalled.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "icon": "📋",
+  "responsibleAgent": "mission-control",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": true
+}

@@ -1,0 +1,15 @@
+{
+  "id": "agent-mgmt",
+  "name": "Agent Management",
+  "description": "View and edit agent personalities, model configurations, and lifecycle state. Core module — cannot be uninstalled.",
+  "version": "1.0.0",
+  "category": "agent",
+  "icon": "🤖",
+  "responsibleAgent": "hr",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": true
+}
