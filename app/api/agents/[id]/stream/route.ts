@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
-import { existsSync, readFileSync } from 'fs';
+import { calcCostUsd } from '@/lib/env';
+import { existsSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -8,151 +9,241 @@ import { spawn } from 'child_process';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const HOME = homedir();
+const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+
+// ── File cache ─────────────────────────────────────────────────────────────
+interface CacheEntry { content: string; mtime: number; }
+const soulCache = new Map<string, CacheEntry>();
+const memCache  = new Map<string, CacheEntry>();
+
+function readCached(cache: Map<string, CacheEntry>, path: string): string | null {
+  if (!existsSync(path)) return null;
+  const mtime = statSync(path).mtimeMs;
+  const hit = cache.get(path);
+  if (hit && hit.mtime === mtime) return hit.content;
+  const content = readFileSync(path, 'utf-8').trim();
+  cache.set(path, { content, mtime });
+  return content;
+}
+
+const CHAT_SUFFIX = `\n\n---
+You are in chat mode. Respond conversationally and stay in character.
+Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
+Artifacts: Wrap code/scripts/data in fenced code blocks.`;
+
+function buildSystemPrompt(id: string): string | null {
+  const dir = join(HOME, 'mission-control', 'agents', id);
+  const soul = readCached(soulCache, join(dir, 'SOUL.md'));
+  if (soul) {
+    let p = soul + CHAT_SUFFIX;
+    const mem = readCached(memCache, join(dir, 'MEMORY.md'));
+    if (mem) p += `\n\n---\n## Your Memory\n${mem}`;
+    return p;
+  }
+  try {
+    const agent = getDb().prepare('SELECT name, role, personality FROM agents WHERE id = ?').get(id) as {
+      personality?: string; role?: string; name?: string;
+    } | undefined;
+    if (agent) {
+      const parts: string[] = [];
+      if (agent.role) parts.push(`You are ${agent.name || id}, a ${agent.role}.`);
+      if (agent.personality) parts.push(agent.personality);
+      parts.push('Task management: Use mcp__mission-control_db__task_* tools.\nArtifacts: Wrap code in fenced code blocks.');
+      return parts.join('\n');
+    }
+  } catch { /* DB not available */ }
+  return null;
+}
+
+// ── Session pool ────────────────────────────────────────────────────────────
+// Tracks Claude CLI session IDs per agent for conversation continuity.
+// Each message spawns a --print process; --resume keeps the conversation going.
+// This is faster than maintaining context in the prompt and preserves native history.
+
+interface SessionEntry {
+  sessionId:    string;
+  soulMtime:    number;  // invalidate when SOUL.md changes
+  lastActivity: number;
+}
+
+type G = typeof globalThis & { _agentSessions?: Map<string, SessionEntry> };
+const sessions: Map<string, SessionEntry> = (globalThis as G)._agentSessions
+  ?? ((globalThis as G)._agentSessions = new Map());
+
+// Reap sessions inactive for 30 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60_000;
+  for (const [id, s] of sessions) {
+    if (s.lastActivity < cutoff) sessions.delete(id);
+  }
+}, 60_000).unref();
+
+function loadSessionFromDb(agentId: string): SessionEntry | null {
+  try {
+    const row = getDb().prepare('SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?')
+      .get(agentId, 'active') as { sessionId: string; lastActivity: number } | undefined;
+    if (!row?.sessionId) return null;
+    return { sessionId: row.sessionId, soulMtime: 0, lastActivity: row.lastActivity };
+  } catch { return null; }
+}
+
+function persistSessionToDb(agentId: string, sessionId: string, model: string) {
+  try {
+    const now = Date.now();
+    getDb().prepare(`INSERT OR REPLACE INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
+      VALUES (?, ?, ?, COALESCE((SELECT createdAt FROM agent_sessions WHERE agentId = ?), ?), ?, 'active')`)
+      .run(agentId, sessionId, model, agentId, now, now);
+  } catch { /* non-critical */ }
+}
+
+function soulMtime(id: string): number {
+  const p = join(HOME, 'mission-control', 'agents', id, 'SOUL.md');
+  return existsSync(p) ? statSync(p).mtimeMs : 0;
+}
+
+// ── Route ──────────────────────────────────────────────────────────────────
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { message, model, history } = await request.json();
-
-  // Build system prompt — prefer SOUL.md from agent workspace, fall back to DB
-  let systemPrompt: string | null = null;
-  const workspaceDir = join(homedir(), 'mission-control', 'agents', id);
-  const soulPath = join(workspaceDir, 'SOUL.md');
-
-  if (existsSync(soulPath)) {
-    systemPrompt = readFileSync(soulPath, 'utf-8').trim();
-    // Append chat-mode instruction so agent doesn't try to run task workflows
-    systemPrompt += '\n\n---\nYou are in chat mode. Respond conversationally and stay in character.\n\nTask management: Use the mission-control-db MCP tools to manage tasks on the Kanban board — NOT the built-in TaskCreate/TaskList/TaskUpdate tools.\n- task_create: create tasks (set assignedTo to give to another agent, parentTaskId to create subtasks)\n- task_update: update status/progress (in-progress, human-review, review, done)\n- task_add_activity: log what you did\nStatus guide: in-progress=working, human-review=need Kevin input, review=send to Clara, done=complete.\n\nArtifacts: When producing code, scripts, files, or structured data, always wrap them in fenced code blocks (```language ... ```). They are automatically extracted to the Artifact Canvas where the user can view, copy, and download them. Use ```mermaid for diagrams and ```json for data.';
-    // Append MEMORY.md if it exists
-    const memoryPath = join(workspaceDir, 'MEMORY.md');
-    if (existsSync(memoryPath)) {
-      const memory = readFileSync(memoryPath, 'utf-8').trim();
-      if (memory) systemPrompt += `\n\n---\n## Your Memory\n${memory}`;
-    }
-  } else {
-    // Fall back to DB persona
-    try {
-      const db = getDb();
-      const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as {
-        personality?: string;
-        role?: string;
-        name?: string;
-      } | undefined;
-      if (agent) {
-        const parts: string[] = [];
-        if (agent.role) parts.push(`You are ${agent.name || id}, a ${agent.role}.`);
-        if (agent.personality) parts.push(agent.personality);
-        parts.push('\nTask management: Use the mission-control-db MCP tools (task_create, task_list, task_update) to manage tasks on the Kanban board — NOT the built-in TaskCreate/TaskList/TaskUpdate tools.\n\nArtifacts: When producing code, scripts, files, or structured data, always wrap them in fenced code blocks (```language ... ```). They are automatically extracted to the Artifact Canvas where the user can view, copy, and download them.');
-        systemPrompt = parts.join('\n');
-      }
-    } catch { /* DB not available — run without persona */ }
-  }
+  const { message, model } = await request.json();
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
-    async start(controller) {
-      // Verify stream is live before spawning
-      controller.enqueue(encoder.encode(`data: {"type":"init"}\n\n`));
+    start(controller) {
+      const enc = (obj: unknown) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+
+      enc({ type: 'init' });
 
       try {
+        const chatModel = model || 'claude-haiku-4-5-20251001';
+        const sm = soulMtime(id);
+
+        // Get session ID for conversation continuity (null = new session)
+        // Check in-memory pool first, fall back to DB if not found
+        let existing = sessions.get(id);
+        if (!existing) {
+          const fromDb = loadSessionFromDb(id);
+          if (fromDb) {
+            existing = { ...fromDb, soulMtime: sm };
+            sessions.set(id, existing);
+          }
+        }
+        const resumeId = (existing && existing.soulMtime === sm) ? existing.sessionId : null;
+
+        const dir = join(HOME, 'mission-control', 'agents', id);
+        const cwd = existsSync(dir) ? dir : HOME;
+
         const args = [
-          '--print',
-          '--verbose',
-          '--output-format', 'stream-json',
-          '--model', model || 'claude-sonnet-4-6',
+          '--print',                        // non-interactive, exits after response
+          '--output-format', 'stream-json', // JSON event stream on stdout
+          '--verbose',                      // required by stream-json format
+          '--model', chatModel,
           '--dangerously-skip-permissions',
         ];
-        if (systemPrompt) {
-          // Use --system-prompt to fully replace (not append) — gives agent their own identity
-          args.push('--system-prompt', systemPrompt);
-        }
-        let fullMessage = message;
-        if (history && history.length > 0) {
-          const historyLines = history.map((m: { role: string; content: string }) =>
-            `[${m.role === 'user' ? 'Kevin' : 'Assistant'}]: ${m.content}`
-          ).join('\n');
-          fullMessage = `## Conversation history\n${historyLines}\n\n## Current message\n${message}`;
-        }
-        args.push(fullMessage);
 
-        // Unset CLAUDECODE env vars so nested Claude CLI sessions are allowed
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        if (resumeId) {
+          // Resume existing conversation — history is preserved by the CLI
+          args.push('--resume', resumeId);
+        } else {
+          // New conversation — inject system prompt
+          const systemPrompt = buildSystemPrompt(id);
+          if (systemPrompt) args.push('--system-prompt', systemPrompt);
+        }
+
+        // Strip Claude CLI env vars so nested spawning is allowed
         const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
 
-        // Use agent's workspace as cwd so they can access MEMORY.md, IDENTITY.md etc.
-        const agentCwd = existsSync(workspaceDir) ? workspaceDir : (process.env.HOME || '/Users/kevin.macarthur');
-
-        const proc = spawn('/Users/kevin.macarthur/.npm-global/bin/claude', args, {
-          cwd: agentCwd,
+        const proc = spawn(CLAUDE_BIN, args, {
+          cwd,
           env: cleanEnv,
           stdio: 'pipe',
         });
 
-        // Claude doesn't need stdin — close it immediately
-        proc.stdin?.end();
+        // Pipe message to stdin and close it (--print reads plain text from stdin)
+        proc.stdin.write(message);
+        proc.stdin.end();
 
-        await new Promise<void>((resolve) => {
-          proc.stdout.on('data', (data: Buffer) => {
-            const lines = data.toString().split('\n').filter(Boolean);
-            for (const line of lines) {
-              try {
-                const parsed = JSON.parse(line);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(parsed)}\n\n`));
-              } catch {
-                controller.enqueue(encoder.encode(
-                  `data: ${JSON.stringify({ type: 'text', text: line })}\n\n`
-                ));
+        let buf = '';
+
+        proc.stdout.on('data', (data: Buffer) => {
+          buf += data.toString();
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const parsed = JSON.parse(line) as {
+                type?: string; session_id?: string;
+                input_tokens?: number; output_tokens?: number;
+              };
+              enc(parsed);
+              if (parsed.type === 'result') {
+                // Save session ID for the next message (in-memory + DB)
+                if (parsed.session_id) {
+                  sessions.set(id, {
+                    sessionId: parsed.session_id,
+                    soulMtime: sm,
+                    lastActivity: Date.now(),
+                  });
+                  persistSessionToDb(id, parsed.session_id, chatModel);
+                }
+                // Log token usage
+                const inputT  = parsed.input_tokens  ?? 0;
+                const outputT = parsed.output_tokens ?? 0;
+                if (inputT > 0 || outputT > 0) {
+                  try {
+                    const costUsd = calcCostUsd(chatModel, inputT, outputT);
+                    getDb().prepare(
+                      `INSERT INTO token_usage (agentId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
+                       VALUES (?, ?, ?, ?, ?, ?, 'stream', ?)`
+                    ).run(id, parsed.session_id ?? null, chatModel, inputT, outputT, costUsd, Date.now());
+                  } catch { /* non-critical */ }
+                }
               }
+            } catch {
+              enc({ type: 'text', text: line });
             }
-          });
-
-          proc.stderr.on('data', (data: Buffer) => {
-            const err = data.toString().trim();
-            if (err) {
-              controller.enqueue(encoder.encode(
-                `data: ${JSON.stringify({ type: 'debug', text: err })}\n\n`
-              ));
-            }
-          });
-
-          proc.on('close', (code) => {
-            controller.enqueue(encoder.encode(
-              `data: ${JSON.stringify({ type: 'done', code })}\n\n`
-            ));
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            resolve();
-          });
-
-          proc.on('error', (err) => {
-            controller.enqueue(encoder.encode(
-              `data: ${JSON.stringify({ type: 'error', text: err.message })}\n\n`
-            ));
-            resolve();
-          });
-
-          // Timeout after 5 minutes
-          setTimeout(() => {
-            proc.kill();
-            controller.enqueue(encoder.encode(
-              `data: ${JSON.stringify({ type: 'timeout', text: 'Stream timeout' })}\n\n`
-            ));
-            resolve();
-          }, 300000);
+          }
         });
 
-        // Agent process finished — mark idle so the UI shows correct state
-        try {
-          getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?')
-            .run('idle', Date.now(), id);
-        } catch { /* non-critical */ }
+        proc.stderr.on('data', (data: Buffer) => {
+          const text = data.toString().trim();
+          if (text) enc({ type: 'debug', text });
+        });
 
-        controller.close();
-      } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : 'Unknown error';
-        controller.enqueue(encoder.encode(
-          `data: ${JSON.stringify({ type: 'error', text: msg })}\n\n`
-        ));
+        const timeout = setTimeout(() => {
+          proc.kill();
+          enc({ type: 'timeout', text: 'Response timed out' });
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          try { controller.close(); } catch { /* already closed */ }
+        }, 120_000);
+
+        proc.on('close', (code) => {
+          clearTimeout(timeout);
+          enc({ type: 'done', code: code ?? 0 });
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          try { controller.close(); } catch { /* already closed */ }
+
+          try {
+            getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?')
+              .run('idle', Date.now(), id);
+          } catch { /* non-critical */ }
+        });
+
+        proc.on('error', (err) => {
+          clearTimeout(timeout);
+          enc({ type: 'error', text: err.message });
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          try { controller.close(); } catch { /* already closed */ }
+        });
+
+      } catch (err: unknown) {
+        enc({ type: 'error', text: err instanceof Error ? err.message : String(err) });
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
       }
     },
