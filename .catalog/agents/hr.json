@@ -1,0 +1,14 @@
+{
+  "id": "hr",
+  "name": "HR",
+  "emoji": "👥",
+  "role": "Agent & Team Manager",
+  "description": "Agent creation, team management, skill gap analysis, and onboarding. Use for: hiring new agents, reviewing agent performance, managing team structure.",
+  "model": "sonnet",
+  "capabilities": ["agent-creation", "training", "skill-gaps", "onboarding", "team-management"],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "management"
+}
