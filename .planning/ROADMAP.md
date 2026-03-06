@@ -200,8 +200,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 33-01: TBD
-- [ ] 33-02: TBD
+- [x] 33-01: AgentLibraryPanel + Active/Library tab in AgentPanel — DONE 2026-03-06
 
 ---
 
@@ -212,7 +211,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 33.1-01: TBD (run /gsd:plan-phase 33.1 to break down)
+- [x] 33.1-01: hr/stream endpoint, catalog registration, v3.0 soul template — DONE 2026-03-06
 
 ---
 
