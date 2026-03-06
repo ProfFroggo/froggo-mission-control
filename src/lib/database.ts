@@ -286,6 +286,22 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- TOKEN USAGE
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS token_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      agentId TEXT NOT NULL,
+      taskId TEXT,
+      sessionId TEXT,
+      model TEXT NOT NULL,
+      inputTokens INTEGER NOT NULL DEFAULT 0,
+      outputTokens INTEGER NOT NULL DEFAULT 0,
+      costUsd REAL NOT NULL DEFAULT 0,
+      source TEXT DEFAULT 'stream',
+      timestamp INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -299,6 +315,9 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_chat_room_messages_room ON chat_room_messages(roomId, timestamp);
     CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_timestamp ON analytics_events(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_agentId ON token_usage(agentId);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_token_usage_taskId ON token_usage(taskId);
 
     -- ══════════════════════════════════════════
     -- SEED DATA
@@ -314,7 +333,7 @@ function initSchema(db: Database.Database) {
   const columnMigrations = [
     `ALTER TABLE chat_rooms ADD COLUMN agents TEXT DEFAULT '[]'`,
     `ALTER TABLE chat_rooms ADD COLUMN sessionKeys TEXT DEFAULT '{}'`,
-    `ALTER TABLE chat_rooms ADD COLUMN updatedAt INTEGER DEFAULT (unixepoch() * 1000)`,
+    `ALTER TABLE chat_rooms ADD COLUMN updatedAt INTEGER DEFAULT 0`,
     `ALTER TABLE chat_room_messages ADD COLUMN role TEXT DEFAULT 'agent'`,
     `ALTER TABLE chat_room_messages ADD COLUMN mentionedAgents TEXT DEFAULT '[]'`,
     `ALTER TABLE chat_room_messages ADD COLUMN messageId TEXT`,
@@ -335,11 +354,13 @@ function seedAgents(db: Database.Database) {
     { id: 'chief',               name: 'Chief',                description: 'Lead engineer',            capabilities: '["architecture","code-review","mentoring"]',                model: 'opus'   },
     { id: 'clara',               name: 'Clara',                description: 'Quality auditor',          capabilities: '["code-review","quality-validation","security"]',           model: 'opus'   },
     { id: 'designer',            name: 'Designer',             description: 'UI/UX designer',           capabilities: '["ui-design","ux-design","prototyping"]',                   model: 'sonnet' },
-    { id: 'social_media_manager',name: 'Social Media Manager', description: 'X/Twitter strategy',      capabilities: '["content-ideation","tweet-drafting","engagement"]',        model: 'sonnet' },
-    { id: 'growth_director',     name: 'Growth Director',      description: 'Strategic growth',         capabilities: '["strategy","growth","marketing","gtm"]',                   model: 'opus'   },
+    { id: 'social-manager',      name: 'Social Manager',       description: 'X/Twitter strategy',      capabilities: '["content-ideation","tweet-drafting","engagement"]',        model: 'sonnet' },
+    { id: 'growth-director',     name: 'Growth Director',      description: 'Strategic growth',         capabilities: '["strategy","growth","marketing","gtm"]',                   model: 'opus'   },
     { id: 'hr',                  name: 'HR',                   description: 'Agent management',         capabilities: '["agent-creation","training","skill-gaps"]',                model: 'sonnet' },
-    { id: 'onchain_worker',      name: 'Onchain Worker',       description: 'Blockchain operations',    capabilities: '["blockchain","crypto","defi","web3"]',                     model: 'sonnet' },
-    { id: 'degen-frog',          name: 'Degen Frog',           description: 'Crypto trading',           capabilities: '["crypto-trading","perps","dex","risk"]',                   model: 'sonnet' },
+    { id: 'senior-coder',        name: 'Senior Coder',         description: 'Lead software engineer',   capabilities: '["architecture","code-review","mentoring","typescript"]',   model: 'opus'   },
+    { id: 'inbox',               name: 'Inbox',                description: 'Message triage',           capabilities: '["triage","routing","prioritization"]',                     model: 'sonnet' },
+    { id: 'discord-manager',     name: 'Discord Manager',      description: 'Discord community',        capabilities: '["discord","community","moderation"]',                      model: 'sonnet' },
+    { id: 'finance-manager',     name: 'Finance Manager',      description: 'Financial operations',     capabilities: '["finance","accounting","reporting"]',                      model: 'sonnet' },
     { id: 'voice',               name: 'Voice',                description: 'Voice agent',              capabilities: '["tts","voice","audio"]',                                   model: 'sonnet' },
   ];
 

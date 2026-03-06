@@ -4,6 +4,7 @@
  */
 
 import { getDb } from './database';
+import { calcCostUsd } from './env';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -196,9 +197,26 @@ export function dispatchTask(taskId: string): boolean {
       outBuf = lines.pop() ?? '';
       for (const line of lines) {
         try {
-          const parsed = JSON.parse(line.trim()) as { type?: string; session_id?: string };
-          if (parsed.type === 'result' && parsed.session_id) {
-            persistTaskSession(agentId, parsed.session_id, model);
+          const parsed = JSON.parse(line.trim()) as {
+            type?: string; session_id?: string;
+            input_tokens?: number; output_tokens?: number;
+          };
+          if (parsed.type === 'result') {
+            if (parsed.session_id) {
+              persistTaskSession(agentId, parsed.session_id, model);
+            }
+            // Log token usage
+            const inputT  = parsed.input_tokens  ?? 0;
+            const outputT = parsed.output_tokens ?? 0;
+            if (inputT > 0 || outputT > 0) {
+              try {
+                const costUsd = calcCostUsd(model, inputT, outputT);
+                getDb().prepare(
+                  `INSERT INTO token_usage (agentId, taskId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 'dispatch', ?)`
+                ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
+              } catch { /* non-critical */ }
+            }
           }
         } catch { /* not JSON, ignore */ }
       }
