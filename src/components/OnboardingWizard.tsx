@@ -15,7 +15,9 @@ import {
   Sparkles,
   PartyPopper,
   RefreshCw,
+  Users,
 } from 'lucide-react';
+import { catalogApi, moduleApi } from '../lib/api';
 
 interface OnboardingWizardProps {
   onComplete: (startTour: boolean) => void;
@@ -27,32 +29,29 @@ const INSTALL_INSTRUCTIONS: Record<string, { title: string; instructions: string
   database: {
     title: 'Task Database Missing',
     instructions: [
-      'The task database was not found at ~/froggo/data/froggo.db',
-      'Run: mkdir -p ~/froggo/data',
+      'The task database was not found at ~/mission-control/data/mission-control.db',
+      'Run: mkdir -p ~/mission-control/data',
       'Then restore from backup or initialize a new database',
     ],
   },
   cli: {
-    title: 'OpenClaw CLI Not Found',
+    title: 'Claude CLI Not Found',
     instructions: [
-      'Install OpenClaw: npm install -g openclaw',
-      'Then run: openclaw setup',
-      'CLI expected at: /opt/homebrew/bin/openclaw',
+      'Install Claude Code: npm install -g @anthropic-ai/claude-code',
+      'Then authenticate: claude auth',
     ],
   },
   gateway: {
-    title: 'Gateway Not Running',
+    title: 'AI Backend Check',
     instructions: [
-      'The OpenClaw gateway is required for AI features',
-      'Start it: launchctl kickstart gui/$(id -u)/ai.openclaw.gateway',
-      'Or run: openclaw gateway start',
+      'Mission Control uses Claude Code CLI — no external gateway required',
     ],
   },
   config: {
-    title: 'OpenClaw Config Missing',
+    title: 'Configuration Missing',
     instructions: [
-      'Configuration file not found at ~/.openclaw/openclaw.json',
-      'Run: openclaw setup to create initial config',
+      'Create .env.local in the project root',
+      'Add VITE_GEMINI_API_KEY for voice/meeting features',
     ],
   },
 };
@@ -80,8 +79,52 @@ interface PermissionState {
 type GatewayStatus = 'idle' | 'testing' | 'connected' | 'error';
 type SampleDataStatus = 'idle' | 'loading' | 'done' | 'skipped';
 
-const STEP_COUNT = 6;
-const STORAGE_KEY = 'froggo-onboarding-completed';
+const STEP_COUNT = 7;
+const STORAGE_KEY = 'mission-control-onboarding-completed';
+
+interface RolePreset {
+  id: string;
+  emoji: string;
+  label: string;
+  description: string;
+  agents: string[];
+  modules: string[];
+}
+
+const ROLE_PRESETS: RolePreset[] = [
+  {
+    id: 'developer',
+    emoji: '💻',
+    label: 'Developer',
+    description: 'Coding, code review, and engineering tasks',
+    agents: ['coder', 'senior-coder'],
+    modules: ['dev', 'kanban', 'notifications'],
+  },
+  {
+    id: 'designer',
+    emoji: '🎨',
+    label: 'Designer',
+    description: 'UI/UX design, creative production, and brand assets',
+    agents: ['designer', 'writer'],
+    modules: ['library', 'kanban', 'notifications'],
+  },
+  {
+    id: 'marketing',
+    emoji: '📣',
+    label: 'Marketing',
+    description: 'Growth campaigns, social media, and content strategy',
+    agents: ['social-manager', 'growth-director', 'writer'],
+    modules: ['twitter', 'analytics', 'schedule'],
+  },
+  {
+    id: 'executive',
+    emoji: '🏢',
+    label: 'Executive',
+    description: 'Strategy, risk, research, and team oversight',
+    agents: ['chief', 'clara', 'researcher'],
+    modules: ['analytics', 'approvals', 'finance'],
+  },
+];
 
 export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -100,6 +143,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const [gatewayError, setGatewayError] = useState('');
   const [sampleDataStatus, setSampleDataStatus] = useState<SampleDataStatus>('idle');
   const [sampleDataCount, setSampleDataCount] = useState(0);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [presetStatus, setPresetStatus] = useState<'idle' | 'applying' | 'done'>('idle');
 
   // --- Dependency Check ---
   const checkDependencies = useCallback(async () => {
@@ -222,22 +267,22 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // --- Step Renderers ---
   const renderWelcome = () => (
     <div className="flex flex-col items-center text-center py-6">
-      <div className="w-20 h-20 rounded-2xl bg-clawd-accent/20 flex items-center justify-center mb-6">
-        <Bot size={40} className="text-clawd-accent" />
+      <div className="w-20 h-20 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mb-6">
+        <Bot size={40} className="text-mission-control-accent" />
       </div>
-      <h2 className="text-2xl font-bold text-clawd-text mb-3">Welcome to Froggo</h2>
-      <p className="text-clawd-text-dim max-w-sm mb-8">
+      <h2 className="text-2xl font-bold text-mission-control-text mb-3">Welcome to Mission Control</h2>
+      <p className="text-mission-control-text-dim max-w-sm mb-8">
         Your AI-powered dashboard for managing agents, tasks, and workflows.
       </p>
       <button
         onClick={goNext}
-        className="px-6 py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent-dim transition-colors"
+        className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent-dim transition-colors"
       >
         Get Started
       </button>
       <button
         onClick={handleSkip}
-        className="mt-4 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+        className="mt-4 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
       >
         Skip Setup
       </button>
@@ -245,7 +290,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   );
 
   const depIcon = (status: DepStatus) => {
-    if (status === 'checking') return <Loader size={18} className="text-clawd-text-dim animate-spin" />;
+    if (status === 'checking') return <Loader size={18} className="text-mission-control-text-dim animate-spin" />;
     if (status === 'ok') return <CheckCircle size={18} className="text-green-500" />;
     return <XCircle size={18} className="text-red-500" />;
   };
@@ -253,31 +298,31 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const renderDependencies = () => (
     <div className="py-4">
       <div className="flex items-center gap-2 mb-1">
-        <Sparkles size={20} className="text-clawd-accent" />
-        <h2 className="text-xl font-bold text-clawd-text">System Check</h2>
+        <Sparkles size={20} className="text-mission-control-accent" />
+        <h2 className="text-xl font-bold text-mission-control-text">System Check</h2>
       </div>
-      <p className="text-clawd-text-dim text-sm mb-6">
+      <p className="text-mission-control-text-dim text-sm mb-6">
         Let's make sure everything is set up correctly.
       </p>
       <div className="space-y-3 mb-6">
         {[
-          { key: 'cli' as const, label: 'OpenClaw CLI installed' },
-          { key: 'gateway' as const, label: 'Gateway running' },
-          { key: 'config' as const, label: 'Configuration file found' },
+          { key: 'cli' as const, label: 'Claude CLI ready' },
+          { key: 'gateway' as const, label: 'AI backend ready' },
+          { key: 'config' as const, label: 'Configuration found' },
           { key: 'database' as const, label: 'Task database found' },
         ].map(item => (
           <div
             key={item.key}
-            className="rounded-lg bg-clawd-bg border border-clawd-border overflow-hidden"
+            className="rounded-lg bg-mission-control-bg border border-mission-control-border overflow-hidden"
           >
             <div className="flex items-center gap-3 p-3">
               {depIcon(depStatus[item.key])}
-              <span className="text-sm text-clawd-text">{item.label}</span>
+              <span className="text-sm text-mission-control-text">{item.label}</span>
             </div>
             {depStatus[item.key] === 'fail' && INSTALL_INSTRUCTIONS[item.key] && (
               <div className="ml-8 pb-3 pr-3 space-y-1">
                 {INSTALL_INSTRUCTIONS[item.key].instructions.map((line, i) => (
-                  <p key={i} className="text-xs text-clawd-text-dim font-mono">{line}</p>
+                  <p key={i} className="text-xs text-mission-control-text-dim font-mono">{line}</p>
                 ))}
               </div>
             )}
@@ -286,7 +331,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </div>
       <button
         onClick={checkDependencies}
-        className="flex items-center gap-2 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+        className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
       >
         <RefreshCw size={14} />
         Re-check
@@ -297,7 +342,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const permIcon = (status: PermStatus) => {
     if (status === 'granted') return <CheckCircle size={18} className="text-green-500" />;
     if (status === 'denied') return <XCircle size={18} className="text-red-500" />;
-    return <Loader size={18} className="text-clawd-text-dim animate-spin" />;
+    return <Loader size={18} className="text-mission-control-text-dim animate-spin" />;
   };
 
   const permMeta: Record<string, { icon: typeof Mic; label: string }> = {
@@ -308,9 +353,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderPermissions = () => (
     <div className="py-4">
-      <h2 className="text-xl font-bold text-clawd-text mb-1">Permissions</h2>
-      <p className="text-clawd-text-dim text-sm mb-6">
-        Froggo needs some permissions for voice and screen features.
+      <h2 className="text-xl font-bold text-mission-control-text mb-1">Permissions</h2>
+      <p className="text-mission-control-text-dim text-sm mb-6">
+        Mission Control needs some permissions for voice and screen features.
       </p>
       <div className="space-y-3">
         {(['microphone', 'camera', 'screen'] as const).map(type => {
@@ -320,18 +365,18 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           return (
             <div
               key={type}
-              className="flex items-center justify-between p-3 rounded-lg bg-clawd-bg border border-clawd-border"
+              className="flex items-center justify-between p-3 rounded-lg bg-mission-control-bg border border-mission-control-border"
             >
               <div className="flex items-center gap-3">
-                <Icon size={18} className="text-clawd-text-dim" />
-                <span className="text-sm text-clawd-text">{meta.label}</span>
+                <Icon size={18} className="text-mission-control-text-dim" />
+                <span className="text-sm text-mission-control-text">{meta.label}</span>
               </div>
               <div className="flex items-center gap-3">
                 {permIcon(status)}
                 {status !== 'granted' && type !== 'screen' && (
                   <button
                     onClick={() => requestPermission(type)}
-                    className="px-3 py-1 text-xs rounded-lg bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 transition-colors"
+                    className="px-3 py-1 text-xs rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors"
                   >
                     Grant
                   </button>
@@ -346,37 +391,18 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderGateway = () => (
     <div className="py-4">
-      <h2 className="text-xl font-bold text-clawd-text mb-1">Gateway Connection</h2>
-      <p className="text-clawd-text-dim text-sm mb-6">
-        Connect to the OpenClaw gateway for AI agent communication.
+      <h2 className="text-xl font-bold text-mission-control-text mb-1">AI Backend</h2>
+      <p className="text-mission-control-text-dim text-sm mb-6">
+        Mission Control uses Claude Code CLI — no external gateway required.
       </p>
-      <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-clawd-bg border border-clawd-border">
-        {gatewayStatus === 'connected' ? (
-          <Wifi size={32} className="text-green-500" />
-        ) : gatewayStatus === 'error' ? (
-          <WifiOff size={32} className="text-red-500" />
-        ) : (
-          <Wifi size={32} className="text-clawd-text-dim" />
-        )}
-        <p className="text-sm text-clawd-text">
-          {gatewayStatus === 'idle' && 'Click below to test your gateway connection.'}
-          {gatewayStatus === 'testing' && 'Testing connection...'}
-          {gatewayStatus === 'connected' && 'Connected successfully'}
-          {gatewayStatus === 'error' && `Could not connect \u2014 ${gatewayError}`}
+      <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-mission-control-bg border border-mission-control-border">
+        <Wifi size={32} className="text-green-500" />
+        <p className="text-sm text-mission-control-text">
+          Claude Code CLI is your AI backend. Agents run as Claude CLI processes.
         </p>
-        <button
-          onClick={testGateway}
-          disabled={gatewayStatus === 'testing'}
-          className="px-4 py-2 text-sm rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
-        >
-          {gatewayStatus === 'testing' ? (
-            <span className="flex items-center gap-2">
-              <Loader size={14} className="animate-spin" /> Testing...
-            </span>
-          ) : (
-            'Test Connection'
-          )}
-        </button>
+        <div className="text-xs text-mission-control-text-dim text-center">
+          MCP servers handle task DB, memory vault, and scheduled jobs.
+        </div>
       </div>
     </div>
   );
@@ -384,17 +410,17 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const renderSampleData = () => (
     <div className="py-4">
       <div className="flex items-center gap-2 mb-1">
-        <Database size={20} className="text-clawd-accent" />
-        <h2 className="text-xl font-bold text-clawd-text">Sample Data</h2>
+        <Database size={20} className="text-mission-control-accent" />
+        <h2 className="text-xl font-bold text-mission-control-text">Sample Data</h2>
       </div>
-      <p className="text-clawd-text-dim text-sm mb-6">
+      <p className="text-mission-control-text-dim text-sm mb-6">
         Want to explore with some demo tasks and data?
       </p>
       {sampleDataStatus === 'idle' && (
         <div className="flex gap-3">
           <button
             onClick={populateSampleData}
-            className="flex-1 px-4 py-3 rounded-xl bg-clawd-accent text-white font-medium hover:bg-clawd-accent-dim transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl bg-mission-control-accent text-white font-medium hover:bg-mission-control-accent-dim transition-colors"
           >
             Yes, add sample data
           </button>
@@ -403,23 +429,106 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               setSampleDataStatus('skipped');
               goNext();
             }}
-            className="flex-1 px-4 py-3 rounded-xl border border-clawd-border text-clawd-text hover:bg-clawd-border/50 transition-colors"
+            className="flex-1 px-4 py-3 rounded-xl border border-mission-control-border text-mission-control-text hover:bg-mission-control-border/50 transition-colors"
           >
             No thanks, start fresh
           </button>
         </div>
       )}
       {sampleDataStatus === 'loading' && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-clawd-bg border border-clawd-border">
-          <Loader size={18} className="animate-spin text-clawd-accent" />
-          <span className="text-sm text-clawd-text">Adding sample data...</span>
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-mission-control-bg border border-mission-control-border">
+          <Loader size={18} className="animate-spin text-mission-control-accent" />
+          <span className="text-sm text-mission-control-text">Adding sample data...</span>
         </div>
       )}
       {sampleDataStatus === 'done' && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
           <CheckCircle size={18} className="text-green-500" />
-          <span className="text-sm text-clawd-text">
+          <span className="text-sm text-mission-control-text">
             Added {sampleDataCount} sample tasks
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const applyPreset = async (preset: RolePreset) => {
+    setPresetStatus('applying');
+    await Promise.allSettled([
+      ...preset.agents.map(id => catalogApi.setAgentInstalled(id, true)),
+      ...preset.modules.map(id => moduleApi.install(id)),
+    ]);
+    setPresetStatus('done');
+  };
+
+  const renderRolePresets = () => (
+    <div className="py-4">
+      <div className="flex items-center gap-2 mb-1">
+        <Users size={20} className="text-mission-control-accent" />
+        <h2 className="text-xl font-bold text-mission-control-text">Your Role</h2>
+      </div>
+      <p className="text-mission-control-text-dim text-sm mb-5">
+        Select your primary role to pre-install relevant agents and modules.
+      </p>
+
+      {presetStatus !== 'done' ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            {ROLE_PRESETS.map(preset => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setSelectedRole(preset.id)}
+                className={`text-left p-3 rounded-xl border-2 transition-all ${
+                  selectedRole === preset.id
+                    ? 'border-mission-control-accent bg-mission-control-accent/10'
+                    : 'border-mission-control-border hover:border-mission-control-accent/40'
+                }`}
+              >
+                <div className="text-2xl mb-1.5">{preset.emoji}</div>
+                <div className="font-semibold text-sm text-mission-control-text mb-0.5">{preset.label}</div>
+                <div className="text-[11px] text-mission-control-text-dim leading-tight">{preset.description}</div>
+              </button>
+            ))}
+          </div>
+
+          {selectedRole && (
+            <div className="mb-4 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border text-xs text-mission-control-text-dim">
+              {(() => {
+                const preset = ROLE_PRESETS.find(r => r.id === selectedRole)!;
+                return (
+                  <>
+                    <span className="text-mission-control-text font-medium">Will install: </span>
+                    {[...preset.agents, ...preset.modules].join(', ')}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={!selectedRole || presetStatus === 'applying'}
+              onClick={() => {
+                const preset = ROLE_PRESETS.find(r => r.id === selectedRole);
+                if (preset) applyPreset(preset);
+              }}
+              className="flex-1 px-4 py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {presetStatus === 'applying' ? (
+                <><Loader size={14} className="animate-spin" /> Applying…</>
+              ) : (
+                <><Sparkles size={14} /> Apply Preset</>
+              )}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20 mb-4">
+          <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
+          <span className="text-sm text-mission-control-text">
+            {ROLE_PRESETS.find(r => r.id === selectedRole)?.label} preset applied!
           </span>
         </div>
       )}
@@ -428,22 +537,22 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderFinish = () => (
     <div className="flex flex-col items-center text-center py-6">
-      <div className="w-20 h-20 rounded-2xl bg-clawd-accent/20 flex items-center justify-center mb-6">
-        <PartyPopper size={40} className="text-clawd-accent" />
+      <div className="w-20 h-20 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mb-6">
+        <PartyPopper size={40} className="text-mission-control-accent" />
       </div>
-      <h2 className="text-2xl font-bold text-clawd-text mb-3">You're All Set!</h2>
-      <p className="text-clawd-text-dim max-w-sm mb-8">
+      <h2 className="text-2xl font-bold text-mission-control-text mb-3">You're All Set!</h2>
+      <p className="text-mission-control-text-dim max-w-sm mb-8">
         Your dashboard is ready. Would you like a quick tour?
       </p>
       <button
         onClick={() => handleFinish(true)}
-        className="px-6 py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent-dim transition-colors w-full max-w-xs"
+        className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
       >
         Start Tour
       </button>
       <button
         onClick={() => handleFinish(false)}
-        className="mt-3 px-6 py-3 border border-clawd-border rounded-xl text-clawd-text hover:bg-clawd-border/50 transition-colors w-full max-w-xs"
+        className="mt-3 px-6 py-3 border border-mission-control-border rounded-xl text-mission-control-text hover:bg-mission-control-border/50 transition-colors w-full max-w-xs"
       >
         Skip Tour
       </button>
@@ -456,6 +565,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     renderPermissions,
     renderGateway,
     renderSampleData,
+    renderRolePresets,
     renderFinish,
   ];
 
@@ -469,7 +579,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-      <div className="w-full max-w-lg bg-clawd-surface rounded-2xl shadow-2xl border border-clawd-border overflow-hidden">
+      <div className="w-full max-w-lg bg-mission-control-surface rounded-2xl shadow-2xl border border-mission-control-border overflow-hidden">
         {/* Step progress dots */}
         <div className="flex items-center justify-center gap-2 pt-5 pb-2">
           {Array.from({ length: STEP_COUNT }).map((_, i) => (
@@ -477,10 +587,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               key={i}
               className={`h-2 rounded-full transition-all duration-300 ${
                 i === currentStep
-                  ? 'w-6 bg-clawd-accent'
+                  ? 'w-6 bg-mission-control-accent'
                   : i < currentStep
-                    ? 'w-2 bg-clawd-accent/50'
-                    : 'w-2 bg-clawd-border'
+                    ? 'w-2 bg-mission-control-accent/50'
+                    : 'w-2 bg-mission-control-border'
               }`}
             />
           ))}
@@ -502,19 +612,19 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             <div className="flex items-center justify-between">
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+                className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
               >
                 <ArrowLeft size={14} />
                 Back
               </button>
-              <span className="text-xs text-clawd-text-dim">
+              <span className="text-xs text-mission-control-text-dim">
                 Step {currentStep + 1} of {STEP_COUNT}
               </span>
               <div className="flex items-center gap-2">
                 {criticalFailed && (
                   <button
                     onClick={checkDependencies}
-                    className="px-3 py-1 text-sm rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 transition-colors"
+                    className="px-3 py-1 text-sm rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors"
                   >
                     Re-check
                   </button>
@@ -522,7 +632,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                 <button
                   onClick={goNext}
                   disabled={criticalFailed}
-                  className="flex items-center gap-1 px-4 py-2 text-sm bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Continue
                   <ArrowRight size={14} />
