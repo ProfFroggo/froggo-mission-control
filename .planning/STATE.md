@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v3.0 Autonomous Core — IN PROGRESS 2026-03-06
+**Current focus:** v3.0 Autonomous Core — COMPLETE 2026-03-06
 
 ## Current Position
 
-Phase: 24 of 30 (precompact-context-resilience)
+Phase: 32 of 39 (agent-hire-wizard)
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-06 — Phase 23 + 23.1 complete (dispatcher overhaul + agent identity foundation)
+Status: Phase 31 complete — ready to plan Phase 32
+Last activity: 2026-03-06 — Phase 31 complete (3/3 plans: catalog schema + 15 agent manifests + 19 module manifests)
 
-Progress: ██░░░░░░░░ 20% (v3.0 — phases 23 + 23.1 done)
+Progress: █░░░░░░░░░ 11% (v4.0 — 1/9 phases)
 
 ## Performance Metrics
 
@@ -85,9 +85,18 @@ None.
 
 - Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
 - Phase 23.1 inserted: Agent Identity Foundation — fixed all 15 workspace CLAUDE.md files
+- Milestone v4.0 created: Agent & Module Library — catalog schema, hire/install wizards (HR + Coder agent-backed), library UIs, lifecycle management, onboarding role presets (Phases 31-39)
+
+### Key Decisions (v4.0)
+
+- Catalog tables (catalog_agents, catalog_modules) are SEPARATE from existing agents/module_state tables — additive only
+- .catalog/ manifest files are source of truth; syncCatalogAgents/syncCatalogModules() upsert on every DB init
+- ON CONFLICT preserves installed/enabled/core — DB owns hire state, manifests own metadata
+- 7 core modules: settings, agent-mgmt, inbox, chat, kanban, approvals, notifications
+- syncCatalogModules() placed in catalogSync.ts (shared file) not a separate file
 
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: Phase 23 + 23.1 complete. Phase 24 (PreCompact) is next.
+Stopped at: Phase 31 complete. 3/3 plans executed. catalog_agents + catalog_modules tables, 15 agent manifests, 19 module manifests, catalogSync.ts startup sync all in place.
 Resume file: None
