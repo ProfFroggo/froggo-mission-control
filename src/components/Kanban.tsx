@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive
+import {
+  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -23,7 +23,7 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
   { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
   { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} className="flex-shrink-0" /> },
-  { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
+  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
 // Format due date
@@ -91,7 +91,7 @@ export default function Kanban() {
   // Active agent sessions (for real-time activity indicators)
   const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
   
-  // Load tasks from froggo-db on mount and poll (only when visible)
+  // Load tasks from mission-control-db on mount and poll (only when visible)
   useEffect(() => {
     loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks'));
     
@@ -544,13 +544,13 @@ export default function Kanban() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-heading-2 icon-text">
               Task Board
               <span className="text-secondary font-normal">
-                Press <kbd className="px-1.5 py-0.5 bg-clawd-bg rounded text-xs">?</kbd> for shortcuts
+                Press <kbd className="px-1.5 py-0.5 bg-mission-control-bg rounded text-xs">?</kbd> for shortcuts
               </span>
             </h1>
             <div className="flex items-center gap-4 text-secondary mt-1">
@@ -571,7 +571,7 @@ export default function Kanban() {
                 </span>
               )}
               {stats.unassigned > 0 && (
-                <span className="icon-text-tight text-clawd-text-dim">
+                <span className="icon-text-tight text-mission-control-text-dim">
                   <User size={14} className="flex-shrink-0" /> {stats.unassigned} unassigned
                 </span>
               )}
@@ -581,13 +581,13 @@ export default function Kanban() {
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim flex-shrink-0" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search tasks..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-                className="pl-9 pr-4 py-2 bg-clawd-bg rounded-xl border border-clawd-border text-sm w-48 focus:outline-none focus:border-clawd-accent"
+                className="pl-9 pr-4 py-2 bg-mission-control-bg rounded-xl border border-mission-control-border text-sm w-48 focus:outline-none focus:border-mission-control-accent"
               />
             </div>
 
@@ -596,14 +596,14 @@ export default function Kanban() {
               onClick={() => setShowFilters(!showFilters)}
               className={`icon-text px-3 py-2 rounded-xl border transition-all ${
                 activeFiltersCount > 0
-                  ? 'bg-clawd-accent/20 border-clawd-accent text-clawd-accent'
-                  : 'bg-clawd-bg border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
+                  : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Filter size={16} className="flex-shrink-0" />
               Filters
               {activeFiltersCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-clawd-accent text-white text-xs rounded-full flex-shrink-0 whitespace-nowrap">
+                <span className="px-1.5 py-0.5 bg-mission-control-accent text-white text-xs rounded-full flex-shrink-0 whitespace-nowrap">
                   {activeFiltersCount}
                 </span>
               )}
@@ -613,7 +613,7 @@ export default function Kanban() {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="icon-btn border border-clawd-border hover:border-clawd-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="icon-btn border border-mission-control-border hover:border-mission-control-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Refresh tasks"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -623,7 +623,7 @@ export default function Kanban() {
             <button
               onClick={handleHealthCheck}
               className="icon-text px-3 py-2 border border-success-border text-success rounded-xl hover:bg-success-subtle transition-all"
-              title="Request Froggo to review board health, merge redundant tasks, and verify workflow"
+              title="Request Mission Control to review board health, merge redundant tasks, and verify workflow"
             >
               <Stethoscope size={16} className="flex-shrink-0" />
               Health Check
@@ -632,25 +632,25 @@ export default function Kanban() {
             {/* New Task */}
             <button 
               onClick={() => handleAddTask('todo')}
-              className="icon-text px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-all hover:scale-105"
+              className="icon-text px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-all hover:scale-105"
             >
               <Plus size={16} className="flex-shrink-0" />
               New Task
-              <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">N</kbd>
+              <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">N</kbd>
             </button>
           </div>
         </div>
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="flex items-center gap-4 p-4 bg-clawd-bg rounded-xl border border-clawd-border animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-4 p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2">
             {/* Project */}
             <div className="icon-text-tight">
-              <FolderOpen size={16} className="text-clawd-text-dim flex-shrink-0" />
+              <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
               <select
                 value={filters.project}
                 onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
-                className="bg-clawd-surface border border-clawd-border rounded-lg px-2 py-1 text-sm"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
               >
                 {projects.map(p => (
                   <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
@@ -660,11 +660,11 @@ export default function Kanban() {
 
             {/* Priority */}
             <div className="icon-text-tight">
-              <Flag size={16} className="text-clawd-text-dim flex-shrink-0" />
+              <Flag size={16} className="text-mission-control-text-dim flex-shrink-0" />
               <select
                 value={filters.priority}
                 onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value as TaskPriority | 'all' }))}
-                className="bg-clawd-surface border border-clawd-border rounded-lg px-2 py-1 text-sm"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
               >
                 <option value="all">All Priorities</option>
                 {PRIORITIES.map(p => (
@@ -675,16 +675,16 @@ export default function Kanban() {
 
             {/* Assignee */}
             <div className="icon-text-tight">
-              <Bot size={16} className="text-clawd-text-dim flex-shrink-0" />
+              <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
               <select
                 value={filters.assignee}
                 onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
-                className="bg-clawd-surface border border-clawd-border rounded-lg px-2 py-1 text-sm"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
               >
                 <option value="all">All Assignees</option>
                 <option value="unassigned">Unassigned</option>
                 {agents
-                  .filter(a => !['main', 'froggo'].includes(a.id))
+                  .filter(a => !['main', 'mission-control'].includes(a.id))
                   .map(a => (
                     <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
                   ))}
@@ -706,7 +706,7 @@ export default function Kanban() {
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="icon-text-tight text-sm text-clawd-accent hover:underline"
+                className="icon-text-tight text-sm text-mission-control-accent hover:underline"
               >
                 <X size={16} className="flex-shrink-0" /> Clear all
               </button>
@@ -740,10 +740,10 @@ export default function Kanban() {
               data-column={column.id}
               className={`flex-shrink-0 w-96 min-w-[320px] flex flex-col rounded-2xl border transition-all ${
                 isDragOver 
-                  ? 'border-clawd-accent border-dashed bg-clawd-accent/10 scale-[1.01] shadow-lg shadow-clawd-accent/20' 
+                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20' 
                   : draggedTask 
-                  ? 'border-clawd-border bg-clawd-surface/50' 
-                  : 'border-clawd-border bg-clawd-surface'
+                  ? 'border-mission-control-border bg-mission-control-surface/50' 
+                  : 'border-mission-control-border bg-mission-control-surface'
               }`}
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
@@ -759,7 +759,7 @@ export default function Kanban() {
               aria-label={`Kanban column: ${column.title}`}
             >
               {/* Column Header */}
-              <div className={`p-3 border-b border-clawd-border border-l-4 ${column.color} rounded-t-2xl`}>
+              <div className={`p-3 border-b border-mission-control-border border-l-4 ${column.color} rounded-t-2xl`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="icon-text">
                     <span>{column.emoji}</span>
@@ -774,7 +774,7 @@ export default function Kanban() {
                     <button
                       onClick={() => setShowArchiveConfirm(true)}
                       disabled={isArchiving || columnTasks.length === 0}
-                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text disabled:opacity-50"
+                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-50"
                       title="Archive all done tasks"
                     >
                       <Archive size={16} className="flex-shrink-0" />
@@ -782,7 +782,7 @@ export default function Kanban() {
                   ) : (
                     <button
                       onClick={() => handleAddTask(column.id)}
-                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
+                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text"
                     >
                       <Plus size={16} className="flex-shrink-0" />
                     </button>
@@ -795,20 +795,20 @@ export default function Kanban() {
                   <div className="relative">
                     <button
                       onClick={() => toggleColumnDropdown(column.id, 'sort')}
-                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.sortBy !== 'newest' ? 'text-clawd-accent' : ''}`}
+                      className={`icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text ${settings.sortBy !== 'newest' ? 'text-mission-control-accent' : ''}`}
                       title="Sort"
                     >
                       <ArrowDown size={14} className="flex-shrink-0" />
                     </button>
                     {dropdowns.sort && (
-                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                      <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-1">
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'newest' ? 'text-clawd-accent' : ''}`}>Newest First</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'oldest' ? 'text-clawd-accent' : ''}`}>Oldest First</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-clawd-accent' : ''}`}>Priority: Low → High</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-clawd-accent' : ''}`}>Priority: High → Low</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-clawd-accent' : ''}`}>Progress: 0% → 100%</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-clawd-accent' : ''}`}>Progress: 100% → 0%</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'newest' ? 'text-mission-control-accent' : ''}`}>Newest First</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'oldest' ? 'text-mission-control-accent' : ''}`}>Oldest First</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-mission-control-accent' : ''}`}>Priority: Low → High</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-mission-control-accent' : ''}`}>Priority: High → Low</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-mission-control-accent' : ''}`}>Progress: 0% → 100%</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-mission-control-accent' : ''}`}>Progress: 100% → 0%</button>
                         </div>
                       </div>
                     )}
@@ -818,19 +818,19 @@ export default function Kanban() {
                   <div className="relative">
                     <button
                       onClick={() => toggleColumnDropdown(column.id, 'filter')}
-                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'text-clawd-accent' : ''}`}
+                      className={`icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text ${settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'text-mission-control-accent' : ''}`}
                       title="Filter"
                     >
                       <Filter size={14} className="flex-shrink-0" />
                     </button>
                     {dropdowns.filter && (
-                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
-                        <div className="p-2 border-b border-clawd-border">
-                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Agent</div>
+                      <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                        <div className="p-2 border-b border-mission-control-border">
+                          <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Agent</div>
                           <select
                             value={settings.filterAgent}
                             onChange={(e) => updateColumnSetting(column.id, 'filterAgent', e.target.value)}
-                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                            className="w-full bg-mission-control-bg border border-mission-control-border rounded px-2 py-1 text-sm"
                           >
                             <option value="all">All Agents</option>
                             <option value="unassigned">Unassigned</option>
@@ -840,11 +840,11 @@ export default function Kanban() {
                           </select>
                         </div>
                         <div className="p-2">
-                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Priority</div>
+                          <div className="text-xs font-semibold text-mission-control-text-dim mb-1">Priority</div>
                           <select
                             value={settings.filterPriority}
                             onChange={(e) => updateColumnSetting(column.id, 'filterPriority', e.target.value as TaskPriority | 'all')}
-                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                            className="w-full bg-mission-control-bg border border-mission-control-border rounded px-2 py-1 text-sm"
                           >
                             <option value="all">All Priorities</option>
                             {PRIORITIES.map(p => (
@@ -853,13 +853,13 @@ export default function Kanban() {
                           </select>
                         </div>
                         {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
-                          <div className="p-2 border-t border-clawd-border">
+                          <div className="p-2 border-t border-mission-control-border">
                             <button
                               onClick={() => {
                                 updateColumnSetting(column.id, 'filterAgent', 'all');
                                 updateColumnSetting(column.id, 'filterPriority', 'all');
                               }}
-                              className="w-full text-sm text-clawd-accent hover:underline"
+                              className="w-full text-sm text-mission-control-accent hover:underline"
                             >
                               Clear Filters
                             </button>
@@ -923,7 +923,7 @@ export default function Kanban() {
           aria-label="Close keyboard shortcuts"
         >
           <div 
-            className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" 
+            className="bg-mission-control-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-mission-control-border" 
             onClick={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
             role="presentation"
@@ -937,10 +937,10 @@ export default function Kanban() {
               </button>
             </div>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-clawd-bg rounded">N</kbd></div>
-              <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-clawd-bg rounded">⌘F</kbd></div>
-              <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-clawd-bg rounded">Esc</kbd></div>
-              <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-clawd-bg rounded">?</kbd></div>
+              <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></div>
+              <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">⌘F</kbd></div>
+              <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></div>
+              <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></div>
             </div>
           </div>
         </div>
@@ -981,16 +981,16 @@ export default function Kanban() {
       {/* Archive Confirmation Dialog */}
       {showArchiveConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-clawd-bg rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
+          <div className="bg-mission-control-bg rounded-lg p-6 max-w-md w-full mx-4 border border-mission-control-border">
             <h3 className="text-heading-3 mb-2">Archive Done Tasks</h3>
-            <p className="text-clawd-text-dim mb-4">
+            <p className="text-mission-control-text-dim mb-4">
               Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
               They will be removed from the board but can still be accessed in the archive.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowArchiveConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-clawd-surface hover:bg-clawd-border transition-colors"
+                className="px-4 py-2 rounded-lg bg-mission-control-surface hover:bg-mission-control-border transition-colors"
               >
                 Cancel
               </button>
@@ -1118,7 +1118,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const isTodoTask = task.status === 'todo' || (task.status as string) === 'backlog';
   const hasMinSubtasks = (task.subtasks?.length || 0) >= 2;
   const hasPriority = task.priority && ['p0', 'p1', 'p2', 'p3'].includes(task.priority);
-  const hasValidAssignment = task.assignedTo && !['main', 'froggo', 'clara'].includes(task.assignedTo);
+  const hasValidAssignment = task.assignedTo && !['main', 'mission-control', 'clara'].includes(task.assignedTo);
   const hasDescription = (task.description?.length || 0) >= 20;
   const isReady = hasMinSubtasks && hasPriority && hasValidAssignment && hasDescription;
 
@@ -1139,7 +1139,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       role="button"
       tabIndex={0}
       aria-label={`Task: ${task.title}, status: ${task.status}`}
-      className={`bg-clawd-bg rounded-xl p-3 border-2 transition-all cursor-pointer group relative ${
+      className={`bg-mission-control-bg rounded-xl p-3 border-2 transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
@@ -1147,7 +1147,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         activityIndicator ? activityIndicator.color :
         dueInfo?.isOverdue ? 'border-error-border bg-error-subtle' :
         task.priority === 'p0' ? 'border-error-border' :
-        'border-clawd-border hover:border-clawd-accent/50'
+        'border-mission-control-border hover:border-mission-control-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
     >
@@ -1184,19 +1184,19 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   aria-label="Close priority dropdown"
                 />
                 <div 
-                  className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
+                  className="fixed bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                   style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                   role="presentation"
                 >
-                  <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
+                  <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Set Priority</div>
                   <div className="space-y-1">
                     {PRIORITIES.map(p => (
                       <button
                         key={p.id}
                         onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                        className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                        className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
                           task.priority === p.id ? `${p.bg} ${p.color}` : ''
                         }`}
                       >
@@ -1255,7 +1255,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         <div className="relative flex-shrink-0">
           <button 
             ref={menuBtnRef}
-            className="icon-btn-sm text-clawd-text-dim opacity-60 hover:opacity-100"
+            className="icon-btn-sm text-mission-control-text-dim opacity-60 hover:opacity-100"
             onClick={(e) => { 
               e.stopPropagation(); 
               if (!showMenu && menuBtnRef.current) {
@@ -1271,7 +1271,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           {showMenu && menuBtnPos && createPortal(
             <>
               <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMenu(false); } }} role="button" tabIndex={0} aria-label="Close menu" />
-              <div className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
+              <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
                 style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
                 <button
                   onClick={(e) => { 
@@ -1282,7 +1282,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                     setShowPriority(true); 
                     setShowMenu(false); 
                   }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
                 >
                   <Flag size={16} className="flex-shrink-0" /> Set Priority
                 </button>
@@ -1295,21 +1295,21 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                     setShowAssign(true); 
                     setShowMenu(false); 
                   }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
                 >
                   <Bot size={16} className="flex-shrink-0" /> Assign Agent
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
                 >
                   <Hand size={16} className="flex-shrink-0" /> Poke
                 </button>
-                <hr className="my-1 border-clawd-border" />
+                <hr className="my-1 border-mission-control-border" />
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
                   disabled={isDeleting}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border text-error disabled:opacity-50"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border text-error disabled:opacity-50"
                 >
                   {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />} 
                   {isDeleting ? 'Deleting...' : 'Delete'}
@@ -1321,24 +1321,36 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         </div>
       </div>
       
-      {/* Agent status / Last update */}
-      {task.lastAgentUpdate && (
-        <div className="text-xs text-clawd-text-dim mb-2 italic line-clamp-1 bg-clawd-surface px-2 py-1 rounded">
-          💬 {task.lastAgentUpdate}
+      {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
+
+      {/* Clara review status badge */}
+      {task.reviewStatus && (
+        <div className={`icon-text-tight text-xs px-2 py-1 rounded mb-2 ${
+          task.reviewStatus === 'approved' ? 'bg-green-500/10 text-green-400' :
+          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
+          'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
+        }`}>
+          {task.reviewStatus === 'approved' ? <ShieldCheck size={12} className="no-shrink" /> :
+           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? <ShieldX size={12} className="no-shrink" /> :
+           <ShieldAlert size={12} className="no-shrink" />}
+          <span>Clara: {task.reviewStatus === 'in-review' ? 'reviewing…' : task.reviewStatus}</span>
+          {task.reviewNotes && (
+            <span className="ml-1 opacity-70 truncate max-w-[120px]">— {task.reviewNotes}</span>
+          )}
         </div>
       )}
       
       {/* Subtask Progress */}
       {subtaskCount > 0 && (
         <div className="mb-2">
-          <div className="icon-text-tight text-xs text-clawd-text-dim mb-1">
+          <div className="icon-text-tight text-xs text-mission-control-text-dim mb-1">
             <CheckSquare size={14} className="flex-shrink-0" />
             <span>{completedSubtasks}/{subtaskCount}</span>
           </div>
-          <div className="h-1 bg-clawd-surface rounded-full overflow-hidden">
+          <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-300 ${
-                subtaskProgress === 100 ? 'bg-green-500' : 'bg-clawd-accent'
+                subtaskProgress === 100 ? 'bg-green-500' : 'bg-mission-control-accent'
               }`}
               style={{ width: `${subtaskProgress}%` }}
             />
@@ -1349,7 +1361,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       {/* Bottom row: Project, Due date, Agent */}
       <div className="flex items-center justify-between gap-2 text-xs min-w-0">
         <div className="icon-text flex-1 min-w-0 min-w-0 overflow-hidden">
-          <span className="icon-text-tight px-2 py-0.5 bg-clawd-surface rounded text-clawd-text-dim no-shrink no-wrap">
+          <span className="icon-text-tight px-2 py-0.5 bg-mission-control-surface rounded text-mission-control-text-dim no-shrink no-wrap">
             <FolderOpen size={14} className="no-shrink" />
             {task.project}
           </span>
@@ -1358,7 +1370,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
               dueInfo.isOverdue ? 'bg-error-subtle text-error' :
               dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
-              'bg-clawd-surface text-clawd-text-dim'
+              'bg-mission-control-surface text-mission-control-text-dim'
             }`}>
               <Calendar size={14} className="no-shrink" />
               {dueInfo.text}
@@ -1384,7 +1396,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
               ) : null}
               <button 
                 ref={assignBtnRef}
-                className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
+                className="icon-text-tight px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent rounded hover:bg-mission-control-accent/20 no-shrink"
                 onClick={(e) => { 
                   e.stopPropagation(); 
                   if (!showAssign && assignBtnRef.current) {
@@ -1405,7 +1417,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           ) : (
             <button 
               ref={assignBtnRef}
-              className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
+              className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-accent no-shrink"
               onClick={(e) => { 
                 e.stopPropagation(); 
                 if (!showAssign && assignBtnRef.current) {
@@ -1424,29 +1436,29 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             <>
               <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowAssign(false); } }} role="button" tabIndex={0} aria-label="Close assign dropdown" />
               <div 
-                className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
+                className="fixed bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                 style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
                 role="presentation"
               >
-                <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
+                <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Assign to agent</div>
                 <div className="space-y-1">
                   <button
                     onClick={() => { onAssign(''); setShowAssign(false); }}
-                    className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                      !task.assignedTo ? 'bg-clawd-border' : ''
+                    className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
+                      !task.assignedTo ? 'bg-mission-control-border' : ''
                     }`}
                   >
-                    <User size={16} className="text-clawd-text-dim" />
+                    <User size={16} className="text-mission-control-text-dim" />
                     Unassigned
                   </button>
                   {agents.map(agent => (
                     <button
                       key={agent.id}
                       onClick={() => { onAssign(agent.id); setShowAssign(false); }}
-                      className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                        task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
+                      className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
+                        task.assignedTo === agent.id ? 'bg-mission-control-accent/20 text-mission-control-accent' : ''
                       }`}
                     >
                       <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
