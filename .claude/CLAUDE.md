@@ -24,8 +24,10 @@
 
 ## Skills Protocol
 
-Before starting a task, check if a relevant skill exists and read it:
-`Read .claude/skills/{skill-name}/SKILL.md`
+**Before starting any task**, check if a relevant skill exists and read it first:
+```
+Read ~/git/mission-control-nextjs/.claude/skills/{skill-name}/SKILL.md
+```
 
 | Doing... | Skill |
 |----------|-------|
@@ -38,5 +40,7 @@ Before starting a task, check if a relevant skill exists and read it:
 | Next.js routes or components | `nextjs-patterns` |
 | Git commits, branches, PRs | `git-workflow` |
 | Social/X content | `x-twitter-strategy` |
+
+Skills are self-contained guides. Reading the relevant skill before starting saves rework and ensures platform conventions are followed.
 
 Your soul file has your specific responsibilities, output paths, and memory protocol.
