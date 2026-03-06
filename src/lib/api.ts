@@ -1,5 +1,5 @@
 // src/lib/api.ts
-// Replaces window.clawdbot.modules.invoke() with fetch calls to Next.js API routes
+// REST API client for all mission-control platform endpoints — fetch calls to Next.js API routes
 
 type ApiOptions = {
   method?: string;
@@ -246,7 +246,23 @@ export const marketplaceApi = {
 };
 
 // ──────────────────────────────────────────────────
-// Compatibility shim — drop-in replacement for window.clawdbot
+// Catalog (v4.0 Agent & Module Library)
+// ──────────────────────────────────────────────────
+export const catalogApi = {
+  listAgents: () => apiCall('/catalog/agents'),
+  getAgent: (id: string) => apiCall(`/catalog/agents/${id}`),
+  setAgentInstalled: (id: string, installed: boolean) =>
+    apiCall(`/catalog/agents/${id}`, { method: 'PATCH', body: { installed } }),
+  listModules: () => apiCall('/catalog/modules'),
+  getModule: (id: string) => apiCall(`/catalog/modules/${id}`),
+  setModuleInstalled: (id: string, installed: boolean) =>
+    apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { installed } }),
+  setModuleEnabled: (id: string, enabled: boolean) =>
+    apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { enabled } }),
+};
+
+// ──────────────────────────────────────────────────
+// Compatibility shim — maps legacy IPC channel names to REST API calls
 // ──────────────────────────────────────────────────
 // Maps old IPC channel names to the new API calls.
 // Use ONLY during migration. Refactor components to use typed APIs above in Phase 4.
@@ -298,7 +314,7 @@ export const libraryApi = {
 };
 
 // ──────────────────────────────────────────────────
-// Compatibility shim — drop-in replacement for window.clawdbot
+// Compatibility shim — maps legacy IPC channel names to REST API calls
 // ──────────────────────────────────────────────────
 // Maps old IPC channel names to the new API calls.
 // Use ONLY during migration. Refactor components to use typed APIs above in Phase 4.
