@@ -139,9 +139,9 @@ for agent in mission-control coder chief clara designer researcher; do
     || check "agent $agent: maxTurns set" "missing"
 done
 
-grep -q "worktreePath" "$REPO/.claude/agents/coder.md" 2>/dev/null \
-  && check "coder.md: worktreePath set" "ok" \
-  || check "coder.md: worktreePath set" "missing"
+grep -q "permissionMode" "$REPO/.claude/agents/coder.md" 2>/dev/null \
+  && check "coder.md: permissionMode set" "ok" \
+  || check "coder.md: permissionMode set" "missing"
 
 grep -q "mcpServers" "$REPO/.claude/settings.json" 2>/dev/null \
   && check "settings.json: mcpServers configured" "ok" \
@@ -191,6 +191,141 @@ grep -q "switch_agent" "$REPO/tools/voice-bridge/src/tools.ts" 2>/dev/null \
 
 echo ""
 
+# ── v3.0: Task Dispatcher ───────────────────────────────────────────────────
+echo "Phase 23: Task Dispatcher Overhaul (v3.0)"
+
+grep -q "buildTaskSystemPrompt" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: buildTaskSystemPrompt present" "ok" \
+  || check "taskDispatcher: buildTaskSystemPrompt present" "not found"
+
+grep -q "resolveModel" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: resolveModel present" "ok" \
+  || check "taskDispatcher: resolveModel present" "not found"
+
+grep -q "process.cwd()" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: cwd = process.cwd()" "ok" \
+  || check "taskDispatcher: cwd = process.cwd()" "not found"
+
+grep -q "stream-json" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: --output-format stream-json" "ok" \
+  || check "taskDispatcher: --output-format stream-json" "not found"
+
+grep -q "persistTaskSession" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: session persistence" "ok" \
+  || check "taskDispatcher: session persistence" "not found"
+
+grep -q "dispatch_exit" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: exit event logging" "ok" \
+  || check "taskDispatcher: exit event logging" "not found"
+
+grep -q "CLAUDE_AGENT_ID" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher: CLAUDE_AGENT_ID in env" "ok" \
+  || check "taskDispatcher: CLAUDE_AGENT_ID in env" "not found"
+
+echo ""
+
+# ── v3.0: Agent Identity ─────────────────────────────────────────────────────
+echo "Phase 23.1: Agent Identity Foundation (v3.0)"
+
+FIXED=0; BROKEN=0
+for dir in ~/mission-control/agents/*/; do
+  id="$(basename "$dir")"
+  if [[ -f "$dir/CLAUDE.md" ]]; then
+    if grep -q "mcp__mission-control_db" "$dir/CLAUDE.md" 2>/dev/null; then
+      FIXED=$((FIXED+1))
+    else
+      BROKEN=$((BROKEN+1))
+    fi
+  fi
+done
+[[ "$BROKEN" -eq 0 && "$FIXED" -gt 0 ]] \
+  && check "Agent workspace CLAUDE.md files: all use MCP tools (${FIXED} agents)" "ok" \
+  || check "Agent workspace CLAUDE.md files: ${BROKEN} still have derek-db" "fix needed"
+
+echo ""
+
+# ── v3.0: PreCompact Hook ────────────────────────────────────────────────────
+echo "Phase 24: PreCompact Context Resilience (v3.0)"
+
+[[ -f "$REPO/tools/hooks/precompact-hook.js" ]] \
+  && check "tools/hooks/precompact-hook.js exists" "ok" \
+  || check "tools/hooks/precompact-hook.js exists" "not found"
+
+grep -q '"PreCompact"' "$REPO/.claude/settings.json" 2>/dev/null \
+  && check "settings.json: PreCompact hook registered" "ok" \
+  || check "settings.json: PreCompact hook registered" "not found"
+
+echo ""
+
+# ── v3.0: Agent Teams Hooks ──────────────────────────────────────────────────
+echo "Phase 25: Agent Teams Quality Gates (v3.0)"
+
+[[ -f "$REPO/tools/hooks/teammate-idle.js" ]] \
+  && check "tools/hooks/teammate-idle.js exists" "ok" \
+  || check "tools/hooks/teammate-idle.js exists" "not found"
+
+[[ -f "$REPO/tools/hooks/task-completed.js" ]] \
+  && check "tools/hooks/task-completed.js exists" "ok" \
+  || check "tools/hooks/task-completed.js exists" "not found"
+
+grep -q '"TeammateIdle"' "$REPO/.claude/settings.json" 2>/dev/null \
+  && check "settings.json: TeammateIdle hook registered" "ok" \
+  || check "settings.json: TeammateIdle hook registered" "not found"
+
+grep -q '"TaskCompleted"' "$REPO/.claude/settings.json" 2>/dev/null \
+  && check "settings.json: TaskCompleted hook registered" "ok" \
+  || check "settings.json: TaskCompleted hook registered" "not found"
+
+echo ""
+
+# ── v3.0: Token Tracking ─────────────────────────────────────────────────────
+echo "Phase 26: Token & Cost Tracking (v3.0)"
+
+grep -q "token_usage" "$REPO/src/lib/database.ts" 2>/dev/null \
+  && check "database.ts: token_usage table defined" "ok" \
+  || check "database.ts: token_usage table defined" "not found"
+
+grep -q "MODEL_PRICING" "$REPO/src/lib/env.ts" 2>/dev/null \
+  && check "env.ts: MODEL_PRICING defined" "ok" \
+  || check "env.ts: MODEL_PRICING defined" "not found"
+
+grep -q "calcCostUsd" "$REPO/src/lib/env.ts" 2>/dev/null \
+  && check "env.ts: calcCostUsd helper" "ok" \
+  || check "env.ts: calcCostUsd helper" "not found"
+
+[[ -f "$REPO/app/api/analytics/tokens/route.ts" ]] \
+  && check "app/api/analytics/tokens/route.ts exists" "ok" \
+  || check "app/api/analytics/tokens/route.ts exists" "not found"
+
+echo ""
+
+# ── v3.0: Monitoring ─────────────────────────────────────────────────────────
+echo "Phase 28: Monitoring & Alerting (v3.0)"
+
+grep -q "checkStuckTasks" "$REPO/tools/cron-daemon.js" 2>/dev/null \
+  && check "cron-daemon.js: checkStuckTasks present" "ok" \
+  || check "cron-daemon.js: checkStuckTasks present" "not found"
+
+[[ -f "$REPO/app/api/agents/health/route.ts" ]] \
+  && check "app/api/agents/health/route.ts exists" "ok" \
+  || check "app/api/agents/health/route.ts exists" "not found"
+
+echo ""
+
+# ── v3.0: Rate Limiting ───────────────────────────────────────────────────────
+echo "Phase 29: Rate Limiting & Resilience (v3.0)"
+
+STREAM_ROUTE="$REPO/app/api/agents/[id]/stream/route.ts"
+grep -q "agentLocks" "$STREAM_ROUTE" 2>/dev/null \
+  && check "stream/route.ts: agentLocks spawn lock" "ok" \
+  || check "stream/route.ts: agentLocks spawn lock" "not found"
+
+grep -q "DEBOUNCE_MS" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher.ts: dispatch debounce" "ok" \
+  || check "taskDispatcher.ts: dispatch debounce" "not found"
+
+echo ""
+
 # ── TypeScript + Build ─────────────────────────────────────────────────────
 echo "Build Verification"
 
@@ -217,5 +352,5 @@ if [[ "${FAIL}" -gt 0 ]]; then
   exit 1
 fi
 
-echo "All v2.0 smoke checks passed."
+echo "All v2.0 + v3.0 smoke checks passed."
 echo ""
