@@ -43,6 +43,7 @@ import {
   Sparkles,
   Code,
   Boxes,
+  Library,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -50,6 +51,8 @@ import { usePanelConfigStore } from '../store/panelConfig';
 import IntegrationWizard from './IntegrationWizard';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
+import ModuleLibraryPanel from './ModuleLibraryPanel';
+import type { CatalogModule } from '../types/catalog';
 
 // ─── Icon mapping ─────────────────────────────────────────────────────────────
 
@@ -127,7 +130,7 @@ interface ModuleCardData {
 
 function ModuleCardSkeleton() {
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 space-y-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3">
           <Skeleton width="w-10" height="h-10" rounded="lg" />
@@ -175,7 +178,7 @@ function CredentialStatusDot({
       />
       {/* Tooltip */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
-        <div className="bg-clawd-bg border border-clawd-border rounded-lg px-2.5 py-1.5 text-xs text-clawd-text whitespace-pre min-w-max shadow-lg">
+        <div className="bg-mission-control-bg border border-mission-control-border rounded-lg px-2.5 py-1.5 text-xs text-mission-control-text whitespace-pre min-w-max shadow-lg">
           {tooltip}
         </div>
       </div>
@@ -201,8 +204,8 @@ function ToggleSwitch({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:ring-offset-2 focus:ring-offset-clawd-bg disabled:opacity-40 disabled:cursor-not-allowed ${
-        checked ? 'bg-clawd-accent' : 'bg-clawd-border'
+      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2 focus:ring-offset-mission-control-bg disabled:opacity-40 disabled:cursor-not-allowed ${
+        checked ? 'bg-mission-control-accent' : 'bg-mission-control-border'
       }`}
     >
       <span
@@ -231,8 +234,8 @@ function CategoryChip({
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
         selected
-          ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-          : 'border-clawd-border text-clawd-text-dim hover:border-clawd-text-dim'
+          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
       }`}
     >
       {label}
@@ -272,20 +275,20 @@ function ModuleCard({
 
   return (
     <div
-      className={`bg-clawd-surface border border-clawd-border rounded-xl p-4 transition-all hover:border-clawd-text-dim/30 ${cardClass}`}
+      className={`bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-all hover:border-mission-control-text-dim/30 ${cardClass}`}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-3 min-w-0">
           {/* Icon */}
-          <div className="w-10 h-10 rounded-lg bg-clawd-accent/10 flex items-center justify-center flex-shrink-0">
-            <IconComponent size={20} className="text-clawd-accent" />
+          <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
+            <IconComponent size={20} className="text-mission-control-accent" />
           </div>
 
           {/* Name + version */}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-clawd-text text-sm truncate">
+              <span className="font-semibold text-mission-control-text text-sm truncate">
                 {manifest.name}
               </span>
               {credStatus && (
@@ -295,7 +298,7 @@ function ModuleCard({
                 />
               )}
             </div>
-            <span className="text-xs text-clawd-text-dim">
+            <span className="text-xs text-mission-control-text-dim">
               v{manifest.version}
               {manifest.author && ` · ${manifest.author}`}
             </span>
@@ -304,14 +307,14 @@ function ModuleCard({
 
         {/* Toggle or Core pill or Re-enable */}
         {manifest.core ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-accent/20 text-clawd-accent font-medium">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent font-medium">
             Core
           </span>
         ) : isDisabled ? (
           <button
             type="button"
             onClick={() => onToggle(data, true)}
-            className="text-xs px-2.5 py-1 rounded-lg border border-clawd-border text-clawd-text-dim hover:text-clawd-text hover:border-clawd-text-dim transition-colors"
+            className="text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
           >
             Re-enable
           </button>
@@ -326,14 +329,14 @@ function ModuleCard({
 
       {/* Description */}
       {manifest.description && (
-        <p className="text-sm text-clawd-text-dim line-clamp-2 mb-3">
+        <p className="text-sm text-mission-control-text-dim line-clamp-2 mb-3">
           {manifest.description}
         </p>
       )}
 
       {/* Footer row: category badge + configure button */}
       <div className="flex items-center gap-2 mt-auto">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-border/60 text-clawd-text-dim capitalize">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
           {category}
         </span>
 
@@ -342,14 +345,14 @@ function ModuleCard({
         )}
 
         {isDisabled && (
-          <span className="text-xs text-clawd-text-dim">Disabled</span>
+          <span className="text-xs text-mission-control-text-dim">Disabled</span>
         )}
 
         {hasCredentials && (
           <button
             type="button"
             onClick={() => onConfigure(data)}
-            className="ml-auto flex items-center gap-1 text-xs text-clawd-text-dim hover:text-clawd-text transition-colors px-2 py-1 rounded-lg border border-clawd-border hover:border-clawd-text-dim"
+            className="ml-auto flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border hover:border-mission-control-text-dim"
           >
             <Settings size={12} />
             Configure
@@ -365,6 +368,7 @@ function ModuleCard({
 export default function ModulesPage() {
   const { savePanels, syncWithViewRegistry } = usePanelConfigStore();
 
+  const [view, setView] = useState<'installed' | 'library'>('installed');
   const [cards, setCards] = useState<ModuleCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -407,7 +411,7 @@ export default function ModulesPage() {
           if (hasCredentials && manifest.credentials) {
             try {
               const credIds = manifest.credentials.map((c) => c.id);
-              const result = await (window as any).clawdbot.modules.invoke(
+              const result = await (window as any).clawdbot?.modules?.invoke?.(
                 'module:cred:status',
                 manifest.id,
                 credIds,
@@ -424,7 +428,7 @@ export default function ModulesPage() {
           let integration: IntegrationState | null = null;
           if (hasCredentials) {
             try {
-              const result = await (window as any).clawdbot.modules.invoke(
+              const result = await (window as any).clawdbot?.modules?.invoke?.(
                 'module:integration:get',
                 manifest.id,
               );
@@ -570,11 +574,50 @@ export default function ModulesPage() {
     <div className="h-full overflow-y-auto p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-clawd-text">Modules</h1>
-        <p className="text-clawd-text-dim mt-1 text-sm">
+        <h1 className="text-2xl font-semibold text-mission-control-text">Modules</h1>
+        <p className="text-mission-control-text-dim mt-1 text-sm">
           Manage installed modules, configure credentials, and toggle features
         </p>
       </div>
+
+      {/* View tabs */}
+      <div className="flex border-b border-mission-control-border -mt-2">
+        <button
+          type="button"
+          onClick={() => setView('installed')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            view === 'installed'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
+        >
+          <Puzzle size={15} /> Installed
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('library')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            view === 'library'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
+        >
+          <Library size={15} /> Library
+        </button>
+      </div>
+
+      {/* Library view */}
+      {view === 'library' && (
+        <ModuleLibraryPanel
+          onInstall={(_module: CatalogModule) => {
+            // Phase 36 will wire the full install wizard here
+            setView('installed');
+          }}
+        />
+      )}
+
+      {/* Installed view */}
+      {view === 'installed' && (<>
 
       {/* Category filter */}
       {!loading && presentCategories.length > 0 && (
@@ -605,7 +648,7 @@ export default function ModulesPage() {
           ))}
         </div>
       ) : filteredCards.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-clawd-text-dim text-sm">
+        <div className="flex items-center justify-center py-16 text-mission-control-text-dim text-sm">
           {selectedCategory
             ? `No modules in "${selectedCategory}" category`
             : 'No modules registered'}
@@ -622,6 +665,8 @@ export default function ModulesPage() {
           ))}
         </div>
       )}
+
+      </>)} {/* end installed view */}
 
       {/* Integration Wizard */}
       {wizardTarget && (
