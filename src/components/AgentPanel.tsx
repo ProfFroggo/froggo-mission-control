@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 import { gateway } from '../lib/gateway';
@@ -10,10 +10,12 @@ import AgentChatModal from './AgentChatModal';
 import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
+import AgentLibraryPanel from './AgentLibraryPanel';
 import { InlineLoader, Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import { CircuitBreakerStatus } from './CircuitBreakerStatus';
+import type { CatalogAgent } from '../types/catalog';
 
 import { getAgentTheme } from '../utils/agentThemes';
 import WidgetLoader from './WidgetLoader';
@@ -38,7 +40,7 @@ const HOVER_BG_MAP: Record<string, string> = {
   'bg-rose-500/8': 'hover:bg-rose-500/8',
   'bg-cyan-500/8': 'hover:bg-cyan-500/8',
   'bg-indigo-500/8': 'hover:bg-indigo-500/8',
-  'bg-clawd-surface': 'hover:bg-clawd-surface',
+  'bg-mission-control-surface': 'hover:bg-mission-control-surface',
 };
 
 export default function AgentPanel() {
@@ -67,22 +69,13 @@ export default function AgentPanel() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
+  const [view, setView] = useState<'active' | 'library'>('active');
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
   const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
   const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Context health check — no REST equivalent, skip silently
-    console.warn('Not implemented: agentManagement.ctx.check');
-  }, []);
-
-  useEffect(() => {
-    // Memory lifecycle status — no REST equivalent, skip silently
-    console.warn('Not implemented: memoryLifecycle.status');
-  }, []);
-
   const handleMemoryRotate = async (agentId: string) => {
-    if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via froggo-db memory-search.`)) return;
+    if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via mission-control-db memory-search.`)) return;
     setRotatingAgent(agentId);
     try {
       // Memory rotation — no REST equivalent
@@ -182,9 +175,9 @@ export default function AgentPanel() {
     active:     { color: 'bg-success',  label: 'Active', pulse: true },
     busy:       { color: 'bg-success',  label: 'Working…', pulse: true },
     idle:       { color: 'bg-warning', label: 'Idle' },
-    offline:    { color: 'bg-clawd-bg0',   label: 'Offline', hideDot: true },
+    offline:    { color: 'bg-mission-control-bg0',   label: 'Offline', hideDot: true },
     suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
-    archived:   { color: 'bg-clawd-bg0',   label: 'Archived', hideDot: true },
+    archived:   { color: 'bg-mission-control-bg0',   label: 'Archived', hideDot: true },
     draft:      { color: 'bg-warning', label: 'Draft', hideDot: true },
     disabled:   { color: 'bg-error',    label: 'Stopped', hideDot: true },
   };
@@ -203,7 +196,7 @@ export default function AgentPanel() {
   };
 
   // Infrastructure agents that must never be stopped from UI
-  const PROTECTED_AGENTS = ['froggo', 'main', 'clara'];
+  const PROTECTED_AGENTS = ['mission-control', 'main', 'clara'];
 
   // Skip phantom/legacy agents — use exclusion so new agents auto-appear
   const PHANTOM_AGENTS = ['main', 'chat-agent'];
@@ -238,7 +231,7 @@ export default function AgentPanel() {
     <div className="h-full overflow-auto p-4">
       <div className="w-full">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <div>
             <h1 className="icon-text text-heading-2 tracking-tight mb-1">
               <Bot size={24} className="flex-shrink-0" /> Agents
@@ -248,27 +241,73 @@ export default function AgentPanel() {
             </p>
           </div>
           <div className="icon-text gap-2">
-            {compareAgents.length >= 2 && (
+            {view === 'active' && compareAgents.length >= 2 && (
               <button type="button" onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-review-border rounded-lg hover:bg-review-subtle transition-colors text-sm">
                 <GitCompare size={15} className="flex-shrink-0" /> Compare ({compareAgents.length})
               </button>
             )}
-            <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
-              className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-clawd-border hover:bg-clawd-border/50'}`}>
-              <BarChart3 size={15} className="flex-shrink-0" /> Analytics
-            </button>
-            <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh" aria-label="Refresh agents">
-              <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
-            <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm">
-              <Plus size={15} className="flex-shrink-0" /> New Worker
-            </button>
+            {view === 'active' && (
+              <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
+                className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-mission-control-border hover:bg-mission-control-border/50'}`}>
+                <BarChart3 size={15} className="flex-shrink-0" /> Analytics
+              </button>
+            )}
+            {view === 'active' && (
+              <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-mission-control-border disabled:opacity-50" title="Refresh" aria-label="Refresh agents">
+                <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+            {view === 'active' && (
+              <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">
+                <Plus size={15} className="flex-shrink-0" /> New Worker
+              </button>
+            )}
           </div>
         </div>
 
+        {/* View tabs */}
+        <div className="flex border-b border-mission-control-border mb-5">
+          <button
+            type="button"
+            onClick={() => setView('active')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              view === 'active'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <Bot size={15} /> Active
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('library')}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              view === 'library'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <Library size={15} /> Library
+          </button>
+        </div>
+
+        {/* Library view */}
+        {view === 'library' && (
+          <AgentLibraryPanel
+            onHire={(_agent: CatalogAgent) => {
+              // Phase 34 will wire the full hire wizard here
+              setView('active');
+              setShowCreateModal(true);
+            }}
+          />
+        )}
+
+        {/* Active view content */}
+        {view === 'active' && (<>
+
         {/* Analytics */}
         {showAnalytics && (
-          <div className="mb-6 rounded-xl border border-clawd-border p-5">
+          <div className="mb-6 rounded-xl border border-mission-control-border p-5">
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
@@ -285,9 +324,9 @@ export default function AgentPanel() {
                   { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-review' },
                 ];
               })().map((s, i) => (
-                <div key={i} className="rounded-lg border border-clawd-border p-4">
+                <div key={i} className="rounded-lg border border-mission-control-border p-4">
                   <div className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.val}</div>
-                  <div className="text-xs text-clawd-text-dim mt-1">{s.label}</div>
+                  <div className="text-xs text-mission-control-text-dim mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -305,7 +344,7 @@ export default function AgentPanel() {
         {/* Core Agents — Profile Card Grid */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest">Core Agents</h2>
+            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest">Core Agents</h2>
             {compareAgents.length > 0 && (
               <span className="text-xs px-2 py-0.5 text-review border border-review-border rounded-full">
                 {compareAgents.length} selected
@@ -354,7 +393,7 @@ export default function AgentPanel() {
                     {/* Profile header */}
                     <div className="flex items-start gap-4 mb-4">
                       {/* Profile picture */}
-                      <div className={`relative flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden ring-2 ${theme.ring} bg-clawd-bg`}>
+                      <div className={`relative flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
                         {theme.pic ? (
                           <img
                             src={`./agent-profiles/${theme.pic}`}
@@ -365,7 +404,7 @@ export default function AgentPanel() {
                         ) : null}
                         <span className={`${theme.pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-3xl`}>{agent.avatar}</span>
                         {/* Status dot - only show for active/busy agents or idle with active task */}
-                        {showDot && <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-clawd-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
+                        {showDot && <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -379,7 +418,7 @@ export default function AgentPanel() {
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               agent.trust_tier === 'master' ? 'bg-review-subtle text-review' :
                               agent.trust_tier === 'expert' ? 'bg-warning/20 text-amber-400' :
-                              'bg-clawd-bg0/20 text-clawd-text-dim'
+                              'bg-mission-control-bg0/20 text-mission-control-text-dim'
                             }`}>
                               {agent.trust_tier === 'master' ? 'Master' :
                                agent.trust_tier === 'expert' ? 'Expert' :
@@ -394,7 +433,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                           {agent.status === 'archived' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted-subtle text-clawd-text-dim">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted-subtle text-mission-control-text-dim">
                               Archived
                             </span>
                           )}
@@ -404,7 +443,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-clawd-text-dim mt-1 line-clamp-2">{agent.description}</p>
+                        <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{agent.description}</p>
                       </div>
 
                       {/* Compact metrics */}
@@ -421,7 +460,7 @@ export default function AgentPanel() {
                         </span>
                       ))}
                       {!isExpanded && (agent.capabilities?.length || 0) > 4 && (
-                        <span className="px-2 py-0.5 text-[11px] text-clawd-text-dim">+{(agent.capabilities?.length || 0) - 4}</span>
+                        <span className="px-2 py-0.5 text-[11px] text-mission-control-text-dim">+{(agent.capabilities?.length || 0) - 4}</span>
                       )}
                     </div>
 
@@ -435,7 +474,7 @@ export default function AgentPanel() {
 
                     {/* Queued tasks */}
                     {agentTasks.length > 0 && !currentTask && (
-                      <div className="text-xs text-clawd-text-dim mb-3">
+                      <div className="text-xs text-mission-control-text-dim mb-3">
                         <Clock size={12} className="inline mr-1" />
                         {agentTasks.length} task{agentTasks.length > 1 ? 's' : ''} queued
                       </div>
@@ -476,13 +515,13 @@ export default function AgentPanel() {
                         </button>
                       ) : null}
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs text-clawd-text-dim hover:text-clawd-text border ${theme.border} rounded-lg hover:bg-clawd-border/30 transition-colors`}>
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text border ${theme.border} rounded-lg hover:bg-mission-control-border/30 transition-colors`}>
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         {isExpanded ? 'Less' : 'More'}
                       </button>
                       <div className="flex-1" />
                       <button type="button" onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-clawd-muted hover:text-clawd-text hover:bg-clawd-surface rounded transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded transition-colors"
                         title="Edit agent personality & model"
                         aria-label={`Manage ${agent.name}`}>
                         <Settings size={12} />
@@ -495,7 +534,7 @@ export default function AgentPanel() {
                         <MessageSquare size={14} />
                       </button>
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-review-subtle' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
+                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-review-subtle' : 'text-mission-control-text-dim opacity-50 hover:opacity-100 hover:bg-mission-control-border/30'}`}
                         title="Compare"
                         aria-label={`Compare ${agent.name}`}>
                         <GitCompare size={14} />
@@ -521,7 +560,7 @@ export default function AgentPanel() {
                           return (
                             <div className="flex items-center gap-1.5 text-xs mt-2">
                               {ctxOk
-                                ? <><CheckCircle size={11} className="text-success" /><span className="text-clawd-text-dim">Shared context OK</span></>
+                                ? <><CheckCircle size={11} className="text-success" /><span className="text-mission-control-text-dim">Shared context OK</span></>
                                 : <><AlertCircle size={11} className="text-error" /><span className="text-error">Missing context links</span></>
                               }
                             </div>
@@ -555,7 +594,7 @@ export default function AgentPanel() {
                         })()}
 
                         <div>
-                          <h4 className="text-[10px] font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <h4 className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
                             <Award size={12} /> Skills ({agent.capabilities?.length || 0})
                           </h4>
                           <div className="flex flex-wrap gap-1.5">
@@ -566,7 +605,7 @@ export default function AgentPanel() {
                               </button>
                             ))}
                             <button type="button" onClick={() => setSelectedAgent(agent.id)}
-                              className="px-2 py-1 text-xs text-clawd-text-dim border border-dashed border-clawd-border rounded-md hover:border-clawd-text-dim transition-colors">
+                              className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
                               + Add
                             </button>
                           </div>
@@ -574,7 +613,7 @@ export default function AgentPanel() {
 
                         <div className="flex gap-2">
                           <button type="button" onClick={() => setSelectedAgent(agent.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-clawd-border rounded-lg hover:bg-clawd-border/30 transition-colors">
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-border/30 transition-colors">
                             <FileText size={14} /> Details
                           </button>
                           <button type="button" onClick={() => setChatAgent(agent.id)}
@@ -598,14 +637,14 @@ export default function AgentPanel() {
         {/* Sub-Agents */}
         {realSubagents.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
               Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
             </h2>
             <div className="space-y-2">
               {realSubagents.map((session) => (
                 <div key={session.key}
                   className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
-                    session.isActive ? 'border-success-border bg-success-subtle' : 'border-clawd-border'
+                    session.isActive ? 'border-success-border bg-success-subtle' : 'border-mission-control-border'
                   }`}>
                   <span className="text-xl no-shrink">🤖</span>
                   <div className="flex-fill">
@@ -616,17 +655,17 @@ export default function AgentPanel() {
                           {session.label}
                         </span>
                       )}
-                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-success animate-pulse' : 'bg-clawd-bg0'}`} />
+                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-success animate-pulse' : 'bg-mission-control-bg0'}`} />
                       {session.isActive && <span className="text-[10px] text-success no-shrink no-wrap">Active</span>}
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-clawd-text-dim overflow-hidden">
+                    <div className="flex items-center gap-3 text-[11px] text-mission-control-text-dim overflow-hidden">
                       <span className="no-shrink">{session.model?.split('/').pop() || 'unknown'}</span>
                       <span className="no-shrink no-wrap">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
                       <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
-                    session.isActive ? 'text-success border border-success-border' : 'text-clawd-text-dim border border-clawd-border'
+                    session.isActive ? 'text-success border border-success-border' : 'text-mission-control-text-dim border border-mission-control-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
                   </span>
@@ -639,13 +678,13 @@ export default function AgentPanel() {
         {/* Workers */}
         {workerAgents.length > 0 && (
           <div>
-            <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
               Workers ({workerAgents.length})
             </h2>
             <div className="space-y-2">
               {workerAgents.map((agent) => (
-                <div key={agent.id} className="rounded-lg border border-clawd-border p-3 flex items-center gap-3 overflow-hidden">
-                  <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden bg-clawd-bg">
+                <div key={agent.id} className="rounded-lg border border-mission-control-border p-3 flex items-center gap-3 overflow-hidden">
+                  <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden bg-mission-control-bg">
                     {getTheme(agent.id).pic ? (
                       <img src={`./agent-profiles/${getTheme(agent.id).pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
                     ) : null}
@@ -656,7 +695,7 @@ export default function AgentPanel() {
                       <span className="font-medium agent-name flex-1 min-w-0">{agent.name}</span>
                       {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
                     </div>
-                    <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
+                    <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                   </div>
                   {agent.status === 'disabled' ? (
                     <button type="button" onClick={() => handleAgentStart(agent.id)}
@@ -680,6 +719,8 @@ export default function AgentPanel() {
             </div>
           </div>
         )}
+
+        </>)} {/* end active view */}
 
         {/* Modals */}
         <WorkerModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
