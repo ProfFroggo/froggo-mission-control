@@ -337,6 +337,126 @@ fi
 
 echo ""
 
+# ── v4.0: Catalog Schema ──────────────────────────────────────────────────────
+echo "Phase 31: Catalog Schema & Data Model (v4.0)"
+
+grep -q "catalog_agents" "$REPO/src/lib/database.ts" 2>/dev/null \
+  && check "database.ts: catalog_agents table defined" "ok" \
+  || check "database.ts: catalog_agents table defined" "not found"
+
+grep -q "catalog_modules" "$REPO/src/lib/database.ts" 2>/dev/null \
+  && check "database.ts: catalog_modules table defined" "ok" \
+  || check "database.ts: catalog_modules table defined" "not found"
+
+[[ -f "$REPO/src/lib/catalogSync.ts" ]] \
+  && check "src/lib/catalogSync.ts exists" "ok" \
+  || check "src/lib/catalogSync.ts exists" "not found"
+
+AGENT_COUNT=$(ls "$REPO/.catalog/agents/"*.json 2>/dev/null | wc -l | tr -d ' ')
+[[ "$AGENT_COUNT" -ge 10 ]] \
+  && check ".catalog/agents: ≥10 manifests ($AGENT_COUNT found)" "ok" \
+  || check ".catalog/agents: ≥10 manifests" "$AGENT_COUNT found"
+
+MODULE_COUNT=$(ls "$REPO/.catalog/modules/"*.json 2>/dev/null | wc -l | tr -d ' ')
+[[ "$MODULE_COUNT" -ge 10 ]] \
+  && check ".catalog/modules: ≥10 manifests ($MODULE_COUNT found)" "ok" \
+  || check ".catalog/modules: ≥10 manifests" "$MODULE_COUNT found"
+
+echo ""
+
+# ── v4.0: Catalog REST API ────────────────────────────────────────────────────
+echo "Phase 32: Catalog REST API (v4.0)"
+
+[[ -f "$REPO/app/api/catalog/agents/route.ts" ]] \
+  && check "app/api/catalog/agents/route.ts exists" "ok" \
+  || check "app/api/catalog/agents/route.ts exists" "not found"
+
+[[ -f "$REPO/app/api/catalog/agents/[id]/route.ts" ]] \
+  && check "app/api/catalog/agents/[id]/route.ts exists" "ok" \
+  || check "app/api/catalog/agents/[id]/route.ts exists" "not found"
+
+[[ -f "$REPO/app/api/catalog/modules/route.ts" ]] \
+  && check "app/api/catalog/modules/route.ts exists" "ok" \
+  || check "app/api/catalog/modules/route.ts exists" "not found"
+
+[[ -f "$REPO/app/api/catalog/modules/[id]/route.ts" ]] \
+  && check "app/api/catalog/modules/[id]/route.ts exists" "ok" \
+  || check "app/api/catalog/modules/[id]/route.ts exists" "not found"
+
+grep -q "catalogApi" "$REPO/src/lib/api.ts" 2>/dev/null \
+  && check "api.ts: catalogApi exported" "ok" \
+  || check "api.ts: catalogApi exported" "not found"
+
+echo ""
+
+# ── v4.0: Agent & Module Library UI ──────────────────────────────────────────
+echo "Phases 33-35: Library UI (v4.0)"
+
+[[ -f "$REPO/src/components/AgentLibraryPanel.tsx" ]] \
+  && check "AgentLibraryPanel.tsx exists" "ok" \
+  || check "AgentLibraryPanel.tsx exists" "not found"
+
+[[ -f "$REPO/src/components/ModuleLibraryPanel.tsx" ]] \
+  && check "ModuleLibraryPanel.tsx exists" "ok" \
+  || check "ModuleLibraryPanel.tsx exists" "not found"
+
+grep -q "AgentLibraryPanel" "$REPO/src/components/AgentPanel.tsx" 2>/dev/null \
+  && check "AgentPanel.tsx: imports AgentLibraryPanel" "ok" \
+  || check "AgentPanel.tsx: imports AgentLibraryPanel" "not found"
+
+grep -q "ModuleLibraryPanel" "$REPO/src/components/ModulesPage.tsx" 2>/dev/null \
+  && check "ModulesPage.tsx: imports ModuleLibraryPanel" "ok" \
+  || check "ModulesPage.tsx: imports ModuleLibraryPanel" "not found"
+
+echo ""
+
+# ── v4.0: Wizards & Install ───────────────────────────────────────────────────
+echo "Phases 34-36: Hire & Install Wizards (v4.0)"
+
+[[ -f "$REPO/app/api/agents/hire/route.ts" ]] \
+  && check "app/api/agents/hire/route.ts exists" "ok" \
+  || check "app/api/agents/hire/route.ts exists" "not found"
+
+[[ -f "$REPO/app/api/modules/install/route.ts" ]] \
+  && check "app/api/modules/install/route.ts exists" "ok" \
+  || check "app/api/modules/install/route.ts exists" "not found"
+
+[[ -f "$REPO/src/components/ModuleInstallModal.tsx" ]] \
+  && check "ModuleInstallModal.tsx exists" "ok" \
+  || check "ModuleInstallModal.tsx exists" "not found"
+
+[[ -f "$REPO/app/api/agents/hr/stream/route.ts" ]] \
+  && check "app/api/agents/hr/stream/route.ts exists" "ok" \
+  || check "app/api/agents/hr/stream/route.ts exists" "not found"
+
+echo ""
+
+# ── v4.0: Lifecycle & Onboarding ─────────────────────────────────────────────
+echo "Phases 37-38: Lifecycle & Onboarding Presets (v4.0)"
+
+grep -q "DELETE" "$REPO/app/api/catalog/agents/[id]/route.ts" 2>/dev/null \
+  && check "catalog/agents/[id]: DELETE handler present" "ok" \
+  || check "catalog/agents/[id]: DELETE handler present" "not found"
+
+grep -q "core.*cannot\|Core modules" "$REPO/app/api/catalog/modules/[id]/route.ts" 2>/dev/null \
+  && check "catalog/modules/[id]: core module guard present" "ok" \
+  || check "catalog/modules/[id]: core module guard present" "not found"
+
+grep -q "ROLE_PRESETS" "$REPO/src/components/OnboardingWizard.tsx" 2>/dev/null \
+  && check "OnboardingWizard.tsx: ROLE_PRESETS defined" "ok" \
+  || check "OnboardingWizard.tsx: ROLE_PRESETS defined" "not found"
+
+grep -q "renderRolePresets" "$REPO/src/components/OnboardingWizard.tsx" 2>/dev/null \
+  && check "OnboardingWizard.tsx: renderRolePresets step added" "ok" \
+  || check "OnboardingWizard.tsx: renderRolePresets step added" "not found"
+
+STEP_COUNT=$(grep -o "STEP_COUNT = [0-9]*" "$REPO/src/components/OnboardingWizard.tsx" 2>/dev/null | grep -o "[0-9]*$")
+[[ "$STEP_COUNT" == "7" ]] \
+  && check "OnboardingWizard.tsx: STEP_COUNT = 7" "ok" \
+  || check "OnboardingWizard.tsx: STEP_COUNT = 7" "got $STEP_COUNT"
+
+echo ""
+
 # ── Summary ────────────────────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "  Results: ${PASS} passed, ${FAIL} failed"
@@ -352,5 +472,5 @@ if [[ "${FAIL}" -gt 0 ]]; then
   exit 1
 fi
 
-echo "All v2.0 + v3.0 smoke checks passed."
+echo "All v2.0 + v3.0 + v4.0 smoke checks passed."
 echo ""
