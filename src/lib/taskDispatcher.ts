@@ -121,6 +121,14 @@ function buildTaskMessage(task: Record<string, unknown>): string {
   return lines.join('\n');
 }
 
+// ── Dispatch debounce ────────────────────────────────────────────────────────
+// Prevents rapid-fire dispatches to the same agent within 100ms.
+// Uses a simple in-memory last-dispatch timestamp per agent.
+type DG = typeof globalThis & { _lastDispatch?: Map<string, number> };
+const lastDispatch: Map<string, number> = (globalThis as DG)._lastDispatch
+  ?? ((globalThis as DG)._lastDispatch = new Map());
+const DEBOUNCE_MS = 100;
+
 // ── Dispatcher ────────────────────────────────────────────────────────────────
 
 /**
@@ -147,6 +155,15 @@ export function dispatchTask(taskId: string): boolean {
     if (!agentId) {
       return false; // No agent assigned — nothing to dispatch
     }
+
+    // Debounce: skip if we dispatched to this agent within 100ms
+    const now = Date.now();
+    const last = lastDispatch.get(agentId) ?? 0;
+    if (now - last < DEBOUNCE_MS) {
+      console.log(`[taskDispatcher] Debounced dispatch to ${agentId} (too rapid)`);
+      return false;
+    }
+    lastDispatch.set(agentId, now);
 
     // Get per-agent model from DB
     const agentRow = db.prepare('SELECT model FROM agents WHERE id = ?').get(agentId) as { model?: string } | undefined;
