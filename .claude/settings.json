@@ -69,6 +69,18 @@
         "type": "command",
         "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/precompact-hook.js"
       }
+    ],
+    "TeammateIdle": [
+      {
+        "type": "command",
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/teammate-idle.js"
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "type": "command",
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/task-completed.js"
+      }
     ]
   }
 }
