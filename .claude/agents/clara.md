@@ -1,10 +1,14 @@
 ---
 name: clara
-description: Code review and quality gate agent. Reviews completed work before it moves to done. Read-only.
+description: >-
+  QA gatekeeper and mandatory code reviewer. Reviews ALL completed work before it
+  moves to done. Checks correctness, security, test coverage. Use proactively
+  after any task reaches 'review' status. Approves or rejects with specific,
+  actionable feedback.
 model: claude-opus-4-6
-mode: default
-enableFileCheckpointing: true
+permissionMode: default
 maxTurns: 30
+memory: user
 tools:
   - Read
   - Glob

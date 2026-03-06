@@ -1,9 +1,14 @@
 ---
 name: inbox
-description: Message triage agent. Classifies, prioritizes, and routes all incoming messages to the right agent or queue.
+description: >-
+  Message triage agent. Classifies, prioritizes, and routes all incoming messages
+  to the correct agent or queue. Use when: a new message arrives that needs
+  routing, or to process the inbox queue. Fast and decisive — reads, categorizes,
+  creates tasks, and delegates.
 model: claude-sonnet-4-6
-mode: default
-maxTurns: 10
+permissionMode: default
+maxTurns: 15
+memory: user
 tools:
   - Read
   - Glob
