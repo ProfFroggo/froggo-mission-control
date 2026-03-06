@@ -1,0 +1,15 @@
+{
+  "id": "module-builder",
+  "name": "Module Builder",
+  "description": "Visual module builder for creating new platform modules. Generates scaffold code, manifest files, and wires into the module system.",
+  "version": "1.0.0",
+  "category": "system",
+  "icon": "🧩",
+  "responsibleAgent": "coder",
+  "requiredAgents": ["coder"],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": ["froggo-coding-standards"],
+  "requiredCli": [],
+  "core": false
+}

@@ -1,0 +1,15 @@
+{
+  "id": "writing",
+  "name": "Writing",
+  "description": "AI-assisted writing workspace. Drafts, edits, and publishes long-form content with Writer agent collaboration.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "icon": "✍️",
+  "responsibleAgent": "writer",
+  "requiredAgents": ["writer"],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": false
+}

@@ -1,0 +1,15 @@
+{
+  "id": "approvals",
+  "name": "Approvals",
+  "description": "Human-in-the-loop approval gates for agent actions. Agents request approval for external actions; humans review and approve/reject. Core module — cannot be uninstalled.",
+  "version": "1.0.0",
+  "category": "communications",
+  "icon": "✅",
+  "responsibleAgent": "mission-control",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": true
+}

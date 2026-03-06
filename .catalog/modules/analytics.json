@@ -1,0 +1,15 @@
+{
+  "id": "analytics",
+  "name": "Analytics",
+  "description": "Platform analytics, usage metrics, agent performance tracking, and reporting dashboards.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "icon": "📊",
+  "responsibleAgent": "mission-control",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": false
+}
