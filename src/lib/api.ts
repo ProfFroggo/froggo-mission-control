@@ -74,6 +74,8 @@ export const agentApi = {
     apiCall(`/agents/${id}/models`, { method: 'PUT', body: config }),
   create: (agent: { id: string; name: string; role: string; emoji?: string; color?: string; capabilities?: string[]; personality?: string }) =>
     apiCall('/agents', { method: 'POST', body: agent }),
+  hire: (data: { id: string; name: string; emoji?: string; role: string; personality?: string; capabilities?: string[] }) =>
+    apiCall('/agents/hire', { method: 'POST', body: data }),
 };
 
 // ──────────────────────────────────────────────────
