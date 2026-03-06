@@ -60,10 +60,11 @@ Rules:
 
 function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'db',       label: 'Register in agent database', detail: 'mission-control.db agents table', status: 'pending' },
-    { id: 'soul',     label: 'Write soul file',            detail: '.claude/agents/{id}.md',          status: 'pending' },
-    { id: 'catalog',  label: 'Add to agent catalog',       detail: '.catalog/agents/{id}.json',       status: 'pending' },
-    { id: 'activate', label: 'Set agent status active',    detail: 'Mark as idle, ready',             status: 'pending' },
+    { id: 'db',        label: 'Register in agent database', detail: 'mission-control.db agents table',          status: 'pending' },
+    { id: 'soul',      label: 'Write soul file',            detail: '.claude/agents/{id}.md',                   status: 'pending' },
+    { id: 'workspace', label: 'Create agent workspace',     detail: '~/mission-control/agents/{id}/',           status: 'pending' },
+    { id: 'catalog',   label: 'Add to agent catalog',       detail: '.catalog/agents/{id}.json',                status: 'pending' },
+    { id: 'activate',  label: 'Set agent status active',    detail: 'Mark as idle, ready',                      status: 'pending' },
   ];
 }
 
@@ -270,6 +271,17 @@ Your workspace: \`~/mission-control/agents/${cfg.id}/\`
       {
         id: 'soul',
         fn: () => agentApi.writeSoul(cfg.id, soulContent),
+      },
+      {
+        id: 'workspace',
+        fn: () => agentApi.hire({
+          id: cfg.id,
+          name: cfg.name,
+          emoji: cfg.emoji,
+          role: cfg.role,
+          personality: cfg.personality,
+          capabilities: cfg.capabilities,
+        }),
       },
       {
         id: 'catalog',
