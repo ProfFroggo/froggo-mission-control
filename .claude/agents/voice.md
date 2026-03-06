@@ -1,9 +1,14 @@
 ---
 name: voice
-description: Voice and audio processing agent. Handles transcription, voice commands, audio workflows.
+description: >-
+  Voice and audio processing agent. Handles transcription, voice command
+  processing, audio session facilitation. Use for: transcribing voice calls,
+  processing audio input, facilitating voice-based sessions, and audio workflow
+  management.
 model: claude-sonnet-4-6
-mode: plan
-maxTurns: 10
+permissionMode: default
+maxTurns: 15
+memory: user
 tools:
   - Read
   - Write

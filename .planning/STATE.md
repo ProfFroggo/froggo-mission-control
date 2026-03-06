@@ -5,37 +5,41 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v2.0 Froggo Platform — Phase 15 (Env & Config) ready to plan
+**Current focus:** v2.0 Froggo Platform — COMPLETE 2026-03-05
 
 ## Current Position
 
-Phase: 15 of 22 (env-and-config)
+Phase: 23 of 30 (task-dispatcher-overhaul)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-05 — v1.0 milestone archived, v2.0 roadmap scaffolded
+Last activity: 2026-03-06 — v3.0 Autonomous Core milestone created (8 phases, 10 plans)
 
-Progress: ████████████████░░░░ 14/22 phases complete
+Progress: ░░░░░░░░░░ 0% (v3.0)
 
 ## Performance Metrics
 
-**Velocity (v1.0):**
-- Total plans completed: 30
-- Average duration: 3 min
-- Total execution time: ~1.5 hours
+**Velocity (v1.0 + v2.0):**
+- Total plans completed: 39 (30 v1.0 + 9 v2.0)
+- v2.0 execution time: ~45 min (8 phases, autonomous)
+- Total git commits this session: 11
 
 ## Accumulated Context
 
-### Architecture (post v1.0)
+### Architecture (v2.0 — fully operational)
 
 - **App**: Next.js 15 App Router, TypeScript, Tailwind, Zustand
 - **DB**: `~/mission-control/data/mission-control.db` (better-sqlite3, WAL, 18 tables)
-- **Memory**: `~/mission-control/memory/` (Obsidian vault, QMD indexed)
-- **Library**: `~/mission-control/library/` (agent output files)
-- **MCP**: `tools/mission-control-db-mcp/` (11 tools) + `tools/memory-mcp/` (3 tools)
-- **Agents**: 13 in `.claude/agents/` with SOUL.md
-- **Hooks**: `tools/hooks/` — approval-hook.js, review-gate.js, session-sync.js
-- **Skills**: 6 in `.claude/skills/`
-- **Build**: `npm run build` PASS, 19 pages, TypeScript clean
+- **Memory**: `~/mission-control/memory/` (Obsidian vault, QMD BM25/vector/hybrid indexed)
+- **Library**: `~/mission-control/library/` (agent output files, category-routed)
+- **MCP**: `tools/mission-control-db-mcp/` (11 tools) + `tools/memory-mcp/` (4 tools v3.0)
+- **Agents**: 15 in `.claude/agents/` — maxTurns, worktreePath, personality enriched
+- **Hooks**: `tools/hooks/` — review-gate.js, session-sync.js (writes to vault + QMD)
+- **Skills**: 9 in `.claude/skills/` (6 updated + 3 new: x-twitter, nextjs-patterns, git-workflow)
+- **Voice**: `tools/voice-bridge/` — Gemini Live WS server, `/api/voice/status` endpoint
+- **Tmux**: `tools/tmux-setup.sh` — `mission-control` session, 3 windows, per-agent panes
+- **Worktrees**: `tools/worktree-setup.sh` — `~/mission-control-worktrees/{coder,designer,chief}`
+- **Approval Rules**: `APPROVAL_RULES.md` — Tier 0-3 with per-agent matrix
+- **E2E test**: `tools/e2e-smoke-test.sh` — 62/62 checks pass
 
 ### Path Mapping (PDF spec → actual)
 
@@ -44,17 +48,20 @@ Progress: ████████████████░░░░ 14/22 pha
 | `~/froggo-nextjs/` | `~/git/mission-control-nextjs/` |
 | `~/froggo/data/froggo.db` | `~/mission-control/data/mission-control.db` |
 | `~/obsidian-vault/` | `~/mission-control/memory/` |
-| `froggo-agents` tmux session | `froggo-agents` (same name) |
+| `froggo-agents` tmux session | `mission-control` (renamed to match project) |
 | `~/froggo-worktrees/` | `~/mission-control-worktrees/` |
 
-### Key Decisions (v1.0 + v2.0 setup)
+### Key Decisions (v2.0)
 
-- Next.js App Router + better-sqlite3 at ~/mission-control/data/mission-control.db
-- SSE not WebSocket; StdioServerTransport for MCP servers
-- Tmux `froggo-agents` session for persistent agent panes (v2.0)
-- Three-tier model: Opus=lead/orchestrator, Sonnet=workers, Haiku=trivial (v2.0)
-- Gemini Live `gemini-2.5-flash-native-audio-preview` for voice layer (v2.0)
-- No new directories during agent work — amend existing structure only
+- ENV.DB_PATH is canonical — no direct process.env in src/
+- Tmux session named `mission-control` (not `froggo-agents`)
+- Memory MCP v3.0: 4 tools (memory_search/recall/write/read) + QMD hybrid search
+- Three-tier model: Opus 4.6 (lead), Sonnet 4.6 (workers), Haiku 4.5 (trivial)
+- Gemini Live `gemini-2.5-flash-native-audio-preview` for voice layer
+- Voice bridge runs as standalone Node.js WS server on port 8765
+- MCP servers registered in `.claude/settings.json` mcpServers block
+- Agent worktrees for coder/designer/chief only; senior-coder shares coder worktree
+- 15 agents total (2 more than spec: discord-manager, finance-manager added in v1.0)
 
 ### Deferred Issues (carried from v1.0)
 
@@ -67,8 +74,12 @@ Progress: ████████████████░░░░ 14/22 pha
 
 None.
 
+## Roadmap Evolution
+
+- Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
+
 ## Session Continuity
 
-Last session: 2026-03-05
-Stopped at: v1.0 archived, v2.0 ROADMAP scaffolded — Phase 15 ready to plan
+Last session: 2026-03-06
+Stopped at: v3.0 Autonomous Core milestone created — Phase 23 (task-dispatcher-overhaul) ready to plan
 Resume file: None
