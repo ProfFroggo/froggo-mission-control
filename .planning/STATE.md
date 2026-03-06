@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v4.0 Agent & Module Library — COMPLETE 2026-03-06
+**Current focus:** v5.0 — planning next milestone
 
 ## Current Position
 
-Phase: 39 of 39 (e2e-verification-v4) — COMPLETE
-Plan: 39-01 complete
-Status: ALL v4.0 PHASES COMPLETE — 107/107 smoke checks pass
-Last activity: 2026-03-06 — Phase 39 complete (E2E smoke test extended, 107 checks pass)
+Phase: Milestone v4.0 SHIPPED — planning v5.0
+Plan: N/A
+Status: Ready for /gsd:new-milestone or /gsd:discuss-milestone
+Last activity: 2026-03-06 — v4.0 milestone archived, tagged v4.0
 
-Progress: ██████████ 100% (v4.0 — 9/9 phases)
+Progress: ██████████ 100% (v4.0 complete — all 39 phases done across 4 milestones)
 
 ## Performance Metrics
 
