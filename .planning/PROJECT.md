@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Mission Control is a multi-agent AI orchestration platform running in the browser. Agents (coder, researcher, writer, chief, clara, designer, etc.) are orchestrated via Claude Code CLI, communicate through a shared SQLite database and Obsidian memory vault, and are controlled through a Next.js dashboard. The v1.0 migration from Electron is complete — the platform now runs fully in the browser with no native dependencies.
+Mission Control is a multi-agent AI orchestration platform running in the browser. Agents (coder, researcher, writer, chief, clara, designer, social-manager, and 8 more) are orchestrated via Claude Code CLI, communicate through a shared SQLite database and Obsidian memory vault, and are controlled through a Next.js dashboard. A self-service catalog allows users to browse, hire, and install agents and modules without touching a CLI. Onboarding role presets configure a fresh instance in seconds.
 
 ## Core Value
 
@@ -10,7 +10,7 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 
 ## Requirements
 
-### Validated (v1.0)
+### Validated
 
 - ✓ Electron removed, Next.js App Router scaffolded — v1.0
 - ✓ 18-table SQLite schema with `getDb()` singleton — v1.0
@@ -28,21 +28,39 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 - ✓ Real SSE streaming via claude CLI `stream-json` — v1.0
 - ✓ 6 Claude Code skills in `.claude/skills/` — v1.0
 - ✓ `npm run build` PASS, TypeScript clean — v1.0
+- ✓ ENV singleton (`src/lib/env.ts`) — single source of truth for paths/models — v2.0
+- ✓ Tmux orchestration (`tools/tmux-setup.sh`, `tools/agent-start.sh`) — v2.0
+- ✓ Enhanced memory MCP v3 (4 tools, QMD BM25/vector/hybrid) — v2.0
+- ✓ APPROVAL_RULES.md Tier 0–3 + git worktrees for coder/designer/chief — v2.0
+- ✓ 15 agents with real personality, maxTurns, worktreePath, model configs — v2.0
+- ✓ 9 skills including x-twitter-strategy, nextjs-patterns, git-workflow — v2.0
+- ✓ Voice bridge: Gemini Live WS server at `ws://localhost:8765` — v2.0
+- ✓ Task dispatcher: soul file as `--system-prompt`, per-agent model, session persistence — v3.0
+- ✓ All 15 workspace CLAUDE.md files using MCP tool calls (not defunct derek-db) — v3.0
+- ✓ PreCompact hook re-injects current task + last 5 activities — v3.0
+- ✓ TeammateIdle + TaskCompleted hooks auto-log to task board — v3.0
+- ✓ Token & cost tracking: `token_usage` table, MODEL_PRICING, calcCostUsd() — v3.0
+- ✓ Skills auto-loading in dispatch message — v3.0
+- ✓ Monitoring: checkStuckTasks() cron sweep, /api/agents/health endpoint — v3.0
+- ✓ Rate limiting: per-agent spawn lock + dispatch debounce — v3.0
+- ✓ Catalog data model: catalog_agents + catalog_modules tables, 15+19 JSON manifests, catalogSync.ts — v4.0
+- ✓ Catalog REST API: GET/PATCH/DELETE endpoints with core module protection — v4.0
+- ✓ Agent Library UI: AgentLibraryPanel, Active/Library tabs, model badges — v4.0
+- ✓ HR stream endpoint fixed, v3.0 soul template, custom agents register in catalog — v4.0
+- ✓ Agent hire wizard: workspace creation with CLAUDE.md + SOUL.md + MEMORY.md — v4.0
+- ✓ Module Library UI: ModuleLibraryPanel, Installed/Library tabs, category/dep warnings — v4.0
+- ✓ Module install wizard: 3-step modal, POST /api/modules/install — v4.0
+- ✓ Lifecycle: non-destructive fire (workspace archive), non-destructive uninstall — v4.0
+- ✓ Onboarding role presets: 4 roles auto-install agents+modules, 7-step wizard — v4.0
 
-### Active (v2.0 — Froggo Platform)
+### Active (v5.0 — next milestone, TBD)
 
-- [ ] Env & config: `.env` file, typed `src/lib/env.ts` wrapper, `COST_STRATEGY.md`
-- [ ] Tmux orchestration: `tools/tmux-setup.sh` named session `froggo-agents`, per-agent panes
-- [ ] Agent start/resume script: `tools/agent-start.sh` (resume by session ID or start new)
-- [ ] Dashboard spawn API: `/api/agents/[id]/spawn` maps agent IDs to tmux panes
-- [ ] Enhanced memory MCP: 4 tools (memory_search, memory_recall, memory_write, memory_read) with QMD BM25/vector/hybrid
-- [ ] Session sync hook: exports to Obsidian, updates QMD index, logs analytics
-- [ ] APPROVAL_RULES.md: Tier 0–3 with explicit examples per agent action
-- [ ] Git worktrees: `tools/worktree-setup.sh` for coder, designer, chief agents
-- [ ] Voice bridge: Gemini Live API (`gemini-2.5-flash-native-audio-preview`) as voice skin, Claude Code as brain
-- [ ] Per-agent capability configs: frontmatter with model, mode, maxTurns, tools, worktree
-- [ ] Agent soul enrichment: real personality, context, and constraints in each SOUL.md
-- [ ] Three-tier model strategy: Opus (lead), Sonnet (worker), Haiku (trivial)
+- [ ] Agent streaming workspace generation (currently step-progress UI, not live stream)
+- [ ] Role preset saved to DB for catalog recommendations
+- [ ] Re-hire UX: full config preservation on re-hire
+- [ ] Starred messages API (ChatPanel TODO)
+- [ ] File attachments in chat
+- [ ] Whisper transcription wired (bridge.ts shim in place)
 
 ### Out of Scope
 
@@ -55,28 +73,30 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 
 ## Context
 
-**Current state (post v1.0):**
+**Current state (post v4.0):**
 - Stack: Next.js 15 App Router, TypeScript, Tailwind CSS, Zustand, better-sqlite3, lucide-react
-- DB: `~/mission-control/data/mission-control.db` (18 tables, WAL mode)
+- DB: `~/mission-control/data/mission-control.db` (20 tables: 18 core + catalog_agents + catalog_modules)
 - Memory: `~/mission-control/memory/` (Obsidian vault, QMD indexed)
-- Library: `~/mission-control/library/` (agent output files)
-- MCP: `mission-control-db` (11 tools) + `memory` (3 tools)
-- Agents: 13 defined in `.claude/agents/` with SOUL.md
-- Build: `npm run build` PASS, 19 pages, TypeScript clean
-- LOC: ~117,000 TypeScript/TSX
+- Library: `~/mission-control/library/` (agent output files, category-routed)
+- MCP: `mission-control-db` (11 tools) + `memory` (4 tools v3)
+- Catalog: `.catalog/agents/` (15 manifests) + `.catalog/modules/` (19 manifests)
+- Agents: 15 defined in `.claude/agents/` with enriched SOUL.md + workspace dirs
+- E2E test: `tools/e2e-smoke-test.sh` — 107/107 checks pass
+- LOC: ~119,510 TypeScript/TSX
+- Build: `npm run build` PASS, TypeScript clean
 
-**Technical debt from v1.0:**
-- 531 `window.clawdbot` references still routed via bridge.ts shim — direct migration per component not yet done
-- Agent SOUL.md files are skeletal — need real personality content
-- Memory MCP uses grep fallback (QMD binary install not verified)
+**Technical debt:**
+- Belt-and-suspenders in ModuleInstallModal (calls both moduleApi.install + catalogApi.setModuleInstalled)
+- 531 `window.clawdbot` refs still via bridge.ts shim (from v1.0 carry-over)
 
-**Path mapping (PDF specs → actual):**
+**Path mapping:**
 | Spec path | Actual path |
 |-----------|-------------|
 | `~/froggo-nextjs/` | `~/git/mission-control-nextjs/` |
 | `~/froggo/data/froggo.db` | `~/mission-control/data/mission-control.db` |
 | `~/obsidian-vault/` | `~/mission-control/memory/` |
-| `froggo-agents` tmux session | `froggo-agents` (same) |
+| `froggo-agents` tmux session | `mission-control` (renamed) |
+| `~/froggo-worktrees/` | `~/mission-control/worktrees/` |
 
 ## Constraints
 
@@ -98,9 +118,15 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 | `noImplicitAny: false` in tsconfig | Electron codebase used implicit any throughout | ✓ Good |
 | Obsidian vault for memory | Human-readable, QMD-searchable, works offline | ✓ Good |
 | StdioServerTransport for MCP | Standard pattern, no extra server port needed | ✓ Good |
-| Tmux for agent orchestration | Terminal multiplexer, persistent sessions, easy pane management | — v2.0 |
-| Gemini Live for voice layer | Native audio I/O, personality transfer via system_instruction | — v2.0 |
-| Three-tier model strategy | Cost/capability tradeoff per agent role | — v2.0 |
+| Tmux for agent orchestration | Terminal multiplexer, persistent sessions, easy pane management | ✓ Good |
+| Gemini Live for voice layer | Native audio I/O, personality transfer via system_instruction | ✓ Good |
+| Three-tier model strategy | Cost/capability tradeoff per agent role | ✓ Good |
+| `--system-prompt` with SOUL.md for dispatch | `--agents {id}` is interactive mode only; `--print` needs explicit system | ✓ Good |
+| Catalog additive (separate tables) | No migration risk to existing agents/module_state | ✓ Good |
+| ON CONFLICT preserves hire state | Manifests own metadata; DB owns install state | ✓ Good |
+| Non-destructive fire (workspace rename) | Preserves agent work history for forensics | ✓ Good |
+| Core module guard at API layer | Defense in depth — not just UI | ✓ Good |
+| `Promise.allSettled` for role presets | Partial install failure doesn't block onboarding | ✓ Good |
 
 ---
-*Last updated: 2026-03-05 after v1.0 milestone*
+*Last updated: 2026-03-06 after v4.0 milestone*

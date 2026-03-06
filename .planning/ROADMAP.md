@@ -10,10 +10,10 @@ Spec sources:
 
 ## Milestones
 
-- ✅ [v1.0 Migration](v1.0-migration-ARCHIVE.md) — Phases 0–14 — SHIPPED 2026-03-04
+- ✅ [v1.0 Migration](milestones/v1.0-migration-ARCHIVE.md) — Phases 0–14 — SHIPPED 2026-03-04
 - ✅ **v2.0 Froggo Platform** — Phases 15–22 — SHIPPED 2026-03-05
 - ✅ **v3.0 Autonomous Core** — Phases 23–30 — SHIPPED 2026-03-06
-- 🚧 **v4.0 Agent & Module Library** — Phases 31–39 (in progress)
+- ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
 
 ---
 
@@ -58,7 +58,8 @@ See full details: [v1.0-migration-ARCHIVE.md](v1.0-migration-ARCHIVE.md)
 
 ---
 
-## ✅ v3.0 Autonomous Core — SHIPPED 2026-03-06
+<details>
+<summary>✅ v3.0 Autonomous Core (Phases 23–30) — SHIPPED 2026-03-06</summary>
 
 **Milestone Goal:** Close the gaps between configured agents and what actually runs in production — dispatched agents execute with their full soul files, sessions persist across tasks, context survives compaction, costs are tracked, and the platform alerts on stuck/failed work.
 
@@ -162,11 +163,16 @@ Plans:
 Plans:
 - [x] 30-01: E2E smoke test extended to 84 checks — all v3.0 phases verified (Phases 23–29) — 84/84 pass — DONE 2026-03-06
 
----
+</details>
 
 ---
 
-## 🚧 v4.0 Agent & Module Library (In Progress)
+<details>
+<summary>✅ v4.0 Agent & Module Library (Phases 31–39) — SHIPPED 2026-03-06</summary>
+
+See full archive: [milestones/v4.0-agent-module-library.md](milestones/v4.0-agent-module-library.md)
+
+## v4.0 Agent & Module Library
 
 **Milestone Goal:** Any team member can browse a catalog of agents and modules, hire/install with a wizard-guided flow backed by HR and Coder agents, and have their Mission Control instance automatically configured — without touching a CLI.
 
@@ -329,5 +335,9 @@ Plans:
 | 37. Agent & Module Lifecycle | v4.0 | 1/1 | Complete | 2026-03-06 |
 | 38. Onboarding Role Presets | v4.0 | 1/1 | Complete | 2026-03-06 |
 | 39. E2E Verification v4.0 | v4.0 | 1/1 | Complete | 2026-03-06 |
+
+</details>
+
+---
 
 **v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 COMPLETE (2026-03-06)**
