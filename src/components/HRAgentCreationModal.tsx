@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
-import { agentApi } from '../lib/api';
+import { agentApi, catalogApi } from '../lib/api';
 
 interface HRAgentCreationModalProps {
   onClose: () => void;
@@ -40,7 +40,7 @@ const AGENT_COLORS = [
   '#009688', '#CDDC39', '#795548', '#607D8B', '#673AB7',
 ];
 
-const HR_SYSTEM = `You are HR for the Froggo AI agent team. Your job is to onboard a new agent through a short conversational interview.
+const HR_SYSTEM = `You are HR for the Mission Control AI agent team. Your job is to onboard a new agent through a short conversational interview.
 
 Collect these fields one at a time (in order):
 1. name — what to call the agent (simple, lowercase-friendly)
@@ -60,9 +60,10 @@ Rules:
 
 function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'db',       label: 'Register in agent database', detail: 'froggo.db agents table', status: 'pending' },
-    { id: 'soul',     label: 'Write soul file',            detail: '.claude/agents/{id}.md',  status: 'pending' },
-    { id: 'activate', label: 'Set agent status active',    detail: 'Mark as idle, ready',     status: 'pending' },
+    { id: 'db',       label: 'Register in agent database', detail: 'mission-control.db agents table', status: 'pending' },
+    { id: 'soul',     label: 'Write soul file',            detail: '.claude/agents/{id}.md',          status: 'pending' },
+    { id: 'catalog',  label: 'Add to agent catalog',       detail: '.catalog/agents/{id}.json',       status: 'pending' },
+    { id: 'activate', label: 'Set agent status active',    detail: 'Mark as idle, ready',             status: 'pending' },
   ];
 }
 
@@ -212,7 +213,46 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationDone(false);
     setCreationError(null);
 
-    const soulContent = `# ${cfg.emoji} ${cfg.name} — Soul\n\n## Identity\nYou are ${cfg.name}, a ${cfg.role} agent on the Froggo team.\n\n## Personality\n${cfg.personality}\n\n## Core Rules\n- Always deliver quality work\n- Communicate blockers immediately\n- Update task status when done\n`;
+    // v3.0 soul template: YAML frontmatter + structured markdown
+    const modelSlug = cfg.capabilities.some(c => c.toLowerCase().includes('code') || c.toLowerCase().includes('engineer'))
+      ? 'claude-sonnet-4-6'
+      : 'claude-haiku-4-5-20251001';
+
+    const soulContent = `---
+name: ${cfg.id}
+description: >-
+  ${cfg.role}. ${cfg.capabilities.slice(0, 3).join(', ')}.
+model: ${modelSlug}
+permissionMode: default
+maxTurns: 40
+memory: user
+---
+
+# ${cfg.emoji} ${cfg.name}
+
+You are ${cfg.name}, a ${cfg.role} on the Mission Control team.
+
+## Personality
+${cfg.personality}
+
+## Capabilities
+${cfg.capabilities.map(c => `- ${c}`).join('\n')}
+
+## Core Rules
+- Check the task board before starting work
+- Post activity on every meaningful decision
+- Update task status when done
+- Communicate blockers immediately
+
+## MCP Tools
+Use \`mcp__mission-control_db__*\` tools for task and agent management.
+Use \`mcp__memory__*\` tools for memory operations.
+
+## Workspace
+Your workspace: \`~/mission-control/agents/${cfg.id}/\`
+- \`SOUL.md\` — your identity (this file)
+- \`MEMORY.md\` — your persistent memory
+`;
 
     const stepFns: Array<{ id: string; fn: () => Promise<void> }> = [
       {
@@ -230,6 +270,18 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       {
         id: 'soul',
         fn: () => agentApi.writeSoul(cfg.id, soulContent),
+      },
+      {
+        id: 'catalog',
+        fn: () => catalogApi.registerAgent({
+          id: cfg.id,
+          name: cfg.name,
+          emoji: cfg.emoji,
+          role: cfg.role,
+          description: cfg.role,
+          capabilities: cfg.capabilities,
+          category: 'custom',
+        }),
       },
       {
         id: 'activate',
@@ -270,20 +322,20 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} type="button" aria-label="Close" />
-      <div className={`relative w-full max-w-lg bg-clawd-bg border border-teal-500/30 rounded-2xl shadow-2xl shadow-teal-500/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-teal-500/30 rounded-2xl shadow-2xl shadow-teal-500/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
+        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-xl">🎓</div>
           <div className="flex-1">
-            <h2 className="font-bold text-clawd-text">HR — Agent Creator</h2>
+            <h2 className="font-bold text-mission-control-text">HR — Agent Creator</h2>
             <p className="text-xs text-teal-400">
               {stage === 'creating'
                 ? creationDone ? 'Onboarding complete!' : creationError ? 'Onboarding failed' : 'Launching new agent...'
                 : 'Building your next team member'}
             </p>
           </div>
-          <button onClick={handleClose} className="p-1 text-clawd-text-dim hover:text-clawd-text rounded-lg hover:bg-clawd-surface transition-colors">
+          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -296,8 +348,8 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                 {pendingConfig.emoji}
               </div>
               <div>
-                <div className="font-semibold text-clawd-text">{pendingConfig.name}</div>
-                <div className="text-xs text-clawd-text-dim">{pendingConfig.role}</div>
+                <div className="font-semibold text-mission-control-text">{pendingConfig.name}</div>
+                <div className="text-xs text-mission-control-text-dim">{pendingConfig.role}</div>
               </div>
               {!creationDone && !creationError && <Loader2 size={16} className="ml-auto text-teal-400 animate-spin" />}
               {creationDone && <Sparkles size={18} className="ml-auto text-teal-400" />}
@@ -305,11 +357,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
             {totalSteps > 0 && (
               <div className="mb-4">
-                <div className="flex justify-between text-xs text-clawd-text-dim mb-1">
+                <div className="flex justify-between text-xs text-mission-control-text-dim mb-1">
                   <span>{doneCount}/{totalSteps} steps</span>
                   <span>{progressPct}%</span>
                 </div>
-                <div className="h-1.5 bg-clawd-border rounded-full overflow-hidden">
+                <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-teal-400'}`} style={{ width: `${progressPct}%` }} />
                 </div>
               </div>
@@ -321,22 +373,22 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                   step.status === 'running' ? 'bg-teal-500/5 border-teal-500/30' :
                   step.status === 'done'    ? 'bg-success-subtle border-success-border' :
                   step.status === 'error'   ? 'bg-error-subtle border-error-border' :
-                  'bg-clawd-surface/50 border-clawd-border'
+                  'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {step.status === 'running' && <Loader2 size={16} className="text-teal-400 animate-spin" />}
                     {step.status === 'done'    && <CheckCircle size={16} className="text-success" />}
                     {step.status === 'error'   && <XCircle size={16} className="text-error" />}
-                    {step.status === 'pending' && <Circle size={16} className="text-clawd-border" />}
+                    {step.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
                       step.status === 'done'    ? 'text-success' :
                       step.status === 'error'   ? 'text-error' :
                       step.status === 'running' ? 'text-teal-400' :
-                      'text-clawd-text-dim'
+                      'text-mission-control-text-dim'
                     }`}>{step.label}</div>
-                    <div className="text-xs text-clawd-text-dim mt-0.5">
+                    <div className="text-xs text-mission-control-text-dim mt-0.5">
                       {step.errorMsg || step.detail}
                     </div>
                   </div>
@@ -348,14 +400,14 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
               <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
                 <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
                 <div className="font-semibold text-teal-400">{pendingConfig.name} is live!</div>
-                <div className="text-xs text-clawd-text-dim mt-1">Find them in the Agents panel</div>
+                <div className="text-xs text-mission-control-text-dim mt-1">Find them in the Agents panel</div>
               </div>
             )}
 
             {creationError && (
               <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-xl">
                 <div className="text-sm text-error font-medium">Onboarding failed</div>
-                <div className="text-xs text-clawd-text-dim mt-1">{creationError}</div>
+                <div className="text-xs text-mission-control-text-dim mt-1">{creationError}</div>
               </div>
             )}
             <div ref={stepsEndRef} />
@@ -373,7 +425,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                 <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
                     ? 'bg-info-subtle text-info rounded-br-md'
-                    : 'bg-clawd-surface text-clawd-text rounded-bl-md'
+                    : 'bg-mission-control-surface text-mission-control-text rounded-bl-md'
                 }`}>
                   {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
                     part.startsWith('**') && part.endsWith('**')
@@ -390,7 +442,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{pendingConfig.emoji}</span>
                   <span className="font-semibold text-teal-400">{pendingConfig.name}</span>
-                  <span className="text-xs text-clawd-text-dim">· {pendingConfig.role}</span>
+                  <span className="text-xs text-mission-control-text-dim">· {pendingConfig.role}</span>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <button
@@ -401,7 +453,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                   </button>
                   <button
                     onClick={() => { setPendingConfig(null); addUserMessage('wait, let me change something'); askHR('wait, let me change something'); }}
-                    className="px-3 py-2 bg-clawd-surface border border-clawd-border text-clawd-text-dim text-sm rounded-xl hover:bg-clawd-border transition-colors"
+                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim text-sm rounded-xl hover:bg-mission-control-border transition-colors"
                   >
                     Edit
                   </button>
@@ -412,7 +464,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {isTyping && (
               <div className="flex justify-start">
                 <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center text-sm mr-2">🎓</div>
-                <div className="bg-clawd-surface px-4 py-3 rounded-xl">
+                <div className="bg-mission-control-surface px-4 py-3 rounded-xl">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -426,18 +478,18 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         )}
 
         {/* Input / action bar */}
-        <div className="p-3 border-t border-clawd-border">
+        <div className="p-3 border-t border-mission-control-border">
           {stage === 'creating' && creationDone ? (
             <button onClick={handleClose} className="w-full py-2.5 bg-teal-500 text-white font-medium rounded-xl hover:bg-teal-600 transition-colors flex items-center justify-center gap-2">
               <Check size={16} /> Done — View Agents
             </button>
           ) : stage === 'creating' && creationError ? (
             <div className="flex gap-2">
-              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-clawd-surface border border-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border transition-colors text-sm">Back</button>
+              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm">Back</button>
               <button onClick={() => pendingConfig && startCreation(pendingConfig)} className="flex-1 py-2.5 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors text-sm">Retry</button>
             </div>
           ) : stage === 'creating' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-clawd-text-dim">
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
               <Loader2 size={14} className="animate-spin text-teal-400" />
               Launching {pendingConfig?.name}...
             </div>
@@ -450,7 +502,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                 onKeyDown={handleKeyDown}
                 disabled={isTyping}
                 placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
-                className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-3 py-2 text-sm text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-teal-500/50 disabled:opacity-50"
+                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-teal-500/50 disabled:opacity-50"
                 autoFocus
               />
               <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">

@@ -253,6 +253,8 @@ export const catalogApi = {
   getAgent: (id: string) => apiCall(`/catalog/agents/${id}`),
   setAgentInstalled: (id: string, installed: boolean) =>
     apiCall(`/catalog/agents/${id}`, { method: 'PATCH', body: { installed } }),
+  registerAgent: (data: Record<string, unknown>) =>
+    apiCall('/catalog/agents', { method: 'POST', body: data }),
   listModules: () => apiCall('/catalog/modules'),
   getModule: (id: string) => apiCall(`/catalog/modules/${id}`),
   setModuleInstalled: (id: string, installed: boolean) =>
