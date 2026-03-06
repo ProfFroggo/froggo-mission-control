@@ -102,6 +102,12 @@ function soulMtime(id: string): number {
   return existsSync(p) ? statSync(p).mtimeMs : 0;
 }
 
+// ── Per-agent spawn lock ─────────────────────────────────────────────────────
+// Prevents duplicate concurrent streams to the same agent.
+type G2 = typeof globalThis & { _agentLocks?: Set<string> };
+const agentLocks: Set<string> = (globalThis as G2)._agentLocks
+  ?? ((globalThis as G2)._agentLocks = new Set());
+
 // ── Route ──────────────────────────────────────────────────────────────────
 export async function POST(
   request: NextRequest,
@@ -110,6 +116,15 @@ export async function POST(
   const { id } = await params;
   const { message, model } = await request.json();
 
+  // Reject if another stream is already active for this agent
+  if (agentLocks.has(id)) {
+    return new Response(
+      `data: ${JSON.stringify({ type: 'error', text: `Agent ${id} is already processing a message. Please wait.` })}\n\ndata: [DONE]\n\n`,
+      { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } }
+    );
+  }
+
+  agentLocks.add(id);
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
@@ -223,6 +238,7 @@ export async function POST(
         }, 120_000);
 
         proc.on('close', (code) => {
+          agentLocks.delete(id);
           clearTimeout(timeout);
           enc({ type: 'done', code: code ?? 0 });
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -235,6 +251,7 @@ export async function POST(
         });
 
         proc.on('error', (err) => {
+          agentLocks.delete(id);
           clearTimeout(timeout);
           enc({ type: 'error', text: err.message });
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -242,6 +259,7 @@ export async function POST(
         });
 
       } catch (err: unknown) {
+        agentLocks.delete(id);
         enc({ type: 'error', text: err instanceof Error ? err.message : String(err) });
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
