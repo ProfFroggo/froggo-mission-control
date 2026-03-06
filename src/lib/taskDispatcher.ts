@@ -179,7 +179,7 @@ export function dispatchTask(taskId: string): boolean {
 
     const proc = spawn(CLAUDE_BIN, args, {
       cwd,
-      env: cleanEnv as NodeJS.ProcessEnv,
+      env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId } as unknown as NodeJS.ProcessEnv,
       detached: true,
       stdio: ['pipe', 'pipe', 'ignore'],
     });

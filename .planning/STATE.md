@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v2.0 Froggo Platform — COMPLETE 2026-03-05
+**Current focus:** v3.0 Autonomous Core — IN PROGRESS 2026-03-06
 
 ## Current Position
 
-Phase: 23 of 30 (task-dispatcher-overhaul)
+Phase: 24 of 30 (precompact-context-resilience)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-06 — v3.0 Autonomous Core milestone created (8 phases, 10 plans)
+Last activity: 2026-03-06 — Phase 23 + 23.1 complete (dispatcher overhaul + agent identity foundation)
 
-Progress: ░░░░░░░░░░ 0% (v3.0)
+Progress: ██░░░░░░░░ 20% (v3.0 — phases 23 + 23.1 done)
 
 ## Performance Metrics
 
@@ -74,12 +74,20 @@ Progress: ░░░░░░░░░░ 0% (v3.0)
 
 None.
 
+### Key Decisions (v3.0 — in progress)
+
+- Task dispatcher: cwd=process.cwd() (not agent workspace) for MCP access; `{agentId}:task` key for task sessions
+- `--system-prompt` with SOUL.md for `--print` mode (not `--agents {id}` which is for interactive mode only)
+- Agent workspace CLAUDE.md files: replaced defunct derek-db CLI with mcp__mission-control_db__* MCP tools
+- Task session expiry: 2 hours (shorter than chat 30-min in-memory; task sessions are discrete)
+
 ## Roadmap Evolution
 
 - Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
+- Phase 23.1 inserted: Agent Identity Foundation — fixed all 15 workspace CLAUDE.md files
 
 ## Session Continuity
 
 Last session: 2026-03-06
-Stopped at: v3.0 Autonomous Core milestone created — Phase 23 (task-dispatcher-overhaul) ready to plan
+Stopped at: Phase 23 + 23.1 complete. Phase 24 (PreCompact) is next.
 Resume file: None

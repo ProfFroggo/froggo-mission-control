@@ -68,7 +68,18 @@ See full details: [v1.0-migration-ARCHIVE.md](v1.0-migration-ARCHIVE.md)
 **Plans**: 1 plan
 
 Plans:
-- [ ] 23-01: Fix `src/lib/taskDispatcher.ts` — replace bare `claude --print` with `claude --print --agents {id}`, load session from `agent_sessions` table and add `--resume`, use per-agent model from DB, set cwd to project root, add activity log on dispatch start/fail/complete
+- [x] 23-01: Fix `src/lib/taskDispatcher.ts` — soul file as --system-prompt, per-agent model from DB, cwd=process.cwd(), --output-format stream-json, session persist with :task suffix, exit logging — DONE 2026-03-06
+
+---
+
+### Phase 23.1: Agent Identity Foundation
+**Goal**: Every agent workspace has correct MCP-based CLAUDE.md (no derek-db), collaborator awareness in SOUL.md, and GSD protocol link; writer and voice get SOUL.md files
+**Depends on**: Phase 23
+**Research**: None
+**Plans**: 1 plan
+
+Plans:
+- [x] 23.1-01: Fix all 15 workspace CLAUDE.md files (replace derek-db with MCP tools) — DONE 2026-03-06
 
 ---
 

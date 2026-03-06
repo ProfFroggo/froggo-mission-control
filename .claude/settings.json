@@ -63,6 +63,12 @@
         "type": "command",
         "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/session-sync.js"
       }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/precompact-hook.js"
+      }
     ]
   }
 }
