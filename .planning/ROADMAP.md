@@ -189,7 +189,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 32-01: TBD
+- [x] 32-01: 4 catalog routes (GET/PATCH agents+modules) + catalogApi in api.ts — DONE 2026-03-06
 
 ---
 
