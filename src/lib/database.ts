@@ -6,6 +6,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { ENV } from './env';
+import { syncCatalogAgents, syncCatalogModules } from './catalogSync';
 
 // Database location — single source of truth via ENV wrapper
 const DB_PATH = ENV.DB_PATH;
@@ -391,6 +392,8 @@ function initSchema(db: Database.Database) {
   }
 
   seedAgents(db);
+  syncCatalogAgents(db);
+  syncCatalogModules(db);
 }
 
 function seedAgents(db: Database.Database) {
