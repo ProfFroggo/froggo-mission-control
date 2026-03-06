@@ -223,6 +223,8 @@ export const moduleApi = {
   getState: () => apiCall('/modules/state'),
   setState: (moduleId: string, enabled: boolean) =>
     apiCall(`/modules/${moduleId}/state`, { method: 'PATCH', body: { enabled } }),
+  install: (moduleId: string) =>
+    apiCall('/modules/install', { method: 'POST', body: { moduleId } }),
 };
 
 // ──────────────────────────────────────────────────

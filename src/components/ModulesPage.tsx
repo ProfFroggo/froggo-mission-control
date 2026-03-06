@@ -608,12 +608,7 @@ export default function ModulesPage() {
 
       {/* Library view */}
       {view === 'library' && (
-        <ModuleLibraryPanel
-          onInstall={(_module: CatalogModule) => {
-            // Phase 36 will wire the full install wizard here
-            setView('installed');
-          }}
-        />
+        <ModuleLibraryPanel />
       )}
 
       {/* Installed view */}
