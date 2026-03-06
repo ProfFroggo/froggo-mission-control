@@ -222,8 +222,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 34-01: TBD
-- [ ] 34-02: TBD
+- [x] 34-01: POST /api/agents/hire workspace creation + modal workspace step — DONE 2026-03-06
 
 ---
 
@@ -320,15 +319,15 @@ Plans:
 | 28. Monitoring & Alerting | v3.0 | 2/2 | Complete | 2026-03-06 |
 | 29. Rate Limiting & Resilience | v3.0 | 1/1 | Complete | 2026-03-06 |
 | 30. E2E Verification v3.0 | v3.0 | 1/1 | Complete | 2026-03-06 |
-| 31. Catalog Schema & Data Model | v4.0 | 0/1 | Not started | - |
-| 32. Catalog REST API | v4.0 | 0/1 | Not started | - |
-| 33. Agent Library UI | v4.0 | 0/2 | Not started | - |
-| 33.1. Create Agent Wizard Overhaul | v4.0 | 0/1 | Not started | - |
-| 34. Agent Hire Wizard | v4.0 | 0/2 | Not started | - |
-| 35. Module Library UI | v4.0 | 0/2 | Not started | - |
-| 36. Module Install Wizard | v4.0 | 0/2 | Not started | - |
-| 37. Agent & Module Lifecycle | v4.0 | 0/1 | Not started | - |
-| 38. Onboarding Role Presets | v4.0 | 0/1 | Not started | - |
-| 39. E2E Verification v4.0 | v4.0 | 0/1 | Not started | - |
+| 31. Catalog Schema & Data Model | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 32. Catalog REST API | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 33. Agent Library UI | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 33.1. Create Agent Wizard Overhaul | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 34. Agent Hire Wizard | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 35. Module Library UI | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 36. Module Install Wizard | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 37. Agent & Module Lifecycle | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 38. Onboarding Role Presets | v4.0 | 1/1 | Complete | 2026-03-06 |
+| 39. E2E Verification v4.0 | v4.0 | 1/1 | Complete | 2026-03-06 |
 
-**v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 IN PROGRESS**
+**v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 COMPLETE (2026-03-06)**
