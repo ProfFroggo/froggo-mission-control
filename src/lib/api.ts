@@ -259,12 +259,16 @@ export const catalogApi = {
     apiCall(`/catalog/agents/${id}`, { method: 'PATCH', body: { installed } }),
   registerAgent: (data: Record<string, unknown>) =>
     apiCall('/catalog/agents', { method: 'POST', body: data }),
+  fireAgent: (id: string) =>
+    apiCall(`/catalog/agents/${id}`, { method: 'DELETE' }),
   listModules: () => apiCall('/catalog/modules'),
   getModule: (id: string) => apiCall(`/catalog/modules/${id}`),
   setModuleInstalled: (id: string, installed: boolean) =>
     apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { installed } }),
   setModuleEnabled: (id: string, enabled: boolean) =>
     apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { enabled } }),
+  uninstallModule: (id: string) =>
+    apiCall(`/catalog/modules/${id}`, { method: 'DELETE' }),
 };
 
 // ──────────────────────────────────────────────────
