@@ -14,6 +14,7 @@ Spec sources:
 - ✅ **v2.0 Froggo Platform** — Phases 15–22 — SHIPPED 2026-03-05
 - ✅ **v3.0 Autonomous Core** — Phases 23–30 — SHIPPED 2026-03-06
 - ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
+- 🚧 **v5.0 Projects Module** — Phases 40–49 — IN PROGRESS
 
 ---
 
@@ -341,3 +342,144 @@ Plans:
 ---
 
 **v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 COMPLETE (2026-03-06)**
+
+---
+
+## v5.0 Projects Module
+
+**Milestone Goal:** Introduce a first-class Projects concept — a named workspace where agents, tasks, chats, files, and automations are organized around a shared goal. Any user can create a project, assign agents to it, track progress across tasks, and run automations — all from a unified project workspace panel in the UI.
+
+**Spec source:** Conversation 2026-03-07 — user request for Projects module with: card view of active projects, per-project workspace with tabs (chat, tasks, automations, files/memory), agent dispatch from project context, project-aware task filtering.
+
+---
+
+### Phase 40: project-data-model
+**Goal**: Add `projects` and `project_members` DB tables; TypeScript interfaces; REST endpoints (`GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`, `POST /api/projects/:id/members`); seed data; catalogSync registers Projects module manifest
+**Depends on**: Phase 39
+**Research**: Unlikely (follows existing agents/tasks DB patterns; better-sqlite3 WAL)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 40-01: DB migration — projects + project_members tables; TypeScript interfaces in src/types/
+- [ ] 40-02: REST API routes + catalog module manifest for projects module
+
+---
+
+### Phase 41: project-creation-wizard
+**Goal**: Multi-step creation wizard (3 steps: Name & Goal → Assign Agents → Review & Launch); POSTs to `/api/projects`; validates name uniqueness; supports emoji/color picker for project identity; accessible modal with keyboard navigation
+**Depends on**: Phase 40
+**Research**: Unlikely (follows AgentHireWizard pattern from Phase 34)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 41-01: ProjectCreationWizard component (3-step modal) wired to POST /api/projects
+
+---
+
+### Phase 42: projects-module-card-view
+**Goal**: Projects module panel showing card grid of active projects — project name, emoji/color, assigned agent avatars, open task count, last activity; "New Project" button opens wizard; empty state with onboarding prompt; registered in ViewRegistry as `projects` module
+**Depends on**: Phase 41
+**Research**: Unlikely (follows ModuleLoader + ViewRegistry patterns from v1.0)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 42-01: ProjectsPanel card grid UI + ViewRegistry registration + module nav entry
+- [ ] 42-02: ProjectCard component with task count badge, agent avatars, last activity timestamp
+
+---
+
+### Phase 43: project-workspace-shell
+**Goal**: Clicking a project card navigates to `/projects/:id` (or opens a workspace panel); shell layout with project header (name, emoji, color, description, assigned agents), tabbed navigation (Chat | Tasks | Automations | Files & Memory), and breadcrumb back to Projects list
+**Depends on**: Phase 42
+**Research**: Unlikely (follows Next.js App Router dynamic route patterns from nextjs-patterns skill)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 43-01: `/app/projects/[id]/page.tsx` route + ProjectWorkspaceShell layout component
+- [ ] 43-02: ProjectHeader component + tab navigation + breadcrumb
+
+---
+
+### Phase 44: project-chat-tab
+**Goal**: Chat tab inside project workspace — lists project chat rooms (auto-creates one per project on creation); renders existing ChatPanel with project context pre-seeded; project-scoped room shown with all assigned agents as participants; new message defaults to project room
+**Depends on**: Phase 43
+**Research**: Unlikely (reuses ChatPanel + chat rooms API; adds project_id FK to chat_rooms)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 44-01: Add project_id to chat_rooms; ProjectChatTab renders ChatPanel scoped to project rooms; auto-create room on project creation
+
+---
+
+### Phase 45: project-tasks-tab
+**Goal**: Tasks tab showing kanban/list view of tasks scoped to the project; filter/sort by status, assignee, priority; "New Task" pre-fills project_id; drag-to-reorder columns; task count rolled up to project card; add project_id FK to tasks table
+**Depends on**: Phase 43
+**Research**: Unlikely (reuses KanbanPanel with project filter; adds project_id to tasks)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 45-01: Add project_id FK to tasks table; filter tasks by project in GET /api/tasks; ProjectTasksTab renders KanbanPanel with projectId prop
+- [ ] 45-02: New Task modal pre-fills project context; task count badge on project card
+
+---
+
+### Phase 46: project-automations-tab
+**Goal**: Automations tab showing cron jobs and n8n/automation workflows scoped to the project; "Add Automation" opens schedule builder (one-off, interval, cron expression); automations tagged with project_id; run history shown per automation; add project_id to schedule.json/cron entries
+**Depends on**: Phase 43
+**Research**: Unlikely (reuses cron-daemon + schedule API; adds project scoping)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 46-01: Add project_id to schedule entries; GET /api/cron?project=:id filter; ProjectAutomationsTab list + run history
+- [ ] 46-02: AutomationBuilder component — name, kind (once/interval/cron), command, project association
+
+---
+
+### Phase 47: project-files-memory-tab
+**Goal**: Files & Memory tab showing files in `~/mission-control/library/projects/{id}/` directory and memory entries tagged with project context; file upload (drag-drop or browse) saves to project library folder; memory search pre-filtered to project; file list with type icons, size, date
+**Depends on**: Phase 43
+**Research**: Unlikely (memory MCP search exists; library path pattern established; file API uses Node.js fs)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 47-01: `GET /api/projects/:id/files` lists ~/mission-control/library/projects/{id}/; `POST` handles file upload; ProjectFilesTab renders file list with icons
+- [ ] 47-02: Memory search panel in Files tab — calls memory_search MCP filtered by project tag; displays knowledge entries
+
+---
+
+### Phase 48: project-agent-dispatch
+**Goal**: "Dispatch Agent" action from project workspace sends a task directly to an assigned agent with project context pre-populated (project name, goal, relevant task IDs); dispatch uses existing taskDispatcher + soul file loading; dispatched task appears in project Tasks tab; project context injected into agent system prompt
+**Depends on**: Phases 44, 45
+**Research**: Unlikely (taskDispatcher.ts already dispatches with soul file; adding project context is additive)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 48-01: ProjectDispatchModal — select agent + write brief; dispatches via POST /api/tasks + taskDispatcher with project_id; project context appended to dispatch message
+
+---
+
+### Phase 49: e2e-verification-v5
+**Goal**: All v5.0 systems verified — project creation, workspace navigation, chat/tasks/automations/files tabs all functional, agent dispatch from project context, task/room project scoping correct, smoke test extended to cover projects module
+**Depends on**: All v5.0 phases
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 49-01: E2E smoke test extended with projects module checks; manual UAT walkthrough all tabs
+
+---
+
+## Progress (v5.0)
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 40. Project Data Model | v5.0 | 0/2 | Todo | — |
+| 41. Project Creation Wizard | v5.0 | 0/1 | Todo | — |
+| 42. Projects Card View | v5.0 | 0/2 | Todo | — |
+| 43. Project Workspace Shell | v5.0 | 0/2 | Todo | — |
+| 44. Project Chat Tab | v5.0 | 0/1 | Todo | — |
+| 45. Project Tasks Tab | v5.0 | 0/2 | Todo | — |
+| 46. Project Automations Tab | v5.0 | 0/2 | Todo | — |
+| 47. Project Files & Memory Tab | v5.0 | 0/2 | Todo | — |
+| 48. Project Agent Dispatch | v5.0 | 0/1 | Todo | — |
+| 49. E2E Verification v5.0 | v5.0 | 0/1 | Todo | — |
