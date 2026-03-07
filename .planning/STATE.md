@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v5.0 — planning next milestone
+**Current focus:** v6.0 Security Hardening — 8 phases (50–57)
 
 ## Current Position
 
-Phase: 49 — e2e-verification-v5
-Plan: 49-01
-Status: DONE — all 10 phases built and committed
-Last activity: 2026-03-07 — v5.0 Projects Module complete
+Phase: 50 of 57 (agent-id-validation)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-07 — Milestone v6.0 Security Hardening created
 
-Progress: ██████████ 100% (v5.0 — 10/10 phases done)
+Progress: ░░░░░░░░░░ 0% (v6.0 — 0/8 phases done)
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ None.
 - Phase 23.1 inserted: Agent Identity Foundation — fixed all 15 workspace CLAUDE.md files
 - Milestone v4.0 created: Agent & Module Library — catalog schema, hire/install wizards (HR + Coder agent-backed), library UIs, lifecycle management, onboarding role presets (Phases 31-39)
 - Milestone v5.0 created: Projects Module — project data model + REST API, creation wizard, card view, workspace shell with 4 tabs (chat/tasks/automations/files+memory), agent dispatch from project context (Phases 40-49)
+- Milestone v6.0 created: Security Hardening — command injection fix, path traversal fixes (library + soul), Gemini key server-side, CSP headers, input validation sweep (Phases 50-57)
 
 ### Key Decisions (v4.0)
 
@@ -99,5 +100,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: v5.0 COMPLETE. All 10 phases done (40-49). Build passes, 0 TS errors. Install via Modules Library. Ready for /gsd:complete-milestone or v6.0 planning.
+Stopped at: Milestone v6.0 Security Hardening initialized. 8 phases (50-57). Ready to plan Phase 50.
 Resume file: None
