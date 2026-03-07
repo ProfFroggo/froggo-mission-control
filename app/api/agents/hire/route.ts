@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
     const guard = validateAgentId(id);
     if (guard) return guard;
 
+    if (typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+    if (name.length > 100) {
+      return NextResponse.json({ error: 'name must be 100 characters or fewer' }, { status: 400 });
+    }
+
     const workspaceDir = join(AGENTS_DIR, id);
     const packageDir = join(CATALOG_DIR, 'agents', id);
 
