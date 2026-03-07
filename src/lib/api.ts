@@ -210,8 +210,10 @@ export const sessionApi = {
 export const analyticsApi = {
   getTokenUsage: (params?: Record<string, string>) =>
     apiCall('/analytics/token-usage', { params }),
-  getTaskStats: () => apiCall('/analytics/task-stats'),
+  getTaskStats: (days?: number) => apiCall(`/analytics/task-stats${days ? `?days=${days}` : ''}`),
   getAgentActivity: () => apiCall('/analytics/agent-activity'),
+  getHeatmap: (days?: number) => apiCall(`/analytics/heatmap${days ? `?days=${days}` : ''}`),
+  getSubtaskStats: () => apiCall('/analytics/subtasks'),
   logEvent: (event: any) =>
     apiCall('/analytics/events', { method: 'POST', body: event }),
 };
@@ -261,6 +263,8 @@ export const catalogApi = {
     apiCall('/catalog/agents', { method: 'POST', body: data }),
   fireAgent: (id: string) =>
     apiCall(`/catalog/agents/${id}`, { method: 'DELETE' }),
+  hireAgent: (data: { id: string; name: string; emoji?: string; role?: string; personality?: string; capabilities?: string[]; color?: string }) =>
+    apiCall('/agents/hire', { method: 'POST', body: data }),
   listModules: () => apiCall('/catalog/modules'),
   getModule: (id: string) => apiCall(`/catalog/modules/${id}`),
   setModuleInstalled: (id: string, installed: boolean) =>
@@ -319,8 +323,8 @@ export const scheduleApi = {
 // Library
 // ──────────────────────────────────────────────────
 export const libraryApi = {
-  getFiles: () => apiCall('/library/files'),
-  getSkills: () => apiCall('/library/skills'),
+  getFiles: () => apiCall('/library/files') as Promise<{ files: any[] }>,
+  getSkills: () => apiCall('/library/skills') as Promise<{ skills: any[] }>,
 };
 
 // ──────────────────────────────────────────────────
@@ -359,6 +363,34 @@ const IPC_ROUTE_MAP: Record<string, (...args: any[]) => Promise<any>> = {
   'analytics:getTokenUsage': (params?: any) => analyticsApi.getTokenUsage(params),
   'analytics:getTaskStats': () => analyticsApi.getTaskStats(),
   'analytics:logEvent': (event: any) => analyticsApi.logEvent(event),
+};
+
+// ──────────────────────────────────────────────────
+// Projects
+// ──────────────────────────────────────────────────
+export const projectsApi = {
+  list: (params?: Record<string, string>) =>
+    apiCall('/projects', { params }),
+  get: (id: string) =>
+    apiCall(`/projects/${id}`),
+  create: (data: any) =>
+    apiCall('/projects', { method: 'POST', body: data }),
+  update: (id: string, data: any) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: data }),
+  archive: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'DELETE' }),
+  getMembers: (id: string) =>
+    apiCall(`/projects/${id}/members`),
+  addMember: (id: string, agentId: string, role = 'member') =>
+    apiCall(`/projects/${id}/members`, { method: 'POST', body: { agentId, role, action: 'add' } }),
+  removeMember: (id: string, agentId: string) =>
+    apiCall(`/projects/${id}/members`, { method: 'POST', body: { agentId, action: 'remove' } }),
+  getFiles: (id: string) =>
+    apiCall(`/projects/${id}/files`),
+  uploadFile: (id: string, name: string, content: string, encoding = 'utf-8') =>
+    apiCall(`/projects/${id}/files`, { method: 'POST', body: { name, content, encoding } }),
+  dispatch: (id: string, data: any) =>
+    apiCall(`/projects/${id}/dispatch`, { method: 'POST', body: data }),
 };
 
 export function invokeCompat(channel: string, ...args: any[]): Promise<any> {

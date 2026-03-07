@@ -44,6 +44,7 @@ import {
   Code,
   Boxes,
   Library,
+  FolderKanban,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -85,6 +86,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Sparkles,
   Code,
   Boxes,
+  FolderKanban,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

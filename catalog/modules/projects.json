@@ -1,0 +1,15 @@
+{
+  "id": "projects",
+  "name": "Projects",
+  "description": "Unified project workspaces — organize tasks, chats, automations, and files around a shared goal. Assign agents, dispatch work, and track progress all in one place.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "icon": "FolderKanban",
+  "responsibleAgent": "mission-control",
+  "requiredAgents": [],
+  "requiredNpm": [],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredCli": [],
+  "core": false
+}
