@@ -15,6 +15,7 @@ Spec sources:
 - ✅ **v3.0 Autonomous Core** — Phases 23–30 — SHIPPED 2026-03-06
 - ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
 - ✅ **v5.0 Projects Module** — Phases 40–49 — SHIPPED 2026-03-07
+- 🚧 **v6.0 Security Hardening** — Phases 50–57 (in progress)
 
 ---
 
@@ -483,3 +484,97 @@ Plans:
 | 47. Project Files & Memory Tab | v5.0 | 2/2 | Complete | 2026-03-07 |
 | 48. Project Agent Dispatch | v5.0 | 1/1 | Complete | 2026-03-07 |
 | 49. E2E Verification v5.0 | v5.0 | 1/1 | Complete | 2026-03-07 |
+| 50. Agent ID Validation | v6.0 | 0/1 | Not started | - |
+| 51. Path Traversal — Library | v6.0 | 0/1 | Not started | - |
+| 52. Command Injection — Spawn | v6.0 | 0/1 | Not started | - |
+| 53. Path Traversal — Soul Route | v6.0 | 0/1 | Not started | - |
+| 54. Gemini Key Server-Side | v6.0 | 0/1 | Not started | - |
+| 55. CSP & Security Headers | v6.0 | 0/1 | Not started | - |
+| 56. Input Sanitization Sweep | v6.0 | 0/1 | Not started | - |
+| 57. Security E2E Verification | v6.0 | 0/1 | Not started | - |
+
+---
+
+### 🚧 v6.0 Security Hardening (In Progress)
+
+**Milestone Goal:** Eliminate all critical and high security findings from the platform audit — command injection, path traversal, credential exposure, and input validation gaps.
+
+#### Phase 50: agent-id-validation
+
+**Goal**: Create a shared `validateAgentId()` utility that enforces `/^[a-z0-9][a-z0-9-_]*$/` and apply it to every route that uses agent ID in file path construction: `[id]/stream`, `[id]/spawn`, `[id]/soul`, `[id]/avatar`, `[id]/config`, `[id]/session`, `[id]/kill`, `[id]/status`, `[id]/models`, `hire`. Return 400 if validation fails.
+**Depends on**: Phase 49
+**Research**: Unlikely (internal validation pattern)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 50-01: TBD (run /gsd:plan-phase 50 to break down)
+
+#### Phase 51: path-traversal-library
+
+**Goal**: Fix the path traversal vulnerability in `/api/library/route.ts` `view` action — after building `candidate = path.join(ENV.LIBRARY_PATH, decoded)`, verify `candidate.startsWith(ENV.LIBRARY_PATH + path.sep)` before reading. Return 403 if outside boundary. Apply the same check to any other route that builds file paths from user input.
+**Depends on**: Phase 50
+**Research**: Unlikely (standard path containment check)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 51-01: TBD
+
+#### Phase 52: command-injection-spawn
+
+**Goal**: Fix command injection in `/api/agents/[id]/spawn/route.ts:73` — replace `execSync(\`bash "${scriptPath}" "${id}"\`)` with `spawnSync('bash', [scriptPath, id])` so the id is passed as a literal argument, never interpolated into a shell string. Agent ID already validated by Phase 50 so double-protected.
+**Depends on**: Phase 50
+**Research**: Unlikely (Node.js child_process pattern)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 52-01: TBD
+
+#### Phase 53: path-traversal-soul-route
+
+**Goal**: Fix two issues in `/api/agents/[id]/soul/route.ts`: (1) remove hardcoded `/Users/kevin.macarthur/git/mission-control-nextjs` path — replace with `process.cwd()` or `join(homedir(), 'git', 'mission-control-nextjs')`; (2) the id-in-path risk is covered by Phase 50's validation, but add an explicit `startsWith(AGENTS_DIR)` check after path construction as defence-in-depth.
+**Depends on**: Phase 50
+**Research**: Unlikely (internal path fix)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 53-01: TBD
+
+#### Phase 54: gemini-key-server-side
+
+**Goal**: Stop sending the Gemini API key to the browser. Add `GET /api/settings/gemini-key` route that reads from the DB server-side and returns the key only to authenticated server requests. Update `VoiceChatPanel`, `MeetingsPanel`, `MeetingScribe`, `MeetingTranscriptionPanel`, `TeamVoiceMeeting`, `MeetingTranscribe`, and `QuickActions` to fetch the key via this API route at call time instead of reading from localStorage. The key stored in the DB settings table (already exists) is the canonical source — remove `localStorage` as a key store.
+**Depends on**: Phase 53
+**Research**: Unlikely (internal API proxy pattern)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 54-01: TBD
+
+#### Phase 55: csp-security-headers
+
+**Goal**: Add security response headers to all routes via Next.js middleware or `next.config.js` `headers()` config: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-XSS-Protection: 1; mode=block`. Add a basic `Content-Security-Policy` that allows `'self'` plus Gemini/Google API origins needed for voice. These headers are free hardening for a web app.
+**Depends on**: Phase 53
+**Research**: Unlikely (standard Next.js header config)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 55-01: TBD
+
+#### Phase 56: input-sanitization-sweep
+
+**Goal**: Audit all remaining user-supplied string inputs that touch the DB or filesystem: (1) add length limits on task title/description (500/5000 chars), agent name (100 chars), library filename (255 chars); (2) ensure no raw string concatenation into SQL queries (currently clean — confirm via grep); (3) sanitize catalog agent/module IDs on install using same `validateAgentId()` from Phase 50; (4) add length cap on personality/soul content written to filesystem (50KB max).
+**Depends on**: Phase 55
+**Research**: Unlikely (input validation patterns)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 56-01: TBD
+
+#### Phase 57: security-e2e-verification
+
+**Goal**: Extend `tools/e2e-smoke-test.sh` with security regression tests: (1) send `../../../etc/passwd` as agent ID → expect 400; (2) send base64(`../../../etc/passwd`) to library view → expect 403/404 not file contents; (3) verify Gemini key endpoint returns key (server-side) but key does NOT appear in any JS bundle or client HTML; (4) send shell-special-char agent ID to spawn → expect 400; (5) confirm all security headers present on any route response.
+**Depends on**: Phase 56
+**Research**: Unlikely (bash test extensions)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 57-01: TBD
