@@ -30,23 +30,9 @@ const logger = createLogger('VoiceChat');
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function loadApiKey(): Promise<string> {
-  // 1. Check Next.js public env vars (client-side, NEXT_PUBLIC_ prefix required)
-  const nextKey = import.meta?.env?.NEXT_PUBLIC_GEMINI_API_KEY || (process as any)?.env?.NEXT_PUBLIC_GEMINI_API_KEY;
-  if (nextKey && nextKey !== 'your_key_here') return nextKey;
-  // 2. Check Vite env vars (legacy / dev compat)
-  const viteKey = import.meta?.env?.VITE_GEMINI_API_KEY || import.meta?.env?.VITE_GOOGLE_API_KEY;
-  if (viteKey && viteKey !== 'your_key_here') return viteKey;
-  // 2. Try settings API
   try {
     const result = await import('../lib/api').then(m => m.settingsApi.get('gemini_api_key'));
     if (result?.value) return result.value;
-  } catch {
-    // Settings API not available
-  }
-  // 3. Check localStorage settings
-  try {
-    const s = JSON.parse(localStorage.getItem('mission-control-settings') || '{}');
-    if (s.geminiApiKey) return s.geminiApiKey;
   } catch { /* ignore */ }
   return '';
 }
@@ -139,6 +125,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // Settings
   const [showSettings, setShowSettings] = useState(false);
+  const [audioInputs, setAudioInputs]   = useState<MediaDeviceInfo[]>([]);
+  const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMic, setSelectedMic]       = useState<string>('');
+  const [selectedSpeaker, setSelectedSpeaker] = useState<string>('');
   
   // Refs
   const callActiveRef = useRef(false);
@@ -155,6 +145,32 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const [agentContext, setAgentContext] = useState<AgentContext | null>(null);
   const agentContextRef = useRef<AgentContext | null>(null);
   
+  // Enumerate audio devices when settings panel opens
+  // Must request mic permission first — otherwise labels/deviceIds are blank
+  useEffect(() => {
+    if (!showSettings) return;
+    const enumerate = () =>
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        setAudioInputs(devices.filter(d => d.kind === 'audioinput'));
+        setAudioOutputs(devices.filter(d => d.kind === 'audiooutput'));
+      });
+
+    // Try enumerating — if labels are blank, request permission then re-enumerate
+    enumerate().then(() => {
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const hasLabels = devices.some(d => d.kind === 'audioinput' && d.label);
+        if (!hasLabels) {
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+              stream.getTracks().forEach(t => t.stop());
+              enumerate();
+            })
+            .catch(() => {});
+        }
+      });
+    }).catch(() => {});
+  }, [showSettings]);
+
   // Sync agentId prop
   useEffect(() => {
     if (agentId) {
@@ -385,7 +401,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       });
       
       addActivity({ type: 'chat', message: `🎙️ Voice call with ${selectedAgent.name}`, timestamp: Date.now() });
-      await geminiLive.startMic();
+      await geminiLive.startMic(selectedMic || undefined);
       
       // Auto-start video if selected
       if (videoMode === 'camera') {
@@ -611,20 +627,42 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       </div>
       
       {/* Settings panel */}
-      {showSettings && !callActive && (
-        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label htmlFor="video-mode-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Video Mode</label>
-              <select id="video-mode-select" value={videoMode} onChange={(e) => setVideoMode(e.target.value as VideoMode)}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm">
-                <option value="none">🎙️ Audio only</option>
-                <option value="camera">📹 Camera</option>
-                <option value="screen">🖥️ Screen share</option>
+      {showSettings && (
+        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Microphone */}
+            <div>
+              <label htmlFor="mic-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Microphone</label>
+              <select
+                id="mic-select"
+                value={selectedMic}
+                onChange={(e) => setSelectedMic(e.target.value)}
+                disabled={callActive}
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm disabled:opacity-50"
+              >
+                <option value="">System default</option>
+                {audioInputs.map(d => (
+                  <option key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 6)}`}</option>
+                ))}
+              </select>
+            </div>
+            {/* Speaker */}
+            <div>
+              <label htmlFor="speaker-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Speaker</label>
+              <select
+                id="speaker-select"
+                value={selectedSpeaker}
+                onChange={(e) => setSelectedSpeaker(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm"
+              >
+                <option value="">System default</option>
+                {audioOutputs.map(d => (
+                  <option key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 6)}`}</option>
+                ))}
               </select>
             </div>
           </div>
-          <p className="text-xs text-mission-control-text-dim mt-2">💡 Video mode is set before connecting. Camera/screen can also be toggled during call.</p>
+          {callActive && <p className="text-xs text-mission-control-text-dim">Mic selection takes effect on next call.</p>}
         </div>
       )}
       
