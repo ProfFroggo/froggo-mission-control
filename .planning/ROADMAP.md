@@ -15,7 +15,7 @@ Spec sources:
 - ✅ **v3.0 Autonomous Core** — Phases 23–30 — SHIPPED 2026-03-06
 - ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
 - ✅ **v5.0 Projects Module** — Phases 40–49 — SHIPPED 2026-03-07
-- 🚧 **v6.0 Security Hardening** — Phases 50–57 (in progress)
+- ✅ **v6.0 Security Hardening** — Phases 50–57 — SHIPPED 2026-03-07
 
 ---
 
@@ -495,7 +495,7 @@ Plans:
 
 ---
 
-### 🚧 v6.0 Security Hardening (In Progress)
+### ✅ v6.0 Security Hardening — SHIPPED 2026-03-07
 
 **Milestone Goal:** Eliminate all critical and high security findings from the platform audit — command injection, path traversal, credential exposure, and input validation gaps.
 
@@ -578,7 +578,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 57-01: extend-e2e-smoke-test-v6-security
+- [x] 57-01: extend-e2e-smoke-test-v6-security — DONE 2026-03-07
 
 ---
 
