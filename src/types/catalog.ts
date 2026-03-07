@@ -15,6 +15,9 @@ export interface CatalogAgent {
   version: string;
   category: string;
   installed: boolean;           // true = hired/active, false = available to hire
+  core: boolean;                // core agents cannot be fired
+  avatar: string | null;        // absolute path to avatar in workspace assets/
+  defaultPersonality: string | null; // pre-fills the hire wizard personality field
   createdAt: number;
   updatedAt: number;
 }
@@ -40,12 +43,13 @@ export interface CatalogModule {
 }
 
 // Raw DB row (before JSON parsing) — used internally in API routes
-export interface CatalogAgentRow extends Omit<CatalogAgent, 'capabilities' | 'requiredApis' | 'requiredSkills' | 'requiredTools' | 'installed'> {
+export interface CatalogAgentRow extends Omit<CatalogAgent, 'capabilities' | 'requiredApis' | 'requiredSkills' | 'requiredTools' | 'installed' | 'core'> {
   capabilities: string;
   requiredApis: string;
   requiredSkills: string;
   requiredTools: string;
   installed: number;
+  core: number;
 }
 
 export interface CatalogModuleRow extends Omit<CatalogModule, 'requiredAgents' | 'requiredNpm' | 'requiredApis' | 'requiredSkills' | 'requiredCli' | 'installed' | 'enabled' | 'core'> {
@@ -68,6 +72,7 @@ export function parseCatalogAgent(row: CatalogAgentRow): CatalogAgent {
     requiredSkills: JSON.parse(row.requiredSkills || '[]'),
     requiredTools:  JSON.parse(row.requiredTools  || '[]'),
     installed: row.installed === 1,
+    core:      row.core      === 1,
   };
 }
 
@@ -86,7 +91,7 @@ export function parseCatalogModule(row: CatalogModuleRow): CatalogModule {
   };
 }
 
-// Manifest file format (.catalog/agents/{id}.json)
+// Manifest file format (catalog/agents/{id}.json)
 export interface AgentManifestFile {
   id: string;
   name: string;
@@ -100,9 +105,11 @@ export interface AgentManifestFile {
   requiredTools?: string[];
   version?: string;
   category?: string;
+  core?: boolean;
+  defaultPersonality?: string;
 }
 
-// Manifest file format (.catalog/modules/{id}.json)
+// Manifest file format (catalog/modules/{id}.json)
 export interface ModuleManifestFile {
   id: string;
   name: string;
