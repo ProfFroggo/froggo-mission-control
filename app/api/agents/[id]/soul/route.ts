@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateAgentId } from '@/lib/validateId';
 import path from 'path';
 import fs from 'fs';
 
-const AGENTS_DIR = path.join(
-  process.env.FROGGO_PROJECT_ROOT || '/Users/kevin.macarthur/git/froggo-nextjs',
-  '.claude',
-  'agents'
-);
+const AGENTS_DIR = path.join(process.cwd(), '.claude', 'agents');
 
 function getSoulPath(id: string): string {
   return path.join(AGENTS_DIR, `${id}.md`);
@@ -18,6 +15,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const filePath = getSoulPath(id);
 
     let content = '';
@@ -38,6 +37,8 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const body = await request.json();
     const { content } = body;
 

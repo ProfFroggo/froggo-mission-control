@@ -114,6 +114,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  if (!/^[a-z0-9][a-z0-9-_]*$/.test(id) || id.length > 64) {
+    return new Response(
+      `data: ${JSON.stringify({ type: 'error', text: 'Invalid agent ID' })}\n\ndata: [DONE]\n\n`,
+      { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } }
+    );
+  }
+
   const { message, model } = await request.json();
 
   // Reject if another stream is already active for this agent
