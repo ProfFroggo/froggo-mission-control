@@ -23,16 +23,10 @@ const logger = createLogger('MeetingScribe');
 let _cachedScribeKey: string | null = null;
 async function getGeminiApiKey(): Promise<string> {
   if (_cachedScribeKey) return _cachedScribeKey;
-  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
-  if (viteKey && viteKey !== 'your_key_here') { _cachedScribeKey = viteKey; return viteKey; }
   try {
     const { settingsApi } = await import('../lib/api');
     const result = await settingsApi.get('gemini_api_key');
     if (result?.value) { _cachedScribeKey = result.value; return result.value; }
-  } catch { /* ignore */ }
-  try {
-    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
-    if (s.geminiApiKey) { _cachedScribeKey = s.geminiApiKey; return s.geminiApiKey; }
   } catch { /* ignore */ }
   return '';
 }
@@ -101,7 +95,7 @@ async function transcribeWithGemini(base64Audio: string, mimeType: string): Prom
               },
             },
             {
-              text: `Transcribe this audio accurately. Common vocabulary: "perps" (perpetual futures), "Froggo", "Clawdbot", "Bitso", "Kanban", "onchain", "Solana", "Dashboard", "Opus", "Sonnet", "Claude".
+              text: `Transcribe this audio accurately. Common vocabulary: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana", "Dashboard", "Opus", "Sonnet", "Claude".
 
 Rules:
 - Output ONLY the transcript text
@@ -525,7 +519,7 @@ ${transcriptText}`,
     }
   }, [entries]);
 
-  const sendToFroggo = useCallback(async () => {
+  const sendToMissionControl = useCallback(async () => {
     const transcriptText = entries
       .filter(e => !e.isProcessing)
       .map(e => e.text)
@@ -547,7 +541,7 @@ ${transcriptText}`,
     try {
       await gateway.sendChat(message);
     } catch (err) {
-      // '[Scribe] Failed to send to Froggo:', err;
+      // '[Scribe] Failed to send to Mission Control:', err;
     }
   }, [entries, actionItems]);
 
@@ -592,9 +586,9 @@ ${transcriptText}`,
   return (
     <div className="flex-1 overflow-hidden flex text-left">
       {/* Left: Recording Controls & Live Transcript */}
-      <div className="w-96 border-r border-clawd-border flex flex-col">
+      <div className="w-96 border-r border-mission-control-border flex flex-col">
         {/* Record Button */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           {isRecording ? (
             <button
               onClick={() => stopRecording()}
@@ -622,7 +616,7 @@ ${transcriptText}`,
               </div>
               <span className="font-mono text-lg">{formatDuration(timer)}</span>
               {/* Audio level bar */}
-              <div className="w-20 h-2 bg-clawd-surface rounded-full overflow-hidden">
+              <div className="w-20 h-2 bg-mission-control-surface rounded-full overflow-hidden">
                 <div
                   className="h-full bg-emerald-400 rounded-full transition-all duration-75"
                   style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
@@ -632,7 +626,7 @@ ${transcriptText}`,
           )}
           
           {processingChunk && (
-            <div className="mt-2 text-xs text-clawd-text-dim flex items-center gap-1">
+            <div className="mt-2 text-xs text-mission-control-text-dim flex items-center gap-1">
               <Loader2 size={12} className="animate-spin" />
               Transcribing chunk...
             </div>
@@ -644,7 +638,7 @@ ${transcriptText}`,
             </div>
           )}
           
-          <p className="text-xs text-clawd-text-dim mt-3 text-center">
+          <p className="text-xs text-mission-control-text-dim mt-3 text-center">
             Powered by Gemini {GEMINI_MODEL} • Audio sent in {CHUNK_INTERVAL_MS / 1000}s chunks
           </p>
         </div>
@@ -655,12 +649,12 @@ ${transcriptText}`,
             <Brain size={16} className="text-emerald-400" />
             <span className="font-medium text-sm">Live Transcript</span>
             {entries.length > 0 && (
-              <span className="text-xs text-clawd-text-dim">({entries.filter(e => !e.isProcessing).length} segments)</span>
+              <span className="text-xs text-mission-control-text-dim">({entries.filter(e => !e.isProcessing).length} segments)</span>
             )}
           </div>
           
           {entries.length === 0 ? (
-            <div className="text-clawd-text-dim text-sm text-center py-12">
+            <div className="text-mission-control-text-dim text-sm text-center py-12">
               <Mic size={32} className="mx-auto mb-3 opacity-30" />
               <p>{isRecording ? 'Listening... transcript will appear here' : 'Start recording to begin transcription'}</p>
             </div>
@@ -671,13 +665,13 @@ ${transcriptText}`,
                   key={entry.id}
                   className={`rounded px-3 py-2 ${
                     entry.isProcessing
-                      ? 'bg-clawd-surface/50 text-clawd-text-dim animate-pulse'
-                      : 'bg-clawd-surface text-clawd-text'
+                      ? 'bg-mission-control-surface/50 text-mission-control-text-dim animate-pulse'
+                      : 'bg-mission-control-surface text-mission-control-text'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <p className="flex-1">{entry.text}</p>
-                    <span className="text-[10px] text-clawd-text-dim shrink-0 mt-0.5">
+                    <span className="text-[10px] text-mission-control-text-dim shrink-0 mt-0.5">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </span>
                   </div>
@@ -690,7 +684,7 @@ ${transcriptText}`,
         
         {/* Action Items */}
         {actionItems.length > 0 && (
-          <div className="border-t border-clawd-border p-4">
+          <div className="border-t border-mission-control-border p-4">
             <button
               onClick={() => setShowActionItems(!showActionItems)}
               className="flex items-center gap-2 mb-2 text-sm font-medium text-warning w-full"
@@ -706,7 +700,7 @@ ${transcriptText}`,
                     <span className="px-1.5 py-0.5 bg-warning-subtle rounded text-warning text-[10px] shrink-0">
                       {item.type}
                     </span>
-                    <span className="text-clawd-text-dim truncate">{item.text}</span>
+                    <span className="text-mission-control-text-dim truncate">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -723,24 +717,24 @@ ${transcriptText}`,
             <div className="flex items-center gap-2 mb-6">
               <FileText size={20} className="text-emerald-400" />
               <h3 className="text-lg font-medium">Meeting Complete</h3>
-              <span className="text-sm text-clawd-text-dim">({formatDuration(summary.duration)})</span>
+              <span className="text-sm text-mission-control-text-dim">({formatDuration(summary.duration)})</span>
             </div>
             
             {summary.savedPath && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-4">
                 <p className="text-sm text-emerald-400">✓ Notes saved</p>
-                <p className="text-xs text-clawd-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
+                <p className="text-xs text-mission-control-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
               </div>
             )}
             
             {/* AI Summary */}
             {aiSummary ? (
-              <div className="bg-clawd-surface border border-clawd-border rounded-lg p-4 mb-4">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles size={16} className="text-review" />
                   <span className="text-sm font-medium text-review">AI Summary</span>
                 </div>
-                <div className="text-sm text-clawd-text whitespace-pre-wrap">{aiSummary}</div>
+                <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
             ) : (
               <button
@@ -759,16 +753,16 @@ ${transcriptText}`,
             {/* Action buttons */}
             <div className="flex gap-2 mb-6">
               <button
-                onClick={sendToFroggo}
+                onClick={sendToMissionControl}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-clawd-accent hover:bg-clawd-accent/80 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Send size={14} /> Send to Froggo
+                <Send size={14} /> Send to Mission Control
               </button>
               <button
                 onClick={exportMarkdown}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-clawd-surface border border-clawd-border hover:border-clawd-accent rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-2 bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Download size={14} /> Export
               </button>
@@ -776,11 +770,11 @@ ${transcriptText}`,
             
             {/* Full transcript review */}
             <div>
-              <h4 className="text-sm font-medium text-clawd-text-dim mb-2">Full Transcript</h4>
+              <h4 className="text-sm font-medium text-mission-control-text-dim mb-2">Full Transcript</h4>
               <div className="space-y-1 text-sm max-h-64 overflow-y-auto">
                 {entries.filter(e => !e.isProcessing).map(entry => (
-                  <p key={entry.id} className="text-clawd-text-dim">
-                    <span className="text-[10px] text-clawd-text-dim/50 mr-1">
+                  <p key={entry.id} className="text-mission-control-text-dim">
+                    <span className="text-[10px] text-mission-control-text-dim/50 mr-1">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {entry.text}
@@ -792,14 +786,14 @@ ${transcriptText}`,
             {/* Clear */}
             <button
               onClick={clearAll}
-              className="mt-6 text-sm text-clawd-text-dim hover:text-error flex items-center gap-1"
+              className="mt-6 text-sm text-mission-control-text-dim hover:text-error flex items-center gap-1"
             >
               <Trash2 size={14} /> Clear
             </button>
           </div>
         ) : !isRecording && !hasTranscript ? (
           /* Empty state */
-          <div className="flex-1 flex items-center justify-center text-clawd-text-dim">
+          <div className="flex-1 flex items-center justify-center text-mission-control-text-dim">
             <div className="text-center">
               <Mic size={48} className="mx-auto mb-4 opacity-20" />
               <p className="text-lg font-medium mb-2">Meeting Scribe</p>
@@ -814,23 +808,23 @@ ${transcriptText}`,
           /* During recording - show larger live view */
           <div className="flex-1 flex flex-col p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Clock size={16} className="text-clawd-text-dim" />
-              <span className="text-sm text-clawd-text-dim">Recording in progress • {formatDuration(timer)}</span>
+              <Clock size={16} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text-dim">Recording in progress • {formatDuration(timer)}</span>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-3">
               {entries.filter(e => !e.isProcessing).map(entry => (
-                <div key={entry.id} className="bg-clawd-surface rounded-lg px-4 py-3">
+                <div key={entry.id} className="bg-mission-control-surface rounded-lg px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-clawd-text">{entry.text}</p>
-                    <span className="text-xs text-clawd-text-dim shrink-0">
+                    <p className="text-mission-control-text">{entry.text}</p>
+                    <span className="text-xs text-mission-control-text-dim shrink-0">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
               ))}
               {processingChunk && (
-                <div className="flex items-center gap-2 text-clawd-text-dim text-sm px-4">
+                <div className="flex items-center gap-2 text-mission-control-text-dim text-sm px-4">
                   <Loader2 size={14} className="animate-spin" />
                   Transcribing...
                 </div>
