@@ -1,36 +1,54 @@
 // src/lib/catalogSync.ts
-// Reads .catalog/ manifest files and upserts them into the DB catalog tables.
+// Reads catalog/ manifest files and upserts them into the DB catalog tables.
 // Called once at DB startup. Safe to re-run — preserves installed status.
 
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { homedir } from 'os';
 import type Database from 'better-sqlite3';
+
+const HOME = homedir();
 import type { AgentManifestFile, ModuleManifestFile } from '../types/catalog';
 
-const CATALOG_DIR = join(process.cwd(), '.catalog');
+const CATALOG_DIR = join(process.cwd(), 'catalog');
 
 export function syncCatalogAgents(db: Database.Database): void {
   const agentsDir = join(CATALOG_DIR, 'agents');
   if (!existsSync(agentsDir)) return;
 
-  const files = readdirSync(agentsDir).filter(f => f.endsWith('.json'));
+  // Support both package dirs ({id}/manifest.json) and legacy flat files ({id}.json)
+  const entries = readdirSync(agentsDir);
+  const packageDirs = entries.filter(e => {
+    const full = join(agentsDir, e);
+    return existsSync(join(full, 'manifest.json')) && !e.endsWith('.json');
+  });
+  const flatFiles = entries.filter(e => e.endsWith('.json'));
+  // Prefer package dirs; flat files only if no package exists
+  const packageIds = new Set(packageDirs);
+  const files = [
+    ...packageDirs.map(d => join(agentsDir, d, 'manifest.json')),
+    ...flatFiles.filter(f => !packageIds.has(f.replace('.json', ''))).map(f => join(agentsDir, f)),
+  ];
 
   const upsert = db.prepare(`
-    INSERT INTO catalog_agents (id, name, emoji, role, description, model, capabilities, requiredApis, requiredSkills, requiredTools, version, category, installed, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, (unixepoch() * 1000), (unixepoch() * 1000))
+    INSERT INTO catalog_agents (id, name, emoji, role, description, model, capabilities, requiredApis, requiredSkills, requiredTools, version, category, avatar, core, defaultPersonality, installed, createdAt, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, (unixepoch() * 1000), (unixepoch() * 1000))
     ON CONFLICT(id) DO UPDATE SET
-      name         = excluded.name,
-      emoji        = excluded.emoji,
-      role         = excluded.role,
-      description  = excluded.description,
-      model        = excluded.model,
-      capabilities = excluded.capabilities,
-      requiredApis = excluded.requiredApis,
-      requiredSkills = excluded.requiredSkills,
-      requiredTools = excluded.requiredTools,
-      version      = excluded.version,
-      category     = excluded.category,
-      updatedAt    = (unixepoch() * 1000)
+      name               = excluded.name,
+      emoji              = excluded.emoji,
+      role               = excluded.role,
+      description        = excluded.description,
+      model              = excluded.model,
+      capabilities       = excluded.capabilities,
+      requiredApis       = excluded.requiredApis,
+      requiredSkills     = excluded.requiredSkills,
+      requiredTools      = excluded.requiredTools,
+      version            = excluded.version,
+      category           = excluded.category,
+      avatar             = COALESCE(excluded.avatar, catalog_agents.avatar),
+      core               = excluded.core,
+      defaultPersonality = excluded.defaultPersonality,
+      updatedAt          = (unixepoch() * 1000)
       -- NOTE: installed is deliberately NOT updated here — preserves hire status across restarts
   `);
 
@@ -38,8 +56,15 @@ export function syncCatalogAgents(db: Database.Database): void {
     for (const file of files) {
       try {
         const manifest: AgentManifestFile = JSON.parse(
-          readFileSync(join(agentsDir, file), 'utf-8')
+          readFileSync(file, 'utf-8')
         );
+        // Resolve avatar: workspace first (hired), then catalog package (pre-hire)
+        const workspaceAvatar = join(HOME, 'mission-control', 'agents', manifest.id, 'assets', 'avatar.png');
+        const catalogAvatar   = join(CATALOG_DIR, 'agents', manifest.id, 'avatar.png');
+        const avatarPath = existsSync(workspaceAvatar) ? workspaceAvatar
+                         : existsSync(catalogAvatar)   ? catalogAvatar
+                         : null;
+
         upsert.run(
           manifest.id,
           manifest.name,
@@ -53,6 +78,9 @@ export function syncCatalogAgents(db: Database.Database): void {
           JSON.stringify(manifest.requiredTools ?? []),
           manifest.version ?? '1.0.0',
           manifest.category ?? 'general',
+          avatarPath,
+          manifest.core ? 1 : 0,
+          manifest.defaultPersonality ?? null,
         );
       } catch (err) {
         console.warn(`[catalogSync] Failed to sync agent manifest ${file}:`, err);
@@ -61,6 +89,17 @@ export function syncCatalogAgents(db: Database.Database): void {
   });
 
   syncAll();
+
+  // Auto-mark agents as installed if they exist in the agents table
+  // (agents table is the source of truth for "hired" status)
+  try {
+    db.prepare(`
+      UPDATE catalog_agents
+      SET installed = 1
+      WHERE id IN (SELECT id FROM agents WHERE status != 'archived')
+        AND installed = 0
+    `).run();
+  } catch { /* agents table may not exist in tests */ }
 }
 
 export function syncCatalogModules(db: Database.Database): void {

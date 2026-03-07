@@ -417,6 +417,9 @@ function initSchema(db: Database.Database) {
     // Projects FK columns
     `ALTER TABLE tasks ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`,
     `ALTER TABLE chat_rooms ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`,
+    `ALTER TABLE tasks ADD COLUMN recurrence TEXT`,
+    `ALTER TABLE tasks ADD COLUMN recurrenceParentId TEXT`,
+    `ALTER TABLE catalog_agents ADD COLUMN defaultPersonality TEXT`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

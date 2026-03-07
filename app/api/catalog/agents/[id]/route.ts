@@ -36,6 +36,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const row = db.prepare('SELECT * FROM catalog_agents WHERE id = ?').get(id) as CatalogAgentRow | undefined;
     if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    const CORE_AGENTS = ['mission-control', 'hr', 'coder', 'inbox', 'clara'];
+    if (CORE_AGENTS.includes(id) && body.installed === false) {
+      return NextResponse.json({ error: 'Core agents cannot be uninstalled' }, { status: 403 });
+    }
+
     const fields: string[] = [];
     const values: unknown[] = [];
 
@@ -72,7 +77,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (guard) return guard;
     const db = getDb();
 
-    const CORE_AGENTS = ['mission-control', 'hr', 'coder', 'inbox'];
+    const CORE_AGENTS = ['mission-control', 'hr', 'coder', 'inbox', 'clara'];
     if (CORE_AGENTS.includes(id)) {
       return NextResponse.json({ error: 'Core agents cannot be fired' }, { status: 403 });
     }
