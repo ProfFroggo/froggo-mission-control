@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
+import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi } from '../lib/api';
@@ -54,6 +54,8 @@ interface Settings {
   rateLimitEmails: number;
   defaultEmailAccount: string;
   defaultCalendarAccount: string;
+  // API Keys
+  geminiApiKey: string;
 }
 
 const defaultKeyboardShortcuts: KeyboardShortcut[] = [
@@ -74,7 +76,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
 ];
 
 const defaultSettings: Settings = {
-  gatewayUrl: 'ws://127.0.0.1:18789',
+  gatewayUrl: '',
   gatewayToken: '',
   voiceEnabled: true,
   voiceSpeed: 1.0,
@@ -103,6 +105,8 @@ const defaultSettings: Settings = {
   rateLimitEmails: 20,
   defaultEmailAccount: useUserSettings.getState().email,
   defaultCalendarAccount: useUserSettings.getState().emailAccounts[0]?.email || '',
+  // API Keys
+  geminiApiKey: '',
 };
 
 // Apply theme and accent color to document
@@ -121,28 +125,28 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   
   // Apply theme colors
   if (actualTheme === 'dark') {
-    root.style.setProperty('--clawd-bg', '#0a0a0a');
-    root.style.setProperty('--clawd-surface', '#141414');
-    root.style.setProperty('--clawd-border', '#262626');
-    root.style.setProperty('--clawd-text', '#fafafa');
-    root.style.setProperty('--clawd-text-dim', '#a1a1aa');
+    root.style.setProperty('--mission-control-bg', '#0a0a0a');
+    root.style.setProperty('--mission-control-surface', '#141414');
+    root.style.setProperty('--mission-control-border', '#262626');
+    root.style.setProperty('--mission-control-text', '#fafafa');
+    root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
   } else {
-    root.style.setProperty('--clawd-bg', '#fafafa');
-    root.style.setProperty('--clawd-surface', '#ffffff');
-    root.style.setProperty('--clawd-border', '#e4e4e7');
-    root.style.setProperty('--clawd-text', '#18181b');
-    root.style.setProperty('--clawd-text-dim', '#71717a');
+    root.style.setProperty('--mission-control-bg', '#fafafa');
+    root.style.setProperty('--mission-control-surface', '#ffffff');
+    root.style.setProperty('--mission-control-border', '#e4e4e7');
+    root.style.setProperty('--mission-control-text', '#18181b');
+    root.style.setProperty('--mission-control-text-dim', '#71717a');
   }
   
   // Apply accent color
-  root.style.setProperty('--clawd-accent', accentColor);
+  root.style.setProperty('--mission-control-accent', accentColor);
   
   // Generate accent-dim (slightly darker)
   const hex = accentColor.replace('#', '');
   const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
   const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
   const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-  root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
+  root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
 
   // Apply font family
   const fontMap: Record<string, string> = {
@@ -151,8 +155,8 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
     'roboto-mono': '"Roboto Mono", Consolas, Monaco, "Courier New", monospace',
     'sf-pro': '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
   };
-  root.style.setProperty('--clawd-font', fontMap[fontFamily] || fontMap.system);
-  root.style.setProperty('--clawd-font-size', `${fontSize}px`);
+  root.style.setProperty('--mission-control-font', fontMap[fontFamily] || fontMap.system);
+  root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
 type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'exportBackup';
@@ -161,8 +165,11 @@ export default function SettingsPanel() {
   const { connected } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem('froggo-settings');
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    const saved = localStorage.getItem('mission-control-settings');
+    const parsed = saved ? JSON.parse(saved) : {};
+    // Exclude geminiApiKey from localStorage — it lives in DB only
+    const { geminiApiKey: _ignored, ...rest } = parsed;
+    return { ...defaultSettings, ...rest };
   });
   const [saved, setSaved] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
@@ -172,6 +179,13 @@ export default function SettingsPanel() {
   useEffect(() => {
     applyTheme(settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize);
   }, [settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize]);
+
+  // Load Gemini key from DB on mount (never from localStorage)
+  useEffect(() => {
+    settingsApi.get('gemini_api_key').then(result => {
+      if (result?.value) setSettings(s => ({ ...s, geminiApiKey: result.value }));
+    }).catch(() => { /* non-critical */ });
+  }, []);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -186,8 +200,15 @@ export default function SettingsPanel() {
   }, [settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize]);
 
   const handleSave = async () => {
-    localStorage.setItem('froggo-settings', JSON.stringify(settings));
-    
+    // Exclude geminiApiKey from localStorage — save it to DB only
+    const { geminiApiKey, ...settingsWithoutKey } = settings;
+    localStorage.setItem('mission-control-settings', JSON.stringify(settingsWithoutKey));
+
+    // Save Gemini key to DB (server-side only, never in localStorage)
+    if (geminiApiKey) {
+      try { await settingsApi.set('gemini_api_key', geminiApiKey); } catch { /* non-critical */ }
+    }
+
     // Save automation settings via API
     try {
       await settingsApi.set('automation', {
@@ -208,7 +229,7 @@ export default function SettingsPanel() {
 
   const handleReset = () => {
     setSettings(defaultSettings);
-    localStorage.removeItem('froggo-settings');
+    localStorage.removeItem('mission-control-settings');
     showToast('info', 'Settings reset', 'All settings restored to defaults');
   };
 
@@ -218,7 +239,7 @@ export default function SettingsPanel() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `froggo-settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `mission-control-settings-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
     showToast('success', 'Settings exported', 'Download started');
@@ -267,17 +288,17 @@ export default function SettingsPanel() {
           <h1 className="text-heading-2 mb-2 flex items-center gap-2">
             <Settings size={24} /> Settings
           </h1>
-          <p className="text-secondary">Configure Froggo dashboard preferences</p>
+          <p className="text-secondary">Configure Mission Control dashboard preferences</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-clawd-border overflow-x-auto">
+        <div className="flex gap-2 mb-6 border-b border-mission-control-border overflow-x-auto">
           <button
             onClick={() => setActiveTab('general')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'general'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             General
@@ -286,8 +307,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('appearance')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'appearance'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Palette size={16} />
@@ -297,8 +318,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('accessibility')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'accessibility'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Type size={16} />
@@ -308,8 +329,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('notifications')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'notifications'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Bell size={16} />
@@ -319,8 +340,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('shortcuts')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'shortcuts'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Keyboard size={16} />
@@ -330,8 +351,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('accounts')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'accounts'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <LinkIcon size={16} />
@@ -341,8 +362,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('security')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'security'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Shield size={16} />
@@ -352,8 +373,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('automation')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'automation'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             Automation
@@ -362,8 +383,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('config')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'config'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             Config
@@ -372,8 +393,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('logs')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'logs'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             Logs
@@ -382,8 +403,8 @@ export default function SettingsPanel() {
             onClick={() => setActiveTab('exportBackup')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'exportBackup'
-                ? 'border-clawd-accent text-clawd-accent'
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Database size={16} />
@@ -407,17 +428,17 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Wifi size={16} /> System Status
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-3">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
                 <div className="text-sm text-gray-400 space-y-1">
-                  <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">froggo-db &middot; memory &middot; cron</span></div>
+                  <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">mission-control-db &middot; memory &middot; cron</span></div>
                   <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
                   <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
-                  <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/froggo/memory/</span></div>
+                  <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/mission-control/memory/</span></div>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
-                  <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success' : 'bg-error'}`} />
-                  <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
+                  <span className="w-2 h-2 rounded-full bg-success" />
+                  <span className="text-sm">Local Mode</span>
                 </div>
               </div>
             </section>
@@ -427,14 +448,14 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Startup
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div>
-                  <label htmlFor="default-panel" className="block text-sm text-clawd-text-dim mb-2">Default Panel on Startup</label>
+                  <label htmlFor="default-panel" className="block text-sm text-mission-control-text-dim mb-2">Default Panel on Startup</label>
                   <select
                     id="default-panel"
                     value={settings.defaultPanel}
                     onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="dashboard">Dashboard</option>
                     <option value="inbox">Inbox</option>
@@ -446,7 +467,7 @@ export default function SettingsPanel() {
                     <option value="voice">Voice</option>
                     <option value="chat">Chat</option>
                   </select>
-                  <p className="text-xs text-clawd-text-dim mt-1">This panel will open when you launch the app</p>
+                  <p className="text-xs text-mission-control-text-dim mt-1">This panel will open when you launch the app</p>
                 </div>
               </div>
             </section>
@@ -456,11 +477,11 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Navigation
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Collapsed Sidebar</div>
-                    <div className="text-sm text-clawd-text-dim">Show sidebar as icon only</div>
+                    <div className="text-sm text-mission-control-text-dim">Show sidebar as icon only</div>
                   </div>
                   <Toggle
                     checked={localStorage.getItem('sidebarExpanded') === 'false'}
@@ -479,11 +500,11 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Volume2 size={16} /> Voice
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Voice Responses</div>
-                    <div className="text-sm text-clawd-text-dim">Read responses aloud</div>
+                    <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
                   </div>
                   <Toggle
                     checked={settings.voiceEnabled}
@@ -491,7 +512,7 @@ export default function SettingsPanel() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="voice-speed" className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="voice-speed" className="block text-sm text-mission-control-text-dim mb-2">
                     Speech Speed: {settings.voiceSpeed.toFixed(1)}x
                   </label>
                   <input
@@ -513,11 +534,11 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <RefreshCw size={16} /> Data Refresh
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Auto Refresh</div>
-                    <div className="text-sm text-clawd-text-dim">Automatically refresh sessions list</div>
+                    <div className="text-sm text-mission-control-text-dim">Automatically refresh sessions list</div>
                   </div>
                   <Toggle
                     checked={settings.autoRefresh}
@@ -526,7 +547,7 @@ export default function SettingsPanel() {
                 </div>
                 {settings.autoRefresh && (
                   <div>
-                    <label htmlFor="refresh-interval" className="block text-sm text-clawd-text-dim mb-2">
+                    <label htmlFor="refresh-interval" className="block text-sm text-mission-control-text-dim mb-2">
                       Refresh Interval: {settings.refreshInterval}s
                     </label>
                     <input
@@ -544,23 +565,46 @@ export default function SettingsPanel() {
               </div>
             </section>
 
+            {/* API Keys */}
+            <section>
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <Key size={16} /> API Keys
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
+                <div>
+                  <label htmlFor="gemini-api-key" className="block text-sm font-medium mb-1">
+                    Google Gemini API Key
+                  </label>
+                  <p className="text-xs text-mission-control-text-dim mb-2">Required for voice chat, meeting transcription, and PDF extraction</p>
+                  <input
+                    id="gemini-api-key"
+                    type="password"
+                    value={settings.geminiApiKey}
+                    onChange={(e) => setSettings(s => ({ ...s, geminiApiKey: e.target.value }))}
+                    placeholder="AIza..."
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </section>
+
             {/* Export/Import */}
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Download size={16} /> Backup & Restore
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div className="flex gap-3">
                   <button
                     onClick={handleExport}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                   >
                     <Download size={16} />
                     Export Settings
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                   >
                     <Upload size={16} />
                     Import Settings
@@ -573,7 +617,7 @@ export default function SettingsPanel() {
                     className="hidden"
                   />
                 </div>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Export your settings to backup or transfer to another device
                 </p>
               </div>
@@ -589,9 +633,9 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Moon size={16} /> Theme
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div>
-                  <label htmlFor="color-mode" className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
+                  <label htmlFor="color-mode" className="block text-sm text-mission-control-text-dim mb-2">Color Mode</label>
                   <div className="flex gap-2">
                     {(['dark', 'light', 'system'] as const).map((t) => (
                       <button
@@ -599,8 +643,8 @@ export default function SettingsPanel() {
                         onClick={() => setSettings(s => ({ ...s, theme: t }))}
                         className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
                           settings.theme === t 
-                            ? 'border-clawd-accent bg-clawd-accent/20 text-clawd-accent' 
-                            : 'border-clawd-border hover:border-clawd-accent/50'
+                            ? 'border-mission-control-accent bg-mission-control-accent/20 text-mission-control-accent' 
+                            : 'border-mission-control-border hover:border-mission-control-accent/50'
                         }`}
                       >
                         {t === 'dark' && <Moon size={16} className="inline mr-2" />}
@@ -612,7 +656,7 @@ export default function SettingsPanel() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="accent-color" className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
+                  <label htmlFor="accent-color" className="block text-sm text-mission-control-text-dim mb-2">Accent Color</label>
                   <div className="flex gap-2 flex-wrap">
                     {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                       <button
@@ -631,7 +675,7 @@ export default function SettingsPanel() {
                     type="color"
                     value={settings.accentColor}
                     onChange={(e) => setSettings(s => ({ ...s, accentColor: e.target.value }))}
-                    className="mt-3 w-full h-10 rounded-lg border border-clawd-border cursor-pointer"
+                    className="mt-3 w-full h-10 rounded-lg border border-mission-control-border cursor-pointer"
                   />
                 </div>
               </div>
@@ -642,14 +686,14 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Type size={16} /> Typography
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 <div>
-                  <label htmlFor="font-family-select" className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
+                  <label htmlFor="font-family-select" className="block text-sm text-mission-control-text-dim mb-2">Font Family</label>
                   <select
                     id="font-family-select"
                     value={settings.fontFamily}
                     onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="system">System Default</option>
                     <option value="inter">Inter</option>
@@ -658,7 +702,7 @@ export default function SettingsPanel() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="font-size" className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="font-size" className="block text-sm text-mission-control-text-dim mb-2">
                     Font Size: {settings.fontSize}px
                   </label>
                   <input
@@ -671,17 +715,17 @@ export default function SettingsPanel() {
                     onChange={(e) => setSettings(s => ({ ...s, fontSize: parseInt(e.target.value) }))}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                  <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                     <span>Small (12px)</span>
                     <span>Medium (14px)</span>
                     <span>Large (18px)</span>
                   </div>
                 </div>
-                <div className="mt-4 p-4 bg-clawd-bg rounded-lg border border-clawd-border">
+                <div className="mt-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
                   <p className="mb-2" style={{ fontSize: `${settings.fontSize}px` }}>
                     The quick brown fox jumps over the lazy dog
                   </p>
-                  <p className="text-xs text-clawd-text-dim">Preview of current font settings</p>
+                  <p className="text-xs text-mission-control-text-dim">Preview of current font settings</p>
                 </div>
               </div>
             </section>
@@ -701,15 +745,15 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Bell size={16} /> Dashboard Notification Preferences
               </h2>
-              <p className="text-sm text-clawd-text-dim mb-4">
+              <p className="text-sm text-mission-control-text-dim mb-4">
                 Configure which types of events trigger in-app notifications
               </p>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 {/* Master Toggle */}
-                <div className="flex items-center justify-between pb-4 border-b border-clawd-border">
+                <div className="flex items-center justify-between pb-4 border-b border-mission-control-border">
                   <div>
                     <div className="font-medium">Enable Notifications</div>
-                    <div className="text-sm text-clawd-text-dim">Master switch for all notifications</div>
+                    <div className="text-sm text-mission-control-text-dim">Master switch for all notifications</div>
                   </div>
                   <Toggle
                     checked={settings.notificationsEnabled}
@@ -719,12 +763,12 @@ export default function SettingsPanel() {
 
                 {/* Notification Types */}
                 <div className="space-y-3">
-                  <h3 className="font-medium text-sm text-clawd-text-dim">Notification Types</h3>
+                  <h3 className="font-medium text-sm text-mission-control-text-dim">Notification Types</h3>
                   
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Task Updates</div>
-                      <div className="text-xs text-clawd-text-dim">Status changes, completions, assignments</div>
+                      <div className="text-xs text-mission-control-text-dim">Status changes, completions, assignments</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.taskUpdates}
@@ -736,7 +780,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Agent Messages</div>
-                      <div className="text-xs text-clawd-text-dim">Messages from Coder, Writer, Researcher agents</div>
+                      <div className="text-xs text-mission-control-text-dim">Messages from Coder, Writer, Researcher agents</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.agentMessages}
@@ -748,7 +792,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Approval Requests</div>
-                      <div className="text-xs text-clawd-text-dim">Tweets, emails, calendar events pending approval</div>
+                      <div className="text-xs text-mission-control-text-dim">Tweets, emails, calendar events pending approval</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.approvalRequests}
@@ -760,7 +804,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">System Alerts</div>
-                      <div className="text-xs text-clawd-text-dim">Errors, warnings, important system events</div>
+                      <div className="text-xs text-mission-control-text-dim">Errors, warnings, important system events</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.systemAlerts}
@@ -771,13 +815,13 @@ export default function SettingsPanel() {
                 </div>
 
                 {/* Notification Channels */}
-                <div className="space-y-3 pt-4 border-t border-clawd-border">
-                  <h3 className="font-medium text-sm text-clawd-text-dim">Notification Channels</h3>
+                <div className="space-y-3 pt-4 border-t border-mission-control-border">
+                  <h3 className="font-medium text-sm text-mission-control-text-dim">Notification Channels</h3>
                   
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Email Notifications</div>
-                      <div className="text-xs text-clawd-text-dim">Send notifications to email (coming soon)</div>
+                      <div className="text-xs text-mission-control-text-dim">Send notifications to email (coming soon)</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.emailNotifications}
@@ -789,7 +833,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Discord Notifications</div>
-                      <div className="text-xs text-clawd-text-dim">Send notifications to Discord (coming soon)</div>
+                      <div className="text-xs text-mission-control-text-dim">Send notifications to Discord (coming soon)</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.discordNotifications}
@@ -801,7 +845,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Telegram Notifications</div>
-                      <div className="text-xs text-clawd-text-dim">Send notifications to Telegram (coming soon)</div>
+                      <div className="text-xs text-mission-control-text-dim">Send notifications to Telegram (coming soon)</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.telegramNotifications}
@@ -813,7 +857,7 @@ export default function SettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">Notification Sound</div>
-                      <div className="text-xs text-clawd-text-dim">Play sound with notifications</div>
+                      <div className="text-xs text-mission-control-text-dim">Play sound with notifications</div>
                     </div>
                     <Toggle
                       checked={settings.notifications.soundEnabled}
@@ -837,18 +881,18 @@ export default function SettingsPanel() {
                 </h2>
                 <button
                   onClick={resetShortcuts}
-                  className="text-sm text-clawd-text-dim hover:text-clawd-accent transition-colors flex items-center gap-1"
+                  className="text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1"
                 >
                   <RotateCcw size={14} />
                   Reset to Defaults
                 </button>
               </div>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-2">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-2">
                 {settings.keyboardShortcuts.map((shortcut) => (
-                  <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-clawd-border last:border-0">
+                  <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-mission-control-border last:border-0">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{shortcut.name}</div>
-                      <div className="text-xs text-clawd-text-dim">{shortcut.description}</div>
+                      <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       {editingShortcut === shortcut.id ? (
@@ -865,12 +909,12 @@ export default function SettingsPanel() {
                               setEditingShortcut(null);
                             }
                           }}
-                          className="w-20 px-2 py-1 text-center bg-clawd-bg border border-clawd-accent rounded text-sm"
+                          className="w-20 px-2 py-1 text-center bg-mission-control-bg border border-mission-control-accent rounded text-sm"
                         />
                       ) : (
                         <button
                           onClick={() => setEditingShortcut(shortcut.id)}
-                          className="px-3 py-1 bg-clawd-bg border border-clawd-border rounded text-sm font-mono hover:border-clawd-accent transition-colors"
+                          className="px-3 py-1 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono hover:border-mission-control-accent transition-colors"
                         >
                           {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
                           {shortcut.currentKey.toUpperCase()}
@@ -879,7 +923,7 @@ export default function SettingsPanel() {
                     </div>
                   </div>
                 ))}
-                <div className="pt-4 text-xs text-clawd-text-dim">
+                <div className="pt-4 text-xs text-mission-control-text-dim">
                   <p>Click on any shortcut to edit it. Press Enter to save or Escape to cancel.</p>
                   <p className="mt-1">⌘ = Command • ⇧ = Shift • ⌥ = Option • ⌃ = Control</p>
                 </div>
@@ -895,7 +939,7 @@ export default function SettingsPanel() {
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 ⚡ Automation
               </h2>
-              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
                 {/* Kill Switch */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -907,7 +951,7 @@ export default function SettingsPanel() {
                         <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded">BLOCKED</span>
                       )}
                     </div>
-                    <div className="text-sm text-clawd-text-dim">
+                    <div className="text-sm text-mission-control-text-dim">
                       {settings.externalActionsEnabled 
                         ? 'Tweets and emails will be sent when approved' 
                         : 'All external actions blocked (safe mode)'}
@@ -922,7 +966,7 @@ export default function SettingsPanel() {
 
                 {/* Rate Limits */}
                 <div>
-                  <label htmlFor="tweet-rate-limit" className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="tweet-rate-limit" className="block text-sm text-mission-control-text-dim mb-2">
                     Tweet Rate Limit: {settings.rateLimitTweets}/hour
                   </label>
                   <input
@@ -937,7 +981,7 @@ export default function SettingsPanel() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="email-rate-limit" className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="email-rate-limit" className="block text-sm text-mission-control-text-dim mb-2">
                     Email Rate Limit: {settings.rateLimitEmails}/hour
                   </label>
                   <input
@@ -959,7 +1003,7 @@ export default function SettingsPanel() {
                     <div className="flex-1">
                       <div className="font-medium text-info mb-2">Smart Account Selection</div>
                       <div className="text-sm text-info space-y-2">
-                        <p>No default accounts! Froggo intelligently chooses which account to use based on context:</p>
+                        <p>No default accounts! Mission Control intelligently chooses which account to use based on context:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
                           <li>Email to your address → Reply from that same address</li>
                           <li>Email to work address → Reply from work address</li>
@@ -983,14 +1027,14 @@ export default function SettingsPanel() {
           <div className="flex gap-3 mt-8">
             <button
               onClick={handleSave}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors"
             >
               {saved ? <Check size={16} /> : <Save size={16} />}
               {saved ? 'Saved!' : 'Save Settings'}
             </button>
             <button
               onClick={handleReset}
-              className="px-6 py-3 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="px-6 py-3 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
               Reset
             </button>
