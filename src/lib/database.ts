@@ -347,6 +347,31 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- PROJECTS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      emoji TEXT DEFAULT '📁',
+      color TEXT DEFAULT '#6366f1',
+      goal TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      createdBy TEXT,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS project_members (
+      projectId TEXT NOT NULL,
+      agentId TEXT NOT NULL,
+      role TEXT DEFAULT 'member',
+      addedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      PRIMARY KEY (projectId, agentId),
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -367,6 +392,9 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_catalog_agents_category ON catalog_agents(category);
     CREATE INDEX IF NOT EXISTS idx_catalog_modules_installed ON catalog_modules(installed);
     CREATE INDEX IF NOT EXISTS idx_catalog_modules_category ON catalog_modules(category);
+    CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+    CREATE INDEX IF NOT EXISTS idx_projects_createdAt ON projects(createdAt);
+    CREATE INDEX IF NOT EXISTS idx_project_members_agentId ON project_members(agentId);
 
     -- ══════════════════════════════════════════
     -- SEED DATA
@@ -386,6 +414,9 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE chat_room_messages ADD COLUMN role TEXT DEFAULT 'agent'`,
     `ALTER TABLE chat_room_messages ADD COLUMN mentionedAgents TEXT DEFAULT '[]'`,
     `ALTER TABLE chat_room_messages ADD COLUMN messageId TEXT`,
+    // Projects FK columns
+    `ALTER TABLE tasks ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`,
+    `ALTER TABLE chat_rooms ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

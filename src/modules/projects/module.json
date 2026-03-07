@@ -1,0 +1,34 @@
+{
+  "id": "projects",
+  "name": "Projects",
+  "version": "1.0.0",
+  "description": "Unified project workspaces — organize tasks, chats, automations, and files around a shared goal.",
+  "author": "Mission Control Team",
+  "icon": "FolderKanban",
+  "category": "productivity",
+  "core": false,
+  "defaultDisabled": false,
+
+  "views": [
+    {
+      "id": "projects",
+      "label": "Projects",
+      "icon": "FolderKanban",
+      "entrypoint": "./views/ProjectsPanel.tsx"
+    }
+  ],
+
+  "credentials": [],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": ["read", "write"],
+    "network": false,
+    "shell": false
+  }
+}

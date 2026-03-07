@@ -1,9 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package, Trash2 } from 'lucide-react';
+import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package, Trash2, MessageSquare, Settings, Calendar, BarChart3, Inbox, LayoutGrid, Wrench, Library, PenLine, Bell, Users, Clock, CheckSquare, Megaphone, User, DollarSign, Mic, FolderKanban, type LucideIcon } from 'lucide-react';
+
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  chat:           MessageSquare,
+  settings:       Settings,
+  meetings:       Calendar,
+  analytics:      BarChart3,
+  inbox:          Inbox,
+  kanban:         LayoutGrid,
+  dev:            Wrench,
+  library:        Library,
+  writing:        PenLine,
+  notifications:  Bell,
+  'agent-mgmt':   Bot,
+  schedule:       Clock,
+  approvals:      CheckSquare,
+  twitter:        Megaphone,
+  accounts:       User,
+  'module-builder': Puzzle,
+  finance:        DollarSign,
+  voice:          Mic,
+  modules:        Package,
+  projects:       FolderKanban,
+};
 import { catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
 import { Spinner } from './LoadingStates';
 import ModuleInstallModal from './ModuleInstallModal';
+import { ModuleLoader } from '../core/ModuleLoader';
+import { usePanelConfigStore } from '../store/panelConfig';
 
 const CATEGORY_COLORS: Record<string, string> = {
   core:           'text-review border-review-border bg-review-subtle',
@@ -50,17 +75,24 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
   useEffect(() => { load(); }, []);
 
-  const filtered = modules.filter(m => {
-    const matchesSearch = !search ||
-      m.name.toLowerCase().includes(search.toLowerCase()) ||
-      (m.description ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      m.category.toLowerCase().includes(search.toLowerCase());
-    const matchesFilter =
-      filter === 'all' ? true :
-      filter === 'installed' ? m.installed :
-      !m.installed;
-    return matchesSearch && matchesFilter;
-  });
+  const filtered = modules
+    .filter(m => {
+      const matchesSearch = !search ||
+        m.name.toLowerCase().includes(search.toLowerCase()) ||
+        (m.description ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        m.category.toLowerCase().includes(search.toLowerCase());
+      const matchesFilter =
+        filter === 'all' ? true :
+        filter === 'installed' ? m.installed :
+        !m.installed;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      // Core modules always first
+      if (a.core && !b.core) return -1;
+      if (!a.core && b.core) return 1;
+      return 0;
+    });
 
   const installedCount = modules.filter(m => m.installed).length;
   const availableCount = modules.filter(m => !m.installed).length;
@@ -165,8 +197,8 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
               >
                 {/* Header */}
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-mission-control-bg flex items-center justify-center text-xl border border-mission-control-border">
-                    {module.icon || '🧩'}
+                  <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
+                    {(() => { const Icon = MODULE_ICONS[module.id] ?? Package; return <Icon size={20} />; })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
@@ -240,10 +272,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                         type="button"
                         disabled={uninstalling === module.id}
                         onClick={async () => {
-                          if (!confirm(`Uninstall ${module.name}? It will be disabled.`)) return;
+                          if (!confirm(`Uninstall ${module.name}? It will be removed from the nav.`)) return;
                           setUninstalling(module.id);
                           try {
                             await catalogApi.uninstallModule(module.id);
+                            ModuleLoader.disableModule(module.id);
+                            usePanelConfigStore.getState().syncWithViewRegistry();
                             await load(false);
                           } finally { setUninstalling(null); }
                         }}
@@ -273,8 +307,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
         <ModuleInstallModal
           module={installTarget}
           onClose={() => setInstallTarget(null)}
-          onInstalled={() => {
+          onInstalled={async (moduleId: string) => {
             setInstallTarget(null);
+            await ModuleLoader.enableModule(moduleId);
+            usePanelConfigStore.getState().syncWithViewRegistry();
             load(false);
           }}
         />
