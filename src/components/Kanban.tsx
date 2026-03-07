@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
+  CheckCircle, Ban, FileText
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -12,6 +13,7 @@ import PokeModal from './PokeModal';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { taskApi, sessionApi } from '../lib/api';
+import { isProtectedAgent } from '../lib/agentConfig';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
@@ -44,14 +46,13 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
   return { text: new Date(timestamp).toLocaleDateString(), isOverdue: false, isDueSoon: false };
 }
 
-const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'blocked', title: 'Blocked', color: 'border-l-error', bg: 'bg-error-subtle', emoji: '🚫' },
-  { id: 'todo', title: 'To Do', color: 'border-l-info', bg: 'bg-info-subtle', emoji: '📝' },
-  { id: 'internal-review', title: 'Internal Review', color: 'border-l-info', bg: 'bg-info-subtle', emoji: '🔍' },
-  { id: 'in-progress', title: 'In Progress', color: 'border-l-warning', bg: 'bg-warning-subtle', emoji: '⚡' },
-  { id: 'review', title: 'Agent Review', color: 'border-l-review', bg: 'bg-review-subtle', emoji: '🤖' },
-  { id: 'human-review', title: 'Human Review', color: 'border-l-warning', bg: 'bg-warning-subtle', emoji: '👤' },
-  { id: 'done', title: 'Done', color: 'border-l-success', bg: 'bg-success-subtle', emoji: '✅' },
+const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
+  { id: 'todo',            title: 'To Do',            color: 'border-t-info',    iconColor: 'text-info',    bg: 'bg-info-subtle',    icon: <FileText size={14} /> },
+  { id: 'internal-review', title: 'Ready to Start',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
+  { id: 'in-progress',     title: 'In Progress',      color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning-subtle', icon: <Zap size={14} /> },
+  { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Bot size={14} /> },
+  { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning-subtle', icon: <User size={14} /> },
+  { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-success', bg: 'bg-success-subtle', icon: <CheckCircle size={14} /> },
 ];
 
 interface Filters {
@@ -63,7 +64,15 @@ interface Filters {
   showCompleted: boolean;
 }
 
-export default function Kanban() {
+interface KanbanProps {
+  /** When set, only tasks belonging to this project are shown */
+  projectId?: string;
+  projectName?: string;
+  /** Override the "New Task" action (e.g. open a project dispatch modal) */
+  onNewTask?: () => void;
+}
+
+export default function Kanban({ projectId, projectName, onNewTask }: KanbanProps = {}) {
   const { tasks, agents, loading, taskCounts } = useStore(
     useShallow(s => ({
       tasks: s.tasks,
@@ -238,8 +247,7 @@ export default function Kanban() {
       
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
-        setModalStatus('todo');
-        setModalOpen(true);
+        handleAddTask('todo');
       }
       if (e.key === '?' && e.shiftKey) {
         e.preventDefault();
@@ -267,8 +275,11 @@ export default function Kanban() {
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
-    let result = tasks;
-    
+    // When scoped to a project, pre-filter before user filters
+    let result = projectId
+      ? tasks.filter(t => t.project_id === projectId || t.project === projectName)
+      : tasks;
+
     // Search
     if (filters.search) {
       const search = filters.search.toLowerCase();
@@ -441,6 +452,7 @@ export default function Kanban() {
   };
 
   const handleAddTask = (status: TaskStatus) => {
+    if (onNewTask) { onNewTask(); return; }
     setModalStatus(status);
     setModalOpen(true);
   };
@@ -644,19 +656,21 @@ export default function Kanban() {
         {/* Filter Panel */}
         {showFilters && (
           <div className="flex items-center gap-4 p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2">
-            {/* Project */}
-            <div className="icon-text-tight">
-              <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
-              <select
-                value={filters.project}
-                onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-              >
-                {projects.map(p => (
-                  <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
-                ))}
-              </select>
-            </div>
+            {/* Project — hidden when already scoped to a project */}
+            {!projectId && (
+              <div className="icon-text-tight">
+                <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                <select
+                  value={filters.project}
+                  onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
+                  className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
+                >
+                  {projects.map(p => (
+                    <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Priority */}
             <div className="icon-text-tight">
@@ -684,7 +698,7 @@ export default function Kanban() {
                 <option value="all">All Assignees</option>
                 <option value="unassigned">Unassigned</option>
                 {agents
-                  .filter(a => !['main', 'mission-control'].includes(a.id))
+                  .filter(a => !isProtectedAgent(a.id))
                   .map(a => (
                     <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
                   ))}
@@ -723,7 +737,7 @@ export default function Kanban() {
             description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
               ? 'No tasks match your current filters. Try adjusting your search or filters.'
               : 'No tasks yet. Create a task to get started.'}
-            action={{ label: 'New Task', onClick: () => setModalOpen(true) }}
+            action={{ label: 'New Task', onClick: () => handleAddTask('todo') }}
           />
         </div>
       )}
@@ -759,10 +773,10 @@ export default function Kanban() {
               aria-label={`Kanban column: ${column.title}`}
             >
               {/* Column Header */}
-              <div className={`p-3 border-b border-mission-control-border border-l-4 ${column.color} rounded-t-2xl`}>
+              <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="icon-text">
-                    <span>{column.emoji}</span>
+                    <span className={column.iconColor}>{column.icon}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
                       {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
@@ -938,7 +952,7 @@ export default function Kanban() {
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></div>
-              <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">⌘F</kbd></div>
+              <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Cmd+F</kbd></div>
               <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></div>
               <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></div>
             </div>
@@ -1118,7 +1132,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const isTodoTask = task.status === 'todo' || (task.status as string) === 'backlog';
   const hasMinSubtasks = (task.subtasks?.length || 0) >= 2;
   const hasPriority = task.priority && ['p0', 'p1', 'p2', 'p3'].includes(task.priority);
-  const hasValidAssignment = task.assignedTo && !['main', 'mission-control', 'clara'].includes(task.assignedTo);
+  const hasValidAssignment = task.assignedTo && !isProtectedAgent(task.assignedTo);
   const hasDescription = (task.description?.length || 0) >= 20;
   const isReady = hasMinSubtasks && hasPriority && hasValidAssignment && hasDescription;
 
@@ -1144,10 +1158,12 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
-        activityIndicator ? activityIndicator.color :
-        dueInfo?.isOverdue ? 'border-error-border bg-error-subtle' :
-        task.priority === 'p0' ? 'border-error-border' :
-        'border-mission-control-border hover:border-mission-control-accent/50'
+        task.status === 'in-progress'
+          ? 'border-green-500/60 bg-green-500/5 shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
+          : activityIndicator ? activityIndicator.color
+          : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
+          : task.priority === 'p0' ? 'border-error-border'
+          : 'border-mission-control-border hover:border-mission-control-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
     >
@@ -1214,30 +1230,30 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         
         {/* Title */}
         <div className="flex items-start gap-1 flex-1 min-w-0">
-          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
+          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-1">{task.title}</h4>
         </div>
         
         {/* Definition of Ready Indicators - show for todo/backlog tasks */}
         {isTodoTask && !isReady && (
           <div className="flex flex-wrap gap-1 mt-1" title={`Missing: ${missingCriteria.join(', ')}`}>
             {!hasMinSubtasks && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded">
-                ⚠️ {task.subtasks?.length || 0}/2 subtasks
+              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded inline-flex items-center gap-0.5">
+                <AlertTriangle size={10} className="inline" /> {task.subtasks?.length || 0}/2 subtasks
               </span>
             )}
             {!hasPriority && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded">
-                ⚠️ No priority
+              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded inline-flex items-center gap-0.5">
+                <AlertTriangle size={10} className="inline" /> No priority
               </span>
             )}
             {!hasValidAssignment && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded">
-                ⚠️ No valid assignee
+              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded inline-flex items-center gap-0.5">
+                <AlertTriangle size={10} className="inline" /> No valid assignee
               </span>
             )}
             {!hasDescription && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded">
-                ⚠️ Needs description
+              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded inline-flex items-center gap-0.5">
+                <AlertTriangle size={10} className="inline" /> Needs description
               </span>
             )}
           </div>
@@ -1246,8 +1262,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         {/* Ready badge for todo tasks that ARE ready */}
         {isTodoTask && isReady && (
           <div className="mt-1" title="Definition of Ready met">
-            <span className="text-[10px] px-1.5 py-0.5 bg-success-subtle text-success rounded">
-              ✅ Ready for Review
+            <span className="text-[10px] px-1.5 py-0.5 bg-success-subtle text-success rounded inline-flex items-center gap-0.5">
+              <CheckCircle size={10} className="inline" /> Ready for Review
             </span>
           </div>
         )}
@@ -1381,15 +1397,16 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         <div className="relative flex-shrink-0">
           {assignedAgent ? (
             <div className="flex items-center gap-1.5 no-shrink">
-              {isAgentWorking ? (
-                <span className="icon-badge-sm bg-warning-subtle text-warning animate-pulse">
+              {task.status === 'in-progress' ? (
+                <span className="icon-badge-sm bg-green-500/20 text-green-400 animate-pulse" title="Agent working">
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
                   disabled={isSpawning}
-                  className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="icon-badge-sm bg-success text-white hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Start agent"
                 >
                   {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
                 </button>
