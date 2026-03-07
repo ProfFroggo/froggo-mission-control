@@ -10,11 +10,12 @@ export async function GET(
     const db = getDb();
     const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
 
-    if (!row) {
-      return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
+    // Fall back to env vars for known keys if not in DB
+    let value = row?.value ?? null;
+    if (!value && key === 'gemini_api_key') {
+      value = process.env.GEMINI_API_KEY ?? null;
     }
-
-    return NextResponse.json({ key, value: row.value });
+    return NextResponse.json({ key, value });
   } catch (error) {
     console.error('GET /api/settings/[key] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
