@@ -91,13 +91,13 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
   analytics: ['coder', 'researcher', 'chief'],
   kanban: ['chief', 'coder', 'clara'],
   agents: ['hr', 'chief', 'coder'],
-  dashboard: ['froggo', 'chief', 'coder'],
-  settings: ['coder', 'chief', 'froggo'],
+  dashboard: ['mission-control', 'chief', 'coder'],
+  settings: ['coder', 'chief', 'mission-control'],
   twitter: ['social-manager', 'growth-director', 'writer'],
-  inbox: ['froggo', 'chief', 'writer'],
-  meetings: ['froggo', 'voice', 'chief'],
-  voicechat: ['voice', 'froggo', 'chief'],
-  accounts: ['froggo', 'chief', 'hr'],
+  inbox: ['mission-control', 'chief', 'writer'],
+  meetings: ['mission-control', 'voice', 'chief'],
+  voicechat: ['voice', 'mission-control', 'chief'],
+  accounts: ['mission-control', 'chief', 'hr'],
   approvals: ['clara', 'chief', 'hr'],
   library: ['researcher', 'writer', 'coder'],
   context: ['coder', 'chief', 'researcher'],
@@ -105,7 +105,7 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
 
 // Task quick-status options
 const TASK_STATUSES = [
-  { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-clawd-text-dim' },
+  { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-mission-control-text-dim' },
   { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-info' },
   { label: 'Review', value: 'review', icon: Search, color: 'text-warning' },
   { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-success' },
@@ -179,13 +179,13 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
+    <div className="absolute w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
-          <Phone size={14} className="text-clawd-accent" />
+          <Phone size={14} className="text-mission-control-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
       </div>
       {activeCall && (
         <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
@@ -201,13 +201,13 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
             className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
               activeCall?.agentId === agent.id
                 ? 'bg-error-subtle border border-error-border'
-                : 'hover:bg-clawd-border'
+                : 'hover:bg-mission-control-border'
             }`}
           >
             <AgentAvatar agentId={agent.id} size="sm" />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-xs">{agent.name}</div>
-              <div className="text-[10px] text-clawd-text-dim truncate">{agent.role}</div>
+              <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
               <PhoneOff size={14} className="text-error" />
@@ -227,7 +227,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
   onStartChat: (agent: ChatAgent, context: string) => void;
 }) {
   const [message, setMessage] = useState('');
-  const suggestedAgentIds = VIEW_AGENT_SUGGESTIONS[currentView] || ['froggo', 'chief', 'coder'];
+  const suggestedAgentIds = VIEW_AGENT_SUGGESTIONS[currentView] || ['mission-control', 'chief', 'coder'];
   const suggestedAgents = suggestedAgentIds
     .map(id => fetchAgentList().find(a => a.id === id))
     .filter(Boolean) as ChatAgent[];
@@ -239,24 +239,24 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
   const viewLabel = getViewLabel(currentView);
 
   return (
-    <div className="absolute w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4 bottom-full mb-2 right-0">
+    <div className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4 bottom-full mb-2 right-0">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium flex items-center gap-2">
-          <Sparkles size={14} className="text-clawd-accent" />
+          <Sparkles size={14} className="text-mission-control-accent" />
           Context Chat
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
       </div>
 
       {/* Context indicator */}
-      <div className="mb-3 p-2 bg-clawd-accent/10 border border-clawd-accent/20 rounded-lg">
-        <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Current Context</div>
-        <div className="text-xs font-medium text-clawd-accent">{viewLabel}</div>
+      <div className="mb-3 p-2 bg-mission-control-accent/10 border border-mission-control-accent/20 rounded-lg">
+        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Current Context</div>
+        <div className="text-xs font-medium text-mission-control-accent">{viewLabel}</div>
       </div>
 
       {/* Suggested agents */}
       <div className="mb-3">
-        <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider mb-1.5">
+        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5">
           Suggested for {viewLabel}
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -266,8 +266,8 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
               onClick={() => setSelectedAgent(agent)}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
                 selectedAgent.id === agent.id
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border hover:bg-clawd-border/80'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border hover:bg-mission-control-border/80'
               }`}
             >
               <AgentAvatar agentId={agent.id} size="xs" />
@@ -276,7 +276,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
           ))}
           <button
             onClick={() => setShowAllAgents(!showAllAgents)}
-            className="px-2 py-1 rounded-full text-xs bg-clawd-border hover:bg-clawd-border/80 transition-colors"
+            className="px-2 py-1 rounded-full text-xs bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
           >
             {showAllAgents ? 'Less' : 'More...'}
           </button>
@@ -289,8 +289,8 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
                 className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
                   selectedAgent.id === agent.id
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-border hover:bg-clawd-border/80'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border hover:bg-mission-control-border/80'
                 }`}
               >
                 <AgentAvatar agentId={agent.id} size="xs" />
@@ -306,7 +306,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
         value={message}
         onChange={e => setMessage(e.target.value)}
         placeholder={`Ask ${selectedAgent.name} about ${viewLabel}...`}
-        className="w-full h-20 bg-clawd-bg border border-clawd-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+        className="w-full h-20 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
         onKeyDown={e => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && message.trim()) {
             onStartChat(selectedAgent, message);
@@ -316,7 +316,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
         }}
       />
       <div className="flex justify-between items-center mt-2">
-        <span className="text-[10px] text-clawd-text-dim">⌘+Enter to send</span>
+        <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
         <button
           onClick={() => {
             if (message.trim()) {
@@ -326,7 +326,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
             }
           }}
           disabled={!message.trim()}
-          className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-50 text-sm"
+          className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 text-sm"
         >
           <Send size={12} />
           Chat with {selectedAgent.name}
@@ -347,8 +347,8 @@ function TaskShortcutsModal({ isOpen, onClose }: {
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
-    // Fetch recent tasks from froggo-db via gateway
-    fetch('http://localhost:18789/api/tasks?limit=5&status=in-progress')
+    // Fetch recent tasks from mission-control-db via gateway
+    fetch('/api/tasks?limit=5&status=in-progress')
       .then(r => r.ok ? r.json() : [])
       .then(data => setRecentTasks(Array.isArray(data) ? data.slice(0, 5) : []))
       .catch(() => setRecentTasks([]))
@@ -357,7 +357,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
-      const res = await fetch(`http://localhost:18789/api/tasks/${taskId}/status`, {
+      const res = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -376,13 +376,13 @@ function TaskShortcutsModal({ isOpen, onClose }: {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
+    <div className="absolute w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
-          <ListTodo size={14} className="text-clawd-accent" />
+          <ListTodo size={14} className="text-mission-control-accent" />
           Task Shortcuts
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
       </div>
 
       {/* Quick status filters */}
@@ -390,7 +390,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
         {TASK_STATUSES.map(s => (
           <button
             key={s.value}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-clawd-border hover:bg-clawd-border/80 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
             title={`View ${s.label} tasks`}
           >
             <s.icon size={10} className={s.color} />
@@ -400,13 +400,13 @@ function TaskShortcutsModal({ isOpen, onClose }: {
       </div>
 
       {loading ? (
-        <div className="text-center py-4 text-xs text-clawd-text-dim">Loading tasks...</div>
+        <div className="text-center py-4 text-xs text-mission-control-text-dim">Loading tasks...</div>
       ) : recentTasks.length === 0 ? (
-        <div className="text-center py-4 text-xs text-clawd-text-dim">No active tasks</div>
+        <div className="text-center py-4 text-xs text-mission-control-text-dim">No active tasks</div>
       ) : (
         <div className="space-y-1.5">
           {recentTasks.map(task => (
-            <div key={task.id} className="p-2 bg-clawd-bg rounded-lg">
+            <div key={task.id} className="p-2 bg-mission-control-bg rounded-lg">
               <div className="text-xs font-medium truncate mb-1">{task.title}</div>
               <div className="flex gap-1">
                 {TASK_STATUSES.map(s => (
@@ -415,8 +415,8 @@ function TaskShortcutsModal({ isOpen, onClose }: {
                     onClick={() => updateTaskStatus(task.id, s.value)}
                     className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
                       task.status === s.value
-                        ? 'bg-clawd-accent text-white'
-                        : 'bg-clawd-border hover:bg-clawd-border/80 text-clawd-text-dim'
+                        ? 'bg-mission-control-accent text-white'
+                        : 'bg-mission-control-border hover:bg-mission-control-border/80 text-mission-control-text-dim'
                     }`}
                     title={`Set to ${s.label}`}
                   >
@@ -506,7 +506,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
   useEffect(() => {
     if (quickMessageOpen) {
-      const textarea = document.querySelector('textarea[placeholder*="Froggo"]') as HTMLTextAreaElement;
+      const textarea = document.querySelector('textarea[placeholder*="Mission Control"]') as HTMLTextAreaElement;
       textarea?.focus();
     }
   }, [quickMessageOpen]);
@@ -556,7 +556,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             logger.debug(`[QuickActions] Executing tool: ${fc.name}`);
             let result: any;
             try {
-              result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
+              result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'mission-control', name: 'Mission Control' });
               logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: unknown) {
               // `[QuickActions] Tool ${fc.name} error:`, err;
@@ -589,19 +589,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   };
 
   const getGeminiApiKey = async (): Promise<string> => {
-    // 1. Check localStorage settings
-    try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
-    catch (err) {
-      // '[QuickActions] Failed to parse settings from localStorage:', err;
-    }
-    // 2. Check env vars
-    const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
-    if (envKey) return envKey;
-    // 3. Try IPC to main process secret store
     try {
-      const result = await settingsApi.get('geminiApiKey');
-      const key = result?.value;
-      if (key) return key;
+      const result = await settingsApi.get('gemini_api_key');
+      if (result?.value) return result.value;
     } catch { /* ignore */ }
     return '';
   };
@@ -851,10 +841,10 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     const contextPrefix = `[Context: viewing ${getViewLabel(currentView)}] `;
     const fullMessage = contextPrefix + message;
     try {
-      const response = await fetch('http://localhost:18789/api/chat', {
+      const response = await fetch(`/api/chat/sessions/${encodeURIComponent(agent.sessionKey)}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: fullMessage, sessionKey: agent.sessionKey }),
+        body: JSON.stringify({ role: 'user', content: fullMessage }),
       });
       if (response.ok) {
         showToast('success', 'Sent to ' + agent.name, 'Check chat for response');
@@ -925,13 +915,13 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     if (!quickMessage.trim()) return;
     setSending(true);
     try {
-      const response = await fetch('http://localhost:18789/api/chat', {
+      const response = await fetch('/api/chat/sessions/web:dashboard/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: quickMessage, sessionKey: 'web:dashboard' }),
+        body: JSON.stringify({ role: 'user', content: quickMessage }),
       });
       if (response.ok) {
-        showToast('success', 'Message sent', 'Froggo will respond in chat');
+        showToast('success', 'Message sent', 'Mission Control will respond in chat');
         setQuickMessage('');
         setQuickMessageOpen(false);
       }
@@ -964,21 +954,21 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
-        <div className={`${panelPos} w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4`}>
+        <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium flex items-center gap-2">
-              <MessageSquare size={16} className="text-clawd-accent" />
+              <MessageSquare size={16} className="text-mission-control-accent" />
               Quick Message
             </h3>
-            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-clawd-border rounded">
+            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
               <X size={16} />
             </button>
           </div>
           <textarea
             value={quickMessage}
             onChange={e => setQuickMessage(e.target.value)}
-            placeholder="Ask Froggo something quick..."
-            className="w-full h-24 bg-clawd-bg border border-clawd-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+            placeholder="Ask Mission Control something quick..."
+            className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleQuickMessage();
             }}
@@ -987,7 +977,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             <button
               onClick={handleQuickMessage}
               disabled={!quickMessage.trim() || sending}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50"
             >
               <Send size={14} />
               {sending ? 'Sending...' : 'Send'}
@@ -1010,7 +1000,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 2b: Active Call Window (agent image / video + transcript + controls) */}
       {callDialogOpen && activeCall && (
-        <div className={`${panelPos} w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden`}>
+        <div className={`${panelPos} w-[320px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden`}>
 
           {/* Agent image / / Screen share area */}
           <div className="relative w-full aspect-square bg-black overflow-hidden">
@@ -1027,13 +1017,13 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             {callVideoMode === 'none' && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <img
-                  src={`./agent-profiles/${activeCall.agentId}.png`}
+                  src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
                   className={`w-32 h-32 rounded-full object-cover border-4 transition-all duration-300 ${
                     callRinging ? 'border-yellow-500 animate-pulse scale-95'
                     : callSpeaking ? 'border-green-500 scale-110 shadow-lg shadow-green-500/30'
                     : callListening ? 'border-blue-500 scale-105 shadow-lg shadow-blue-500/20'
-                    : 'border-clawd-border'
+                    : 'border-mission-control-border'
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
@@ -1064,18 +1054,18 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Transcript */}
-          <div ref={callTranscriptRef} className="h-[140px] overflow-y-auto px-3 py-2 space-y-1.5 text-xs border-t border-clawd-border">
+          <div ref={callTranscriptRef} className="h-[140px] overflow-y-auto px-3 py-2 space-y-1.5 text-xs border-t border-mission-control-border">
             {callTranscript.length === 0 && (
-              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+              <div className="flex items-center justify-center h-full text-mission-control-text-dim">
                 {callRinging ? 'Ringing...' : 'Waiting for response...'}
               </div>
             )}
             {callTranscript.map((entry, i) => (
               <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
-                  entry.role === 'user' ? 'bg-clawd-accent/50 text-white'
-                  : entry.role === 'system' ? 'bg-clawd-bg text-clawd-text-dim italic text-[10px]'
-                  : 'bg-clawd-border/50 text-clawd-text'
+                  entry.role === 'user' ? 'bg-mission-control-accent/50 text-white'
+                  : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-[10px]'
+                  : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
                   {entry.text}
                 </div>
@@ -1084,19 +1074,19 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Controls bar */}
-          <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-clawd-border bg-clawd-bg/50">
+          <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
             <button onClick={toggleCallMute} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-error-subtle text-error' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
               title={callMuted ? 'Unmute' : 'Mute'}>
               {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
             <button onClick={toggleCallScreen} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
               title="Share Screen">
               <Monitor size={16} />
             </button>
             <button onClick={toggleCallCamera} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
               title="Camera">
               {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
             </button>
@@ -1119,25 +1109,25 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
-        <div className={`${panelPos} w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
+        <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium flex items-center gap-2">
-              <MessageSquare size={14} className="text-clawd-accent" />
+              <MessageSquare size={14} className="text-mission-control-accent" />
               Chat with Agent
             </h3>
-            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
           </div>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
               <button
                 key={agent.id}
                 onClick={() => handleStartAgentChat(agent)}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm hover:bg-clawd-border"
+                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm hover:bg-mission-control-border"
               >
                 <AgentAvatar agentId={agent.id} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-xs">{agent.name}</div>
-                  <div className="text-[10px] text-clawd-text-dim truncate">{agent.role}</div>
+                  <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
                 </div>
               </button>
             ))}
@@ -1147,17 +1137,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Agent Chat Interface */}
       {agentChatOpen && chatAgent && (
-        <div className={`${panelPos} w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden`}>
+        <div className={`${panelPos} w-[320px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden`}>
           {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2.5 bg-clawd-bg/50 border-b border-clawd-border">
+          <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-bg/50 border-b border-mission-control-border">
             <div className="flex items-center gap-2">
               <AgentAvatar agentId={chatAgent.id} size="sm" />
               <div>
                 <div className="text-xs font-semibold">{chatAgent.name}</div>
-                <div className="text-[10px] text-clawd-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
+                <div className="text-[10px] text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
             </div>
-            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded">
+            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
               <X size={12} />
             </button>
           </div>
@@ -1165,7 +1155,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           {/* Messages */}
           <div ref={chatScrollRef} className="h-[320px] overflow-y-auto px-3 py-2 space-y-2 text-xs">
             {chatMessages.length === 0 && !chatLoading && (
-              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+              <div className="flex items-center justify-center h-full text-mission-control-text-dim">
                 Start a conversation with {chatAgent.name}
               </div>
             )}
@@ -1173,8 +1163,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-xl ${
                   msg.role === 'user'
-                    ? 'bg-clawd-accent/50 text-white'
-                    : 'bg-clawd-border/50 text-clawd-text'
+                    ? 'bg-mission-control-accent/50 text-white'
+                    : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
                   {msg.content}
                 </div>
@@ -1182,7 +1172,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             ))}
             {chatLoading && chatMessages.length > 0 && (
               <div className="flex justify-start">
-                <div className="bg-clawd-border/50 px-3 py-2 rounded-xl text-clawd-text-dim">
+                <div className="bg-mission-control-border/50 px-3 py-2 rounded-xl text-mission-control-text-dim">
                   <span className="animate-pulse">●●●</span>
                 </div>
               </div>
@@ -1190,19 +1180,19 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-clawd-border bg-clawd-surface flex gap-2">
+          <div className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface flex gap-2">
             <input
               type="text"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
               placeholder={`Message ${chatAgent.name}...`}
-              className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-clawd-accent"
+              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-mission-control-accent"
             />
             <button
               onClick={sendChatMessage}
               disabled={!chatInput.trim() || chatLoading}
-              className="p-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-40 transition-colors"
+              className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-40 transition-colors"
             >
               <Send size={12} />
             </button>
@@ -1234,19 +1224,19 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* ─── Toolbar Pill ─── */}
       <div
-        className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full transition-all duration-300 px-1.5 py-1 ${
+        className={`flex items-center gap-1 bg-mission-control-surface border border-mission-control-border rounded-full transition-all duration-300 px-1.5 py-1 ${
           isFloating ? 'shadow-none' : 'shadow-lg'
         } ${dragging ? 'cursor-grabbing shadow-2xl scale-105 opacity-90' : ''}`}
         style={isFloating ? noDrag : {}}
       >
         {/* Drag Handle */}
         <div
-          className="drag-handle p-2 cursor-grab active:cursor-grabbing hover:bg-clawd-border rounded-full transition-colors select-none"
+          className="drag-handle p-2 cursor-grab active:cursor-grabbing hover:bg-mission-control-border rounded-full transition-colors select-none"
           title="Drag to reposition"
           onMouseDown={isFloating ? undefined : handleMouseDown}
           style={isFloating ? dragStyle : {}}
         >
-          <GripVertical size={16} className="text-clawd-text-dim pointer-events-none" />
+          <GripVertical size={16} className="text-mission-control-text-dim pointer-events-none" />
         </div>
 
         {state.isCollapsed ? (
@@ -1260,7 +1250,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               }}
               className={`p-2.5 rounded-full transition-colors ${
                 callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+                : activeCall ? 'bg-red-500 text-white' : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
               }`}
               title={activeCall ? activeCall.agentName : 'Call Agent'}
               style={isFloating ? noDrag : {}}
@@ -1275,36 +1265,36 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             )}
             <button
               onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors"
+              className="p-2 rounded-full hover:bg-mission-control-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
             >
-              <ExternalLink size={14} className="text-clawd-text-dim" />
+              <ExternalLink size={14} className="text-mission-control-text-dim" />
             </button>
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronLeft size={16} className="text-clawd-text-dim" />
+            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
+              <ChevronLeft size={16} className="text-mission-control-text-dim" />
             </button>
           </>
         ) : (
           <>
             {/* Standard actions */}
-            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
-              <Search size={16} className="text-clawd-text-dim" />
+            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
+              <Search size={16} className="text-mission-control-text-dim" />
             </button>
-            <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="New Task" style={isFloating ? noDrag : {}}>
-              <Plus size={16} className="text-clawd-text-dim" />
+            <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="New Task" style={isFloating ? noDrag : {}}>
+              <Plus size={16} className="text-mission-control-text-dim" />
             </button>
             {/* Context Chat */}
             <button
               onClick={() => { closeAllModals(); setContextChatOpen(!contextChatOpen); }}
-              className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
+              className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'}`}
               title={`Chat about ${getViewLabel(currentView)}`}
               style={isFloating ? noDrag : {}}
             >
-              <Sparkles size={16} className={contextChatOpen ? '' : 'text-clawd-text-dim'} />
+              <Sparkles size={16} className={contextChatOpen ? '' : 'text-mission-control-text-dim'} />
             </button>
 
-            <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
+            <div className="w-px h-6 bg-mission-control-border mx-0.5" style={isFloating ? noDrag : {}} />
 
             {/* Agent Chat button */}
             <button
@@ -1314,12 +1304,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 else { setAgentChatModalOpen(!agentChatModalOpen); }
               }}
               className={`p-2.5 rounded-full transition-colors ${
-                agentChatOpen || agentChatModalOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
+                agentChatOpen || agentChatModalOpen ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
               }`}
               title="Chat with Agent"
               style={isFloating ? noDrag : {}}
             >
-              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-clawd-text-dim'} />
+              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-mission-control-text-dim'} />
             </button>
 
             {/* Primary: Call button (was where meeting button was) */}
@@ -1332,8 +1322,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               className={`p-2.5 rounded-full transition-colors ${
                 callRinging ? 'bg-yellow-500 text-white animate-pulse'
                 : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
-                : agentCallModalOpen ? 'bg-clawd-accent text-white'
-                : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+                : agentCallModalOpen ? 'bg-mission-control-accent text-white'
+                : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
               }`}
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
               style={isFloating ? noDrag : {}}
@@ -1341,21 +1331,21 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
 
-            <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
+            <div className="w-px h-6 bg-mission-control-border mx-0.5" style={isFloating ? noDrag : {}} />
             <button
               onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors"
+              className="p-2 rounded-full hover:bg-mission-control-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
             >
-              <ExternalLink size={14} className="text-clawd-text-dim" />
+              <ExternalLink size={14} className="text-mission-control-text-dim" />
             </button>
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronRight size={16} className="text-clawd-text-dim" />
+            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
+              <ChevronRight size={16} className="text-mission-control-text-dim" />
             </button>
             {!isFloating && (
-              <button onClick={resetPosition} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Reset position">
-                <RotateCcw size={14} className="text-clawd-text-dim" />
+              <button onClick={resetPosition} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Reset position">
+                <RotateCcw size={14} className="text-mission-control-text-dim" />
               </button>
             )}
           </>

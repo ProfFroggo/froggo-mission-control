@@ -20,17 +20,19 @@ export default function MeetingTranscriptionPanel() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [results, setResults] = useState<TranscriptionResult[]>(() => {
     try {
-      const saved = localStorage.getItem('froggo-meeting-transcriptions');
+      const saved = localStorage.getItem('mission-control-meeting-transcriptions');
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getService = useCallback(() => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
-    if (!apiKey || apiKey === 'your_key_here') {
-      throw new Error('Gemini API key not set. Configure it in Voice Settings.');
+  const getService = useCallback(async () => {
+    const { settingsApi } = await import('../lib/api');
+    const result = await settingsApi.get('gemini_api_key');
+    const apiKey = result?.value;
+    if (!apiKey) {
+      throw new Error('Gemini API key not set. Configure it in Settings > API Keys.');
     }
     return new GeminiTranscriptionService(apiKey);
   }, []);
@@ -43,7 +45,7 @@ export default function MeetingTranscriptionPanel() {
     setIsTranscribing(true);
 
     try {
-      const service = getService();
+      const service = await getService();
       const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
 
       const result: TranscriptionResult = {
@@ -55,7 +57,7 @@ export default function MeetingTranscriptionPanel() {
 
       setResults(prev => {
         const updated = [result, ...prev];
-        localStorage.setItem('froggo-meeting-transcriptions', JSON.stringify(updated));
+        localStorage.setItem('mission-control-meeting-transcriptions', JSON.stringify(updated));
         return updated;
       });
     } catch (err: unknown) {
@@ -74,12 +76,12 @@ export default function MeetingTranscriptionPanel() {
     setError('');
 
     try {
-      const service = getService();
+      const service = await getService();
       const summary = await service.summarizeMeeting(result.transcript);
 
       setResults(prev => {
         const updated = prev.map(r => r.id === resultId ? { ...r, summary } : r);
-        localStorage.setItem('froggo-meeting-transcriptions', JSON.stringify(updated));
+        localStorage.setItem('mission-control-meeting-transcriptions', JSON.stringify(updated));
         return updated;
       });
     } catch (err: unknown) {
@@ -92,7 +94,7 @@ export default function MeetingTranscriptionPanel() {
   const deleteResult = useCallback((id: string) => {
     setResults(prev => {
       const updated = prev.filter(r => r.id !== id);
-      localStorage.setItem('froggo-meeting-transcriptions', JSON.stringify(updated));
+      localStorage.setItem('mission-control-meeting-transcriptions', JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -120,17 +122,17 @@ export default function MeetingTranscriptionPanel() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg text-white">
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+    <div className="flex flex-col h-full bg-mission-control-bg text-white">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
           <FileAudio className="w-5 h-5 text-emerald-400" />
           <h2 className="text-lg font-semibold">🐸 Meeting Transcription</h2>
         </div>
-        <span className="text-xs text-clawd-text-dim">Powered by Gemini AI</span>
+        <span className="text-xs text-mission-control-text-dim">Powered by Gemini AI</span>
       </div>
 
       {/* Upload */}
-      <div className="p-4 border-b border-clawd-border">
+      <div className="p-4 border-b border-mission-control-border">
         <input
           ref={fileInputRef}
           type="file"
@@ -149,7 +151,7 @@ export default function MeetingTranscriptionPanel() {
             <><Upload className="w-5 h-5" /><span>Upload Audio for Transcription</span></>
           )}
         </button>
-        <p className="text-xs text-clawd-text-dim mt-2 text-center">
+        <p className="text-xs text-mission-control-text-dim mt-2 text-center">
           Supports MP3, WAV, WebM, M4A, OGG, and video files
         </p>
       </div>
@@ -161,51 +163,51 @@ export default function MeetingTranscriptionPanel() {
       {/* Results */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
             <FileAudio className="w-16 h-16 mb-4 opacity-50" />
             <p className="text-sm">No transcriptions yet</p>
             <p className="text-xs mt-2">Upload a meeting recording to get started</p>
           </div>
         ) : (
           results.map(result => (
-            <div key={result.id} className="bg-clawd-surface rounded-lg p-4 space-y-3">
+            <div key={result.id} className="bg-mission-control-surface rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">{result.filename}</div>
-                  <div className="text-xs text-clawd-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
+                  <div className="text-xs text-mission-control-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
                 </div>
                 <div className="flex items-center space-x-2">
                   {!result.summary && (
                     <button
                       onClick={() => summarize(result.id)}
                       disabled={isSummarizing}
-                      className="p-2 hover:bg-clawd-border rounded transition-colors text-emerald-400"
+                      className="p-2 hover:bg-mission-control-border rounded transition-colors text-emerald-400"
                       title="AI Summarize"
                     >
                       {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     </button>
                   )}
-                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-clawd-border rounded transition-colors" title="Download">
+                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-mission-control-border rounded transition-colors" title="Download">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-clawd-border rounded transition-colors text-error" title="Delete">
+                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-mission-control-border rounded transition-colors text-error" title="Delete">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="text-sm text-clawd-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-clawd-bg rounded p-3">
+              <div className="text-sm text-mission-control-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg rounded p-3">
                 {result.transcript}
               </div>
 
               {result.summary && (
-                <div className="space-y-2 border-t border-clawd-border pt-3">
+                <div className="space-y-2 border-t border-mission-control-border pt-3">
                   <div className="text-sm font-medium text-emerald-400">✨ AI Summary</div>
-                  <p className="text-sm text-clawd-text">{result.summary.summary}</p>
+                  <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-warning mb-1">Action Items</div>
-                      <ul className="text-xs text-clawd-text-dim space-y-1">
+                      <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.actionItems.map((item, i) => <li key={i}>• {item}</li>)}
                       </ul>
                     </div>
@@ -213,7 +215,7 @@ export default function MeetingTranscriptionPanel() {
                   {result.summary.keyDecisions.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
-                      <ul className="text-xs text-clawd-text-dim space-y-1">
+                      <ul className="text-xs text-mission-control-text-dim space-y-1">
                         {result.summary.keyDecisions.map((d, i) => <li key={i}>• {d}</li>)}
                       </ul>
                     </div>
