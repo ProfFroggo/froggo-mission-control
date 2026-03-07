@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-05)
 
 ## Current Position
 
-Phase: Milestone v4.0 SHIPPED — planning v5.0
-Plan: N/A
-Status: Ready for /gsd:new-milestone or /gsd:discuss-milestone
-Last activity: 2026-03-06 — v4.0 milestone archived, tagged v4.0
+Phase: 40 — project-data-model
+Plan: 40-01
+Status: Todo — v5.0 milestone created, ready to execute Phase 40
+Last activity: 2026-03-07 — v5.0 Projects Module milestone created (Phases 40–49)
 
-Progress: ██████████ 100% (v4.0 complete — all 39 phases done across 4 milestones)
+Progress: ░░░░░░░░░░ 0% (v5.0 — 0/10 phases done)
 
 ## Performance Metrics
 
@@ -86,6 +86,7 @@ None.
 - Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
 - Phase 23.1 inserted: Agent Identity Foundation — fixed all 15 workspace CLAUDE.md files
 - Milestone v4.0 created: Agent & Module Library — catalog schema, hire/install wizards (HR + Coder agent-backed), library UIs, lifecycle management, onboarding role presets (Phases 31-39)
+- Milestone v5.0 created: Projects Module — project data model + REST API, creation wizard, card view, workspace shell with 4 tabs (chat/tasks/automations/files+memory), agent dispatch from project context (Phases 40-49)
 
 ### Key Decisions (v4.0)
 
@@ -97,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-06
-Stopped at: v4.0 COMPLETE. All 9 phases done (31-39). 107/107 E2E smoke checks pass. Ready for /gsd:complete-milestone.
+Last session: 2026-03-07
+Stopped at: v5.0 milestone created. Phase 40 (project-data-model) is next. Start with Plan 40-01: DB migration (projects + project_members tables) then Plan 40-02: REST API routes + catalog module manifest.
 Resume file: None
