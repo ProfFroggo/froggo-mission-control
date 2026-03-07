@@ -489,7 +489,7 @@ Plans:
 | 52. Command Injection — Spawn | v6.0 | 0/1 | Not started | - |
 | 53. Path Traversal — Soul Route | v6.0 | 0/1 | Not started | - |
 | 54. Gemini Key Server-Side | v6.0 | 0/1 | Not started | - |
-| 55. CSP & Security Headers | v6.0 | 0/1 | Not started | - |
+| 55. CSP & Security Headers | v6.0 | 1/1 | Complete | 2026-03-07 |
 | 56. Input Sanitization Sweep | v6.0 | 0/1 | Not started | - |
 | 57. Security E2E Verification | v6.0 | 0/1 | Not started | - |
 
@@ -557,7 +557,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 55-01: TBD
+- [x] 55-01: Add security headers to next.config.js (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection, CSP with Gemini origins) — DONE 2026-03-07
 
 #### Phase 56: input-sanitization-sweep
 
@@ -578,3 +578,127 @@ Plans:
 
 Plans:
 - [ ] 57-01: TBD
+
+---
+
+## Milestone 6: Codebase Review & Hardening
+*Auto-generated from full codebase audit — 2026-03-07. Backup: mission-control-nextjs-backup-20260307-181947*
+
+#### Phase 58: cron-race-condition-fixes
+
+**Goal**: Fix 3 race conditions in cron/interval initialization: (1) `taskDispatcherCron.ts` — store interval ID in `globalThis.__taskDispatcherInterval`, guard with existence check before creating; (2) `claraReviewCron.ts` — set `g._claraReviewCron` flag BEFORE creating the interval to eliminate TOCTOU window; (3) `app/api/agents/[id]/stream/route.ts` — store reap interval in `globalThis._reapInterval`, guard with existence check; (4) `taskDispatcher.ts:~608` — store redispatch setTimeout IDs in a `Map<string, NodeJS.Timeout>`, skip if already queued; (5) `app/api/health/route.ts` — wrap both cron startup calls in a once-per-process globalThis guard.
+**Status**: COMPLETE
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 58-01: fix-cron-races
+
+#### Phase 59: logic-bug-fixes
+
+**Goal**: Fix 5 logic bugs causing data corruption: (1) `app/api/tasks/[id]/route.ts` reviewStatus auto-advancement — add guard `if (!('status' in body))` so explicit status overrides are never clobbered by the auto-advance; (2) recurrence spawning in same file — query for existing sibling with same `recurrenceParentId + dueDate` before spawning to prevent duplicate tasks on rapid PATCH calls; (3) `app/api/agents/route.ts` POST — remove `role`, `personality`, `color` from INSERT statement (columns don't exist in agents schema → runtime SQL error); (4) `app/api/approvals/[id]/route.ts` — wrap processing in `if (existing.status === 'pending')` guard to prevent duplicate activity logs; (5) `app/api/inbox/[id]/route.ts` — check `result.changes === 0` after UPDATE and return 404 early instead of SELECT then null-check.
+**Depends on**: Phase 58
+**Plans**: 1 plan
+
+Plans:
+- [x] 59-01: fix-logic-bugs
+
+#### Phase 60: api-validation-hardening
+
+**Goal**: Add missing input validation to 5 API routes: (1) `app/api/notifications/route.ts` — validate `parseInt(limit)` and `parseInt(since)` with NaN check, return 400 on invalid; (2) `app/api/inbox/route.ts` — add console.warn in fire-and-forget spawn catch block (currently silent); (3) `src/lib/api.ts` streamMessage — add `.catch(onError)` to outer fetch chain; (4) `app/api/chat/sessions/route.ts` — validate agentId doesn't contain colon or special chars before constructing key; (5) `app/api/agents/[id]/stream/route.ts` — verify agent exists in DB before spawning Claude process.
+**Depends on**: Phase 59
+**Plans**: 1 plan
+
+Plans:
+- [x] 60-01: api-validation
+
+#### Phase 61: emoji-removal
+
+**Goal**: Replace ALL emoji characters used as UI elements with Lucide icons per CLAUDE.md policy. Files: (1) `AccessibilitySettings.tsx:329` — 💡→Lightbulb, remove ⌘ from span; (2) `FinancePanel.tsx:286-296` — 🍽️🛍️💡🖼️→UtensilsCrossed,ShoppingBag,Lightbulb,ImageIcon; (3) `Kanban.tsx:50-54` — add `icon: LucideIcon` to column config, render icon instead of emoji; (4) `Kanban.tsx:1227-1252` — ⚠️✅→AlertTriangle,CheckCircle; (5) `EnhancedSettingsPanel.tsx:633-640` — remove emojis from option labels; (6) `ScreenSourcePicker.tsx:140` — ⚠️→AlertTriangle; (7) `DraggableVideoWindow.tsx:177` — 📹🖥️→Camera,Monitor; (8) `DashboardRedesigned.tsx:110,634-635` — emoji returns→icon components; (9) `VIPSettingsPanel.tsx:31` — emoji:'🎯'→icon field; (10) `TaskDetailPanel.tsx:~800` — ✅❌→CheckCircle,XCircle; (11) `ModuleLoader.ts` — remove ❌ from console string.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 61-01: replace-emojis
+
+#### Phase 62: hardcoded-color-fixes
+
+**Goal**: Replace hardcoded Tailwind color classes with design tokens: (1) `Kanban.tsx:1394` `bg-green-500`→`bg-success`; (2) `HealthCheckModal.tsx:613` `bg-green-600 hover:bg-green-700`→`bg-success hover:bg-success/90`; (3) `MarketplaceBrowse.tsx:255,265` `bg-green-600/90`,`bg-amber-500/90`→`bg-success`,`bg-warning`; (4) `ScreenSourcePicker.tsx:159` `bg-black`→`bg-mission-control-bg`; (5) normalize modal overlays to `bg-black/50` (ScreenSourcePicker uses bg-black/60).
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 62-01: fix-hardcoded-colors
+
+#### Phase 63: button-focus-standardization
+
+**Goal**: Standardize interactive element styles: (1) audit all primary/action buttons — should use `rounded-xl`; icon/secondary buttons use `rounded-lg`; (2) fix `HealthCheckModal.tsx` primary button to use `rounded-xl`; `ProjectCreationWizard.tsx:494` retry to `rounded-lg`; (3) add `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent` to ALL buttons missing focus styles — especially in `ScreenSourcePicker.tsx`; (4) document the standard in a comment in forms.css.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 63-01: button-focus-std
+
+#### Phase 64: store-selector-narrowing
+
+**Goal**: Replace broad store subscriptions with granular selectors to eliminate unnecessary re-renders: (1) `Dashboard.tsx:706` — split 11-value `useStore()` into individual selectors; (2) `App.tsx:63` — split 4 action destructuring into individual selectors; (3) `Sidebar.tsx:54-56` — wrap activeTasks filter in useMemo; (4) `CommsInbox3Pane.tsx` — narrow activities subscription; (5) verify `useShallow` usage in Kanban.tsx is correct. Move `APPROVAL_ICONS` map in Dashboard.tsx to module level (outside component function).
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 64-01: narrow-store-selectors
+
+#### Phase 65: react-memo-usememo
+
+**Goal**: Add memoization to high-frequency render paths: (1) `Dashboard.tsx` — wrap StatCard, ApprovalCard, HeaderBar in React.memo(); (2) `Dashboard.tsx:357-368` — `useMemo` for activities.slice(0,8); (3) `Dashboard.tsx:723-739` — consolidate 5 derived useMemo into grouped memo; (4) `CommandPalette.tsx:63-210` — `useMemo` for commands array with proper deps; (5) `Kanban.tsx` — memo KanbanCard (or equivalent card component) to isolate single-card updates from full column re-render.
+**Depends on**: Phase 64
+**Plans**: 1 plan
+
+Plans:
+- [x] 65-01: add-memoization
+
+#### Phase 66: n-plus-one-fixes
+
+**Goal**: Replace O(n) linear searches with Map lookups in render hot paths: (1) `Dashboard.tsx` ActivityFeed — `useMemo(() => new Map(agents.map(a=>[a.id,a])), [agents])` then `agentMap.get(task.assignedTo)`; (2) `Dashboard.tsx` TodaySchedule — pre-compute `getMeetingLink` results in useMemo; (3) `store.ts` updateTask action — consider adding `taskById` lookup helper or Map alongside array; (4) `store.ts` loadTasksFromDB — add 5s request deduplication guard to prevent N concurrent fetches from multiple mounted components.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 66-01: n-plus-one
+
+#### Phase 67: interval-effect-cleanup
+
+**Goal**: Fix stale closures and interval management in effects: (1) `Dashboard.tsx` TodaySchedule — wrap `loadEvents` in `useCallback`, add to interval deps; (2) `Dashboard.tsx` SystemHealth — same pattern; (3) `Sidebar.tsx:97-101` — ensure `loadInboxCount` wrapped in `useCallback([])` to stabilize interval dep; (4) `Kanban.tsx:95-149` — verify `loadTasksFromDB` is stable store action ref; consider merging two 30s intervals into one.
+**Depends on**: Phase 65
+**Plans**: 1 plan
+
+Plans:
+- [x] 67-01: interval-cleanup
+
+#### Phase 68: formatting-utils-consolidation
+
+**Goal**: Create `src/utils/formatting.ts` and eliminate all duplicate formatting functions: (1) `formatTimeAgo(ts: number): string` — 6+ copies in Dashboard, DashboardRedesigned, NotificationsPanelV2, QuickStatsWidget, DebugTab, ChannelsTab, CodeAgentDashboard → one canonical impl; (2) `formatDueDate` — 3 copies in Kanban, TaskScheduler, ProjectKanban → one; (3) `formatDate`/`formatTime`/`formatDateTime` — 5+ variants → standardized set; (4) `formatDuration` — 2 copies → one. Update all import sites.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 68-01: formatting-utils
+
+#### Phase 69: agent-config-centralization
+
+**Goal**: Create `src/lib/agentConfig.ts` to eliminate hardcoded agent names/IDs: (1) `PROTECTED_AGENTS = ['mission-control', 'main', 'clara']` — currently duplicated in Kanban, AgentPanel, TaskDetailPanel (3 copies); (2) agent type labels map — duplicated in MorningBrief, QuickActions; (3) default assignment lists — OnboardingWizard, ModuleBuilder/TaskGenerator. Update all 7 affected files to import from `agentConfig.ts`.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 69-01: agent-config
+
+#### Phase 70: dead-code-cleanup
+
+**Goal**: Remove dead/duplicate code: (1) `src/components/IconWrapper.tsx` — remove duplicate IconBadge function (lines 146-181); verify consumers import from IconBadge.tsx; (2) remove `pendingTaskUpdates` Set from store.ts (declared but never used — implement properly or delete); (3) remove commented-out code blocks in HealthCheckModal.tsx (~lines 200,250); (4) audit 4 potentially unused components: Toggle.tsx, LoadingPanel.tsx, Skeleton.tsx, BadgeShowcase.tsx — remove if truly unused; (5) remove/gate 40+ console.log statements in non-error paths.
+**Depends on**: none
+**Plans**: 1 plan
+
+Plans:
+- [x] 70-01: dead-code
+
