@@ -51,7 +51,7 @@ const INSTALL_INSTRUCTIONS: Record<string, { title: string; instructions: string
     title: 'Configuration Missing',
     instructions: [
       'Create .env.local in the project root',
-      'Add VITE_GEMINI_API_KEY for voice/meeting features',
+      'Add your Gemini API key in Settings → API Keys for voice/meeting features',
     ],
   },
 };
@@ -127,6 +127,11 @@ const ROLE_PRESETS: RolePreset[] = [
 ];
 
 export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
+  // Mark as seen immediately on first mount so it never re-shows on reload
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, 'true');
+  }, []);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [depStatus, setDepStatus] = useState<DependencyState>({
     cli: 'checking',
@@ -251,8 +256,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const requestPermission = async (type: 'microphone' | 'camera' | 'screen') => {
     try {
-      // Screen recording permission is system-level, can't be requested via browser
-      if (type === 'screen') return;
+      if (type === 'screen') {
+        // Use getDisplayMedia to prompt for screen share permission
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        stream.getTracks().forEach(t => t.stop());
+        setPermStatus(prev => ({ ...prev, screen: 'granted' }));
+        return;
+      }
       // Request via getUserMedia to trigger browser permission prompt
       const constraints = type === 'microphone' ? { audio: true } : { video: true };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -260,7 +270,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       stream.getTracks().forEach(t => t.stop());
       setPermStatus(prev => ({ ...prev, [type]: 'granted' }));
     } catch {
-      // Permission denied or API not available
+      // Permission denied or dismissed
+      if (type === 'screen') setPermStatus(prev => ({ ...prev, screen: 'denied' }));
     }
   };
 
@@ -373,7 +384,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               </div>
               <div className="flex items-center gap-3">
                 {permIcon(status)}
-                {status !== 'granted' && type !== 'screen' && (
+                {status !== 'granted' && (
                   <button
                     onClick={() => requestPermission(type)}
                     className="px-3 py-1 text-xs rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors"
