@@ -14,7 +14,7 @@ Spec sources:
 - ✅ **v2.0 Froggo Platform** — Phases 15–22 — SHIPPED 2026-03-05
 - ✅ **v3.0 Autonomous Core** — Phases 23–30 — SHIPPED 2026-03-06
 - ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
-- 🚧 **v5.0 Projects Module** — Phases 40–49 — IN PROGRESS
+- ✅ **v5.0 Projects Module** — Phases 40–49 — SHIPPED 2026-03-07
 
 ---
 
@@ -341,7 +341,7 @@ Plans:
 
 ---
 
-**v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 COMPLETE (2026-03-06)**
+**v1.0 COMPLETE (2026-03-04) — v2.0 COMPLETE (2026-03-05) — v3.0 COMPLETE (2026-03-06) — v4.0 COMPLETE (2026-03-06) — v5.0 COMPLETE (2026-03-07)**
 
 ---
 
@@ -360,8 +360,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 40-01: DB migration — projects + project_members tables; TypeScript interfaces in src/types/
-- [ ] 40-02: REST API routes + catalog module manifest for projects module
+- [x] 40-01: DB migration — projects + project_members tables; TypeScript interfaces in src/types/
+- [x] 40-02: REST API routes + catalog module manifest for projects module
 
 ---
 
@@ -372,7 +372,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 41-01: ProjectCreationWizard component (3-step modal) wired to POST /api/projects
+- [x] 41-01: ProjectCreationWizard component (3-step modal) wired to POST /api/projects
 
 ---
 
@@ -383,8 +383,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 42-01: ProjectsPanel card grid UI + ViewRegistry registration + module nav entry
-- [ ] 42-02: ProjectCard component with task count badge, agent avatars, last activity timestamp
+- [x] 42-01: ProjectsPanel card grid UI + ViewRegistry registration + module nav entry
+- [x] 42-02: ProjectCard component with task count badge, agent avatars, last activity timestamp
 
 ---
 
@@ -395,8 +395,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 43-01: `/app/projects/[id]/page.tsx` route + ProjectWorkspaceShell layout component
-- [ ] 43-02: ProjectHeader component + tab navigation + breadcrumb
+- [x] 43-01: `/app/projects/[id]/page.tsx` route + ProjectWorkspaceShell layout component
+- [x] 43-02: ProjectHeader component + tab navigation + breadcrumb
 
 ---
 
@@ -407,7 +407,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 44-01: Add project_id to chat_rooms; ProjectChatTab renders ChatPanel scoped to project rooms; auto-create room on project creation
+- [x] 44-01: Add project_id to chat_rooms; ProjectChatTab renders ChatPanel scoped to project rooms; auto-create room on project creation
 
 ---
 
@@ -418,8 +418,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 45-01: Add project_id FK to tasks table; filter tasks by project in GET /api/tasks; ProjectTasksTab renders KanbanPanel with projectId prop
-- [ ] 45-02: New Task modal pre-fills project context; task count badge on project card
+- [x] 45-01: Add project_id FK to tasks table; filter tasks by project in GET /api/tasks; ProjectTasksTab renders KanbanPanel with projectId prop
+- [x] 45-02: New Task modal pre-fills project context; task count badge on project card
 
 ---
 
@@ -430,8 +430,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 46-01: Add project_id to schedule entries; GET /api/cron?project=:id filter; ProjectAutomationsTab list + run history
-- [ ] 46-02: AutomationBuilder component — name, kind (once/interval/cron), command, project association
+- [x] 46-01: Add project_id to schedule entries; GET /api/cron?project=:id filter; ProjectAutomationsTab list + run history
+- [x] 46-02: AutomationBuilder component — name, kind (once/interval/cron), command, project association
 
 ---
 
@@ -442,8 +442,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 47-01: `GET /api/projects/:id/files` lists ~/mission-control/library/projects/{id}/; `POST` handles file upload; ProjectFilesTab renders file list with icons
-- [ ] 47-02: Memory search panel in Files tab — calls memory_search MCP filtered by project tag; displays knowledge entries
+- [x] 47-01: `GET /api/projects/:id/files` lists ~/mission-control/library/projects/{id}/; `POST` handles file upload; ProjectFilesTab renders file list with icons
+- [x] 47-02: Memory search panel in Files tab — calls memory_search MCP filtered by project tag; displays knowledge entries
 
 ---
 
@@ -454,7 +454,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 48-01: ProjectDispatchModal — select agent + write brief; dispatches via POST /api/tasks + taskDispatcher with project_id; project context appended to dispatch message
+- [x] 48-01: ProjectDispatchModal — select agent + write brief; dispatches via POST /api/tasks + taskDispatcher with project_id; project context appended to dispatch message
 
 ---
 
@@ -465,7 +465,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 49-01: E2E smoke test extended with projects module checks; manual UAT walkthrough all tabs
+- [x] 49-01: E2E smoke test extended with projects module checks; manual UAT walkthrough all tabs
 
 ---
 
@@ -473,13 +473,13 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 40. Project Data Model | v5.0 | 0/2 | Todo | — |
-| 41. Project Creation Wizard | v5.0 | 0/1 | Todo | — |
-| 42. Projects Card View | v5.0 | 0/2 | Todo | — |
-| 43. Project Workspace Shell | v5.0 | 0/2 | Todo | — |
-| 44. Project Chat Tab | v5.0 | 0/1 | Todo | — |
-| 45. Project Tasks Tab | v5.0 | 0/2 | Todo | — |
-| 46. Project Automations Tab | v5.0 | 0/2 | Todo | — |
-| 47. Project Files & Memory Tab | v5.0 | 0/2 | Todo | — |
-| 48. Project Agent Dispatch | v5.0 | 0/1 | Todo | — |
-| 49. E2E Verification v5.0 | v5.0 | 0/1 | Todo | — |
+| 40. Project Data Model | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 41. Project Creation Wizard | v5.0 | 1/1 | Complete | 2026-03-07 |
+| 42. Projects Card View | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 43. Project Workspace Shell | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 44. Project Chat Tab | v5.0 | 1/1 | Complete | 2026-03-07 |
+| 45. Project Tasks Tab | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 46. Project Automations Tab | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 47. Project Files & Memory Tab | v5.0 | 2/2 | Complete | 2026-03-07 |
+| 48. Project Agent Dispatch | v5.0 | 1/1 | Complete | 2026-03-07 |
+| 49. E2E Verification v5.0 | v5.0 | 1/1 | Complete | 2026-03-07 |
