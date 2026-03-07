@@ -578,7 +578,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 57-01: TBD
+- [ ] 57-01: extend-e2e-smoke-test-v6-security
 
 ---
 
