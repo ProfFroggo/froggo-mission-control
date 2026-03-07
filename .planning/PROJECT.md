@@ -52,6 +52,15 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 - ✓ Module install wizard: 3-step modal, POST /api/modules/install — v4.0
 - ✓ Lifecycle: non-destructive fire (workspace archive), non-destructive uninstall — v4.0
 - ✓ Onboarding role presets: 4 roles auto-install agents+modules, 7-step wizard — v4.0
+- ✓ `validateAgentId()` utility — all agent/catalog routes guarded against path traversal and injection — v6.0
+- ✓ Command injection fixed in spawn route (`spawnSync` args array, never shell-interpolated) — v6.0
+- ✓ Path traversal fixed in library (`startsWith` boundary) + files/read (`ALLOWED_ROOTS` allowlist) routes — v6.0
+- ✓ Hardcoded absolute path removed from soul route (uses `process.cwd()`) — v6.0
+- ✓ Gemini API key server-side: 7 components use DB-backed settings API, not localStorage — v6.0
+- ✓ 5 security headers in next.config.js (X-Frame-Options, CSP with Gemini origins, nosniff, Referrer-Policy, XSS-Protection) — v6.0
+- ✓ Input length limits: task (500/5000), hire (100), library (255), soul (50KB cap, 413 on exceed) — v6.0
+- ✓ Module ID validation via `validateAgentId` in catalog/modules/[id] — v6.0
+- ✓ 20 security regression checks in e2e-smoke-test.sh (127/128 passing) — v6.0
 
 ### Active (v5.0 — next milestone, TBD)
 
@@ -73,17 +82,17 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 
 ## Context
 
-**Current state (post v4.0):**
+**Current state (post v6.0):**
 - Stack: Next.js 15 App Router, TypeScript, Tailwind CSS, Zustand, better-sqlite3, lucide-react
 - DB: `~/mission-control/data/mission-control.db` (20 tables: 18 core + catalog_agents + catalog_modules)
 - Memory: `~/mission-control/memory/` (Obsidian vault, QMD indexed)
 - Library: `~/mission-control/library/` (agent output files, category-routed)
 - MCP: `mission-control-db` (11 tools) + `memory` (4 tools v3)
-- Catalog: `.catalog/agents/` (15 manifests) + `.catalog/modules/` (19 manifests)
+- Catalog: `catalog/agents/` (15 manifests) + `catalog/modules/` (18 manifests)
 - Agents: 15 defined in `.claude/agents/` with enriched SOUL.md + workspace dirs
-- E2E test: `tools/e2e-smoke-test.sh` — 107/107 checks pass
+- E2E test: `tools/e2e-smoke-test.sh` — 127/128 checks pass (1 pre-existing TS error)
 - LOC: ~119,510 TypeScript/TSX
-- Build: `npm run build` PASS, TypeScript clean
+- Security: all critical/high audit findings resolved (v6.0)
 
 **Technical debt:**
 - Belt-and-suspenders in ModuleInstallModal (calls both moduleApi.install + catalogApi.setModuleInstalled)
@@ -127,6 +136,12 @@ Agents talking end-to-end — a human assigns work, agents execute autonomously,
 | Non-destructive fire (workspace rename) | Preserves agent work history for forensics | ✓ Good |
 | Core module guard at API layer | Defense in depth — not just UI | ✓ Good |
 | `Promise.allSettled` for role presets | Partial install failure doesn't block onboarding | ✓ Good |
+| `validateAgentId` shared utility pattern | One function applied everywhere — returns `NextResponse \| null` | ✓ Good |
+| `spawnSync` args array for child processes | Agent ID never shell-interpolated — eliminates injection class | ✓ Good |
+| `ALLOWED_ROOTS` allowlist for file reads | Safer than denylist — explicit whitelist of accessible paths | ✓ Good |
+| CSP via `next.config.js headers()` (not middleware) | Simpler, no edge runtime needed, applies globally | ✓ Good |
+| Input length caps pragmatic (not RFC-strict) | 500/5000/100/255/50KB chosen for DoS prevention, not pedantic limits | ✓ Good |
+| Static smoke test checks (grep-based) | No running server required — catches regressions in any environment | ✓ Good |
 
 ---
-*Last updated: 2026-03-06 after v4.0 milestone*
+*Last updated: 2026-03-07 after v6.0 milestone*

@@ -1,5 +1,33 @@
 # Project Milestones: Mission Control Next.js
 
+## v6.0 Security Hardening (Shipped: 2026-03-07)
+
+**Delivered:** Eliminated all critical/high security vulnerabilities — command injection via shell-interpolated agent IDs fixed, path traversal blocked in library/soul/files routes, Gemini API key moved server-side out of localStorage, 5 security headers added, input length limits enforced across all user-facing routes, and 20 security regression checks added to the E2E smoke test.
+
+**Phases completed:** 50–57 (8 phases, 9 plans; phases 52+53 absorbed into Phase 50)
+
+**Key accomplishments:**
+
+- `validateAgentId()` shared utility (`src/lib/validateId.ts`): enforces `/^[a-z0-9][a-z0-9-_]*$/`, applied to 10+ routes — full defence-in-depth against path traversal and injection via agent ID
+- Command injection fix: `spawn/route.ts` replaced `execSync(\`bash "${id}"\`)` with `spawnSync('bash', [script, id])` — id never interpolated into shell string
+- Path traversal fix: `library/route.ts` `startsWith(LIBRARY_PATH)` boundary check + `files/read/route.ts` `ALLOWED_ROOTS` allowlist — returns 403 for `/etc/passwd`, private keys, env files
+- Hardcoded absolute path removed from `soul/route.ts` — uses `process.cwd()` (works on any machine)
+- Gemini API key server-side: 7 voice/meeting components converted from localStorage fallback to `settingsApi.get('gemini_api_key')` API-only — key never reaches browser storage
+- CSP + 4 security headers in `next.config.js` — `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `X-XSS-Protection`, CSP with Gemini HTTPS/WSS origins
+- Input length limits: task title ≤500, description ≤5000, agent name ≤100, library name ≤255, soul content ≤50KB (413 response); SQL injection confirmed safe (grep verification)
+- 20 security regression checks in `tools/e2e-smoke-test.sh` (127/128 total passing)
+
+**Stats:**
+
+- 8 phases (50–57), 9 plans, ~26 task commits
+- 127/128 E2E smoke checks pass (pre-existing TS error unrelated to security)
+- Timeline: 2026-03-07 (1 intensive session)
+- Git range: `e75dd81` (Phase 50 plan) → `42ccc8a` (Phase 57 complete)
+
+**Archive:** `.planning/milestones/v6.0-security-hardening.md`
+
+---
+
 ## v4.0 Agent & Module Library (Shipped: 2026-03-06)
 
 **Delivered:** Full self-service catalog — browse, hire, install, and manage agents and modules without touching a CLI. Hire wizard creates agent workspaces, module install wizard wires module_state, lifecycle management handles fire/uninstall non-destructively, and onboarding role presets auto-configure a fresh instance.

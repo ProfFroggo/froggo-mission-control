@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-05)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v6.0 Security Hardening — 8 phases (50–57)
+**Current focus:** v6.0 complete — planning next milestone
 
 ## Current Position
 
 Phase: 57 of 57 (security-e2e-verification)
 Plan: 1/1 Complete 2026-03-07
-Status: Phase complete — v6.0 milestone done
-Last activity: 2026-03-07 — Phase 57 complete (commit: b748c17)
+Status: Milestone complete — v6.0 archived, tagged v6.0
+Last activity: 2026-03-07 — v6.0 milestone complete (archived, git tagged)
 
-Progress: ██████████ 100% (v6.0 — 8/8 phases done)
+Progress: ██████████ 100% (v6.0 — 8/8 phases done, SHIPPED)
 
 ## Performance Metrics
 
