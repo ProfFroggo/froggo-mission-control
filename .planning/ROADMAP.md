@@ -490,7 +490,7 @@ Plans:
 | 53. Path Traversal — Soul Route | v6.0 | 0/1 | Not started | - |
 | 54. Gemini Key Server-Side | v6.0 | 0/1 | Not started | - |
 | 55. CSP & Security Headers | v6.0 | 1/1 | Complete | 2026-03-07 |
-| 56. Input Sanitization Sweep | v6.0 | 0/1 | Not started | - |
+| 56. Input Sanitization Sweep | v6.0 | 1/2 | In progress | - |
 | 57. Security E2E Verification | v6.0 | 0/1 | Not started | - |
 
 ---
@@ -567,7 +567,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 56-01: TBD
+- [x] 56-01: Add length limits to task, hire, library routes — DONE 2026-03-07
 
 #### Phase 57: security-e2e-verification
 
