@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { validateAgentId } from '@/lib/validateId';
 
 export async function POST(
   _request: NextRequest,
@@ -7,6 +8,8 @@ export async function POST(
 ) {
   try {
     const { id: agentId } = await params;
+    const guard = validateAgentId(agentId);
+    if (guard) return guard;
     const db = getDb();
     const now = Date.now();
 

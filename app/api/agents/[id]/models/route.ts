@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { validateAgentId } from '@/lib/validateId';
 
 export async function GET(
   _request: NextRequest,
@@ -7,6 +8,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const agent = db.prepare('SELECT id, model FROM agents WHERE id = ?').get(id) as { id: string; model: string } | undefined;
 
@@ -27,6 +30,8 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const body = await request.json();
 

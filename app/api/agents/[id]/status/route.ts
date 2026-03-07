@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { validateAgentId } from '@/lib/validateId';
 
 export async function PATCH(
   request: NextRequest,
@@ -7,6 +8,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const body = await request.json();
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { validateAgentId } from '@/lib/validateId';
 
 export async function GET(
   _request: NextRequest,
@@ -7,6 +8,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const session = db.prepare('SELECT * FROM agent_sessions WHERE agentId = ?').get(id);
     return NextResponse.json(session || { agentId: id, sessionId: null, status: 'none' });
@@ -22,6 +25,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const { sessionId, model } = await request.json();
     const now = Date.now();
@@ -40,6 +45,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     db.prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(id);
     return NextResponse.json({ success: true });
