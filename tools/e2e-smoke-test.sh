@@ -25,7 +25,7 @@ check() {
 
 echo ""
 echo "═══════════════════════════════════════════"
-echo "  Mission Control v2.0 E2E Smoke Test"
+echo "  Mission Control v6.0 E2E Smoke Test"
 echo "═══════════════════════════════════════════"
 echo ""
 
@@ -352,15 +352,15 @@ grep -q "catalog_modules" "$REPO/src/lib/database.ts" 2>/dev/null \
   && check "src/lib/catalogSync.ts exists" "ok" \
   || check "src/lib/catalogSync.ts exists" "not found"
 
-AGENT_COUNT=$(ls "$REPO/.catalog/agents/"*.json 2>/dev/null | wc -l | tr -d ' ')
+AGENT_COUNT=$(ls "$REPO/catalog/agents/"*.json 2>/dev/null | wc -l | tr -d ' ')
 [[ "$AGENT_COUNT" -ge 10 ]] \
-  && check ".catalog/agents: ≥10 manifests ($AGENT_COUNT found)" "ok" \
-  || check ".catalog/agents: ≥10 manifests" "$AGENT_COUNT found"
+  && check "catalog/agents: ≥10 manifests ($AGENT_COUNT found)" "ok" \
+  || check "catalog/agents: ≥10 manifests" "$AGENT_COUNT found"
 
-MODULE_COUNT=$(ls "$REPO/.catalog/modules/"*.json 2>/dev/null | wc -l | tr -d ' ')
+MODULE_COUNT=$(ls "$REPO/catalog/modules/"*.json 2>/dev/null | wc -l | tr -d ' ')
 [[ "$MODULE_COUNT" -ge 10 ]] \
-  && check ".catalog/modules: ≥10 manifests ($MODULE_COUNT found)" "ok" \
-  || check ".catalog/modules: ≥10 manifests" "$MODULE_COUNT found"
+  && check "catalog/modules: ≥10 manifests ($MODULE_COUNT found)" "ok" \
+  || check "catalog/modules: ≥10 manifests" "$MODULE_COUNT found"
 
 echo ""
 
@@ -457,6 +457,84 @@ STEP_COUNT=$(grep -o "STEP_COUNT = [0-9]*" "$REPO/src/components/OnboardingWizar
 
 echo ""
 
+# ── v6.0: Security Hardening Regression ─────────────────────────────────────
+echo "v6.0: Security Hardening Regression"
+
+# Phase 50: Agent ID validation utility
+grep -q "AGENT_ID_PATTERN" "$REPO/src/lib/validateId.ts" 2>/dev/null \
+  && check "validateId.ts: AGENT_ID_PATTERN defined" "ok" \
+  || check "validateId.ts: AGENT_ID_PATTERN defined" "not found"
+
+[[ "$(node -e 'const p=/^[a-z0-9][a-z0-9-_]*$/; console.log(p.test("../../../etc/passwd") ? "BAD" : "ok")')" == "ok" ]] \
+  && check "AGENT_ID_PATTERN: rejects path traversal (../../../etc/passwd)" "ok" \
+  || check "AGENT_ID_PATTERN: rejects path traversal (../../../etc/passwd)" "pattern allows traversal — SECURITY BUG"
+
+[[ "$(node -e 'const p=/^[a-z0-9][a-z0-9-_]*$/; console.log(p.test("agent;rm -rf /") ? "BAD" : "ok")')" == "ok" ]] \
+  && check "AGENT_ID_PATTERN: rejects shell special chars (;rm -rf /)" "ok" \
+  || check "AGENT_ID_PATTERN: rejects shell special chars (;rm -rf /)" "pattern allows shell chars — SECURITY BUG"
+
+for route in "agents/[id]/spawn" "agents/[id]/soul" "catalog/agents/[id]" "catalog/modules/[id]"; do
+  grep -q "validateAgentId" "$REPO/app/api/$route/route.ts" 2>/dev/null \
+    && check "validateAgentId guard: app/api/$route" "ok" \
+    || check "validateAgentId guard: app/api/$route" "guard missing — SECURITY BUG"
+done
+
+echo ""
+
+# Phase 52-53: Path traversal protection
+grep -q 'startsWith(ENV.LIBRARY_PATH' "$REPO/app/api/library/route.ts" 2>/dev/null \
+  && check "library/route.ts: path traversal guard (startsWith LIBRARY_PATH)" "ok" \
+  || check "library/route.ts: path traversal guard (startsWith LIBRARY_PATH)" "guard missing — SECURITY BUG"
+
+grep -q "validateAgentId" "$REPO/app/api/agents/[id]/soul/route.ts" 2>/dev/null \
+  && check "soul/route.ts: validateAgentId blocks path traversal via agent ID" "ok" \
+  || check "soul/route.ts: validateAgentId blocks path traversal via agent ID" "guard missing — SECURITY BUG"
+
+echo ""
+
+# Phase 54: Gemini key not in client bundle
+! grep -rq "NEXT_PUBLIC_GEMINI" "$REPO/src/" "$REPO/.env" 2>/dev/null \
+  && check "No NEXT_PUBLIC_GEMINI vars (key not baked into client bundle)" "ok" \
+  || check "No NEXT_PUBLIC_GEMINI vars (key not baked into client bundle)" "NEXT_PUBLIC_GEMINI found — key exposed in bundle — SECURITY BUG"
+
+! grep -rq "VITE_GEMINI_API_KEY" "$REPO/src/" 2>/dev/null \
+  && check "No VITE_GEMINI_API_KEY in src/ (legacy var removed)" "ok" \
+  || check "No VITE_GEMINI_API_KEY in src/ (legacy var removed)" "VITE_GEMINI_API_KEY still referenced — SECURITY BUG"
+
+grep -q "Exclude geminiApiKey from localStorage" "$REPO/src/components/SettingsPanel.tsx" 2>/dev/null \
+  && check "SettingsPanel.tsx: Gemini key excluded from localStorage save" "ok" \
+  || check "SettingsPanel.tsx: Gemini key excluded from localStorage save" "localStorage exclusion missing"
+
+echo ""
+
+# Phase 55: Security headers
+for header in "X-Frame-Options" "X-Content-Type-Options" "Referrer-Policy" "X-XSS-Protection" "Content-Security-Policy"; do
+  grep -q "$header" "$REPO/next.config.js" 2>/dev/null \
+    && check "next.config.js: $header header set" "ok" \
+    || check "next.config.js: $header header set" "header missing — SECURITY BUG"
+done
+
+echo ""
+
+# Phase 56: Input validation — length limits
+grep -q "500" "$REPO/app/api/tasks/route.ts" 2>/dev/null \
+  && check "tasks/route.ts: title length limit (500 chars)" "ok" \
+  || check "tasks/route.ts: title length limit (500 chars)" "limit missing"
+
+grep -q "100" "$REPO/app/api/agents/hire/route.ts" 2>/dev/null \
+  && check "hire/route.ts: name length limit (100 chars)" "ok" \
+  || check "hire/route.ts: name length limit (100 chars)" "limit missing"
+
+grep -q "255" "$REPO/app/api/library/route.ts" 2>/dev/null \
+  && check "library/route.ts: name length limit (255 chars)" "ok" \
+  || check "library/route.ts: name length limit (255 chars)" "limit missing"
+
+grep -q "MAX_SOUL_BYTES" "$REPO/app/api/agents/[id]/soul/route.ts" 2>/dev/null \
+  && check "soul/route.ts: MAX_SOUL_BYTES size cap (50KB)" "ok" \
+  || check "soul/route.ts: MAX_SOUL_BYTES size cap (50KB)" "size cap missing"
+
+echo ""
+
 # ── Summary ────────────────────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "  Results: ${PASS} passed, ${FAIL} failed"
@@ -472,5 +550,5 @@ if [[ "${FAIL}" -gt 0 ]]; then
   exit 1
 fi
 
-echo "All v2.0 + v3.0 + v4.0 smoke checks passed."
+echo "All v2.0 + v3.0 + v4.0 + v6.0 smoke checks passed."
 echo ""
