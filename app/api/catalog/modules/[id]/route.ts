@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { parseCatalogModule, type CatalogModuleRow } from '@/types/catalog';
+import { validateAgentId } from '@/lib/validateId';
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const row = db.prepare('SELECT * FROM catalog_modules WHERE id = ?').get(id) as CatalogModuleRow | undefined;
     if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -20,6 +23,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const body = await req.json();
     const db = getDb();
 
@@ -47,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    fields.push('updated_at = ?');
+    fields.push('updatedAt = ?');
     values.push(Date.now());
     values.push(id);
 
@@ -67,6 +72,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
 
     const row = db.prepare('SELECT * FROM catalog_modules WHERE id = ?').get(id) as CatalogModuleRow | undefined;
@@ -74,7 +81,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (row.core === 1) return NextResponse.json({ error: 'Core modules cannot be uninstalled' }, { status: 403 });
 
     // Mark uninstalled in catalog
-    db.prepare('UPDATE catalog_modules SET installed = 0, enabled = 0, updated_at = ? WHERE id = ?').run(Date.now(), id);
+    db.prepare('UPDATE catalog_modules SET installed = 0, enabled = 0, updatedAt = ? WHERE id = ?').run(Date.now(), id);
 
     // Disable in module_state
     db.prepare('UPDATE module_state SET enabled = 0 WHERE module_id = ?').run(id);
