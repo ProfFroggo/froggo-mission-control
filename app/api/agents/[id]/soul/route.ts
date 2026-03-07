@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 const AGENTS_DIR = path.join(process.cwd(), '.claude', 'agents');
+const MAX_SOUL_BYTES = 50 * 1024; // 50KB
 
 function getSoulPath(id: string): string {
   return path.join(AGENTS_DIR, `${id}.md`);
@@ -44,6 +45,12 @@ export async function PUT(
 
     if (typeof content !== 'string') {
       return NextResponse.json({ error: 'content must be a string' }, { status: 400 });
+    }
+    if (content.length > MAX_SOUL_BYTES) {
+      return NextResponse.json(
+        { error: `Soul content must be ${MAX_SOUL_BYTES / 1024}KB or fewer` },
+        { status: 413 }
+      );
     }
 
     // Ensure directory exists
