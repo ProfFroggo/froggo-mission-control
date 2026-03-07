@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
+import { validateAgentId } from '@/lib/validateId';
+import { mkdirSync, writeFileSync, existsSync, copyFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const HOME = homedir();
 const AGENTS_DIR = join(HOME, 'mission-control', 'agents');
+const CATALOG_DIR = join(process.cwd(), 'catalog');
 
 function buildWorkspaceClaude(id: string, name: string, emoji: string, role: string): string {
   return `# CLAUDE.md — ${name} (${emoji})
@@ -69,28 +72,53 @@ ${capabilities.map(c => `- ${c}`).join('\n')}
 }
 
 // POST /api/agents/hire
-// Creates the ~/mission-control/agents/{id}/ workspace directory with:
-//   CLAUDE.md, SOUL.md, MEMORY.md
-// Returns { path, files } on success.
+// Creates the ~/mission-control/agents/{id}/ workspace, registers in agents table,
+// and marks catalog_agents.installed = 1.
+// Reads soul.md and claude.md from catalog/agents/{id}/ package if available.
 export async function POST(request: NextRequest) {
   try {
-    const { id, name, emoji, role, personality, capabilities } = await request.json();
+    const { id, name, emoji, role, personality, capabilities, color } = await request.json();
 
     if (!id || !name) {
       return NextResponse.json({ error: 'id and name are required' }, { status: 400 });
     }
 
+    const guard = validateAgentId(id);
+    if (guard) return guard;
+
     const workspaceDir = join(AGENTS_DIR, id);
+    const packageDir = join(CATALOG_DIR, 'agents', id);
 
-    // Create workspace directory (idempotent)
+    // Create workspace directory and sub-directories (idempotent)
     mkdirSync(workspaceDir, { recursive: true });
-
-    // Create sub-directories
     mkdirSync(join(workspaceDir, 'memory'), { recursive: true });
+    mkdirSync(join(workspaceDir, 'assets'), { recursive: true });
+
+    // Prefer bundled soul.md from package, fall back to generated
+    let soulContent: string;
+    const packageSoul = join(packageDir, 'soul.md');
+    if (existsSync(packageSoul)) {
+      soulContent = readFileSync(packageSoul, 'utf-8');
+      // Append user personalization if provided
+      if (personality) {
+        soulContent += `\n## User Context\n\n${personality}\n`;
+      }
+    } else {
+      soulContent = buildWorkspaceSoul(name, role || 'Agent', personality || 'Professional and reliable.', capabilities || []);
+    }
+
+    // Prefer bundled claude.md from package, fall back to generated
+    let claudeContent: string;
+    const packageClaude = join(packageDir, 'claude.md');
+    if (existsSync(packageClaude)) {
+      claudeContent = readFileSync(packageClaude, 'utf-8');
+    } else {
+      claudeContent = buildWorkspaceClaude(id, name, emoji || '🤖', role || 'Agent');
+    }
 
     const files: Record<string, string> = {
-      'CLAUDE.md': buildWorkspaceClaude(id, name, emoji || '🤖', role || 'Agent'),
-      'SOUL.md':   buildWorkspaceSoul(name, role || 'Agent', personality || 'Professional and reliable.', capabilities || []),
+      'CLAUDE.md': claudeContent,
+      'SOUL.md':   soulContent,
       'MEMORY.md': `# MEMORY.md — ${name}\n\n*Created: ${new Date().toISOString().split('T')[0]}*\n\n## Key Learnings\n\n(empty — memory builds as you work)\n`,
     };
 
@@ -103,9 +131,52 @@ export async function POST(request: NextRequest) {
       written.push(filename);
     }
 
+    // Avatar: prefer package avatar, then public/agent-profiles, then workspace existing
+    const avatarDest = join(workspaceDir, 'assets', 'avatar.png');
+    const packageAvatar = join(packageDir, 'avatar.png');
+    const publicAvatar = join(process.cwd(), 'public', 'agent-profiles', `${id}.png`);
+    let avatarPath: string | null = null;
+    if (!existsSync(avatarDest)) {
+      if (existsSync(packageAvatar)) {
+        copyFileSync(packageAvatar, avatarDest);
+        avatarPath = avatarDest;
+      } else if (existsSync(publicAvatar)) {
+        copyFileSync(publicAvatar, avatarDest);
+        avatarPath = avatarDest;
+      }
+    } else {
+      avatarPath = avatarDest;
+    }
+
+    // Register/update agent in agents table (source of truth for active agents)
+    const db = getDb();
+    db.prepare(`
+      INSERT INTO agents (id, name, role, emoji, color, capabilities, personality, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'idle', unixepoch())
+      ON CONFLICT(id) DO UPDATE SET
+        name         = excluded.name,
+        role         = excluded.role,
+        emoji        = excluded.emoji,
+        color        = excluded.color,
+        capabilities = excluded.capabilities,
+        personality  = excluded.personality,
+        status       = CASE WHEN agents.status = 'archived' THEN 'idle' ELSE agents.status END
+    `).run(
+      id, name, role || 'Agent', emoji || '🤖', color || '#00BCD4',
+      JSON.stringify(Array.isArray(capabilities) ? capabilities : []),
+      personality || ''
+    );
+
+    // Mark installed in catalog
+    db.prepare(`
+      UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updatedAt = ?
+      WHERE id = ?
+    `).run(avatarPath, Date.now(), id);
+
     return NextResponse.json({
       path: workspaceDir,
       files: written,
+      avatar: avatarPath,
     }, { status: 201 });
   } catch (error) {
     console.error('POST /api/agents/hire error:', error);
