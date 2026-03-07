@@ -4,6 +4,20 @@ import { ENV } from '@/lib/env';
 import { readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 
+const MIME_MAP: Record<string, string> = {
+  '.md': 'text/markdown', '.txt': 'text/plain', '.pdf': 'application/pdf',
+  '.json': 'application/json', '.ts': 'text/plain', '.tsx': 'text/plain',
+  '.js': 'text/plain', '.jsx': 'text/plain', '.py': 'text/plain',
+  '.sh': 'text/plain', '.csv': 'text/csv', '.html': 'text/html',
+  '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
+  '.svg': 'image/svg+xml', '.mp4': 'video/mp4', '.mp3': 'audio/mpeg',
+  '.mov': 'video/quicktime',
+};
+function getFileMime(filePath: string) {
+  return MIME_MAP[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
+}
+
 // Unified /api/library action handler
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -29,7 +43,7 @@ export async function GET(request: NextRequest) {
       // First: try to decode as base64 relative path (new filesystem-based IDs)
       let filePath: string | null = null;
       try {
-        const decoded = Buffer.from(id.replace(/_/g, '/'), 'base64').toString('utf8');
+        const decoded = Buffer.from(id, 'base64url').toString('utf8');
         const candidate = path.join(ENV.LIBRARY_PATH, decoded);
         if (!candidate.startsWith(ENV.LIBRARY_PATH + path.sep) && candidate !== ENV.LIBRARY_PATH) {
           return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
@@ -54,6 +68,34 @@ export async function GET(request: NextRequest) {
       } catch {
         return NextResponse.json({ success: false, error: 'Could not read file' }, { status: 500 });
       }
+    }
+
+    if (action === 'raw') {
+      const id = searchParams.get('id');
+      if (!id) return new NextResponse('id required', { status: 400 });
+
+      let filePath: string | null = null;
+      try {
+        const decoded = Buffer.from(id, 'base64url').toString('utf8');
+        const candidate = path.join(ENV.LIBRARY_PATH, decoded);
+        if (!candidate.startsWith(ENV.LIBRARY_PATH + path.sep) && candidate !== ENV.LIBRARY_PATH) {
+          return new NextResponse('Forbidden', { status: 403 });
+        }
+        if (existsSync(candidate)) filePath = candidate;
+      } catch { /* invalid id */ }
+
+      if (!filePath) return new NextResponse('Not found', { status: 404 });
+
+      const bytes = readFileSync(filePath);
+      const mime = getFileMime(filePath);
+      const filename = path.basename(filePath);
+      return new NextResponse(bytes, {
+        headers: {
+          'Content-Type': mime,
+          'Content-Disposition': `attachment; filename="${filename}"`,
+          'Content-Length': String(bytes.length),
+        },
+      });
     }
 
     if (action === 'folder-rules') {
@@ -103,6 +145,9 @@ export async function POST(request: NextRequest) {
 
     if (action === 'update') {
       const { id, ...fields } = body;
+      if (typeof fields.name === 'string' && fields.name.length > 255) {
+        return NextResponse.json({ success: false, error: 'name must be 255 characters or fewer' }, { status: 400 });
+      }
       const allowed = ['category', 'project', 'tags', 'name', 'path', 'content'];
       const updates = Object.entries(fields).filter(([k]) => allowed.includes(k));
       if (updates.length === 0) return NextResponse.json({ success: false, error: 'No valid fields' }, { status: 400 });
@@ -129,6 +174,9 @@ export async function POST(request: NextRequest) {
 
     if (action === 'folder-create') {
       const { name, color, icon, sort_order = 0 } = body;
+      if (!name || typeof name !== 'string' || name.length > 255) {
+        return NextResponse.json({ success: false, error: 'folder name must be 255 characters or fewer' }, { status: 400 });
+      }
       const id = crypto.randomUUID();
       db.prepare('INSERT INTO library_folders (id, name, color, icon, sort_order) VALUES (?, ?, ?, ?, ?)').run(id, name, color, icon, sort_order);
       const folder = db.prepare('SELECT * FROM library_folders WHERE id = ?').get(id);
