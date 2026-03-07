@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { spawn, execSync } from 'child_process';
+import { validateAgentId } from '@/lib/validateId';
+import { spawn, spawnSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -11,6 +12,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const guard = validateAgentId(id);
+    if (guard) return guard;
     const db = getDb();
     const body = await request.json().catch(() => ({}));
 
@@ -70,7 +73,7 @@ export async function POST(
     try {
       const scriptPath = join(process.cwd(), 'tools', 'agent-start.sh');
       if (existsSync(scriptPath)) {
-        execSync(`bash "${scriptPath}" "${id}"`, { timeout: 5000 });
+        spawnSync('bash', [scriptPath, id], { timeout: 5000 });
       }
     } catch {
       // tmux not available or agent already running — not fatal
