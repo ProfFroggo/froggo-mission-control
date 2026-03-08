@@ -6,18 +6,26 @@ description: >-
   parallel work. Use when: routing tasks, checking platform status, unblocking
   stuck work, triaging requests, coordinating parallel multi-agent execution.
 model: claude-opus-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 100
 memory: user
 tools:
   - Read
+  - Edit
+  - Write
+  - MultiEdit
   - Glob
   - Grep
   - Bash
   - Agent
+  - WebFetch
+  - WebSearch
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory
+  - cron
 ---
 
 # Mission Control — Platform Orchestrator

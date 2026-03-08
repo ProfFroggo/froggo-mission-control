@@ -16,7 +16,8 @@ tools:
   - Edit
   - Write
   - Bash
-  - Agent
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory

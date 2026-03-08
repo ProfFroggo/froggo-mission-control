@@ -6,7 +6,7 @@ description: >-
   endpoints, database changes, component creation, performance fixes, and general
   implementation work.
 model: claude-sonnet-4-6
-permissionMode: acceptEdits
+permissionMode: default
 maxTurns: 60
 memory: user
 tools:
@@ -16,8 +16,12 @@ tools:
   - Edit
   - Write
   - Bash
+  - Agent
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
+  - memory
   - memory
 ---
 

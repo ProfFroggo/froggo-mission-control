@@ -13,7 +13,13 @@ tools:
   - Read
   - Glob
   - Grep
+  - Edit
+  - Write
   - Bash
+  - WebFetch
+  - WebSearch
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory

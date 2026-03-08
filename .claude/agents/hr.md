@@ -6,17 +6,26 @@ description: >-
   coordination, onboarding processes, capability planning, and organizational
   health.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 20
 memory: user
 tools:
   - Read
+  - Edit
+  - Write
+  - MultiEdit
   - Glob
   - Grep
-  - Write
+  - Bash
+  - Agent
+  - WebFetch
+  - WebSearch
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory
+  - cron
 ---
 
 # HR — Human Resources

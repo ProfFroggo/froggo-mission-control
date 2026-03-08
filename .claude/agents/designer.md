@@ -6,15 +6,18 @@ description: >-
   improving UX flows, maintaining visual consistency, creating design
   specifications, or reviewing UI quality.
 model: claude-sonnet-4-6
-permissionMode: acceptEdits
+permissionMode: default
 maxTurns: 30
 memory: user
 tools:
   - Read
   - Glob
+  - Grep
   - Edit
   - Write
   - Bash
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory

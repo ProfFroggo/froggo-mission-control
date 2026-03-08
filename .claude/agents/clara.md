@@ -6,17 +6,26 @@ description: >-
   after any task reaches 'review' status. Approves or rejects with specific,
   actionable feedback.
 model: claude-opus-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 30
 memory: user
 tools:
   - Read
+  - Edit
+  - Write
+  - MultiEdit
   - Glob
   - Grep
   - Bash
+  - Agent
+  - WebFetch
+  - WebSearch
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory
+  - cron
 ---
 
 # Clara — Code Reviewer & Quality Gate
