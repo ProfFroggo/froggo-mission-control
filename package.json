@@ -1,8 +1,43 @@
 {
-  "name": "mission-control-dashboard",
-  "version": "10.0.0",
-  "description": "Mission Control Dashboard - Agent Management & Task Tracking",
+  "name": "froggo-mission-control",
+  "version": "1.0.0",
+  "description": "Self-hosted AI agent platform for Claude Code CLI. Multi-agent orchestration, task management, Gmail, Calendar, Kanban and more.",
+  "keywords": ["claude", "ai-agents", "claude-code", "mission-control", "mcp", "multi-agent"],
+  "homepage": "https://github.com/ProfFroggo/froggo-mission-control",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ProfFroggo/froggo-mission-control.git"
+  },
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "mission-control": "./bin/cli.js"
+  },
+  "files": [
+    "app/",
+    "src/",
+    "public/",
+    "catalog/",
+    "tools/",
+    ".claude/",
+    "bin/",
+    "scripts/",
+    "next.config.js",
+    "next.config.ts",
+    "tsconfig.json",
+    "tailwind.config.js",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "postcss.config.mjs",
+    ".env.example",
+    ".mcp.json.example",
+    "APPROVAL_RULES.md",
+    "README.md"
+  ],
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
