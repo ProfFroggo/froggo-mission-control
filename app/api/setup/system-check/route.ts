@@ -43,16 +43,23 @@ function checkAgentsOnDisk(): { count: number; ok: boolean } {
   }
 }
 
+function checkCronDaemon(): boolean {
+  const cronPlist = path.join(homedir(), 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
+  return existsSync(cronPlist);
+}
+
 export async function GET() {
   const cli = checkCliInstalled();
   const database = checkDatabase();
   const mcp = checkMcpServers();
   const agentsInfo = checkAgentsOnDisk();
+  const cronDaemon = checkCronDaemon();
 
   return NextResponse.json({
     cli: { ok: cli, label: 'Claude CLI installed' },
     database: { ok: database, label: 'Task database found', critical: true },
     mcp: { ok: mcp, label: 'MCP servers configured' },
     agents: { ok: agentsInfo.ok, label: `Agent souls on disk (${agentsInfo.count} found)`, count: agentsInfo.count },
+    cronDaemon: { ok: cronDaemon, label: 'Cron daemon LaunchAgent installed' },
   });
 }
