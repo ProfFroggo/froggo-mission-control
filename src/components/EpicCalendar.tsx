@@ -365,7 +365,11 @@ export default function EpicCalendar({
       if (response) {
         // Track partial errors separately - events should still render
         if (response.errors && response.errors.length > 0) {
-          setPartialError(`${response.errors.length} calendar(s) failed to load`);
+          const firstErr: string = response.errors[0] ?? '';
+          const needsReauth = /insufficient.*scope|invalid_grant|unauthorized|forbidden/i.test(firstErr);
+          setPartialError(needsReauth
+            ? 'Google Calendar access denied — reconnect Google in Settings → Google Workspace'
+            : `${response.errors.length} calendar(s) failed to load`);
         }
 
         setEvents(response.events || []);

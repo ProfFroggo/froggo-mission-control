@@ -533,7 +533,7 @@ async function cmdSetup(force = false) {
 
   // ── Scaffold core agent workspaces ──────────────────────────────────────
   step('Bootstrapping core agent workspaces');
-  const coreAgents = ['mission-control', 'clara', 'coder', 'writer'];
+  const coreAgents = ['mission-control', 'clara', 'coder', 'hr'];
   const catalogAgentsDir = path.join(INSTALL_DIR, 'catalog', 'agents');
   for (const agentId of coreAgents) {
     const agentWorkspaceDir = path.join(MC_AGENTS, agentId);
@@ -588,7 +588,7 @@ async function cmdSetup(force = false) {
       '- **mission-control** — Primary orchestrator, delegates work',
       '- **clara** — QA review gate, runs before work ships',
       '- **coder** — Code execution, debugging, implementation',
-      '- **writer** — Content, docs, long-form writing',
+      '- **hr** — Agent management, hiring, training, skill gaps',
       '',
       '## Task Lifecycle',
       'todo → internal-review → in-progress → review → human-review → done',
@@ -622,6 +622,19 @@ async function cmdSetup(force = false) {
   const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
   const logPath  = path.join(HOME, 'Library', 'Logs', 'mission-control-app.log');
 
+  // Detect custom CA certificate for corporate SSL inspection proxies (e.g. Cloudflare Gateway).
+  // Without NODE_EXTRA_CA_CERTS in the LaunchAgent env, Node.js (and Claude CLI) cannot trust
+  // the proxy's certificate and api.anthropic.com calls hang silently → 120s timeout.
+  // Priority: (1) already set in current shell env, (2) common cert locations.
+  const certCandidates = [
+    process.env.NODE_EXTRA_CA_CERTS,
+    path.join(HOME, '.certs', 'cloudflare_ca_certificate.pem'),
+    path.join(HOME, '.certs', 'ca_certificate.pem'),
+    '/etc/ssl/certs/ca-certificates.crt',       // Linux
+    '/usr/local/share/ca-certificates/extra.crt', // Linux custom
+  ].filter(Boolean);
+  const detectedCert = certCandidates.find(p => { try { return existsSync(p); } catch { return false; } });
+
   const envVars = {
     HOME,
     CLAUDE_BIN: resolvedClaude,
@@ -631,7 +644,13 @@ async function cmdSetup(force = false) {
     PROJECT_DIR: INSTALL_DIR,
     LOG_DIR: MC_LOGS,
     GEMINI_API_KEY: geminiKey,
-    ANTHROPIC_API_KEY: anthropicKey,
+    // ANTHROPIC_API_KEY intentionally omitted — Claude Code CLI uses its own
+    // stored credentials (keychain/config). Setting it here (even to '') overrides
+    // that lookup and causes apiKeySource:"none", breaking all agent chat.
+    ...(anthropicKey ? { ANTHROPIC_API_KEY: anthropicKey } : {}),
+    // NODE_EXTRA_CA_CERTS: pass through so Node.js trusts corporate SSL inspection certs.
+    // Without this, Claude CLI API calls hang silently on networks with proxy MITM (e.g. Bitso VPN).
+    ...(detectedCert ? { NODE_EXTRA_CA_CERTS: detectedCert } : {}),
     CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
     CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING: '1',
     MODEL_LEAD: 'claude-opus-4-6',

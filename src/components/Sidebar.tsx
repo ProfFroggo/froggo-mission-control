@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
+  FolderOpen, FolderKanban, CalendarClock,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -9,13 +10,17 @@ import { usePanelConfigStore } from '../store/panelConfig';
 import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
 
-// Static icon map for built-in panels — renders nav instantly before ViewRegistry populates
+// Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
+// Must include ALL DEFAULT_PANELS ids so panels appear immediately (before async initAll() runs).
 const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   dashboard:     LayoutDashboard,
+  projects:      FolderKanban,
   inbox:         Mail,
   kanban:        Kanban,
   chat:          MessageSquare,
   approvals:     ShieldAlert,
+  schedule:      CalendarClock,
+  library:       FolderOpen,
   agents:        Bot,
   notifications: Bell,
   modules:       Puzzle,

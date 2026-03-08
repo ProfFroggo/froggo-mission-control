@@ -4,7 +4,7 @@ import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
 import { existsSync, readFileSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { homedir } from 'os';
+import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
 
 export const dynamic = 'force-dynamic';
@@ -327,8 +327,28 @@ export async function POST(
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }
 
-        // Strip Claude CLI env vars so nested spawning is allowed
-        const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+        // Strip Claude CLI session vars so nested spawning is allowed.
+        // Also strip ANTHROPIC_API_KEY — when set to empty string by the LaunchAgent plist
+        // it overrides Claude Code's keychain/config lookup and causes apiKeySource:"none".
+        // Claude Code CLI handles its own auth; we must not interfere.
+        const {
+          CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID,
+          ANTHROPIC_API_KEY,
+          ...cleanEnv
+        } = process.env;
+        // LaunchAgent has a minimal environment (no PATH, USER, LOGNAME, TMPDIR).
+        // Ensure these are present so Claude Code can access keychain and system tools.
+        if (!cleanEnv.PATH || cleanEnv.PATH.length < 20) {
+          cleanEnv.PATH = [
+            '/opt/homebrew/bin', '/opt/homebrew/sbin',
+            '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin',
+            join(HOME, '.npm-global', 'bin'),
+            join(HOME, '.local', 'bin'),
+          ].join(':');
+        }
+        if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch { /* ignore */ } }
+        if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
+        if (!cleanEnv.TMPDIR)  { cleanEnv.TMPDIR  = tmpdir(); }
 
         const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
           cwd,
@@ -396,8 +416,10 @@ export async function POST(
           }
         });
 
-        proc.stderr.on('data', (_data: Buffer) => {
-          // Suppress debug output — not displayed by client
+        proc.stderr.on('data', (data: Buffer) => {
+          // Log to server console for diagnostics — not shown to client
+          const msg = data.toString().trim();
+          if (msg) console.error(`[stream/${id}/stderr]`, msg.slice(0, 500));
         });
 
         const timeout = setTimeout(() => {
@@ -458,7 +480,7 @@ export async function POST(
             const sp = (buildSystemPrompt(id) ?? '') + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
-            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd: HOME, env: cleanEnv, stdio: 'pipe' });
+            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
             fresh.stdin.write(message);
             fresh.stdin.end();
 

@@ -289,11 +289,11 @@ function navigateTo(view: string) {
  * Predefined tours for common workflows
  */
 export const tours: Record<string, Tour> = {
-  /** 8-stop platform tour launched from the onboarding wizard */
+  /** 12-stop platform tour launched from the onboarding wizard */
   platformTour: {
     id: 'platform-tour',
     name: 'Platform Tour',
-    description: 'An 8-stop guided tour of Mission Control',
+    description: 'A 12-stop guided tour of Mission Control',
     steps: [
       {
         target: '[data-view="dashboard"]',
@@ -303,6 +303,13 @@ export const tours: Record<string, Tour> = {
         action: () => navigateTo('dashboard'),
       },
       {
+        target: '[data-view="projects"]',
+        title: 'Projects',
+        content: 'Unified project workspaces where tasks, chats, and files live together. Create a project and everything related to it stays in one place.',
+        position: 'right',
+        action: () => navigateTo('projects'),
+      },
+      {
         target: '[data-view="kanban"]',
         title: 'Tasks',
         content: 'The Kanban board tracks every piece of work. Create a task, assign it to an agent, and watch it move through Todo → In Progress → Review → Done automatically.',
@@ -310,11 +317,18 @@ export const tours: Record<string, Tour> = {
         action: () => navigateTo('kanban'),
       },
       {
-        target: '[data-view="agents"]',
-        title: 'Agents',
-        content: 'All your AI agents live here. Start a chat, check their status indicators, or hire new specialists from the catalog — each agent has a defined role and skill set.',
+        target: '[data-view="approvals"]',
+        title: 'Approvals',
+        content: 'Before agents take high-impact actions — sending emails, publishing content, running scripts — they pause here for your sign-off. Stay in control without slowing things down.',
         position: 'right',
-        action: () => navigateTo('agents'),
+        action: () => navigateTo('approvals'),
+      },
+      {
+        target: '[data-view="chat"]',
+        title: 'Chat',
+        content: 'Talk directly to any agent, one-on-one or in a room with multiple agents. Ask questions, delegate work, or just think out loud — agents remember context across sessions.',
+        position: 'right',
+        action: () => navigateTo('chat'),
       },
       {
         target: '[data-view="inbox"]',
@@ -324,11 +338,11 @@ export const tours: Record<string, Tour> = {
         action: () => navigateTo('inbox'),
       },
       {
-        target: '[data-view="memory"]',
-        title: 'Memory',
-        content: 'The shared knowledge base your agents read and write. Browse session history, search the vault, and open notes directly in Obsidian for deeper editing.',
+        target: '[data-view="schedule"]',
+        title: 'Schedule',
+        content: 'Calendar view for tasks, events, and content. See everything your team has planned, schedule new work, and keep agents on deadline.',
         position: 'right',
-        action: () => navigateTo('memory'),
+        action: () => navigateTo('schedule'),
       },
       {
         target: '[data-view="library"]',
@@ -338,11 +352,18 @@ export const tours: Record<string, Tour> = {
         action: () => navigateTo('library'),
       },
       {
-        target: '[data-view="analytics"]',
-        title: 'Analytics',
-        content: 'Token usage charts, per-agent activity breakdowns, and cost tracking. See exactly how your AI budget is being spent and which agents are doing the heavy lifting.',
+        target: '[data-view="agents"]',
+        title: 'Agents',
+        content: 'All your AI agents live here. Start a chat, check their status indicators, or hire new specialists from the catalog — each agent has a defined role and skill set.',
         position: 'right',
-        action: () => navigateTo('analytics'),
+        action: () => navigateTo('agents'),
+      },
+      {
+        target: '[data-view="modules"]',
+        title: 'Modules',
+        content: 'Extend Mission Control with optional modules — social media, finance, writing workspace, analytics, and more. Install or uninstall anytime from the module library.',
+        position: 'right',
+        action: () => navigateTo('modules'),
       },
       {
         target: '[data-view="settings"]',
@@ -350,6 +371,12 @@ export const tours: Record<string, Tour> = {
         content: 'API keys, permissions, connected accounts, and theme preferences all live here. You can also restart this tour at any time from the General tab.',
         position: 'right',
         action: () => navigateTo('settings'),
+      },
+      {
+        target: '[data-toolbar]',
+        title: 'Floating Toolbar',
+        content: 'Quick-access toolbar for the actions you use most — new task, quick chat, search, and more. Drag it anywhere on screen to keep it out of your way.',
+        position: 'top',
       },
     ],
   },

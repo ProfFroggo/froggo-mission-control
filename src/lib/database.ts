@@ -500,22 +500,13 @@ async function migrateKeysToKeychain(db: Database.Database): Promise<void> {
 }
 
 function seedAgents(db: Database.Database) {
+  // Only seed the 4 core agents that are always present.
+  // All other agents are installed via the onboarding wizard or Agents catalog — not auto-seeded.
   const agents = [
-    { id: 'mission-control',              name: 'Mission Control',               description: 'Main orchestrator',        capabilities: '["coordination","task-management","delegation"]',          model: 'opus'   },
-    { id: 'coder',               name: 'Coder',                description: 'Software engineer',        capabilities: '["coding","debugging","typescript","python"]',              model: 'sonnet' },
-    { id: 'researcher',          name: 'Researcher',           description: 'Research & analysis',      capabilities: '["research","analysis","web-search"]',                      model: 'sonnet' },
-    { id: 'writer',              name: 'Writer',               description: 'Content creation',         capabilities: '["writing","editing","documentation"]',                     model: 'sonnet' },
-    { id: 'chief',               name: 'Chief',                description: 'Lead engineer',            capabilities: '["architecture","code-review","mentoring"]',                model: 'opus'   },
-    { id: 'clara',               name: 'Clara',                description: 'Quality auditor',          capabilities: '["code-review","quality-validation","security"]',           model: 'opus'   },
-    { id: 'designer',            name: 'Designer',             description: 'UI/UX designer',           capabilities: '["ui-design","ux-design","prototyping"]',                   model: 'sonnet' },
-    { id: 'social-manager',      name: 'Social Manager',       description: 'X/Twitter strategy',      capabilities: '["content-ideation","tweet-drafting","engagement"]',        model: 'sonnet' },
-    { id: 'growth-director',     name: 'Growth Director',      description: 'Strategic growth',         capabilities: '["strategy","growth","marketing","gtm"]',                   model: 'opus'   },
-    { id: 'hr',                  name: 'HR',                   description: 'Agent management',         capabilities: '["agent-creation","training","skill-gaps"]',                model: 'sonnet' },
-    { id: 'senior-coder',        name: 'Senior Coder',         description: 'Lead software engineer',   capabilities: '["architecture","code-review","mentoring","typescript"]',   model: 'opus'   },
-    { id: 'inbox',               name: 'Inbox',                description: 'Message triage',           capabilities: '["triage","routing","prioritization"]',                     model: 'sonnet' },
-    { id: 'discord-manager',     name: 'Discord Manager',      description: 'Discord community',        capabilities: '["discord","community","moderation"]',                      model: 'sonnet' },
-    { id: 'finance-manager',     name: 'Finance Manager',      description: 'Financial operations',     capabilities: '["finance","accounting","reporting"]',                      model: 'sonnet' },
-    { id: 'voice',               name: 'Voice',                description: 'Voice agent',              capabilities: '["tts","voice","audio"]',                                   model: 'sonnet' },
+    { id: 'mission-control', name: 'Mission Control', description: 'Main orchestrator',  capabilities: '["coordination","task-management","delegation"]',        model: 'opus'   },
+    { id: 'clara',           name: 'Clara',           description: 'Quality auditor',    capabilities: '["code-review","quality-validation","security"]',       model: 'opus'   },
+    { id: 'coder',           name: 'Coder',           description: 'Software engineer',  capabilities: '["coding","debugging","typescript","python"]',          model: 'sonnet' },
+    { id: 'hr',              name: 'HR',              description: 'Agent management',   capabilities: '["agent-creation","training","skill-gaps"]',            model: 'sonnet' },
   ];
 
   const stmt = db.prepare(

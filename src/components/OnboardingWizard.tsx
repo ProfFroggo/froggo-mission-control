@@ -95,7 +95,7 @@ const CORE_AGENTS: AgentEntry[] = [
   { id: 'mission-control', name: 'Mission Control', description: 'Primary orchestrator — routes tasks, coordinates agents, plans work', core: true },
   { id: 'clara', name: 'Clara', description: 'Review & QA gate — validates work before it ships', core: true },
   { id: 'coder', name: 'Coder', description: 'Implements features, fixes bugs, writes tests', core: true },
-  { id: 'writer', name: 'Writer', description: 'Creates and edits documentation, blog posts, and content', core: true },
+  { id: 'hr', name: 'HR', description: 'Agent management — hiring, training, skill gaps, and team health', core: true },
 ];
 
 const OPTIONAL_AGENTS: AgentEntry[] = [
@@ -104,12 +104,12 @@ const OPTIONAL_AGENTS: AgentEntry[] = [
   { id: 'discord-manager', name: 'Discord Manager', description: 'Community management, moderation, and engagement' },
   { id: 'finance-manager', name: 'Finance Manager', description: 'Financial tracking, reporting, and budget management' },
   { id: 'growth-director', name: 'Growth Director', description: 'Growth strategy, GTM planning, and marketing initiatives' },
-  { id: 'hr', name: 'HR', description: 'Agent creation, team management, and skill gap analysis' },
   { id: 'inbox', name: 'Inbox', description: 'Monitors incoming messages and triages by urgency' },
   { id: 'researcher', name: 'Researcher', description: 'Deep research, competitive analysis, and technical investigation' },
   { id: 'senior-coder', name: 'Senior Coder', description: 'Complex features, architecture implementation, mentoring' },
   { id: 'social-manager', name: 'Social Manager', description: 'X/Twitter strategy, content, and social engagement' },
   { id: 'voice', name: 'Voice', description: 'Text-to-speech, voice interaction, and audio processing' },
+  { id: 'writer', name: 'Writer', description: 'Creates and edits documentation, blog posts, and content' },
 ];
 
 const CORE_MODULES: ModuleEntry[] = [
@@ -119,6 +119,9 @@ const CORE_MODULES: ModuleEntry[] = [
   { id: 'inbox', name: 'Inbox', description: 'Unified communications inbox across all channels', core: true },
   { id: 'notifications', name: 'Notifications', description: 'Activity updates, alerts, and completions from agents', core: true },
   { id: 'kanban', name: 'Kanban', description: 'Task board for project management and tracking', core: true },
+  { id: 'projects', name: 'Projects', description: 'Unified project workspaces with tasks, chats, and files', core: true },
+  { id: 'schedule', name: 'Schedule', description: 'Calendar and scheduling for tasks and content', core: true },
+  { id: 'library', name: 'Library', description: 'Browse and manage all agent output files', core: true },
   { id: 'settings', name: 'Settings', description: 'Dashboard preferences, security, and configuration', core: true },
 ];
 
@@ -126,11 +129,8 @@ const OPTIONAL_MODULES: ModuleEntry[] = [
   { id: 'analytics', name: 'Analytics', description: 'Platform metrics, agent performance, and reporting' },
   { id: 'dev', name: 'Dev Tools', description: 'Developer utilities, DB inspection, and platform internals' },
   { id: 'finance', name: 'Finance', description: 'Multi-account financial management with AI categorization' },
-  { id: 'library', name: 'Library', description: 'Browse and manage all agent output files' },
   { id: 'meetings', name: 'Meetings', description: 'Scheduling, agendas, notes, and action items' },
   { id: 'module-builder', name: 'Module Builder', description: 'Visual builder for creating new platform modules' },
-  { id: 'projects', name: 'Projects', description: 'Unified project workspaces with tasks, chats, and files' },
-  { id: 'schedule', name: 'Schedule', description: 'Calendar and scheduling for tasks and content' },
   { id: 'social-media', name: 'Social Media', description: 'Social media command center — publish, plan, and research' },
   { id: 'voice-chat', name: 'Voice Chat', description: 'Real-time voice interaction with agents via microphone' },
   { id: 'writing', name: 'Writing', description: 'AI-assisted writing workspace for long-form content' },
@@ -283,8 +283,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // ─────────────────────────────────────────────
   useEffect(() => {
     if (currentStep === 1) runSystemCheck();
-    if (currentStep === 5) checkGoogleStatus();
-    if (currentStep === 6) {
+    if (currentStep === 4) checkGoogleStatus();
+    if (currentStep === 5) {
       checkObsidian();
       checkBrowserPermissions();
     }
