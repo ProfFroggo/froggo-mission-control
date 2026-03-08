@@ -53,3 +53,153 @@ Pixar style headshot portrait of [character description]. [personality expressio
 5. Add personality entry to `public/agent-profiles/personalities.json`
 
 **If image generation unavailable:** Use closest existing avatar as placeholder, create a task for the user to provide a proper image.
+
+## Creating a New Agent
+
+Complete checklist — all steps required for a fully working agent.
+
+### Step 1 — Catalog files (in the platform repo)
+
+Create these files at `~/git/mission-control-nextjs/catalog/agents/{id}/`:
+
+**`{id}.json`** — manifest (place in `catalog/agents/`, not the subdirectory):
+```json
+{
+  "id": "{id}",
+  "name": "{Display Name}",
+  "emoji": "🤖",
+  "role": "{Role Title}",
+  "description": "{One-line description}",
+  "model": "sonnet",
+  "capabilities": ["list", "of", "capabilities"],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "custom"
+}
+```
+
+**`claude.md`** — agent instructions (use existing agents as template):
+- Identity and role
+- Directories section (copy from any existing claude.md)
+- Task pipeline section
+- MCP tools section
+- Core rules
+
+**`soul.md`** — personality file:
+- Character description
+- Personality traits
+- Vibe and communication style
+- Responsibilities and output paths
+
+**`avatar.webp`** — 2048×2048 WebP headshot (see ## Agent Headshots section)
+
+### Step 2 — Agent definition file (trust tier)
+
+Create `~/git/mission-control-nextjs/.claude/agents/{id}.md`:
+
+```markdown
+---
+name: {id}
+description: >-
+  {One-line description for agent routing}
+model: claude-sonnet-4-6
+permissionMode: default
+maxTurns: 50
+memory: user
+tools:
+  - Read
+  - Glob
+  - Grep
+  - Edit
+  - Write
+  - Bash
+  - TodoRead
+  - TodoWrite
+mcpServers:
+  - mission-control_db
+  - memory
+---
+
+# {Display Name}
+
+{Brief description of what this agent does and when to use it.}
+```
+
+**Trust tier rules:**
+- New custom agents start as `permissionMode: default` (apprentice)
+- Promote to `bypassPermissions` only after proving reliable (worker tier)
+- Only Mission Control, Clara, and HR run as `bypassPermissions`
+
+### Step 3 — Register in platform
+
+Call the register API (no restart needed):
+```
+POST /api/agents/register
+Body: { "id": "{id}" }
+```
+
+Then install the workspace:
+```
+POST /api/agents/hire
+Body: { "agentId": "{id}" }
+```
+
+The hire endpoint creates `~/mission-control/agents/{id}/` with CLAUDE.md, SOUL.md, MEMORY.md copied from catalog.
+
+### Step 4 — Create memory vault directory
+
+```bash
+mkdir -p ~/mission-control/memory/agents/{id}
+```
+
+### Step 5 — Add DIRECTORIES.md to workspace
+
+Copy from any existing agent workspace:
+```bash
+cp ~/mission-control/agents/mission-control/DIRECTORIES.md ~/mission-control/agents/{id}/DIRECTORIES.md
+```
+
+### Step 6 — Avatar in public profile
+
+```bash
+cp ~/git/mission-control-nextjs/catalog/agents/{id}/avatar.webp \
+   ~/git/mission-control-nextjs/public/agent-profiles/{id}.webp
+```
+
+### Step 7 — Update personalities.json
+
+Add entry to `~/git/mission-control-nextjs/public/agent-profiles/personalities.json`:
+```json
+"{id}": {
+  "name": "{Display Name}",
+  "role": "{Role}",
+  "emoji": "🤖",
+  "personality": "{personality description}",
+  "vibe": "{vibe description}",
+  "bio": "{bio}",
+  "image_prompt": "Pixar style headshot portrait of [character]. [expression]. Solid soft [color] background."
+}
+```
+
+### Step 8 — Announce
+
+Post to the general chat room:
+```
+mcp__mission-control_db__chat_post — "New agent {name} has joined the team. Role: {role}. Available for tasks immediately."
+```
+
+### Verification checklist
+- [ ] `catalog/agents/{id}.json` exists
+- [ ] `catalog/agents/{id}/claude.md` exists
+- [ ] `catalog/agents/{id}/soul.md` exists
+- [ ] `catalog/agents/{id}/avatar.webp` exists
+- [ ] `.claude/agents/{id}.md` exists with correct trust tier
+- [ ] `/api/agents/register` called successfully
+- [ ] `/api/agents/hire` called successfully
+- [ ] `~/mission-control/agents/{id}/` workspace exists
+- [ ] `~/mission-control/memory/agents/{id}/` exists
+- [ ] `public/agent-profiles/{id}.webp` copied
+- [ ] `personalities.json` updated
+- [ ] Chat announcement posted

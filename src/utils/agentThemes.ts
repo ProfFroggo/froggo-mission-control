@@ -88,11 +88,28 @@ export function registerAgentTheme(id: string, color: string, pic?: string) {
   }
 }
 
+const FALLBACK_PALETTE = [
+  { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400' },
+  { color: '#2196F3', border: 'border-blue-500/40',   bg: 'bg-blue-500/8',    text: 'text-blue-400',   ring: 'ring-blue-500/50',   dot: 'bg-blue-400' },
+  { color: '#9C27B0', border: 'border-purple-500/40', bg: 'bg-purple-500/8',  text: 'text-purple-400', ring: 'ring-purple-500/50', dot: 'bg-purple-400' },
+  { color: '#F44336', border: 'border-red-500/40',    bg: 'bg-red-500/8',     text: 'text-red-400',    ring: 'ring-red-500/50',    dot: 'bg-red-400' },
+  { color: '#FF9800', border: 'border-orange-500/40', bg: 'bg-orange-500/8',  text: 'text-orange-400', ring: 'ring-orange-500/50', dot: 'bg-orange-400' },
+  { color: '#00BCD4', border: 'border-cyan-500/40',   bg: 'bg-cyan-500/8',    text: 'text-cyan-400',   ring: 'ring-cyan-500/50',   dot: 'bg-cyan-400' },
+  { color: '#E91E63', border: 'border-rose-500/40',   bg: 'bg-rose-500/8',    text: 'text-rose-400',   ring: 'ring-rose-500/50',   dot: 'bg-rose-400' },
+  { color: '#00897B', border: 'border-teal-500/40',   bg: 'bg-teal-500/8',    text: 'text-teal-400',   ring: 'ring-teal-500/50',   dot: 'bg-teal-400' },
+];
+
+function hashId(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 /**
  * Get agent theme with fallback chain:
  * 1. Hardcoded theme (known agents)
- * 2. Runtime cache (newly registered agents)
- * 3. Default theme
+ * 2. Runtime cache (newly registered agents with explicit color)
+ * 3. Deterministic palette theme derived from agent ID hash
  */
 export function getAgentTheme(id: string): AgentTheme {
   const normalizedId = id.toLowerCase();
@@ -102,13 +119,14 @@ export function getAgentTheme(id: string): AgentTheme {
     return agentThemes[normalizedId];
   }
 
-  // Check runtime cache
+  // Check runtime cache (agents registered with explicit hex color)
   if (dynamicThemeCache[normalizedId]) {
     return dynamicThemeCache[normalizedId];
   }
 
-  // Default fallback
-  return defaultTheme;
+  // Deterministic palette fallback — new/unknown agents get a stable color
+  const palette = FALLBACK_PALETTE[hashId(normalizedId) % FALLBACK_PALETTE.length];
+  return { ...palette, pic: `${id}.webp` };
 }
 
 /**
