@@ -7,7 +7,7 @@
  */
 
 const { execSync, spawnSync } = require('child_process');
-const { existsSync, mkdirSync, realpathSync } = require('fs');
+const { existsSync, mkdirSync } = require('fs');
 const path = require('path');
 const os = require('os');
 
@@ -133,20 +133,18 @@ function installObsidian() {
 
 installObsidian();
 
-// ── Rebuild native addons for current Node.js version ──────────────────────
-// npm can place packages in node_modules/ (as a symlink to .pnpm/) or in .ignored/.
-// We resolve BOTH the symlink target (real physical dir) and use require.resolve(),
-// then run node-gyp rebuild in the real directory so the .node binary ends up
-// where Node.js will actually find it at runtime.
-info('Rebuilding native modules for Node.js ' + process.version + '...');
+// ── Fix native addon locations ──────────────────────────────────────────────
+// npm with pnpm layout places packages in node_modules/.pnpm/<pkg>/node_modules/<pkg>/
+// but prebuild-install downloads prebuilt binaries into node_modules/.ignored/<pkg>/
+// The .pnpm/ path is what require() uses at runtime, so binaries must live there.
+// Strategy: copy from .ignored/ if available (same ABI), else rebuild with node-gyp.
+info('Setting up native modules for Node.js ' + process.version + '...');
 
 // Find node-gyp — search common locations across npm and pnpm layouts
 function findNodeGyp() {
   const candidates = [
     path.join(ROOT, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'),
-    path.join(ROOT, 'node_modules', '.pnpm', 'node-gyp@12.2.0', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'),
   ];
-  // Also search dynamically in .pnpm for any node-gyp version
   const pnpmDir = path.join(ROOT, 'node_modules', '.pnpm');
   if (existsSync(pnpmDir)) {
     try {
@@ -159,66 +157,87 @@ function findNodeGyp() {
   return candidates.find(c => existsSync(c)) ?? null;
 }
 
+// Check if a .node file is loadable for the current Node ABI
+function nodeFileLoads(nodePath) {
+  try {
+    process.dlopen({ exports: {} }, nodePath);
+    return true;
+  } catch { return false; }
+}
+
+// Find the .node binding file in a package dir by searching build/Release/, build/Debug/, etc.
+function findNodeFile(dir) {
+  const candidates = [
+    path.join(dir, 'build', 'Release'),
+    path.join(dir, 'build', 'Debug'),
+    path.join(dir, 'build'),
+    path.join(dir, 'out', 'Release'),
+    path.join(dir, 'Release'),
+  ];
+  for (const d of candidates) {
+    if (!existsSync(d)) continue;
+    try {
+      const files = require('fs').readdirSync(d).filter(f => f.endsWith('.node'));
+      if (files.length) return path.join(d, files[0]);
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
 const nodeGypBin = findNodeGyp();
+const { copyFileSync } = require('fs');
 
 for (const mod of ['better-sqlite3', 'keytar']) {
-  // resolve() follows symlinks — gives us the real physical dir in .pnpm/
-  let modDir = null;
+  // Find the target dir — where require() looks at runtime (node_modules/.pnpm/...)
+  let targetDir = null;
   try {
-    const resolved = require.resolve(`${mod}/package.json`, { paths: [ROOT] });
-    modDir = path.dirname(realpathSync(resolved));
+    targetDir = path.dirname(require.resolve(`${mod}/package.json`, { paths: [ROOT] }));
   } catch {
-    // Fall back to symlink path if realpathSync fails
-    try {
-      modDir = path.dirname(require.resolve(`${mod}/package.json`, { paths: [ROOT] }));
-    } catch {
-      warn(`${mod} not found in node_modules — skipping`);
-      continue;
-    }
-  }
-
-  if (!nodeGypBin) {
-    warn(`node-gyp not found — skipping ${mod} rebuild. Run: npm rebuild ${mod}`);
+    warn(`${mod} not found in node_modules — skipping`);
     continue;
   }
 
-  info(`Rebuilding ${mod} at ${modDir}...`);
+  // Where the binding should live (where bindings package will find it)
+  const targetBinding = path.join(targetDir, 'build', 'Release', `${mod.replace(/-/g, '_')}.node`);
+
+  // Already in the right place?
+  if (existsSync(targetBinding) && nodeFileLoads(targetBinding)) {
+    success(`${mod} ready`);
+    continue;
+  }
+
+  info(`Setting up ${mod}...`);
+
+  // Strategy 1: copy prebuilt binary from .ignored/ (placed there by prebuild-install)
+  const ignoredDir = path.join(ROOT, 'node_modules', '.ignored', mod);
+  const ignoredBinding = findNodeFile(ignoredDir);
+  if (ignoredBinding && nodeFileLoads(ignoredBinding)) {
+    try {
+      mkdirSync(path.dirname(targetBinding), { recursive: true });
+      copyFileSync(ignoredBinding, targetBinding);
+      if (existsSync(targetBinding) && nodeFileLoads(targetBinding)) {
+        success(`${mod} ready (prebuilt)`);
+        continue;
+      }
+    } catch { /* fall through to rebuild */ }
+  }
+
+  // Strategy 2: rebuild with node-gyp
+  if (!nodeGypBin) {
+    warn(`node-gyp not found — ${mod} may not work. Run: cd "${targetDir}" && node-gyp rebuild`);
+    continue;
+  }
+
   const result = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
-    cwd: modDir,
+    cwd: targetDir,
     stdio: 'pipe',
     env: { ...process.env, npm_config_node_gyp: nodeGypBin },
   });
 
-  // Verify the binding actually loads after rebuild — the real test
-  function bindingLoads() {
-    try {
-      const pkg = JSON.parse(require('fs').readFileSync(require('path').join(modDir, 'package.json'), 'utf-8'));
-      const main = require('path').join(modDir, pkg.main || 'index.js');
-      require(main); // will throw if .node file is missing
-      return true;
-    } catch { return false; }
-  }
-
-  if (result.status === 0 && bindingLoads()) {
+  if (result.status === 0 && existsSync(targetBinding) && nodeFileLoads(targetBinding)) {
     success(`${mod} compiled`);
   } else {
-    // First fallback: npm rebuild via npx
-    const r2 = spawnSync('npm', ['rebuild', mod, '--prefix', ROOT],
-      { cwd: ROOT, stdio: 'pipe', shell: true });
-    if (r2.status === 0 && bindingLoads()) {
-      success(`${mod} compiled (via npm rebuild)`);
-    } else {
-      // Second fallback: node-gyp directly with explicit node version
-      const r3 = spawnSync(process.execPath, [nodeGypBin, 'rebuild',
-        `--target=${process.versions.node}`, '--arch=arm64', '--dist-url=https://nodejs.org/dist'],
-        { cwd: modDir, stdio: 'pipe', env: { ...process.env, npm_config_node_gyp: nodeGypBin } });
-      if (r3.status === 0 && bindingLoads()) {
-        success(`${mod} compiled (direct rebuild)`);
-      } else {
-        warn(`${mod} rebuild failed — run manually: cd "${modDir}" && node-gyp rebuild`);
-        if (result.stderr) warn(result.stderr.toString().slice(0, 300));
-      }
-    }
+    warn(`${mod} setup failed — run manually: cd "${targetDir}" && node-gyp rebuild`);
   }
 }
 

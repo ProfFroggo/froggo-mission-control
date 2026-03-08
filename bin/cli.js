@@ -225,20 +225,56 @@ function scaffoldLibrary(base) {
 // Ensures better-sqlite3 is compiled for the current Node.js version.
 // Runs once at startup — if the .node binding is missing, rebuilds automatically.
 function ensureNativeModules() {
-  const modPath = path.join(INSTALL_DIR, 'node_modules', 'better-sqlite3');
-  if (!existsSync(modPath)) return; // not installed, skip
+  // Find where require() will look for better-sqlite3 at runtime (node_modules/.pnpm/...)
+  let targetDir = null;
   try {
-    require(modPath); // will throw if binding is missing
-    return; // already works
-  } catch (e) {
-    if (!String(e).includes('bindings')) return; // different error, skip
+    targetDir = path.dirname(require.resolve('better-sqlite3/package.json', { paths: [INSTALL_DIR] }));
+  } catch {
+    return; // not installed
   }
-  warn('better-sqlite3 native binding missing — rebuilding for Node.js ' + process.version);
+
+  // The binding must be at build/Release/better_sqlite3.node for bindings pkg to find it
+  const targetBinding = path.join(targetDir, 'build', 'Release', 'better_sqlite3.node');
+
+  // Check with dlopen (not require) — no cache, no false positives
+  function loadsOk(p) {
+    if (!existsSync(p)) return false;
+    try { process.dlopen({ exports: {} }, p); return true; } catch { return false; }
+  }
+
+  if (loadsOk(targetBinding)) return; // already good
+
+  warn('better-sqlite3 binding missing or wrong ABI — fixing for Node.js ' + process.version);
+
+  // Strategy 1: copy prebuilt binary from .ignored/ (placed there by prebuild-install)
+  const { mkdirSync: mkd, copyFileSync: cpf, readdirSync } = require('fs');
+  const ignoredDir = path.join(INSTALL_DIR, 'node_modules', '.ignored', 'better-sqlite3');
+  function findNodeFile(dir) {
+    for (const sub of ['build/Release', 'build/Debug', 'build', 'out/Release', 'Release']) {
+      const d = path.join(dir, sub);
+      if (!existsSync(d)) continue;
+      try {
+        const f = readdirSync(d).find(x => x.endsWith('.node'));
+        if (f) return path.join(d, f);
+      } catch {}
+    }
+    return null;
+  }
+  const ignoredBinding = findNodeFile(ignoredDir);
+  if (ignoredBinding && loadsOk(ignoredBinding)) {
+    try {
+      mkd(path.dirname(targetBinding), { recursive: true });
+      cpf(ignoredBinding, targetBinding);
+      if (loadsOk(targetBinding)) { success('better-sqlite3 ready'); return; }
+    } catch {}
+  }
+
+  // Strategy 2: rebuild with node-gyp
+  const pnpmDir = path.join(INSTALL_DIR, 'node_modules', '.pnpm');
   const nodeGypBin = (() => {
-    const pnpmDir = path.join(INSTALL_DIR, 'node_modules', '.pnpm');
     if (existsSync(pnpmDir)) {
       try {
-        const entries = require('fs').readdirSync(pnpmDir).filter(e => e.startsWith('node-gyp@'));
+        const entries = readdirSync(pnpmDir).filter(e => e.startsWith('node-gyp@'));
         for (const e of entries) {
           const p = path.join(pnpmDir, e, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
           if (existsSync(p)) return p;
@@ -248,22 +284,20 @@ function ensureNativeModules() {
     const flat = path.join(INSTALL_DIR, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
     return existsSync(flat) ? flat : null;
   })();
-  if (!nodeGypBin) { warn('node-gyp not found — run: cd ' + modPath + ' && node-gyp rebuild'); return; }
-  const { realpathSync } = require('fs');
-  let realModPath;
-  try {
-    realModPath = path.dirname(realpathSync(path.join(modPath, 'package.json')));
-  } catch {
-    realModPath = modPath;
+
+  if (!nodeGypBin) {
+    warn('node-gyp not found — run: cd "' + targetDir + '" && node-gyp rebuild');
+    return;
   }
+
   const r = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
-    cwd: realModPath, stdio: 'inherit',
+    cwd: targetDir, stdio: 'inherit',
     env: { ...process.env, npm_config_node_gyp: nodeGypBin },
   });
-  if (r.status === 0) {
-    success('better-sqlite3 rebuilt successfully');
+  if (r.status === 0 && loadsOk(targetBinding)) {
+    success('better-sqlite3 compiled');
   } else {
-    warn('Rebuild failed — run: cd "' + realModPath + '" && node-gyp rebuild');
+    warn('Rebuild failed — run: cd "' + targetDir + '" && node-gyp rebuild');
   }
 }
 
