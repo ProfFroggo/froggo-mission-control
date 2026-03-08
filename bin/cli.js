@@ -319,6 +319,10 @@ async function cmdSetup(force = false) {
       content = content.replace(/,?\s*"QMD_BIN":\s*"[^"]*"/g, '');
     }
     writeFileSync(settingsPath, content);
+    // Also write to ~/mission-control/.claude/settings.json for agents running in MC_HOME
+    const mcClaudeDir = path.join(MC_HOME, '.claude');
+    mkdirSync(mcClaudeDir, { recursive: true });
+    writeFileSync(path.join(mcClaudeDir, 'settings.json'), content);
     success('.claude/settings.json generated');
   }
 
@@ -342,8 +346,92 @@ async function cmdSetup(force = false) {
       },
     },
   };
-  writeFileSync(path.join(INSTALL_DIR, '.mcp.json'), JSON.stringify(mcpConfig, null, 2));
+  const mcpJson = JSON.stringify(mcpConfig, null, 2);
+  writeFileSync(path.join(INSTALL_DIR, '.mcp.json'), mcpJson);
+  // Also write to ~/mission-control/.mcp.json so agents in MC_HOME get MCP access
+  writeFileSync(path.join(MC_HOME, '.mcp.json'), mcpJson);
   success('.mcp.json generated');
+
+  // ── Scaffold core agent workspaces ──────────────────────────────────────
+  step('Bootstrapping core agent workspaces');
+  const coreAgents = ['mission-control', 'clara', 'coder', 'writer'];
+  const catalogAgentsDir = path.join(INSTALL_DIR, 'catalog', 'agents');
+  for (const agentId of coreAgents) {
+    const agentWorkspaceDir = path.join(MC_AGENTS, agentId);
+    mkdirSync(agentWorkspaceDir, { recursive: true });
+
+    // Copy CLAUDE.md from catalog
+    const srcClaude = path.join(catalogAgentsDir, agentId, 'claude.md');
+    const dstClaude = path.join(agentWorkspaceDir, 'CLAUDE.md');
+    if (existsSync(srcClaude) && !existsSync(dstClaude)) {
+      copyFileSync(srcClaude, dstClaude);
+    }
+
+    // Copy SOUL.md from catalog
+    const srcSoul = path.join(catalogAgentsDir, agentId, 'soul.md');
+    const dstSoul = path.join(agentWorkspaceDir, 'SOUL.md');
+    if (existsSync(srcSoul) && !existsSync(dstSoul)) {
+      copyFileSync(srcSoul, dstSoul);
+    }
+
+    // Create empty MEMORY.md
+    const dstMemory = path.join(agentWorkspaceDir, 'MEMORY.md');
+    if (!existsSync(dstMemory)) {
+      writeFileSync(dstMemory, '# Memory\n');
+    }
+  }
+  success('Core agent workspaces bootstrapped');
+
+  // ── Generate ~/mission-control/CLAUDE.md ────────────────────────────────
+  const mcClaudeMd = path.join(MC_HOME, 'CLAUDE.md');
+  if (!existsSync(mcClaudeMd)) {
+    const mcClaudeMdContent = [
+      '# Mission Control',
+      '',
+      '## Paths',
+      `- App: ${INSTALL_DIR} — \`npm start\` → localhost:${port}`,
+      `- DB: ${MC_DATA}/mission-control.db`,
+      `- Vault: ${MC_MEMORY}/`,
+      `- Library: ${MC_LIBRARY}/`,
+      `- Agents: ${MC_AGENTS}/`,
+      '',
+      '## MCP Tools Available',
+      '- `mcp__mission-control-db__task_create/update/list` — task management',
+      '- `mcp__mission-control-db__chat_post/read` — agent chat',
+      '- `mcp__mission-control-db__approval_create` — human approval gates',
+      '- `mcp__memory__memory_search/recall/write/read` — knowledge vault',
+      '- `mcp__cron__schedule_create/list` — scheduling',
+      '',
+      '## Agent Roster',
+      '- **mission-control** — Primary orchestrator, delegates work',
+      '- **clara** — QA review gate, runs before work ships',
+      '- **coder** — Code execution, debugging, implementation',
+      '- **writer** — Content, docs, long-form writing',
+      '',
+      '## Task Lifecycle',
+      'todo → internal-review → in-progress → review → human-review → done',
+      '',
+      '## Key Rules',
+      '- Check task board before starting work',
+      '- Post activity on every meaningful decision',
+      '- External actions → `approval_create` MCP tool first',
+      '- P0/P1 tasks → Clara review before done',
+      '- ENV values → read from app API, never hardcode paths',
+    ].join('\n');
+    writeFileSync(mcClaudeMd, mcClaudeMdContent);
+  }
+  success('~/mission-control/CLAUDE.md written');
+
+  // ── Create empty data files ──────────────────────────────────────────────
+  const scheduleFile = path.join(MC_DATA, 'schedule.json');
+  if (!existsSync(scheduleFile)) {
+    writeFileSync(scheduleFile, '{}');
+  }
+  const googleTokensFile = path.join(MC_DATA, 'google-tokens.json');
+  if (!existsSync(googleTokensFile)) {
+    writeFileSync(googleTokensFile, '{}');
+  }
+  success('Data files initialised');
 
   // ── Install persistent service ──────────────────────────────────────────
   step('Installing persistent service (auto-start at login)');

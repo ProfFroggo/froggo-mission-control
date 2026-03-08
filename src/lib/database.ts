@@ -414,6 +414,31 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_projects_createdAt ON projects(createdAt);
     CREATE INDEX IF NOT EXISTS idx_project_members_agentId ON project_members(agentId);
 
+    -- ── Performance indexes ──────────────────────────────────────────────
+    -- Tasks: composite indexes for common dashboard queries
+    CREATE INDEX IF NOT EXISTS idx_tasks_status_updated ON tasks(status, updatedAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo_status ON tasks(assignedTo, status);
+    CREATE INDEX IF NOT EXISTS idx_tasks_priority_status ON tasks(priority, status);
+
+    -- Subtasks: position-ordered retrieval per task
+    CREATE INDEX IF NOT EXISTS idx_subtasks_taskId_position ON subtasks(taskId, position);
+
+    -- Task activity: agent timeline queries
+    CREATE INDEX IF NOT EXISTS idx_activity_agentId_timestamp ON task_activity(agentId, timestamp DESC);
+
+    -- Messages: session-ordered retrieval
+    CREATE INDEX IF NOT EXISTS idx_messages_sessionKey_timestamp ON messages(sessionKey, timestamp DESC);
+
+    -- Inbox: type and recency queries
+    CREATE INDEX IF NOT EXISTS idx_inbox_type ON inbox(type);
+    CREATE INDEX IF NOT EXISTS idx_inbox_createdAt ON inbox(createdAt DESC);
+
+    -- Token usage: cost reporting
+    CREATE INDEX IF NOT EXISTS idx_token_usage_model ON token_usage(model, timestamp DESC);
+
+    -- Approvals: requester queries
+    CREATE INDEX IF NOT EXISTS idx_approvals_requester ON approvals(requester, createdAt DESC);
+
     -- No default rooms seeded — rooms are created on demand
   `);
 

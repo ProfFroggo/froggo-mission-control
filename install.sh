@@ -287,6 +287,151 @@ cat > "${MCPJSON}" << EOF
 EOF
 success ".mcp.json written"
 
+# ── Step 9b: Generate ~/mission-control/.claude/settings.json ────────────────
+MC_CLAUDE_DIR="${MC_HOME}/.claude"
+mkdir -p "${MC_CLAUDE_DIR}"
+
+TEMPLATE="${REPO_DIR}/.claude/settings.json.template"
+MC_SETTINGS_OUTPUT="${MC_CLAUDE_DIR}/settings.json"
+
+if [ -f "${TEMPLATE}" ]; then
+  QMD_BIN=""
+  for qmd_path in "/opt/homebrew/bin/qmd" "/usr/local/bin/qmd" "${HOME}/.npm-global/bin/qmd" "${HOME}/.local/bin/qmd"; do
+    if [ -x "$qmd_path" ]; then
+      QMD_BIN="$qmd_path"
+      break
+    fi
+  done
+
+  sed \
+    -e "s|{{PROJECT_ROOT}}|${REPO_DIR}|g" \
+    -e "s|{{HOME}}|${HOME}|g" \
+    "${TEMPLATE}" > "${MC_SETTINGS_OUTPUT}"
+
+  if [ -z "${QMD_BIN}" ]; then
+    python3 -c "
+import json, sys
+with open('${MC_SETTINGS_OUTPUT}') as f: d = json.load(f)
+if 'mcpServers' in d and 'memory' in d['mcpServers']:
+    d['mcpServers']['memory']['env'].pop('QMD_BIN', None)
+with open('${MC_SETTINGS_OUTPUT}', 'w') as f: json.dump(d, f, indent=2)
+" 2>/dev/null || true
+  fi
+  success "~/mission-control/.claude/settings.json generated"
+fi
+
+# ── Step 9c: Generate ~/mission-control/.mcp.json ────────────────────────────
+cat > "${MC_HOME}/.mcp.json" << EOF
+{
+  "mcpServers": {
+    "mission-control-db": {
+      "command": "node",
+      "args": ["${REPO_DIR}/tools/mission-control-db-mcp/dist/index.js"],
+      "env": {
+        "DB_PATH": "${MC_DATA}/mission-control.db"
+      }
+    },
+    "memory": {
+      "command": "node",
+      "args": ["${REPO_DIR}/tools/memory-mcp/dist/index.js"],
+      "env": {
+        "VAULT_PATH": "${MC_MEMORY}",
+        "LOG_DIR": "${MC_LOGS}"$([ -n "${QMD_BIN:-}" ] && echo ",
+        \"QMD_BIN\": \"${QMD_BIN}\"" || true)
+      }
+    },
+    "cron": {
+      "command": "node",
+      "args": ["${REPO_DIR}/tools/cron-mcp/dist/index.js"],
+      "env": {
+        "SCHEDULE_PATH": "${MC_DATA}/schedule.json"
+      }
+    }
+  }
+}
+EOF
+success "~/mission-control/.mcp.json written"
+
+# ── Step 9d: Scaffold core agent workspaces ───────────────────────────────────
+step "Bootstrapping core agent workspaces"
+
+bootstrap_agents() {
+  local catalog_agents_dir="${REPO_DIR}/catalog/agents"
+  local core_agents=("mission-control" "clara" "coder" "writer")
+
+  for agent_id in "${core_agents[@]}"; do
+    local workspace="${MC_AGENTS}/${agent_id}"
+    mkdir -p "${workspace}"
+
+    local src_claude="${catalog_agents_dir}/${agent_id}/claude.md"
+    local dst_claude="${workspace}/CLAUDE.md"
+    if [ -f "${src_claude}" ] && [ ! -f "${dst_claude}" ]; then
+      cp "${src_claude}" "${dst_claude}"
+    fi
+
+    local src_soul="${catalog_agents_dir}/${agent_id}/soul.md"
+    local dst_soul="${workspace}/SOUL.md"
+    if [ -f "${src_soul}" ] && [ ! -f "${dst_soul}" ]; then
+      cp "${src_soul}" "${dst_soul}"
+    fi
+
+    local dst_memory="${workspace}/MEMORY.md"
+    if [ ! -f "${dst_memory}" ]; then
+      echo "# Memory" > "${dst_memory}"
+    fi
+  done
+}
+
+bootstrap_agents
+success "Core agent workspaces bootstrapped"
+
+# ── Step 9e: Generate ~/mission-control/CLAUDE.md ────────────────────────────
+if [ ! -f "${MC_HOME}/CLAUDE.md" ]; then
+  cat > "${MC_HOME}/CLAUDE.md" << EOF
+# Mission Control
+
+## Paths
+- App: ${REPO_DIR} — \`npm start\` → localhost:${PORT}
+- DB: ${MC_DATA}/mission-control.db
+- Vault: ${MC_MEMORY}/
+- Library: ${MC_LIBRARY}/
+- Agents: ${MC_AGENTS}/
+
+## MCP Tools Available
+- \`mcp__mission-control-db__task_create/update/list\` — task management
+- \`mcp__mission-control-db__chat_post/read\` — agent chat
+- \`mcp__mission-control-db__approval_create\` — human approval gates
+- \`mcp__memory__memory_search/recall/write/read\` — knowledge vault
+- \`mcp__cron__schedule_create/list\` — scheduling
+
+## Agent Roster
+- **mission-control** — Primary orchestrator, delegates work
+- **clara** — QA review gate, runs before work ships
+- **coder** — Code execution, debugging, implementation
+- **writer** — Content, docs, long-form writing
+
+## Task Lifecycle
+todo → internal-review → in-progress → review → human-review → done
+
+## Key Rules
+- Check task board before starting work
+- Post activity on every meaningful decision
+- External actions → \`approval_create\` MCP tool first
+- P0/P1 tasks → Clara review before done
+- ENV values → read from app API, never hardcode paths
+EOF
+  success "~/mission-control/CLAUDE.md written"
+fi
+
+# ── Step 9f: Create empty data files ─────────────────────────────────────────
+if [ ! -f "${MC_DATA}/schedule.json" ]; then
+  echo '{}' > "${MC_DATA}/schedule.json"
+fi
+if [ ! -f "${MC_DATA}/google-tokens.json" ]; then
+  echo '{}' > "${MC_DATA}/google-tokens.json"
+fi
+success "Data files initialised"
+
 # ── Step 10: Obsidian vault skeleton ─────────────────────────────────────────
 step "Setting up memory vault"
 
