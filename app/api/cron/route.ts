@@ -1,3 +1,4 @@
+import { ENV } from '@/lib/env';
 import { NextRequest, NextResponse } from 'next/server';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const SCHEDULE_PATH = process.env.MC_SCHEDULE_PATH || join(homedir(), 'mission-control/data/schedule.json');
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 
 function readJobs(): Record<string, unknown>[] {
   if (!existsSync(SCHEDULE_PATH)) return [];

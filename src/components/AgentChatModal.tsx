@@ -3,14 +3,13 @@ import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, 
 import MarkdownMessage from './MarkdownMessage';
 import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
-import { gateway } from '../lib/gateway';
+import { chatApi } from '../lib/api';
 import { getAgentTheme } from '../utils/agentThemes';
-import { agentApi, chatApi } from '../lib/api';
 
 interface AgentChatModalProps {
   agentId: string;
   onClose: () => void;
-  existingSessionKey?: string; // Optional: connect to existing session instead of spawning new
+  existingSessionKey?: string;
 }
 
 interface Message {
@@ -25,34 +24,25 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [sessionKey, setSessionKey] = useState<string | null>(null);
-  const [spawning, setSpawning] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const streamCleanupRef = useRef<(() => void) | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const agent = agents.find(a => a.id === agentId);
+  // Each agent gets its own persistent modal session — isolated from toolbar or room sessions
+  const sessionKey = existingSessionKey ?? `modal:${agentId}`;
 
-  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const historyPollRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup timeouts and listeners on unmount
   useEffect(() => {
     return () => {
-      streamCleanupRef.current?.();
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-      if (historyPollRef.current) {
-        clearInterval(historyPollRef.current);
-      }
+      abortRef.current?.abort();
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     };
   }, []);
 
   const handleClose = useCallback(() => {
-    // Clean up stream listener
-    streamCleanupRef.current?.();
+    abortRef.current?.abort();
     setIsClosing(true);
     closeTimeoutRef.current = setTimeout(() => {
       onClose();
@@ -60,14 +50,18 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
     }, 200);
   }, [onClose]);
 
+  // Load persisted history on open
   useEffect(() => {
-    initChat();
-    return () => {
-      streamCleanupRef.current?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // initChat re-initializes state, adding it to deps causes unnecessary re-runs
-  }, [agentId]);
+    chatApi.getMessages(sessionKey).then((rows: any) => {
+      if (Array.isArray(rows) && rows.length > 0) {
+        setMessages(rows.slice(-60).map((m: any) => ({
+          role: m.role as Message['role'],
+          content: m.content,
+          timestamp: m.timestamp ?? Date.now(),
+        })));
+      }
+    }).catch(() => {});
+  }, [sessionKey]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,314 +70,92 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
   // ESC key to close
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleClose();
-      }
+      if (e.key === 'Escape') { e.preventDefault(); handleClose(); }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [handleClose]);
 
-  const initChat = async () => {
-    // If we have an existing session key, use it directly
-    if (existingSessionKey) {
-      setSessionKey(existingSessionKey);
-      setMessages([]); // History will be loaded by polling
-      return;
-    }
-
-    // Otherwise, spawn a new session
-    setSpawning(true);
-    setMessages([{
-      role: 'system',
-      content: `Connecting to ${agent?.name || agentId}...`,
-      timestamp: Date.now(),
-    }]);
-
-    try {
-      // Spawn a real agent session via REST API
-      const result = await agentApi.spawn(agentId);
-      const key = typeof result === 'string' ? result : result?.sessionKey;
-      if (key) {
-        setSessionKey(key);
-        setMessages([{
-          role: 'system',
-          content: `✅ Connected to ${agent?.name || agentId}. Session active — you're chatting with a real LLM.`,
-          timestamp: Date.now(),
-        }]);
-      } else {
-        throw new Error(result?.error || 'No session key returned');
-      }
-    } catch (e: unknown) {
-      const errMsg = e instanceof Error ? e.message : 'Unknown error';
-      setMessages([{
-        role: 'system',
-        content: `❌ Failed to connect: ${errMsg}. The gateway may not support agent spawning, or the session limit was reached.`,
-        timestamp: Date.now(),
-      }]);
-    }
-    setSpawning(false);
-  };
-
-  // Poll session history for real-time updates
-  const fetchHistory = useCallback(async () => {
-    if (!sessionKey) return;
-    
-    try {
-      const historyResult = await gateway.request('sessions.history', {
-        sessionKey,
-        limit: 100,
-      }) as any;
-
-      if (historyResult?.messages && Array.isArray(historyResult.messages)) {
-        const formattedMessages: Message[] = historyResult.messages
-          .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
-          .map((msg: any) => {
-            // Extract text from content (handle both string and array formats)
-            let content = '';
-            if (typeof msg.content === 'string') {
-              content = msg.content;
-            } else if (Array.isArray(msg.content)) {
-              // Filter for text blocks only - skip tool calls, thinking, etc.
-              content = msg.content
-                .filter((c: any) => c.type === 'text')
-                .map((c: any) => c.text)
-                .join('');
-            }
-            
-            return {
-              role: msg.role,
-              content: content || '',
-              timestamp: msg.timestamp || Date.now(),
-            };
-          })
-          .filter((msg: Message) => msg.content.trim().length > 0); // Skip empty messages
-
-        // Only update if we have new messages (avoid flicker)
-        setMessages(prev => {
-          if (JSON.stringify(prev) !== JSON.stringify(formattedMessages)) {
-            return formattedMessages;
-          }
-          return prev;
-        });
-      }
-    } catch (e) {
-      // Silently fail - don't spam errors during polling
-    }
-  }, [sessionKey]);
-
-  // Set up real-time streaming listeners when sessionKey is available
-  useEffect(() => {
-    if (!sessionKey) return;
-
-    // Fetch initial history once
-    fetchHistory();
-
-    // Real-time streaming handler - appends chunks as they arrive
-    const handleDelta = (data: any) => {
-      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
-      
-      if (data.chunk) {
-        // Instant streaming - append chunk to streaming content
-        setStreamingContent(prev => prev + data.chunk);
-      }
-    };
-
-    // Final message handler - convert streaming to message
-    const handleMessage = (data: any) => {
-      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
-
-      const finalContent = data.content || data.response || data.text;
-      if (finalContent) {
-        // Add assistant message
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: finalContent,
-          timestamp: Date.now(),
-        }]);
-        setStreamingContent('');
-      }
-    };
-
-    // Unified chat event handler
-    const handleChat = (data: any) => {
-      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
-
-      if (data.state === 'streaming' && data.chunk) {
-        setStreamingContent(prev => prev + data.chunk);
-      } else if (data.state === 'done' || data.state === 'complete') {
-        const finalContent = data.content || data.response;
-        if (finalContent) {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: finalContent,
-            timestamp: Date.now(),
-          }]);
-          setStreamingContent('');
-        }
-      }
-    };
-
-    // Subscribe to all chat events
-    const unsub1 = gateway.on('chat.delta', handleDelta);
-    const unsub2 = gateway.on('chat.message', handleMessage);
-    const unsub3 = gateway.on('chat', handleChat);
-    const unsub4 = gateway.on('chat.end', handleMessage);
-
-    // Fallback: poll every 10 seconds to catch any missed updates
-    historyPollRef.current = setInterval(fetchHistory, 10000);
-
-    return () => {
-      unsub1();
-      unsub2();
-      unsub3();
-      unsub4();
-      if (historyPollRef.current) {
-        clearInterval(historyPollRef.current);
-        historyPollRef.current = null;
-      }
-    };
-  }, [sessionKey, fetchHistory]);
-
   const sendMessage = useCallback(async () => {
-    if (!input.trim() || !sessionKey || sending) return;
+    if (!input.trim() || sending) return;
 
     const userText = input.trim();
-    const userMessage: Message = {
-      role: 'user',
-      content: userText,
-      timestamp: Date.now(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setSending(true);
     setStreamingContent('');
 
+    const userMsg: Message = { role: 'user', content: userText, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+    chatApi.saveMessage(sessionKey, { role: 'user', content: userText, timestamp: Date.now() }).catch(() => {});
+
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    let reply = '';
     try {
-      // Listen for streaming chunks
-      let fullResponse = '';
-      streamCleanupRef.current?.();
-
-      const unsub = gateway.on('chat', (data: any) => {
-        // STRICT session matching - only accept events for THIS session
-        // Prevents bleed between multiple open chat modals
-        if (!data.sessionKey || data.sessionKey !== sessionKey) return;
-
-        if (data.state === 'streaming' && data.chunk) {
-          fullResponse += data.chunk;
-          setStreamingContent(fullResponse);
-        }
-        if (data.state === 'done' || data.state === 'complete') {
-          const finalContent = data.content || data.response || fullResponse;
-          if (finalContent) {
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: finalContent,
-              timestamp: Date.now(),
-            }]);
-          }
-          setStreamingContent('');
-          setSending(false);
-          unsub();
-          streamCleanupRef.current = null;
-        }
-        if (data.state === 'error') {
-          setMessages(prev => [...prev, {
-            role: 'system',
-            content: `⚠️ Error: ${data.error || 'Unknown error'}`,
-            timestamp: Date.now(),
-          }]);
-          setStreamingContent('');
-          setSending(false);
-          unsub();
-          streamCleanupRef.current = null;
-        }
+      const res = await fetch(`/api/agents/${agentId}/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, sessionKey }),
+        signal: ctrl.signal,
       });
-      streamCleanupRef.current = unsub;
+      if (!res.ok) throw new Error(`Stream error: ${res.status}`);
 
-      // Send the message to the real session via gateway
-      const result = await gateway.sendToSession(sessionKey, userText);
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
 
-      // If we get a direct response (non-streaming), use it
-      const responseText = typeof result === 'string' ? result : (result as any)?.response;
-      if (responseText) {
-        // Clean up stream listener since we got a direct response
-        unsub();
-        streamCleanupRef.current = null;
-        setStreamingContent('');
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: responseText,
-          timestamp: Date.now(),
-        }]);
-        setSending(false);
-      } else if (result && !(result as any).success && (result as any).error) {
-        // Handle error response
-        unsub();
-        streamCleanupRef.current = null;
-        setStreamingContent('');
-        setMessages(prev => [...prev, {
-          role: 'system',
-          content: `⚠️ Error: ${(result as any).error}`,
-          timestamp: Date.now(),
-        }]);
-        setSending(false);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6);
+          if (raw === '[DONE]') break;
+          try {
+            const chunk = JSON.parse(raw);
+            if (chunk.type === 'result' && chunk.result && !chunk.is_error) {
+              reply = chunk.result;
+              setStreamingContent(reply);
+            } else if (chunk.type === 'text' && chunk.text) {
+              reply += chunk.text;
+              setStreamingContent(reply);
+            } else if (chunk.type === 'assistant' && Array.isArray(chunk.message?.content)) {
+              for (const block of chunk.message.content) {
+                if (block.type === 'text') { reply += block.text; setStreamingContent(reply); }
+              }
+            }
+          } catch { /* non-JSON line, ignore */ }
+        }
       }
 
-      // Set a timeout in case streaming never completes
-      const responseTimeoutRef = setTimeout(() => {
-        if (sending) {
-          // If still sending after 2 minutes, finalize what we have
-          if (fullResponse) {
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: fullResponse,
-              timestamp: Date.now(),
-            }]);
-          } else {
-            setMessages(prev => [...prev, {
-              role: 'system',
-              content: '⏱️ Response timed out. The agent may still be processing.',
-              timestamp: Date.now(),
-            }]);
-          }
-          setStreamingContent('');
-          setSending(false);
-          unsub();
-          streamCleanupRef.current = null;
-        }
-      }, 120000);
-
-      // Cleanup timeout if component unmounts during request
-      const cleanupTimeout = () => clearTimeout(responseTimeoutRef);
-      window.addEventListener('beforeunload', cleanupTimeout);
-      
-      // Store cleanup for useEffect return
-      streamCleanupRef.current = () => {
-        unsub();
-        clearTimeout(responseTimeoutRef);
-        window.removeEventListener('beforeunload', cleanupTimeout);
-      };
-
-    } catch (e: unknown) {
-      // 'Failed to send message:', e;
+      const finalReply = reply.trim();
       setStreamingContent('');
+      if (finalReply) {
+        setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: Date.now() }]);
+        chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: Date.now() }).catch(() => {});
+      } else {
+        setMessages(prev => [...prev, { role: 'system', content: '⚠️ No response from agent', timestamp: Date.now() }]);
+      }
+    } catch (e: unknown) {
+      setStreamingContent('');
+      if (e instanceof Error && e.name === 'AbortError') return; // closed by user
       setMessages(prev => [...prev, {
         role: 'system',
         content: `❌ Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
         timestamp: Date.now(),
       }]);
+    } finally {
       setSending(false);
     }
-  }, [input, sessionKey, sending]);
+  }, [input, sending, agentId, sessionKey]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
   const quickPrompts = [
@@ -395,33 +167,31 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
   if (!agent) return null;
 
-  // Handle backdrop click with keyboard support
   const handleBackdropClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     if ('key' in e && e.key !== 'Enter' && e.key !== 'Escape') return;
     handleClose();
   };
 
-  // Handle inner click with keyboard support
   const handleInnerClick = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.stopPropagation();
     if ('key' in e && e.key !== 'Enter') return;
   };
 
   return (
-    <div 
+    <div
       className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`} 
+      }`}
       onClick={handleBackdropClick}
       role="button"
       tabIndex={0}
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div 
+      <div
         className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
-        }`} 
+        }`}
         onClick={handleInnerClick}
         role="presentation"
         onKeyDown={handleInnerClick}
@@ -450,39 +220,27 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             <div>
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 Chat with {agent.name}
-                {sessionKey ? (
-                  <span className="text-sm px-2 py-0.5 bg-success-subtle text-success rounded">
-                    🟢 Live LLM
-                  </span>
-                ) : spawning ? (
-                  <span className="text-sm px-2 py-0.5 bg-warning-subtle text-warning rounded flex items-center gap-1">
-                    <Loader2 size={12} className="animate-spin" /> Connecting...
-                  </span>
-                ) : (
-                  <span className="text-sm px-2 py-0.5 bg-error-subtle text-error rounded">
-                    Disconnected
-                  </span>
-                )}
+                <span className="text-sm px-2 py-0.5 bg-success-subtle text-success rounded">
+                  Live LLM
+                </span>
               </h2>
               <p className="text-xs text-mission-control-text-dim">
-                {sessionKey ? 'Real-time conversation with agent LLM' : 'Establishing connection...'}
+                Persistent session — history restored on reconnect
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {sessionKey && (
-              <button
-                onClick={() => setIsVoiceMode(!isVoiceMode)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isVoiceMode
-                    ? 'bg-review-subtle text-review hover:bg-review-subtle'
-                    : 'hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-                title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
-              >
-                {isVoiceMode ? <MessageSquare size={16} /> : <Mic size={16} />}
-              </button>
-            )}
+            <button
+              onClick={() => setIsVoiceMode(!isVoiceMode)}
+              className={`p-2 rounded-lg transition-colors ${
+                isVoiceMode
+                  ? 'bg-review-subtle text-review hover:bg-review-subtle'
+                  : 'hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+              title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+            >
+              {isVoiceMode ? <MessageSquare size={16} /> : <Mic size={16} />}
+            </button>
             <button
               onClick={handleClose}
               className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
@@ -494,7 +252,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         </div>
 
         {/* Voice Mode */}
-        {isVoiceMode && sessionKey && (
+        {isVoiceMode && (
           <VoiceChatPanel
             agentId={agentId}
             sessionKey={sessionKey}
@@ -504,7 +262,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         )}
 
         {/* Quick Prompts */}
-        {!isVoiceMode && messages.length <= 1 && !spawning && sessionKey && (
+        {!isVoiceMode && messages.length === 0 && (
           <div className="p-4 border-b border-mission-control-border">
             <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase mb-2">
               Quick Prompts
@@ -513,13 +271,11 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               {quickPrompts.map((item) => (
                 <button
                   key={item.text}
-                  onClick={() => {
-                    setInput(item.prompt);
-                  }}
+                  onClick={() => setInput(item.prompt)}
                   className="flex items-center gap-2 p-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-left"
                 >
-                  <item.icon size={14} className="text-mission-control-accent flex-shrink-0" />
-                  <span className="truncate">{item.text}</span>
+                  <item.icon size={14} className="text-mission-control-text-dim flex-shrink-0" />
+                  <span className="text-mission-control-text-dim">{item.text}</span>
                 </button>
               ))}
             </div>
@@ -527,172 +283,83 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         )}
 
         {/* Messages */}
-        <div className={`flex-1 overflow-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
-          {messages.filter(msg => {
-            const t = msg.content?.trim();
-            return t !== 'NO_REPLY' && t !== 'HEARTBEAT_OK' && t !== 'NO' && t !== 'NO_RE' && t !== 'NO_';
-          }).map((msg, i, arr) => {
-            const showAvatar = i === 0 || arr[i - 1]?.role !== msg.role;
-            const isLastInGroup = i === arr.length - 1 || arr[i + 1]?.role !== msg.role;
-            
-            return (
-              <div
-                key={`${msg.role}-${msg.timestamp}-${i}`}
-                className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} ${
-                  showAvatar ? 'mt-6' : 'mt-1.5'
-                }`}
-              >
-                {/* Avatar */}
-                <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20 ${
-                    msg.role === 'user' 
-                      ? 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white' 
-                      : msg.role === 'assistant' 
-                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white' 
-                        : 'bg-gradient-to-br from-gray-400 to-slate-500 text-white'
-                  }`}>
-                    {msg.role === 'user' ? (
-                      <User size={16} />
-                    ) : msg.role === 'assistant' ? (
-                      <Bot size={16} />
-                    ) : (
-                      <Sparkles size={16} />
-                    )}
+        {!isVoiceMode && (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role !== 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center flex-shrink-0">
+                    {msg.role === 'system' ? <Sparkles size={14} /> : <Bot size={14} />}
                   </div>
-                </div>
-
-                {/* Message content column */}
-                <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[70%] min-w-[120px]`}>
-                  {/* Sender name */}
-                  {showAvatar && (
-                    <div className={`text-xs font-medium mb-1 px-1 ${
-                      msg.role === 'user' 
-                        ? 'text-info' 
-                        : msg.role === 'assistant' 
-                          ? 'text-emerald-500' 
-                          : 'text-mission-control-text-dim'
-                    }`}>
-                      {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? agent?.name : 'System'}
-                    </div>
-                  )}
-
-                  {/* Message Bubble */}
-                  <div className={`px-4 py-3 transition-all ${
-                    msg.role === 'user' 
-                      ? 'bg-mission-control-accent/50 text-white'
-                      : msg.role === 'assistant' 
-                        ? 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border shadow-sm' 
-                        : 'bg-warning-subtle border border-warning-border text-warning'
-                  } ${
-                    msg.role === 'user'
-                      ? 'rounded-2xl rounded-tr-sm'
-                      : msg.role === 'assistant'
-                        ? 'rounded-2xl rounded-tl-sm'
-                        : 'rounded-2xl'
-                  }`}>
-                    {msg.role === 'user' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                    ) : (
-                      <MarkdownMessage content={msg.content} />
-                    )}
-                  </div>
-
-                  {/* Timestamp */}
-                  {isLastInGroup && (
-                    <div className={`flex items-center gap-2 mt-1.5 px-1 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-[10px] text-mission-control-text-dim/80 font-medium">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+                )}
+                <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
+                  msg.role === 'user'
+                    ? 'bg-mission-control-accent text-white'
+                    : msg.role === 'system'
+                    ? 'bg-warning-subtle text-warning border border-warning-border'
+                    : 'bg-mission-control-surface border border-mission-control-border'
+                }`}>
+                  {msg.role === 'assistant' ? (
+                    <MarkdownMessage content={msg.content} />
+                  ) : (
+                    msg.content
                   )}
                 </div>
-              </div>
-            );
-          })}
-
-          {/* Streaming content */}
-          {streamingContent && (
-            <div className="flex gap-3 mt-6">
-              <div className="flex-shrink-0 w-10">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20">
-                  <Bot size={16} />
-                </div>
-              </div>
-              <div className="flex flex-col items-start max-w-[70%] min-w-[120px]">
-                <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
-                  {agent?.name}
-                </div>
-                <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                  <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Thinking indicator (when sending but no streaming content yet) */}
-          {sending && !streamingContent && (
-            <div className="flex gap-3 mt-6">
-              <div className="flex-shrink-0 w-10">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20">
-                  <Bot size={16} />
-                </div>
-              </div>
-              <div className="flex flex-col items-start">
-                <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
-                  {agent?.name}
-                </div>
-                <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                    <span className="text-sm text-mission-control-text-dim">Thinking...</span>
+                {msg.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-mission-control-accent flex items-center justify-center flex-shrink-0">
+                    <User size={14} className="text-white" />
                   </div>
+                )}
+              </div>
+            ))}
+            {streamingContent && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center flex-shrink-0">
+                  <Bot size={14} />
+                </div>
+                <div className="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border">
+                  <MarkdownMessage content={streamingContent} />
+                  <span className="inline-block w-1 h-3 bg-mission-control-text-dim animate-pulse ml-0.5" />
                 </div>
               </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
+            )}
+            {sending && !streamingContent && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center flex-shrink-0">
+                  <Bot size={14} />
+                </div>
+                <div className="rounded-xl px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border">
+                  <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
 
         {/* Input */}
-        <div className={`p-4 border-t border-mission-control-border ${isVoiceMode ? 'hidden' : ''}`}>
-          <div className="flex gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={sessionKey ? "Type your message... (Shift+Enter for new line)" : "Waiting for connection..."}
-              className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
-              rows={2}
-              disabled={sending || !sessionKey}
-            />
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || sending || !sessionKey}
-              className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
-              aria-label="Send message"
-            >
-              <Send size={20} />
-            </button>
-          </div>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-xs text-mission-control-text-dim">
-              💡 You&apos;re talking to a real LLM — ask anything relevant to this agent&apos;s role
-            </span>
-            {!sessionKey && !spawning && (
+        {!isVoiceMode && (
+          <div className="p-4 border-t border-mission-control-border">
+            <div className="flex gap-2">
+              <textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Message ${agent.name}...`}
+                rows={2}
+                disabled={sending}
+                className="flex-1 resize-none rounded-lg border border-mission-control-border bg-mission-control-bg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+              />
               <button
-                onClick={initChat}
-                className="text-xs text-mission-control-accent hover:underline"
+                onClick={sendMessage}
+                disabled={!input.trim() || sending}
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Retry connection
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

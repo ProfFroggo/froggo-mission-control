@@ -1,19 +1,16 @@
-// LEGACY: HRReportsModal uses file-level suppression for intentional patterns.
-// Modal for HR reports - patterns are safe.
-// Review: 2026-02-17 - suppression retained, patterns are safe
-
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
 import ReactMarkdown from 'react-markdown';
-import { analyticsApi } from '../lib/api';
+import remarkGfm from 'remark-gfm';
 
-interface Report {
+interface ReportFile {
   name: string;
   path: string;
   size: number;
-  createdAt: number;
-  modifiedAt: number;
+  createdAt: string;
+  modifiedAt: string;
+  type: 'training-log' | 'weekly-report';
 }
 
 interface HRReportsModalProps {
@@ -21,20 +18,21 @@ interface HRReportsModalProps {
 }
 
 export default function HRReportsModal({ onClose }: HRReportsModalProps) {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [reportContent, setReportContent] = useState<string>('');
+  const [files, setFiles] = useState<ReportFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<ReportFile | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [loadingContent, setLoadingContent] = useState(false);
 
-  const loadReports = async () => {
+  const loadFiles = async () => {
     setLoading(true);
     try {
-      const result = await analyticsApi.getAgentActivity();
-      const reportsList = result?.reports || [];
-      setReports(reportsList as Report[]);
-      if (reportsList.length > 0 && !selectedReport) {
-        loadReport(reportsList[0] as Report);
+      const res = await fetch('/api/training-logs');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: ReportFile[] = await res.json();
+      setFiles(data);
+      if (data.length > 0 && !selectedFile) {
+        loadFileContent(data[0]);
       }
     } catch (error) {
       showToast('error', 'Failed to load reports', String(error));
@@ -43,40 +41,41 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     }
   };
 
-  const loadReport = async (report: Report) => {
-    setSelectedReport(report);
+  const loadFileContent = async (file: ReportFile) => {
+    setSelectedFile(file);
     setLoadingContent(true);
+    setFileContent('');
     try {
-      // Individual report reading — fetch from analytics endpoint
-      const result = await analyticsApi.getAgentActivity();
-      const found = (result?.reports || []).find((r: any) => r.name === report.name);
-      setReportContent(found?.content || '');
+      const res = await fetch(`/api/training-logs?file=${encodeURIComponent(file.name)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setFileContent(data.content || '');
     } catch (error) {
       showToast('error', 'Failed to read report', String(error));
-      setReportContent('');
+      setFileContent('');
     } finally {
       setLoadingContent(false);
     }
   };
 
   const downloadReport = () => {
-    if (!selectedReport || !reportContent) return;
-    const blob = new Blob([reportContent], { type: 'text/markdown' });
+    if (!selectedFile || !fileContent) return;
+    const blob = new Blob([fileContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = selectedReport.name;
+    a.download = selectedFile.name;
     a.click();
     URL.revokeObjectURL(url);
     showToast('success', 'Report downloaded');
   };
 
   useEffect(() => {
-    loadReports();
+    loadFiles();
   }, []);
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -91,6 +90,42 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const trainingLogs = files.filter((f) => f.type === 'training-log');
+  const weeklyReports = files.filter((f) => f.type === 'weekly-report');
+
+  const renderSidebarSection = (title: string, items: ReportFile[]) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="mb-4">
+        <div className="px-4 py-2 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+          {title}
+        </div>
+        <div className="px-4 space-y-2">
+          {items.map((file) => (
+            <button
+              key={file.name}
+              onClick={() => loadFileContent(file)}
+              className={`w-full text-left p-3 rounded-lg border transition-all ${
+                selectedFile?.name === file.name
+                  ? 'border-teal-500/50 bg-teal-500/10'
+                  : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
+              }`}
+            >
+              <div className="font-medium text-sm mb-1 line-clamp-1">{file.name}</div>
+              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+                <Calendar size={12} />
+                {formatDate(file.modifiedAt)}
+              </div>
+              <div className="text-xs text-mission-control-text-dim mt-1">
+                {formatSize(file.size)}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
@@ -103,20 +138,20 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             <div>
               <h2 className="text-xl font-semibold">HR Reports</h2>
               <p className="text-sm text-mission-control-text-dim">
-                {reports.length} report{reports.length !== 1 ? 's' : ''} available
+                {files.length} report{files.length !== 1 ? 's' : ''} available
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={loadReports}
+              onClick={loadFiles}
               disabled={loading}
               className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
               title="Refresh"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
-            {selectedReport && reportContent && (
+            {selectedFile && fileContent && (
               <button
                 onClick={downloadReport}
                 className="flex items-center gap-2 px-3 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
@@ -136,54 +171,38 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar - Report List */}
-          <div className="w-80 flex-shrink-0 border-r border-mission-control-border overflow-y-auto">
+          {/* Sidebar - File List */}
+          <div className="w-80 flex-shrink-0 border-r border-mission-control-border overflow-y-auto py-4">
             {loading ? (
               <div className="p-4 text-center text-mission-control-text-dim">Loading...</div>
-            ) : reports.length === 0 ? (
+            ) : files.length === 0 ? (
               <div className="p-8 text-center">
-                <FileText size={48} className="text-mission-control-text-dim mx-auto mb-4" />
-                <p className="text-mission-control-text-dim">No reports yet</p>
+                <FileText size={48} className="text-mission-control-text-dim mx-auto mb-4 opacity-40" />
+                <p className="text-mission-control-text-dim text-sm">
+                  No reports yet — run an HR training job to generate reports
+                </p>
               </div>
             ) : (
-              <div className="p-4 space-y-2">
-                {reports.map((report) => (
-                  <button
-                    key={report.name}
-                    onClick={() => loadReport(report)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      selectedReport?.name === report.name
-                        ? 'border-teal-500/50 bg-teal-500/10'
-                        : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
-                    }`}
-                  >
-                    <div className="font-medium text-sm mb-1 line-clamp-1">{report.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
-                      <Calendar size={12} />
-                      {formatDate(report.createdAt)}
-                    </div>
-                    <div className="text-xs text-mission-control-text-dim mt-1">
-                      {formatSize(report.size)}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                {renderSidebarSection('Training Logs', trainingLogs)}
+                {renderSidebarSection('Weekly Reports', weeklyReports)}
+              </>
             )}
           </div>
 
-          {/* Main - Report Content */}
+          {/* Main - File Content */}
           <div className="flex-1 min-w-0 overflow-y-auto p-6">
             {loadingContent ? (
               <div className="flex items-center justify-center h-full">
                 <RefreshCw size={32} className="animate-spin text-mission-control-text-dim" />
               </div>
-            ) : !selectedReport ? (
+            ) : !selectedFile ? (
               <div className="flex items-center justify-center h-full text-mission-control-text-dim">
                 Select a report to view
               </div>
             ) : (
               <div className="prose prose-invert max-w-none">
-                <ReactMarkdown>{reportContent}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{fileContent}</ReactMarkdown>
               </div>
             )}
           </div>

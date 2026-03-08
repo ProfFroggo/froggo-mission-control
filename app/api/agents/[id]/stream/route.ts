@@ -1,3 +1,4 @@
+import { ENV } from '@/lib/env';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const HOME = homedir();
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 
 // ── File cache ─────────────────────────────────────────────────────────────
 interface CacheEntry { content: string; mtime: number; }

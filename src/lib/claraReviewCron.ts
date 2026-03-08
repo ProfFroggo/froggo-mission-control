@@ -1,3 +1,4 @@
+import { ENV } from './env';
 /**
  * Clara Review Cron — runs every 3 minutes on the server.
  * Finds all tasks in 'review' status without an active/completed review
@@ -12,7 +13,7 @@ import { homedir } from 'os';
 import { spawn } from 'child_process';
 
 const HOME = homedir();
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 const REVIEW_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 
 // Track tasks currently being reviewed to avoid duplicates

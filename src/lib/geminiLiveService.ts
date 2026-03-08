@@ -153,6 +153,7 @@ export class GeminiLiveService {
   private ws: WebSocket | null = null;
   private listeners = new Map<GeminiLiveEvent, Set<EventListener>>();
   private audioContext: AudioContext | null = null;
+  private workletLoaded = false;
   private micStream: MediaStream | null = null;
   private videoStream: MediaStream | null = null;
   private micProcessor: AudioWorkletNode | null = null;
@@ -566,26 +567,13 @@ export class GeminiLiveService {
   private async preWarmAudioWorklet(): Promise<void> {
     if (this.audioContext) return; // already warmed
     this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
-    const workletCode = `
-class AudioCaptureProcessor extends AudioWorkletProcessor {
-  process(inputs, outputs, parameters) {
-    const input = inputs[0];
-    if (input.length > 0 && input[0].length > 0) {
-      const channelData = new Float32Array(input[0]);
-      this.port.postMessage({ audio: channelData }, [channelData.buffer]);
-    }
-    return true;
-  }
-}
-registerProcessor('audio-capture-processor', AudioCaptureProcessor);
-`;
-    const blob = new Blob([workletCode], { type: 'application/javascript' });
-    const workletUrl = URL.createObjectURL(blob);
     try {
-      await this.audioContext.audioWorklet.addModule(workletUrl);
+      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
+      this.workletLoaded = true;
       logger.debug('[GeminiLive] AudioWorklet pre-warmed');
-    } finally {
-      URL.revokeObjectURL(workletUrl);
+    } catch (err) {
+      logger.warn('[GeminiLive] AudioWorklet pre-warm failed:', err);
+      // workletLoaded stays false — startMic will retry
     }
   }
 
@@ -603,30 +591,14 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
         },
       });
 
-      // Reuse pre-warmed AudioContext if available (loaded in parallel with WS handshake)
+      // Reuse pre-warmed AudioContext if available; re-load worklet if it wasn't registered
       if (!this.audioContext) {
         this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
-        const workletCode = `
-class AudioCaptureProcessor extends AudioWorkletProcessor {
-  process(inputs, outputs, parameters) {
-    const input = inputs[0];
-    if (input.length > 0 && input[0].length > 0) {
-      const channelData = new Float32Array(input[0]);
-      this.port.postMessage({ audio: channelData }, [channelData.buffer]);
-    }
-    return true;
-  }
-}
-registerProcessor('audio-capture-processor', AudioCaptureProcessor);
-`;
-        const blob = new Blob([workletCode], { type: 'application/javascript' });
-        const workletUrl = URL.createObjectURL(blob);
-        logger.debug('[GeminiLive] Loading audio processor from blob URL');
-        try {
-          await this.audioContext.audioWorklet.addModule(workletUrl);
-        } finally {
-          URL.revokeObjectURL(workletUrl);
-        }
+      }
+      if (!this.workletLoaded) {
+        logger.debug('[GeminiLive] Loading audio processor from static file');
+        await this.audioContext.audioWorklet.addModule('/audio-processor.js');
+        this.workletLoaded = true;
       }
 
       this.micSource = this.audioContext.createMediaStreamSource(this.micStream);

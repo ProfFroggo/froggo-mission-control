@@ -8,9 +8,29 @@
 
 import path from 'path';
 import os from 'os';
+import { execSync } from 'child_process';
+import { existsSync } from 'fs';
 
 function resolveHome(p: string): string {
   return p.replace(/^~/, os.homedir());
+}
+
+function resolveClaudeBin(): string {
+  if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
+  try {
+    const found = execSync('which claude 2>/dev/null', { encoding: 'utf-8', timeout: 2000 }).trim();
+    if (found) return found;
+  } catch { /* not on PATH */ }
+  const candidates = [
+    '/usr/local/bin/claude',
+    path.join(os.homedir(), '.npm-global', 'bin', 'claude'),
+    path.join(os.homedir(), '.local', 'bin', 'claude'),
+    '/opt/homebrew/bin/claude',
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return 'claude';
 }
 
 export const ENV = {
@@ -44,7 +64,10 @@ export const ENV = {
     path.join(os.homedir(), 'mission-control', 'logs')
   ),
 
-  // QMD binary
+  // Claude CLI binary
+  CLAUDE_BIN: resolveClaudeBin(),
+
+  // QMD binary (optional — memory search)
   QMD_BIN: resolveHome(
     process.env.QMD_BIN || '/opt/homebrew/bin/qmd'
   ),

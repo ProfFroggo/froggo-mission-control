@@ -1,3 +1,4 @@
+import { ENV } from './env';
 /**
  * Session Keepalive — pings active Claude CLI sessions every 25 minutes.
  *
@@ -20,7 +21,7 @@ import { homedir } from 'os';
 import { spawn } from 'child_process';
 
 const HOME = homedir();
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 
 // Ping sessions that are idle between 25 min and 90 min
 // (< 25 min = recently active, no need; > 90 min = too late, let failsafe handle it)

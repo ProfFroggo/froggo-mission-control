@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   HelpCircle, X, Search, BookOpen,
   MessageCircle, Lightbulb, ChevronRight,
@@ -242,7 +244,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
 
         {/* Footer */}
         <div className="p-4 border-t border-mission-control-border bg-mission-control-bg text-center text-sm text-mission-control-text-dim flex-shrink-0">
-          <span>Mission Control — Private Use License</span>
+          <span>© 2026 <a href="https://froggo.pro" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline">froggo.pro</a> — AGPL-3.0 License</span>
         </div>
       </div>
     </div>
@@ -426,10 +428,22 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
         </div>
 
         {/* Content */}
-        <div className="max-w-none text-left">
-          <div className="whitespace-pre-wrap text-mission-control-text leading-relaxed">
+        <div className="prose prose-invert max-w-none text-left text-mission-control-text leading-relaxed
+          [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2
+          [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2
+          [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1
+          [&_strong]:text-mission-control-text [&_strong]:font-semibold
+          [&_p]:mb-3 [&_p]:text-mission-control-text
+          [&_ul]:mb-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ul]:text-mission-control-text
+          [&_ol]:mb-3 [&_ol]:pl-5 [&_ol]:list-decimal [&_ol]:text-mission-control-text
+          [&_li]:mb-1
+          [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:bg-mission-control-bg [&_code]:rounded [&_code]:text-xs [&_code]:font-mono [&_code]:text-mission-control-accent
+          [&_pre]:bg-mission-control-bg [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:mb-3 [&_pre]:overflow-x-auto
+          [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-sm
+          [&_hr]:border-mission-control-border [&_hr]:my-4">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {article.content}
-          </div>
+          </ReactMarkdown>
         </div>
       </div>
     </div>

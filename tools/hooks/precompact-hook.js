@@ -13,7 +13,7 @@ const path = require('path');
 
 // SQLite DB path
 const DB_PATH = process.env.DB_PATH ||
-  path.join(process.env.HOME || '/Users/kevin.macarthur', 'mission-control', 'data', 'mission-control.db');
+  path.join(process.env.HOME || require('os').homedir(), 'mission-control', 'data', 'mission-control.db');
 
 // Lazy DB open — only if we have something to inject
 let db = null;
