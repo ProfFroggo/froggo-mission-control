@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { ENV } from './env';
 import { syncCatalogAgents, syncCatalogModules } from './catalogSync';
+import { keychainSet } from './keychain';
 
 // Database location — single source of truth via ENV wrapper
 const DB_PATH = ENV.DB_PATH;
@@ -471,6 +472,28 @@ function initSchema(db: Database.Database) {
   seedAgents(db);
   syncCatalogAgents(db);
   syncCatalogModules(db);
+
+  // Migrate plaintext API keys from DB to OS keychain (fire-and-forget)
+  migrateKeysToKeychain(db).catch(console.error);
+}
+
+async function migrateKeysToKeychain(db: Database.Database): Promise<void> {
+  const keysToMigrate = ['gemini_api_key', 'anthropic_api_key'];
+  for (const key of keysToMigrate) {
+    try {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+      if (row?.value) {
+        const saved = await keychainSet(key, row.value);
+        if (saved) {
+          db.prepare('DELETE FROM settings WHERE key = ?').run(key);
+          console.log(`[db] Migrated ${key} from SQLite to OS keychain`);
+        }
+      }
+    } catch (err) {
+      // Non-fatal — keytar may not be available in all environments
+      console.warn(`[db] Could not migrate ${key} to keychain:`, err);
+    }
+  }
 }
 
 function seedAgents(db: Database.Database) {
