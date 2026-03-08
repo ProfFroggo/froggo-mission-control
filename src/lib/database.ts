@@ -393,6 +393,22 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- MODULE BUILDER DRAFTS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS modules_builder (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL DEFAULT 'Untitled Module',
+      description TEXT,
+      category TEXT DEFAULT 'general',
+      status TEXT NOT NULL DEFAULT 'in-progress',
+      spec TEXT DEFAULT '{}',
+      conversationState TEXT DEFAULT '{}',
+      overallProgress REAL DEFAULT 0,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -416,6 +432,8 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
     CREATE INDEX IF NOT EXISTS idx_projects_createdAt ON projects(createdAt);
     CREATE INDEX IF NOT EXISTS idx_project_members_agentId ON project_members(agentId);
+    CREATE INDEX IF NOT EXISTS idx_modules_builder_status ON modules_builder(status);
+    CREATE INDEX IF NOT EXISTS idx_modules_builder_updatedAt ON modules_builder(updatedAt DESC);
 
     -- ── Performance indexes ──────────────────────────────────────────────
     -- Tasks: composite indexes for common dashboard queries
