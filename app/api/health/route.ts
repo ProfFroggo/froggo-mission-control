@@ -18,6 +18,9 @@ export async function GET() {
   const dbPath = path.join(homedir(), 'mission-control', 'data', 'mission-control.db');
   const database = existsSync(dbPath);
 
+  const cronPlist = path.join(homedir(), 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
+  const cronDaemonInstalled = existsSync(cronPlist);
+
   return NextResponse.json({
     // We use Claude Code CLI — no OpenClaw gateway needed
     cli: true,
@@ -25,5 +28,6 @@ export async function GET() {
     config: true,
     database,
     backend: 'claude-code-cli',
+    cronDaemon: cronDaemonInstalled,
   });
 }

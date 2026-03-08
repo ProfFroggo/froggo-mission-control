@@ -47,20 +47,22 @@ const header  = (msg) => {
 };
 
 // ── Paths ────────────────────────────────────────────────────────────────────
-const INSTALL_DIR = path.dirname(__dirname);          // where this package lives
-const HOME        = os.homedir();
-const MC_HOME     = path.join(HOME, 'mission-control');
-const MC_DATA     = path.join(MC_HOME, 'data');
-const MC_MEMORY   = path.join(MC_HOME, 'memory');
-const MC_LIBRARY  = path.join(MC_HOME, 'library');
-const MC_AGENTS   = path.join(MC_HOME, 'agents');
-const MC_LOGS     = path.join(MC_HOME, 'logs');
-const ENV_FILE    = path.join(INSTALL_DIR, '.env');
-const LOG_FILE    = path.join(HOME, 'Library', 'Logs', 'mission-control-app.plist');
-const LAUNCHAGENT = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
-const SYSTEMD_SVC = path.join(HOME, '.config', 'systemd', 'user', 'mission-control.service');
-const IS_MAC      = os.platform() === 'darwin';
-const IS_LINUX    = os.platform() === 'linux';
+const INSTALL_DIR  = path.dirname(__dirname);          // where this package lives
+const HOME         = os.homedir();
+const MC_HOME      = path.join(HOME, 'mission-control');
+const MC_DATA      = path.join(MC_HOME, 'data');
+const MC_MEMORY    = path.join(MC_HOME, 'memory');
+const MC_LIBRARY   = path.join(MC_HOME, 'library');
+const MC_AGENTS    = path.join(MC_HOME, 'agents');
+const MC_LOGS      = path.join(MC_HOME, 'logs');
+const ENV_FILE     = path.join(INSTALL_DIR, '.env');
+const LOG_FILE     = path.join(HOME, 'Library', 'Logs', 'mission-control-app.plist');
+const LAUNCHAGENT  = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
+const CRON_AGENT   = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
+const SYSTEMD_SVC  = path.join(HOME, '.config', 'systemd', 'user', 'mission-control.service');
+const SYSTEMD_CRON = path.join(HOME, '.config', 'systemd', 'user', 'mission-control-cron.service');
+const IS_MAC       = os.platform() === 'darwin';
+const IS_LINUX     = os.platform() === 'linux';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function findQmdBin() {
@@ -73,6 +75,20 @@ function findQmdBin() {
     if (found) return found;
   } catch {}
   return '/opt/homebrew/bin/qmd'; // default, will be installed by postinstall
+}
+
+function findNodeBin() {
+  // process.execPath is the node binary running this script — most reliable
+  if (process.execPath && existsSync(process.execPath)) return process.execPath;
+  const candidates = [
+    '/opt/homebrew/bin/node',   // Apple Silicon Mac
+    '/usr/local/bin/node',       // Intel Mac
+    '/usr/bin/node',             // Linux
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  return process.execPath; // last resort
 }
 
 function findClaudeBin() {
@@ -462,7 +478,7 @@ async function cmdSetup(force = false) {
 
   // ── Install persistent service ──────────────────────────────────────────
   step('Installing persistent service (auto-start at login)');
-  const nodeBin = process.execPath;
+  const nodeBin = findNodeBin();
   const nextBin = path.join(INSTALL_DIR, 'node_modules', '.bin', 'next');
   const logPath  = path.join(HOME, 'Library', 'Logs', 'mission-control-app.log');
 
@@ -529,6 +545,50 @@ ${envDict}
     execSync(`launchctl load -w "${LAUNCHAGENT}"`, { stdio: 'pipe' });
     success('LaunchAgent installed — starts automatically at login');
     info(`Logs: ${logPath}`);
+
+    // ── Cron daemon LaunchAgent ──────────────────────────────────────────
+    const cronLogPath   = path.join(MC_LOGS, 'cron-daemon.log');
+    const cronErrPath   = path.join(MC_LOGS, 'cron-daemon-error.log');
+    const cronDaemonJs  = path.join(INSTALL_DIR, 'tools', 'cron-daemon.js');
+    const cronPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mission-control.cron</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${nodeBin}</string>
+    <string>${cronDaemonJs}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>${INSTALL_DIR}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>${HOME}</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>${cronLogPath}</string>
+  <key>StandardErrorPath</key>
+  <string>${cronErrPath}</string>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>`;
+    writeFileSync(CRON_AGENT, cronPlist);
+    try { execSync(`launchctl unload "${CRON_AGENT}" 2>/dev/null || true`, { stdio: 'pipe' }); } catch {}
+    try { execSync(`launchctl load -w "${CRON_AGENT}"`, { stdio: 'pipe' }); } catch (e) {
+      warn(`Cron daemon LaunchAgent loaded (cron-daemon.js may not exist yet — will start when present)`);
+    }
+    success('Cron daemon LaunchAgent installed');
+    info(`Cron logs: ${cronLogPath}`);
 
   } else if (IS_LINUX) {
     const svcDir = path.dirname(SYSTEMD_SVC);
@@ -604,6 +664,9 @@ async function cmdStart() {
   info('Starting Mission Control...');
   if (IS_MAC && existsSync(LAUNCHAGENT)) {
     execSync(`launchctl load -w "${LAUNCHAGENT}" 2>/dev/null || launchctl start com.mission-control.app`, { stdio: 'pipe' });
+    if (existsSync(CRON_AGENT)) {
+      try { execSync(`launchctl load -w "${CRON_AGENT}" 2>/dev/null || launchctl start com.mission-control.cron`, { stdio: 'pipe' }); } catch {}
+    }
   } else if (IS_LINUX && existsSync(SYSTEMD_SVC)) {
     spawnSync('systemctl', ['--user', 'start', 'mission-control.service'], { stdio: 'inherit' });
   } else {
@@ -627,6 +690,9 @@ async function cmdStop() {
   info('Stopping Mission Control...');
   if (IS_MAC && existsSync(LAUNCHAGENT)) {
     try { execSync('launchctl stop com.mission-control.app', { stdio: 'pipe' }); } catch {}
+    if (existsSync(CRON_AGENT)) {
+      try { execSync('launchctl stop com.mission-control.cron', { stdio: 'pipe' }); } catch {}
+    }
     success('Stopped (LaunchAgent will restart it — to disable: launchctl unload ' + LAUNCHAGENT + ')');
   } else if (IS_LINUX && existsSync(SYSTEMD_SVC)) {
     spawnSync('systemctl', ['--user', 'stop', 'mission-control.service'], { stdio: 'inherit' });

@@ -613,10 +613,14 @@ if [ "${OS}" = "Darwin" ]; then
   # macOS LaunchAgent
   LAUNCH_AGENT_DIR="${HOME}/Library/LaunchAgents"
   PLIST="${LAUNCH_AGENT_DIR}/com.mission-control.app.plist"
+  CRON_PLIST="${LAUNCH_AGENT_DIR}/com.mission-control.cron.plist"
   LOG_FILE="${HOME}/Library/Logs/mission-control-app.log"
-  
+
+  # Detect node binary (prefer which node, fall back to Apple Silicon / Intel paths)
+  NODE_BIN="$(which node 2>/dev/null || echo /opt/homebrew/bin/node)"
+
   mkdir -p "${LAUNCH_AGENT_DIR}"
-  
+
   cat > "${PLIST}" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -626,7 +630,7 @@ if [ "${OS}" = "Darwin" ]; then
   <string>com.mission-control.app</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>${NODE_BIN}</string>
     <string>${REPO_DIR}/node_modules/.bin/next</string>
     <string>start</string>
     <string>--port</string>
@@ -637,7 +641,7 @@ if [ "${OS}" = "Darwin" ]; then
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>
-    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     <key>HOME</key>
     <string>${HOME}</string>
     <key>MC_DB_PATH</key>
@@ -680,12 +684,53 @@ if [ "${OS}" = "Darwin" ]; then
 </dict>
 </plist>
 EOF
-  
+
   # Unload existing (if any) then load
   launchctl unload "${PLIST}" 2>/dev/null || true
   launchctl load -w "${PLIST}"
   success "LaunchAgent installed — Mission Control starts automatically at login"
   info "Logs: $LOG_FILE"
+
+  # ── Cron daemon LaunchAgent ────────────────────────────────────────────────
+  cat > "${CRON_PLIST}" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mission-control.cron</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${NODE_BIN}</string>
+    <string>${REPO_DIR}/tools/cron-daemon.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>${REPO_DIR}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>${HOME}</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>${MC_LOGS}/cron-daemon.log</string>
+  <key>StandardErrorPath</key>
+  <string>${MC_LOGS}/cron-daemon-error.log</string>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>
+EOF
+
+  launchctl unload "${CRON_PLIST}" 2>/dev/null || true
+  launchctl load -w "${CRON_PLIST}" 2>/dev/null || warn "Cron daemon plist registered (will start when cron-daemon.js is present)"
+  success "Cron daemon LaunchAgent installed"
+  info "Cron logs: ${MC_LOGS}/cron-daemon.log"
 
 elif [ "${OS}" = "Linux" ]; then
   # systemd user service
