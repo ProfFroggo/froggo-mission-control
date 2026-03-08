@@ -90,6 +90,49 @@ function installQmd() {
 
 installQmd();
 
+// ── Install Obsidian ──────────────────────────────────────────────────────
+function installObsidian() {
+  if (isMac) {
+    const alreadyInstalled = existsSync('/Applications/Obsidian.app');
+    if (alreadyInstalled) {
+      success('Obsidian already installed');
+      return;
+    }
+
+    const brewCheck = spawnSync('which brew', { shell: true, stdio: 'pipe' });
+    if (brewCheck.status !== 0) {
+      warn('Could not auto-install Obsidian. Download from https://obsidian.md and open ~/mission-control/memory as a vault.');
+      return;
+    }
+
+    info('Installing Obsidian...');
+    const result = spawnSync('brew install --cask obsidian', { shell: true, stdio: 'pipe', encoding: 'utf-8' });
+    if (result.status === 0) {
+      success('Obsidian installed');
+      spawnSync(`open -a Obsidian "${os.homedir()}/mission-control/memory"`, { shell: true, stdio: 'pipe' });
+    } else {
+      warn('Could not auto-install Obsidian. Download from https://obsidian.md and open ~/mission-control/memory as a vault.');
+    }
+  } else if (isLinux) {
+    const alreadyInstalled = spawnSync('which obsidian', { shell: true, stdio: 'pipe' }).status === 0 ||
+      existsSync('/snap/bin/obsidian');
+    if (alreadyInstalled) {
+      success('Obsidian already installed');
+      return;
+    }
+
+    info('Installing Obsidian via snap...');
+    const result = spawnSync('snap install obsidian --classic', { shell: true, stdio: 'pipe', encoding: 'utf-8' });
+    if (result.status === 0) {
+      success('Obsidian installed');
+    } else {
+      warn('Could not auto-install Obsidian. Download from https://obsidian.md');
+    }
+  }
+}
+
+installObsidian();
+
 // ── Build Next.js app ──────────────────────────────────────────────────────
 info('Building dashboard (Next.js)...');
 process.env.NEXT_TELEMETRY_DISABLED = '1';

@@ -190,6 +190,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // Step 6 — Obsidian vault
   const [obsidianStatus, setObsidianStatus] = useState<'checking' | 'found' | 'not-found'>('checking');
   const [obsidianSkipped, setObsidianSkipped] = useState(false);
+  const [obsidianConfirmed, setObsidianConfirmed] = useState(false);
+  const [obsidianOpening, setObsidianOpening] = useState(false);
 
   // Step 7 — agent & module picker
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<Set<string>>(new Set());
@@ -770,6 +772,15 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   );
 
   // STEP 5 — Obsidian Vault + Mic/Camera
+  const handleOpenObsidian = async () => {
+    setObsidianOpening(true);
+    try {
+      await fetch('/api/setup/open-obsidian', { method: 'POST' });
+    } finally {
+      setObsidianOpening(false);
+    }
+  };
+
   const renderObsidianAndPermissions = () => (
     <div className="py-4">
       <div className="flex items-center gap-2 mb-1">
@@ -777,38 +788,70 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         <h2 className="text-xl font-bold text-mission-control-text">Memory Vault & Permissions</h2>
       </div>
       <p className="text-mission-control-text-dim text-sm mb-5">
-        Confirm your memory vault and grant microphone / camera access for voice features.
+        Obsidian is required for agent memory. Open the vault before continuing.
       </p>
 
       {/* Obsidian vault status */}
       <div className="mb-4">
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault</p>
+        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault (Required)</p>
         <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {obsidianStatus === 'checking' && <Loader size={16} className="animate-spin text-mission-control-accent" />}
           {obsidianStatus === 'found' && <CheckCircle size={16} className="text-green-500" />}
-          {obsidianStatus === 'not-found' && <XCircle size={16} className="text-yellow-500" />}
+          {obsidianStatus === 'not-found' && (
+            obsidianOpening
+              ? <Loader size={16} className="animate-spin text-mission-control-accent" />
+              : <AlertTriangle size={16} className="text-yellow-500" />
+          )}
           <div className="flex-1">
             <span className="text-sm text-mission-control-text">
               {obsidianStatus === 'checking' && 'Checking vault…'}
-              {obsidianStatus === 'found' && 'Memory vault detected'}
-              {obsidianStatus === 'not-found' && 'Vault not found at ~/mission-control/memory'}
+              {obsidianStatus === 'found' && 'Memory vault detected at ~/mission-control/memory'}
+              {obsidianStatus === 'not-found' && (
+                obsidianOpening
+                  ? 'Obsidian is installing… this may take a minute'
+                  : 'Obsidian not detected — install required'
+              )}
             </span>
-            {obsidianStatus === 'not-found' && (
+            {obsidianStatus === 'not-found' && !obsidianOpening && (
               <p className="text-xs text-mission-control-text-dim mt-0.5">
-                Agents will still work — memory features require the vault directory.
+                Obsidian is required for agent memory. Install it below or via brew.
               </p>
             )}
           </div>
         </div>
-        {!obsidianSkipped && obsidianStatus === 'not-found' && (
+
+        {/* Open in Obsidian button */}
+        <div className="flex items-center gap-2 mt-3">
           <button
-            onClick={() => setObsidianSkipped(true)}
-            className="flex items-center gap-1 mt-2 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            onClick={handleOpenObsidian}
+            disabled={obsidianOpening}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <AlertTriangle size={12} className="text-yellow-500" />
-            Skip — I'll set up the vault later
+            {obsidianOpening
+              ? <Loader size={14} className="animate-spin" />
+              : <BookOpen size={14} />
+            }
+            Open in Obsidian
           </button>
-        )}
+          <button
+            onClick={checkObsidian}
+            className="flex items-center gap-1 px-3 py-2 text-xs rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          >
+            <RefreshCw size={12} />
+            Re-check
+          </button>
+        </div>
+
+        {/* Confirmation checkbox — required to continue */}
+        <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={obsidianConfirmed}
+            onChange={e => setObsidianConfirmed(e.target.checked)}
+            className="w-4 h-4 rounded accent-mission-control-accent"
+          />
+          <span className="text-sm text-mission-control-text">I've opened the vault in Obsidian</span>
+        </label>
       </div>
 
       {/* Microphone & Camera */}
@@ -1149,23 +1192,24 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // Block Continue on step 7 until install finishes
   const installInProgress = currentStep === 7 && !installComplete;
 
-  const canContinue = !criticalFailed && !permissionsRequired && !installInProgress;
+  const canContinue = !criticalFailed && !permissionsRequired && !installInProgress && !obsidianRequired;
 
-  // Steps that allow skipping
-  const isSkippable = [3, 4, 5].includes(currentStep);
+  // Steps that allow skipping (step 5 — Obsidian — is now mandatory)
+  const isSkippable = [3, 4].includes(currentStep);
 
   const skipLabels: Record<number, string> = {
     3: 'Skip',
     4: 'Skip',
-    5: 'Skip',
   };
 
   const handleSkipStep = () => {
     if (currentStep === 3) setGeminiSkipped(true);
     if (currentStep === 4) setGoogleSkipped(true);
-    if (currentStep === 5) setObsidianSkipped(true);
     goNext();
   };
+
+  // Block Continue on step 5 until user confirms they've opened Obsidian
+  const obsidianRequired = currentStep === 5 && !obsidianConfirmed;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
@@ -1199,6 +1243,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             )}
             {permissionsRequired && (
               <p className="text-xs text-yellow-500 text-center mb-3">Confirm agent permissions above to continue.</p>
+            )}
+            {obsidianRequired && (
+              <p className="text-xs text-yellow-500 text-center mb-3">Open the vault in Obsidian and check the box above to continue.</p>
             )}
             <div className="flex items-center justify-between">
               <button
