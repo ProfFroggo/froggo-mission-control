@@ -7,13 +7,16 @@
 
 # Build artifacts (rebuilt by postinstall)
 .next/
-tools/*/dist/
-tools/*/node_modules/
+**/dist/
+**/node_modules/
 tsconfig.tsbuildinfo
 tsconfig.node.tsbuildinfo
 
+# Large binary assets (downloaded/generated at runtime)
+public/models/
+public/agent-profiles/
+
 # Dev/test only
-node_modules/
 coverage/
 src/tests/
 *.test.ts
