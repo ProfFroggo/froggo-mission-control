@@ -186,6 +186,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleSkipped, setGoogleSkipped] = useState(false);
   const [googleConnecting, setGoogleConnecting] = useState(false);
+  const [googleNoCredentials, setGoogleNoCredentials] = useState(false);
 
   // Step 6 — Obsidian vault
   const [obsidianStatus, setObsidianStatus] = useState<'checking' | 'found' | 'not-found'>('checking');
@@ -361,11 +362,16 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // ─────────────────────────────────────────────
   const connectGoogle = async () => {
     setGoogleConnecting(true);
+    setGoogleNoCredentials(false);
     try {
       const res = await fetch('/api/google/auth/url');
-      const data = res.ok ? await res.json() : null;
+      const data = await res.json();
       if (data?.url) {
         window.location.href = data.url;
+      } else {
+        // No client_secret.json configured — credentials not set up yet
+        setGoogleNoCredentials(true);
+        setGoogleConnecting(false);
       }
     } catch {
       setGoogleConnecting(false);
@@ -755,6 +761,19 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
       {(googleStatus === 'disconnected' || googleStatus === 'error') && (
         <>
+          {googleNoCredentials && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4 text-xs space-y-2">
+              <p className="font-medium text-amber-400">Google credentials not configured</p>
+              <p className="text-mission-control-text-dim">To connect Google, you need an OAuth client ID. This is a one-time setup:</p>
+              <ol className="text-mission-control-text-dim space-y-1 list-decimal list-inside">
+                <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline">Google Cloud Console → Credentials</a></li>
+                <li>Create an OAuth 2.0 Client ID (Desktop or Web app)</li>
+                <li>Download the JSON and save it to:<br/><code className="font-mono text-mission-control-text">~/.config/google-workspace-mcp/client_secret.json</code></li>
+                <li>Click Connect again</li>
+              </ol>
+              <p className="text-mission-control-text-dim">Or skip for now — you can do this later in Settings → Google Workspace.</p>
+            </div>
+          )}
           <button
             onClick={connectGoogle}
             disabled={googleConnecting}
