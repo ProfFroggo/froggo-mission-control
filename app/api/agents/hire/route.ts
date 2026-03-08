@@ -138,18 +138,28 @@ export async function POST(request: NextRequest) {
       written.push(filename);
     }
 
-    // Avatar: prefer package avatar, then public/agent-profiles, then workspace existing
-    const avatarDest = join(workspaceDir, 'assets', 'avatar.png');
-    const packageAvatar = join(packageDir, 'avatar.png');
-    const publicAvatar = join(process.cwd(), 'public', 'agent-profiles', `${id}.png`);
+    // Avatar: prefer package avatar (webp then png), then public/agent-profiles (webp then png), then workspace existing
+    const avatarDestWebp = join(workspaceDir, 'assets', 'avatar.webp');
+    const avatarDestPng  = join(workspaceDir, 'assets', 'avatar.png');
+    const avatarDest = existsSync(avatarDestWebp) ? avatarDestWebp : avatarDestPng;
+    const packageAvatarWebp = join(packageDir, 'avatar.webp');
+    const packageAvatarPng  = join(packageDir, 'avatar.png');
+    const publicAvatarWebp  = join(process.cwd(), 'public', 'agent-profiles', `${id}.webp`);
+    const publicAvatarPng   = join(process.cwd(), 'public', 'agent-profiles', `${id}.png`);
     let avatarPath: string | null = null;
-    if (!existsSync(avatarDest)) {
-      if (existsSync(packageAvatar)) {
-        copyFileSync(packageAvatar, avatarDest);
-        avatarPath = avatarDest;
-      } else if (existsSync(publicAvatar)) {
-        copyFileSync(publicAvatar, avatarDest);
-        avatarPath = avatarDest;
+    if (!existsSync(avatarDestWebp) && !existsSync(avatarDestPng)) {
+      if (existsSync(packageAvatarWebp)) {
+        copyFileSync(packageAvatarWebp, avatarDestWebp);
+        avatarPath = avatarDestWebp;
+      } else if (existsSync(packageAvatarPng)) {
+        copyFileSync(packageAvatarPng, avatarDestPng);
+        avatarPath = avatarDestPng;
+      } else if (existsSync(publicAvatarWebp)) {
+        copyFileSync(publicAvatarWebp, avatarDestWebp);
+        avatarPath = avatarDestWebp;
+      } else if (existsSync(publicAvatarPng)) {
+        copyFileSync(publicAvatarPng, avatarDestPng);
+        avatarPath = avatarDestPng;
       }
     } else {
       avatarPath = avatarDest;

@@ -59,8 +59,8 @@ export function syncCatalogAgents(db: Database.Database): void {
           readFileSync(file, 'utf-8')
         );
         // Resolve avatar: workspace first (hired), then catalog package (pre-hire)
-        const workspaceAvatar = join(HOME, 'mission-control', 'agents', manifest.id, 'assets', 'avatar.png');
-        const catalogAvatar   = join(CATALOG_DIR, 'agents', manifest.id, 'avatar.png');
+        const workspaceAvatar = join(HOME, 'mission-control', 'agents', manifest.id, 'assets', 'avatar.webp');
+        const catalogAvatar   = join(CATALOG_DIR, 'agents', manifest.id, 'avatar.webp');
         const avatarPath = existsSync(workspaceAvatar) ? workspaceAvatar
                          : existsSync(catalogAvatar)   ? catalogAvatar
                          : null;
