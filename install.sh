@@ -166,6 +166,32 @@ for tool in mission-control-db-mcp memory-mcp cron-mcp; do
   fi
 done
 
+# ── Step 5b: Install QMD memory search tool ───────────────────────────────────
+step "Installing QMD memory search tool"
+
+install_qmd() {
+  # Check if qmd is already installed
+  if command -v qmd &>/dev/null || [ -x "/opt/homebrew/bin/qmd" ] || [ -x "/usr/local/bin/qmd" ]; then
+    success "qmd already installed"
+    return
+  fi
+
+  # Check if Homebrew is available
+  if ! command -v brew &>/dev/null; then
+    warn "Homebrew not found — install qmd manually for full memory search: brew install profroggo/tap/qmd"
+    return
+  fi
+
+  info "Installing qmd memory search tool..."
+  if brew install profroggo/tap/qmd 2>/dev/null; then
+    success "qmd installed"
+  else
+    warn "qmd install failed — memory search will use ripgrep fallback. Install manually: brew install profroggo/tap/qmd"
+  fi
+}
+
+install_qmd
+
 # ── Step 6: Build the app ─────────────────────────────────────────────────────
 step "Building Mission Control (Next.js)"
 cd "${REPO_DIR}"
