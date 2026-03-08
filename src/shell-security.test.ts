@@ -113,7 +113,7 @@ describe('validateWritePath', () => {
   });
 
   it('allows writes to home directory', () => {
-    expect(validateWritePath('/Users/worker/project/file.ts').allowed).toBe(true);
+    expect(validateWritePath('/Users/testuser/project/file.ts').allowed).toBe(true);
   });
 
   it('allows writes to tmp', () => {
