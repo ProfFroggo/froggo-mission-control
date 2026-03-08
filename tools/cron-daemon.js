@@ -37,7 +37,11 @@ const { spawn } = require('child_process');
 const HOME = os.homedir();
 const SCHEDULE_PATH = process.env.SCHEDULE_PATH || path.join(HOME, 'mission-control/data/schedule.json');
 const LOG_PATH = process.env.LOG_PATH || path.join(HOME, 'mission-control/logs/cron.log');
-const CLAUDE_BIN = process.env.CLAUDE_BIN || path.join(HOME, '.npm-global/bin/claude');
+const CLAUDE_BIN = process.env.CLAUDE_BIN || (() => {
+  try { return require('child_process').execSync('which claude', { encoding: 'utf-8', timeout: 2000 }).trim(); } catch {}
+  const candidates = ['/usr/local/bin/claude', path.join(HOME, '.npm-global', 'bin', 'claude'), '/opt/homebrew/bin/claude'];
+  return candidates.find(f => require('fs').existsSync(f)) || 'claude';
+})();
 const DB_PATH = process.env.DB_PATH || path.join(HOME, 'mission-control/data/mission-control.db');
 const PID_PATH = path.join(HOME, 'mission-control/logs/cron-daemon.pid');
 const CHECK_INTERVAL = 60_000;        // 1 minute — schedule job check

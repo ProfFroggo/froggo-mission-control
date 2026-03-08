@@ -61,7 +61,7 @@ export async function PATCH(
           }
           db.prepare(
             `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-          ).run(taskId, 'kevin', 'approval_' + action,
+          ).run(taskId, 'human', 'approval_' + action,
             `Human ${action}: ${notes || '(no notes)'}`, now);
         }
       } catch { /* non-critical */ }
