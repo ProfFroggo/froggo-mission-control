@@ -134,14 +134,84 @@ mkdir -p "${MC_MEMORY}/sessions"
 mkdir -p "${MC_MEMORY}/daily"
 mkdir -p "${MC_MEMORY}/templates"
 mkdir -p "${MC_LIBRARY}/code"
-mkdir -p "${MC_LIBRARY}/design/ui"
 mkdir -p "${MC_LIBRARY}/design/images"
 mkdir -p "${MC_LIBRARY}/design/media"
-mkdir -p "${MC_LIBRARY}/docs/research"
+mkdir -p "${MC_LIBRARY}/design/ui"
+mkdir -p "${MC_LIBRARY}/docs/planning"
 mkdir -p "${MC_LIBRARY}/docs/presentations"
+mkdir -p "${MC_LIBRARY}/docs/research"
 mkdir -p "${MC_LIBRARY}/docs/strategies"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/code"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/design/images"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/design/media"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/design/ui"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/docs/presentations"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/docs/research"
+mkdir -p "${MC_LIBRARY}/campaigns/campaign-{name}-{date}/docs/strategies"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/code"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/design/images"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/design/media"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/design/ui"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/docs/presentations"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/docs/research"
+mkdir -p "${MC_LIBRARY}/projects/project-{name}-{date}/docs/strategies"
 mkdir -p "${MC_AGENTS}"
 mkdir -p "${MC_LOGS}"
+
+# Add .gitkeep to each leaf directory so structure is preserved in git
+LIBRARY_LEAF_DIRS=(
+  "code"
+  "design/images" "design/media" "design/ui"
+  "docs/planning" "docs/presentations" "docs/research" "docs/strategies"
+  "campaigns/campaign-{name}-{date}/code"
+  "campaigns/campaign-{name}-{date}/design/images"
+  "campaigns/campaign-{name}-{date}/design/media"
+  "campaigns/campaign-{name}-{date}/design/ui"
+  "campaigns/campaign-{name}-{date}/docs/presentations"
+  "campaigns/campaign-{name}-{date}/docs/research"
+  "campaigns/campaign-{name}-{date}/docs/strategies"
+  "projects/project-{name}-{date}/code"
+  "projects/project-{name}-{date}/design/images"
+  "projects/project-{name}-{date}/design/media"
+  "projects/project-{name}-{date}/design/ui"
+  "projects/project-{name}-{date}/docs/presentations"
+  "projects/project-{name}-{date}/docs/research"
+  "projects/project-{name}-{date}/docs/strategies"
+)
+for leaf in "${LIBRARY_LEAF_DIRS[@]}"; do
+  touch "${MC_LIBRARY}/${leaf}/.gitkeep"
+done
+
+# Write library README (only if it doesn't already exist)
+if [ ! -f "${MC_LIBRARY}/README.md" ]; then
+  cat > "${MC_LIBRARY}/README.md" << 'EOF'
+# Mission Control Library
+
+All agent output files live here. Agents write to the appropriate subfolder automatically.
+
+## Structure
+
+- `code/` — code files, scripts, snippets
+- `design/images/` — images and graphics
+- `design/media/` — video, audio, media files
+- `design/ui/` — UI mockups, wireframes, components
+- `docs/planning/` — plans, roadmaps, specs
+- `docs/presentations/` — slide decks and presentations
+- `docs/research/` — research reports and analysis
+- `docs/strategies/` — strategy documents
+- `campaigns/` — per-campaign folders (auto-created when campaign starts)
+- `projects/` — per-project folders (auto-created when project is created)
+
+## File naming
+
+`YYYY-MM-DD_type_description.ext`
+
+Examples:
+- `2026-03-08_research_competitor-analysis.md`
+- `2026-03-08_code_auth-service.ts`
+- `2026-03-08_design_landing-page-v2.png`
+EOF
+fi
 
 success "~/mission-control/ directory tree created"
 

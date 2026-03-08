@@ -144,6 +144,48 @@ function parseEnvFile(filePath) {
   return env;
 }
 
+// ── Library scaffolding ───────────────────────────────────────────────────────
+
+function scaffoldLibraryDirs(base) {
+  const subdirs = [
+    'code',
+    'design/images',
+    'design/media',
+    'design/ui',
+    'docs/planning',
+    'docs/presentations',
+    'docs/research',
+    'docs/strategies',
+    'campaigns/campaign-{name}-{date}/code',
+    'campaigns/campaign-{name}-{date}/design/images',
+    'campaigns/campaign-{name}-{date}/design/media',
+    'campaigns/campaign-{name}-{date}/design/ui',
+    'campaigns/campaign-{name}-{date}/docs/presentations',
+    'campaigns/campaign-{name}-{date}/docs/research',
+    'campaigns/campaign-{name}-{date}/docs/strategies',
+    'projects/project-{name}-{date}/code',
+    'projects/project-{name}-{date}/design/images',
+    'projects/project-{name}-{date}/design/media',
+    'projects/project-{name}-{date}/design/ui',
+    'projects/project-{name}-{date}/docs/presentations',
+    'projects/project-{name}-{date}/docs/research',
+    'projects/project-{name}-{date}/docs/strategies',
+  ];
+  return subdirs.map(d => path.join(base, d));
+}
+
+function scaffoldLibrary(base) {
+  const dirs = scaffoldLibraryDirs(base);
+  for (const dir of dirs) {
+    mkdirSync(dir, { recursive: true });
+    // Add .gitkeep to each leaf directory so structure is preserved in git
+    const gitkeep = path.join(dir, '.gitkeep');
+    if (!existsSync(gitkeep)) {
+      writeFileSync(gitkeep, '');
+    }
+  }
+}
+
 // ── Commands ─────────────────────────────────────────────────────────────────
 
 async function cmdSetup(force = false) {
@@ -189,19 +231,45 @@ async function cmdSetup(force = false) {
     path.join(MC_MEMORY, 'sessions'),
     path.join(MC_MEMORY, 'daily'),
     path.join(MC_MEMORY, 'templates'),
-    path.join(MC_LIBRARY, 'code'),
-    path.join(MC_LIBRARY, 'design', 'ui'),
-    path.join(MC_LIBRARY, 'design', 'images'),
-    path.join(MC_LIBRARY, 'design', 'media'),
-    path.join(MC_LIBRARY, 'docs', 'research'),
-    path.join(MC_LIBRARY, 'docs', 'presentations'),
-    path.join(MC_LIBRARY, 'docs', 'strategies'),
     MC_AGENTS,
     MC_LOGS,
     path.join(HOME, 'Library', 'Logs'),
   ];
   for (const d of dirs) {
     try { mkdirSync(d, { recursive: true }); } catch {}
+  }
+  // Scaffold full library structure with .gitkeep in each leaf directory
+  scaffoldLibrary(MC_LIBRARY);
+  // Write library README (only if it doesn't already exist)
+  const libraryReadme = path.join(MC_LIBRARY, 'README.md');
+  if (!existsSync(libraryReadme)) {
+    writeFileSync(libraryReadme, [
+      '# Mission Control Library',
+      '',
+      'All agent output files live here. Agents write to the appropriate subfolder automatically.',
+      '',
+      '## Structure',
+      '',
+      '- `code/` — code files, scripts, snippets',
+      '- `design/images/` — images and graphics',
+      '- `design/media/` — video, audio, media files',
+      '- `design/ui/` — UI mockups, wireframes, components',
+      '- `docs/planning/` — plans, roadmaps, specs',
+      '- `docs/presentations/` — slide decks and presentations',
+      '- `docs/research/` — research reports and analysis',
+      '- `docs/strategies/` — strategy documents',
+      '- `campaigns/` — per-campaign folders (auto-created when campaign starts)',
+      '- `projects/` — per-project folders (auto-created when project is created)',
+      '',
+      '## File naming',
+      '',
+      '`YYYY-MM-DD_type_description.ext`',
+      '',
+      'Examples:',
+      '- `2026-03-08_research_competitor-analysis.md`',
+      '- `2026-03-08_code_auth-service.ts`',
+      '- `2026-03-08_design_landing-page-v2.png`',
+    ].join('\n'));
   }
   success('~/mission-control/ directory tree created');
 
