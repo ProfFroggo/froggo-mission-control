@@ -290,7 +290,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       checkObsidian();
       checkBrowserPermissions();
     }
-    if (currentStep === 8) {
+    if (currentStep === 7) {
       buildAndStartInstall();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
