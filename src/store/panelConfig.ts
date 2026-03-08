@@ -11,19 +11,25 @@ export interface PanelConfig {
 
 const STORAGE_KEY = 'mission-control-panel-config';
 
-// Core nav items only — always present regardless of module state.
-// Optional module panels are added dynamically via syncWithViewRegistry()
-// once ModuleLoader has initialized installed modules.
+// Default panel order and visibility for a fresh install.
+// Module-owned panels (projects, schedule, library, settings, etc.) are included here
+// so their position is correct when modules install. Panels without a registered icon
+// are silently skipped by the sidebar, so non-installed modules cause no visual glitch.
+// Optional module panels are also synced dynamically via syncWithViewRegistry().
 const DEFAULT_PANELS: PanelConfig[] = [
-  { id: 'dashboard',     label: 'Dashboard',        visible: true, order: 0 },
-  { id: 'inbox',         label: 'Inbox',             visible: true, order: 1 },
-  { id: 'kanban',        label: 'Tasks',             visible: true, order: 2 },
-  { id: 'chat',          label: 'Chat',              visible: true, order: 3 },
-  { id: 'approvals',     label: 'Approvals',         visible: true, order: 4 },
-  { id: 'agents',        label: 'Agents',            visible: true, order: 5 },
-  { id: 'notifications', label: 'Notifications',     visible: true, order: 6 },
-  { id: 'modules',       label: 'Modules',           visible: true, order: 7 },
-  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true, order: 8 },
+  { id: 'dashboard',     label: 'Dashboard',        visible: true,  order: 0  },
+  { id: 'projects',      label: 'Projects',          visible: true,  order: 1  },
+  { id: 'kanban',        label: 'Tasks',             visible: true,  order: 2  },
+  { id: 'approvals',     label: 'Approvals',         visible: true,  order: 3  },
+  { id: 'chat',          label: 'Chat',              visible: true,  order: 4  },
+  { id: 'inbox',         label: 'Inbox',             visible: true,  order: 5  },
+  { id: 'schedule',      label: 'Schedule',          visible: true,  order: 6  },
+  { id: 'library',       label: 'Library',           visible: true,  order: 7  },
+  { id: 'agents',        label: 'Agents',            visible: true,  order: 8  },
+  { id: 'modules',       label: 'Modules',           visible: true,  order: 9  },
+  { id: 'settings',      label: 'Settings',          visible: true,  order: 10 },
+  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 11 },
+  { id: 'notifications', label: 'Notifications',     visible: false, order: 12 },
 ];
 
 function loadFromStorage(): PanelConfig[] {
