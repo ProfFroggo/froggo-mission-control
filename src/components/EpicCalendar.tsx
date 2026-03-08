@@ -369,7 +369,7 @@ export default function EpicCalendar({
           const needsReauth = /insufficient.*scope|invalid_grant|unauthorized|forbidden/i.test(firstErr);
           setPartialError(needsReauth
             ? 'Google Calendar access denied — reconnect Google in Settings → Google Workspace'
-            : `${response.errors.length} calendar(s) failed to load`);
+            : firstErr || `${response.errors.length} calendar(s) failed to load`);
         }
 
         setEvents(response.events || []);

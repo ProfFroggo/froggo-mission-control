@@ -10,7 +10,10 @@ function cronJobsAsEvents(timeMin: string, timeMax: string) {
   const schedulePath = join(homedir(), 'mission-control/data/schedule.json');
   if (!existsSync(schedulePath)) return [];
   let jobs: any[] = [];
-  try { jobs = JSON.parse(readFileSync(schedulePath, 'utf-8')); } catch { return []; }
+  try {
+    const parsed = JSON.parse(readFileSync(schedulePath, 'utf-8'));
+    jobs = Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
 
   const min = new Date(timeMin).getTime();
   const max = new Date(timeMax).getTime();

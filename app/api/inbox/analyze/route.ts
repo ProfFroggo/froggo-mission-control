@@ -10,7 +10,8 @@ import { google } from 'googleapis';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN = process.execPath;
 
 interface AnalysisResult {
   triage: 'urgent' | 'action' | 'fyi' | 'no-reply';
@@ -35,8 +36,8 @@ function runClaude(prompt: string): Promise<string> {
     let output = '';
     let errorOutput = '';
     const proc = spawn(
-      CLAUDE_BIN,
-      ['--print', '--model', 'claude-haiku-4-5-20251001', '--output-format', 'text', prompt],
+      NODE_BIN,
+      [CLAUDE_SCRIPT, '--print', '--model', 'claude-haiku-4-5-20251001', '--output-format', 'text', prompt],
       {
         cwd: join(homedir(), 'mission-control', 'agents', 'inbox'),
         env: cleanEnv as NodeJS.ProcessEnv,
@@ -150,7 +151,7 @@ Emails to analyze:
 
 ${messageBlocks}`;
 
-    if (!existsSync(CLAUDE_BIN)) {
+    if (!existsSync(CLAUDE_SCRIPT)) {
       return NextResponse.json({ success: false, error: 'Claude CLI not found' });
     }
 
