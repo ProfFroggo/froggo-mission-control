@@ -150,9 +150,11 @@ for (const mod of ['better-sqlite3', 'keytar']) {
 info('Building dashboard (Next.js)...');
 process.env.NEXT_TELEMETRY_DISABLED = '1';
 
-const buildResult = spawnSync('./node_modules/.bin/next', ['build'], {
+// Use the actual Next.js JS entry point — avoids the shell wrapper which
+// may fail if node isn't on PATH in the spawn context
+const nextScript = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next');
+const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
   cwd: ROOT,
-  shell: true,
   stdio: 'inherit',
   env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
 });

@@ -498,7 +498,9 @@ async function cmdSetup(force = false) {
   // ── Install persistent service ──────────────────────────────────────────
   step('Installing persistent service (auto-start at login)');
   const nodeBin = findNodeBin();
-  const nextBin = path.join(INSTALL_DIR, 'node_modules', '.bin', 'next');
+  // Use the actual Next.js JS entry point — avoids the .bin/next shell wrapper
+  // which fails in LaunchAgent/systemd contexts where node isn't in PATH
+  const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
   const logPath  = path.join(HOME, 'Library', 'Logs', 'mission-control-app.log');
 
   const envVars = {
@@ -536,9 +538,11 @@ async function cmdSetup(force = false) {
   <string>com.mission-control.app</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/sh</string>
-    <string>-c</string>
-    <string>${nextBin} start --port ${port}</string>
+    <string>${nodeBin}</string>
+    <string>${nextScript}</string>
+    <string>start</string>
+    <string>--port</string>
+    <string>${port}</string>
   </array>
   <key>WorkingDirectory</key>
   <string>${INSTALL_DIR}</string>
@@ -618,7 +622,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=/bin/sh -c '${nextBin} start --port ${port}'
+ExecStart=${nodeBin} ${nextScript} start --port ${port}
 Restart=always
 RestartSec=5
 ${envLines}
@@ -635,6 +639,22 @@ WantedBy=default.target
     success('systemd service installed and started');
   } else {
     warn(`Platform: ${os.platform()} — auto-start not supported. Use \`mission-control start\` manually.`);
+  }
+
+  // ── Ensure Next.js build exists ─────────────────────────────────────────
+  const nextDir = path.join(INSTALL_DIR, '.next');
+  if (!existsSync(nextDir)) {
+    step('Building dashboard (Next.js build not found)...');
+    const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
+    const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
+      cwd: INSTALL_DIR,
+      stdio: 'inherit',
+      env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+    });
+    if (buildResult.status !== 0) {
+      fail('Next.js build failed. Check error output above, then run: mission-control build');
+    }
+    success('Dashboard built');
   }
 
   // ── Start and open ──────────────────────────────────────────────────────
@@ -688,8 +708,8 @@ async function cmdStart() {
     spawnSync('systemctl', ['--user', 'start', 'mission-control.service'], { stdio: 'inherit' });
   } else {
     // Direct start
-    const nextBinFallback = path.join(INSTALL_DIR, 'node_modules', '.bin', 'next');
-    const proc = spawn('/bin/sh', ['-c', `${nextBinFallback} start`], {
+    const nextScriptFallback = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
+    const proc = spawn(process.execPath, [nextScriptFallback, 'start'], {
       cwd: INSTALL_DIR,
       detached: true,
       stdio: 'ignore',
