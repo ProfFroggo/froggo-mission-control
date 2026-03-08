@@ -664,9 +664,11 @@ WantedBy=default.target
   console.log('');
 
   const appUrl = `http://localhost:${port}`;
+  // Pass ?setup=1 on first launch so the wizard shows even if localStorage is stale
+  const launchUrl = `${appUrl}?setup=1`;
   if (health) {
     success(`Running at ${appUrl}`);
-    openBrowser(appUrl);
+    openBrowser(launchUrl);
   } else {
     warn('Server did not respond — check logs:');
     if (IS_MAC) info(`tail -f ${logPath}`);
@@ -678,7 +680,7 @@ WantedBy=default.target
   console.log(c.bold(c.green('║   Setup complete!                    ║')));
   console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
   console.log('');
-  console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))}`);
+  console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))} — setup wizard will launch automatically`);
   console.log('');
   console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
   console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
