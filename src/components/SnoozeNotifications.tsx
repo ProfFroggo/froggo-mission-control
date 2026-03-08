@@ -43,7 +43,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
             newReminders.forEach((reminder: SnoozeReminder) => {
               new Notification('Snoozed Conversation Reminder', {
                 body: reminder.snooze_reason || 'A snoozed conversation needs your attention',
-                icon: '/frog-icon.png',
+                icon: '/agent-profiles/froggo.webp',
                 tag: reminder.session_id,
               });
             });
