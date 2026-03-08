@@ -49,8 +49,9 @@ export function useFirstTimeUser(
 
     if (startTourAfter) {
       // Small delay to let wizard unmount before tour starts
+      // Dispatch event so App.tsx can call startPlatformTour (which it holds a ref to)
       setTimeout(() => {
-        startTour('gettingStarted');
+        window.dispatchEvent(new Event('restart-platform-tour'));
         localStorage.setItem(TOUR_SEEN_KEY, 'true');
       }, 500);
     } else {

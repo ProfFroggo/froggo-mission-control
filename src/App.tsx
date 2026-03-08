@@ -55,7 +55,7 @@ function App() {
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [, setSidebarWidth] = useState(208); // Track sidebar width for sidebar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
-  const { activeTour, completeTour, skipTour, startTour, hasCompletedTour } = useTour();
+  const { activeTour, completeTour, skipTour, startTour, startPlatformTour, hasCompletedTour } = useTour();
   const { showOnboardingWizard, completeOnboarding, skipOnboarding } = useFirstTimeUser(startTour, hasCompletedTour);
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
@@ -179,6 +179,27 @@ function App() {
     window.addEventListener('navigate-library', handleNavigateLibrary);
     return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
   }, []);
+
+  // Listen for tour navigation events — tour steps dispatch these to switch panels
+  useEffect(() => {
+    const handleTourNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ view: string }>;
+      if (customEvent.detail?.view) {
+        setCurrentView(customEvent.detail.view);
+      }
+    };
+    window.addEventListener('tour-navigate', handleTourNavigate);
+    return () => window.removeEventListener('tour-navigate', handleTourNavigate);
+  }, []);
+
+  // Listen for restart-tour event dispatched from SettingsPanel
+  useEffect(() => {
+    const handleRestartTour = () => {
+      startPlatformTour();
+    };
+    window.addEventListener('restart-platform-tour', handleRestartTour);
+    return () => window.removeEventListener('restart-platform-tour', handleRestartTour);
+  }, [startPlatformTour]);
 
   // Global keyboard shortcuts
   useEffect(() => {

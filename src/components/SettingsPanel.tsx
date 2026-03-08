@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity } from 'lucide-react';
+import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -492,6 +492,25 @@ export default function SettingsPanel() {
                 <p className="text-xs text-mission-control-text-dim">
                   Export your settings to backup or transfer to another device
                 </p>
+              </div>
+            </section>
+
+            {/* Platform Tour */}
+            <section>
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <Map size={16} /> Platform Tour
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
+                <p className="text-sm text-mission-control-text-dim">
+                  Re-launch the 8-stop guided tour to explore Dashboard, Tasks, Agents, Inbox, Memory, Library, Analytics, and Settings.
+                </p>
+                <button
+                  onClick={() => window.dispatchEvent(new Event('restart-platform-tour'))}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                >
+                  <Map size={14} />
+                  Restart Tour
+                </button>
               </div>
             </section>
           </div>
