@@ -639,8 +639,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           </div>
         ))}
       </div>
-      <div className="p-3 rounded-lg bg-mission-control-accent/5 border border-mission-control-accent/20 mb-4 text-xs text-mission-control-text-dim">
-        <p>These permissions are defined in <code className="font-mono text-mission-control-text">.claude/settings.json</code> and can be reviewed or restricted at any time from Settings.</p>
+      <div className="p-3 rounded-lg bg-mission-control-accent/5 border border-mission-control-accent/20 mb-4 text-xs text-mission-control-text-dim space-y-1">
+        <p>These are platform-wide defaults defined in <code className="font-mono text-mission-control-text">.claude/settings.json</code>.</p>
+        <p>Per-agent permissions — which tools each agent can use — are configured individually on the <span className="text-mission-control-text font-medium">Agents</span> page after setup.</p>
       </div>
       {permissionsConfirmed ? (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
