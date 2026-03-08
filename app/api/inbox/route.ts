@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
+import { ENV } from '@/lib/env';
 
 function parseInboxItem(row: Record<string, unknown>) {
   if (!row) return row;
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
       const inboxCwd = join(homedir(), 'mission-control', 'agents', 'inbox');
       const triggerMsg = `New inbox item received. Title: "${title}". Type: ${type || 'unknown'}. Channel: ${channel || 'unknown'}. Please triage this item, assign priority, and update its status.`;
       const proc = spawn(
-        '/Users/kevin.macarthur/.npm-global/bin/claude',
+        ENV.CLAUDE_BIN,
         ['--print', '--model', 'claude-haiku-4-5-20251001',
           '--allowedTools', TIER_TOOLS['worker'].join(','),
           '--disallowedTools', loadDisallowedTools('inbox').join(','),

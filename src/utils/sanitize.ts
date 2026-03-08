@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
  * Uses DOMPurify for robust XSS protection
  * 
  * SECURITY AUDIT: 2026-03-03 - All configurations reviewed and approved
- * See: /Users/worker/mission-control-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
+ * Security audit: 2026-03-03 — dangerouslySetInnerHTML usage reviewed and approved
  */
 
 // Configure DOMPurify with safe defaults

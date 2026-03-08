@@ -139,32 +139,11 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
           parts.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
       } else if (att.type.startsWith('image/')) {
-        try {
-          const uploadDir = '/Users/worker/mission-control/uploads';
-          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          console.warn('Not implemented: fs.writeBase64 for image upload', tempPath);
-          parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
-        } catch {
-          parts.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
-        }
+        parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
       } else if (att.type === 'application/pdf') {
-        try {
-          const uploadDir = '/Users/worker/mission-control/uploads';
-          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
-          parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
-        } catch {
-          parts.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
-        }
+        parts.push(`\n\n📄 PDF ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
       } else {
-        try {
-          const uploadDir = '/Users/worker/mission-control/uploads';
-          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
-          console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
-          parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
-        } catch {
-          parts.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
-        }
+        parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
       }
     }
     return parts.join('');

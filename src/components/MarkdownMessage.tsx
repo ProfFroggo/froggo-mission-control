@@ -142,7 +142,7 @@ function escapeHtml(text: string): string {
  * - Failed URL validation degrades to plain text (safe fallback)
  * 
  * AUDIT: 2026-03-03 - Reviewed and approved (LOW RISK - SECURE)
- * See: /Users/worker/mission-control-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
+ * Security audit: 2026-03-03 — dangerouslySetInnerHTML usage reviewed and approved (LOW RISK - SECURE)
  */
 function formatInline(text: string, mentions?: MentionData): React.ReactNode {
   let remaining = escapeHtml(text);
