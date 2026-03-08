@@ -1,6 +1,6 @@
 {
   "name": "froggo-mission-control",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Self-hosted AI agent platform for Claude Code CLI. Multi-agent orchestration, task management, Gmail, Calendar, Kanban and more.",
   "keywords": [
     "claude",
@@ -104,6 +104,9 @@
     "lucide-react": "^0.303.0",
     "next": "^16.1.6",
     "node-gyp": "^12.2.0",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16",
+    "tailwindcss": "3.4.17",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-draggable": "^4.5.0",
@@ -133,7 +136,6 @@
     "@typescript-eslint/parser": "^8.0.0",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/ui": "^4.0.18",
-    "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -142,9 +144,7 @@
     "happy-dom": "^20.4.0",
     "jsdom": "^27.4.0",
     "playwright": "^1.58.0",
-    "postcss": "^8.4.32",
     "prettier": "^3.2.0",
-    "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.18",
     "ws": "^8.19.0"
