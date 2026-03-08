@@ -42,23 +42,45 @@ Mission Control is your personal AI operations center. It ships with:
 
 ## Installation
 
+### Option A — npm (recommended)
+
 ```bash
-# Step 1 — install (2–3 min, fully automatic, no interaction needed)
+# Step 1 — install (2–3 min, fully automatic)
 npm install -g froggo-mission-control
 
 # Step 2 — setup wizard (~2 min, interactive)
 mission-control
 ```
 
-**That's it.**
-
-### What `npm install -g` does automatically
-
+**What `npm install -g` does automatically:**
 - Downloads the package and all dependencies
 - Compiles the 3 MCP servers (`mission-control-db-mcp`, `memory-mcp`, `cron-mcp`)
 - Runs `next build` — full production build of the dashboard
 
-### What `mission-control` does (interactive wizard)
+---
+
+### Option B — install.sh (clone + run)
+
+```bash
+git clone https://github.com/ProfFroggo/froggo-mission-control.git
+cd froggo-mission-control
+./install.sh
+```
+
+**What `install.sh` does automatically:**
+- Checks prerequisites (Node.js 20+, Claude Code CLI, Git)
+- Installs all npm dependencies
+- Compiles the 3 MCP servers
+- Builds the Next.js dashboard (`next build`)
+- Creates the full `~/mission-control/` directory tree
+- Generates `.env`, `.mcp.json`, and `.claude/settings.json` configured for your machine
+- Sets up an Obsidian-compatible memory vault skeleton
+- Installs a **LaunchAgent** (macOS) or **systemd service** (Linux) — persistent, auto-start at login, auto-restart on crash
+- Opens the app in your browser when ready
+
+---
+
+### What `mission-control` does (interactive wizard — npm install only)
 
 1. Checks Claude Code CLI is installed — offers to install it if missing
 2. Asks for your Gemini API key (+ optional Anthropic key, port)
@@ -69,14 +91,6 @@ mission-control
 7. Waits for the server, opens your browser
 
 **After setup:** Mission Control runs at `http://localhost:3000` persistently. It starts automatically when you log in. No tmux, no terminal window needed.
-
-### From source
-
-```bash
-git clone https://github.com/ProfFroggo/froggo-mission-control.git
-cd froggo-mission-control
-./install.sh
-```
 
 ---
 
