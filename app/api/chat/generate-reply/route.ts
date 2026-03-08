@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { ENV } from '@/lib/env';
+import { spawnSync } from 'child_process';
 
 export const runtime = 'nodejs';
 
@@ -10,25 +11,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'message is required' }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ success: false, error: 'ANTHROPIC_API_KEY not configured' }, { status: 424 });
-    }
-
-    const client = new Anthropic({ apiKey });
     const systemPrompt = `You are a helpful assistant generating a ${tone} reply to a message. Be concise and direct. Only output the reply text, nothing else.`;
     const userPrompt = context
       ? `Context: ${context}\n\nMessage to reply to: ${message}`
       : `Message to reply to: ${message}`;
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: userPrompt }],
-      system: systemPrompt,
-    });
+    const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+    void CLAUDECODE; void CLAUDE_CODE_ENTRYPOINT; void CLAUDE_CODE_SESSION_ID;
 
-    const reply = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    const result = spawnSync(
+      process.execPath,
+      [
+        ENV.CLAUDE_SCRIPT,
+        '--print',
+        '--output-format', 'text',
+        '--model', ENV.MODEL_TRIVIAL,
+        '--system-prompt', systemPrompt,
+      ],
+      {
+        input: userPrompt,
+        encoding: 'utf-8',
+        env: cleanEnv as NodeJS.ProcessEnv,
+        timeout: 30_000,
+      }
+    );
+
+    if (result.error || result.status !== 0) {
+      console.error('generate-reply claude error:', result.stderr);
+      return NextResponse.json({ success: false, error: 'Claude CLI failed' }, { status: 500 });
+    }
+
+    const reply = (result.stdout || '').trim();
     return NextResponse.json({ success: true, reply });
   } catch (error) {
     console.error('POST /api/chat/generate-reply error:', error);
