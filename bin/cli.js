@@ -63,6 +63,18 @@ const IS_MAC      = os.platform() === 'darwin';
 const IS_LINUX    = os.platform() === 'linux';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+function findQmdBin() {
+  const candidates = ['/opt/homebrew/bin/qmd', '/usr/local/bin/qmd'];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  try {
+    const found = execSync('which qmd 2>/dev/null', { encoding: 'utf-8', timeout: 2000 }).trim();
+    if (found) return found;
+  } catch {}
+  return '/opt/homebrew/bin/qmd'; // default, will be installed by postinstall
+}
+
 function findClaudeBin() {
   if (process.env.CLAUDE_BIN && existsSync(process.env.CLAUDE_BIN)) return process.env.CLAUDE_BIN;
   try {
@@ -260,17 +272,11 @@ async function cmdSetup(force = false) {
   const templatePath = path.join(INSTALL_DIR, '.claude', 'settings.json.template');
   const settingsPath = path.join(INSTALL_DIR, '.claude', 'settings.json');
   if (existsSync(templatePath)) {
-    const qmdBin = ['/opt/homebrew/bin/qmd', '/usr/local/bin/qmd', path.join(HOME, '.npm-global', 'bin', 'qmd')]
-      .find(f => existsSync(f)) || '';
+    const qmdBin = findQmdBin();
     let content = readFileSync(templatePath, 'utf-8')
       .replace(/\{\{PROJECT_ROOT\}\}/g, INSTALL_DIR)
-      .replace(/\{\{HOME\}\}/g, HOME);
-    if (qmdBin) {
-      content = content.replace(/\{\{QMD_BIN\}\}/g, qmdBin);
-    } else {
-      // Remove QMD_BIN line entirely if not installed
-      content = content.replace(/,?\s*"QMD_BIN":\s*"[^"]*"/g, '');
-    }
+      .replace(/\{\{HOME\}\}/g, HOME)
+      .replace(/\{\{QMD_BIN\}\}/g, qmdBin);
     writeFileSync(settingsPath, content);
     // Also write to ~/mission-control/.claude/settings.json for agents running in MC_HOME
     const mcClaudeDir = path.join(MC_HOME, '.claude');
