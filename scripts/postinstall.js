@@ -41,6 +41,14 @@ function run(cmd, cwd = ROOT, label = cmd) {
   return true;
 }
 
+// ── Verify node-gyp is available ──────────────────────────────────────────
+(function checkNodeGyp() {
+  const result = spawnSync('node', ['-e', "require('node-gyp')"], { stdio: 'pipe' });
+  if (result.status !== 0) {
+    warn("node-gyp not found — native modules (keychain support) may not compile. On macOS run: xcode-select --install");
+  }
+})();
+
 console.log(`\n${BOLD}Mission Control${RESET} — setting up... (this takes 1–3 minutes)\n`);
 
 // ── Build MCP servers ──────────────────────────────────────────────────────
