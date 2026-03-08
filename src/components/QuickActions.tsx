@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
-  Plus, MessageSquare, CheckCircle, Search, Send, X,
-  ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
-  ExternalLink,
+  MessageSquare, CheckCircle, Search, Send, X,
+  ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
@@ -170,6 +169,8 @@ function getViewLabel(view: string): string {
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
 /** FEATURE 2: Agent selection modal for voice calls */
+const MIC_STORAGE_KEY = 'toolbar-call-mic-device-id';
+
 function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
   isOpen: boolean;
   onClose: () => void;
@@ -177,17 +178,78 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
   activeCall: { agentId: string; agentName: string } | null;
   panelPos: string;
 }) {
+  const [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMic, setSelectedMic] = useState<string>(
+    () => localStorage.getItem(MIC_STORAGE_KEY) ?? 'default'
+  );
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    navigator.mediaDevices?.enumerateDevices().then(devices => {
+      const mics = devices.filter(d => d.kind === 'audioinput');
+      setMicDevices(mics);
+      // If saved device no longer exists, reset to default
+      if (selectedMic !== 'default' && !mics.find(m => m.deviceId === selectedMic)) {
+        setSelectedMic('default');
+        localStorage.removeItem(MIC_STORAGE_KEY);
+      }
+    }).catch(() => {});
+  }, [isOpen, selectedMic]);
+
+  const handleMicChange = (deviceId: string) => {
+    setSelectedMic(deviceId);
+    localStorage.setItem(MIC_STORAGE_KEY, deviceId);
+    // Expose globally so GeminiLiveService can read it
+    (window as any).__preferredMicDeviceId = deviceId === 'default' ? undefined : deviceId;
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
+    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-[28rem] overflow-y-auto`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Phone size={14} className="text-mission-control-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSettings(s => !s)}
+            className={`p-1 rounded transition-colors ${showSettings ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'hover:bg-mission-control-border'}`}
+            title="Mic settings"
+          >
+            <Mic size={13} />
+          </button>
+          <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
+        </div>
       </div>
+
+      {/* Mic settings panel */}
+      {showSettings && (
+        <div className="mb-3 p-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
+          <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Mic size={10} /> Microphone Input
+          </div>
+          {micDevices.length === 0 ? (
+            <p className="text-xs text-mission-control-text-dim">No microphone devices found</p>
+          ) : (
+            <select
+              value={selectedMic}
+              onChange={e => handleMicChange(e.target.value)}
+              className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded px-2 py-1 focus:outline-none focus:border-mission-control-accent"
+            >
+              <option value="default">System Default</option>
+              {micDevices.map(d => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {activeCall && (
         <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
@@ -663,7 +725,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         stopRinging();
         // Trigger the agent to "answer" the call with a greeting
         await geminiLive.sendText('Hey, you just picked up the phone. Greet me!');
-        await geminiLive.startMic();
+        await geminiLive.startMic((window as any).__preferredMicDeviceId);
         if (!isMeetingActive) toggleMeeting();
       } catch (err: unknown) {
         stopRinging();
@@ -813,16 +875,28 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
     setChatLoading(true);
     try {
-      // Use streamMessage or direct REST call
+      // Stream from the agent — handle stream-json format emitted by the route
       const { streamMessage } = await import('../lib/api');
       let reply = '';
       await new Promise<void>((resolve, reject) => {
         streamMessage(
           chatAgent.id,
           msg,
-          (chunk: any) => { reply += chunk.delta || chunk.content || ''; },
+          (chunk: any) => {
+            // stream-json events: { type:'result', result:'...' } or { type:'text', text:'...' }
+            if (chunk.type === 'result' && chunk.result && !chunk.is_error) {
+              reply = chunk.result; // result is the complete final text
+            } else if (chunk.type === 'text' && chunk.text) {
+              reply += chunk.text;
+            } else if (chunk.type === 'assistant' && Array.isArray(chunk.message?.content)) {
+              for (const block of chunk.message.content) {
+                if (block.type === 'text') reply += block.text;
+              }
+            }
+          },
           () => resolve(),
           (err: Error) => reject(err),
+          sessionKey,
         );
       });
       if (reply) {
@@ -988,7 +1062,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       )}
 
       {/* FEATURE 2: Agent Call Modal */}
-      {agentCallModalOpen && !state.isCollapsed && (
+      {agentCallModalOpen && (
         <AgentCallModal
           isOpen={agentCallModalOpen}
           onClose={() => setAgentCallModalOpen(false)}
@@ -1248,12 +1322,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               }}
               className={`p-2.5 rounded-full transition-colors ${
                 callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white' : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
+                : activeCall ? 'bg-red-500 text-white' : 'hover:bg-mission-control-border'
               }`}
               title={activeCall ? activeCall.agentName : 'Call Agent'}
               style={isFloating ? noDrag : {}}
             >
-              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} className="text-mission-control-text-dim" />}
             </button>
             {activeCall && (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error" style={isFloating ? noDrag : {}}>
@@ -1261,14 +1335,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 {activeCall.agentName}
               </span>
             )}
-            <button
-              onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
-              className="p-2 rounded-full hover:bg-mission-control-border transition-colors"
-              title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
-              style={isFloating ? noDrag : {}}
-            >
-              <ExternalLink size={14} className="text-mission-control-text-dim" />
-            </button>
             <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
               <ChevronLeft size={16} className="text-mission-control-text-dim" />
             </button>
@@ -1279,20 +1345,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
               <Search size={16} className="text-mission-control-text-dim" />
             </button>
-            <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="New Task" style={isFloating ? noDrag : {}}>
-              <Plus size={16} className="text-mission-control-text-dim" />
-            </button>
-            {/* Context Chat */}
-            <button
-              onClick={() => { closeAllModals(); setContextChatOpen(!contextChatOpen); }}
-              className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'}`}
-              title={`Chat about ${getViewLabel(currentView)}`}
-              style={isFloating ? noDrag : {}}
-            >
-              <Sparkles size={16} className={contextChatOpen ? '' : 'text-mission-control-text-dim'} />
-            </button>
-
-            <div className="w-px h-6 bg-mission-control-border mx-0.5" style={isFloating ? noDrag : {}} />
 
             {/* Agent Chat button */}
             <button
@@ -1321,7 +1373,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 callRinging ? 'bg-yellow-500 text-white animate-pulse'
                 : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
                 : agentCallModalOpen ? 'bg-mission-control-accent text-white'
-                : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
+                : 'hover:bg-mission-control-border'
               }`}
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
               style={isFloating ? noDrag : {}}
@@ -1329,23 +1381,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
 
-            <div className="w-px h-6 bg-mission-control-border mx-0.5" style={isFloating ? noDrag : {}} />
-            <button
-              onClick={isFloating ? () => showToast('info', 'Pop-in not available in web mode') : handlePopOut}
-              className="p-2 rounded-full hover:bg-mission-control-border transition-colors"
-              title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
-              style={isFloating ? noDrag : {}}
-            >
-              <ExternalLink size={14} className="text-mission-control-text-dim" />
-            </button>
             <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
               <ChevronRight size={16} className="text-mission-control-text-dim" />
             </button>
-            {!isFloating && (
-              <button onClick={resetPosition} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Reset position">
-                <RotateCcw size={14} className="text-mission-control-text-dim" />
-              </button>
-            )}
           </>
         )}
       </div>

@@ -4,13 +4,13 @@
  */
 
 import { getDb } from './database';
-import { calcCostUsd } from './env';
+import { calcCostUsd, ENV } from './env';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
 
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 const HOME = homedir();
 
 // ── Model resolution ─────────────────────────────────────────────────────────

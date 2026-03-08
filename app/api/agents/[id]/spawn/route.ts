@@ -1,3 +1,4 @@
+import { ENV } from '@/lib/env';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { validateAgentId } from '@/lib/validateId';
@@ -60,7 +61,7 @@ export async function POST(
       const spawnArgs = resumed
         ? ['--resume', existing!.sessionId, '--agents', id]
         : ['--agents', id];
-      const proc = spawn('/Users/kevin.macarthur/.npm-global/bin/claude', spawnArgs, {
+      const proc = spawn(ENV.CLAUDE_BIN, spawnArgs, {
         cwd: existsSync(agentCwd) ? agentCwd : homedir(),
         env: { ...cleanEnv } as NodeJS.ProcessEnv,
         detached: true,

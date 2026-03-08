@@ -1,3 +1,4 @@
+import { ENV } from '@/lib/env';
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
@@ -9,7 +10,7 @@ import { google } from 'googleapis';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 
 interface AnalysisResult {
   triage: 'urgent' | 'action' | 'fyi' | 'no-reply';

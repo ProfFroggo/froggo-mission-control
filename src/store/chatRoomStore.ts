@@ -71,6 +71,8 @@ export interface ChatRoom {
   artifacts: Artifact[];
   /** Currently displayed artifact */
   activeArtifactId?: string;
+  /** Persisted count from DB — used in room list before messages are lazy-loaded */
+  messageCount?: number;
 }
 
 interface ChatRoomState {
@@ -140,6 +142,7 @@ export const useChatRoomStore = create<ChatRoomState>()(
               name: r.name,
               agents: (() => { try { return JSON.parse(r.agents || '[]'); } catch { return []; } })(),
               messages: [],
+              messageCount: r.messageCount ?? 0,
               createdAt: r.createdAt,
               updatedAt: r.updatedAt || r.createdAt,
               sessionKeys: (() => { try { return JSON.parse(r.sessionKeys || '{}'); } catch { return {}; } })(),
@@ -180,7 +183,7 @@ export const useChatRoomStore = create<ChatRoomState>()(
           .slice(-MAX_MESSAGES_PER_ROOM);
         set(state => ({
           rooms: state.rooms.map(r =>
-            r.id === roomId ? { ...r, messages: deduped } : r
+            r.id === roomId ? { ...r, messages: deduped, messageCount: deduped.length } : r
           ),
         }));
       } catch (e) {

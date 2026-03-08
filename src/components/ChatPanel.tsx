@@ -1156,7 +1156,7 @@ export default function ChatPanel() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{room.name}</div>
                       <div className="text-xs text-mission-control-text-dim">
-                        {room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
+                        {room.messageCount ?? room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
                   </button>

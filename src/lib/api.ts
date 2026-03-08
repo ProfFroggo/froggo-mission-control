@@ -102,14 +102,15 @@ export function streamMessage(
   message: string,
   onChunk: (chunk: any) => void,
   onDone: () => void,
-  onError: (err: Error) => void
+  onError: (err: Error) => void,
+  sessionKey?: string,
 ) {
   const controller = new AbortController();
 
   fetch(`/api/agents/${agentId}/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, ...(sessionKey ? { sessionKey } : {}) }),
     signal: controller.signal,
   }).then(async (response) => {
     if (!response.ok) {

@@ -49,12 +49,7 @@ const migrations = [
   // Indexes
   `CREATE INDEX IF NOT EXISTS idx_chat_room_messages_room ON chat_room_messages(roomId, timestamp)`,
   `CREATE INDEX IF NOT EXISTS idx_agent_sessions_status ON agent_sessions(status)`,
-  // Seed chat rooms
-  `INSERT OR IGNORE INTO chat_rooms (id, name, topic) VALUES
-    ('general', 'General', 'Cross-team coordination'),
-    ('code-review', 'Code Review', 'Review requests and discussions'),
-    ('planning', 'Planning', 'Task decomposition and architecture'),
-    ('incidents', 'Incidents', 'Bug reports and production issues')`,
+  // Rooms are created on demand — no hardcoded seeds
 ];
 
 for (const sql of migrations) {

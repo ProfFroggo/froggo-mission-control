@@ -1,10 +1,11 @@
+import { ENV } from '@/lib/env';
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const CLAUDE_BIN = '/Users/kevin.macarthur/.npm-global/bin/claude';
+const CLAUDE_BIN = ENV.CLAUDE_BIN;
 
 // POST /api/agents/hr/stream
 // Called by HRAgentCreationModal to run the HR conversational agent.

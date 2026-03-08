@@ -4,7 +4,13 @@ import { getDb } from '@/lib/database';
 export async function GET(_request: NextRequest) {
   try {
     const db = getDb();
-    const rooms = db.prepare('SELECT * FROM chat_rooms ORDER BY createdAt ASC').all();
+    const rooms = db.prepare(`
+      SELECT r.*, COUNT(m.id) AS messageCount
+      FROM chat_rooms r
+      LEFT JOIN chat_room_messages m ON m.roomId = r.id
+      GROUP BY r.id
+      ORDER BY r.createdAt ASC
+    `).all();
     return NextResponse.json(rooms);
   } catch (error) {
     console.error('GET /api/chat-rooms error:', error);

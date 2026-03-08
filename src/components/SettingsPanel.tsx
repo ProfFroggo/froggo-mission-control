@@ -1,27 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key } from 'lucide-react';
-import { useStore } from '../store/store';
+import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi } from '../lib/api';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
-import ConfigTab from './ConfigTab';
-import LogsTab from './LogsTab';
 import ExportBackupTab from './ExportBackupTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
 import AccessibilitySettings from './AccessibilitySettings';
 import { Toggle } from './Toggle';
 
 interface NotificationPreferences {
-  taskUpdates: boolean;
-  agentMessages: boolean;
-  approvalRequests: boolean;
-  systemAlerts: boolean;
-  emailNotifications: boolean;
-  discordNotifications: boolean;
-  telegramNotifications: boolean;
-  soundEnabled: boolean;
+  enabled: boolean;
 }
 
 interface KeyboardShortcut {
@@ -34,26 +24,14 @@ interface KeyboardShortcut {
 }
 
 interface Settings {
-  gatewayUrl: string;
-  gatewayToken: string;
-  voiceEnabled: boolean;
-  voiceSpeed: number;
-  notificationsEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
   accentColor: string;
   fontFamily: string;
   fontSize: number;
-  autoRefresh: boolean;
-  refreshInterval: number;
   defaultPanel: string;
   notifications: NotificationPreferences;
-  keyboardShortcuts: KeyboardShortcut[];
   // Automation settings
   externalActionsEnabled: boolean;
-  rateLimitTweets: number;
-  rateLimitEmails: number;
-  defaultEmailAccount: string;
-  defaultCalendarAccount: string;
   // API Keys
   geminiApiKey: string;
 }
@@ -76,36 +54,13 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
 ];
 
 const defaultSettings: Settings = {
-  gatewayUrl: '',
-  gatewayToken: '',
-  voiceEnabled: true,
-  voiceSpeed: 1.0,
-  notificationsEnabled: true,
   theme: 'dark',
   accentColor: '#22c55e',
   fontFamily: 'system',
   fontSize: 14,
-  autoRefresh: true,
-  refreshInterval: 30,
   defaultPanel: 'dashboard',
-  notifications: {
-    taskUpdates: true,
-    agentMessages: true,
-    approvalRequests: true,
-    systemAlerts: true,
-    emailNotifications: false,
-    discordNotifications: false,
-    telegramNotifications: false,
-    soundEnabled: true,
-  },
-  keyboardShortcuts: defaultKeyboardShortcuts,
-  // Automation defaults
+  notifications: { enabled: true },
   externalActionsEnabled: false,
-  rateLimitTweets: 10,
-  rateLimitEmails: 20,
-  defaultEmailAccount: useUserSettings.getState().email,
-  defaultCalendarAccount: useUserSettings.getState().emailAccounts[0]?.email || '',
-  // API Keys
   geminiApiKey: '',
 };
 
@@ -159,11 +114,25 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'exportBackup';
+type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup';
+
+interface SystemHealth { cli: boolean; database: boolean; backend: string; }
+
+function StatusRow({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-mission-control-text-dim">{label}</span>
+      <span className={`font-mono text-xs ${ok === false ? 'text-error' : ok === true ? 'text-success' : 'text-mission-control-text-dim'}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
 
 export default function SettingsPanel() {
-  const { connected } = useStore();
   const [activeTab, setActiveTab] = useState<Tab>('general');
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [agentCount, setAgentCount] = useState<number | null>(null);
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('mission-control-settings');
     const parsed = saved ? JSON.parse(saved) : {};
@@ -172,13 +141,20 @@ export default function SettingsPanel() {
     return { ...defaultSettings, ...rest };
   });
   const [saved, setSaved] = useState(false);
-  const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Apply theme on mount and when settings change
   useEffect(() => {
     applyTheme(settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize);
   }, [settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize]);
+
+  // Load live system health
+  useEffect(() => {
+    fetch('/api/health').then(r => r.json()).then(data => setHealth(data)).catch(() => {});
+    fetch('/api/agents').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setAgentCount(data.length);
+    }).catch(() => {});
+  }, []);
 
   // Load Gemini key from DB on mount (never from localStorage)
   useEffect(() => {
@@ -213,10 +189,6 @@ export default function SettingsPanel() {
     try {
       await settingsApi.set('automation', {
         externalActionsEnabled: settings.externalActionsEnabled,
-        rateLimitTweets: settings.rateLimitTweets,
-        rateLimitEmails: settings.rateLimitEmails,
-        defaultEmailAccount: settings.defaultEmailAccount,
-        defaultCalendarAccount: settings.defaultCalendarAccount,
       });
     } catch (e) {
       // Settings API save failed — localStorage save above still applies
@@ -262,23 +234,6 @@ export default function SettingsPanel() {
     reader.readAsText(file);
   };
 
-  const handleShortcutEdit = (id: string, key: string) => {
-    setSettings(s => ({
-      ...s,
-      keyboardShortcuts: s.keyboardShortcuts.map(sc =>
-        sc.id === id ? { ...sc, currentKey: key } : sc
-      )
-    }));
-    setEditingShortcut(null);
-  };
-
-  const resetShortcuts = () => {
-    setSettings(s => ({
-      ...s,
-      keyboardShortcuts: defaultKeyboardShortcuts
-    }));
-    showToast('info', 'Shortcuts reset', 'All keyboard shortcuts restored to defaults');
-  };
 
   return (
     <div className="h-full overflow-auto p-4">
@@ -356,7 +311,7 @@ export default function SettingsPanel() {
             }`}
           >
             <LinkIcon size={16} />
-            Accounts
+            Google Workspace
           </button>
           <button
             onClick={() => setActiveTab('security')}
@@ -380,26 +335,6 @@ export default function SettingsPanel() {
             Automation
           </button>
           <button
-            onClick={() => setActiveTab('config')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'config'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            Config
-          </button>
-          <button
-            onClick={() => setActiveTab('logs')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'logs'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            Logs
-          </button>
-          <button
             onClick={() => setActiveTab('exportBackup')}
             className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'exportBackup'
@@ -416,30 +351,37 @@ export default function SettingsPanel() {
         {activeTab === 'accounts' && <ConnectedAccountsPanel />}
         {activeTab === 'security' && <SecuritySettings />}
         {activeTab === 'accessibility' && <AccessibilitySettings />}
-        {activeTab === 'config' && <ConfigTab />}
-        {activeTab === 'logs' && <LogsTab />}
         {activeTab === 'exportBackup' && <ExportBackupTab />}
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
           <div className="space-y-6">
-            {/* Claude Code System Status */}
+            {/* Live System Status */}
             <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Wifi size={16} /> System Status
-              </h2>
-              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">mission-control-db &middot; memory &middot; cron</span></div>
-                  <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
-                  <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
-                  <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/mission-control/memory/</span></div>
-                </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <span className="w-2 h-2 rounded-full bg-success" />
-                  <span className="text-sm">Local Mode</span>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-heading-3 flex items-center gap-2">
+                  <Activity size={16} /> System Status
+                </h2>
+                <button
+                  onClick={() => {
+                    setHealth(null);
+                    setAgentCount(null);
+                    fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => {});
+                    fetch('/api/agents').then(r => r.json()).then(d => { if (Array.isArray(d)) setAgentCount(d.length); }).catch(() => {});
+                  }}
+                  className="text-xs text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1 transition-colors"
+                >
+                  <RefreshCw size={12} /> Refresh
+                </button>
+              </div>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-2 text-sm">
+                <StatusRow label="Claude CLI" value={health ? (health.cli ? 'Ready' : 'Not found') : '…'} ok={health?.cli} />
+                <StatusRow label="Database" value={health ? (health.database ? 'Connected' : 'Missing') : '…'} ok={health?.database} />
+                <StatusRow label="MCP Servers" value="mission-control-db · memory" ok={true} />
+                <StatusRow label="Agents" value={agentCount !== null ? `${agentCount} registered` : '…'} ok={agentCount !== null && agentCount > 0} />
+                <StatusRow label="Hooks" value="approval · review-gate · session-sync · precompact" ok={true} />
+                <StatusRow label="Vault" value="~/mission-control/memory/" ok={true} />
+                <StatusRow label="Library" value="~/mission-control/library/" ok={true} />
               </div>
             </section>
 
@@ -492,76 +434,6 @@ export default function SettingsPanel() {
                     colorScheme="green"
                   />
                 </div>
-              </div>
-            </section>
-
-            {/* Voice */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Volume2 size={16} /> Voice
-              </h2>
-              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Voice Responses</div>
-                    <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
-                  </div>
-                  <Toggle
-                    checked={settings.voiceEnabled}
-                    onChange={(checked) => setSettings(s => ({ ...s, voiceEnabled: checked }))}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="voice-speed" className="block text-sm text-mission-control-text-dim mb-2">
-                    Speech Speed: {settings.voiceSpeed.toFixed(1)}x
-                  </label>
-                  <input
-                    id="voice-speed"
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    value={settings.voiceSpeed}
-                    onChange={(e) => setSettings(s => ({ ...s, voiceSpeed: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Data */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <RefreshCw size={16} /> Data Refresh
-              </h2>
-              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">Auto Refresh</div>
-                    <div className="text-sm text-mission-control-text-dim">Automatically refresh sessions list</div>
-                  </div>
-                  <Toggle
-                    checked={settings.autoRefresh}
-                    onChange={(checked) => setSettings(s => ({ ...s, autoRefresh: checked }))}
-                  />
-                </div>
-                {settings.autoRefresh && (
-                  <div>
-                    <label htmlFor="refresh-interval" className="block text-sm text-mission-control-text-dim mb-2">
-                      Refresh Interval: {settings.refreshInterval}s
-                    </label>
-                    <input
-                      id="refresh-interval"
-                      type="range"
-                      min="10"
-                      max="120"
-                      step="10"
-                      value={settings.refreshInterval}
-                      onChange={(e) => setSettings(s => ({ ...s, refreshInterval: parseInt(e.target.value) }))}
-                      className="w-full"
-                    />
-                  </div>
-                )}
               </div>
             </section>
 
@@ -735,139 +607,7 @@ export default function SettingsPanel() {
         {/* NOTIFICATIONS TAB */}
         {activeTab === 'notifications' && (
           <div className="space-y-6">
-            {/* Global Notification Settings */}
-            <section>
-              <GlobalNotificationSettings />
-            </section>
-
-            {/* Dashboard-specific Notification Preferences */}
-            <section>
-              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Bell size={16} /> Dashboard Notification Preferences
-              </h2>
-              <p className="text-sm text-mission-control-text-dim mb-4">
-                Configure which types of events trigger in-app notifications
-              </p>
-              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
-                {/* Master Toggle */}
-                <div className="flex items-center justify-between pb-4 border-b border-mission-control-border">
-                  <div>
-                    <div className="font-medium">Enable Notifications</div>
-                    <div className="text-sm text-mission-control-text-dim">Master switch for all notifications</div>
-                  </div>
-                  <Toggle
-                    checked={settings.notificationsEnabled}
-                    onChange={(checked) => setSettings(s => ({ ...s, notificationsEnabled: checked }))}
-                  />
-                </div>
-
-                {/* Notification Types */}
-                <div className="space-y-3">
-                  <h3 className="font-medium text-sm text-mission-control-text-dim">Notification Types</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Task Updates</div>
-                      <div className="text-xs text-mission-control-text-dim">Status changes, completions, assignments</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.taskUpdates}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, taskUpdates: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Agent Messages</div>
-                      <div className="text-xs text-mission-control-text-dim">Messages from Coder, Writer, Researcher agents</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.agentMessages}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, agentMessages: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Approval Requests</div>
-                      <div className="text-xs text-mission-control-text-dim">Tweets, emails, calendar events pending approval</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.approvalRequests}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, approvalRequests: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">System Alerts</div>
-                      <div className="text-xs text-mission-control-text-dim">Errors, warnings, important system events</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.systemAlerts}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, systemAlerts: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-                </div>
-
-                {/* Notification Channels */}
-                <div className="space-y-3 pt-4 border-t border-mission-control-border">
-                  <h3 className="font-medium text-sm text-mission-control-text-dim">Notification Channels</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Email Notifications</div>
-                      <div className="text-xs text-mission-control-text-dim">Send notifications to email (coming soon)</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.emailNotifications}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, emailNotifications: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Discord Notifications</div>
-                      <div className="text-xs text-mission-control-text-dim">Send notifications to Discord (coming soon)</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.discordNotifications}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, discordNotifications: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Telegram Notifications</div>
-                      <div className="text-xs text-mission-control-text-dim">Send notifications to Telegram (coming soon)</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.telegramNotifications}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, telegramNotifications: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-sm">Notification Sound</div>
-                      <div className="text-xs text-mission-control-text-dim">Play sound with notifications</div>
-                    </div>
-                    <Toggle
-                      checked={settings.notifications.soundEnabled}
-                      onChange={(checked) => setSettings(s => ({ ...s, notifications: { ...s.notifications, soundEnabled: checked } }))}
-                      disabled={!settings.notificationsEnabled}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
+            <GlobalNotificationSettings />
           </div>
         )}
 
@@ -875,58 +615,23 @@ export default function SettingsPanel() {
         {activeTab === 'shortcuts' && (
           <div className="space-y-6">
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-heading-3 flex items-center gap-2">
-                  <Keyboard size={16} /> Keyboard Shortcuts
-                </h2>
-                <button
-                  onClick={resetShortcuts}
-                  className="text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1"
-                >
-                  <RotateCcw size={14} />
-                  Reset to Defaults
-                </button>
-              </div>
-              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-2">
-                {settings.keyboardShortcuts.map((shortcut) => (
-                  <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-mission-control-border last:border-0">
-                    <div className="flex-1">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <Keyboard size={16} /> Keyboard Shortcuts
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-1">
+                {defaultKeyboardShortcuts.map((shortcut) => (
+                  <div key={shortcut.id} className="flex items-center justify-between py-2.5 border-b border-mission-control-border last:border-0">
+                    <div>
                       <div className="font-medium text-sm">{shortcut.name}</div>
                       <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {editingShortcut === shortcut.id ? (
-                        <input
-                          type="text"
-                          value={shortcut.currentKey}
-                          onChange={(e) => handleShortcutEdit(shortcut.id, e.target.value)}
-                          onBlur={() => setEditingShortcut(null)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              setEditingShortcut(null);
-                            } else if (e.key === 'Escape') {
-                              handleShortcutEdit(shortcut.id, shortcut.defaultKey);
-                              setEditingShortcut(null);
-                            }
-                          }}
-                          className="w-20 px-2 py-1 text-center bg-mission-control-bg border border-mission-control-accent rounded text-sm"
-                        />
-                      ) : (
-                        <button
-                          onClick={() => setEditingShortcut(shortcut.id)}
-                          className="px-3 py-1 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono hover:border-mission-control-accent transition-colors"
-                        >
-                          {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
-                          {shortcut.currentKey.toUpperCase()}
-                        </button>
-                      )}
-                    </div>
+                    <kbd className="px-3 py-1 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono text-mission-control-text-dim">
+                      {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
+                      {shortcut.currentKey.toUpperCase()}
+                    </kbd>
                   </div>
                 ))}
-                <div className="pt-4 text-xs text-mission-control-text-dim">
-                  <p>Click on any shortcut to edit it. Press Enter to save or Escape to cancel.</p>
-                  <p className="mt-1">⌘ = Command • ⇧ = Shift • ⌥ = Option • ⌃ = Control</p>
-                </div>
+                <p className="pt-3 text-xs text-mission-control-text-dim">⌘ = Command &nbsp;·&nbsp; ⇧ = Shift &nbsp;·&nbsp; ⌥ = Option &nbsp;·&nbsp; ⌃ = Control</p>
               </div>
             </section>
           </div>
@@ -937,10 +642,10 @@ export default function SettingsPanel() {
           <div className="space-y-6">
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
-                ⚡ Automation
+                <Settings size={16} /> Automation
               </h2>
               <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-4">
-                {/* Kill Switch */}
+                {/* External Actions kill switch */}
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium flex items-center gap-2">
@@ -952,9 +657,9 @@ export default function SettingsPanel() {
                       )}
                     </div>
                     <div className="text-sm text-mission-control-text-dim">
-                      {settings.externalActionsEnabled 
-                        ? 'Tweets and emails will be sent when approved' 
-                        : 'All external actions blocked (safe mode)'}
+                      {settings.externalActionsEnabled
+                        ? 'Approved agent actions (emails, posts) will execute'
+                        : 'All external actions blocked — agents can plan but not execute'}
                     </div>
                   </div>
                   <Toggle
@@ -964,58 +669,12 @@ export default function SettingsPanel() {
                   />
                 </div>
 
-                {/* Rate Limits */}
-                <div>
-                  <label htmlFor="tweet-rate-limit" className="block text-sm text-mission-control-text-dim mb-2">
-                    Tweet Rate Limit: {settings.rateLimitTweets}/hour
-                  </label>
-                  <input
-                    id="tweet-rate-limit"
-                    type="range"
-                    min="1"
-                    max="30"
-                    step="1"
-                    value={settings.rateLimitTweets}
-                    onChange={(e) => setSettings(s => ({ ...s, rateLimitTweets: parseInt(e.target.value) }))}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email-rate-limit" className="block text-sm text-mission-control-text-dim mb-2">
-                    Email Rate Limit: {settings.rateLimitEmails}/hour
-                  </label>
-                  <input
-                    id="email-rate-limit"
-                    type="range"
-                    min="1"
-                    max="50"
-                    step="1"
-                    value={settings.rateLimitEmails}
-                    onChange={(e) => setSettings(s => ({ ...s, rateLimitEmails: parseInt(e.target.value) }))}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Smart Account Selection Info */}
-                <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <span className="text-xl">🤖</span>
-                    <div className="flex-1">
-                      <div className="font-medium text-info mb-2">Smart Account Selection</div>
-                      <div className="text-sm text-info space-y-2">
-                        <p>No default accounts! Mission Control intelligently chooses which account to use based on context:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Email to your address → Reply from that same address</li>
-                          <li>Email to work address → Reply from work address</li>
-                          <li>Calendar invite on iCloud → Use iCloud calendar</li>
-                          <li>Reply-to address matching for email threads</li>
-                        </ul>
-                        <p className="mt-3 text-xs">
-                          View selection rules in Connected Accounts (⌘0)
-                        </p>
-                      </div>
-                    </div>
+                {/* Info */}
+                <div className="p-4 bg-info-subtle border border-info-border rounded-lg text-sm text-info space-y-2">
+                  <div className="font-medium flex items-center gap-2">
+                    <Shield size={14} /> Approval Gate
                   </div>
+                  <p>Agents call <code className="text-xs bg-black/20 px-1 rounded">approval_create</code> before any external action. The Approvals panel lets you review and approve or reject each one before it executes.</p>
                 </div>
               </div>
             </section>

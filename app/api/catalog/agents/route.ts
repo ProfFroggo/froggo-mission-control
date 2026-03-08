@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 const CATALOG_AGENTS_DIR = join(
-  process.env.MC_PROJECT_ROOT || '/Users/kevin.macarthur/git/mission-control-nextjs',
+  process.env.MC_PROJECT_ROOT || process.cwd(),
   'catalog',
   'agents'
 );

@@ -10,7 +10,7 @@
 const path = require('path');
 
 const DB_PATH = process.env.DB_PATH ||
-  path.join(process.env.HOME || '/Users/kevin.macarthur', 'mission-control', 'data', 'mission-control.db');
+  path.join(process.env.HOME || require('os').homedir(), 'mission-control', 'data', 'mission-control.db');
 
 let db = null;
 function getDb() {

@@ -47,6 +47,116 @@ const MCP_SERVERS = [
     label: 'Memory MCP',
     tools: ['memory_search', 'memory_recall', 'memory_write', 'memory_read'],
   },
+  {
+    id: 'google-workspace',
+    label: 'Google Workspace',
+    tools: [
+      // Auth
+      'auth_clear', 'auth_refreshToken',
+      // Calendar
+      'calendar_list', 'calendar_listEvents', 'calendar_getEvent',
+      'calendar_createEvent', 'calendar_updateEvent', 'calendar_deleteEvent',
+      'calendar_findFreeTime', 'calendar_respondToEvent',
+      // Gmail
+      'gmail_search', 'gmail_get', 'gmail_listLabels',
+      'gmail_send', 'gmail_createDraft', 'gmail_sendDraft',
+      'gmail_modify', 'gmail_downloadAttachment',
+      // Drive
+      'drive_search', 'drive_findFolder', 'drive_downloadFile',
+      // Docs
+      'docs_find', 'docs_create', 'docs_getText', 'docs_appendText',
+      'docs_insertText', 'docs_replaceText', 'docs_move', 'docs_extractIdFromUrl',
+      // Sheets
+      'sheets_find', 'sheets_getMetadata', 'sheets_getRange', 'sheets_getText',
+      // Slides
+      'slides_find', 'slides_getMetadata', 'slides_getText',
+      // Chat
+      'chat_listSpaces', 'chat_findSpaceByName', 'chat_findDmByEmail',
+      'chat_listThreads', 'chat_getMessages', 'chat_sendMessage',
+      'chat_sendDm', 'chat_setUpSpace',
+      // People
+      'people_getMe', 'people_getUserProfile',
+      // Time
+      'time_getCurrentDate', 'time_getCurrentTime', 'time_getTimeZone',
+    ],
+  },
+  {
+    id: 'n8n-mcp',
+    label: 'n8n Automation',
+    tools: [
+      'n8n_list_workflows', 'n8n_get_workflow', 'n8n_create_workflow',
+      'n8n_update_full_workflow', 'n8n_update_partial_workflow', 'n8n_delete_workflow',
+      'n8n_test_workflow', 'n8n_executions', 'n8n_workflow_versions',
+      'n8n_validate_workflow', 'n8n_autofix_workflow', 'n8n_deploy_template',
+      'n8n_health_check', 'get_node', 'get_template', 'search_nodes',
+      'search_templates', 'tools_documentation', 'validate_node', 'validate_workflow',
+    ],
+  },
+  {
+    id: 'claude_ai_Vercel',
+    label: 'Vercel',
+    tools: [
+      'list_projects', 'get_project', 'list_deployments', 'get_deployment',
+      'get_deployment_build_logs', 'get_runtime_logs', 'deploy_to_vercel',
+      'list_teams', 'get_access_to_vercel_url', 'web_fetch_vercel_url',
+      'check_domain_availability_and_price', 'search_vercel_documentation',
+    ],
+  },
+  {
+    id: 'birdeye-api-mcp',
+    label: 'Birdeye (DeFi/Tokens)',
+    tools: [
+      'get-defi-price', 'get-defi-multi_price', 'post-defi-multi_price',
+      'get-defi-history_price', 'get-defi-historical_price_unix',
+      'get-defi-ohlcv', 'get-defi-ohlcv-pair', 'get-defi-ohlcv-base_quote',
+      'get-defi-v3-ohlcv', 'get-defi-v3-ohlcv-pair',
+      'get-defi-token_overview', 'get-defi-token_security', 'get-defi-token_trending',
+      'get-defi-token_creation_info', 'get-defi-tokenlist',
+      'get-defi-v3-token-list', 'get-defi-v3-token-list-scroll',
+      'get-defi-v3-token-meta-data-single', 'get-defi-v3-token-meta-data-multiple',
+      'get-defi-v3-token-market-data', 'get-defi-v3-token-market-data-multiple',
+      'get-defi-v3-token-trade-data-single', 'get-defi-v3-token-trade-data-multiple',
+      'get-defi-v3-token-holder', 'get-defi-v3-token-txs',
+      'get-defi-v3-token-mint-burn-txs',
+      'get-defi-price_volume-single', 'post-defi-price_volume-multi',
+      'get-defi-txs-token', 'get-defi-txs-token-seek_by_time',
+      'get-defi-txs-pair', 'get-defi-txs-pair-seek_by_time',
+      'get-defi-v3-txs', 'get-defi-v3-txs-latest-block',
+      'get-defi-v3-all-time-trades-single', 'post-defi-v3-all-time-trades-multiple',
+      'get-defi-v2-markets', 'get-defi-v2-tokens-new_listing', 'get-defi-v2-tokens-top_traders',
+      'get-defi-v3-pair-overview-single', 'get-defi-v3-pair-overview-multiple',
+      'get-defi-v3-search', 'get-defi-networks',
+      'get-trader-gainers-losers', 'get-trader-txs-seek_by_time',
+      'get-v1-wallet-token_balance', 'get-v1-wallet-token_list',
+      'get-v1-wallet-tx_list', 'get-v1-wallet-list_supported_chain',
+      'get-wallet-v2-balance-change',
+    ],
+  },
+  {
+    id: 'solana-mcp-server',
+    label: 'Solana',
+    tools: [
+      'Solana_Documentation_Search', 'Solana_Expert__Ask_For_Help',
+      'Ask_Solana_Anchor_Framework_Expert',
+    ],
+  },
+  {
+    id: 'supabase',
+    label: 'Supabase',
+    tools: [
+      'list_projects', 'get_project', 'create_project', 'pause_project', 'restore_project',
+      'list_organizations', 'get_organization',
+      'execute_sql', 'apply_migration', 'list_migrations',
+      'list_tables', 'list_extensions', 'generate_typescript_types',
+      'create_branch', 'list_branches', 'delete_branch', 'merge_branch',
+      'reset_branch', 'rebase_branch',
+      'deploy_edge_function', 'get_edge_function', 'list_edge_functions',
+      'get_logs', 'get_advisors',
+      'get_project_url', 'get_publishable_keys',
+      'get_cost', 'confirm_cost',
+      'search_docs',
+    ],
+  },
 ];
 
 // Approval tiers
@@ -398,7 +508,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-5 pt-3 border-b border-mission-control-border overflow-x-auto">
+        <div className="flex gap-1 px-5 pt-3 border-b border-mission-control-border overflow-x-auto min-h-[44px]">
           {TABS.map(t => (
             <button
               key={t.id}
