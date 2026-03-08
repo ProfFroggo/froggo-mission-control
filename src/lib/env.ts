@@ -11,6 +11,30 @@ import os from 'os';
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 
+// ── Search backend detection ────────────────────────────────────────────────
+// Resolved once at startup. Order of preference: qmd > ripgrep > none.
+function resolveSearchBackend(qmdBin: string): 'qmd' | 'ripgrep' | 'none' {
+  if (existsSync(qmdBin)) return 'qmd';
+
+  // Check for ripgrep on PATH or common locations
+  try {
+    const found = execSync('which rg 2>/dev/null', { encoding: 'utf-8', timeout: 2000 }).trim();
+    if (found) return 'ripgrep';
+  } catch { /* not on PATH */ }
+
+  const rgCandidates = [
+    '/opt/homebrew/bin/rg',
+    '/usr/local/bin/rg',
+    '/usr/bin/rg',
+  ];
+  for (const c of rgCandidates) {
+    if (existsSync(c)) return 'ripgrep';
+  }
+
+  console.warn(`[env] QMD not found at ${qmdBin} and ripgrep (rg) not found. Memory search will be unavailable. Install qmd: brew install profroggo/tap/qmd`);
+  return 'none';
+}
+
 function resolveHome(p: string): string {
   return p.replace(/^~/, os.homedir());
 }
@@ -80,6 +104,11 @@ export const ENV = {
   MODEL_WORKER:  process.env.MODEL_WORKER  || 'claude-sonnet-4-6',
   MODEL_TRIVIAL: process.env.MODEL_TRIVIAL || 'claude-haiku-4-5-20251001',
 } as const;
+
+// ── Search backend ───────────────────────────────────────────────────────────
+// Determined once at startup. Consumers import this to decide which search
+// path to use without re-checking the filesystem on every request.
+export const searchBackend: 'qmd' | 'ripgrep' | 'none' = resolveSearchBackend(ENV.QMD_BIN);
 
 // Model pricing (USD per million tokens) — update when Anthropic changes pricing
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
