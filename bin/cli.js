@@ -533,7 +533,7 @@ async function cmdSetup(force = false) {
 
   // ── Scaffold core agent workspaces ──────────────────────────────────────
   step('Bootstrapping core agent workspaces');
-  const coreAgents = ['mission-control', 'clara', 'coder', 'hr'];
+  const coreAgents = ['mission-control', 'clara', 'coder', 'hr', 'inbox'];
   const catalogAgentsDir = path.join(INSTALL_DIR, 'catalog', 'agents');
   for (const agentId of coreAgents) {
     const agentWorkspaceDir = path.join(MC_AGENTS, agentId);
@@ -807,26 +807,43 @@ WantedBy=default.target
   if (health) {
     success(`Running at ${appUrl}`);
     openBrowser(launchUrl);
-  } else {
-    warn('Server did not respond — check logs:');
-    if (IS_MAC) info(`tail -f ${logPath}`);
-  }
 
-  // ── Final summary ───────────────────────────────────────────────────────
-  console.log('');
-  console.log(c.bold(c.green('╔══════════════════════════════════════╗')));
-  console.log(c.bold(c.green('║   Setup complete!                    ║')));
-  console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
-  console.log('');
-  console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))} — setup wizard will launch automatically`);
-  console.log('');
-  console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
-  console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
-  console.log('');
-  console.log(`  ${c.dim('mission-control status   — check health')}`);
-  console.log(`  ${c.dim('mission-control stop     — stop the server')}`);
-  console.log(`  ${c.dim('mission-control logs     — view logs')}`);
-  console.log('');
+    // ── Final summary ─────────────────────────────────────────────────────
+    console.log('');
+    console.log(c.bold(c.green('╔══════════════════════════════════════╗')));
+    console.log(c.bold(c.green('║   Setup complete!                    ║')));
+    console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
+    console.log('');
+    console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))} — setup wizard will launch automatically`);
+    console.log('');
+    console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
+    console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
+    console.log('');
+    console.log(`  ${c.dim('mission-control status   — check health')}`);
+    console.log(`  ${c.dim('mission-control stop     — stop the server')}`);
+    console.log(`  ${c.dim('mission-control logs     — view logs')}`);
+    console.log('');
+  } else {
+    console.log('');
+    console.error(c.bold(c.red('╔════════════════════════════════════════════╗')));
+    console.error(c.bold(c.red('║   Server did not start — setup incomplete  ║')));
+    console.error(c.bold(c.red('╚════════════════════════════════════════════╝')));
+    console.log('');
+    console.log(`  ${c.yellow('Port:')}      ${port}`);
+    console.log(`  ${c.yellow('Platform:')} ${INSTALL_DIR}`);
+    console.log('');
+    console.log(`  ${c.bold('Troubleshooting:')}`);
+    console.log(`  1. Check if port ${port} is already in use: ${c.dim(`lsof -ti:${port}`)}`);
+    if (IS_MAC) {
+      console.log(`  2. Check the logs: ${c.dim(`tail -50 ${logPath}`)}`);
+      console.log(`  3. Try restarting: ${c.dim('mission-control restart')}`);
+    } else {
+      console.log(`  2. Check the logs: ${c.dim('mission-control logs')}`);
+      console.log(`  3. Try restarting: ${c.dim('mission-control restart')}`);
+    }
+    console.log('');
+    process.exit(1);
+  }
 }
 
 async function cmdStart() {

@@ -117,7 +117,7 @@ export default function SchedulePanel() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        <ErrorBoundary componentName={`Schedule-${activeTab}`}>
+        <ErrorBoundary key={activeTab} componentName={`Schedule-${activeTab}`}>
           {activeTab === 'calendar' && <EpicCalendar />}
           {activeTab === 'tasks' && <TaskScheduler />}
           {activeTab === 'scheduler' && <ContentScheduler />}

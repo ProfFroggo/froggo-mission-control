@@ -61,7 +61,7 @@ export default function EpicCalendar({
   const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
 
   const { emailAccounts } = useUserSettings();
-  const accounts = useMemo(() => emailAccounts.map(a => a.email), [emailAccounts]);
+  const accounts = useMemo(() => (Array.isArray(emailAccounts) ? emailAccounts : []).map(a => a.email), [emailAccounts]);
 
   // Open create event modal
   const handleCreateEvent = () => {

@@ -96,6 +96,7 @@ const CORE_AGENTS: AgentEntry[] = [
   { id: 'clara', name: 'Clara', description: 'Review & QA gate — validates work before it ships', core: true },
   { id: 'coder', name: 'Coder', description: 'Implements features, fixes bugs, writes tests', core: true },
   { id: 'hr', name: 'HR', description: 'Agent management — hiring, training, skill gaps, and team health', core: true },
+  { id: 'inbox', name: 'Inbox', description: 'Message triage specialist — monitors and routes incoming messages by urgency', core: true },
 ];
 
 const OPTIONAL_AGENTS: AgentEntry[] = [
@@ -104,7 +105,6 @@ const OPTIONAL_AGENTS: AgentEntry[] = [
   { id: 'discord-manager', name: 'Discord Manager', description: 'Community management, moderation, and engagement' },
   { id: 'finance-manager', name: 'Finance Manager', description: 'Financial tracking, reporting, and budget management' },
   { id: 'growth-director', name: 'Growth Director', description: 'Growth strategy, GTM planning, and marketing initiatives' },
-  { id: 'inbox', name: 'Inbox', description: 'Monitors incoming messages and triages by urgency' },
   { id: 'researcher', name: 'Researcher', description: 'Deep research, competitive analysis, and technical investigation' },
   { id: 'senior-coder', name: 'Senior Coder', description: 'Complex features, architecture implementation, mentoring' },
   { id: 'social-manager', name: 'Social Manager', description: 'X/Twitter strategy, content, and social engagement' },

@@ -518,13 +518,14 @@ async function migrateKeysToKeychain(db: Database.Database): Promise<void> {
 }
 
 function seedAgents(db: Database.Database) {
-  // Only seed the 4 core agents that are always present.
+  // Only seed the 5 core agents that are always present.
   // All other agents are installed via the onboarding wizard or Agents catalog — not auto-seeded.
   const agents = [
-    { id: 'mission-control', name: 'Mission Control', description: 'Main orchestrator',  capabilities: '["coordination","task-management","delegation"]',        model: 'opus'   },
-    { id: 'clara',           name: 'Clara',           description: 'Quality auditor',    capabilities: '["code-review","quality-validation","security"]',       model: 'opus'   },
-    { id: 'coder',           name: 'Coder',           description: 'Software engineer',  capabilities: '["coding","debugging","typescript","python"]',          model: 'sonnet' },
-    { id: 'hr',              name: 'HR',              description: 'Agent management',   capabilities: '["agent-creation","training","skill-gaps"]',            model: 'sonnet' },
+    { id: 'mission-control', name: 'Mission Control', description: 'Main orchestrator',           capabilities: '["coordination","task-management","delegation"]',              model: 'opus'   },
+    { id: 'clara',           name: 'Clara',           description: 'Quality auditor',             capabilities: '["code-review","quality-validation","security"]',             model: 'opus'   },
+    { id: 'coder',           name: 'Coder',           description: 'Software engineer',           capabilities: '["coding","debugging","typescript","python"]',               model: 'sonnet' },
+    { id: 'hr',              name: 'HR',              description: 'Agent management',            capabilities: '["agent-creation","training","skill-gaps"]',                model: 'sonnet' },
+    { id: 'inbox',           name: 'Inbox',           description: 'Message triage specialist',   capabilities: '["triage","routing","prioritization","monitoring"]',          model: 'sonnet' },
   ];
 
   const stmt = db.prepare(
