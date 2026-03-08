@@ -9,7 +9,7 @@
 import path from 'path';
 import os from 'os';
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, realpathSync } from 'fs';
 
 // ── Search backend detection ────────────────────────────────────────────────
 // Resolved once at startup. Order of preference: qmd > ripgrep > none.
@@ -57,6 +57,18 @@ function resolveClaudeBin(): string {
   return 'claude';
 }
 
+// Resolve the real JS file behind the claude symlink so we can spawn it with
+// process.execPath (node) directly — avoids #!/usr/bin/env node shebang failure
+// in LaunchAgent / systemd contexts where 'node' is not on PATH.
+function resolveClaudeScript(): string {
+  const bin = resolveClaudeBin();
+  try {
+    const real = realpathSync(bin);
+    if (real.endsWith('.js')) return real;
+  } catch { /* fallback */ }
+  return bin;
+}
+
 export const ENV = {
   // Database
   DB_PATH: resolveHome(
@@ -88,8 +100,11 @@ export const ENV = {
     path.join(os.homedir(), 'mission-control', 'logs')
   ),
 
-  // Claude CLI binary
+  // Claude CLI binary (symlink path, e.g. ~/.npm-global/bin/claude)
   CLAUDE_BIN: resolveClaudeBin(),
+  // Real .js file behind the claude symlink — spawn this with process.execPath
+  // to avoid #!/usr/bin/env node shebang failures in LaunchAgent/systemd contexts
+  CLAUDE_SCRIPT: resolveClaudeScript(),
 
   // QMD binary (optional — memory search)
   QMD_BIN: resolveHome(

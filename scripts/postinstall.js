@@ -7,7 +7,7 @@
  */
 
 const { execSync, spawnSync } = require('child_process');
-const { existsSync, mkdirSync } = require('fs');
+const { existsSync, mkdirSync, realpathSync } = require('fs');
 const path = require('path');
 const os = require('os');
 
@@ -134,39 +134,73 @@ function installObsidian() {
 installObsidian();
 
 // ── Rebuild native addons for current Node.js version ──────────────────────
-// npm rebuild can target the wrong copy when packages are in .pnpm/ or .ignored/.
-// Use require.resolve to find the ACTUAL installed location, then node-gyp rebuild there.
+// npm can place packages in node_modules/ (as a symlink to .pnpm/) or in .ignored/.
+// We resolve BOTH the symlink target (real physical dir) and use require.resolve(),
+// then run node-gyp rebuild in the real directory so the .node binary ends up
+// where Node.js will actually find it at runtime.
 info('Rebuilding native modules for Node.js ' + process.version + '...');
+
+// Find node-gyp — search common locations across npm and pnpm layouts
+function findNodeGyp() {
+  const candidates = [
+    path.join(ROOT, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'),
+    path.join(ROOT, 'node_modules', '.pnpm', 'node-gyp@12.2.0', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'),
+  ];
+  // Also search dynamically in .pnpm for any node-gyp version
+  const pnpmDir = path.join(ROOT, 'node_modules', '.pnpm');
+  if (existsSync(pnpmDir)) {
+    try {
+      const entries = require('fs').readdirSync(pnpmDir).filter(e => e.startsWith('node-gyp@'));
+      for (const e of entries) {
+        candidates.push(path.join(pnpmDir, e, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js'));
+      }
+    } catch { /* ignore */ }
+  }
+  return candidates.find(c => existsSync(c)) ?? null;
+}
+
+const nodeGypBin = findNodeGyp();
+
 for (const mod of ['better-sqlite3', 'keytar']) {
+  // resolve() follows symlinks — gives us the real physical dir in .pnpm/
   let modDir = null;
   try {
-    modDir = path.dirname(require.resolve(`${mod}/package.json`, { paths: [ROOT] }));
+    const resolved = require.resolve(`${mod}/package.json`, { paths: [ROOT] });
+    modDir = path.dirname(realpathSync(resolved));
   } catch {
-    warn(`${mod} not found in node_modules — skipping`);
+    // Fall back to symlink path if realpathSync fails
+    try {
+      modDir = path.dirname(require.resolve(`${mod}/package.json`, { paths: [ROOT] }));
+    } catch {
+      warn(`${mod} not found in node_modules — skipping`);
+      continue;
+    }
+  }
+
+  if (!nodeGypBin) {
+    warn(`node-gyp not found — skipping ${mod} rebuild. Run: npm rebuild ${mod}`);
     continue;
   }
 
   info(`Rebuilding ${mod} at ${modDir}...`);
-  // Find node-gyp: prefer the one bundled in this package, fall back to global
-  const nodeGypLocal = path.join(ROOT, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
-  const nodeGypPnpm  = path.join(ROOT, 'node_modules', '.pnpm', 'node-gyp@12.2.0', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
-  const nodeGypBin   = existsSync(nodeGypLocal) ? nodeGypLocal : existsSync(nodeGypPnpm) ? nodeGypPnpm : null;
-  if (!nodeGypBin) { warn(`node-gyp not found — skipping ${mod} rebuild`); continue; }
-
   const result = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
     cwd: modDir,
     stdio: 'inherit',
+    env: { ...process.env, npm_config_node_gyp: nodeGypBin },
   });
 
   if (result.status === 0) {
     success(`${mod} compiled`);
   } else {
-    // Fall back to npm rebuild as secondary attempt
-    const r2 = spawnSync('npm', ['rebuild', mod], { cwd: ROOT, shell: true, stdio: 'inherit' });
-    if (r2.status === 0) {
-      success(`${mod} compiled (via npm rebuild)`);
-    } else {
+    // Fallback: npm rebuild (targets all locations)
+    const r2 = spawnSync(process.execPath, [
+      path.join(ROOT, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+      'rebuild', mod,
+    ], { cwd: ROOT, stdio: 'inherit' });
+    if (r2.status !== 0) {
       warn(`${mod} rebuild failed — run: cd ${modDir} && node-gyp rebuild`);
+    } else {
+      success(`${mod} compiled (via npm rebuild)`);
     }
   }
 }

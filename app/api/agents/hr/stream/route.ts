@@ -5,7 +5,9 @@ import { spawn } from 'child_process';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath;
 
 // POST /api/agents/hr/stream
 // Called by HRAgentCreationModal to run the HR conversational agent.
@@ -25,8 +27,8 @@ export async function POST(request: NextRequest) {
       delete env.CLAUDECODE;
 
       const proc = spawn(
-        CLAUDE_BIN,
-        ['--print', '--model', 'claude-haiku-4-5-20251001'],
+        NODE_BIN,
+        [CLAUDE_SCRIPT, '--print', '--model', 'claude-haiku-4-5-20251001'],
         { stdio: ['pipe', 'pipe', 'pipe'], env }
       );
 

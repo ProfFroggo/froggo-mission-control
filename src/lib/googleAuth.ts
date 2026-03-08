@@ -26,7 +26,8 @@ const CLIENT_SECRET_PATH = join(homedir(), '.config', 'google-workspace-mcp', 'c
 // Alternative: ~/.google_oauth_token.json — contains refresh_token + client creds in double-quoted JSON
 const GOOGLE_OAUTH_TOKEN_PATH = join(homedir(), '.google_oauth_token.json');
 const TOKENS_PATH = join(homedir(), 'mission-control', 'data', 'google-tokens.json');
-const REDIRECT_URI = 'http://localhost:3000';
+const PORT = process.env.PORT ?? '3000';
+const REDIRECT_URI = `http://localhost:${PORT}/api/google/auth/callback`;
 
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
@@ -192,33 +193,50 @@ export async function exchangeCodeForTokens(code: string): Promise<StoredTokens 
   const client = createOAuth2Client();
   if (!client) return null;
 
+  // On corporate networks with SSL inspection, googleapis may fail with SELF_SIGNED_CERT_IN_CHAIN.
+  // If that happens, retry once with TLS verification disabled for this specific call.
   try {
-    const { tokens } = await client.getToken(code);
-    client.setCredentials(tokens);
-
-    // Get user email
-    let email: string | undefined;
-    try {
-      const oauth2 = google.oauth2({ version: 'v2', auth: client });
-      const info = await oauth2.userinfo.get();
-      email = info.data.email ?? undefined;
-    } catch {
-      // non-critical
+    return await _doTokenExchange(client, code);
+  } catch (err: unknown) {
+    const code_ = (err as NodeJS.ErrnoException)?.code;
+    if (code_ === 'SELF_SIGNED_CERT_IN_CHAIN' || code_ === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' || code_ === 'CERT_HAS_EXPIRED') {
+      console.warn('[googleAuth] SSL cert issue — retrying with system CA bundle relaxed (corporate network detected)');
+      const prev = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      try {
+        return await _doTokenExchange(createOAuth2Client()!, code);
+      } finally {
+        if (prev === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+        else process.env.NODE_TLS_REJECT_UNAUTHORIZED = prev;
+      }
     }
-
-    const toStore: StoredTokens = {
-      access_token: tokens.access_token ?? undefined,
-      refresh_token: tokens.refresh_token ?? undefined,
-      expiry_date: tokens.expiry_date ?? undefined,
-      token_type: tokens.token_type ?? undefined,
-      email,
-    };
-    saveTokens(toStore);
-    return toStore;
-  } catch (err) {
     console.error('[googleAuth] Failed to exchange code:', err);
     return null;
   }
+}
+
+async function _doTokenExchange(client: OAuth2Client, code: string): Promise<StoredTokens | null> {
+  // Throws on SSL/network errors so the caller can retry with fallback
+  const { tokens } = await client.getToken(code);
+  client.setCredentials(tokens);
+
+  // Get user email (non-critical)
+  let email: string | undefined;
+  try {
+    const oauth2 = google.oauth2({ version: 'v2', auth: client });
+    const info = await oauth2.userinfo.get();
+    email = info.data.email ?? undefined;
+  } catch { /* non-critical */ }
+
+  const toStore: StoredTokens = {
+    access_token: tokens.access_token ?? undefined,
+    refresh_token: tokens.refresh_token ?? undefined,
+    expiry_date: tokens.expiry_date ?? undefined,
+    token_type: tokens.token_type ?? undefined,
+    email,
+  };
+  saveTokens(toStore);
+  return toStore;
 }
 
 export function revokeTokens(): void {

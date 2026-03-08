@@ -30,6 +30,8 @@ export function useFirstTimeUser(
     if (!onboardingDone || forceSetup) {
       // Wizard not completed (or forced) -- show it first
       setShowOnboardingWizard(true);
+      // Strip ?setup=1 so browser URL is clean
+      if (forceSetup) window.history.replaceState({}, '', window.location.pathname);
     } else if (!tourSeen && !hasCompletedTour('getting-started')) {
       // Wizard done but tour not seen -- auto-start tour after brief delay
       const timer = setTimeout(() => {

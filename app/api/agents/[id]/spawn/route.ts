@@ -61,7 +61,7 @@ export async function POST(
       const spawnArgs = resumed
         ? ['--resume', existing!.sessionId, '--agents', id]
         : ['--agents', id];
-      const proc = spawn(ENV.CLAUDE_BIN, spawnArgs, {
+      const proc = spawn(process.execPath, [ENV.CLAUDE_SCRIPT, ...spawnArgs], {
         cwd: existsSync(agentCwd) ? agentCwd : homedir(),
         env: { ...cleanEnv } as NodeJS.ProcessEnv,
         detached: true,

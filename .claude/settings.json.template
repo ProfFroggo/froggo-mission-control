@@ -26,7 +26,7 @@
   "mcpServers": {
     "mission-control_db": {
       "type": "stdio",
-      "command": "node",
+      "command": "{{NODE_BIN}}",
       "args": ["{{PROJECT_ROOT}}/tools/mission-control-db-mcp/dist/index.js"],
       "env": {
         "DB_PATH": "{{HOME}}/mission-control/data/mission-control.db"
@@ -34,7 +34,7 @@
     },
     "memory": {
       "type": "stdio",
-      "command": "node",
+      "command": "{{NODE_BIN}}",
       "args": ["{{PROJECT_ROOT}}/tools/memory-mcp/dist/index.js"],
       "env": {
         "VAULT_PATH": "{{HOME}}/mission-control/memory",
@@ -44,7 +44,7 @@
     },
     "cron": {
       "type": "stdio",
-      "command": "node",
+      "command": "{{NODE_BIN}}",
       "args": ["{{PROJECT_ROOT}}/tools/cron-mcp/dist/index.js"],
       "env": {
         "SCHEDULE_PATH": "{{HOME}}/mission-control/data/schedule.json"
@@ -55,43 +55,43 @@
     "PreToolUse": [
       {
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/approval-hook.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/approval-hook.js"
       }
     ],
     "PostToolUse": [
       {
         "matcher": "mcp__mission-control-db__task_update",
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/review-gate.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/review-gate.js"
       },
       {
         "matcher": "mcp__mission-control-db__chat_post",
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/agent-wake.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/agent-wake.js"
       }
     ],
     "Stop": [
       {
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/session-sync.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/session-sync.js"
       }
     ],
     "PreCompact": [
       {
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/precompact-hook.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/precompact-hook.js"
       }
     ],
     "TeammateIdle": [
       {
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/teammate-idle.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/teammate-idle.js"
       }
     ],
     "TaskCompleted": [
       {
         "type": "command",
-        "command": "node {{PROJECT_ROOT}}/tools/hooks/task-completed.js"
+        "command": "{{NODE_BIN}} {{PROJECT_ROOT}}/tools/hooks/task-completed.js"
       }
     ]
   }

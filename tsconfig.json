@@ -44,6 +44,7 @@
     "dist",
     "dist-electron",
     "release",
+    "tools",
     "vite.config.ts",
     "vitest.config.ts",
     "**/*.test.ts",

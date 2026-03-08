@@ -2,7 +2,7 @@ import { ENV } from '@/lib/env';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
-import { existsSync, readFileSync, statSync } from 'fs';
+import { existsSync, readFileSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -11,7 +11,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const HOME = homedir();
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+// Spawn claude via process.execPath + real .js path to avoid #!/usr/bin/env node
+// shebang failure in LaunchAgent / systemd environments where 'node' isn't on PATH.
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath; // absolute path to the current node binary
 
 // ── File cache ─────────────────────────────────────────────────────────────
 interface CacheEntry { content: string; mtime: number; }
@@ -263,10 +267,20 @@ export async function POST(
 
   agentLocks.set(id, Date.now());
   const encoder = new TextEncoder();
+  let activeProc: ReturnType<typeof spawn> | null = null;
+  let streamCancelled = false; // guard against double-close after cancel()
   const stream = new ReadableStream({
+    cancel() {
+      // Client disconnected — kill the spawned process and release the lock immediately
+      streamCancelled = true;
+      agentLocks.delete(id);
+      try { activeProc?.kill(); } catch { /* ignore */ }
+    },
     start(controller) {
-      const enc = (obj: unknown) =>
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      const enc = (obj: unknown) => {
+        if (streamCancelled) return;
+        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* closed */ }
+      };
 
       enc({ type: 'init' });
 
@@ -287,10 +301,12 @@ export async function POST(
         const resumeId = (existing && existing.soulMtime === sm) ? existing.sessionId : null;
 
         const dir = join(HOME, 'mission-control', 'agents', id);
-        // For new sessions: use HOME so the agent's CLAUDE.md boot sequence is NOT triggered.
-        // The --system-prompt arg already injects the agent's identity and personality.
-        // For resumed sessions: CLAUDE.md isn't re-read anyway, so cwd doesn't matter.
-        const cwd = resumeId && existsSync(dir) ? dir : HOME;
+        // Always use the agent workspace dir as cwd so Claude finds ~/mission-control/.mcp.json
+        // and ~/.claude/settings.json via directory traversal. Creating it if it doesn't exist.
+        // (Using HOME directly would skip ~/mission-control/ in the search path, causing MCP
+        // servers to not be found and all tool calls to silently fail → 120s timeout.)
+        try { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); } catch {}
+        const cwd = existsSync(dir) ? dir : HOME;
 
         const { allowed, disallowed } = resolveAgentTools(id);
         const args = [
@@ -314,11 +330,12 @@ export async function POST(
         // Strip Claude CLI env vars so nested spawning is allowed
         const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
 
-        const proc = spawn(CLAUDE_BIN, args, {
+        const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
           cwd,
           env: cleanEnv,
           stdio: 'pipe',
         });
+        activeProc = proc;
 
         // Pipe message to stdin and close it (--print reads plain text from stdin)
         proc.stdin.write(message);
@@ -385,15 +402,19 @@ export async function POST(
 
         const timeout = setTimeout(() => {
           proc.kill();
-          enc({ type: 'timeout', text: 'Response timed out' });
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          try { controller.close(); } catch { /* already closed */ }
+          if (!streamCancelled) {
+            enc({ type: 'timeout', text: 'Response timed out' });
+            try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
+            try { controller.close(); } catch { /* already closed */ }
+          }
+          agentLocks.delete(id);
         }, 120_000);
 
         const finishStream = (code: number | null) => {
           agentLocks.delete(id); // release lock
+          if (streamCancelled) return; // client disconnected — controller already closed
           enc({ type: 'done', code: code ?? 0 });
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
           try { controller.close(); } catch { /* already closed */ }
           try { getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run('idle', Date.now(), id); } catch {}
         };
@@ -437,7 +458,7 @@ export async function POST(
             const sp = (buildSystemPrompt(id) ?? '') + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
-            const fresh = spawn(CLAUDE_BIN, freshArgs, { cwd: HOME, env: cleanEnv, stdio: 'pipe' });
+            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd: HOME, env: cleanEnv, stdio: 'pipe' });
             fresh.stdin.write(message);
             fresh.stdin.end();
 

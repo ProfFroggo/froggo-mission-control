@@ -182,7 +182,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const [geminiSkipped, setGeminiSkipped] = useState(false);
 
   // Step 5 — Google Workspace
-  const [googleStatus, setGoogleStatus] = useState<'checking' | 'connected' | 'disconnected' | 'error'>('checking');
+  const [googleStatus, setGoogleStatus] = useState<'checking' | 'connected' | 'disconnected' | 'error'>('disconnected');
   const [googleEmail, setGoogleEmail] = useState('');
   const [googleSkipped, setGoogleSkipped] = useState(false);
   const [googleConnecting, setGoogleConnecting] = useState(false);
@@ -356,7 +356,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   };
 
   // ─────────────────────────────────────────────
-  // Google OAuth connect
+  // Google OAuth connect — opens popup, listens for postMessage from callback page
   // ─────────────────────────────────────────────
   const connectGoogle = async () => {
     setGoogleConnecting(true);
@@ -364,13 +364,37 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     try {
       const res = await fetch('/api/google/auth/url');
       const data = await res.json();
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        // No client_secret.json configured — credentials not set up yet
+      if (!data?.url) {
         setGoogleNoCredentials(true);
         setGoogleConnecting(false);
+        return;
       }
+      // Open OAuth in a popup — callback page will postMessage and close itself
+      const popup = window.open(data.url, 'google-oauth', 'width=520,height=640,left=200,top=100');
+      const onMessage = (evt: MessageEvent) => {
+        if (evt.origin !== window.location.origin) return;
+        if (evt.data?.type !== 'google-auth') return;
+        window.removeEventListener('message', onMessage);
+        if (evt.data.success) {
+          setGoogleStatus('connected');
+          setGoogleEmail(evt.data.detail ?? '');
+        } else {
+          setGoogleStatus('error');
+        }
+        setGoogleConnecting(false);
+        try { popup?.close(); } catch { /* ignore */ }
+      };
+      window.addEventListener('message', onMessage);
+      // Fallback: if popup is closed without messaging us, stop spinner
+      const poll = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(poll);
+          window.removeEventListener('message', onMessage);
+          setGoogleConnecting(false);
+          // Re-check status in case tokens were saved before popup closed
+          checkGoogleStatus();
+        }
+      }, 800);
     } catch {
       setGoogleConnecting(false);
     }

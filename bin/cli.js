@@ -106,6 +106,25 @@ function findClaudeBin() {
   return candidates.find(f => existsSync(f)) || 'claude';
 }
 
+function isPortFree(port) {
+  try {
+    const net = require('net');
+    return new Promise(resolve => {
+      const s = net.createServer();
+      s.once('error', () => resolve(false));
+      s.once('listening', () => { s.close(); resolve(true); });
+      s.listen(port, '127.0.0.1');
+    });
+  } catch { return Promise.resolve(false); }
+}
+
+async function findFreePort(start = 3000) {
+  for (let p = start; p < start + 20; p++) {
+    if (await isPortFree(p)) return p;
+  }
+  return start; // give up and let the server fail with a clear error
+}
+
 function getPort() {
   return parseInt(process.env.PORT || '3000', 10);
 }
@@ -236,7 +255,16 @@ async function cmdSetup(force = false) {
   const existingEnv = parseEnvFile(ENV_FILE);
   const geminiKey    = existingEnv.GEMINI_API_KEY    || '';
   const anthropicKey = existingEnv.ANTHROPIC_API_KEY || '';
-  const port         = existingEnv.PORT              || '3000';
+  // Auto-detect available port if 3000 is already taken by something else
+  let port = existingEnv.PORT || '3000';
+  if (!existingEnv.PORT) {
+    const preferred = 3000;
+    const free = await findFreePort(preferred);
+    if (free !== preferred) {
+      warn(`Port ${preferred} is in use — using port ${free} instead`);
+    }
+    port = String(free);
+  }
 
   // ── Create directories ──────────────────────────────────────────────────
   step('Creating directory structure');
@@ -249,6 +277,9 @@ async function cmdSetup(force = false) {
     path.join(MC_MEMORY, 'templates'),
     MC_AGENTS,
     MC_LOGS,
+    path.join(MC_HOME, 'skills'),     // shared skills library
+    path.join(MC_HOME, 'tools'),      // shared tools and scripts
+    path.join(MC_HOME, 'worktrees'),  // agent git worktrees
     path.join(HOME, 'Library', 'Logs'),
   ];
   for (const d of dirs) {
@@ -379,7 +410,8 @@ async function cmdSetup(force = false) {
     let content = readFileSync(templatePath, 'utf-8')
       .replace(/\{\{PROJECT_ROOT\}\}/g, INSTALL_DIR)
       .replace(/\{\{HOME\}\}/g, HOME)
-      .replace(/\{\{QMD_BIN\}\}/g, qmdBin);
+      .replace(/\{\{QMD_BIN\}\}/g, qmdBin)
+      .replace(/\{\{NODE_BIN\}\}/g, nodeBin);
     writeFileSync(settingsPath, content);
     // Also write to ~/mission-control/.claude/settings.json for agents running in MC_HOME
     const mcClaudeDir = path.join(MC_HOME, '.claude');
@@ -389,20 +421,22 @@ async function cmdSetup(force = false) {
   }
 
   // ── Generate .mcp.json ──────────────────────────────────────────────────
+  // Use absolute node binary path — critical for LaunchAgent / systemd environments
+  // where 'node' is not on PATH when the MCP server child process is spawned.
   const mcpConfig = {
     mcpServers: {
       'mission-control-db': {
-        command: 'node',
+        command: nodeBin,
         args: [path.join(INSTALL_DIR, 'tools', 'mission-control-db-mcp', 'dist', 'index.js')],
         env: { DB_PATH: `${MC_DATA}/mission-control.db` },
       },
       memory: {
-        command: 'node',
+        command: nodeBin,
         args: [path.join(INSTALL_DIR, 'tools', 'memory-mcp', 'dist', 'index.js')],
         env: { VAULT_PATH: MC_MEMORY, LOG_DIR: MC_LOGS },
       },
       cron: {
-        command: 'node',
+        command: nodeBin,
         args: [path.join(INSTALL_DIR, 'tools', 'cron-mcp', 'dist', 'index.js')],
         env: { SCHEDULE_PATH: `${MC_DATA}/schedule.json` },
       },
@@ -420,7 +454,10 @@ async function cmdSetup(force = false) {
   const catalogAgentsDir = path.join(INSTALL_DIR, 'catalog', 'agents');
   for (const agentId of coreAgents) {
     const agentWorkspaceDir = path.join(MC_AGENTS, agentId);
-    mkdirSync(agentWorkspaceDir, { recursive: true });
+    // Create full agent workspace subdirectory structure
+    for (const sub of ['assets', 'deliverables', 'memory', 'reviews', 'scripts', 'tasks']) {
+      mkdirSync(path.join(agentWorkspaceDir, sub), { recursive: true });
+    }
 
     // Copy CLAUDE.md from catalog
     const srcClaude = path.join(catalogAgentsDir, agentId, 'claude.md');

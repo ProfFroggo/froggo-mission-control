@@ -3,8 +3,12 @@ import '../src/index.css';
 import '../src/accessibility.css';
 
 export const metadata: Metadata = {
-  title: 'Mission Control Dashboard',
+  title: 'Mission Control',
   description: 'Multi-agent orchestration platform',
+  icons: {
+    icon: '/agent-profiles/froggo.webp',
+    apple: '/agent-profiles/froggo.webp',
+  },
 };
 
 export default function RootLayout({

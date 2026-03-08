@@ -1,14 +1,21 @@
 {
   "id": "writer",
   "name": "Writer",
-  "emoji": "✍️",
+  "emoji": "\u270d\ufe0f",
   "role": "Content Creator",
   "description": "Creates, edits, and polishes written content. Best for: documentation, blog posts, newsletters, copy, technical writing, proofreading.",
   "model": "sonnet",
-  "capabilities": ["writing", "editing", "documentation", "copywriting", "proofreading"],
+  "capabilities": [
+    "writing",
+    "editing",
+    "documentation",
+    "copywriting",
+    "proofreading"
+  ],
   "requiredApis": [],
   "requiredSkills": [],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "utility"
+  "category": "utility",
+  "core": true
 }

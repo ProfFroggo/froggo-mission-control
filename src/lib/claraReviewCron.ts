@@ -12,8 +12,10 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
 
-const HOME = homedir();
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const HOME          = homedir();
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath;
 const REVIEW_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 
 // Track tasks currently being reviewed to avoid duplicates
@@ -61,7 +63,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
   const claraDir = join(HOME, 'mission-control', 'agents', 'clara');
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
 
-  const proc = spawn(CLAUDE_BIN, [
+  const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT,
     '--print',
     '--output-format', 'stream-json',
     '--verbose',

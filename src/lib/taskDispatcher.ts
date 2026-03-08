@@ -10,7 +10,9 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
 
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath;
 const HOME = homedir();
 
 // ── Model resolution ─────────────────────────────────────────────────────────
@@ -601,7 +603,7 @@ export function dispatchTask(taskId: string): boolean {
     // cwd = project root (not agent workspace) so .claude/settings.json MCP config is loaded
     const cwd = process.cwd();
 
-    const proc = spawn(CLAUDE_BIN, args, {
+    const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
       cwd,
       env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId, ...apiKeyEnv } as unknown as NodeJS.ProcessEnv,
       detached: true,

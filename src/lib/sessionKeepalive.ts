@@ -20,8 +20,10 @@ import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
 
-const HOME = homedir();
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const HOME          = homedir();
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath;
 
 // Ping sessions that are idle between 25 min and 90 min
 // (< 25 min = recently active, no need; > 90 min = too late, let failsafe handle it)
@@ -38,7 +40,7 @@ function pingSession(sessionKey: string, sessionId: string): void {
 
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
 
-  const proc = spawn(CLAUDE_BIN, [
+  const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT,
     '--resume', sessionId,
     '--print',
     '--output-format', 'stream-json',

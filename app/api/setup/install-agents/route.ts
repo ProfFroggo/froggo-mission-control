@@ -1,5 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { mkdirSync, existsSync, copyFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+import { ENV } from '@/lib/env';
+
+function scaffoldAgentWorkspace(agentId: string) {
+  const agentDir = join(homedir(), 'mission-control', 'agents', agentId);
+  for (const sub of ['assets', 'deliverables', 'memory', 'reviews', 'scripts', 'tasks']) {
+    mkdirSync(join(agentDir, sub), { recursive: true });
+  }
+  // Copy SOUL.md from catalog if not already present
+  const catalogSoul = join(ENV.PROJECT_DIR, 'catalog', 'agents', agentId, 'soul.md');
+  const destSoul = join(agentDir, 'SOUL.md');
+  if (existsSync(catalogSoul) && !existsSync(destSoul)) {
+    try { copyFileSync(catalogSoul, destSoul); } catch { /* non-critical */ }
+  }
+  // Copy CLAUDE.md from catalog if not already present
+  const catalogClaude = join(ENV.PROJECT_DIR, 'catalog', 'agents', agentId, 'claude.md');
+  const destClaude = join(agentDir, 'CLAUDE.md');
+  if (existsSync(catalogClaude) && !existsSync(destClaude)) {
+    try { copyFileSync(catalogClaude, destClaude); } catch { /* non-critical */ }
+  }
+}
 
 interface InstallItem {
   kind: 'agent' | 'module';
@@ -30,7 +53,7 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       try {
         if (item.kind === 'agent') {
-          const agent = db.prepare('SELECT id FROM catalog_agents WHERE id = ?').get(item.id);
+          const agent = db.prepare('SELECT id, name, role, emoji, color, capabilities, defaultPersonality FROM catalog_agents WHERE id = ?').get(item.id) as Record<string, string> | undefined;
           if (!agent) {
             results.push({ kind: 'agent', id: item.id, success: false, error: 'Not found in catalog' });
             continue;
@@ -38,6 +61,21 @@ export async function POST(request: NextRequest) {
           db.prepare(
             'UPDATE catalog_agents SET installed = 1, enabled = 1, updatedAt = ? WHERE id = ?'
           ).run(Date.now(), item.id);
+          // Provision into agents table so the agent is active
+          db.prepare(
+            `INSERT OR IGNORE INTO agents (id, name, role, emoji, color, capabilities, personality, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'offline', unixepoch())`
+          ).run(
+            agent.id,
+            agent.name,
+            agent.role ?? 'Agent',
+            agent.emoji ?? '🤖',
+            agent.color ?? '#00BCD4',
+            agent.capabilities ?? '[]',
+            agent.defaultPersonality ?? '',
+          );
+          // Scaffold workspace directories and copy soul/config files
+          try { scaffoldAgentWorkspace(item.id); } catch { /* non-critical */ }
           results.push({ kind: 'agent', id: item.id, success: true });
 
         } else if (item.kind === 'module') {

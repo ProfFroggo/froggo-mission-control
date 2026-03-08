@@ -338,6 +338,7 @@ function initSchema(db: Database.Database) {
       core INTEGER DEFAULT 0,
       defaultPersonality TEXT,
       installed INTEGER DEFAULT 0,
+      enabled INTEGER DEFAULT 1,
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
       updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
@@ -459,6 +460,7 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE catalog_agents ADD COLUMN defaultPersonality TEXT`,
     `ALTER TABLE catalog_agents ADD COLUMN core INTEGER DEFAULT 0`,
     `ALTER TABLE catalog_agents ADD COLUMN avatar TEXT`,
+    `ALTER TABLE catalog_agents ADD COLUMN enabled INTEGER DEFAULT 1`,
     `ALTER TABLE agents ADD COLUMN role TEXT`,
     `ALTER TABLE agents ADD COLUMN emoji TEXT DEFAULT '🤖'`,
     `ALTER TABLE agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,
@@ -469,7 +471,6 @@ function initSchema(db: Database.Database) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
 
-  seedAgents(db);
   syncCatalogAgents(db);
   syncCatalogModules(db);
 

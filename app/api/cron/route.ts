@@ -10,7 +10,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const SCHEDULE_PATH = process.env.MC_SCHEDULE_PATH || join(homedir(), 'mission-control/data/schedule.json');
-const CLAUDE_BIN = ENV.CLAUDE_BIN;
+const CLAUDE_BIN    = ENV.CLAUDE_BIN;
+const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
+const NODE_BIN      = process.execPath;
 
 function readJobs(): Record<string, unknown>[] {
   if (!existsSync(SCHEDULE_PATH)) return [];
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
       const agentId = isGeneric ? 'mission-control' : sessionTarget;
       const allowedTools = TIER_TOOLS['worker'];
       const disallowedTools = loadDisallowedTools(agentId);
-      const proc = spawn(CLAUDE_BIN, ['--print', '--model', model,
+      const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, '--print', '--model', model,
         '--allowedTools', allowedTools.join(','),
         '--disallowedTools', disallowedTools.join(','),
         message], {
