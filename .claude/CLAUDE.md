@@ -19,18 +19,25 @@
 - **Dark/light theme** — all form elements (input, textarea, select, button) must use CSS variables via the global `forms.css` stylesheet. Never hardcode colors or use undefined Tailwind tokens like `bg-mission-control-bg1` (use `bg-mission-control-surface` instead).
 - **Global styles first** — add new styles to the relevant global CSS file, not as one-off Tailwind classes per component.
 
-## Task Lifecycle
-`todo → internal-review → in-progress → review → human-review → done`
+## Task Pipeline
 
-- **todo**: set up planning, subtasks (2+), assign agent — then move to internal-review
-- **internal-review** ("Ready to Start"): Clara quality gate — verifies plan/subtasks/assignment before work begins
-- **in-progress**: agent working, spawning sub-agents per subtask
-- **review**: Clara verifies ALL planned work completed — sends back to in-progress with notes if incomplete
-- **human-review**: required for external/content/approval tasks, or if truly blocked (needs human to unblock)
-- **done**: agent review can go straight here if no human approval needed
+```
+todo → internal-review → in-progress → agent-review → done
+              ↕                              ↕
+         human-review                  human-review
+      (needs human input)          (external dependency)
+```
 
-**`blocked` status is removed — if something is blocked, move to `human-review` so a human can unblock it.**
+- **todo** — task created, needs a plan and subtasks assigned
+- **internal-review** — Clara quality gate BEFORE work starts: verifies plan, subtasks, agent assignment
+- **in-progress** — agent actively working
+- **agent-review** — Clara quality gate AFTER work: verifies all planned work is complete and correct
+- **human-review** — branches off at any stage when: (1) needs human input/approval, or (2) blocked by external dependency
+- **done** — Clara approved, work complete
+
+**`blocked` status does not exist — use `human-review` instead.**
 **Skipping internal-review (todo → in-progress) is blocked by MCP.**
+**Agents must NOT move a task to `done` directly — only Clara can after her review passes.**
 
 ## Agent Communication
 - Async messaging: `chat_post` / `chat_read` MCP tools
