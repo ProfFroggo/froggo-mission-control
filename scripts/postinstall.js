@@ -62,6 +62,34 @@ for (const server of mcpServers) {
   success(server);
 }
 
+// ── Install QMD memory search tool ────────────────────────────────────────
+function installQmd() {
+  const qmdPaths = ['/opt/homebrew/bin/qmd', '/usr/local/bin/qmd'];
+  const alreadyInstalled = qmdPaths.some(p => existsSync(p)) ||
+    spawnSync('which qmd', { shell: true, stdio: 'pipe' }).status === 0;
+
+  if (alreadyInstalled) {
+    success('qmd already installed');
+    return;
+  }
+
+  const brewCheck = spawnSync('which brew', { shell: true, stdio: 'pipe' });
+  if (brewCheck.status !== 0) {
+    warn('Homebrew not found — install qmd manually for full memory search: brew install profroggo/tap/qmd');
+    return;
+  }
+
+  info('Installing qmd memory search tool...');
+  const brewResult = spawnSync('brew install profroggo/tap/qmd', { shell: true, stdio: 'pipe', encoding: 'utf-8' });
+  if (brewResult.status === 0) {
+    success('qmd installed');
+  } else {
+    warn('qmd install failed — memory search will use ripgrep fallback. Install manually: brew install profroggo/tap/qmd');
+  }
+}
+
+installQmd();
+
 // ── Build Next.js app ──────────────────────────────────────────────────────
 info('Building dashboard (Next.js)...');
 process.env.NEXT_TELEMETRY_DISABLED = '1';
