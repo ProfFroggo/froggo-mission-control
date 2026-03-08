@@ -193,6 +193,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const [obsidianSkipped, setObsidianSkipped] = useState(false);
   const [obsidianConfirmed, setObsidianConfirmed] = useState(false);
   const [obsidianOpening, setObsidianOpening] = useState(false);
+  const obsidianDone = obsidianStatus === 'found' || obsidianConfirmed || obsidianSkipped;
 
   // Step 7 — agent & module picker
   const [selectedOptionalAgents, setSelectedOptionalAgents] = useState<Set<string>>(new Set());
@@ -268,13 +269,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const checkObsidian = useCallback(async () => {
     setObsidianStatus('checking');
     try {
-      // Heuristic: if memory vault path exists, Obsidian is configured
-      const res = await fetch('/api/memory/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: 'test', limit: 1 }),
-      });
-      setObsidianStatus(res.ok ? 'found' : 'not-found');
+      const res = await fetch('/api/setup/vault-check');
+      const data = res.ok ? await res.json() : null;
+      // exists = vault dir present; opened = .obsidian/ present (Obsidian created it)
+      setObsidianStatus(data?.exists ? 'found' : 'not-found');
     } catch {
       setObsidianStatus('not-found');
     }
@@ -822,12 +820,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         <h2 className="text-xl font-bold text-mission-control-text">Memory Vault & Permissions</h2>
       </div>
       <p className="text-mission-control-text-dim text-sm mb-5">
-        Obsidian is required for agent memory. Open the vault before continuing.
+        Obsidian provides a visual interface for the agent memory vault. Agents work without it, but you won't be able to browse memory files visually.
       </p>
 
       {/* Obsidian vault status */}
       <div className="mb-4">
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault (Required)</p>
+        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault (Recommended)</p>
         <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {obsidianStatus === 'checking' && <Loader size={16} className="animate-spin text-mission-control-accent" />}
           {obsidianStatus === 'found' && <CheckCircle size={16} className="text-green-500" />}
@@ -876,16 +874,34 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           </button>
         </div>
 
-        {/* Confirmation checkbox — required to continue */}
-        <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={obsidianConfirmed}
-            onChange={e => setObsidianConfirmed(e.target.checked)}
-            className="w-4 h-4 rounded accent-mission-control-accent"
-          />
-          <span className="text-sm text-mission-control-text">I've opened the vault in Obsidian</span>
-        </label>
+        {/* Confirmation checkbox */}
+        {!obsidianSkipped && (
+          <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={obsidianConfirmed}
+              onChange={e => setObsidianConfirmed(e.target.checked)}
+              className="w-4 h-4 rounded accent-mission-control-accent"
+            />
+            <span className="text-sm text-mission-control-text">I've opened the vault in Obsidian</span>
+          </label>
+        )}
+        {obsidianSkipped ? (
+          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-500">
+            <AlertTriangle size={12} />
+            Skipped — open Obsidian and load ~/mission-control/memory as a vault anytime
+          </div>
+        ) : (
+          !obsidianConfirmed && obsidianStatus !== 'found' && (
+            <button
+              onClick={() => setObsidianSkipped(true)}
+              className="flex items-center gap-1 mt-3 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            >
+              <AlertTriangle size={12} className="text-yellow-500" />
+              Skip — I'll set up Obsidian later
+            </button>
+          )
+        )}
       </div>
 
       {/* Microphone & Camera */}
@@ -1226,12 +1242,11 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // Block Continue on step 7 until install finishes
   const installInProgress = currentStep === 7 && !installComplete;
 
-  // Block Continue on step 5 until user confirms they've opened Obsidian
-  const obsidianRequired = currentStep === 5 && !obsidianConfirmed;
+  // Block Continue on step 5 until vault confirmed or skipped
+  const obsidianRequired = currentStep === 5 && !obsidianDone;
 
   const canContinue = !criticalFailed && !permissionsRequired && !installInProgress && !obsidianRequired;
 
-  // Steps that allow skipping (step 5 — Obsidian — is now mandatory)
   const isSkippable = [3, 4].includes(currentStep);
 
   const skipLabels: Record<number, string> = {
