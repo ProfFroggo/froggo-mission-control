@@ -771,11 +771,37 @@ StandardError=journal
 WantedBy=default.target
 EOF
   
+  # cron daemon systemd service
+  cat > "${SYSTEMD_DIR}/mission-control-cron.service" << EOF
+[Unit]
+Description=Mission Control Cron Daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=${REPO_DIR}
+ExecStart=${NODE_BIN} ${REPO_DIR}/tools/cron-daemon.js
+Restart=always
+RestartSec=5
+Environment=HOME=${HOME}
+Environment=MC_DB_PATH=${MC_DATA}/mission-control.db
+Environment=SCHEDULE_PATH=${MC_DATA}/schedule.json
+Environment=PROJECT_DIR=${REPO_DIR}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+EOF
+
   systemctl --user daemon-reload
   systemctl --user enable mission-control.service
+  systemctl --user enable mission-control-cron.service
   systemctl --user start mission-control.service
-  success "systemd service installed and started"
+  systemctl --user start mission-control-cron.service
+  success "systemd services installed and started (app + cron daemon)"
   info "Logs: journalctl --user -fu mission-control"
+  info "Cron logs: journalctl --user -fu mission-control-cron"
 else
   warn "Unknown OS (${OS}) — manual startup only. Run: npm start"
 fi
