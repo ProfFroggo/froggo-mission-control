@@ -536,11 +536,9 @@ async function cmdSetup(force = false) {
   <string>com.mission-control.app</string>
   <key>ProgramArguments</key>
   <array>
-    <string>${nodeBin}</string>
-    <string>${nextBin}</string>
-    <string>start</string>
-    <string>--port</string>
-    <string>${port}</string>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>${nextBin} start --port ${port}</string>
   </array>
   <key>WorkingDirectory</key>
   <string>${INSTALL_DIR}</string>
@@ -620,7 +618,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=${nodeBin} ${nextBin} start --port ${port}
+ExecStart=/bin/sh -c '${nextBin} start --port ${port}'
 Restart=always
 RestartSec=5
 ${envLines}
@@ -690,7 +688,8 @@ async function cmdStart() {
     spawnSync('systemctl', ['--user', 'start', 'mission-control.service'], { stdio: 'inherit' });
   } else {
     // Direct start
-    const proc = spawn(process.execPath, [path.join(INSTALL_DIR, 'node_modules', '.bin', 'next'), 'start'], {
+    const nextBinFallback = path.join(INSTALL_DIR, 'node_modules', '.bin', 'next');
+    const proc = spawn('/bin/sh', ['-c', `${nextBinFallback} start`], {
       cwd: INSTALL_DIR,
       detached: true,
       stdio: 'ignore',
