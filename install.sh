@@ -192,6 +192,46 @@ install_qmd() {
 
 install_qmd
 
+# ── Step 5c: Install Obsidian ─────────────────────────────────────────────────
+step "Installing Obsidian"
+
+install_obsidian() {
+  if [ "$(uname -s)" = "Darwin" ]; then
+    if [ -d "/Applications/Obsidian.app" ]; then
+      success "Obsidian already installed"
+      return
+    fi
+
+    if ! command -v brew &>/dev/null; then
+      warn "Could not auto-install Obsidian. Download from https://obsidian.md and open ~/mission-control/memory as a vault."
+      return
+    fi
+
+    info "Installing Obsidian..."
+    if brew install --cask obsidian 2>/dev/null; then
+      success "Obsidian installed"
+      open -a Obsidian "${MC_MEMORY}" 2>/dev/null || true
+    else
+      warn "Could not auto-install Obsidian. Download from https://obsidian.md and open ~/mission-control/memory as a vault."
+    fi
+
+  elif [ "$(uname -s)" = "Linux" ]; then
+    if command -v obsidian &>/dev/null || [ -x "/snap/bin/obsidian" ]; then
+      success "Obsidian already installed"
+      return
+    fi
+
+    info "Installing Obsidian via snap..."
+    if snap install obsidian --classic 2>/dev/null; then
+      success "Obsidian installed"
+    else
+      warn "Could not auto-install Obsidian. Download from https://obsidian.md"
+    fi
+  fi
+}
+
+install_obsidian
+
 # ── Step 6: Build the app ─────────────────────────────────────────────────────
 step "Building Mission Control (Next.js)"
 cd "${REPO_DIR}"
