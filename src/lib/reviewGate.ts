@@ -38,16 +38,30 @@ export function runReviewGate(taskId: string): ReviewGateResult {
       autoFixed.push(`Reviewer set to ${REVIEWER}`);
     }
 
-    // Check 1: Task is not clearly incomplete (progress ≥ 50 or has lastAgentUpdate)
+    // Check 1: Has a plan (planningNotes ≥ 20 chars)
+    const plan = ((task.planningNotes as string) ?? '').trim();
+    if (plan.length < 20) {
+      failures.push('planningNotes is required and must contain a meaningful plan (min 20 chars)');
+    }
+
+    // Check 2: At least one subtask
+    const subtaskCount = (db.prepare(
+      'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?'
+    ).get(taskId) as { c: number }).c;
+    if (subtaskCount < 1) {
+      failures.push(`at least 1 subtask required to enter review (currently ${subtaskCount})`);
+    }
+
+    // Check 3: Has an assigned worker
+    if (!task.assignedTo) {
+      failures.push('No worker agent assigned (assignedTo is required)');
+    }
+
+    // Check 4: Task not clearly incomplete
     const progress = (task.progress as number) ?? 0;
     const hasUpdate = task.lastAgentUpdate && (task.lastAgentUpdate as string).trim().length > 0;
     if (progress < 50 && !hasUpdate) {
       failures.push('Task appears incomplete (progress < 50% with no agent update)');
-    }
-
-    // Check 2: Has an assigned worker (auto-fix: try to infer from task if missing)
-    if (!task.assignedTo) {
-      failures.push('No worker agent assigned (assignedTo is required)');
     }
 
     // If any check fails, push task back to todo
