@@ -16,6 +16,8 @@ Spec sources:
 - ✅ [**v4.0 Agent & Module Library**](milestones/v4.0-agent-module-library.md) — Phases 31–39 — SHIPPED 2026-03-06
 - ✅ **v5.0 Projects Module** — Phases 40–49 — SHIPPED 2026-03-07
 - ✅ [**v6.0 Security Hardening**](milestones/v6.0-security-hardening.md) — Phases 50–57 — SHIPPED 2026-03-07
+- ✅ **v6.1 Codebase Review & Hardening** — Phases 58–70 — SHIPPED 2026-03-07
+- 🚧 **v7.0 Install & First-Run Overhaul** — Phases 71–78 (in progress)
 
 ---
 
@@ -634,3 +636,123 @@ Plans:
 Plans:
 - [x] 70-01: dead-code
 
+
+---
+
+### 🚧 v7.0 Install & First-Run Overhaul (In Progress)
+
+**Milestone Goal:** Every user who runs `npm install -g froggo-mission-control` gets a working, fully-configured platform in under 5 minutes — no broken builds, no empty agent workspaces, no missing config files, and a guided in-app setup wizard that walks them through credentials, agents, modules, and a tour.
+
+**Source:** Clean-install audit `~/Downloads/mission-control-install-improvements.md` (2026-03-08) + WebP image migration.
+
+---
+
+#### Phase 71: build-fix-postcss-tailwind
+
+**Goal**: Fix P0 build break — `postcss.config.mjs` must use `@tailwindcss/postcss` (not `tailwindcss` directly) for Tailwind v4 + Next.js 16; add `@tailwindcss/postcss` to `package.json` dependencies; ensure `@tailwindcss/forms` is present; verify `next build` completes without errors after fix
+**Depends on**: Phase 70
+**Research**: Unlikely (known root cause, config file change only)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 71-01: TBD (run /gsd:plan-phase 71 to break down)
+
+---
+
+#### Phase 72: install-bootstrap-core
+
+**Goal**: Make `mission-control setup` / `install.sh` produce a fully working `~/mission-control/` directory: (1) scaffold core agent workspaces (main, clara, coder, writer) from `catalog/agents/{id}/` templates; (2) generate `~/mission-control/.claude/settings.json` with MCP registrations + hooks; (3) generate `~/mission-control/.mcp.json` with corrected VAULT_PATH and all 3 MCP servers including cron-mcp; (4) generate `~/mission-control/CLAUDE.md` with project context, agent roster, task lifecycle, MCP tool docs; (5) create `schedule.json` as `{}` and `google-tokens.json` as `{}`; (6) apply performance indexes SQL to DB on first init
+**Depends on**: Phase 71
+**Research**: Unlikely (all patterns exist in bin/cli.js and install.sh; catalog templates already on disk)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 72-01: TBD
+- [ ] 72-02: TBD
+
+---
+
+#### Phase 73: qmd-fallback-and-search-ui
+
+**Goal**: Graceful search degradation when `qmd` is not installed: (1) `src/lib/env.ts` add `resolveQmdBin()` trying `qmd` then falling back to `rg`; (2) memory MCP uses fallback bin if qmd missing; (3) Memory panel shows search tool status badge (qmd/ripgrep/not found); (4) clear UI message with install link if neither found
+**Depends on**: Phase 72
+**Research**: Unlikely (env.ts resolveClaudeBin() pattern already exists)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 73-01: TBD
+
+---
+
+#### Phase 74: cli-wizard-simplification
+
+**Goal**: Strip all interactive prompts from CLI wizard — no API keys, no permissions, no sample data, no role selection; CLI does only: prerequisite check, directory creation, core bootstrap, config generation, LaunchAgent/systemd install, MCP + next build, start server, open `/setup`; update `bin/cli.js` and `install.sh`
+**Depends on**: Phase 72
+**Research**: Unlikely (existing bin/cli.js patterns; removal-only changes)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 74-01: TBD
+
+---
+
+#### Phase 75: in-app-wizard-overhaul
+
+**Goal**: Redesign `/setup` OnboardingWizard with 10-step flow: Welcome → System Check → Agent Permissions → Gemini API Key (skippable) → Google Workspace OAuth (skippable) → Obsidian Vault (skippable) → Agent & Module Picker (core pre-checked, optional catalog checkboxes) → Animated Setup Checklist (live progress) → Interactive Tour → Done; remove role-preset step, camera/mic permissions step, sample data step
+**Depends on**: Phase 74
+**Research**: Unlikely (extends existing OnboardingWizard; agent/module catalog API exists from v4.0)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 75-01: TBD
+- [ ] 75-02: TBD
+- [ ] 75-03: TBD
+
+---
+
+#### Phase 76: interactive-tour
+
+**Goal**: Re-launchable interactive tour with 8 stops (Dashboard → Tasks → Agents → Inbox → Memory → Library → Analytics → Settings); each stop: element highlight overlay, 1-2 sentence tooltip, Next/Skip buttons; tour state in DB settings; re-launchable from Settings → Help; auto-launches at end of setup wizard
+**Depends on**: Phase 75
+**Research**: Unlikely (vanilla React portal overlay; no external library needed)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 76-01: TBD
+
+---
+
+#### Phase 77: webp-image-migration
+
+**Goal**: Convert all PNG/JPG images to WebP: audit `public/` and `catalog/agents/*/avatar.*`; convert with `cwebp`/`sharp`; update all `<img>`, `next/image`, and CSS references; update `package.json` files array if needed; verify agent avatars render in Agent Library UI
+**Depends on**: Phase 71
+**Research**: Unlikely (Next.js Image supports WebP natively)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 77-01: TBD
+
+---
+
+#### Phase 78: e2e-verification-v7
+
+**Goal**: Verify all v7.0 changes: fresh setup creates all expected files in `~/mission-control/`; core agent workspaces exist; config files generated correctly; `next build` passes; wizard flow completes; agent/module picker installs; tour navigates all 8 stops; WebP images load; smoke test updated with install checks
+**Depends on**: All v7.0 phases
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 78-01: TBD
+
+## Progress (v7.0)
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 71. Build Fix PostCSS/Tailwind | v7.0 | 0/1 | Not started | - |
+| 72. Install Bootstrap Core | v7.0 | 0/2 | Not started | - |
+| 73. QMD Fallback & Search UI | v7.0 | 0/1 | Not started | - |
+| 74. CLI Wizard Simplification | v7.0 | 0/1 | Not started | - |
+| 75. In-App Wizard Overhaul | v7.0 | 0/3 | Not started | - |
+| 76. Interactive Tour | v7.0 | 0/1 | Not started | - |
+| 77. WebP Image Migration | v7.0 | 0/1 | Not started | - |
+| 78. E2E Verification v7.0 | v7.0 | 0/1 | Not started | - |
