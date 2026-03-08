@@ -145,7 +145,7 @@ export default function InboxPanel() {
         ];
         if (reviewTasks.length > 0) {
           // Convert tasks to inbox item format
-          // Show tasks with reviewStatus starting with 'pending' (e.g. 'pending', 'pending-kevin')
+          // Show tasks with reviewStatus starting with 'pending' (e.g. 'pending', 'pending-human')
           const taskItems = reviewTasks
             .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
             .filter((t: any) => !t.reviewStatus || t.reviewStatus.startsWith('pending'))
