@@ -133,12 +133,26 @@ function installObsidian() {
 
 installObsidian();
 
+// ── Rebuild native addons for current Node.js version ──────────────────────
+info('Rebuilding native modules for Node.js ' + process.version + '...');
+for (const mod of ['better-sqlite3', 'keytar']) {
+  const result = spawnSync('npm', ['rebuild', mod], {
+    cwd: ROOT, shell: true, stdio: 'pipe', encoding: 'utf-8',
+  });
+  if (result.status === 0) {
+    success(`${mod} compiled`);
+  } else {
+    warn(`${mod} rebuild failed (non-fatal): ${(result.stderr || '').slice(0, 120)}`);
+  }
+}
+
 // ── Build Next.js app ──────────────────────────────────────────────────────
 info('Building dashboard (Next.js)...');
 process.env.NEXT_TELEMETRY_DISABLED = '1';
 
-const buildResult = spawnSync('node', ['node_modules/.bin/next', 'build'], {
+const buildResult = spawnSync('./node_modules/.bin/next', ['build'], {
   cwd: ROOT,
+  shell: true,
   stdio: 'inherit',
   env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
 });

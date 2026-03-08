@@ -1192,6 +1192,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // Block Continue on step 7 until install finishes
   const installInProgress = currentStep === 7 && !installComplete;
 
+  // Block Continue on step 5 until user confirms they've opened Obsidian
+  const obsidianRequired = currentStep === 5 && !obsidianConfirmed;
+
   const canContinue = !criticalFailed && !permissionsRequired && !installInProgress && !obsidianRequired;
 
   // Steps that allow skipping (step 5 — Obsidian — is now mandatory)
@@ -1207,9 +1210,6 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     if (currentStep === 4) setGoogleSkipped(true);
     goNext();
   };
-
-  // Block Continue on step 5 until user confirms they've opened Obsidian
-  const obsidianRequired = currentStep === 5 && !obsidianConfirmed;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
