@@ -4,7 +4,7 @@
  *
  * Commands:
  *   mission-control           → setup (first run) or status
- *   mission-control setup     → interactive first-run wizard
+ *   mission-control setup     → non-interactive setup, opens browser to /setup
  *   mission-control start     → start the server
  *   mission-control stop      → stop the server
  *   mission-control restart   → restart the server
@@ -22,10 +22,7 @@ const { execSync, spawnSync, spawn } = require('child_process');
 const { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } = require('fs');
 const path   = require('path');
 const os     = require('os');
-const https  = require('https');
 const http   = require('http');
-const readline = require('readline');
-
 // ── Colours ──────────────────────────────────────────────────────────────────
 const c = {
   red:    s => `\x1b[31m${s}\x1b[0m`,
@@ -66,31 +63,6 @@ const IS_MAC      = os.platform() === 'darwin';
 const IS_LINUX    = os.platform() === 'linux';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function prompt(question, defaultVal = '') {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise(resolve => {
-    const hint = defaultVal ? c.dim(` [${defaultVal}]`) : '';
-    rl.question(`  ${question}${hint}: `, answer => {
-      rl.close();
-      resolve(answer.trim() || defaultVal);
-    });
-  });
-}
-
-function promptSecret(question) {
-  return new Promise(resolve => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    // Disable echo
-    if (process.stdin.isTTY) process.stdin.setRawMode(true);
-    rl.question(`  ${question}: `, answer => {
-      if (process.stdin.isTTY) process.stdin.setRawMode(false);
-      rl.close();
-      process.stdout.write('\n');
-      resolve(answer.trim());
-    });
-  });
-}
-
 function findClaudeBin() {
   if (process.env.CLAUDE_BIN && existsSync(process.env.CLAUDE_BIN)) return process.env.CLAUDE_BIN;
   try {
@@ -173,47 +145,28 @@ async function cmdSetup(force = false) {
   }
 
   header('Mission Control Setup');
-  console.log('  This wizard sets up your persistent local AI agent platform.\n');
+  console.log('  Setting up your persistent local AI agent platform...\n');
 
-  // ── Check Claude CLI ────────────────────────────────────────────────────
+  // ── Check prerequisites ─────────────────────────────────────────────────
   step('Prerequisites');
-  const claudeBin = findClaudeBin();
-  if (claudeBin === 'claude' && !existsSync('/usr/local/bin/claude')) {
-    warn('Claude Code CLI not found in PATH.');
-    const install = await prompt('Install Claude Code CLI now? (requires npm)', 'y');
-    if (install.toLowerCase() === 'y') {
-      info('Installing @anthropic-ai/claude-code...');
-      const r = spawnSync('npm', ['install', '-g', '@anthropic-ai/claude-code'], { stdio: 'inherit' });
-      if (r.status !== 0) fail('Install failed. Run: npm install -g @anthropic-ai/claude-code');
-    } else {
-      warn('Claude CLI required for agents. Add it later and re-run setup.');
-    }
-  } else {
-    success(`Claude Code CLI: ${claudeBin}`);
-  }
 
   // Node version check
   const nodeMaj = parseInt(process.versions.node.split('.')[0], 10);
   if (nodeMaj < 20) fail(`Node.js 20+ required (found ${process.versions.node}). Upgrade at https://nodejs.org`);
   success(`Node.js ${process.versions.node}`);
 
-  // ── API Keys ────────────────────────────────────────────────────────────
-  step('API Keys');
-  console.log('  Mission Control needs API keys to unlock all features.');
-  console.log('  Press Enter to skip any — add them later in Settings → API Keys.\n');
+  const claudeBin = findClaudeBin();
+  if (claudeBin === 'claude' && !existsSync('/usr/local/bin/claude')) {
+    warn('Claude Code CLI not found in PATH. Install it after setup: npm install -g @anthropic-ai/claude-code');
+  } else {
+    success(`Claude Code CLI: ${claudeBin}`);
+  }
 
+  // ── Defaults (all credentials collected in-app at /setup) ───────────────
   const existingEnv = parseEnvFile(ENV_FILE);
-
-  console.log(c.bold('  Gemini API Key') + c.dim(' — required for Voice'));
-  console.log(c.dim('  Free at: https://aistudio.google.com/app/apikey'));
-  const geminiKey = await prompt('Gemini API Key', existingEnv.GEMINI_API_KEY || '');
-
-  console.log('');
-  console.log(c.bold('  Anthropic API Key') + c.dim(' — optional if using Claude Code CLI subscription'));
-  console.log(c.dim('  Get at: https://console.anthropic.com/'));
-  const anthropicKey = await prompt('Anthropic API Key (press Enter to skip)', existingEnv.ANTHROPIC_API_KEY || '');
-
-  const port = await prompt('Port', existingEnv.PORT || '3000');
+  const geminiKey    = existingEnv.GEMINI_API_KEY    || '';
+  const anthropicKey = existingEnv.ANTHROPIC_API_KEY || '';
+  const port         = existingEnv.PORT              || '3000';
 
   // ── Create directories ──────────────────────────────────────────────────
   step('Creating directory structure');
@@ -539,9 +492,10 @@ WantedBy=default.target
   const health = await waitForServer(parseInt(port, 10), 60);
   console.log('');
 
+  const setupUrl = `http://localhost:${port}/setup`;
   if (health) {
     success(`Running at http://localhost:${port}`);
-    openBrowser(`http://localhost:${port}`);
+    openBrowser(setupUrl);
   } else {
     warn('Server did not respond — check logs:');
     if (IS_MAC) info(`tail -f ${logPath}`);
@@ -550,19 +504,14 @@ WantedBy=default.target
   // ── Final summary ───────────────────────────────────────────────────────
   console.log('');
   console.log(c.bold(c.green('╔══════════════════════════════════════╗')));
-  console.log(c.bold(c.green('║   Mission Control is ready           ║')));
+  console.log(c.bold(c.green('║   Setup complete!                    ║')));
   console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
   console.log('');
-  console.log(`  ${c.bold('Dashboard:')}  http://localhost:${port}`);
+  console.log(`  Setup complete! Continue in your browser at ${c.bold(c.cyan(setupUrl))}`);
+  console.log('');
   console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
   console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
   console.log('');
-  console.log(`  ${c.bold('Next steps:')}`);
-  console.log(`    1. Connect Google Workspace in the setup wizard`);
-  console.log(`    2. Browse the Agents Catalog → hire your team`);
-  console.log(`    3. Install modules from the Modules Library`);
-  console.log('');
-  if (!geminiKey) console.log(`  ${c.yellow('Voice:')} add Gemini API key in Settings → Voice`);
   console.log(`  ${c.dim('mission-control status   — check health')}`);
   console.log(`  ${c.dim('mission-control stop     — stop the server')}`);
   console.log(`  ${c.dim('mission-control logs     — view logs')}`);
@@ -722,8 +671,8 @@ ${c.bold('USAGE')}
   mission-control [command]
 
 ${c.bold('COMMANDS')}
-  (no command)     Setup wizard on first run, or show status
-  setup            Run the interactive setup wizard
+  (no command)     Setup on first run, or show status
+  setup            Run setup (non-interactive) and open browser to /setup
   setup --force    Re-run setup (overwrites existing config)
   start            Start the server
   stop             Stop the server
@@ -738,7 +687,7 @@ ${c.bold('COMMANDS')}
 
 ${c.bold('EXAMPLES')}
   npm install -g froggo-mission-control   Install
-  mission-control                          First-run setup wizard
+  mission-control                          First-run setup (opens browser to /setup)
   mission-control status                   Check if running
   mission-control logs                     View logs
   mission-control update                   Update to latest
