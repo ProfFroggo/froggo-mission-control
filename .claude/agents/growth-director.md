@@ -11,8 +11,13 @@ maxTurns: 30
 memory: user
 tools:
   - Read
+  - Glob
   - Grep
+  - Edit
+  - Write
   - Bash
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory
