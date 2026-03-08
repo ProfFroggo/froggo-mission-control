@@ -402,6 +402,9 @@ async function cmdSetup(force = false) {
   writeFileSync(ENV_FILE, envContent);
   success('.env written');
 
+  // Resolve node binary once — used in MCP configs, settings template, and LaunchAgent/systemd
+  const nodeBin = findNodeBin();
+
   // ── Generate .claude/settings.json from template ────────────────────────
   const templatePath = path.join(INSTALL_DIR, '.claude', 'settings.json.template');
   const settingsPath = path.join(INSTALL_DIR, '.claude', 'settings.json');
@@ -534,7 +537,6 @@ async function cmdSetup(force = false) {
 
   // ── Install persistent service ──────────────────────────────────────────
   step('Installing persistent service (auto-start at login)');
-  const nodeBin = findNodeBin();
   // Use the actual Next.js JS entry point — avoids the .bin/next shell wrapper
   // which fails in LaunchAgent/systemd contexts where node isn't in PATH
   const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
