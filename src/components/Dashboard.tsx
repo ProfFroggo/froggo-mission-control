@@ -55,7 +55,7 @@ function HeaderBar({ connected }: { connected: boolean }) {
     <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border/50">
       <div>
         <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
-          {greeting}, Kevin
+          {greeting}
         </h1>
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
