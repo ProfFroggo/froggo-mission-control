@@ -135,14 +135,15 @@ installObsidian();
 
 // ── Rebuild native addons for current Node.js version ──────────────────────
 info('Rebuilding native modules for Node.js ' + process.version + '...');
+// Use 'inherit' so failures are visible; npm rebuild finds nested .pnpm packages automatically
 for (const mod of ['better-sqlite3', 'keytar']) {
   const result = spawnSync('npm', ['rebuild', mod], {
-    cwd: ROOT, shell: true, stdio: 'pipe', encoding: 'utf-8',
+    cwd: ROOT, shell: true, stdio: 'inherit',
   });
   if (result.status === 0) {
     success(`${mod} compiled`);
   } else {
-    warn(`${mod} rebuild failed (non-fatal): ${(result.stderr || '').slice(0, 120)}`);
+    warn(`${mod} rebuild failed — the app may not start correctly. Try: npm rebuild ${mod} in the install directory`);
   }
 }
 
