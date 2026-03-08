@@ -5,8 +5,18 @@ import path from 'path';
 import { execSync } from 'child_process';
 
 function checkCliInstalled(): boolean {
+  // Check common install locations — 'which claude' fails in LaunchAgent PATH context
+  const candidates = [
+    process.env.CLAUDE_BIN,                        // set by cli.js in LaunchAgent env
+    '/opt/homebrew/bin/claude',                     // Homebrew Apple Silicon
+    '/usr/local/bin/claude',                        // Homebrew Intel / manual
+    `${homedir()}/.npm-global/bin/claude`,          // npm global custom prefix
+    `${homedir()}/.local/bin/claude`,               // Linux local
+    '/usr/bin/claude',
+  ];
+  if (candidates.some(p => p && existsSync(p))) return true;
   try {
-    execSync('which claude', { stdio: 'pipe' });
+    execSync('which claude', { stdio: 'pipe', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${homedir()}/.npm-global/bin:${process.env.PATH}` } });
     return true;
   } catch {
     return false;

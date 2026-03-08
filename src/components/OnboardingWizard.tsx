@@ -586,11 +586,25 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             </div>
           ))}
         </div>
+        {sysCheck.cli === 'fail' && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3 text-xs space-y-1.5">
+            <p className="font-medium text-amber-400">Claude CLI not detected</p>
+            <p className="text-mission-control-text-dim">Mission Control requires the Claude Code CLI to spawn agents.</p>
+            <a
+              href="https://docs.anthropic.com/claude-code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-mission-control-accent hover:underline font-medium"
+            >
+              Install Claude Code CLI →
+            </a>
+            <p className="text-mission-control-text-dim">After installing, click Re-check below.</p>
+          </div>
+        )}
         {criticalFailed && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-4 text-xs text-red-400 space-y-1">
             <p className="font-medium">Task database not found</p>
-            <p>Run: <code className="font-mono">mkdir -p ~/mission-control/data</code></p>
-            <p>Then restart the app and return here.</p>
+            <p className="text-mission-control-text-dim">Run <code className="font-mono text-red-300">mission-control restart</code> in your terminal, then click Re-check.</p>
           </div>
         )}
         <button
