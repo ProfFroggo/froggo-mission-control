@@ -134,16 +134,40 @@ function installObsidian() {
 installObsidian();
 
 // ── Rebuild native addons for current Node.js version ──────────────────────
+// npm rebuild can target the wrong copy when packages are in .pnpm/ or .ignored/.
+// Use require.resolve to find the ACTUAL installed location, then node-gyp rebuild there.
 info('Rebuilding native modules for Node.js ' + process.version + '...');
-// Use 'inherit' so failures are visible; npm rebuild finds nested .pnpm packages automatically
 for (const mod of ['better-sqlite3', 'keytar']) {
-  const result = spawnSync('npm', ['rebuild', mod], {
-    cwd: ROOT, shell: true, stdio: 'inherit',
+  let modDir = null;
+  try {
+    modDir = path.dirname(require.resolve(`${mod}/package.json`, { paths: [ROOT] }));
+  } catch {
+    warn(`${mod} not found in node_modules — skipping`);
+    continue;
+  }
+
+  info(`Rebuilding ${mod} at ${modDir}...`);
+  // Find node-gyp: prefer the one bundled in this package, fall back to global
+  const nodeGypLocal = path.join(ROOT, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
+  const nodeGypPnpm  = path.join(ROOT, 'node_modules', '.pnpm', 'node-gyp@12.2.0', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
+  const nodeGypBin   = existsSync(nodeGypLocal) ? nodeGypLocal : existsSync(nodeGypPnpm) ? nodeGypPnpm : null;
+  if (!nodeGypBin) { warn(`node-gyp not found — skipping ${mod} rebuild`); continue; }
+
+  const result = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
+    cwd: modDir,
+    stdio: 'inherit',
   });
+
   if (result.status === 0) {
     success(`${mod} compiled`);
   } else {
-    warn(`${mod} rebuild failed — the app may not start correctly. Try: npm rebuild ${mod} in the install directory`);
+    // Fall back to npm rebuild as secondary attempt
+    const r2 = spawnSync('npm', ['rebuild', mod], { cwd: ROOT, shell: true, stdio: 'inherit' });
+    if (r2.status === 0) {
+      success(`${mod} compiled (via npm rebuild)`);
+    } else {
+      warn(`${mod} rebuild failed — run: cd ${modDir} && node-gyp rebuild`);
+    }
   }
 }
 
