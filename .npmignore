@@ -1,0 +1,46 @@
+# Never publish these
+.env
+.env.local
+.env*.local
+.mcp.json
+.claude/settings.json
+
+# Build artifacts (rebuilt by postinstall)
+.next/
+tools/*/dist/
+tools/*/node_modules/
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
+
+# Dev/test only
+node_modules/
+coverage/
+src/tests/
+*.test.ts
+*.test.tsx
+*.spec.ts
+
+# Personal / machine-specific
+*.db
+*.db-shm
+*.db-wal
+memory/
+.planning/
+.DS_Store
+*.log
+*.swp
+*.swo
+
+# Electron leftovers (legacy)
+dist/
+dist-electron/
+release/
+build/
+
+# Git
+.git/
+.github/
+
+# Editor
+.idea/
+.vscode/

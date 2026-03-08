@@ -42,24 +42,32 @@ Mission Control is your personal AI operations center. It ships with:
 ## Installation
 
 ```bash
-git clone https://github.com/ProfFroggo/froggo-Mission-Control.git
-cd froggo-Mission-Control
-./install.sh
+npm install -g froggo-mission-control
+mission-control
 ```
 
-The installer will:
-1. Check all prerequisites (Node, Claude CLI, git)
-2. Ask for your Gemini API key
-3. Create `~/mission-control/` directory structure
-4. Install all npm dependencies
-5. Compile the three MCP servers
-6. Build the Next.js app
-7. Generate your `.env`, `.mcp.json`, and `.claude/settings.json`
-8. Set up an Obsidian-compatible memory vault skeleton
-9. Install a LaunchAgent (macOS) or systemd service (Linux) for auto-start at login
-10. Open the app in your browser with the first-run setup wizard
+That's it. The two commands handle everything:
 
-**After installation:** The app lives at `http://localhost:3000` and starts automatically when you log in.
+**`npm install -g froggo-mission-control`** — downloads the package, installs all dependencies, compiles the three MCP servers, and builds the Next.js app. Takes 2–3 minutes. No interaction needed.
+
+**`mission-control`** — interactive setup wizard:
+1. Checks Claude Code CLI is installed (offers to install if missing)
+2. Asks for your Gemini API key
+3. Creates `~/mission-control/` directory structure
+4. Writes your `.env`, `.mcp.json`, and `.claude/settings.json`
+5. Sets up an Obsidian-compatible memory vault
+6. Installs a LaunchAgent (macOS) or systemd service (Linux) — auto-starts at login, auto-restarts on crash
+7. Opens your browser to the setup wizard
+
+**After setup:** The app runs at `http://localhost:3000` persistently. It starts automatically when you log in. No tmux, no terminal window needed.
+
+### Manual / from source
+
+```bash
+git clone https://github.com/ProfFroggo/froggo-mission-control.git
+cd froggo-mission-control
+./install.sh
+```
 
 ---
 
