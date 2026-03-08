@@ -4,7 +4,7 @@
  *
  * Commands:
  *   mission-control           → setup (first run) or status
- *   mission-control setup     → non-interactive setup, opens browser to /setup
+ *   mission-control setup     → non-interactive setup, opens browser to /
  *   mission-control start     → start the server
  *   mission-control stop      → stop the server
  *   mission-control restart   → restart the server
@@ -645,10 +645,10 @@ WantedBy=default.target
   const health = await waitForServer(parseInt(port, 10), 60);
   console.log('');
 
-  const setupUrl = `http://localhost:${port}/setup`;
+  const appUrl = `http://localhost:${port}`;
   if (health) {
-    success(`Running at http://localhost:${port}`);
-    openBrowser(setupUrl);
+    success(`Running at ${appUrl}`);
+    openBrowser(appUrl);
   } else {
     warn('Server did not respond — check logs:');
     if (IS_MAC) info(`tail -f ${logPath}`);
@@ -660,7 +660,7 @@ WantedBy=default.target
   console.log(c.bold(c.green('║   Setup complete!                    ║')));
   console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
   console.log('');
-  console.log(`  Setup complete! Continue in your browser at ${c.bold(c.cyan(setupUrl))}`);
+  console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))}`);
   console.log('');
   console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
   console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
