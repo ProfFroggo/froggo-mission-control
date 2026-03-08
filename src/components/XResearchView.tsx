@@ -181,16 +181,16 @@ export function XResearchView() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg">
+    <div className="flex flex-col h-full bg-mission-control-bg">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border">
+      <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-lg font-semibold text-clawd-text flex items-center gap-2">
-              <Search size={20} className="text-clawd-accent" />
+            <h1 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
+              <Search size={20} className="text-mission-control-accent" />
               Research
             </h1>
-            <p className="text-sm text-clawd-text-dim mt-1">
+            <p className="text-sm text-mission-control-text-dim mt-1">
               Search social media for content inspiration and competitive insights
             </p>
           </div>
@@ -198,8 +198,8 @@ export function XResearchView() {
             onClick={() => setShowLibrary(!showLibrary)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               showLibrary
-                ? 'bg-clawd-accent text-white'
-                : 'bg-clawd-surface border border-clawd-border text-clawd-text hover:border-clawd-accent/50'
+                ? 'bg-mission-control-accent text-white'
+                : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:border-mission-control-accent/50'
             }`}
           >
             <Save size={16} />
@@ -210,20 +210,20 @@ export function XResearchView() {
         {/* Search Input */}
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch()}
               placeholder="Search tweets, users, topics..."
-              className="w-full pl-10 pr-4 py-3 bg-clawd-surface border border-clawd-border rounded-lg text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent"
+              className="w-full pl-10 pr-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
             />
           </div>
           <button
             onClick={performSearch}
             disabled={loading || !query.trim()}
-            className="flex items-center gap-2 px-6 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="flex items-center gap-2 px-6 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {loading ? 'Searching...' : 'Start Research'}
@@ -236,9 +236,9 @@ export function XResearchView() {
         {showLibrary ? (
           /* Library View */
           <div className="space-y-4">
-            <h2 className="font-semibold text-clawd-text">Research Library</h2>
+            <h2 className="text-sm font-semibold text-mission-control-text">Research Library</h2>
             {savedItems.length === 0 ? (
-              <div className="text-center py-12 text-clawd-text-dim">
+              <div className="text-center py-12 text-mission-control-text-dim">
                 <Save size={32} className="mx-auto mb-3 opacity-30" />
                 <p>No saved research yet</p>
                 <p className="text-sm mt-1">Search for content and save results to build your library</p>
@@ -248,26 +248,26 @@ export function XResearchView() {
                 {savedItems.map((saved) => (
                   <div
                     key={saved.id}
-                    className="bg-clawd-surface border border-clawd-border rounded-xl p-4"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <div className="font-medium text-clawd-text">{saved.query}</div>
-                        <div className="text-sm text-clawd-text-dim">
+                        <div className="font-medium text-mission-control-text">{saved.query}</div>
+                        <div className="text-sm text-mission-control-text-dim">
                           {saved.results.length} items • Saved {new Date(saved.savedAt).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => loadSavedResults(saved)}
-                          className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim hover:text-clawd-text transition-colors"
+                          className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                           title="Load results"
                         >
                           <ExternalLink size={16} />
                         </button>
                         <button
                           onClick={() => deleteSaved(saved.id)}
-                          className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim hover:text-review transition-colors"
+                          className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim hover:text-review transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -278,13 +278,13 @@ export function XResearchView() {
                       {saved.results.slice(0, 5).map((r) => (
                         <span
                           key={r.id}
-                          className="px-2 py-1 bg-clawd-bg rounded text-xs text-clawd-text-dim"
+                          className="px-2 py-1 bg-mission-control-bg rounded text-xs text-mission-control-text-dim"
                         >
                           {getTypeIcon(r.type)} {getTypeLabel(r.type)}
                         </span>
                       ))}
                       {saved.results.length > 5 && (
-                        <span className="px-2 py-1 text-xs text-clawd-text-dim">
+                        <span className="px-2 py-1 text-xs text-mission-control-text-dim">
                           +{saved.results.length - 5} more
                         </span>
                       )}
@@ -298,22 +298,22 @@ export function XResearchView() {
           /* Loading State */
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner size={40} />
-            <p className="text-clawd-text-dim mt-4">Searching...</p>
+            <p className="text-mission-control-text-dim mt-4">Searching...</p>
           </div>
         ) : !searched ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Search size={48} className="text-clawd-text-dim opacity-30 mb-4" />
-            <p className="text-clawd-text font-medium mb-2">Research Social Media Content</p>
-            <p className="text-clawd-text-dim text-sm max-w-md">
+            <Search size={48} className="text-mission-control-text-dim opacity-30 mb-4" />
+            <p className="text-mission-control-text font-medium mb-2">Research Social Media Content</p>
+            <p className="text-mission-control-text-dim text-sm max-w-md">
               Enter a search query to find trending tweets, relevant users, and topics. Save your findings to build a research library for content planning.
             </p>
           </div>
         ) : results.length === 0 ? (
           /* No Results from API — agent is researching */
-          <div className="text-center py-16 text-clawd-text-dim">
+          <div className="text-center py-16 text-mission-control-text-dim">
             <Search size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-clawd-text font-medium">Researcher is working on it</p>
+            <p className="text-mission-control-text font-medium">Researcher is working on it</p>
             <p className="text-sm mt-2">Check the agent chat on the left for research results.</p>
             <p className="text-xs mt-1">Direct API returned no results for &quot;{query}&quot;</p>
           </div>
@@ -322,14 +322,14 @@ export function XResearchView() {
           <div className="space-y-4">
             {/* Selection Actions */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center justify-between bg-clawd-surface border border-clawd-accent/50 rounded-xl p-3">
-                <span className="text-sm text-clawd-text">
+              <div className="flex items-center justify-between bg-mission-control-surface border border-mission-control-accent/50 rounded-xl p-3">
+                <span className="text-sm text-mission-control-text">
                   <Check size={16} className="inline mr-1" />
                   {selectedIds.size} selected
                 </span>
                 <button
                   onClick={saveToLibrary}
-                  className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors text-sm font-medium"
+                  className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
                 >
                   <Save size={16} />
                   Save to Library
@@ -344,10 +344,10 @@ export function XResearchView() {
                   key={result.id}
                   role="button"
                   tabIndex={0}
-                  className={`bg-clawd-surface border rounded-xl p-4 cursor-pointer transition-all hover:border-clawd-accent/50 ${
+                  className={`bg-mission-control-surface border rounded-xl p-4 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
                     selectedIds.has(result.id)
-                      ? 'border-clawd-accent bg-clawd-accent/5'
-                      : 'border-clawd-border'
+                      ? 'border-mission-control-accent bg-mission-control-accent/5'
+                      : 'border-mission-control-border'
                   }`}
                   onClick={() => toggleSelection(result.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSelection(result.id); }}
@@ -356,8 +356,8 @@ export function XResearchView() {
                     {/* Selection Checkbox */}
                     <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                       selectedIds.has(result.id)
-                        ? 'bg-clawd-accent border-clawd-accent'
-                        : 'border-clawd-border'
+                        ? 'bg-mission-control-accent border-mission-control-accent'
+                        : 'border-mission-control-border'
                     }`}>
                       {selectedIds.has(result.id) && <Check size={12} className="text-white" />}
                     </div>
@@ -370,25 +370,25 @@ export function XResearchView() {
                           result.type === 'tweet' ? 'bg-info-subtle text-info' :
                           result.type === 'thread' ? 'bg-success-subtle text-success' :
                           result.type === 'user' ? 'bg-purple-subtle text-purple-500' :
-                          'bg-clawd-accent/20 text-clawd-accent'
+                          'bg-mission-control-accent/20 text-mission-control-accent'
                         }`}>
                           {getTypeIcon(result.type)} {getTypeLabel(result.type)}
                         </span>
                         {result.username && (
-                          <span className="text-sm text-clawd-text-dim">{result.username}</span>
+                          <span className="text-sm text-mission-control-text-dim">{result.username}</span>
                         )}
                       </div>
 
                       {/* Tweet Content */}
                       {result.content && (
-                        <p className="text-sm text-clawd-text mb-3 line-clamp-3">
+                        <p className="text-sm text-mission-control-text mb-3 line-clamp-3">
                           {result.content}
                         </p>
                       )}
 
                       {/* Metrics */}
                       {(result.likes || result.retweets || result.replies || result.followers) && (
-                        <div className="flex items-center gap-4 text-xs text-clawd-text-dim">
+                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim">
                           {result.followers !== undefined && (
                             <span className="flex items-center gap-1">
                               <User size={12} />
@@ -412,7 +412,7 @@ export function XResearchView() {
 
                       {/* Topic/Thread Count */}
                       {(result.tweetCount || result.engagement) && (
-                        <div className="flex items-center gap-4 text-xs text-clawd-text-dim mt-2">
+                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mt-2">
                           {result.tweetCount !== undefined && (
                             <span>{result.tweetCount.toLocaleString()} tweets</span>
                           )}
@@ -423,8 +423,8 @@ export function XResearchView() {
                       )}
 
                       {/* Date & Link */}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-clawd-border">
-                        <span className="text-xs text-clawd-text-dim">
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-mission-control-border">
+                        <span className="text-xs text-mission-control-text-dim">
                           {result.date && new Date(result.date).toLocaleDateString()}
                         </span>
                         {result.url && (

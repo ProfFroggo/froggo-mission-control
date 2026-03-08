@@ -66,7 +66,7 @@ export default function InboxWidget() {
       <div className="flex items-center justify-between mb-4">
         <Inbox 
           size={28} 
-          className={unreadCount > 0 ? 'text-info' : 'text-clawd-text-dim'} 
+          className={unreadCount > 0 ? 'text-info' : 'text-mission-control-text-dim'} 
         />
         {unreadCount > 0 && (
           <span className="px-3 py-1 bg-blue-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
@@ -75,11 +75,11 @@ export default function InboxWidget() {
         )}
       </div>
       
-      <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-blue-400 bg-clip-text text-transparent">
+      <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-blue-400 bg-clip-text text-transparent">
         {unreadCount}
       </div>
       
-      <div className="text-sm font-medium text-clawd-text-dim mb-3">
+      <div className="text-sm font-medium text-mission-control-text-dim mb-3">
         Unread Inbox
       </div>
       

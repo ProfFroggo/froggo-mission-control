@@ -1,41 +1,24 @@
 /**
- * Module registration entry point.
+ * Module registration entry point — CORE MODULES ONLY.
  *
- * Import this file in App.tsx (after CoreViews) to register all modules.
- * Each module's index.ts self-registers with the ModuleLoader on import.
+ * Core modules are always loaded regardless of catalog state.
+ * Optional modules are loaded dynamically by ModuleLoader.initAll()
+ * based on their installed/enabled state in the catalog DB.
  *
- * To add a new module:
- * 1. Create src/modules/<name>/
- * 2. Add module.json and index.ts
- * 3. Add import below
+ * To add a new optional module:
+ * 1. Create src/modules/<name>/ with module.json and index.ts
+ * 2. Add it to src/modules/optional-registry.ts
+ * 3. Add a catalog/modules/<name>.json manifest
  */
 
-// Extracted modules (proof-of-concept)
-import './finance';
+// Core modules — always active, cannot be uninstalled
 import './settings';
-import './analytics';
-import './library';
-
-import './twitter';
-import './agent-mgmt';
-
-// Phase 45: Core view migrations
 import './inbox';
 import './chat';
 import './kanban';
 import './approvals';
 import './notifications';
-
-// Phase 46: Optional module migrations — wave 1
-import './meetings';
-import './voice';
+import './agent-mgmt';
+import './library';
+import './projects';
 import './schedule';
-import './writing';
-
-// Phase 47: Optional module migrations — wave 2
-import './accounts';
-import './dev';
-import './module-builder';
-
-// Future modules:
-// import './comms';

@@ -29,33 +29,33 @@ export default function TimelineForm({ event, onCancel, onSave, nextPosition }: 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-clawd-bg/50 rounded border border-clawd-border">
+    <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-mission-control-bg/50 rounded border border-mission-control-border">
       <input
         type="text"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         placeholder="Date (e.g. Summer 1995)"
-        className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
+        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
       />
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="What happened?"
         rows={3}
-        className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent resize-none"
+        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent resize-none"
       />
       <div className="flex gap-1">
         <button
           type="submit"
           disabled={!date.trim() || !description.trim() || saving}
-          className="px-2 py-0.5 rounded bg-clawd-accent text-white text-[10px] font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40"
+          className="px-2 py-0.5 rounded bg-mission-control-accent text-white text-[10px] font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
         >
           {saving ? '...' : event ? 'Update' : 'Add'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-2 py-0.5 rounded text-clawd-text-dim text-[10px] hover:bg-clawd-border transition-colors"
+          className="px-2 py-0.5 rounded text-mission-control-text-dim text-[10px] hover:bg-mission-control-border transition-colors"
         >
           Cancel
         </button>

@@ -79,7 +79,7 @@ function ThreadMessage({
       {/* Avatar */}
       <div className="flex-shrink-0 w-8">
         {isMe ? (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
@@ -93,10 +93,10 @@ function ThreadMessage({
       <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%] min-w-[120px]`}>
         {/* Sender name and timestamp */}
         <div className={`flex items-center gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-          <span className={`text-xs font-medium ${isMe ? 'text-clawd-accent' : 'text-indigo-600'}`}>
+          <span className={`text-xs font-medium ${isMe ? 'text-mission-control-accent' : 'text-indigo-600'}`}>
             {isMe ? 'You' : displayName}
           </span>
-          <span className="text-[10px] text-clawd-text-dim/70">
+          <span className="text-[10px] text-mission-control-text-dim/70">
             {formatMessageTime(message.timestamp)}
           </span>
           {message.is_starred && (
@@ -114,7 +114,7 @@ function ThreadMessage({
                 className={`p-1.5 rounded-lg transition-all ${
                   message.is_starred
                     ? 'bg-yellow-100 text-warning shadow-sm'
-                    : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-warning hover:bg-yellow-50 border border-clawd-border'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-yellow-50 border border-mission-control-border'
                 }`}
                 title={message.is_starred ? 'Unstar' : 'Star'}
               >
@@ -124,7 +124,7 @@ function ThreadMessage({
             {!isMe && onMarkRead && (
               <button
                 onClick={() => onMarkRead(message.id, !message.is_read)}
-                className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
+                className="p-1.5 rounded-lg bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border border border-mission-control-border transition-all"
                 title={message.is_read ? 'Mark unread' : 'Mark read'}
               >
                 {message.is_read ? <Mail size={14} /> : <Check size={14} />}
@@ -136,14 +136,14 @@ function ThreadMessage({
           <div
             className={`px-4 py-3 transition-all ${
               isMe
-                ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white shadow-md rounded-2xl rounded-tr-sm'
-                : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
-            } ${!message.is_read && !isMe ? 'ring-2 ring-clawd-accent/30' : ''}`}
+                ? 'bg-gradient-to-br from-mission-control-accent to-purple-500 text-white shadow-md rounded-2xl rounded-tr-sm'
+                : 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
+            } ${!message.is_read && !isMe ? 'ring-2 ring-mission-control-accent/30' : ''}`}
           >
             {/* Subject (for thread root) */}
             {message.is_thread_root && message.subject && (
               <div className={`text-sm font-semibold mb-2 pb-2 ${
-                isMe ? 'border-b border-white/10 dark:border-white/20' : 'border-b border-clawd-border'
+                isMe ? 'border-b border-white/10 dark:border-white/20' : 'border-b border-mission-control-border'
               }`}>
                 {message.subject}
               </div>
@@ -163,7 +163,7 @@ function ThreadMessage({
               <button
                 onClick={() => setExpanded(!expanded)}
                 className={`text-xs mt-3 flex items-center gap-1 transition-opacity ${
-                  isMe ? 'opacity-80 hover:opacity-100' : 'text-clawd-text-dim hover:text-clawd-text'
+                  isMe ? 'opacity-80 hover:opacity-100' : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {expanded ? (
@@ -181,7 +181,7 @@ function ThreadMessage({
             {/* Attachments indicator */}
             {message.has_attachment && (
               <div className={`flex items-center gap-1.5 mt-2 pt-2 text-xs ${
-                isMe ? 'border-t border-white/10 dark:border-white/20 opacity-90' : 'border-t border-clawd-border text-clawd-text-dim'
+                isMe ? 'border-t border-white/10 dark:border-white/20 opacity-90' : 'border-t border-mission-control-border text-mission-control-text-dim'
               }`}>
                 <Paperclip size={14} />
                 <span>Has attachment</span>
@@ -246,22 +246,22 @@ export default function ThreadView({
   const { email: myEmail, phone: myPhone } = useUserSettings();
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg">
+    <div className="flex flex-col h-full bg-mission-control-bg">
       {/* Thread header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface flex items-center justify-between">
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <MessageCircle size={16} className="text-clawd-accent flex-shrink-0" />
+            <MessageCircle size={16} className="text-mission-control-accent flex-shrink-0" />
             <h3 className="font-semibold text-sm truncate">
               {metadata?.subject || `Thread on ${metadata?.platform}`}
             </h3>
             {(metadata?.unread_count ?? 0) > 0 && (
-              <span className="bg-clawd-accent text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="bg-mission-control-accent text-white text-xs px-2 py-0.5 rounded-full">
                 {metadata?.unread_count} new
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
             <span>{metadata?.message_count} messages</span>
             {metadata?.participants && (
               <>
@@ -274,7 +274,7 @@ export default function ThreadView({
         {onClose && (
           <button
             onClick={onClose}
-            className="ml-2 px-3 py-1 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="ml-2 px-3 py-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Close
           </button>
@@ -284,9 +284,9 @@ export default function ThreadView({
       {/* Messages list */}
       <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="text-center text-clawd-text-dim py-8">Loading thread...</div>
+          <div className="text-center text-mission-control-text-dim py-8">Loading thread...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-clawd-text-dim py-8">No messages in this thread</div>
+          <div className="text-center text-mission-control-text-dim py-8">No messages in this thread</div>
         ) : (
           <>
             {messages.map((msg) => {
@@ -312,7 +312,7 @@ export default function ThreadView({
 
       {/* Reply input */}
       {onReply && (
-        <div className="p-4 border-t border-clawd-border bg-clawd-surface">
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
           <div className="flex gap-2">
             <textarea
               value={replyText}
@@ -323,18 +323,18 @@ export default function ThreadView({
                 }
               }}
               placeholder="Type your reply... (⌘↵ to send)"
-              className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               rows={3}
             />
             <button
               onClick={handleReply}
               disabled={!replyText.trim() || sending}
-              className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium self-end"
+              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium self-end"
             >
               {sending ? 'Sending...' : 'Send'}
             </button>
           </div>
-          <div className="text-xs text-clawd-text-dim mt-2">
+          <div className="text-xs text-mission-control-text-dim mt-2">
             Press ⌘+Enter to send
           </div>
         </div>

@@ -1,12 +1,11 @@
 {
-  "id": "froggo-finance",
+  "id": "finance",
   "name": "Finance",
   "version": "1.0.0",
   "description": "Multi-account financial management with AI-powered categorization, recurring detection, proactive insights, scenario projections, and XLSX export.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "DollarSign",
   "category": "finance",
-
   "credentials": [
     {
       "id": "solana_rpc_url",
@@ -16,14 +15,12 @@
       "type": "url"
     }
   ],
-
   "healthCheck": {
     "type": "url",
     "credentialId": "solana_rpc_url",
     "method": "POST",
     "successStatus": 200
   },
-
   "views": [
     {
       "id": "finance",
@@ -32,7 +29,6 @@
       "entrypoint": "./views/FinancePanel.tsx"
     }
   ],
-
   "ipcChannels": {
     "handle": [
       "finance:getTransactions",
@@ -69,15 +65,18 @@
       "finance:scenario:projectSimple"
     ]
   },
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
-    "ipc": ["financeAgent:*", "finance:*"],
-    "filesystem": ["$DATA_DIR/finance/"],
+    "ipc": [
+      "financeAgent:*",
+      "finance:*"
+    ],
+    "filesystem": [
+      "$DATA_DIR/finance/"
+    ],
     "network": false,
     "shell": false
   }

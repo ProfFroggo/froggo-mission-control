@@ -11,7 +11,7 @@ export async function GET(_request: NextRequest) {
       ORDER BY s.lastActivity DESC
     `).all();
 
-    return NextResponse.json(sessions);
+    return NextResponse.json({ success: true, sessions });
   } catch (error) {
     console.error('GET /api/chat/sessions error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

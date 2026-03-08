@@ -150,7 +150,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface">
+    <div className="flex flex-col h-full bg-mission-control-surface">
       <PromptDialog
         open={promptOpen}
         onClose={closePrompt}
@@ -158,9 +158,9 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         {...promptConfig}
       />
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border">
+      <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-clawd-text">Approval Queue</h3>
+          <h3 className="text-sm font-semibold text-mission-control-text">Approval Queue</h3>
           <span className="px-2 py-1 text-xs bg-warning-subtle text-warning rounded-full">
             {items.length} pending
           </span>
@@ -174,19 +174,19 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
             <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
-            <Clock className="w-12 h-12 text-clawd-text-dim mb-3" />
-            <p className="font-medium text-clawd-text">No items pending approval</p>
-            <p className="text-sm mt-1 text-clawd-text-dim">Items will appear here when agents propose content</p>
+          <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
+            <Clock className="w-12 h-12 text-mission-control-text-dim mb-3" />
+            <p className="font-medium text-mission-control-text">No items pending approval</p>
+            <p className="text-sm mt-1 text-mission-control-text-dim">Items will appear here when agents propose content</p>
           </div>
         ) : (
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4">
+              <div key={item.id} className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-clawd-text">{('title' in item ? item.title : item.id)}</h4>
-                    <p className="text-xs text-clawd-text-dim mt-1">
+                    <h4 className="text-sm font-semibold text-mission-control-text">{('title' in item ? item.title : item.id)}</h4>
+                    <p className="text-xs text-mission-control-text-dim mt-1">
                       Proposed by {item.proposed_by} • {new Date(item.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -232,13 +232,13 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                 
                 {/* Content preview */}
                 {item.itemType === 'draft' ? (
-                  <div className="text-sm text-clawd-text mb-3 space-y-2">
+                  <div className="text-sm text-mission-control-text mb-3 space-y-2">
                     {(() => {
                       try {
                         const parsed = JSON.parse((item as Draft).content);
                         return (parsed.tweets || []).slice(0, 2).map((tweet: string, idx: number) => (
-                          <div key={idx} className="p-2 bg-clawd-surface rounded border border-clawd-border">
-                            <span className="text-xs text-clawd-text-dim">Tweet {idx + 1}:</span>
+                          <div key={idx} className="p-2 bg-mission-control-surface rounded border border-mission-control-border">
+                            <span className="text-xs text-mission-control-text-dim">Tweet {idx + 1}:</span>
                             <p className="line-clamp-2">{tweet}</p>
                           </div>
                         ));
@@ -248,15 +248,15 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                     })()}
                   </div>
                 ) : (
-                  <p className="text-sm text-clawd-text mb-3 line-clamp-4">
+                  <p className="text-sm text-mission-control-text mb-3 line-clamp-4">
                     {'description' in item ? item.description : ''}
                   </p>
                 )}
                 
                 {/* Citations (research only) */}
                 {item.itemType === 'research' && 'citations' in item && item.citations && item.citations.length > 0 && (
-                  <div className="mb-3 pb-3 border-b border-clawd-border">
-                    <p className="text-xs font-medium text-clawd-text-dim mb-2">Citations:</p>
+                  <div className="mb-3 pb-3 border-b border-mission-control-border">
+                    <p className="text-xs font-medium text-mission-control-text-dim mb-2">Citations:</p>
                     <div className="space-y-1">
                       {item.citations.slice(0, 3).map((citation, idx) => (
                         <a
@@ -271,7 +271,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                         </a>
                       ))}
                       {item.citations.length > 3 && (
-                        <p className="text-xs text-clawd-text-dim">+{item.citations.length - 3} more</p>
+                        <p className="text-xs text-mission-control-text-dim">+{item.citations.length - 3} more</p>
                       )}
                     </div>
                   </div>

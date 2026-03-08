@@ -8,7 +8,7 @@
  * 
  * When Kevin pokes a task, this modal opens instead of posting to Discord.
  * Shows task context, agent activity, and allows task-scoped conversation.
- * Responses have Froggo personality - casual, direct, bit of humor.
+ * Responses have Mission Control personality - casual, direct, bit of humor.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -328,23 +328,23 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     switch (status) {
       case 'in-progress': return 'text-info';
       case 'review': return 'text-warning';
-      case 'blocked': return 'text-error';
+      case 'human-review': return 'text-error';
       case 'done': return 'text-success';
-      default: return 'text-clawd-text-muted';
+      default: return 'text-mission-control-text-muted';
     }
   };
 
   return (
     <BaseModal isOpen={true} onClose={onClose} size="lg" className="flex flex-col">
       {/* Header with task context */}
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border bg-clawd-bg-alt/50">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border bg-mission-control-bg-alt/50">
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-2xl">🫵</span>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-clawd-text truncate">
+            <h2 className="text-base font-semibold text-mission-control-text truncate">
               Poke: {taskTitle}
             </h2>
-            <div className="flex items-center gap-3 text-xs text-clawd-text-muted">
+            <div className="flex items-center gap-3 text-xs text-mission-control-text-muted">
               {task && (
                 <>
                   <span className={`flex items-center gap-1 ${getStatusColor(task.status)}`}>
@@ -370,7 +370,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-clawd-border/50 text-clawd-text-muted hover:text-clawd-text transition-colors"
+          className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-muted hover:text-mission-control-text transition-colors"
         >
           <X size={18} />
         </button>
@@ -380,7 +380,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
         {/* History loading state */}
         {!historyLoaded && (
-          <div className="flex items-center justify-center h-full text-clawd-text-muted text-sm">
+          <div className="flex items-center justify-center h-full text-mission-control-text-muted text-sm">
             <Loader2 size={16} className="animate-spin mr-2" />
             Loading...
           </div>
@@ -393,10 +393,10 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                 msg.role === 'user'
-                  ? 'bg-clawd-accent/20 text-clawd-accent ml-auto rounded-br-md'
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent ml-auto rounded-br-md'
                   : msg.role === 'system'
-                  ? 'bg-clawd-border/30 text-clawd-text-muted italic text-xs'
-                  : 'bg-clawd-bg-alt text-clawd-text rounded-bl-md'
+                  ? 'bg-mission-control-border/30 text-mission-control-text-muted italic text-xs'
+                  : 'bg-mission-control-bg-alt text-mission-control-text rounded-bl-md'
               }`}
             >
               {msg.role === 'assistant' ? (
@@ -411,7 +411,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {/* Streaming content */}
         {streamingContent && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-clawd-bg-alt text-clawd-text">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-bg-alt text-mission-control-text">
               <MarkdownMessage content={streamingContent} />
             </div>
           </div>
@@ -420,8 +420,8 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         {/* Loading indicator */}
         {(loading || sending) && !streamingContent && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-clawd-bg-alt">
-              <Loader2 size={16} className="animate-spin text-clawd-text-muted" />
+            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-bg-alt">
+              <Loader2 size={16} className="animate-spin text-mission-control-text-muted" />
             </div>
           </div>
         )}
@@ -430,7 +430,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       </div>
 
       {/* Input area */}
-      <div className="p-3 border-t border-clawd-border bg-clawd-bg">
+      <div className="p-3 border-t border-mission-control-border bg-mission-control-bg">
         <div className="flex items-center gap-2">
           <input
             ref={inputRef}
@@ -440,17 +440,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-clawd-bg-alt border border-clawd-border text-clawd-text text-sm focus:outline-none focus:border-clawd-accent/50 disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-mission-control-bg-alt border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || sending || loading}
-            className="p-2.5 rounded-xl bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2.5 rounded-xl bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Send size={16} />
           </button>
         </div>
-        <p className="text-[10px] text-clawd-text-muted/40 mt-1.5 text-center">
+        <p className="text-[10px] text-mission-control-text-muted/40 mt-1.5 text-center">
           Task-scoped conversation • Responses have personality 🐸
         </p>
       </div>

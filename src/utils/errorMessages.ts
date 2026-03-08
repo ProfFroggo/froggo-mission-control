@@ -209,12 +209,12 @@ export function getErrorInfo(error: unknown, context?: ErrorContext): ErrorInfo 
   if (err.message?.includes('IPC') || err.message?.includes('ipcRenderer') || err.message?.includes('main process')) {
     return {
       title: 'Communication Error',
-      message: `Unable to communicate with the application. Try restarting Froggo.`,
+      message: `Unable to communicate with the application. Try restarting Mission Control.`,
       recoverable: true,
       severity: 'error',
       code: 'IPC_ERROR',
       recovery: [
-        { label: 'Restart Froggo', action: 'restart' },
+        { label: 'Restart Mission Control', action: 'restart' },
         { label: 'Refresh Page', action: 'refresh' },
       ],
     };

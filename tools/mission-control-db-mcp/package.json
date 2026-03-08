@@ -1,0 +1,19 @@
+{
+  "name": "mission-control-db-mcp",
+  "version": "1.0.0",
+  "description": "Mission Control database MCP server for agent tool access",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "better-sqlite3": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/better-sqlite3": "latest",
+    "@types/node": "latest"
+  }
+}

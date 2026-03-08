@@ -29,7 +29,7 @@ function profLabel(p: number): string {
 }
 
 const AGENT_EMOJIS: Record<string, string> = {
-  froggo: '🐸', coder: '💻', researcher: '🔬', writer: '✍️', chief: '👔', hr: '🎓',
+  'mission-control': '🐸', coder: '💻', researcher: '🔬', writer: '✍️', chief: '👔', hr: '🎓',
 };
 
 export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
@@ -93,20 +93,20 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         tabIndex={0}
         aria-label="Close agent skills"
       />
-      <div className={`relative w-full max-w-2xl bg-clawd-bg border border-clawd-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
+        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <Award size={20} className="text-teal-400" />
-          <h2 className="font-bold text-clawd-text flex-1">Agent Skills & Proficiency</h2>
+          <h2 className="font-bold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
           <select
             value={selectedAgent}
             onChange={e => setSelectedAgent(e.target.value)}
-            className="text-xs bg-clawd-surface border border-clawd-border rounded-lg px-2 py-1 text-clawd-text"
+            className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text"
           >
             <option value="all">All Agents</option>
             {agents.map(a => <option key={a} value={a}>{AGENT_EMOJIS[a] || '🤖'} {a}</option>)}
           </select>
-          <button onClick={handleClose} className="p-1 text-clawd-text-dim hover:text-clawd-text rounded-lg hover:bg-clawd-surface">
+          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface">
             <X size={18} />
           </button>
         </div>
@@ -114,11 +114,11 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center text-clawd-text-dim py-8">Loading...</div>
+            <div className="text-center text-mission-control-text-dim py-8">Loading...</div>
           ) : Object.keys(grouped).length === 0 ? (
             <div className="text-center py-12">
-              <Award size={32} className="mx-auto text-clawd-text-dim mb-3 opacity-40" />
-              <p className="text-clawd-text-dim text-sm">No skills tracked yet.</p>
+              <Award size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
+              <p className="text-mission-control-text-dim text-sm">No skills tracked yet.</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -126,8 +126,8 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
                 <div key={agentId}>
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-lg">{AGENT_EMOJIS[agentId] || '🤖'}</span>
-                    <span className="font-semibold text-clawd-text capitalize">{agentId}</span>
-                    <span className="text-xs text-clawd-text-dim">
+                    <span className="font-semibold text-mission-control-text capitalize">{agentId}</span>
+                    <span className="text-xs text-mission-control-text-dim">
                       · Avg: {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}
                     </span>
                   </div>

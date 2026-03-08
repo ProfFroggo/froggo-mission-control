@@ -110,8 +110,8 @@ export function XAnalyticsView() {
       value: summary?.followers ?? 0,
       icon: Users,
       format: (v: number) => v.toLocaleString(),
-      color: 'text-clawd-accent',
-      bg: 'bg-clawd-accent/10',
+      color: 'text-mission-control-accent',
+      bg: 'bg-mission-control-accent/10',
     },
     {
       label: 'Engagement Rate',
@@ -140,30 +140,30 @@ export function XAnalyticsView() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-clawd-bg">
+    <div className="flex flex-col h-full overflow-y-auto bg-mission-control-bg">
       <div className="max-w-5xl mx-auto p-6 space-y-6 w-full">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/10 rounded-xl">
-              <BarChart2 size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/10 rounded-xl">
+              <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-clawd-text">X Analytics</h1>
-              <p className="text-sm text-clawd-text-dim">Performance overview for your social media account</p>
+              <h1 className="text-xl font-semibold text-mission-control-text">X Analytics</h1>
+              <p className="text-sm text-mission-control-text-dim">Performance overview for your social media account</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={loadData}
-              className="p-2 rounded-lg border border-clawd-border hover:bg-clawd-surface transition-colors text-clawd-text-dim hover:text-clawd-text"
+              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim hover:text-mission-control-text"
               title="Refresh data"
             >
               <RefreshCw size={16} />
             </button>
             <button
               onClick={handleDownloadReport}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors text-sm font-medium"
             >
               <Download size={16} />
               Download Report
@@ -173,7 +173,7 @@ export function XAnalyticsView() {
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-clawd-accent" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent" />
           </div>
         ) : (
           <>
@@ -192,29 +192,29 @@ export function XAnalyticsView() {
                 return (
                   <div
                     key={card.label}
-                    className="bg-clawd-surface rounded-xl border border-clawd-border p-5"
+                    className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5"
                   >
                     <div className={`inline-flex p-2 rounded-lg ${card.bg} mb-3`}>
                       <Icon size={20} className={card.color} />
                     </div>
-                    <div className="text-2xl font-bold text-clawd-text mb-1">
+                    <div className="text-2xl font-bold text-mission-control-text mb-1">
                       {card.format(card.value)}
                     </div>
-                    <div className="text-sm text-clawd-text-dim">{card.label}</div>
+                    <div className="text-sm text-mission-control-text-dim">{card.label}</div>
                   </div>
                 );
               })}
             </div>
 
             {/* Top Content */}
-            <div className="bg-clawd-surface rounded-xl border border-clawd-border">
-              <div className="p-5 border-b border-clawd-border">
-                <h2 className="font-semibold text-clawd-text">Top Content</h2>
-                <p className="text-sm text-clawd-text-dim mt-0.5">Recent posted and approved tweets</p>
+            <div className="bg-mission-control-surface rounded-xl border border-mission-control-border">
+              <div className="p-5 border-b border-mission-control-border">
+                <h2 className="text-sm font-semibold text-mission-control-text">Top Content</h2>
+                <p className="text-sm text-mission-control-text-dim mt-0.5">Recent posted and approved tweets</p>
               </div>
-              <div className="divide-y divide-clawd-border">
+              <div className="divide-y divide-mission-control-border">
                 {topContent.length === 0 ? (
-                  <div className="p-8 text-center text-clawd-text-dim">
+                  <div className="p-8 text-center text-mission-control-text-dim">
                     <BarChart2 size={32} className="mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No published content yet</p>
                     <p className="text-xs mt-1">Content will appear here once tweets are posted</p>
@@ -223,10 +223,10 @@ export function XAnalyticsView() {
                   topContent.map((post) => (
                     <div key={post.id} className="p-4 flex items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-clawd-text line-clamp-2">
+                        <p className="text-sm text-mission-control-text line-clamp-2">
                           {post.content.slice(0, 120)}{post.content.length > 120 ? '...' : ''}
                         </p>
-                        <p className="text-xs text-clawd-text-dim mt-1">
+                        <p className="text-xs text-mission-control-text-dim mt-1">
                           {new Date(post.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
@@ -244,38 +244,38 @@ export function XAnalyticsView() {
             </div>
 
             {/* Competitor Insights */}
-            <div className="bg-clawd-surface rounded-xl border border-clawd-border">
-              <div className="p-5 border-b border-clawd-border flex items-center gap-2">
-                <Users size={18} className="text-clawd-text-dim" />
+            <div className="bg-mission-control-surface rounded-xl border border-mission-control-border">
+              <div className="p-5 border-b border-mission-control-border flex items-center gap-2">
+                <Users size={18} className="text-mission-control-text-dim" />
                 <div>
-                  <h2 className="font-semibold text-clawd-text">Competitor Insights <span className="text-xs font-normal text-clawd-text-dim">(Sample data)</span></h2>
-                  <p className="text-sm text-clawd-text-dim mt-0.5">Benchmarking against similar accounts</p>
+                  <h2 className="text-sm font-semibold text-mission-control-text">Competitor Insights <span className="text-xs font-normal text-mission-control-text-dim">(Sample data)</span></h2>
+                  <p className="text-sm text-mission-control-text-dim mt-0.5">Benchmarking against similar accounts</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-clawd-border">
-                      <th className="text-left p-4 text-xs uppercase tracking-wide text-clawd-text-dim font-medium">Account</th>
-                      <th className="text-left p-4 text-xs uppercase tracking-wide text-clawd-text-dim font-medium">Followers</th>
-                      <th className="text-left p-4 text-xs uppercase tracking-wide text-clawd-text-dim font-medium">Avg. Engagement</th>
-                      <th className="text-left p-4 text-xs uppercase tracking-wide text-clawd-text-dim font-medium">Post Frequency</th>
+                    <tr className="border-b border-mission-control-border">
+                      <th className="text-left p-4 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">Account</th>
+                      <th className="text-left p-4 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">Followers</th>
+                      <th className="text-left p-4 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">Avg. Engagement</th>
+                      <th className="text-left p-4 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">Post Frequency</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-clawd-border">
+                  <tbody className="divide-y divide-mission-control-border">
                     {MOCK_COMPETITORS.map((c) => (
-                      <tr key={c.account} className="hover:bg-clawd-bg/50 transition-colors">
-                        <td className="p-4 text-clawd-text font-medium">{c.account}</td>
-                        <td className="p-4 text-clawd-text-dim">{c.followers}</td>
-                        <td className="p-4 text-clawd-text-dim">{c.engagement}</td>
-                        <td className="p-4 text-clawd-text-dim">{c.frequency}</td>
+                      <tr key={c.account} className="hover:bg-mission-control-bg/50 transition-colors">
+                        <td className="p-4 text-mission-control-text font-medium">{c.account}</td>
+                        <td className="p-4 text-mission-control-text-dim">{c.followers}</td>
+                        <td className="p-4 text-mission-control-text-dim">{c.engagement}</td>
+                        <td className="p-4 text-mission-control-text-dim">{c.frequency}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <div className="px-5 pb-4 pt-2">
-                <p className="text-xs text-clawd-text-dim italic">
+                <p className="text-xs text-mission-control-text-dim italic">
                   Connect X API for live competitor data. Currently showing placeholder benchmarks.
                 </p>
               </div>

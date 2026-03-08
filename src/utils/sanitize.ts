@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
  * Uses DOMPurify for robust XSS protection
  * 
  * SECURITY AUDIT: 2026-03-03 - All configurations reviewed and approved
- * See: /Users/worker/froggo-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
+ * See: /Users/worker/mission-control-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
  */
 
 // Configure DOMPurify with safe defaults
@@ -90,7 +90,7 @@ export function sanitizeSearchSnippet(snippet: string): string {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/&lt;mark&gt;/g, '<mark class="bg-clawd-accent/30 text-clawd-accent font-medium">')
+      .replace(/&lt;mark&gt;/g, '<mark class="bg-mission-control-accent/30 text-mission-control-accent font-medium">')
       .replace(/&lt;\/mark&gt;/g, '</mark>');
   }
   return DOMPurify.sanitize(snippet, searchSnippetConfig);

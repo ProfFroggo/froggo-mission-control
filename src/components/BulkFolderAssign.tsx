@@ -78,23 +78,23 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
   };
 
   return (
-    <div className="w-full max-w-md bg-clawd-surface rounded-lg shadow-xl overflow-hidden">
+    <div className="w-full max-w-md bg-mission-control-surface rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
-          <FolderPlus size={20} className="text-clawd-accent" />
+          <FolderPlus size={20} className="text-mission-control-accent" />
           <h3 className="font-semibold">Bulk Folder Assignment</h3>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-clawd-border rounded transition-colors"
+          className="p-1 hover:bg-mission-control-border rounded transition-colors"
         >
           <X size={16} />
         </button>
       </div>
 
       {/* Info */}
-      <div className="p-4 bg-info-subtle border-b border-clawd-border">
+      <div className="p-4 bg-info-subtle border-b border-mission-control-border">
         <p className="text-sm text-info">
           Assigning {sessionKeys.length} conversation{sessionKeys.length !== 1 ? 's' : ''} to selected folders
         </p>
@@ -104,10 +104,10 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       <div className="p-4 max-h-96 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 size={24} className="animate-spin text-clawd-text-dim" />
+            <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
           </div>
         ) : folders.length === 0 ? (
-          <div className="text-center py-8 text-clawd-text-dim">
+          <div className="text-center py-8 text-mission-control-text-dim">
             <p className="mb-2">No folders available</p>
             <p className="text-xs">Create folders first in Folder Manager</p>
           </div>
@@ -121,15 +121,15 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
                   onClick={() => toggleFolder(folder.id)}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                     isSelected
-                      ? 'border-clawd-accent bg-clawd-accent/10'
-                      : 'border-clawd-border hover:border-clawd-accent/50 hover:bg-clawd-bg'
+                      ? 'border-mission-control-accent bg-mission-control-accent/10'
+                      : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-bg'
                   }`}
                 >
                   <div className="flex-shrink-0">
                     {isSelected ? (
-                      <CheckSquare size={16} className="text-clawd-accent" />
+                      <CheckSquare size={16} className="text-mission-control-accent" />
                     ) : (
-                      <Square size={16} className="text-clawd-text-dim" />
+                      <Square size={16} className="text-mission-control-text-dim" />
                     )}
                   </div>
                   <div
@@ -141,7 +141,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
                   <div className="flex-1 text-left min-w-0">
                     <div className="font-medium truncate">{folder.name}</div>
                     {folder.description && (
-                      <div className="text-xs text-clawd-text-dim truncate">
+                      <div className="text-xs text-mission-control-text-dim truncate">
                         {folder.description}
                       </div>
                     )}
@@ -154,14 +154,14 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-3 p-4 border-t border-clawd-border bg-clawd-bg">
-        <div className="text-sm text-clawd-text-dim">
+      <div className="flex items-center justify-between gap-3 p-4 border-t border-mission-control-border bg-mission-control-bg">
+        <div className="text-sm text-mission-control-text-dim">
           {selectedFolders.size} folder{selectedFolders.size !== 1 ? 's' : ''} selected
         </div>
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+            className="px-4 py-2 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             disabled={assigning}
           >
             Cancel
@@ -169,7 +169,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
           <button
             onClick={handleAssign}
             disabled={selectedFolders.size === 0 || assigning}
-            className="px-4 py-2 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {assigning ? (
               <>

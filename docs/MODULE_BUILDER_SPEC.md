@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-A new dashboard page where users build module specifications through a conversational AI interview. Left panel: chat interface. Right panel: live spec preview/wireframe. When the conversation completes, the system auto-generates all froggo-db tasks needed to build the module.
+A new dashboard page where users build module specifications through a conversational AI interview. Left panel: chat interface. Right panel: live spec preview/wireframe. When the conversation completes, the system auto-generates all mission-control-db tasks needed to build the module.
 
 ## 2. UI Layout
 
@@ -161,14 +161,14 @@ src/components/ModuleBuilder/
 ├── SpecPreviewPanel.tsx         # Right panel — live preview
 ├── useModuleSpec.ts             # Hook managing ModuleSpec state
 ├── useConversationFlow.ts       # Hook managing interview sections/questions
-├── TaskGenerator.ts             # Generates froggo-db tasks from spec
+├── TaskGenerator.ts             # Generates mission-control-db tasks from spec
 ├── types.ts                     # ModuleSpec, ViewSpec, etc.
 └── questionBank.ts              # All questions organized by section
 ```
 
 ### 6.2 AI Integration
 
-- Uses OpenClaw gateway to send conversation messages
+- Uses Claude CLI SSE stream route at /api/agents/[id]/stream to send conversation messages
 - System prompt instructs AI to follow the questionnaire flow
 - AI extracts structured data from user responses
 - Parsed data updates ModuleSpec in real-time
@@ -178,21 +178,30 @@ src/components/ModuleBuilder/
 ```typescript
 // TaskGenerator.ts
 async function generateTasks(spec: ModuleSpec): Promise<void> {
-  // Uses electron IPC to call froggo-db commands
-  const mainTaskId = await ipc.invoke('froggo-db:task-add', {
-    title: `Build Module: ${spec.name}`,
-    description: buildDescription(spec),
-    assign: spec.type === 'service' ? 'senior-coder' : 'coder',
-    priority: estimatePriority(spec),
-    deliverable: `src/modules/${spec.id}/`
+  // Uses /api/tasks REST endpoint to create tasks in mission-control.db
+  const res = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: `Build Module: ${spec.name}`,
+      description: buildDescription(spec),
+      assign: spec.type === 'service' ? 'senior-coder' : 'coder',
+      priority: estimatePriority(spec),
+      deliverable: `src/modules/${spec.id}/`
+    })
   });
-  
+  const { id: mainTaskId } = await res.json();
+
   // Generate subtasks based on spec
   for (const subtask of buildSubtasks(spec)) {
-    await ipc.invoke('froggo-db:subtask-add', {
-      taskId: mainTaskId,
-      title: subtask.title,
-      description: subtask.description
+    await fetch('/api/tasks/subtasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskId: mainTaskId,
+        title: subtask.title,
+        description: subtask.description
+      })
     });
   }
 }
@@ -212,7 +221,7 @@ Add to `CoreViews.tsx`:
 | 1 | Types, question bank, conversation flow hook | Chief/Coder | 4h |
 | 2 | ConversationPanel UI | Coder | 6h |
 | 3 | SpecPreviewPanel UI | Coder | 6h |
-| 4 | AI integration (gateway conversation) | Senior Coder | 8h |
+| 4 | AI integration (Claude CLI SSE stream via /api/agents/[id]/stream) | Senior Coder | 8h |
 | 5 | TaskGenerator + IPC bridge | Coder | 4h |
 | 6 | ModuleBuilderPage assembly + CoreViews registration | Coder | 2h |
 | 7 | Testing + polish | Coder | 4h |

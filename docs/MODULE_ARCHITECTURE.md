@@ -1,10 +1,10 @@
-# MODULE_ARCHITECTURE.md — Froggo Dashboard Modular System
+# MODULE_ARCHITECTURE.md — Mission Control Dashboard Modular System
 
 > **Canonical specification** for the modular dashboard architecture and marketplace integration.
 > This document merges and supersedes:
 > - `archives/.../modular-dashboard-architecture-report.md` (Senior Coder, 2026-02-16)
 > - `agent-chief/module-system-design.md` (Chief, 2026-02-10)
-> - `agent-froggo/data/marketplace-research/INDEX.md` (Researcher, 2026-01-30)
+> - `agent-mission-control/data/marketplace-research/INDEX.md` (Researcher, 2026-01-30)
 >
 > **Author:** Chief · **Date:** 2026-02-20 · **Status:** CANONICAL v2
 
@@ -12,7 +12,7 @@
 
 ## 1. Problem Statement
 
-The Froggo Dashboard has grown organically to 180+ components, a 10K-line `electron/main.ts` with 308 IPC handlers, and tightly coupled feature domains. This makes it:
+The Mission Control Dashboard has grown organically to 180+ components, a 10K-line `electron/main.ts` with 308 IPC handlers, and tightly coupled feature domains. This makes it:
 
 - **Hard to maintain** — changes to one feature risk breaking others
 - **Hard to extend** — adding a new "module" means touching 5+ files
@@ -39,7 +39,7 @@ The Froggo Dashboard has grown organically to 180+ components, a 10K-line `elect
 | **Shopify** | App config | App API | Sandboxed iframe | ✅ | Commercial marketplace |
 | **Raycast** | manifest.json | ~/.raycast/ | Sandboxed | ✅ | Store UX |
 
-**Best fit for Froggo:** Obsidian-style (single-process, manifest.json, user-installed) with VS Code–style contribution points for navigation, commands, and settings.
+**Best fit for Mission Control:** Obsidian-style (single-process, manifest.json, user-installed) with VS Code–style contribution points for navigation, commands, and settings.
 
 **Market verdict:** ✅ HIGHLY FEASIBLE (9/10 score from feasibility study). No technical blockers. All critical components have proven patterns.
 
@@ -78,7 +78,7 @@ The Froggo Dashboard has grown organically to 180+ components, a 10K-line `elect
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Froggo Dashboard                      │
+│                    Mission Control Dashboard                      │
 │                                                          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
 │  │  Module   │  │  Module   │  │  Module   │  ...        │
@@ -111,11 +111,11 @@ The canonical manifest schema, combining all three design inputs:
 
 ```json
 {
-  "id": "froggo-finance",
+  "id": "mission-control-finance",
   "name": "Finance",
   "version": "1.0.0",
   "description": "Financial management, budgets, and Solana wallet integration",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "license": "MIT",
   "icon": "DollarSign",
   "category": "productivity",
@@ -183,8 +183,8 @@ The canonical manifest schema, combining all three design inputs:
   },
 
   "metadata": {
-    "homepage": "https://froggo.app/modules/finance",
-    "repository": "https://github.com/ProfFroggo/froggo-finance",
+    "homepage": "https://mission-control.app/modules/finance",
+    "repository": "https://github.com/ProfMission Control/mission-control-finance",
     "category": "finance",
     "tags": ["finance", "wallet", "solana", "budget"]
   }
@@ -340,10 +340,10 @@ Examples:
 
 ### 10.1 Architecture
 
-Standalone Next.js static site at `~/froggo-marketplace/`:
+Standalone Next.js static site at `~/mission-control-marketplace/`:
 
 ```
-froggo-marketplace/
+mission-control-marketplace/
 ├── src/app/
 │   ├── page.tsx                  # Browse modules
 │   └── module/[id]/page.tsx      # Module detail
@@ -353,7 +353,7 @@ froggo-marketplace/
 │   └── manifest-schema.ts       # Shared validation
 └── public/modules/
     ├── registry.json             # All published manifests
-    └── froggo-finance/
+    └── mission-control-finance/
         └── module.json           # Individual manifest
 ```
 
@@ -364,16 +364,16 @@ froggo-marketplace/
   "version": 1,
   "modules": [
     {
-      "id": "froggo-finance",
+      "id": "mission-control-finance",
       "name": "Finance",
       "version": "1.0.0",
-      "author": "Froggo Team",
+      "author": "Mission Control Team",
       "description": "...",
       "category": "finance",
       "downloads": 0,
       "verified": true,
-      "manifestUrl": "/modules/froggo-finance/module.json",
-      "packageUrl": "/modules/froggo-finance/froggo-finance-1.0.0.tar.gz"
+      "manifestUrl": "/modules/mission-control-finance/module.json",
+      "packageUrl": "/modules/mission-control-finance/mission-control-finance-1.0.0.tar.gz"
     }
   ]
 }
@@ -385,7 +385,7 @@ froggo-marketplace/
 2. Dashboard downloads module package
 3. ModuleLoader validates manifest + permissions
 4. User approves permissions
-5. Module extracted to `~/.froggo/modules/<id>/`
+5. Module extracted to `~/.mission-control/modules/<id>/`
 6. Dashboard restarts or hot-reloads module
 7. Module appears in sidebar automatically (via `syncWithViewRegistry`)
 
@@ -455,7 +455,7 @@ Revenue sources: Platform commission (30%), premium features, developer tools.
 
 1. **Hot reload vs restart?** — Start with restart. Hot reload is complex.
 2. **Module store isolation?** — Zustand allows independent stores. Prefer separate per module.
-3. **Shared component library?** — Export as `@froggo/ui`. Modules import shared components.
+3. **Shared component library?** — Export as `@mission-control/ui`. Modules import shared components.
 4. **Electron handler loading?** — Static import now, dynamic import later.
 5. **Versioning strategy?** — SemVer for modules, core version compatibility in manifest.
 6. **npm dependencies in modules?** — Bundle at build time. No runtime npm in modules.
@@ -482,7 +482,7 @@ Revenue sources: Platform commission (30%), premium features, developer tools.
 | ModuleContext | ✅ Implemented | `src/core/ModuleContext.tsx` | React hooks |
 | Handler extraction | 🔄 Partial | `electron/handlers/` | 2 of ~12 done |
 | REFACTORING-PLAN | 📋 Exists | `electron/REFACTORING-PLAN.md` | Phase 1 complete |
-| Marketplace scaffold | ✅ Created | `~/froggo-marketplace/` | Next.js static site |
+| Marketplace scaffold | ✅ Created | `~/mission-control-marketplace/` | Next.js static site |
 
 ## Appendix B: Source Document Mapping
 

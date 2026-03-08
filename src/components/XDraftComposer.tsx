@@ -175,7 +175,7 @@ export default function XDraftComposer() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-clawd-bg">
+      <div className="flex items-center justify-center h-full bg-mission-control-bg">
         <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -184,22 +184,22 @@ export default function XDraftComposer() {
   const selectedPlan = contentPlans.find(p => p.id === selectedPlanId);
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg p-6">
+    <div className="flex flex-col h-full bg-mission-control-bg p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-info" />
-            <h3 className="text-lg font-semibold text-clawd-text">Create Draft</h3>
+            <h3 className="text-lg font-semibold text-mission-control-text">Create Draft</h3>
           </div>
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-2 px-3 py-1 bg-review hover:bg-review/80 text-clawd-text text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 bg-review hover:bg-review/80 text-mission-control-text text-sm rounded-lg transition-colors"
             >
               <Eye className="w-4 h-4" />
               {showPreview ? 'Hide' : 'Show'} Preview
             </button>
         </div>
-        <p className="text-sm text-clawd-text-dim">
+        <p className="text-sm text-mission-control-text-dim">
           Turn approved content plan into final draft with A/B versions.
         </p>
       </div>
@@ -209,14 +209,14 @@ export default function XDraftComposer() {
             {/* Plan Selector (optional) */}
             {contentPlans.length > 0 && (
             <div>
-              <label htmlFor="content-plan" className="block text-sm font-medium text-clawd-text mb-2">
-                Content Plan <span className="text-xs text-clawd-text-dim">(optional)</span>
+              <label htmlFor="content-plan" className="block text-sm font-medium text-mission-control-text mb-2">
+                Content Plan <span className="text-xs text-mission-control-text-dim">(optional)</span>
               </label>
               <select
                 id="content-plan"
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full bg-mission-control-bg-alt text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                 disabled={submitting}
               >
                 <option value="">Select a content plan...</option>
@@ -241,7 +241,7 @@ export default function XDraftComposer() {
 
             {/* Version Selector */}
               <div>
-                <span className="block text-sm font-medium text-clawd-text mb-2">
+                <span className="block text-sm font-medium text-mission-control-text mb-2">
                   Version <span className="text-error">*</span>
                 </span>
                 <div className="flex gap-2" role="radiogroup" aria-label="Version selection">
@@ -252,8 +252,8 @@ export default function XDraftComposer() {
                       aria-pressed={version === v}
                       className={`px-6 py-2 rounded-lg border-2 transition-colors ${
                         version === v
-                          ? 'border-info bg-info/20 text-clawd-text'
-                          : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
+                          ? 'border-info bg-info/20 text-mission-control-text'
+                          : 'border-mission-control-border bg-mission-control-bg-alt text-mission-control-text-dim hover:border-mission-control-border/80'
                       }`}
                       disabled={submitting}
                     >
@@ -266,7 +266,7 @@ export default function XDraftComposer() {
             {/* Tweet Editor */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label htmlFor="tweet-content" className="text-sm font-medium text-clawd-text">
+                  <label htmlFor="tweet-content" className="text-sm font-medium text-mission-control-text">
                     Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (
@@ -293,15 +293,15 @@ export default function XDraftComposer() {
                               placeholder={`Tweet ${index + 1}/${tweets.length}...`}
                               aria-label={`Tweet ${index + 1} content`}
                               rows={3}
-                              className={`w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
+                              className={`w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
                                 isOverLimit(tweet)
                                   ? 'border-error focus:ring-error'
-                                  : 'border-clawd-border focus:ring-info'
+                                  : 'border-mission-control-border focus:ring-info'
                               }`}
                               disabled={submitting}
                             />
                             <div className={`absolute bottom-2 right-2 text-xs font-mono ${
-                              isOverLimit(tweet) ? 'text-error' : 'text-clawd-text-dim'
+                              isOverLimit(tweet) ? 'text-error' : 'text-mission-control-text-dim'
                             }`}>
                               {getCharCount(tweet)}/{TWEET_CHAR_LIMIT}
                             </div>
@@ -324,21 +324,21 @@ export default function XDraftComposer() {
 
             {/* Preview */}
             {showPreview && (
-              <div className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-clawd-text mb-3">Preview (X Style)</h4>
+              <div className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-mission-control-text mb-3">Preview (X Style)</h4>
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
-                    <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-clawd-bg-alt rounded-lg p-4 border border-clawd-border">
+                    <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-mission-control-bg-alt rounded-lg p-4 border border-mission-control-border">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-clawd-accent rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-clawd-text font-semibold">K</span>
+                        <div className="w-10 h-10 bg-mission-control-accent rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-mission-control-text font-semibold">K</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-clawd-text">Your Name</span>
-                            <span className="text-clawd-text-dim text-sm">@you • now</span>
+                            <span className="font-semibold text-mission-control-text">Your Name</span>
+                            <span className="text-mission-control-text-dim text-sm">@you • now</span>
                           </div>
-                          <p className="text-clawd-text whitespace-pre-wrap break-words">{tweet}</p>
+                          <p className="text-mission-control-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
                             <div className="mt-2 text-info text-sm">
                               Show this thread
@@ -363,21 +363,21 @@ export default function XDraftComposer() {
             </div>
 
           {/* Schedule Button */}
-          <div className="mt-6 pt-6 border-t border-clawd-border">
+          <div className="mt-6 pt-6 border-t border-mission-control-border">
             <div className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="block text-sm text-clawd-text-dim mb-2">Schedule for later</label>
+                <label className="block text-sm text-mission-control-text-dim mb-2">Schedule for later</label>
                 <input
                   type="datetime-local"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
-                  className="w-full px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-clawd-text"
+                  className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text"
                 />
               </div>
               <button
                 onClick={handleSchedule}
                 disabled={scheduling || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-                className="px-6 py-2 bg-clawd-accent hover:bg-clawd-accent/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+                className="px-6 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
               >
                 {scheduling ? 'Scheduling...' : 'Schedule'}
               </button>
@@ -385,15 +385,15 @@ export default function XDraftComposer() {
           </div>
 
           {/* Submit Button */}
-          <div className="mt-4 pt-4 border-t border-clawd-border">
+          <div className="mt-4 pt-4 border-t border-mission-control-border">
             <button
               onClick={handleSubmit}
               disabled={submitting || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-mission-control-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-clawd-text border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-mission-control-text border-t-transparent rounded-full animate-spin" />
                   Submitting...
                 </>
               ) : (

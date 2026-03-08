@@ -73,7 +73,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
       case 'needs-reauth':
         return 'text-warning';
       default:
-        return 'text-clawd-text-dim';
+        return 'text-mission-control-text-dim';
     }
   };
 
@@ -121,12 +121,12 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
           <div>
             <h2 className="text-xl font-semibold">{account.email}</h2>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-clawd-text-dim capitalize">{account.provider}</span>
-              <span className="text-clawd-text-dim">•</span>
+              <span className="text-sm text-mission-control-text-dim capitalize">{account.provider}</span>
+              <span className="text-mission-control-text-dim">•</span>
               <span className={`text-sm ${getStatusColor()}`}>
                 {account.status === 'connected' ? 'Connected' : 
                  account.status === 'error' ? 'Error' :
@@ -136,7 +136,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             aria-label="Close modal"
           >
             <X size={16} />
@@ -144,15 +144,15 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 border-b border-clawd-border">
+        <div className="flex gap-1 px-6 pt-4 border-b border-mission-control-border">
           {(['overview', 'permissions', 'security'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 border-b-2 transition-colors capitalize ${
                 activeTab === tab
-                  ? 'border-clawd-accent text-clawd-accent'
-                  : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {tab === 'overview' && '📊'}
@@ -171,33 +171,33 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             <div className="space-y-6">
               {/* Rate Limits */}
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Rate Limits & Usage</h3>
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Rate Limits & Usage</h3>
                 <div className="space-y-2 text-sm">
                   {account.dataTypes.includes('email' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                      <span className="text-clawd-text-dim">Email Sending</span>
+                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                      <span className="text-mission-control-text-dim">Email Sending</span>
                       <span className="font-medium">
                         {account.metadata?.emailQuota || '500'} / day
-                        <span className="text-xs text-clawd-text-dim ml-2">
+                        <span className="text-xs text-mission-control-text-dim ml-2">
                           ({account.metadata?.emailUsed || 0} used)
                         </span>
                       </span>
                     </div>
                   )}
                   {account.dataTypes.includes('calendar' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                      <span className="text-clawd-text-dim">Calendar Events</span>
+                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                      <span className="text-mission-control-text-dim">Calendar Events</span>
                       <span className="font-medium">
                         {account.metadata?.calendarQuota || '10,000'} / day
-                        <span className="text-xs text-clawd-text-dim ml-2">
+                        <span className="text-xs text-mission-control-text-dim ml-2">
                           ({account.metadata?.calendarUsed || 0} used)
                         </span>
                       </span>
                     </div>
                   )}
                   {account.dataTypes.includes('drive' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                      <span className="text-clawd-text-dim">Drive Storage</span>
+                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                      <span className="text-mission-control-text-dim">Drive Storage</span>
                       <span className="font-medium">
                         {account.metadata?.driveUsed || '2.5'} GB / {account.metadata?.driveQuota || '15'} GB
                       </span>
@@ -206,29 +206,29 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                   {(!account.dataTypes.includes('email' as any) && 
                     !account.dataTypes.includes('calendar' as any) && 
                     !account.dataTypes.includes('drive' as any)) && (
-                    <div className="text-center py-4 text-clawd-text-dim text-sm">
+                    <div className="text-center py-4 text-mission-control-text-dim text-sm">
                       No rate limits applicable for this account
                     </div>
                   )}
                 </div>
-                <div className="mt-3 p-3 bg-clawd-bg rounded-lg text-xs text-clawd-text-dim">
-                  Rate limits are provider-specific and reset daily. Froggo tracks usage to avoid hitting limits.
+                <div className="mt-3 p-3 bg-mission-control-bg rounded-lg text-xs text-mission-control-text-dim">
+                  Rate limits are provider-specific and reset daily. Mission Control tracks usage to avoid hitting limits.
                 </div>
               </section>
 
               {/* Data Types */}
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Connected Services</h3>
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Connected Services</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {account.dataTypes.map((type) => (
                     <div
                       key={type}
-                      className="flex items-center gap-3 p-3 bg-clawd-bg rounded-lg border border-clawd-border"
+                      className="flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border"
                     >
                       <span className="text-2xl">{DATA_TYPE_ICONS[type]}</span>
                       <div className="flex-1">
                         <div className="font-medium capitalize">{type}</div>
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           {account.metadata?.[`${type}sCount`] ? 
                             `${account.metadata[`${type}sCount`]} items` : 
                             'Active'}
@@ -242,28 +242,28 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
               {/* Connection Status */}
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Connection Details</h3>
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Connection Details</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                    <span className="text-clawd-text-dim">Status</span>
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <span className="text-mission-control-text-dim">Status</span>
                     <span className={`font-medium ${getStatusColor()}`}>
                       {account.status === 'connected' ? '✅ Connected' :
                        account.status === 'error' ? '❌ Error' :
                        account.status === 'needs-reauth' ? '⚠️ Needs Reauth' : '🔄 Checking'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                    <span className="text-clawd-text-dim">Auth Type</span>
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <span className="text-mission-control-text-dim">Auth Type</span>
                     <span className="font-medium capitalize">{account.authType}</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                    <span className="text-clawd-text-dim">Last Checked</span>
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <span className="text-mission-control-text-dim">Last Checked</span>
                     <span className="font-medium">
                       {account.lastChecked ? formatDate(account.lastChecked) : 'Never'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                    <span className="text-clawd-text-dim">Added</span>
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <span className="text-mission-control-text-dim">Added</span>
                     <span className="font-medium">{formatDate(account.createdAt)}</span>
                   </div>
                 </div>
@@ -285,11 +285,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               {/* Metadata */}
               {account.metadata && Object.keys(account.metadata).length > 0 && (
                 <section>
-                  <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Additional Info</h3>
+                  <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Additional Info</h3>
                   <div className="space-y-2 text-sm">
                     {Object.entries(account.metadata).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
-                        <span className="text-clawd-text-dim capitalize">
+                      <div key={key} className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                        <span className="text-mission-control-text-dim capitalize">
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </span>
                         <span className="font-medium">{String(value)}</span>
@@ -310,7 +310,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                   <div className="flex-1">
                     <div className="font-medium text-info mb-1">Permissions Explained</div>
                     <div className="text-sm text-info">
-                      These permissions allow Froggo to access your data securely. 
+                      These permissions allow Mission Control to access your data securely. 
                       You can revoke access at any time.
                     </div>
                   </div>
@@ -318,23 +318,23 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </div>
 
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Granted Permissions</h3>
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Granted Permissions</h3>
                 <div className="space-y-3">
                   {account.scopes.map((scope, idx) => (
                     <div
                       key={idx}
-                      className="p-4 bg-clawd-bg rounded-lg border border-clawd-border"
+                      className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border"
                     >
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">{DATA_TYPE_ICONS[scope.type]}</span>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium capitalize">{scope.type}</span>
-                            <span className="text-xs px-2 py-0.5 bg-clawd-surface rounded">
+                            <span className="text-xs px-2 py-0.5 bg-mission-control-surface rounded">
                               {PERMISSION_LABELS[scope.permission]}
                             </span>
                           </div>
-                          <p className="text-sm text-clawd-text-dim">{scope.description}</p>
+                          <p className="text-sm text-mission-control-text-dim">{scope.description}</p>
                         </div>
                         <CheckCircle size={16} className="text-success mt-0.5" />
                       </div>
@@ -344,9 +344,9 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Why We Need These */}
-              <section className="p-4 bg-clawd-bg rounded-lg border border-clawd-border">
-                <h4 className="font-medium mb-2">Why does Froggo need these permissions?</h4>
-                <ul className="space-y-2 text-sm text-clawd-text-dim">
+              <section className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                <h4 className="font-medium mb-2">Why does Mission Control need these permissions?</h4>
+                <ul className="space-y-2 text-sm text-mission-control-text-dim">
                   {account.dataTypes.includes('email' as DataType) && (
                     <li className="flex items-start gap-2">
                       <span>•</span>
@@ -386,30 +386,30 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {activeTab === 'security' && (
             <div className="space-y-6">
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Security Status</h3>
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Security Status</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Key size={16} className="text-clawd-text-dim" />
-                      <span className="text-clawd-text-dim">Token Storage</span>
+                      <Key size={16} className="text-mission-control-text-dim" />
+                      <span className="text-mission-control-text-dim">Token Storage</span>
                     </div>
                     <span className="font-medium text-success">
                       ✅ Encrypted
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Shield size={16} className="text-clawd-text-dim" />
-                      <span className="text-clawd-text-dim">OAuth Protocol</span>
+                      <Shield size={16} className="text-mission-control-text-dim" />
+                      <span className="text-mission-control-text-dim">OAuth Protocol</span>
                     </div>
                     <span className="font-medium text-success">
                       ✅ Secure
                     </span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg">
+                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-clawd-text-dim" />
-                      <span className="text-clawd-text-dim">Token Refresh</span>
+                      <Clock size={16} className="text-mission-control-text-dim" />
+                      <span className="text-mission-control-text-dim">Token Refresh</span>
                     </div>
                     <span className="font-medium text-success">
                       ✅ Automatic
@@ -418,9 +418,9 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                 </div>
               </section>
 
-              <section className="p-4 bg-clawd-bg rounded-lg border border-clawd-border">
-                <h4 className="font-medium mb-2">How Froggo keeps your data safe</h4>
-                <ul className="space-y-2 text-sm text-clawd-text-dim">
+              <section className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                <h4 className="font-medium mb-2">How Mission Control keeps your data safe</h4>
+                <ul className="space-y-2 text-sm text-mission-control-text-dim">
                   <li className="flex items-start gap-2">
                     <span>🔐</span>
                     <span>OAuth tokens are encrypted using system keychain</span>
@@ -445,16 +445,16 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               <section>
-                <h3 className="text-sm font-medium text-clawd-text-dim mb-3">Provider Security</h3>
-                <div className="p-4 bg-clawd-bg rounded-lg border border-clawd-border">
-                  <p className="text-sm text-clawd-text-dim mb-3">
+                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Provider Security</h3>
+                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                  <p className="text-sm text-mission-control-text-dim mb-3">
                     Review and manage app permissions directly in your {account.provider} account:
                   </p>
                   <a
                     href={PROVIDER_DOCS[account.provider]}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-clawd-accent hover:underline"
+                    className="inline-flex items-center gap-2 text-sm text-mission-control-accent hover:underline"
                   >
                     Open {account.provider} Security Settings
                     <ExternalLink size={14} />
@@ -466,7 +466,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               <section className="p-4 bg-error-subtle border border-error-border rounded-lg">
                 <h4 className="font-medium text-error mb-2">Danger Zone</h4>
                 <p className="text-sm text-error mb-3">
-                  Removing this account will revoke Froggo&apos;s access and delete all stored credentials.
+                  Removing this account will revoke Mission Control&apos;s access and delete all stored credentials.
                   This action cannot be undone.
                 </p>
                 <button
@@ -481,17 +481,17 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-clawd-border">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-mission-control-border">
           <button
             onClick={onRefresh}
-            className="px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:bg-clawd-surface transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2"
           >
             <RefreshCw size={16} />
             Test Connection
           </button>
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             Done
           </button>

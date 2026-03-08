@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { 
-  Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, 
-  ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
-  Inbox, ListTodo, AlertTriangle, Sparkles, 
-  TrendingUp, Clock, Zap, Users
+import { formatTimeAgo } from '../utils/formatting';
+import {
+  Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff,
+  ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown,
+  Inbox, ListTodo, AlertTriangle, Sparkles,
+  TrendingUp, Clock, Zap, Users, Send, Gamepad2, Monitor, Settings
 } from 'lucide-react';
 import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
 import AgentAvatar from './AgentAvatar';
@@ -106,12 +107,12 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   ];
 
   const getSessionIcon = (session: any) => {
-    if (session.channel === 'whatsapp') return '💬';
-    if (session.channel === 'telegram') return '✈️';
-    if (session.channel === 'discord') return '🎮';
-    if (session.key?.includes('subagent')) return '🤖';
-    if (session.key?.includes('cron')) return '⏰';
-    return '💻';
+    if (session.channel === 'whatsapp') return <MessageSquare size={18} />;
+    if (session.channel === 'telegram') return <Send size={18} />;
+    if (session.channel === 'discord') return <Gamepad2 size={18} />;
+    if (session.key?.includes('subagent')) return <Bot size={18} />;
+    if (session.key?.includes('cron')) return <Clock size={18} />;
+    return <Monitor size={18} />;
   };
 
   const getSessionName = (session: any) => {
@@ -125,17 +126,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   };
 
   return (
-    <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
+    <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* HERO SECTION - Modern, spacious, attention-grabbing */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-clawd-surface via-clawd-bg to-clawd-surface border-b border-clawd-border/50">
+      <div className="relative overflow-hidden bg-gradient-to-br from-mission-control-surface via-mission-control-bg to-mission-control-surface border-b border-mission-control-border/50">
         {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-clawd-accent/5 via-transparent to-purple-500/5 animate-gradient-x opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-mission-control-accent/5 via-transparent to-purple-500/5 animate-gradient-x opacity-50" />
         
         <div className="relative max-w-8xl mx-auto px-8 py-8">
           {/* Greeting & Status Row */}
           <div className="flex items-center justify-between mb-6">
             <div className="space-y-2">
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text via-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
                 {greeting}, Kevin
               </h1>
               
@@ -218,7 +219,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${pendingApprovals.length > 0 
                 ? 'bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent border-2 border-warning-border hover:border-warning-border shadow-xl shadow-orange-500/20' 
-                : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
+                : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
             {/* Animated background gradient */}
@@ -228,7 +229,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-clawd-text-dim'}`} />
+                <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {pendingApprovals.length > 0 && (
                   <span className="px-3 py-1 bg-orange-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
                     {pendingApprovals.length}
@@ -236,11 +237,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-orange-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-orange-600 bg-clip-text text-transparent">
                 {pendingApprovals.length}
               </div>
               
-              <div className="text-sm font-medium text-clawd-text-dim mb-3">Pending Approvals</div>
+              <div className="text-sm font-medium text-mission-control-text-dim mb-3">Pending Approvals</div>
               
               {pendingApprovals.length > 0 && (
                 <div className="flex items-center gap-2 text-xs text-warning font-medium">
@@ -257,12 +258,12 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${inProgressTasks.length > 0 
                 ? 'bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent border border-info-border hover:border-info-border shadow-lg' 
-                : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
+                : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-clawd-text-dim'}`} />
+                <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-mission-control-text-dim'}`} />
                 {needsReview.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-review-subtle text-white text-xs font-medium rounded-full">
                     {needsReview.length} review
@@ -270,15 +271,15 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-blue-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-blue-600 bg-clip-text text-transparent">
                 {inProgressTasks.length}
               </div>
               
-              <div className="text-sm font-medium text-clawd-text-dim mb-2">In Progress</div>
+              <div className="text-sm font-medium text-mission-control-text-dim mb-2">In Progress</div>
               
               {/* Mini progress bar */}
               {inProgressTasks.length > 0 && (
-                <div className="h-2 bg-clawd-border/50 rounded-full overflow-hidden">
+                <div className="h-2 bg-mission-control-border/50 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
                     style={{ width: `${Math.min((inProgressTasks.length / (inProgressTasks.length + needsReview.length)) * 100, 100)}%` }}
@@ -294,12 +295,12 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${urgentTasks.length > 0 || unassignedTasks.length > 0
                 ? 'bg-gradient-to-br from-yellow-500/20 via-yellow-500/10 to-transparent border border-warning-border hover:border-warning-border shadow-lg' 
-                : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
+                : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-clawd-text-dim'}`} />
+                <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {urgentTasks.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
                     P0
@@ -307,11 +308,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-yellow-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-yellow-600 bg-clip-text text-transparent">
                 {urgentTasks.length + unassignedTasks.length}
               </div>
               
-              <div className="text-sm font-medium text-clawd-text-dim">Needs Attention</div>
+              <div className="text-sm font-medium text-mission-control-text-dim">Needs Attention</div>
               
               {urgentTasks.length > 0 && (
                 <div className="mt-2 text-xs text-warning">
@@ -327,22 +328,22 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${activeSubagents.length > 0
                 ? 'bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent border border-success-border hover:border-success-border shadow-lg' 
-                : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
+                : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/50 shadow-lg'
               } hover:scale-105`}
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-clawd-text-dim'}`} />
+                <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-mission-control-text-dim'}`} />
                 {activeSubagents.length > 0 && (
                   <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-clawd-text to-green-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-green-600 bg-clip-text text-transparent">
                 {totalAgentCount}
               </div>
               
-              <div className="text-sm font-medium text-clawd-text-dim">Active Agents</div>
+              <div className="text-sm font-medium text-mission-control-text-dim">Active Agents</div>
               
               {activeSubagents.length > 0 && (
                 <div className="mt-2 text-xs text-success">
@@ -358,8 +359,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           
           {/* LEFT: Active Work (2 columns) */}
           <div className="lg:col-span-2">
-            <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
-              <div className="p-6 border-b border-clawd-border/50 flex items-center justify-between bg-gradient-to-r from-clawd-surface to-clawd-bg">
+            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
+              <div className="p-6 border-b border-mission-control-border/50 flex items-center justify-between bg-gradient-to-r from-mission-control-surface to-mission-control-bg">
                 <h2 className="flex items-center gap-3 text-lg font-semibold">
                   <Activity size={20} className="text-info" />
                   Active Work
@@ -371,14 +372,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 </h2>
                 <button 
                   onClick={() => onNavigate?.('kanban')}
-                  className="flex items-center gap-2 text-sm text-clawd-accent hover:text-clawd-accent-dim transition-colors group"
+                  className="flex items-center gap-2 text-sm text-mission-control-accent hover:text-mission-control-accent-dim transition-colors group"
                 >
                   View All 
                   <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
               
-              <div className="divide-y divide-clawd-border/30 max-h-96 overflow-y-auto">
+              <div className="divide-y divide-mission-control-border/30 max-h-96 overflow-y-auto">
                 {loading.tasks ? (
                   <div className="p-4 space-y-3">
                     <TaskCardSkeleton />
@@ -388,11 +389,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 ) : [...inProgressTasks, ...needsReview].length === 0 ? (
                   <div className="p-12 text-center">
                     <CheckCircle size={48} className="mx-auto mb-4 text-success/50" />
-                    <p className="text-lg font-medium text-clawd-text-dim mb-2">All caught up!</p>
-                    <p className="text-sm text-clawd-text-dim mb-4">No active tasks at the moment</p>
+                    <p className="text-lg font-medium text-mission-control-text-dim mb-2">All caught up!</p>
+                    <p className="text-sm text-mission-control-text-dim mb-4">No active tasks at the moment</p>
                     <button 
                       onClick={() => onNavigate?.('kanban')}
-                      className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+                      className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
                     >
                       Create a task
                     </button>
@@ -403,7 +404,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     return (
                       <div 
                         key={task.id} 
-                        className="group p-4 hover:bg-clawd-bg/30 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
+                        className="group p-4 hover:bg-mission-control-bg/30 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
                         onClick={() => onNavigate?.('kanban')}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate?.('kanban'); } }}
                         role="button"
@@ -414,12 +415,12 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                           <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                             task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
                             task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
-                            'bg-clawd-bg0'
+                            'bg-mission-control-bg0'
                           }`} />
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-3 mb-1">
-                              <h3 className="font-medium text-clawd-text group-hover:text-clawd-accent transition-colors">
+                              <h3 className="font-medium text-mission-control-text group-hover:text-mission-control-accent transition-colors">
                                 {task.title}
                               </h3>
                               <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
@@ -431,7 +432,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               </span>
                             </div>
                             
-                            <div className="flex items-center gap-3 text-sm text-clawd-text-dim">
+                            <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
                               {task.project && (
                                 <span className="flex items-center gap-1.5">
                                   <TrendingUp size={14} />
@@ -464,21 +465,21 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           {/* RIGHT: Today at a Glance (1 column) */}
           <div className="space-y-6">
             {/* Calendar Widget */}
-            <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
+            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
               <TodayCalendarWidget onNavigate={onNavigate} />
             </div>
 
             {/* Email Widget */}
-            <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
+            <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
               <EmailWidget />
             </div>
 
             {/* Weather & Quick Stats side-by-side */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
+              <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
                 <WeatherWidget />
               </div>
-              <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
+              <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
                 <QuickStatsWidget />
               </div>
             </div>
@@ -486,10 +487,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         </div>
 
         {/* ACTIVITY STREAM - Collapsible glass panel */}
-        <div className="bg-clawd-surface/60 backdrop-blur-2xl rounded-2xl border border-clawd-border/30 overflow-hidden shadow-2xl">
+        <div className="bg-mission-control-surface/60 backdrop-blur-2xl rounded-2xl border border-mission-control-border/30 overflow-hidden shadow-2xl">
           <button 
             onClick={() => setShowActivityStream(!showActivityStream)}
-            className="w-full p-6 flex items-center justify-between hover:bg-clawd-bg/20 transition-all group"
+            className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-review-border">
@@ -498,7 +499,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               
               <div className="text-left">
                 <h3 className="text-lg font-semibold mb-1">Activity Stream</h3>
-                <p className="text-sm text-clawd-text-dim">
+                <p className="text-sm text-mission-control-text-dim">
                   {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
                 </p>
               </div>
@@ -507,23 +508,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             <div className="flex items-center gap-3">
               <button 
                 onClick={(e) => { e.stopPropagation(); fetchSessions(); }}
-                className="p-2 hover:bg-clawd-border/50 rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border/50 rounded-lg transition-colors"
                 title="Refresh"
               >
-                <RefreshCw size={18} className="text-clawd-text-dim hover:text-clawd-accent transition-colors" />
+                <RefreshCw size={18} className="text-mission-control-text-dim hover:text-mission-control-accent transition-colors" />
               </button>
               <div className={`transform transition-transform duration-200 ${showActivityStream ? 'rotate-180' : ''}`}>
-                <ChevronDown size={24} className="text-clawd-text-dim group-hover:text-clawd-accent transition-colors" />
+                <ChevronDown size={24} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
               </div>
             </div>
           </button>
           
           {showActivityStream && (
-            <div className="border-t border-clawd-border/30 bg-clawd-bg/20">
-              <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-clawd-border/30">
+            <div className="border-t border-mission-control-border/30 bg-mission-control-bg/20">
+              <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-mission-control-border/30">
                 {/* Sessions */}
                 <div className="p-6">
-                  <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
                     <MessageSquare size={14} />
                     Sessions ({sessions.length})
                   </h4>
@@ -535,21 +536,21 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         <SessionCardSkeleton />
                       </>
                     ) : sessions.length === 0 ? (
-                      <p className="text-sm text-clawd-text-dim text-center py-8">No active sessions</p>
+                      <p className="text-sm text-mission-control-text-dim text-center py-8">No active sessions</p>
                     ) : (
                       sessions.slice(0, 6).map((s: any) => {
                         const isActive = Date.now() - (s.updatedAt || 0) < 300000;
                         return (
                           <div 
                             key={s.key} 
-                            className="flex items-center gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface/50 hover:bg-mission-control-surface transition-colors"
                           >
-                            <span className="text-xl">{getSessionIcon(s)}</span>
+                            <span className="text-mission-control-text-dim flex-shrink-0">{getSessionIcon(s)}</span>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
-                              <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt)}</div>
+                              <div className="text-xs text-mission-control-text-dim">{formatTimeAgo(s.updatedAt)}</div>
                             </div>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                           </div>
                         );
                       })
@@ -559,7 +560,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Agents */}
                 <div className="p-6">
-                  <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Bot size={14} />
                     Agents ({totalAgentCount})
                   </h4>
@@ -567,14 +568,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     {agents.slice(0, 4).map((agent) => (
                       <div 
                         key={agent.id} 
-                        className="flex items-center gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
+                        className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface/50 hover:bg-mission-control-surface transition-colors"
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="lg" />
                         <div className="flex-1">
                           <div className="text-sm font-medium">{agent.name}</div>
                           <div className={`text-xs ${
                             agent.status === 'busy' ? 'text-success' :
-                            agent.status === 'active' ? 'text-success' : 'text-clawd-text-dim'
+                            agent.status === 'active' ? 'text-success' : 'text-mission-control-text-dim'
                           }`}>
                             {agent.status}
                           </div>
@@ -583,7 +584,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     ))}
                     
                     {activeSubagents.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-clawd-border/30 space-y-2">
+                      <div className="mt-4 pt-4 border-t border-mission-control-border/30 space-y-2">
                         {activeSubagents.slice(0, 3).map((session) => (
                           <div 
                             key={session.key}
@@ -592,7 +593,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium truncate">{session.displayName}</div>
-                              <div className="text-xs text-clawd-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
+                              <div className="text-xs text-mission-control-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
                             </div>
                           </div>
                         ))}
@@ -604,14 +605,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 {/* Notifications */}
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-2">
                       <Bell size={14} />
                       Notifications ({activities.length})
                     </h4>
                     {activities.length > 0 && (
                       <button 
                         onClick={clearActivities}
-                        className="text-xs text-clawd-text-dim hover:text-clawd-accent transition-colors"
+                        className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
                       >
                         Clear all
                       </button>
@@ -620,23 +621,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {activities.length === 0 ? (
                       <div className="text-center py-8">
-                        <Bell size={32} className="mx-auto mb-2 text-clawd-text-dim/30" />
-                        <p className="text-sm text-clawd-text-dim">All caught up</p>
+                        <Bell size={32} className="mx-auto mb-2 text-mission-control-text-dim/30" />
+                        <p className="text-sm text-mission-control-text-dim">All caught up</p>
                       </div>
                     ) : (
                       activities.slice(0, 8).map((a) => (
                         <div 
                           key={a.id} 
-                          className="flex items-start gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
+                          className="flex items-start gap-3 p-3 rounded-lg bg-mission-control-surface/50 hover:bg-mission-control-surface transition-colors"
                         >
-                          <span className="text-lg flex-shrink-0">
-                            {a.type === 'chat' ? '💬' : 
-                             a.type === 'task' ? '✅' : 
-                             a.type === 'agent' ? '🤖' : '⚙️'}
+                          <span className="text-mission-control-text-dim flex-shrink-0">
+                            {a.type === 'chat' ? <MessageSquare size={16} /> :
+                             a.type === 'task' ? <CheckCircle size={16} /> :
+                             a.type === 'agent' ? <Bot size={16} /> : <Settings size={16} />}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-clawd-text line-clamp-2">{a.message}</p>
-                            <p className="text-xs text-clawd-text-dim mt-1">{formatTimeAgo(a.timestamp)}</p>
+                            <p className="text-sm text-mission-control-text line-clamp-2">{a.message}</p>
+                            <p className="text-xs text-mission-control-text-dim mt-1">{formatTimeAgo(a.timestamp)}</p>
                           </div>
                         </div>
                       ))
@@ -658,12 +659,3 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   );
 }
 
-function formatTimeAgo(ts: number): string {
-  if (!ts) return 'unknown';
-  const diff = Date.now() - ts;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-  return new Date(ts).toLocaleDateString();
-}

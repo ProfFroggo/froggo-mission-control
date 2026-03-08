@@ -1,7 +1,7 @@
 {
   "name": "memory-mcp",
   "version": "1.0.0",
-  "description": "Froggo memory MCP server — Obsidian vault search and write",
+  "description": "Mission Control memory MCP server — Obsidian vault search and write",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

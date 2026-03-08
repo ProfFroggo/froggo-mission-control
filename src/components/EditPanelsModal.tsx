@@ -44,19 +44,19 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl bg-clawd-surface border border-clawd-border transition-shadow ${
+      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl bg-mission-control-surface border border-mission-control-border transition-shadow ${
         isDragging ? 'shadow-xl scale-[1.02]' : ''
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="text-clawd-text-dim hover:text-clawd-text cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        className="text-mission-control-text-dim hover:text-mission-control-text cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
         aria-label={`Drag to reorder ${panel.label}`}
       >
         <GripVertical size={20} />
       </button>
-      <span className="flex-1 text-clawd-text text-sm font-medium">{panel.label}</span>
+      <span className="flex-1 text-mission-control-text text-sm font-medium">{panel.label}</span>
       <Toggle
         checked={panel.visible}
         onChange={(_checked) => onToggle(panel.id)}
@@ -136,12 +136,12 @@ export default function EditPanelsModal() {
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-clawd-text">Edit Panels</h2>
-            <p className="text-sm text-clawd-text-dim mt-1">Showing {visibleCount} of {draft.length} Panels</p>
+            <h2 className="text-xl font-bold text-mission-control-text">Edit Panels</h2>
+            <p className="text-sm text-mission-control-text-dim mt-1">Showing {visibleCount} of {draft.length} Panels</p>
           </div>
           <button
             onClick={closeEditModal}
-            className="text-clawd-text-dim hover:text-clawd-text transition-colors p-1"
+            className="text-mission-control-text-dim hover:text-mission-control-text transition-colors p-1"
             aria-label="Close"
           >
             <X size={22} />
@@ -169,16 +169,16 @@ export default function EditPanelsModal() {
         </div>
 
         {/* Footer buttons */}
-        <div className="flex gap-3 p-6 pt-4 border-t border-clawd-border">
+        <div className="flex gap-3 p-6 pt-4 border-t border-mission-control-border">
           <button
             onClick={handleReset}
-            className="flex-1 py-3 rounded-xl border border-clawd-border text-clawd-text font-semibold text-sm hover:bg-clawd-surface transition-colors"
+            className="flex-1 py-3 rounded-xl border border-mission-control-border text-mission-control-text font-semibold text-sm hover:bg-mission-control-surface transition-colors"
           >
             Reset
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-xl bg-clawd-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="flex-1 py-3 rounded-xl bg-mission-control-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             Save
           </button>

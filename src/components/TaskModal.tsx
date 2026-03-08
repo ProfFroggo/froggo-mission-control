@@ -16,7 +16,7 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} /> },
   { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} /> },
   { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} /> },
-  { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} /> },
+  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} /> },
 ];
 
 interface TaskModalProps {
@@ -65,7 +65,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [priority, setPriority] = useState<TaskPriority | ''>('');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [reviewerId, setReviewerId] = useState<string>('froggo'); // Default to Froggo as reviewer
+  const [reviewerId, setReviewerId] = useState<string>('mission-control'); // Default to Mission Control as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
 
   // Multi-stage project state
@@ -107,11 +107,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
-        // Always default reviewer to froggo unless explicitly set
-        setReviewerId('froggo');
+        // Always default reviewer to mission-control unless explicitly set
+        setReviewerId('mission-control');
       } else {
-        // Fresh task - default reviewer to froggo
-        setReviewerId('froggo');
+        // Fresh task - default reviewer to mission-control
+        setReviewerId('mission-control');
       }
       
       // Start chat with greeting if in chat mode
@@ -196,7 +196,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
-      reviewerId: reviewerId || 'froggo', // Always set reviewer (default: froggo)
+      reviewerId: reviewerId || 'mission-control', // Always set reviewer (default: mission-control)
       reviewStatus: 'pending' as any, // Initialize review status
       // Multi-stage fields
       ...(showMultiStage && projectName ? { projectName } : {}),
@@ -238,7 +238,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     try {
       // Construct context-aware prompt
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Froggo 🐸, helping create a task in the Kanban system. Have a natural conversation to gather:\n- Task title (clear, actionable)\n- Description (context, details)\n- Project (Dashboard/X/Discord/Telegram/Dev/etc)\n- Priority (p0=urgent, p1=high, p2=medium, p3=low)\n- Due date (if time-sensitive)\n- Agent assignment (Coder/Researcher/Writer/Chief/Main)\n\nAfter gathering enough info, output the task in this JSON format:\n\`\`\`json\n{"task": {"title": "...", "description": "...", "project": "...", "priority": "p1", "dueDate": "2024-01-30", "assignedTo": "coder"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and efficient. Ask clarifying questions if needed.`;
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping create a task in the Kanban system. Have a natural conversation to gather:\n- Task title (clear, actionable)\n- Description (context, details)\n- Project (Dashboard/X/Discord/Telegram/Dev/etc)\n- Priority (p0=urgent, p1=high, p2=medium, p3=low)\n- Due date (if time-sensitive)\n- Agent assignment (Coder/Researcher/Writer/Chief/Main)\n\nAfter gathering enough info, output the task in this JSON format:\n\`\`\`json\n{"task": {"title": "...", "description": "...", "project": "...", "priority": "p1", "dueDate": "2024-01-30", "assignedTo": "coder"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and efficient. Ask clarifying questions if needed.`;
 
       // Setup streaming listener
       const unsubscribe = gateway.on('chat', (data: any) => {
@@ -322,7 +322,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: extractedData.priority,
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
-      reviewerId: 'froggo', // Always default to Froggo as reviewer
+      reviewerId: 'mission-control', // Always default to Mission Control as reviewer
       reviewStatus: 'pending' as any, // Initialize review status
     };
 
@@ -376,7 +376,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       return 'chief';
     }
     
-    return 'main'; // Default to Froggo
+    return 'main'; // Default to Mission Control
   };
 
   const resetForm = () => {
@@ -386,7 +386,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setPriority('');
     setDueDate('');
     setAssignedTo('');
-    setReviewerId('froggo'); // Reset to default reviewer
+    setReviewerId('mission-control'); // Reset to default reviewer
     setSelectedFiles([]); // Clear file selections
     setChatMessages([]);
     setChatInput('');
@@ -416,7 +416,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     >
       <div className="flex flex-col h-full">
         {/* Header with Mode Selector */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           <h2 className="text-xl font-semibold mb-4">Create New Task</h2>
 
           {/* Mode Selector */}
@@ -426,12 +426,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'chat'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <MessageSquare size={16} />
-              <span className="font-medium">Chat with Froggo</span>
+              <span className="font-medium">Chat with Mission Control</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
             </button>
             <button
@@ -439,8 +439,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Edit3 size={16} />
@@ -464,12 +464,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
-                          ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface border border-clawd-border'
+                          ? 'bg-mission-control-accent text-white'
+                          : 'bg-mission-control-surface border border-mission-control-border'
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-clawd-text-dim'}`}>
+                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-mission-control-text-dim'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
@@ -479,11 +479,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
-                        <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
+                        <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+                        <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
                       </div>
                     </div>
                   </div>
@@ -492,10 +492,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin text-clawd-accent" />
-                        <span className="text-sm text-clawd-text-dim">Froggo is thinking...</span>
+                        <Loader2 size={16} className="animate-spin text-mission-control-accent" />
+                        <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -507,9 +507,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               {/* Extracted Task Preview */}
               {conversationComplete && extractedData.title && (
                 <div className="px-6 pb-4">
-                  <div className="bg-clawd-accent/10 border border-clawd-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <Sparkles size={16} className="text-clawd-accent" />
+                      <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Task Ready!</span>
                     </div>
                     <div className="space-y-1 text-sm">
@@ -522,7 +522,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     <button
                       onClick={handleCreateFromChat}
                       type="button"
-                      className="mt-3 w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium"
+                      className="mt-3 w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
                     >
                       Create Task
                     </button>
@@ -531,7 +531,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               )}
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-clawd-border">
+              <div className="p-6 border-t border-mission-control-border">
                 <div className="flex gap-3">
                   <textarea
                     ref={inputRef}
@@ -546,19 +546,19 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     placeholder="Describe what you need done..."
                     rows={2}
                     disabled={isStreaming || conversationComplete}
-                    className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
+                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={handleChatSubmit}
                     type="button"
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
-                    className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
-                <div className="text-xs text-clawd-text-dim mt-2">
-                  Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Shift+Enter</kbd> for new line
+                <div className="text-xs text-mission-control-text-dim mt-2">
+                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
               </div>
             </div>
@@ -567,34 +567,34 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Title */}
               <div>
-                <label htmlFor="task-title" className="block text-sm text-clawd-text-dim mb-1">Title *</label>
+                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">Title *</label>
                 <input
                   id="task-title"
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="What needs to be done?"
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   /* autoFocus removed for accessibility - users can focus naturally */
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label htmlFor="task-description" className="block text-sm text-clawd-text-dim mb-1">Description</label>
+                <label htmlFor="task-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
                 <textarea
                   id="task-description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Add more details, context, or instructions for the agent..."
                   rows={3}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
               </div>
 
               {/* Priority */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Flag size={14} /> Priority
                 </span>
                 <div className="flex gap-2">
@@ -604,8 +604,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     aria-label="No priority"
                     className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
                       !priority
-                        ? 'border-clawd-accent bg-clawd-accent/10'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10'
+                        : 'border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
                     None
@@ -618,8 +618,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       aria-label={`Priority: ${p.label}`}
                       className={`flex-1 p-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${
                         priority === p.id
-                          ? `border-clawd-accent ${p.bg} ${p.color}`
-                          : 'border-clawd-border hover:border-clawd-accent/50'
+                          ? `border-mission-control-accent ${p.bg} ${p.color}`
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
                       }`}
                     >
                       {p.icon}
@@ -630,7 +630,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Due Date */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Calendar size={14} /> Due Date
                 </span>
                 <div className="flex gap-2">
@@ -639,13 +639,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     type="datetime-local"
                     value={dueDate}
                     onChange={e => setDueDate(e.target.value)}
-                    className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent text-sm"
+                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setQuickDue(1)}
                     aria-label="Due in 1 hour"
-                    className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
+                    className="px-2 py-1 text-xs bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50"
                   >
                     1h
                   </button>
@@ -653,7 +653,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     type="button"
                     onClick={() => setQuickDue(4)}
                     aria-label="Due in 4 hours"
-                    className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
+                    className="px-2 py-1 text-xs bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50"
                   >
                     4h
                   </button>
@@ -661,7 +661,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     type="button"
                     onClick={() => setQuickDue(24)}
                     aria-label="Due in 1 day"
-                    className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
+                    className="px-2 py-1 text-xs bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50"
                   >
                     1d
                   </button>
@@ -669,7 +669,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     type="button"
                     onClick={() => setQuickDue(168)}
                     aria-label="Due in 1 week"
-                    className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
+                    className="px-2 py-1 text-xs bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50"
                   >
                     1w
                   </button>
@@ -679,23 +679,23 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               {/* Project & Status Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="task-project" className="block text-sm text-clawd-text-dim mb-1">Project</label>
+                  <label htmlFor="task-project" className="block text-sm text-mission-control-text-dim mb-1">Project</label>
                   <input
                     id="task-project"
                     type="text"
                     value={project}
                     onChange={e => setProject(e.target.value)}
                     placeholder="Project name"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
-                  <label htmlFor="task-status" className="block text-sm text-clawd-text-dim mb-1">Status</label>
+                  <label htmlFor="task-status" className="block text-sm text-mission-control-text-dim mb-1">Status</label>
                   <select
                     id="task-status"
                     value={status}
                     onChange={e => setStatus(e.target.value as TaskStatus)}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="todo">📝 To Do</option>
                     <option value="in-progress">⚡ In Progress</option>
@@ -707,7 +707,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Assign to Agent */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Bot size={14} /> Assign to Agent (Worker)
                 </span>
                 <div className="grid grid-cols-3 gap-2">
@@ -718,15 +718,15 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     aria-pressed={!assignedTo}
                     className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                       !assignedTo
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
                     <span className="text-base">👤</span>
                     <span className="truncate">None</span>
                   </button>
                   {agents
-                    .filter(agent => !['main', 'froggo'].includes(agent.id))
+                    .filter(agent => !['main', 'mission-control'].includes(agent.id))
                     .map(agent => (
                       <button
                         key={agent.id}
@@ -736,8 +736,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         aria-pressed={assignedTo === agent.id}
                         className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                           assignedTo === agent.id
-                            ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                            : 'border-clawd-border hover:border-clawd-accent/50'
+                            ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'border-mission-control-border hover:border-mission-control-accent/50'
                         }`}
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
@@ -749,7 +749,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Assign Reviewer */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   👀 Agent Reviewer
                 </span>
                 <div className="grid grid-cols-3 gap-2">
@@ -764,24 +764,24 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         aria-pressed={reviewerId === agent.id}
                         className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                           reviewerId === agent.id
-                            ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                            : 'border-clawd-border hover:border-clawd-accent/50'
+                            ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'border-mission-control-border hover:border-mission-control-accent/50'
                         }`}
                       >
                         <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
-                        {agent.id === 'froggo' && <span className="text-xs opacity-60">(default)</span>}
+                        {agent.id === 'mission-control' && <span className="text-xs opacity-60">(default)</span>}
                       </button>
                     ))}
                 </div>
-                <p className="text-xs text-clawd-text-dim mt-2">
-                  📌 Default: Froggo (agent reviewer for all tasks)
+                <p className="text-xs text-mission-control-text-dim mt-2">
+                  📌 Default: Mission Control (agent reviewer for all tasks)
                 </p>
               </div>
 
               {/* File Attachments */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                   <Upload size={14} /> Attach Files (Optional)
                 </span>
                 <div className="space-y-2">
@@ -801,7 +801,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     />
                     <label
                       htmlFor="task-file-input"
-                      className="inline-flex items-center gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors cursor-pointer text-sm"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors cursor-pointer text-sm"
                     >
                       <Upload size={16} />
                       Choose Files
@@ -814,12 +814,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       {selectedFiles.map((file, index) => (
                         <div
                           key={`${file.name}-${index}`}
-                          className="flex items-center justify-between gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm"
+                          className="flex items-center justify-between gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <Upload size={14} className="flex-shrink-0 text-clawd-text-dim" />
+                            <Upload size={14} className="flex-shrink-0 text-mission-control-text-dim" />
                             <span className="truncate">{file.name}</span>
-                            <span className="text-xs text-clawd-text-dim flex-shrink-0">
+                            <span className="text-xs text-mission-control-text-dim flex-shrink-0">
                               ({(file.size / 1024).toFixed(1)} KB)
                             </span>
                           </div>
@@ -837,46 +837,46 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-clawd-text-dim mt-1">
+                <p className="text-xs text-mission-control-text-dim mt-1">
                   Files will be attached after task creation
                 </p>
               </div>
 
               {/* Multi-Stage Project Setup */}
-              <div className="border border-clawd-border rounded-lg overflow-hidden">
+              <div className="border border-mission-control-border rounded-lg overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setShowMultiStage(!showMultiStage)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-clawd-surface hover:bg-clawd-bg transition-colors text-sm"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-bg transition-colors text-sm"
                 >
                   <span className="flex items-center gap-2">
                     <span>🔄</span>
                     <span>Multi-Stage Project</span>
                     {showMultiStage && projectName && (
-                      <span className="text-xs text-clawd-accent bg-clawd-accent/10 px-2 py-0.5 rounded-full">{projectName}</span>
+                      <span className="text-xs text-mission-control-accent bg-mission-control-accent/10 px-2 py-0.5 rounded-full">{projectName}</span>
                     )}
                   </span>
-                  <span className="text-clawd-text-dim">{showMultiStage ? '▲' : '▼'}</span>
+                  <span className="text-mission-control-text-dim">{showMultiStage ? '▲' : '▼'}</span>
                 </button>
                 {showMultiStage && (
-                  <div className="p-3 space-y-3 border-t border-clawd-border">
+                  <div className="p-3 space-y-3 border-t border-mission-control-border">
                     <div>
-                      <label className="block text-xs text-clawd-text-dim mb-1">Project Name</label>
+                      <label className="block text-xs text-mission-control-text-dim mb-1">Project Name</label>
                       <input
                         type="text"
                         value={projectName}
                         onChange={e => setProjectName(e.target.value)}
                         placeholder="e.g., Authentication System"
-                        className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                        className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Number</label>
+                        <label className="block text-xs text-mission-control-text-dim mb-1">Stage Number</label>
                         <select
                           value={stageNumber}
                           onChange={e => setStageNumber(Number(e.target.value))}
-                          className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                          className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         >
                           {[1,2,3,4,5,6,7,8,9,10].map(n => (
                             <option key={n} value={n}>{n}</option>
@@ -884,26 +884,26 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Name</label>
+                        <label className="block text-xs text-mission-control-text-dim mb-1">Stage Name</label>
                         <input
                           type="text"
                           value={stageName}
                           onChange={e => setStageName(e.target.value)}
                           placeholder="e.g., Design Phase"
-                          className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                          className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-clawd-text-dim mb-1">Next Stage (auto-creates on completion)</label>
+                      <label className="block text-xs text-mission-control-text-dim mb-1">Next Stage (auto-creates on completion)</label>
                       <input
                         type="text"
                         value={nextStage}
                         onChange={e => setNextStage(e.target.value)}
                         placeholder="e.g., Stage 2: Implementation"
-                        className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                        className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
-                      <p className="text-xs text-clawd-text-dim mt-1">
+                      <p className="text-xs text-mission-control-text-dim mt-1">
                         💡 If set, a new task with this title will be automatically created when this task is marked done
                       </p>
                     </div>
@@ -912,11 +912,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               </div>
 
               {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
+              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+                  className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
                 >
                   Cancel
                 </button>
@@ -924,11 +924,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   type="submit"
                   disabled={!title.trim()}
                   aria-disabled={!title.trim()}
-                  className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   Create Task
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
-                  <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">⌘S</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">⌘S</kbd>
                 </button>
               </div>
             </form>

@@ -170,16 +170,17 @@ function getViewLabel(view: string): string {
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
 /** FEATURE 2: Agent selection modal for voice calls */
-function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
+function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (agent: ChatAgent) => void;
   activeCall: { agentId: string; agentName: string } | null;
+  panelPos: string;
 }) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
+    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Phone size={14} className="text-mission-control-accent" />
@@ -220,11 +221,12 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
 }
 
 /** FEATURE 3: Context-aware agent chat modal */
-function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
+function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos }: {
   isOpen: boolean;
   onClose: () => void;
   currentView: string;
   onStartChat: (agent: ChatAgent, context: string) => void;
+  panelPos: string;
 }) {
   const [message, setMessage] = useState('');
   const suggestedAgentIds = VIEW_AGENT_SUGGESTIONS[currentView] || ['mission-control', 'chief', 'coder'];
@@ -239,7 +241,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
   const viewLabel = getViewLabel(currentView);
 
   return (
-    <div className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4 bottom-full mb-2 right-0">
+    <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Sparkles size={14} className="text-mission-control-accent" />
@@ -337,9 +339,10 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
 }
 
 /** FEATURE 4: Task status shortcuts modal */
-function TaskShortcutsModal({ isOpen, onClose }: {
+function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
   isOpen: boolean;
   onClose: () => void;
+  panelPos: string;
 }) {
   const [recentTasks, setRecentTasks] = useState<Array<{ id: string; title: string; status: string }>>([]);
   const [loading, setLoading] = useState(false);
@@ -376,7 +379,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 bottom-full mb-2 right-0 max-h-80 overflow-y-auto">
+    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <ListTodo size={14} className="text-mission-control-accent" />
@@ -943,10 +946,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const noDrag = isFloating ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {};
   const dragStyle = isFloating ? { WebkitAppRegion: 'drag' } as React.CSSProperties : {};
 
-  // Panel position classes
-  const panelPos = isFloating
-    ? 'absolute bottom-full mb-2 left-1/2 -translate-x-1/2'
-    : `absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`;
+  // Panel position classes — for floating mode use snap edge so popups never overflow
+  const panelPos = `absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`;
 
   const pillContent = (
     <>
@@ -988,14 +989,13 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 2: Agent Call Modal */}
       {agentCallModalOpen && !state.isCollapsed && (
-        <div className={panelPos}>
-          <AgentCallModal
-            isOpen={agentCallModalOpen}
-            onClose={() => setAgentCallModalOpen(false)}
-            onSelect={handleAgentCall}
-            activeCall={activeCall}
-          />
-        </div>
+        <AgentCallModal
+          isOpen={agentCallModalOpen}
+          onClose={() => setAgentCallModalOpen(false)}
+          onSelect={handleAgentCall}
+          activeCall={activeCall}
+          panelPos={panelPos}
+        />
       )}
 
       {/* FEATURE 2b: Active Call Window (agent image / video + transcript + controls) */}
@@ -1202,24 +1202,22 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 3: Context Chat Modal */}
       {contextChatOpen && !state.isCollapsed && (
-        <div className={panelPos}>
-          <ContextChatModal
-            isOpen={contextChatOpen}
-            onClose={() => setContextChatOpen(false)}
-            currentView={currentView}
-            onStartChat={handleContextChat}
-          />
-        </div>
+        <ContextChatModal
+          isOpen={contextChatOpen}
+          onClose={() => setContextChatOpen(false)}
+          currentView={currentView}
+          onStartChat={handleContextChat}
+          panelPos={panelPos}
+        />
       )}
 
       {/* FEATURE 4: Task Shortcuts Modal */}
       {taskShortcutsOpen && !state.isCollapsed && (
-        <div className={panelPos}>
-          <TaskShortcutsModal
-            isOpen={taskShortcutsOpen}
-            onClose={() => setTaskShortcutsOpen(false)}
-          />
-        </div>
+        <TaskShortcutsModal
+          isOpen={taskShortcutsOpen}
+          onClose={() => setTaskShortcutsOpen(false)}
+          panelPos={panelPos}
+        />
       )}
 
       {/* ─── Toolbar Pill ─── */}

@@ -91,11 +91,11 @@ export default function NewContentWidget() {
   if (loading && totalNew === 0) {
     return (
       <div className="p-6 animate-pulse">
-        <div className="h-8 w-8 bg-clawd-border/50 rounded-full mb-4" />
+        <div className="h-8 w-8 bg-mission-control-border/50 rounded-full mb-4" />
         <div className="space-y-2">
-          <div className="h-4 bg-clawd-border/50 rounded" />
-          <div className="h-4 bg-clawd-border/50 rounded" />
-          <div className="h-4 bg-clawd-border/50 rounded" />
+          <div className="h-4 bg-mission-control-border/50 rounded" />
+          <div className="h-4 bg-mission-control-border/50 rounded" />
+          <div className="h-4 bg-mission-control-border/50 rounded" />
         </div>
       </div>
     );
@@ -117,7 +117,7 @@ export default function NewContentWidget() {
       <div className="flex items-center justify-between mb-4">
         <Sparkles 
           size={28} 
-          className={totalNew > 0 ? 'text-review' : 'text-clawd-text-dim'} 
+          className={totalNew > 0 ? 'text-review' : 'text-mission-control-text-dim'} 
         />
         {totalNew > 0 && (
           <span className="px-3 py-1 bg-purple-500 text-white text-sm font-bold rounded-full shadow-lg">
@@ -126,45 +126,45 @@ export default function NewContentWidget() {
         )}
       </div>
       
-      <div className="text-3xl font-bold mb-3 bg-gradient-to-br from-clawd-text to-purple-400 bg-clip-text text-transparent">
+      <div className="text-3xl font-bold mb-3 bg-gradient-to-br from-mission-control-text to-purple-400 bg-clip-text text-transparent">
         {totalNew} New
       </div>
       
       <div className="space-y-2.5">
         {/* Files */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <div className="flex items-center gap-2">
             <FileText size={16} className="text-success" />
-            <span className="text-sm text-clawd-text-dim">Files</span>
+            <span className="text-sm text-mission-control-text-dim">Files</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.files > 0 ? 'text-success' : 'text-clawd-text-dim'
+            counts.files > 0 ? 'text-success' : 'text-mission-control-text-dim'
           }`}>
             {counts.files}
           </span>
         </div>
 
         {/* Images */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <div className="flex items-center gap-2">
             <Image size={16} className="text-review" />
-            <span className="text-sm text-clawd-text-dim">Images</span>
+            <span className="text-sm text-mission-control-text-dim">Images</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.images > 0 ? 'text-review' : 'text-clawd-text-dim'
+            counts.images > 0 ? 'text-review' : 'text-mission-control-text-dim'
           }`}>
             {counts.images}
           </span>
         </div>
 
         {/* Reports */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
           <div className="flex items-center gap-2">
             <FileBarChart size={16} className="text-info" />
-            <span className="text-sm text-clawd-text-dim">Reports</span>
+            <span className="text-sm text-mission-control-text-dim">Reports</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.reports > 0 ? 'text-info' : 'text-clawd-text-dim'
+            counts.reports > 0 ? 'text-info' : 'text-mission-control-text-dim'
           }`}>
             {counts.reports}
           </span>
@@ -172,7 +172,7 @@ export default function NewContentWidget() {
       </div>
 
       {totalNew === 0 && (
-        <div className="mt-4 text-xs text-clawd-text-dim text-center">
+        <div className="mt-4 text-xs text-mission-control-text-dim text-center">
           No new content (24h)
         </div>
       )}

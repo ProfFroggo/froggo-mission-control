@@ -53,26 +53,26 @@ export default function SetupWizard() {
   // -- braindump step --
   if (step === 'braindump') {
     return (
-      <div className="h-full overflow-y-auto bg-clawd-bg">
+      <div className="h-full overflow-y-auto bg-mission-control-bg">
         <div className="max-w-2xl mx-auto px-6 py-12">
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 rounded-lg bg-clawd-accent/15">
-              <Wand2 size={24} className="text-clawd-accent" />
+            <div className="p-2 rounded-lg bg-mission-control-accent/15">
+              <Wand2 size={24} className="text-mission-control-accent" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-clawd-text">Plan Your Book</h1>
-              <p className="text-sm text-clawd-text-dim mt-0.5">
+              <h1 className="text-2xl font-bold text-mission-control-text">Plan Your Book</h1>
+              <p className="text-sm text-mission-control-text-dim mt-0.5">
                 Describe your idea and an AI agent will help you build a full plan.
               </p>
             </div>
           </div>
 
           {/* Card */}
-          <div className="p-6 rounded-xl border border-clawd-border bg-clawd-surface space-y-6">
+          <div className="p-6 rounded-xl border border-mission-control-border bg-mission-control-surface space-y-6">
             {/* Book type selector */}
             <div>
-              <span className="block text-xs font-medium text-clawd-text-dim mb-2">
+              <span className="block text-xs font-medium text-mission-control-text-dim mb-2">
                 Book Type
               </span>
               <div className="flex gap-2">
@@ -85,8 +85,8 @@ export default function SetupWizard() {
                       onClick={() => handleTypeSelect(opt.key, opt.agent)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                         isSelected
-                          ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                          : 'border-clawd-border text-clawd-text-dim hover:border-clawd-text-dim'
+                          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
                       }`}
                     >
                       <Icon size={16} />
@@ -103,14 +103,14 @@ export default function SetupWizard() {
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
                   placeholder="e.g. Fantasy, Sci-Fi, Thriller..."
-                  className="mt-2 w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
+                  className="mt-2 w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
                 />
               )}
             </div>
 
             {/* Brain dump textarea */}
             <div>
-              <label htmlFor="brain-dump-textarea" className="block text-xs font-medium text-clawd-text-dim mb-2">
+              <label htmlFor="brain-dump-textarea" className="block text-xs font-medium text-mission-control-text-dim mb-2">
                 Describe your book idea
               </label>
               <textarea
@@ -119,7 +119,7 @@ export default function SetupWizard() {
                 onChange={(e) => setBrainDump(e.target.value)}
                 rows={6}
                 placeholder="What's your book about? Pour out everything -- characters, themes, plot points, personal experiences, inspiration..."
-                className="w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent resize-y min-h-[120px]"
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent resize-y min-h-[120px]"
               />
             </div>
 
@@ -127,7 +127,7 @@ export default function SetupWizard() {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => cancelWizard()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
               >
                 <X size={14} />
                 Cancel
@@ -135,7 +135,7 @@ export default function SetupWizard() {
               <button
                 onClick={handleStartPlanning}
                 disabled={!brainDump.trim()}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Start Planning
                 <ArrowRight size={16} />
@@ -151,16 +151,16 @@ export default function SetupWizard() {
   if (step === 'conversation' || step === 'extracting') {
     const agent = getWizardAgent(selectedAgent);
     return (
-      <div className="h-full flex flex-col bg-clawd-bg">
+      <div className="h-full flex flex-col bg-mission-control-bg">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-clawd-border bg-clawd-surface flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-clawd-accent" />
-            <span className="text-sm font-medium text-clawd-text">
+            <Sparkles size={14} className="text-mission-control-accent" />
+            <span className="text-sm font-medium text-mission-control-text">
               Planning with {agent.name}
             </span>
             {messages.length > 0 && (
-              <span className="text-xs text-clawd-text-dim">
+              <span className="text-xs text-mission-control-text-dim">
                 ({messages.length} message{messages.length !== 1 ? 's' : ''})
               </span>
             )}
@@ -169,14 +169,14 @@ export default function SetupWizard() {
             <button
               onClick={() => setStep('extracting')}
               disabled={step === 'extracting' || streaming || messages.length < 4}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-clawd-accent text-white text-xs font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-accent text-white text-xs font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 size={12} />
               Generate Plan
             </button>
             <button
               onClick={() => cancelWizard()}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
             >
               <X size={12} />
               Cancel
@@ -190,7 +190,7 @@ export default function SetupWizard() {
             <WizardChat />
           </div>
           {plan && (
-            <div className="w-[280px] flex-shrink-0 border-l border-clawd-border overflow-y-auto p-2">
+            <div className="w-[280px] flex-shrink-0 border-l border-mission-control-border overflow-y-auto p-2">
               <WizardPlanPreview />
             </div>
           )}
@@ -207,10 +207,10 @@ export default function SetupWizard() {
   // -- creating step --
   if (step === 'creating') {
     return (
-      <div className="h-full flex items-center justify-center bg-clawd-bg">
+      <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
-          <Loader2 size={32} className="mx-auto text-clawd-accent animate-spin mb-4" />
-          <p className="text-clawd-text text-sm font-medium">Creating your project...</p>
+          <Loader2 size={32} className="mx-auto text-mission-control-accent animate-spin mb-4" />
+          <p className="text-mission-control-text text-sm font-medium">Creating your project...</p>
         </div>
       </div>
     );
@@ -219,11 +219,11 @@ export default function SetupWizard() {
   // -- complete step --
   if (step === 'complete') {
     return (
-      <div className="h-full flex items-center justify-center bg-clawd-bg">
+      <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
           <CheckCircle size={48} className="mx-auto text-success mb-4" />
-          <p className="text-clawd-text text-sm font-medium">Project created successfully!</p>
-          <p className="text-clawd-text-dim text-xs mt-1">Redirecting...</p>
+          <p className="text-mission-control-text text-sm font-medium">Project created successfully!</p>
+          <p className="text-mission-control-text-dim text-xs mt-1">Redirecting...</p>
         </div>
       </div>
     );

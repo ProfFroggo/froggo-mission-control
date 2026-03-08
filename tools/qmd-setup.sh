@@ -1,12 +1,12 @@
 #!/bin/bash
-# QMD setup script for Froggo memory system
-# Run once to initialize QMD with the Froggo vault
+# QMD setup script for Mission Control memory system
+# Run once to initialize QMD with the Mission Control vault
 
 set -e
 
-VAULT_PATH="${VAULT_PATH:-$HOME/froggo/memory}"
+VAULT_PATH="${VAULT_PATH:-$HOME/mission-control/memory}"
 
-echo "Setting up QMD for Froggo memory vault at $VAULT_PATH..."
+echo "Setting up QMD for Mission Control memory vault at $VAULT_PATH..."
 
 # Install QMD (requires bun)
 if ! command -v qmd &> /dev/null; then

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Bot, Send, Target, AlertTriangle } from 'lucide-react';
+import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project, ProjectMember } from '../../types/projects';
 import AgentAvatar from '../AgentAvatar';
@@ -61,7 +62,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-bg1 rounded transition-colors"
+            className="p-1 text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface rounded transition-colors"
           >
             <X size={15} />
           </button>
@@ -71,7 +72,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
         <div className="p-5 space-y-4">
           {/* Project context badge */}
           <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <span className="text-base">{project.emoji}</span>
+            {(() => { const DispIcon = getProjectIcon(project.emoji); return <DispIcon size={16} style={{ color: project.color }} />; })()}
             <div className="min-w-0">
               <p className="text-xs font-medium text-mission-control-text-primary truncate">{project.name}</p>
               {project.goal && (
@@ -130,7 +131,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoFocus
-              className="w-full px-3 py-2 bg-mission-control-bg1 border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50"
             />
           </div>
 
@@ -144,7 +145,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 bg-mission-control-bg1 border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50 resize-none"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50 resize-none"
             />
           </div>
 
@@ -173,7 +174,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
         <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text-primary hover:bg-mission-control-bg1 transition-colors text-sm"
+            className="px-4 py-2 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors text-sm"
           >
             Cancel
           </button>

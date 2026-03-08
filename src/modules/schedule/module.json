@@ -1,11 +1,12 @@
 {
-  "id": "froggo-schedule",
+  "id": "schedule",
   "name": "Schedule",
   "version": "1.0.0",
   "description": "Calendar and schedule management for planning events and tasks.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Calendar",
   "category": "productivity",
+  "core": true,
   "credentials": [],
   "views": [
     {
@@ -15,6 +16,14 @@
       "entrypoint": "./views/SchedulePanel.tsx"
     }
   ],
-  "dependencies": { "core": ">=1.0.0", "modules": [] },
-  "permissions": { "ipc": [], "filesystem": [], "network": false, "shell": false }
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
 }

@@ -64,7 +64,7 @@
   background: rgba(20, 20, 20, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--clawd-border-glass);
+  border: 1px solid var(--mission-control-border-glass);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
@@ -416,7 +416,7 @@
 
 /* Focus ring for accessibility */
 .focus-ring-modern:focus-visible {
-  outline: 2px solid var(--clawd-accent);
+  outline: 2px solid var(--mission-control-accent);
   outline-offset: 4px;
   border-radius: 8px;
 }
@@ -481,7 +481,7 @@
 
 /* Subtle border glow for dark mode */
 .border-glow {
-  border: 1px solid var(--clawd-border-glass);
+  border: 1px solid var(--mission-control-border-glass);
   box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.05);
 }
 

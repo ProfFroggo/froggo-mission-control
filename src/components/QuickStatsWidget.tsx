@@ -1,4 +1,5 @@
 import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
+import { formatTimeAgo } from '../utils/formatting';
 import { useStore } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 import AgentAvatar from './AgentAvatar';
@@ -19,10 +20,10 @@ export default function QuickStatsWidget() {
   // Show loading state while initial data is loading
   if (loading.tasks || loading.agents) {
     return (
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
-        <div className="p-4 border-b border-clawd-border">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <div className="p-4 border-b border-mission-control-border">
           <h2 className="font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-clawd-accent" /> Quick Stats
+            <Activity size={16} className="text-mission-control-accent" /> Quick Stats
           </h2>
         </div>
         <WidgetLoading variant="skeleton" lines={4} />
@@ -67,14 +68,14 @@ export default function QuickStatsWidget() {
     discord: 'text-indigo-400',
     telegram: 'text-info',
     whatsapp: 'text-success',
-    web: 'text-clawd-text-dim',
+    web: 'text-mission-control-text-dim',
   };
 
   return (
-    <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
-      <div className="p-4 border-b border-clawd-border">
+    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border">
         <h2 className="font-semibold flex items-center gap-2">
-          <Activity size={16} className="text-clawd-accent" /> Quick Stats
+          <Activity size={16} className="text-mission-control-accent" /> Quick Stats
         </h2>
       </div>
 
@@ -83,24 +84,24 @@ export default function QuickStatsWidget() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Users size={16} className="text-review" />
-            <span className="text-sm font-medium text-clawd-text-dim">Active Sessions</span>
+            <span className="text-sm font-medium text-mission-control-text-dim">Active Sessions</span>
             <span className="ml-auto text-lg font-bold">{sessions.length}</span>
           </div>
           <div className="flex flex-wrap gap-2 ml-6">
             {Object.entries(sessionsByChannel).map(([channel, count]) => (
               <div
                 key={channel}
-                className="flex items-center gap-1.5 px-2 py-1 bg-clawd-bg/50 rounded-md text-xs"
+                className="flex items-center gap-1.5 px-2 py-1 bg-mission-control-bg/50 rounded-md text-xs"
               >
                 <span>{channelIcons[channel] || '💻'}</span>
-                <span className={channelColors[channel] || 'text-clawd-text-dim'}>
+                <span className={channelColors[channel] || 'text-mission-control-text-dim'}>
                   {channel}
                 </span>
-                <span className="text-clawd-text-dim">×{count}</span>
+                <span className="text-mission-control-text-dim">×{count}</span>
               </div>
             ))}
             {Object.keys(sessionsByChannel).length === 0 && (
-              <span className="text-xs text-clawd-text-dim">No active sessions</span>
+              <span className="text-xs text-mission-control-text-dim">No active sessions</span>
             )}
           </div>
         </div>
@@ -109,7 +110,7 @@ export default function QuickStatsWidget() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-info" />
-            <span className="text-sm font-medium text-clawd-text-dim">Running Agents</span>
+            <span className="text-sm font-medium text-mission-control-text-dim">Running Agents</span>
             <span className="ml-auto text-lg font-bold">{totalAgents}</span>
           </div>
           <div className="space-y-1 ml-6">
@@ -117,28 +118,28 @@ export default function QuickStatsWidget() {
               busyAgents.map(agent => (
                 <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
                   <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                  <span className="text-clawd-text truncate min-w-0 shrink">{agent.name}</span>
+                  <span className="text-mission-control-text truncate min-w-0 shrink">{agent.name}</span>
                   {agent.currentTaskId && (
-                    <span className="ml-auto text-clawd-text-dim truncate flex-1">
+                    <span className="ml-auto text-mission-control-text-dim truncate flex-1">
                       {tasks.find(t => t.id === agent.currentTaskId)?.title}
                     </span>
                   )}
                 </div>
               ))
             ) : (
-              <span className="text-xs text-clawd-text-dim">
+              <span className="text-xs text-mission-control-text-dim">
                 {agents.length} agent{agents.length !== 1 ? 's' : ''} idle
               </span>
             )}
             {subagentSessions.length > 0 && (
-              <div className="pt-1 border-t border-clawd-border/50">
-                <div className="text-xs text-clawd-text-dim mb-1">
+              <div className="pt-1 border-t border-mission-control-border/50">
+                <div className="text-xs text-mission-control-text-dim mb-1">
                   + {subagentSessions.length} sub-agent{subagentSessions.length !== 1 ? 's' : ''}
                 </div>
                 {subagentSessions.slice(0, 2).map(session => (
                   <div key={session.key} className="flex items-center gap-2 text-xs overflow-hidden">
                     <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-                    <span className="text-clawd-text truncate min-w-0 flex-1">{session.displayName}</span>
+                    <span className="text-mission-control-text truncate min-w-0 flex-1">{session.displayName}</span>
                   </div>
                 ))}
               </div>
@@ -150,7 +151,7 @@ export default function QuickStatsWidget() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <CheckSquare size={16} className="text-success" />
-            <span className="text-sm font-medium text-clawd-text-dim">Tasks Today</span>
+            <span className="text-sm font-medium text-mission-control-text-dim">Tasks Today</span>
             <span className="ml-auto text-lg font-bold">
               {completedToday.length}/{totalToday}
             </span>
@@ -158,19 +159,19 @@ export default function QuickStatsWidget() {
           <div className="ml-6">
             {totalToday > 0 ? (
               <div className="space-y-1">
-                <div className="w-full bg-clawd-border rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-mission-control-border rounded-full h-2 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all"
                     style={{ width: `${(completedToday.length / totalToday) * 100}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-clawd-text-dim">
+                <div className="flex justify-between text-xs text-mission-control-text-dim">
                   <span>{completedToday.length} completed</span>
                   <span>{totalToday - completedToday.length} remaining</span>
                 </div>
               </div>
             ) : (
-              <span className="text-xs text-clawd-text-dim">No tasks created today</span>
+              <span className="text-xs text-mission-control-text-dim">No tasks created today</span>
             )}
           </div>
         </div>
@@ -179,7 +180,7 @@ export default function QuickStatsWidget() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Activity size={16} className="text-warning" />
-            <span className="text-sm font-medium text-clawd-text-dim">Recent Activity</span>
+            <span className="text-sm font-medium text-mission-control-text-dim">Recent Activity</span>
           </div>
           <div className="ml-6 space-y-2">
             {recentActivities.length > 0 ? (
@@ -192,14 +193,14 @@ export default function QuickStatsWidget() {
                        activity.type === 'agent' ? '🤖' : '⚙️'}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-clawd-text line-clamp-2">{activity.message}</p>
-                      <p className="text-clawd-text-dim whitespace-nowrap">{formatTimeAgo(activity.timestamp)}</p>
+                      <p className="text-mission-control-text line-clamp-2">{activity.message}</p>
+                      <p className="text-mission-control-text-dim whitespace-nowrap">{formatTimeAgo(activity.timestamp)}</p>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <span className="text-xs text-clawd-text-dim">No recent activity</span>
+              <span className="text-xs text-mission-control-text-dim">No recent activity</span>
             )}
           </div>
         </div>
@@ -208,11 +209,3 @@ export default function QuickStatsWidget() {
   );
 }
 
-function formatTimeAgo(ts: number): string {
-  if (!ts) return 'unknown';
-  const diff = Date.now() - ts;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return new Date(ts).toLocaleDateString();
-}

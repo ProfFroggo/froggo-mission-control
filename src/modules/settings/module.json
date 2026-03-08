@@ -1,15 +1,13 @@
 {
-  "id": "froggo-settings",
+  "id": "settings",
   "name": "Settings",
   "version": "1.0.0",
   "description": "Dashboard settings, preferences, security, connected accounts, and configuration.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Settings",
   "category": "system",
   "core": true,
-
   "credentials": [],
-
   "views": [
     {
       "id": "settings",
@@ -24,7 +22,6 @@
       "entrypoint": "MarketplaceBrowse"
     }
   ],
-
   "ipcChannels": {
     "handle": [
       "settings:get",
@@ -33,15 +30,20 @@
       "settings:saveApiKey"
     ]
   },
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
-    "ipc": ["settings:*", "security:*", "backup:*", "export:*"],
-    "filesystem": ["$DATA_DIR/settings/"],
+    "ipc": [
+      "settings:*",
+      "security:*",
+      "backup:*",
+      "export:*"
+    ],
+    "filesystem": [
+      "$DATA_DIR/settings/"
+    ],
     "network": false,
     "shell": false
   }

@@ -82,7 +82,7 @@ describe('LoadingStates', () => {
       render(<LoadingButton variant="secondary">Click me</LoadingButton>);
 
       const button = screen.getByRole('button');
-      expect(button).toHaveClass('bg-clawd-surface');
+      expect(button).toHaveClass('bg-mission-control-surface');
     });
 
     it('should apply size classes', () => {
@@ -118,7 +118,7 @@ describe('LoadingStates', () => {
       const { container } = render(<Skeleton />);
 
       const skeleton = container.firstChild as HTMLElement;
-      expect(skeleton).toHaveClass('bg-clawd-border');
+      expect(skeleton).toHaveClass('bg-mission-control-border');
       expect(skeleton).toHaveClass('animate-pulse');
     });
 
@@ -163,7 +163,7 @@ describe('LoadingStates', () => {
       const { container } = render(<TaskCardSkeleton />);
 
       const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('bg-clawd-surface');
+      expect(outerDiv).toHaveClass('bg-mission-control-surface');
       expect(outerDiv).toHaveClass('rounded-lg');
     });
   });

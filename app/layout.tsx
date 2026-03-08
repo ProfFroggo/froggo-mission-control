@@ -3,7 +3,7 @@ import '../src/index.css';
 import '../src/accessibility.css';
 
 export const metadata: Metadata = {
-  title: 'Froggo Dashboard',
+  title: 'Mission Control Dashboard',
   description: 'Multi-agent orchestration platform',
 };
 

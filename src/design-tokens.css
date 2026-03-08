@@ -1,12 +1,12 @@
 /**
- * FROGGO DASHBOARD DESIGN TOKENS
+ * MISSION CONTROL DASHBOARD DESIGN TOKENS
  * 
  * Centralized design system tokens for consistent UI
  * Created: 2025-01-28
  * Task: task-1769688719100
  * 
  * Usage: Import this file in index.css
- * Documentation: ~/froggo/docs/design-system/DESIGN_TOKENS.md
+ * Documentation: ~/mission-control/docs/design-system/DESIGN_TOKENS.md
  */
 
 :root {
@@ -66,38 +66,38 @@
      ============================================ */
   
   /* Surface colors */
-  --clawd-bg: #0a0a0a;               /* Page background */
-  --clawd-surface: #141414;          /* Cards, panels, elevated surfaces */
-  --clawd-border: #262626;           /* Borders, dividers */
-  --clawd-border-glass: rgba(255, 255, 255, 0.08);   /* Subtle glass borders (dark) */
-  --clawd-border-glass-hover: rgba(255, 255, 255, 0.15); /* Glass border hover state */
-  --clawd-border-subtle: rgba(38, 38, 38, 0.5);      /* Muted dividers */
+  --mission-control-bg: #0a0a0a;               /* Page background */
+  --mission-control-surface: #141414;          /* Cards, panels, elevated surfaces */
+  --mission-control-border: #262626;           /* Borders, dividers */
+  --mission-control-border-glass: rgba(255, 255, 255, 0.08);   /* Subtle glass borders (dark) */
+  --mission-control-border-glass-hover: rgba(255, 255, 255, 0.15); /* Glass border hover state */
+  --mission-control-border-subtle: rgba(38, 38, 38, 0.5);      /* Muted dividers */
 
   /* Text colors */
-  --clawd-text: #fafafa;             /* Primary text */
-  --clawd-text-dim: #a1a1aa;         /* Secondary text, muted content */
+  --mission-control-text: #fafafa;             /* Primary text */
+  --mission-control-text-dim: #a1a1aa;         /* Secondary text, muted content */
   
   /* Accent colors */
-  --clawd-accent: #22c55e;           /* Primary action color (green) */
-  --clawd-accent-dim: #16a34a;       /* Accent hover/active state */
+  --mission-control-accent: #22c55e;           /* Primary action color (green) */
+  --mission-control-accent-dim: #16a34a;       /* Accent hover/active state */
   
   /* ============================================
      COLOR TOKENS - INTERACTIVE STATES
      ============================================ */
   
   /* Hover states */
-  --color-hover: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
-  --color-hover-accent: color-mix(in srgb, var(--clawd-accent) 90%, transparent);
+  --color-hover: color-mix(in srgb, var(--mission-control-surface) 90%, var(--mission-control-text));
+  --color-hover-accent: color-mix(in srgb, var(--mission-control-accent) 90%, transparent);
   
   /* Active states */
-  --color-active: color-mix(in srgb, var(--clawd-surface) 80%, var(--clawd-text));
+  --color-active: color-mix(in srgb, var(--mission-control-surface) 80%, var(--mission-control-text));
   
   /* Disabled states */
-  --color-disabled: color-mix(in srgb, var(--clawd-surface) 50%, transparent);
-  --color-disabled-text: color-mix(in srgb, var(--clawd-text-dim) 50%, transparent);
+  --color-disabled: color-mix(in srgb, var(--mission-control-surface) 50%, transparent);
+  --color-disabled-text: color-mix(in srgb, var(--mission-control-text-dim) 50%, transparent);
   
   /* Focus ring */
-  --color-focus-ring: var(--clawd-accent);
+  --color-focus-ring: var(--mission-control-accent);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
   
@@ -249,20 +249,20 @@
 
 :root.light {
   /* Surface colors */
-  --clawd-bg: #fafafa;
-  --clawd-surface: #ffffff;
-  --clawd-border: #e4e4e7;
-  --clawd-border-glass: rgba(0, 0, 0, 0.08);
-  --clawd-border-glass-hover: rgba(0, 0, 0, 0.15);
-  --clawd-border-subtle: rgba(228, 228, 231, 0.5);
+  --mission-control-bg: #fafafa;
+  --mission-control-surface: #ffffff;
+  --mission-control-border: #e4e4e7;
+  --mission-control-border-glass: rgba(0, 0, 0, 0.08);
+  --mission-control-border-glass-hover: rgba(0, 0, 0, 0.15);
+  --mission-control-border-subtle: rgba(228, 228, 231, 0.5);
 
   /* Text colors */
-  --clawd-text: #18181b;
-  --clawd-text-dim: #52525b;
+  --mission-control-text: #18181b;
+  --mission-control-text-dim: #52525b;
   
   /* Interactive states (light theme specific) */
-  --color-hover: color-mix(in srgb, var(--clawd-bg) 90%, var(--clawd-text));
-  --color-active: color-mix(in srgb, var(--clawd-bg) 80%, var(--clawd-text));
+  --color-hover: color-mix(in srgb, var(--mission-control-bg) 90%, var(--mission-control-text));
+  --color-active: color-mix(in srgb, var(--mission-control-bg) 80%, var(--mission-control-text));
   
   /* Shadows (lighter in light theme) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -310,13 +310,13 @@
 
 .text-secondary {
   font-size: var(--text-small);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   line-height: var(--leading-normal);
 }
 
 .text-caption {
   font-size: var(--text-caption);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   line-height: var(--leading-normal);
 }
 

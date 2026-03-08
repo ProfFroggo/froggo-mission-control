@@ -1,9 +1,9 @@
 {
-  "id": "froggo-meetings",
+  "id": "meetings",
   "name": "Meetings",
   "version": "1.0.0",
   "description": "Meetings management panel for scheduling and tracking meetings.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Users",
   "category": "productivity",
   "credentials": [],

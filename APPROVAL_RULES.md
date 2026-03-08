@@ -3,6 +3,46 @@
 Agents MUST use `approval_create` MCP tool for any action in Tier 2 or higher.
 The approval hook (`tools/hooks/approval-hook.js`) enforces these tiers automatically.
 
+## ⚠️ Task Creation Standards — MANDATORY (enforced by MCP)
+
+### Task Lifecycle
+```
+todo → internal-review → in-progress → review → human-review (if needed) → done
+                                              ↘ done (if no human approval needed)
+       ↑ quality gate        ↑ agent works   ↑ Clara checks completion
+```
+
+**Stage definitions:**
+- **todo**: task created, agent setting it up (add planning, subtasks, assign agent)
+- **internal-review** ("Ready to Start"): quality gate — Clara verifies everything is in place before work begins
+- **in-progress**: assigned agent is actively working, spawning sub-agents for subtasks
+- **review** (Agent Review): Clara verifies ALL planned work was completed; sends back to in-progress with notes if incomplete
+- **human-review**: required for external actions, content approval, permissions, irreversible actions, OR if task is blocked and needs a human to unblock it
+- **done**: complete
+
+**`blocked` status no longer exists.** If a task is blocked, move it to `human-review` with a clear description of what is blocking it.
+
+### Mandatory requirements before moving to `internal-review`:
+1. **`planningNotes` required** — full plan, approach, steps, context (min 20 chars). Enforced on `task_create` AND `todo → internal-review`.
+2. **Clara is always reviewer** — `reviewerId` is hardcoded to `clara`. Do not override.
+3. **Minimum 2 subtasks** — use `subtask_create` to add at least 2 subtasks.
+4. **Agent must be assigned** — `assignedTo` must be set.
+
+### Correct agent workflow:
+```
+1. task_create (planningNotes filled)       ← blocked if planningNotes missing
+2. subtask_create × 2+                      ← break work into steps
+3. task_update assignedTo=<agent>           ← assign the worker
+4. task_update status=internal-review       ← blocked if above not done
+   (Clara reviews → moves to in-progress)
+5. agent works → task_update status=review  ← agent signals work complete
+   (Clara checks → done or human-review)
+```
+
+**Skipping internal-review is a workflow violation and will be blocked.**
+
+---
+
 ## Tier 0: Auto-Approve (no interruption)
 
 All of the following execute without any approval request:

@@ -75,7 +75,7 @@ export default function UsageStatsPanel() {
   if (loading || !stats) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-clawd-text-dim">
+        <div className="flex items-center gap-2 text-mission-control-text-dim">
           <RefreshCw size={20} className="animate-spin" />
           Loading usage statistics...
         </div>
@@ -101,24 +101,24 @@ export default function UsageStatsPanel() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="text-clawd-accent" size={20} />
+            <Activity className="text-mission-control-accent" size={20} />
             Usage Statistics
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Comprehensive usage metrics and activity tracking
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {([7, 30, 90] as const).map((days) => (
               <button
                 key={days}
                 onClick={() => setTimeRange(days)}
                 className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                   timeRange === days
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {days}d
@@ -128,7 +128,7 @@ export default function UsageStatsPanel() {
 
           <button
             onClick={loadStats}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -138,7 +138,7 @@ export default function UsageStatsPanel() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <MessageSquare size={20} className="text-info" />
             <TrendingUp size={16} className="text-success" />
@@ -146,13 +146,13 @@ export default function UsageStatsPanel() {
           <div className="text-3xl font-bold text-info mb-1">
             {stats.totalMessages.toLocaleString()}
           </div>
-          <div className="text-sm text-clawd-text-dim">Total Messages</div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
+          <div className="text-sm text-mission-control-text-dim">Total Messages</div>
+          <div className="mt-2 text-xs text-mission-control-text-dim">
             ~{avgMessagesPerDay}/day avg
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Users size={20} className="text-review" />
             <MessageCircle size={16} className="text-info" />
@@ -160,13 +160,13 @@ export default function UsageStatsPanel() {
           <div className="text-3xl font-bold text-review mb-1">
             {stats.totalConversations}
           </div>
-          <div className="text-sm text-clawd-text-dim">Conversations</div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
+          <div className="text-sm text-mission-control-text-dim">Conversations</div>
+          <div className="mt-2 text-xs text-mission-control-text-dim">
             {stats.activeChannels} active channels
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Phone size={20} className="text-success" />
             <Activity size={16} className="text-warning" />
@@ -174,13 +174,13 @@ export default function UsageStatsPanel() {
           <div className="text-3xl font-bold text-success mb-1">
             {topChannel?.channel || 'N/A'}
           </div>
-          <div className="text-sm text-clawd-text-dim">Top Channel</div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
+          <div className="text-sm text-mission-control-text-dim">Top Channel</div>
+          <div className="mt-2 text-xs text-mission-control-text-dim">
             {topChannel?.count.toLocaleString() || 0} messages
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Mail size={20} className="text-warning" />
             <TrendingUp size={16} className="text-success" />
@@ -188,15 +188,15 @@ export default function UsageStatsPanel() {
           <div className="text-3xl font-bold text-warning mb-1">
             {stats.avgResponseTime.toFixed(1)}m
           </div>
-          <div className="text-sm text-clawd-text-dim">Avg Response Time</div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
+          <div className="text-sm text-mission-control-text-dim">Avg Response Time</div>
+          <div className="mt-2 text-xs text-mission-control-text-dim">
             Between messages
           </div>
         </div>
       </div>
 
       {/* Messages Over Time Chart */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 mb-6">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
         <h3 className="font-semibold mb-4">Messages Over Time</h3>
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={stats.messagesPerDay}>
@@ -206,7 +206,7 @@ export default function UsageStatsPanel() {
                 <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
             <XAxis
               dataKey="date"
               stroke={CHART_AXIS.stroke}
@@ -217,8 +217,8 @@ export default function UsageStatsPanel() {
             <YAxis stroke={CHART_AXIS.stroke} />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'var(--clawd-surface)',
-                border: '1px solid var(--clawd-border)',
+                backgroundColor: 'var(--mission-control-surface)',
+                border: '1px solid var(--mission-control-border)',
                 borderRadius: '8px',
               }}
             />
@@ -236,17 +236,17 @@ export default function UsageStatsPanel() {
       {/* Channel Distribution & Peak Hours */}
       <div className="grid grid-cols-2 gap-6 mb-6">
         {/* Channel Breakdown */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Channel Distribution</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={stats.channelBreakdown} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis type="number" stroke={CHART_AXIS.stroke} />
               <YAxis dataKey="channel" type="category" stroke={CHART_AXIS.stroke} width={80} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--clawd-surface)',
-                  border: '1px solid var(--clawd-border)',
+                  backgroundColor: 'var(--mission-control-surface)',
+                  border: '1px solid var(--mission-control-border)',
                   borderRadius: '8px',
                 }}
               />
@@ -256,11 +256,11 @@ export default function UsageStatsPanel() {
         </div>
 
         {/* Peak Hours */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Activity by Hour</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={stats.peakHours}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis
                 dataKey="hour"
                 stroke={CHART_AXIS.stroke}
@@ -269,8 +269,8 @@ export default function UsageStatsPanel() {
               <YAxis stroke={CHART_AXIS.stroke} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--clawd-surface)',
-                  border: '1px solid var(--clawd-border)',
+                  backgroundColor: 'var(--mission-control-surface)',
+                  border: '1px solid var(--mission-control-border)',
                   borderRadius: '8px',
                 }}
                 labelFormatter={(hour) => `${hour}:00 - ${hour + 1}:00`}
@@ -282,33 +282,33 @@ export default function UsageStatsPanel() {
       </div>
 
       {/* Insights */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <h3 className="font-semibold mb-4">Insights</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-clawd-bg rounded-xl">
-            <div className="text-sm text-clawd-text-dim mb-1">Most active hour</div>
+          <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="text-sm text-mission-control-text-dim mb-1">Most active hour</div>
             <div className="font-medium text-lg">
               {peakHour ? `${peakHour.hour}:00 - ${peakHour.hour + 1}:00` : 'N/A'}
             </div>
             {peakHour && (
-              <div className="text-sm text-clawd-text-dim mt-1">
+              <div className="text-sm text-mission-control-text-dim mt-1">
                 {peakHour.count} messages
               </div>
             )}
           </div>
-          <div className="p-4 bg-clawd-bg rounded-xl">
-            <div className="text-sm text-clawd-text-dim mb-1">Messages per conversation</div>
+          <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="text-sm text-mission-control-text-dim mb-1">Messages per conversation</div>
             <div className="font-medium text-lg">
               {stats.totalConversations > 0
                 ? Math.round(stats.totalMessages / stats.totalConversations)
                 : 0}
             </div>
-            <div className="text-sm text-clawd-text-dim mt-1">
+            <div className="text-sm text-mission-control-text-dim mt-1">
               Average depth
             </div>
           </div>
-          <div className="p-4 bg-clawd-bg rounded-xl">
-            <div className="text-sm text-clawd-text-dim mb-1">Busiest day</div>
+          <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="text-sm text-mission-control-text-dim mb-1">Busiest day</div>
             <div className="font-medium text-lg">
               {stats.messagesPerDay.length > 0
                 ? new Date(
@@ -316,15 +316,15 @@ export default function UsageStatsPanel() {
                   ).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                 : 'N/A'}
             </div>
-            <div className="text-sm text-clawd-text-dim mt-1">
+            <div className="text-sm text-mission-control-text-dim mt-1">
               {stats.messagesPerDay.length > 0
                 ? stats.messagesPerDay.reduce((a, b) => (a.count > b.count ? a : b)).count
                 : 0}{' '}
               messages
             </div>
           </div>
-          <div className="p-4 bg-clawd-bg rounded-xl">
-            <div className="text-sm text-clawd-text-dim mb-1">Growth trend</div>
+          <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="text-sm text-mission-control-text-dim mb-1">Growth trend</div>
             <div className="font-medium text-lg flex items-center gap-2">
               {stats.messagesPerDay.length >= 2 &&
               stats.messagesPerDay[stats.messagesPerDay.length - 1].count >
@@ -334,7 +334,7 @@ export default function UsageStatsPanel() {
                   <span className="text-success">Increasing</span>
                 </>
               ) : (
-                <span className="text-clawd-text-dim">Stable</span>
+                <span className="text-mission-control-text-dim">Stable</span>
               )}
             </div>
           </div>

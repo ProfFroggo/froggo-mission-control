@@ -124,7 +124,7 @@ interface UpdateInfo {
 
 function MarketplaceCardSkeleton() {
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 space-y-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
       <div className="flex items-start gap-3">
         <Skeleton width="w-10" height="h-10" rounded="lg" />
         <div className="flex-1 space-y-1.5">
@@ -159,8 +159,8 @@ function CategoryChip({
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
         selected
-          ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-          : 'border-clawd-border text-clawd-text-dim hover:border-clawd-text-dim'
+          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
       }`}
     >
       {label}
@@ -192,17 +192,17 @@ function ModuleCard({
   const IconComponent = resolveIcon(mod.icon);
 
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 transition-all hover:border-clawd-text-dim/30 flex flex-col gap-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-clawd-accent/10 flex items-center justify-center flex-shrink-0">
-          <IconComponent size={20} className="text-clawd-accent" />
+        <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
+          <IconComponent size={20} className="text-mission-control-accent" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-semibold text-clawd-text text-sm">{mod.name}</span>
+            <span className="font-semibold text-mission-control-text text-sm">{mod.name}</span>
             {mod.agent && (
-              <span className="inline-flex items-center gap-0.5 text-xs bg-clawd-accent/15 text-clawd-accent px-1.5 py-0.5 rounded font-medium">
+              <span className="inline-flex items-center gap-0.5 text-xs bg-mission-control-accent/15 text-mission-control-accent px-1.5 py-0.5 rounded font-medium">
                 <Bot size={10} />
                 Agent
               </span>
@@ -216,7 +216,7 @@ function ModuleCard({
               </span>
             )}
           </div>
-          <span className="text-xs text-clawd-text-dim">
+          <span className="text-xs text-mission-control-text-dim">
             v{mod.version}
             {mod.author && ` · ${mod.author}`}
           </span>
@@ -225,18 +225,18 @@ function ModuleCard({
 
       {/* Description */}
       {mod.description && (
-        <p className="text-sm text-clawd-text-dim line-clamp-2 leading-relaxed">
+        <p className="text-sm text-mission-control-text-dim line-clamp-2 leading-relaxed">
           {mod.description}
         </p>
       )}
 
       {/* Footer: category + downloads + actions */}
       <div className="mt-auto flex items-center gap-2 flex-wrap">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-border/60 text-clawd-text-dim capitalize">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
           {mod.category}
         </span>
         {mod.downloads > 0 && (
-          <span className="text-xs text-clawd-text-dim">
+          <span className="text-xs text-mission-control-text-dim">
             {mod.downloads.toLocaleString()} installs
           </span>
         )}
@@ -244,7 +244,7 @@ function ModuleCard({
         {/* Action buttons */}
         <div className="ml-auto flex items-center gap-2">
           {isInstalling ? (
-            <span className="flex items-center gap-1.5 text-xs text-clawd-text-dim px-3 py-1.5">
+            <span className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-3 py-1.5">
               <Loader2 size={13} className="animate-spin" />
               Installing…
             </span>
@@ -252,7 +252,7 @@ function ModuleCard({
             <button
               type="button"
               onClick={() => onInstall(mod)}
-              className="flex items-center gap-1.5 text-xs font-medium bg-green-600/90 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium bg-success/90 hover:bg-success text-white px-3 py-1.5 rounded-lg transition-colors"
             >
               <Download size={13} />
               Install
@@ -262,7 +262,7 @@ function ModuleCard({
               <button
                 type="button"
                 onClick={() => onUpdate(mod)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-amber-500/90 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium bg-warning/90 hover:bg-warning text-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 <RefreshCw size={13} />
                 Update
@@ -270,14 +270,14 @@ function ModuleCard({
               <button
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-clawd-border hover:border-red-500/40 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
                 title="Uninstall"
               >
                 <Trash2 size={13} />
               </button>
             </>
           ) : builtin ? (
-            <span className="flex items-center gap-1.5 text-xs text-clawd-accent font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-mission-control-accent font-medium">
               <PackageCheck size={13} />
               Built-in
             </span>
@@ -290,7 +290,7 @@ function ModuleCard({
               <button
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-clawd-border hover:border-red-500/40 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
                 title="Uninstall"
               >
                 <Trash2 size={13} />
@@ -450,7 +450,7 @@ export default function MarketplaceBrowse() {
       {restartBanner && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
-          Please restart Froggo.app to apply changes.
+          Please restart Mission Control.app to apply changes.
         </div>
       )}
 
@@ -465,21 +465,21 @@ export default function MarketplaceBrowse() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2.5 mb-1">
-          <Store size={22} className="text-clawd-accent flex-shrink-0" />
-          <h1 className="text-2xl font-semibold text-clawd-text">Marketplace</h1>
+          <Store size={22} className="text-mission-control-accent flex-shrink-0" />
+          <h1 className="text-xl font-semibold text-mission-control-text">Marketplace</h1>
         </div>
-        <p className="text-clawd-text-dim text-sm">Browse and install modules to extend your dashboard</p>
+        <p className="text-mission-control-text-dim text-sm">Browse and install modules to extend your dashboard</p>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim pointer-events-none" />
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
         <input
           type="text"
           placeholder="Search modules…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-clawd-surface border border-clawd-border rounded-lg pl-9 pr-4 py-2 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent transition-colors"
+          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-9 pr-4 py-2 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
         />
       </div>
 
@@ -510,7 +510,7 @@ export default function MarketplaceBrowse() {
           ))}
         </div>
       ) : filteredModules.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-clawd-text-dim">
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-mission-control-text-dim">
           <PackageCheck size={36} className="opacity-40" />
           <span className="text-sm">
             {searchQuery || activeCategory

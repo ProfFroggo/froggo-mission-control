@@ -123,7 +123,7 @@ export default function Tooltip({
     };
 
     // Get computed tooltip background color (theme-aware)
-    const tooltipBg = 'var(--clawd-surface)';
+    const tooltipBg = 'var(--mission-control-surface)';
 
     switch (position) {
       case 'top':
@@ -194,9 +194,9 @@ export default function Tooltip({
             style={{
               maxWidth: `${maxWidth}px`,
               padding: '8px 12px',
-              backgroundColor: 'var(--clawd-surface)',
-              color: 'var(--clawd-text)',
-              border: '1px solid var(--clawd-border)',
+              backgroundColor: 'var(--mission-control-surface)',
+              color: 'var(--mission-control-text)',
+              border: '1px solid var(--mission-control-border)',
               borderRadius: '8px',
               fontSize: '13px',
               lineHeight: '1.4',
@@ -220,7 +220,7 @@ export default function Tooltip({
 export function HelpTooltip({ content, position = 'top' }: { content: string | ReactNode; position?: 'top' | 'bottom' | 'left' | 'right' }) {
   return (
     <Tooltip content={content} position={position}>
-      <button className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-clawd-border hover:bg-clawd-accent/20 text-clawd-text-dim hover:text-clawd-accent transition-colors">
+      <button className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-mission-control-border hover:bg-mission-control-accent/20 text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
         <span className="text-xs">?</span>
       </button>
     </Tooltip>

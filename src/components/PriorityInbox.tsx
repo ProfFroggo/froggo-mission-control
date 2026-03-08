@@ -44,8 +44,8 @@ export function PriorityIndicator({
       pulse: false
     },
     low: {
-      color: 'bg-clawd-bg0',
-      textColor: 'text-clawd-text-dim',
+      color: 'bg-mission-control-bg0',
+      textColor: 'text-mission-control-text-dim',
       label: 'Low',
       icon: ChevronDown,
       pulse: false
@@ -89,17 +89,17 @@ export function PriorityExplanation({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
+        className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
         title="Why is this priority?"
       >
-        <Info size={14} className="text-clawd-text-dim" />
+        <Info size={14} className="text-mission-control-text-dim" />
       </button>
       
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-4 min-w-[320px] z-50">
+        <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl p-4 min-w-[320px] z-50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-sm">Priority Calculation</h4>
-            <button onClick={() => setIsOpen(false)} className="text-clawd-text-dim hover:text-clawd-text">
+            <button onClick={() => setIsOpen(false)} className="text-mission-control-text-dim hover:text-mission-control-text">
               ×
             </button>
           </div>
@@ -108,11 +108,11 @@ export function PriorityExplanation({
             {explanation && explanation.map((factor: any, i: number) => (
               <div key={i} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="text-clawd-text-dim">{factor.factor}</span>
-                  <span className="text-clawd-accent font-mono">{Math.round(factor.score)}</span>
+                  <span className="text-mission-control-text-dim">{factor.factor}</span>
+                  <span className="text-mission-control-accent font-mono">{Math.round(factor.score)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-clawd-text-dim">×{factor.weight}</span>
+                  <span className="text-mission-control-text-dim">×{factor.weight}</span>
                   <span className="font-semibold">=  {Math.round(factor.contribution)}</span>
                 </div>
               </div>
@@ -120,27 +120,27 @@ export function PriorityExplanation({
           </div>
           
           {senderStats && (
-            <div className="border-t border-clawd-border pt-3 mt-3">
-              <h5 className="text-xs font-semibold text-clawd-text-dim mb-2">Sender Profile</h5>
+            <div className="border-t border-mission-control-border pt-3 mt-3">
+              <h5 className="text-xs font-semibold text-mission-control-text-dim mb-2">Sender Profile</h5>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-clawd-text-dim">Importance:</span>
+                  <span className="text-mission-control-text-dim">Importance:</span>
                   <span className="font-mono">{Math.round(senderStats.importance)}/100</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-clawd-text-dim">Reply Rate:</span>
+                  <span className="text-mission-control-text-dim">Reply Rate:</span>
                   <span className="font-mono">{Math.round(senderStats.replyRate)}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-clawd-text-dim">Avg Response:</span>
+                  <span className="text-mission-control-text-dim">Avg Response:</span>
                   <span className="font-mono">{formatResponseTime(senderStats.avgResponseTime)}</span>
                 </div>
               </div>
             </div>
           )}
           
-          <div className="mt-3 pt-3 border-t border-clawd-border">
-            <p className="text-xs text-clawd-text-dim italic">
+          <div className="mt-3 pt-3 border-t border-mission-control-border">
+            <p className="text-xs text-mission-control-text-dim italic">
               Priority adapts based on your interaction patterns
             </p>
           </div>
@@ -160,38 +160,38 @@ function formatResponseTime(seconds: number): string {
 // Priority stats card
 export function PriorityStats({ stats }: { stats: any }) {
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
-        <Star size={16} className="text-clawd-accent" />
+        <Star size={16} className="text-mission-control-accent" />
         <h3 className="font-semibold text-sm">Priority Stats</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="text-xs text-clawd-text-dim mb-1">Critical</div>
+          <div className="text-xs text-mission-control-text-dim mb-1">Critical</div>
           <div className="text-2xl font-bold text-error">{stats.critical || 0}</div>
         </div>
         <div>
-          <div className="text-xs text-clawd-text-dim mb-1">High</div>
+          <div className="text-xs text-mission-control-text-dim mb-1">High</div>
           <div className="text-2xl font-bold text-warning">{stats.high || 0}</div>
         </div>
         <div>
-          <div className="text-xs text-clawd-text-dim mb-1">Normal</div>
+          <div className="text-xs text-mission-control-text-dim mb-1">Normal</div>
           <div className="text-2xl font-bold text-info">{stats.normal || 0}</div>
         </div>
         <div>
-          <div className="text-xs text-clawd-text-dim mb-1">Low</div>
-          <div className="text-2xl font-bold text-clawd-text-dim">{stats.low || 0}</div>
+          <div className="text-xs text-mission-control-text-dim mb-1">Low</div>
+          <div className="text-2xl font-bold text-mission-control-text-dim">{stats.low || 0}</div>
         </div>
       </div>
       
-      <div className="mt-4 pt-4 border-t border-clawd-border">
+      <div className="mt-4 pt-4 border-t border-mission-control-border">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-clawd-text-dim">Avg Score</span>
+          <span className="text-mission-control-text-dim">Avg Score</span>
           <span className="font-mono font-semibold">{stats.avgScore?.toFixed(1) || 'N/A'}</span>
         </div>
         <div className="flex items-center justify-between text-xs mt-1">
-          <span className="text-clawd-text-dim">Learning</span>
+          <span className="text-mission-control-text-dim">Learning</span>
           <span className="text-success font-medium">{stats.learnedSenders || 0} senders</span>
         </div>
       </div>
@@ -222,7 +222,7 @@ export function PrioritySettings({
   ];
 
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
       <h3 className="font-semibold text-sm mb-4">Priority Weights</h3>
       
       <div className="space-y-3 mb-6">
@@ -231,9 +231,9 @@ export function PrioritySettings({
             <div className="flex items-center justify-between mb-1">
               <div>
                 <span className="text-xs font-medium">{w.label}</span>
-                <p className="text-xs text-clawd-text-dim">{w.desc}</p>
+                <p className="text-xs text-mission-control-text-dim">{w.desc}</p>
               </div>
-              <span className="text-xs font-mono text-clawd-accent">{config[w.key] || 0}%</span>
+              <span className="text-xs font-mono text-mission-control-accent">{config[w.key] || 0}%</span>
             </div>
             <input
               type="range"
@@ -242,7 +242,7 @@ export function PrioritySettings({
               step="5"
               value={config[w.key] || 0}
               onChange={(e) => onUpdate(w.key, parseFloat(e.target.value))}
-              className="w-full h-1 bg-clawd-border rounded-lg appearance-none cursor-pointer accent-clawd-accent"
+              className="w-full h-1 bg-mission-control-border rounded-lg appearance-none cursor-pointer accent-mission-control-accent"
             />
           </div>
         ))}
@@ -255,7 +255,7 @@ export function PrioritySettings({
           <div key={t.key}>
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium">{t.label}</span>
-              <span className="text-xs font-mono text-clawd-accent">{config[t.key] || 0}</span>
+              <span className="text-xs font-mono text-mission-control-accent">{config[t.key] || 0}</span>
             </div>
             <input
               type="range"
@@ -264,14 +264,14 @@ export function PrioritySettings({
               step="5"
               value={config[t.key] || 0}
               onChange={(e) => onUpdate(t.key, parseFloat(e.target.value))}
-              className="w-full h-1 bg-clawd-border rounded-lg appearance-none cursor-pointer accent-clawd-accent"
+              className="w-full h-1 bg-mission-control-border rounded-lg appearance-none cursor-pointer accent-mission-control-accent"
             />
           </div>
         ))}
       </div>
       
-      <div className="mt-4 pt-4 border-t border-clawd-border">
-        <p className="text-xs text-clawd-text-dim italic">
+      <div className="mt-4 pt-4 border-t border-mission-control-border">
+        <p className="text-xs text-mission-control-text-dim italic">
           Adjust weights to customize how priority is calculated. Changes take effect on next calculation.
         </p>
       </div>

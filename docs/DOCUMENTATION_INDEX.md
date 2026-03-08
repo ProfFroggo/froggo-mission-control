@@ -1,4 +1,4 @@
-# Froggo Dashboard - Documentation Index
+# Mission Control Dashboard - Documentation Index
 
 **Your complete guide to all help resources**
 
@@ -6,7 +6,7 @@
 
 ## 📚 Documentation Suite
 
-This comprehensive documentation covers everything you need to master Froggo Dashboard. Choose the right guide for your needs:
+This comprehensive documentation covers everything you need to master Mission Control Dashboard. Choose the right guide for your needs:
 
 ---
 
@@ -67,7 +67,7 @@ This comprehensive documentation covers everything you need to master Froggo Das
 
 **Structure:**
 ```
-1. Introduction (What is Froggo?)
+1. Introduction (What is Mission Control?)
 2. Getting Started (Installation, setup)
 3. Core Concepts (Agents, tasks, workflow)
 4. Panel Reference (Detailed guide for each panel)
@@ -277,7 +277,7 @@ Each walkthrough includes:
 - Multi-channel message management
 - Custom data exports
 
-**Result:** You're a Froggo ninja! 🥷
+**Result:** You're a Mission Control ninja! 🥷
 
 ---
 
@@ -312,7 +312,7 @@ Each walkthrough includes:
 **Track productivity**
 → Analytics (User Guide) + Productivity Metrics article
 
-**Customize Froggo**
+**Customize Mission Control**
 → Settings (User Guide) + Best Practices
 
 ---
@@ -429,14 +429,14 @@ Access comprehensive help without leaving the app:
 
 ---
 
-### Ask Froggo (⌘9)
+### Ask Mission Control (⌘9)
 
-Get instant answers from Froggo:
+Get instant answers from Mission Control:
 
 **How to Use:**
 1. Press `⌘9` to open Chat
 2. Type your question naturally
-3. Froggo responds with help
+3. Mission Control responds with help
 4. Follow up with clarifying questions
 
 **Example Questions:**
@@ -446,7 +446,7 @@ Get instant answers from Froggo:
 - "How do I use voice assistant?"
 - "Explain the agent system"
 
-**Froggo knows:**
+**Mission Control knows:**
 - All documentation content
 - Your current system state
 - Task history and context
@@ -481,8 +481,8 @@ Get instant answers from Froggo:
 **Feedback:**
 Found an error? Have a suggestion?
 - In-App: Settings > Support > Report Issue
-- Email: docs@froggo.ai
-- GitHub: github.com/froggo/dashboard/issues
+- Email: docs@mission-control.ai
+- GitHub: github.com/mission-control/dashboard/issues
 
 ---
 
@@ -492,8 +492,8 @@ Found an error? Have a suggestion?
 
 All documentation available at:
 - In-App: Settings > Help > Download Documentation
-- Web: https://docs.froggo.ai/download
-- GitHub: github.com/froggo/dashboard/docs
+- Web: https://docs.mission-control.ai/download
+- GitHub: github.com/mission-control/dashboard/docs
 
 **Formats:**
 - Markdown (source)
@@ -507,7 +507,7 @@ All documentation available at:
 
 ## 🎓 Certification (Coming Soon)
 
-**Froggo Power User Certification:**
+**Mission Control Power User Certification:**
 
 Complete the course, pass the exam, get certified!
 
@@ -561,20 +561,20 @@ Contributors listed in:
 **Need help not covered in docs?**
 
 ### Community
-- **Discord:** https://discord.gg/froggo
-- **Forum:** https://forum.froggo.ai
-- **Reddit:** r/froggo
+- **Discord:** https://discord.gg/mission-control
+- **Forum:** https://forum.mission-control.ai
+- **Reddit:** r/mission-control
 - Response: Minutes to hours
 
 ### Official
-- **Email:** support@froggo.ai
+- **Email:** support@mission-control.ai
 - **Live Chat:** Settings > Support (Premium)
 - **Phone:** Coming soon
 - Response: 24-48 hours
 
 ### Emergency
-- **Critical bugs:** urgent@froggo.ai
-- **Security issues:** security@froggo.ai
+- **Critical bugs:** urgent@mission-control.ai
+- **Security issues:** security@mission-control.ai
 - Response: <4 hours
 
 ---
@@ -626,7 +626,7 @@ With these resources, you have everything you need to:
 
 **Remember:**
 - Press `⌘?` for in-app help
-- Ask Froggo (⌘9) for quick answers
+- Ask Mission Control (⌘9) for quick answers
 - Join Discord community for peer support
 - Check troubleshooting guide when stuck
 

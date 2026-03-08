@@ -5,7 +5,7 @@
 // Review: 2026-02-17 - suppression retained for stability
 
 import { useState, useEffect } from 'react';
-import { Star, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
+import { Star, Plus, Edit, Trash2, Save, X, CheckCircle, Bot, Briefcase, Target, Users, Heart, ShoppingBag } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { settingsApi } from '../lib/api';
@@ -26,11 +26,11 @@ interface VipSender {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'boss', label: 'Boss', emoji: '👔', color: 'text-review' },
-  { value: 'client', label: 'Client', emoji: '💼', color: 'text-info' },
-  { value: 'stakeholder', label: 'Stakeholder', emoji: '🎯', color: 'text-warning' },
-  { value: 'team', label: 'Team', emoji: '👥', color: 'text-success' },
-  { value: 'family', label: 'Family', emoji: '❤️', color: 'text-pink-400' },
+  { value: 'boss', label: 'Boss', icon: <ShoppingBag size={12} />, color: 'text-review' },
+  { value: 'client', label: 'Client', icon: <Briefcase size={12} />, color: 'text-info' },
+  { value: 'stakeholder', label: 'Stakeholder', icon: <Target size={12} />, color: 'text-warning' },
+  { value: 'team', label: 'Team', icon: <Users size={12} />, color: 'text-success' },
+  { value: 'family', label: 'Family', icon: <Heart size={12} />, color: 'text-pink-400' },
 ];
 
 const TYPE_OPTIONS = [
@@ -189,15 +189,15 @@ export default function VIPSettingsPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-clawd-bg">
+    <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-clawd-border/50">
+      <div className="flex items-center justify-between p-6 border-b border-mission-control-border/50">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
             <Star className="text-warning" size={24} />
             VIP Senders
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Manage important senders and priority boosts
           </p>
         </div>
@@ -212,13 +212,13 @@ export default function VIPSettingsPanel() {
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-2 px-6 py-3 border-b border-clawd-border/50 overflow-x-auto">
+      <div className="flex gap-2 px-6 py-3 border-b border-mission-control-border/50 overflow-x-auto">
         <button
           onClick={() => setCategoryFilter(null)}
           className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
             categoryFilter === null
-              ? 'bg-clawd-surface text-white'
-              : 'text-clawd-text-dim hover:bg-clawd-surface/50'
+              ? 'bg-mission-control-surface text-white'
+              : 'text-mission-control-text-dim hover:bg-mission-control-surface/50'
           }`}
         >
           All
@@ -229,11 +229,11 @@ export default function VIPSettingsPanel() {
             onClick={() => setCategoryFilter(cat.value)}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors whitespace-nowrap ${
               categoryFilter === cat.value
-                ? 'bg-clawd-surface text-white'
-                : 'text-clawd-text-dim hover:bg-clawd-surface/50'
+                ? 'bg-mission-control-surface text-white'
+                : 'text-mission-control-text-dim hover:bg-mission-control-surface/50'
             }`}
           >
-            {cat.emoji} {cat.label}
+            <span className="inline-flex items-center gap-1">{cat.icon} {cat.label}</span>
           </button>
         ))}
       </div>
@@ -241,9 +241,9 @@ export default function VIPSettingsPanel() {
       {/* VIP List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-3">
         {loading ? (
-          <div className="text-center text-clawd-text-dim py-12">Loading...</div>
+          <div className="text-center text-mission-control-text-dim py-12">Loading...</div>
         ) : vips.length === 0 ? (
-          <div className="text-center text-clawd-text-dim py-12">
+          <div className="text-center text-mission-control-text-dim py-12">
             <Star size={48} className="mx-auto mb-4 opacity-20" />
             <p>No VIP senders configured</p>
             <p className="text-sm mt-2">Add important senders to prioritize their messages</p>
@@ -256,41 +256,41 @@ export default function VIPSettingsPanel() {
             return (
               <div
                 key={vip.id}
-                className="bg-clawd-bg/50 border border-clawd-border/50 rounded-lg p-4 hover:border-clawd-border 
+                className="bg-mission-control-bg/50 border border-mission-control-border/50 rounded-lg p-4 hover:border-mission-control-border 
                          transition-colors"
               >
                 {isEditing ? (
                   // Edit Form
                   <div className="space-y-3">
                     <div>
-                      <label htmlFor="vip-label" className="block text-sm text-clawd-text-dim mb-1">Label</label>
+                      <label htmlFor="vip-label" className="block text-sm text-mission-control-text-dim mb-1">Label</label>
                       <input
                         id="vip-label"
                         type="text"
                         value={formData.label}
                         onChange={e => setFormData({ ...formData, label: e.target.value })}
-                        className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                                  focus:outline-none focus:border-info-border"
                       />
                     </div>
                     <div>
-                      <label htmlFor="vip-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                      <label htmlFor="vip-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
                       <select
                         id="vip-category"
                         value={formData.category}
                         onChange={e => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                                  focus:outline-none focus:border-info-border"
                       >
                         {CATEGORY_OPTIONS.map(cat => (
                           <option key={cat.value} value={cat.value}>
-                            {cat.emoji} {cat.label}
+                            {cat.label}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="vip-boost" className="block text-sm text-clawd-text-dim mb-1">
+                      <label htmlFor="vip-boost" className="block text-sm text-mission-control-text-dim mb-1">
                         Priority Boost ({formData.boost})
                       </label>
                       <input
@@ -304,13 +304,13 @@ export default function VIPSettingsPanel() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="vip-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                      <label htmlFor="vip-notes" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
                       <textarea
                         id="vip-notes"
                         value={formData.notes}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         rows={2}
-                        className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                                  focus:outline-none focus:border-info-border"
                         placeholder="Why is this person a VIP?"
                       />
@@ -326,7 +326,7 @@ export default function VIPSettingsPanel() {
                       </button>
                       <button
                         onClick={resetForm}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-clawd-surface hover:bg-clawd-border
+                        className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-surface hover:bg-mission-control-border
                                  text-white rounded transition-colors"
                       >
                         <X size={14} />
@@ -341,19 +341,19 @@ export default function VIPSettingsPanel() {
                       <div className="flex items-center gap-2">
                         <Star className="text-warning" size={20} />
                         <span className="text-lg font-semibold text-white">{vip.label}</span>
-                        <span className={`text-sm ${catInfo.color}`}>
-                          {catInfo.emoji} {catInfo.label}
+                        <span className={`text-sm inline-flex items-center gap-1 ${catInfo.color}`}>
+                          {catInfo.icon} {catInfo.label}
                         </span>
                         {vip.auto_detected === 1 && (
-                          <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded">
-                            🤖 Auto
+                          <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded inline-flex items-center gap-1">
+                            <Bot size={10} /> Auto
                           </span>
                         )}
                       </div>
                       <div className="flex gap-1">
                         <button
                           onClick={() => startEdit(vip)}
-                          className="p-1.5 text-clawd-text-dim hover:text-info hover:bg-info-subtle rounded
+                          className="p-1.5 text-mission-control-text-dim hover:text-info hover:bg-info-subtle rounded
                                    transition-colors"
                           title="Edit"
                         >
@@ -361,7 +361,7 @@ export default function VIPSettingsPanel() {
                         </button>
                         <button
                           onClick={() => handleRemove(vip.id, vip.label)}
-                          className="p-1.5 text-clawd-text-dim hover:text-error hover:bg-error-subtle rounded
+                          className="p-1.5 text-mission-control-text-dim hover:text-error hover:bg-error-subtle rounded
                                    transition-colors"
                           title="Remove"
                         >
@@ -371,18 +371,18 @@ export default function VIPSettingsPanel() {
                     </div>
 
                     <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2 text-clawd-text-dim">
+                      <div className="flex items-center gap-2 text-mission-control-text-dim">
                         <span className="font-mono text-info">{vip.identifier}</span>
-                        <span className="text-clawd-text-dim">({vip.identifier_type})</span>
+                        <span className="text-mission-control-text-dim">({vip.identifier_type})</span>
                       </div>
-                      <div className="text-clawd-text-dim">
+                      <div className="text-mission-control-text-dim">
                         Priority boost: <span className="text-warning font-semibold">+{vip.priority_boost}</span>
                       </div>
                       {vip.notes && (
-                        <div className="text-clawd-text-dim italic">{vip.notes}</div>
+                        <div className="text-mission-control-text-dim italic">{vip.notes}</div>
                       )}
                       {vip.message_count > 0 && (
-                        <div className="text-clawd-text-dim">
+                        <div className="text-mission-control-text-dim">
                           {vip.message_count} messages
                           {vip.last_message_at && ` • Last: ${new Date(vip.last_message_at).toLocaleDateString()}`}
                         </div>
@@ -399,17 +399,17 @@ export default function VIPSettingsPanel() {
       {/* Add VIP Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-clawd-bg border border-clawd-border rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Add VIP Sender</h3>
-              <button type="button" onClick={resetForm} className="text-clawd-text-dim hover:text-white">
+              <h3 className="text-lg font-semibold text-mission-control-text">Add VIP Sender</h3>
+              <button type="button" onClick={resetForm} className="text-mission-control-text-dim hover:text-white">
                 <X size={20} />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="vip-identifier" className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-identifier" className="block text-sm text-mission-control-text-dim mb-1">
                   Identifier <span className="text-error">*</span>
                 </label>
                 <input
@@ -418,20 +418,20 @@ export default function VIPSettingsPanel() {
                   value={formData.identifier}
                   onChange={e => setFormData({ ...formData, identifier: e.target.value })}
                   placeholder="email@example.com, +1234567890, @username, domain.com"
-                  className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                            focus:outline-none focus:border-info-border"
                 />
               </div>
 
               <div>
-                <label htmlFor="vip-type" className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-type" className="block text-sm text-mission-control-text-dim mb-1">
                   Type
                 </label>
                 <select
                   id="vip-type"
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                            focus:outline-none focus:border-info-border"
                 >
                   {TYPE_OPTIONS.map(type => (
@@ -443,7 +443,7 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label htmlFor="vip-label" className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-label" className="block text-sm text-mission-control-text-dim mb-1">
                   Label <span className="text-error">*</span>
                 </label>
                 <input
@@ -452,30 +452,30 @@ export default function VIPSettingsPanel() {
                   value={formData.label}
                   onChange={e => setFormData({ ...formData, label: e.target.value })}
                   placeholder="Kevin, CEO, Key Client"
-                  className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                            focus:outline-none focus:border-info-border"
                 />
               </div>
 
               <div>
-                <label htmlFor="vip-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                <label htmlFor="vip-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
                 <select
                   id="vip-category"
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                            focus:outline-none focus:border-info-border"
                 >
                   {CATEGORY_OPTIONS.map(cat => (
                     <option key={cat.value} value={cat.value}>
-                      {cat.emoji} {cat.label}
+                      {cat.label}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="vip-boost" className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-boost" className="block text-sm text-mission-control-text-dim mb-1">
                   Priority Boost: {formData.boost} (0-50)
                 </label>
                 <input
@@ -487,7 +487,7 @@ export default function VIPSettingsPanel() {
                   onChange={e => setFormData({ ...formData, boost: parseInt(e.target.value) })}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                   <span>Low</span>
                   <span>Medium</span>
                   <span>High</span>
@@ -495,14 +495,14 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label htmlFor="vip-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                <label htmlFor="vip-notes" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
                 <textarea
                   id="vip-notes"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                   placeholder="Why is this person a VIP?"
-                  className="w-full bg-clawd-surface border border-clawd-border rounded px-3 py-2 text-white
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
                            focus:outline-none focus:border-info-border"
                 />
               </div>
@@ -510,7 +510,7 @@ export default function VIPSettingsPanel() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleAdd}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent hover:bg-clawd-accent-dim
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent-dim
                            text-white rounded-lg transition-colors"
                 >
                   <CheckCircle size={16} />
@@ -518,7 +518,7 @@ export default function VIPSettingsPanel() {
                 </button>
                 <button
                   onClick={resetForm}
-                  className="px-4 py-2 bg-clawd-surface hover:bg-clawd-border text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-mission-control-surface hover:bg-mission-control-border text-white rounded-lg transition-colors"
                 >
                   Cancel
                 </button>

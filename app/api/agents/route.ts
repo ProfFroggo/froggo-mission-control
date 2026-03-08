@@ -17,7 +17,19 @@ function parseAgent(row: Record<string, unknown>) {
 export async function GET(_request: NextRequest) {
   try {
     const db = getDb();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY name ASC').all() as Record<string, unknown>[];
+
+    // Staleness sweep: agents with no activity in 30+ minutes revert to offline
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    db.prepare(
+      `UPDATE agents SET status = 'offline'
+       WHERE status IN ('active', 'idle')
+         AND lastActivity IS NOT NULL
+         AND lastActivity < ?`
+    ).run(cutoff);
+
+    const rows = db.prepare(
+      `SELECT * FROM agents WHERE status != 'archived' ORDER BY CASE id WHEN 'mission-control' THEN 0 WHEN 'hr' THEN 1 WHEN 'coder' THEN 2 WHEN 'inbox' THEN 3 ELSE 4 END, name ASC`
+    ).all() as Record<string, unknown>[];
     return NextResponse.json(rows.map(parseAgent));
   } catch (error) {
     console.error('GET /api/agents error:', error);
@@ -28,19 +40,18 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, role, emoji, color, capabilities, personality } = body;
-    if (!id || !name || !role) {
-      return NextResponse.json({ error: 'id, name and role are required' }, { status: 400 });
+    const { id, name, capabilities } = body;
+    if (!id || !name) {
+      return NextResponse.json({ error: 'id and name are required' }, { status: 400 });
     }
     const db = getDb();
     db.prepare(`
-      INSERT INTO agents (id, name, role, emoji, color, capabilities, personality, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'idle', unixepoch())
-      ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role,
-        emoji=excluded.emoji, color=excluded.color, capabilities=excluded.capabilities,
-        personality=excluded.personality
-    `).run(id, name, role, emoji || '🤖', color || '#00BCD4',
-      JSON.stringify(Array.isArray(capabilities) ? capabilities : []), personality || '');
+      INSERT INTO agents (id, name, capabilities, status)
+      VALUES (?, ?, ?, 'idle')
+      ON CONFLICT(id) DO UPDATE SET name=excluded.name,
+        capabilities=excluded.capabilities
+    `).run(id, name,
+      JSON.stringify(Array.isArray(capabilities) ? capabilities : []));
     const row = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as Record<string, unknown>;
     return NextResponse.json(parseAgent(row), { status: 201 });
   } catch (error) {

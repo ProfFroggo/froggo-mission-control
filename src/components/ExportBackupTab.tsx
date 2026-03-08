@@ -181,7 +181,7 @@ export default function ExportBackupTab() {
         settingsApi.getAll().catch(() => ({})),
       ]);
       const backup = { tasks, agents, sessions, settings, timestamp: new Date().toISOString(), version: '1.0' };
-      const filename = `froggo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filename = `mission-control-backup-${new Date().toISOString().slice(0, 10)}.json`;
       downloadJSON(backup, filename);
       showToast('success', 'Backup Created', `Downloaded as ${filename}`);
     } catch (error) {
@@ -220,25 +220,25 @@ export default function ExportBackupTab() {
       {/* Statistics */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4">
-            <div className="flex items-center gap-2 text-clawd-text-dim mb-2">
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <Database size={16} />
               <span className="text-sm">Database Size</span>
             </div>
             <div className="text-2xl font-semibold">{formatBytes(stats.databaseSize)}</div>
           </div>
           
-          <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4">
-            <div className="flex items-center gap-2 text-clawd-text-dim mb-2">
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <HardDrive size={16} />
               <span className="text-sm">Backups</span>
             </div>
             <div className="text-2xl font-semibold">{stats.backupCount}</div>
-            <div className="text-xs text-clawd-text-dim">{formatBytes(stats.totalBackupSize)} total</div>
+            <div className="text-xs text-mission-control-text-dim">{formatBytes(stats.totalBackupSize)} total</div>
           </div>
           
-          <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4">
-            <div className="flex items-center gap-2 text-clawd-text-dim mb-2">
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <Clock size={16} />
               <span className="text-sm">Last Backup</span>
             </div>
@@ -247,8 +247,8 @@ export default function ExportBackupTab() {
             </div>
           </div>
           
-          <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4">
-            <div className="flex items-center gap-2 text-clawd-text-dim mb-2">
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+            <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
               <Download size={16} />
               <span className="text-sm">Exports</span>
             </div>
@@ -258,7 +258,7 @@ export default function ExportBackupTab() {
       )}
 
       {/* Export Section */}
-      <section className="bg-clawd-surface rounded-xl border border-clawd-border p-6">
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
           <Download size={20} />
           Export Data
@@ -267,14 +267,14 @@ export default function ExportBackupTab() {
         <div className="space-y-4">
           {/* Format Selector */}
           <div>
-            <span className="block text-sm text-clawd-text-dim mb-2">Export Format</span>
+            <span className="block text-sm text-mission-control-text-dim mb-2">Export Format</span>
             <div className="flex gap-2" role="radiogroup" aria-label="Export format">
               <button
                 onClick={() => setExportFormat('json')}
                 className={`px-4 py-2 rounded-lg border transition-colors ${
                   exportFormat === 'json'
-                    ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                    : 'border-clawd-border text-clawd-text-dim hover:border-clawd-accent/50'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50'
                 }`}
               >
                 JSON
@@ -283,8 +283,8 @@ export default function ExportBackupTab() {
                 onClick={() => setExportFormat('csv')}
                 className={`px-4 py-2 rounded-lg border transition-colors ${
                   exportFormat === 'csv'
-                    ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                    : 'border-clawd-border text-clawd-text-dim hover:border-clawd-accent/50'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/50'
                 }`}
               >
                 CSV
@@ -297,7 +297,7 @@ export default function ExportBackupTab() {
             <button
               onClick={handleExportTasks}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-clawd-bg hover:bg-clawd-surface border border-clawd-border rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={16} />
               Export Tasks
@@ -306,7 +306,7 @@ export default function ExportBackupTab() {
             <button
               onClick={handleExportAgentLogs}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-clawd-bg hover:bg-clawd-surface border border-clawd-border rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={16} />
               Export Agent Logs
@@ -315,21 +315,21 @@ export default function ExportBackupTab() {
             <button
               onClick={handleExportChatHistory}
               disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-clawd-bg hover:bg-clawd-surface border border-clawd-border rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={16} />
               Export Chat History
             </button>
           </div>
 
-          <div className="text-xs text-clawd-text-dim">
-            Exports are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/froggo/exports/</code>
+          <div className="text-xs text-mission-control-text-dim">
+            Exports are saved to: <code className="bg-mission-control-bg px-1 py-0.5 rounded">~/mission-control/exports/</code>
           </div>
         </div>
       </section>
 
       {/* Backup Section */}
-      <section className="bg-clawd-surface rounded-xl border border-clawd-border p-6">
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
           <HardDrive size={20} />
           Database Backup
@@ -343,7 +343,7 @@ export default function ExportBackupTab() {
                 type="checkbox"
                 checked={includeAttachments}
                 onChange={(e) => setIncludeAttachments(e.target.checked)}
-                className="w-4 h-4 rounded border-clawd-border bg-clawd-bg checked:bg-clawd-accent"
+                className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg checked:bg-mission-control-accent"
               />
               <span className="text-sm">Include attachments (larger file size)</span>
             </label>
@@ -353,26 +353,26 @@ export default function ExportBackupTab() {
           <button
             onClick={handleCreateBackup}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/80 text-white rounded-lg transition-colors disabled:opacity-50 w-full md:w-auto"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/80 text-white rounded-lg transition-colors disabled:opacity-50 w-full md:w-auto"
           >
             <Database size={16} />
             Create Backup Now
           </button>
 
           {/* Auto-Backup Settings */}
-          <div className="pt-4 border-t border-clawd-border">
+          <div className="pt-4 border-t border-mission-control-border">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="font-medium">Scheduled Auto-Backups</div>
-                <div className="text-sm text-clawd-text-dim">Automatically backup database daily</div>
+                <div className="text-sm text-mission-control-text-dim">Automatically backup database daily</div>
               </div>
               <button
                 onClick={() => setAutoBackupEnabled(!autoBackupEnabled)}
                 className={`w-12 h-6 rounded-full transition-colors ${
-                  autoBackupEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
+                  autoBackupEnabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full bg-clawd-text shadow transition-transform ${
+                <div className={`w-5 h-5 rounded-full bg-mission-control-text shadow transition-transform ${
                   autoBackupEnabled ? 'translate-x-6' : 'translate-x-0.5'
                 }`} />
               </button>
@@ -381,17 +381,17 @@ export default function ExportBackupTab() {
             {autoBackupEnabled && (
               <div className="bg-info-subtle border border-info-border rounded-lg p-4">
                 <div className="text-sm text-info">
-                  Auto-backup will run daily at 3:00 AM. Backups are created via Clawdbot cron system.
+                  Auto-backup will run daily at 3:00 AM. Backups are created via mission-control cron system.
                 </div>
               </div>
             )}
           </div>
 
           {/* Cleanup Settings */}
-          <div className="pt-4 border-t border-clawd-border">
+          <div className="pt-4 border-t border-mission-control-border">
             <label htmlFor="backup-count" className="block text-sm font-medium mb-2">Retention Policy</label>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-clawd-text-dim">Keep last</span>
+              <span className="text-sm text-mission-control-text-dim">Keep last</span>
               <input
                 id="backup-count"
                 type="number"
@@ -399,13 +399,13 @@ export default function ExportBackupTab() {
                 max="100"
                 value={keepBackupsCount}
                 onChange={(e) => setKeepBackupsCount(parseInt(e.target.value) || 10)}
-                className="w-20 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-center"
+                className="w-20 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-center"
               />
-              <span className="text-sm text-clawd-text-dim">backups</span>
+              <span className="text-sm text-mission-control-text-dim">backups</span>
               <button
                 onClick={handleCleanupBackups}
                 disabled={loading}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-clawd-bg hover:bg-clawd-surface border border-clawd-border rounded-lg transition-colors disabled:opacity-50"
+                className="ml-auto flex items-center gap-2 px-4 py-2 bg-mission-control-bg hover:bg-mission-control-surface border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
               >
                 <Trash2 size={14} />
                 Cleanup Now
@@ -413,14 +413,14 @@ export default function ExportBackupTab() {
             </div>
           </div>
 
-          <div className="text-xs text-clawd-text-dim">
-            Backups are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/froggo/backups/</code>
+          <div className="text-xs text-mission-control-text-dim">
+            Backups are saved to: <code className="bg-mission-control-bg px-1 py-0.5 rounded">~/mission-control/backups/</code>
           </div>
         </div>
       </section>
 
       {/* Available Backups */}
-      <section className="bg-clawd-surface rounded-xl border border-clawd-border p-6">
+      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Database size={20} />
@@ -428,7 +428,7 @@ export default function ExportBackupTab() {
           </h2>
           <button
             onClick={loadBackups}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-accent transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
           >
             <RefreshCw size={14} />
             Refresh
@@ -436,7 +436,7 @@ export default function ExportBackupTab() {
         </div>
 
         {backups.length === 0 ? (
-          <div className="text-center py-8 text-clawd-text-dim">
+          <div className="text-center py-8 text-mission-control-text-dim">
             <Database size={48} className="mx-auto mb-3 opacity-50" />
             <p>No backups found</p>
             <p className="text-sm mt-1">Create your first backup above</p>
@@ -446,11 +446,11 @@ export default function ExportBackupTab() {
             {backups.map((backup, idx) => (
               <div
                 key={backup.filename}
-                className="flex items-center justify-between p-4 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors"
+                className="flex items-center justify-between p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
               >
                 <div className="flex-1">
                   <div className="font-medium">{backup.filename}</div>
-                  <div className="flex items-center gap-4 mt-1 text-sm text-clawd-text-dim">
+                  <div className="flex items-center gap-4 mt-1 text-sm text-mission-control-text-dim">
                     <span>{formatDate(backup.created)}</span>
                     <span>{formatBytes(backup.size)}</span>
                     {backup.metadata?.includesAttachments && (
@@ -469,7 +469,7 @@ export default function ExportBackupTab() {
                   <button
                     onClick={() => handleRestoreBackup(backup.path)}
                     disabled={loading}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-clawd-accent/10 hover:bg-clawd-accent/20 text-clawd-accent rounded transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-mission-control-accent/10 hover:bg-mission-control-accent/20 text-mission-control-accent rounded transition-colors disabled:opacity-50"
                   >
                     <Upload size={14} />
                     Restore

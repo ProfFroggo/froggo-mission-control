@@ -49,7 +49,7 @@ export default function ProductivityHeatmap() {
   );
 
   const getColor = (value: number) => {
-    if (value === 0) return 'bg-clawd-border';
+    if (value === 0) return 'bg-mission-control-border';
     const intensity = (value / maxActivity) * 100;
     if (intensity < 20) return 'bg-success-subtle';
     if (intensity < 40) return 'bg-success-subtle';
@@ -74,7 +74,7 @@ export default function ProductivityHeatmap() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Loading heatmap...</div>
+        <div className="text-mission-control-text-dim">Loading heatmap...</div>
       </div>
     );
   }
@@ -85,23 +85,23 @@ export default function ProductivityHeatmap() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="text-clawd-accent" size={20} />
+            <Activity className="text-mission-control-accent" size={20} />
             Productivity Heatmap
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Activity patterns by day and hour
           </p>
         </div>
 
-        <div className="flex bg-clawd-border rounded-lg p-1">
+        <div className="flex bg-mission-control-border rounded-lg p-1">
           {([7, 30, 90] as const).map((days) => (
             <button
               key={days}
               onClick={() => setTimeRange(days)}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                 timeRange === days
-                  ? 'bg-clawd-accent text-white'
-                  : 'text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {days}d
@@ -112,16 +112,16 @@ export default function ProductivityHeatmap() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Total Activity</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Total Activity</div>
           <div className="text-2xl font-bold text-success">{totalActivity}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Peak Day</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Peak Day</div>
           <div className="text-2xl font-bold text-info">{peakDay}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Peak Hour</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Peak Hour</div>
           <div className="text-2xl font-bold text-review">
             {peakHour}:00 - {peakHour + 1}:00
           </div>
@@ -129,7 +129,7 @@ export default function ProductivityHeatmap() {
       </div>
 
       {/* Heatmap */}
-      <div className="flex-1 bg-clawd-surface border border-clawd-border rounded-2xl p-6 overflow-auto">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 overflow-auto">
         <div className="min-w-max">
           {/* Hour labels */}
           <div className="flex mb-2">
@@ -137,7 +137,7 @@ export default function ProductivityHeatmap() {
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="w-6 text-center text-xs text-clawd-text-dim"
+                className="w-6 text-center text-xs text-mission-control-text-dim"
               >
                 {hour % 3 === 0 ? hour : ''}
               </div>
@@ -147,13 +147,13 @@ export default function ProductivityHeatmap() {
           {/* Heatmap grid */}
           {DAYS.map((day, dayIndex) => (
             <div key={day} className="flex items-center mb-1">
-              <div className="w-12 text-xs text-clawd-text-dim font-medium">
+              <div className="w-12 text-xs text-mission-control-text-dim font-medium">
                 {day}
               </div>
               {aggregatedData[dayIndex].map((value, hour) => (
                 <div
                   key={hour}
-                  className={`w-6 h-6 mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-clawd-accent ${getColor(value)}`}
+                  className={`w-6 h-6 mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-mission-control-accent ${getColor(value)}`}
                   title={`${day} ${hour}:00 - ${value} activities`}
                   role="presentation"
                   onMouseEnter={() => {
@@ -170,25 +170,25 @@ export default function ProductivityHeatmap() {
 
           {/* Legend */}
           <div className="flex items-center gap-2 mt-6">
-            <span className="text-xs text-clawd-text-dim">Less</span>
+            <span className="text-xs text-mission-control-text-dim">Less</span>
             <div className="flex gap-1">
-              <div className="w-4 h-4 rounded bg-clawd-border" />
+              <div className="w-4 h-4 rounded bg-mission-control-border" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-green-300" />
             </div>
-            <span className="text-xs text-clawd-text-dim">More</span>
+            <span className="text-xs text-mission-control-text-dim">More</span>
           </div>
 
           {/* Selected cell info */}
           {selectedCell && (
-            <div className="mt-4 p-3 bg-clawd-bg rounded-lg">
+            <div className="mt-4 p-3 bg-mission-control-bg rounded-lg">
               <p className="text-sm font-medium">
                 {DAYS[selectedCell.dayOfWeek]} {selectedCell.hour}:00 - {selectedCell.hour + 1}:00
               </p>
-              <p className="text-sm text-clawd-text-dim mt-1">
+              <p className="text-sm text-mission-control-text-dim mt-1">
                 {selectedCell.activityCount} activities on {selectedCell.date}
               </p>
             </div>
@@ -197,30 +197,30 @@ export default function ProductivityHeatmap() {
       </div>
 
       {/* Insights */}
-      <div className="mt-6 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <h3 className="font-medium mb-3 flex items-center gap-2">
-          <Calendar size={16} className="text-clawd-accent" />
+          <Calendar size={16} className="text-mission-control-accent" />
           Pattern Insights
         </h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-clawd-bg rounded-lg">
-            <div className="text-sm text-clawd-text-dim mb-1">Most productive day</div>
+          <div className="p-3 bg-mission-control-bg rounded-lg">
+            <div className="text-sm text-mission-control-text-dim mb-1">Most productive day</div>
             <div className="font-medium text-success">{peakDay}</div>
           </div>
-          <div className="p-3 bg-clawd-bg rounded-lg">
-            <div className="text-sm text-clawd-text-dim mb-1">Peak productivity time</div>
+          <div className="p-3 bg-mission-control-bg rounded-lg">
+            <div className="text-sm text-mission-control-text-dim mb-1">Peak productivity time</div>
             <div className="font-medium text-info">
               {peakHour}:00 - {peakHour + 1}:00
             </div>
           </div>
-          <div className="p-3 bg-clawd-bg rounded-lg">
-            <div className="text-sm text-clawd-text-dim mb-1">Avg activities/day</div>
+          <div className="p-3 bg-mission-control-bg rounded-lg">
+            <div className="text-sm text-mission-control-text-dim mb-1">Avg activities/day</div>
             <div className="font-medium text-review">
               {timeRange > 0 ? Math.round(totalActivity / timeRange) : 0}
             </div>
           </div>
-          <div className="p-3 bg-clawd-bg rounded-lg">
-            <div className="text-sm text-clawd-text-dim mb-1">Working hours span</div>
+          <div className="p-3 bg-mission-control-bg rounded-lg">
+            <div className="text-sm text-mission-control-text-dim mb-1">Working hours span</div>
             <div className="font-medium text-warning">
               {HOURS.filter((h) => aggregatedData.flat()[h] > 0).length}h
             </div>

@@ -9,7 +9,7 @@
 ## Changes
 
 Created 13 agent definition files in `.claude/agents/`:
-- froggo.md — Opus, plan mode, orchestrator, uses Task()
+- mission-control.md — Opus, plan mode, orchestrator, uses Task()
 - coder.md — Sonnet, acceptEdits, full Write/Edit/Bash
 - researcher.md — Sonnet, plan mode, read-only
 - writer.md — Sonnet, acceptEdits, Write/Edit
@@ -23,7 +23,7 @@ Created 13 agent definition files in `.claude/agents/`:
 - designer.md — Sonnet, acceptEdits, UI/UX
 - degen-frog.md — Sonnet, plan mode, crypto/DeFi specialist
 
-All agents include mcpServers: [froggo_db, memory]
+All agents include mcpServers: [mission-control_db, memory]
 
 ## Outcome
 

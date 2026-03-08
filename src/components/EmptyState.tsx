@@ -149,8 +149,8 @@ export default function EmptyState(props: EmptyStateProps) {
         onClick={actionConfig.onClick}
         className={`px-4 py-2 rounded-lg font-medium transition-colors ${
           actionConfig.variant === 'secondary'
-            ? 'bg-clawd-border text-clawd-text hover:bg-clawd-border/80'
-            : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+            ? 'bg-mission-control-border text-mission-control-text hover:bg-mission-control-border/80'
+            : 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90'
         }`}
       >
         {actionConfig.label}
@@ -168,7 +168,7 @@ export default function EmptyState(props: EmptyStateProps) {
       <div className="empty-state-icon">
         <Icon 
           size={compact ? 24 : 32} 
-          className="text-clawd-text-dim"
+          className="text-mission-control-text-dim"
           aria-hidden="true"
         />
       </div>

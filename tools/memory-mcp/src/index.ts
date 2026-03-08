@@ -13,7 +13,7 @@ import os from 'os';
 const execFileAsync = promisify(execFile);
 
 const VAULT_PATH = process.env.VAULT_PATH ||
-  path.join(os.homedir(), 'mission-control', 'memory');
+  path.join(os.homedir(), 'mission-control');
 
 const QMD_BIN = process.env.QMD_BIN || '/opt/homebrew/bin/qmd';
 const AGENT_ID = process.env.CLAUDE_CODE_AGENT_ID || process.env.AGENT_ID || 'unknown';
@@ -22,14 +22,15 @@ function ensureDir(p: string) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
 
-// Category → vault subfolder routing
+// Category → vault subfolder routing (relative to VAULT_PATH = ~/mission-control)
+// Writes route into the correct subfolder of the wider vault.
 const CATEGORY_FOLDER: Record<string, string> = {
-  decision: 'knowledge',
-  gotcha:   'knowledge',
-  pattern:  'knowledge',
-  daily:    'daily',
-  review:   'sessions',
-  agent:    'agents',
+  decision: 'memory/knowledge',
+  gotcha:   'memory/knowledge',
+  pattern:  'memory/knowledge',
+  daily:    'memory/daily',
+  review:   'memory/sessions',
+  agent:    'agents',  // overridden below to agents/{agentId}
 };
 
 const server = new Server(
@@ -116,7 +117,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           );
           return { content: [{ type: 'text', text: stdout || 'No results found.' }] };
         } catch (e: any) {
-          // Fallback: recursive grep through vault
+          // Fallback: recursive grep — skip binary/noisy dirs
+          const SKIP_DIRS = new Set(['data', 'logs', 'worktrees', '.git', '.obsidian', 'node_modules']);
           ensureDir(VAULT_PATH);
           const results: string[] = [];
           function grepDir(dir: string) {
@@ -127,7 +129,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 if (results.length >= limit) break;
                 const fullPath = path.join(dir, entry.name);
                 if (entry.isDirectory()) {
-                  grepDir(fullPath);
+                  if (!SKIP_DIRS.has(entry.name)) grepDir(fullPath);
                 } else if (entry.name.endsWith('.md')) {
                   try {
                     const content = fs.readFileSync(fullPath, 'utf-8');
@@ -161,6 +163,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
         const results: string[] = [];
 
+        const SKIP_RECALL = new Set(['data', 'logs', 'worktrees', '.git', '.obsidian', 'node_modules']);
         function findRecent(dir: string) {
           if (results.length >= limit) return;
           try {
@@ -169,7 +172,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               if (results.length >= limit) break;
               const fullPath = path.join(dir, entry.name);
               if (entry.isDirectory()) {
-                findRecent(fullPath);
+                if (!SKIP_RECALL.has(entry.name)) findRecent(fullPath);
               } else if (entry.name.endsWith('.md')) {
                 try {
                   const stat = fs.statSync(fullPath);

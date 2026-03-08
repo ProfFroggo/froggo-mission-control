@@ -57,7 +57,7 @@ export default function SourceList() {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {sources.length === 0 && editingId !== 'new-source' && (
-          <p className="text-[11px] text-clawd-text-dim text-center py-4">No sources yet</p>
+          <p className="text-[11px] text-mission-control-text-dim text-center py-4">No sources yet</p>
         )}
 
         {sources.map((source) =>
@@ -71,17 +71,17 @@ export default function SourceList() {
           ) : (
             <div
               key={source.id}
-              className="group p-2 rounded bg-clawd-bg/30 hover:bg-clawd-bg/60 transition-colors"
+              className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-bg/60 transition-colors"
             >
               <div className="flex items-start justify-between gap-1">
                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
-                  <span className="text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 bg-clawd-accent/20 text-clawd-accent">
+                  <span className="text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 bg-mission-control-accent/20 text-mission-control-accent">
                     {typeBadge[source.type]?.abbr ?? 'OT'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] text-clawd-text font-medium line-clamp-1">{source.title}</span>
+                    <span className="text-[10px] text-mission-control-text font-medium line-clamp-1">{source.title}</span>
                     {source.author && (
-                      <p className="text-[9px] text-clawd-text-dim">{source.author}</p>
+                      <p className="text-[9px] text-mission-control-text-dim">{source.author}</p>
                     )}
                   </div>
                   {source.url && (
@@ -89,7 +89,7 @@ export default function SourceList() {
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-0.5 text-clawd-text-dim hover:text-clawd-accent transition-colors flex-shrink-0"
+                      className="p-0.5 text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex-shrink-0"
                       title={source.url}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -100,14 +100,14 @@ export default function SourceList() {
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
                     onClick={() => setEditingId(source.id)}
-                    className="p-0.5 rounded text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
                   </button>
                   <button
                     onClick={() => handleDelete(source.id)}
-                    className="p-0.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
@@ -115,7 +115,7 @@ export default function SourceList() {
                 </div>
               </div>
               {source.notes && (
-                <p className="text-[9px] text-clawd-text-dim mt-0.5 ml-5 line-clamp-2">{source.notes}</p>
+                <p className="text-[9px] text-mission-control-text-dim mt-0.5 ml-5 line-clamp-2">{source.notes}</p>
               )}
             </div>
           ),
@@ -130,10 +130,10 @@ export default function SourceList() {
       </div>
 
       {editingId !== 'new-source' && (
-        <div className="p-2 border-t border-clawd-border flex-shrink-0">
+        <div className="p-2 border-t border-mission-control-border flex-shrink-0">
           <button
             onClick={() => setEditingId('new-source')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text transition-colors"
+            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Source

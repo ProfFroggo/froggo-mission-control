@@ -64,7 +64,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-clawd-text-dim">
+      <div className="flex items-center justify-center h-full text-mission-control-text-dim">
         Loading modules...
       </div>
     );
@@ -77,11 +77,11 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
-        <h1 className="text-lg font-semibold text-clawd-text">My Modules</h1>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <h1 className="text-lg font-semibold text-mission-control-text">My Modules</h1>
         <button
           onClick={onCreateNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-opacity"
         >
           <Plus size={14} /> Create New
         </button>
@@ -90,13 +90,13 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5">
         {modules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim gap-4">
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim gap-4">
             <Package size={48} className="opacity-30" />
             <p className="text-lg">No modules yet</p>
             <p className="text-sm">Create your first module spec to get started.</p>
             <button
               onClick={onCreateNew}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-opacity"
             >
               <Plus size={14} /> Create New Module
             </button>
@@ -107,7 +107,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
               <div
                 key={mod.id}
                 onClick={() => onSelectModule(mod.id)}
-                className="group relative bg-clawd-surface border border-clawd-border rounded-xl p-4 cursor-pointer hover:border-clawd-accent/50 transition-colors"
+                className="group relative bg-mission-control-surface border border-mission-control-border rounded-xl p-4 cursor-pointer hover:border-mission-control-accent/50 transition-colors"
               >
                 {/* Status badge */}
                 <div className="flex items-center justify-between mb-2">
@@ -128,28 +128,28 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                 </div>
 
                 {/* Name */}
-                <h3 className="text-clawd-text font-medium truncate">
+                <h3 className="text-mission-control-text font-medium truncate">
                   {mod.name || 'Untitled Module'}
                 </h3>
 
                 {/* Description */}
                 {mod.description && (
-                  <p className="text-clawd-text-dim text-sm mt-1 line-clamp-2">
+                  <p className="text-mission-control-text-dim text-sm mt-1 line-clamp-2">
                     {mod.description}
                   </p>
                 )}
 
                 {/* Progress bar */}
                 <div className="mt-3">
-                  <div className="flex items-center justify-between text-xs text-clawd-text-dim mb-1">
+                  <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
                     <span>{mod.overall_progress}%</span>
                     <span className="flex items-center gap-1">
                       <Clock size={10} /> {timeAgo(mod.updated_at)}
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-clawd-bg rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-clawd-accent rounded-full transition-all"
+                      className="h-full bg-mission-control-accent rounded-full transition-all"
                       style={{ width: `${mod.overall_progress}%` }}
                     />
                   </div>

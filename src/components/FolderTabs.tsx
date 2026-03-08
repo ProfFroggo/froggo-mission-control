@@ -57,10 +57,10 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
         relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
         border-b-2 whitespace-nowrap cursor-move
         ${isActive 
-          ? 'border-clawd-accent text-clawd-accent bg-clawd-accent/5' 
+          ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
           : isDropOver || isOver
-          ? 'border-green-500 text-clawd-text bg-success-subtle'
-          : 'border-transparent text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border/30'
+          ? 'border-green-500 text-mission-control-text bg-success-subtle'
+          : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
         }
       `}
     >
@@ -70,8 +70,8 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
         <span className={`
           text-xs px-2 py-0.5 rounded-full
           ${isActive 
-            ? 'bg-clawd-accent text-white' 
-            : 'bg-clawd-border text-clawd-text-dim'
+            ? 'bg-mission-control-accent text-white' 
+            : 'bg-mission-control-border text-mission-control-text-dim'
           }
         `}>
           {folder.conversation_count}
@@ -183,8 +183,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
   return (
     <>
-      <div className="border-b border-clawd-border bg-clawd-surface">
-        <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-clawd-border scrollbar-track-transparent">
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
+        <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
           {/* All Sessions Tab */}
           <button
             onClick={() => onSelectFolder(null)}
@@ -192,8 +192,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
               relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
               border-b-2 whitespace-nowrap
               ${selectedFolder === null 
-                ? 'border-clawd-accent text-clawd-accent bg-clawd-accent/5' 
-                : 'border-transparent text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border/30'
+                ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
               }
             `}
           >
@@ -203,8 +203,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
               <span className={`
                 text-xs px-2 py-0.5 rounded-full
                 ${selectedFolder === null 
-                  ? 'bg-clawd-accent text-white' 
-                  : 'bg-clawd-border text-clawd-text-dim'
+                  ? 'bg-mission-control-accent text-white' 
+                  : 'bg-mission-control-border text-mission-control-text-dim'
                 }
               `}>
                 {allSessionsCount}
@@ -250,17 +250,17 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 px-2 ml-auto border-l border-clawd-border">
+          <div className="flex items-center gap-1 px-2 ml-auto border-l border-mission-control-border">
             <button
               onClick={handleCreateFolder}
-              className="p-2 rounded-lg text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-border/50 transition-colors"
+              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Create new folder"
             >
               <Plus size={16} />
             </button>
             <button
               onClick={() => setShowManager(true)}
-              className="p-2 rounded-lg text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-border/50 transition-colors"
+              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Manage folders"
             >
               <Settings size={16} />

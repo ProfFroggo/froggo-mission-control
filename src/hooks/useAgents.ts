@@ -1,5 +1,5 @@
 /**
- * useAgents - Hook for dynamically fetching agent data from window.clawdbot APIs.
+ * useAgents - Hook for dynamically fetching agent data from REST API at /api/agents.
  *
  * Polls gateway sessions and agent metrics, merging them into AgentInfo[].
  * Aggregates sessions by agent name and includes subagents from all workspaces.
@@ -29,7 +29,7 @@ export interface AgentInfo {
   lastSeen?: string;
 }
 
-// agentApi imported from @/lib/api replaces window.clawdbot.agents
+// agentApi imported from @/lib/api — uses /api/agents REST route
 
 /** Threshold in ms — sessions updated within this window are considered active */
 const ACTIVE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
@@ -59,7 +59,7 @@ function parseSessionKey(key: string): { agent: string; kind: 'direct' | 'subage
   // Common patterns:
   //   agent:coder:cron:uuid          → agent=coder, kind=direct
   //   agent:coder:subagent:uuid      → agent=coder (subagent), kind=subagent
-  //   agent:froggo:cron:uuid     → agent=froggo, kind=direct
+  //   agent:mission-control:cron:uuid     → agent=mission-control, kind=direct
   const parts = key.split(':');
   if (parts[0] === 'agent' && parts.length >= 3) {
     const agentName = parts[1];
@@ -105,7 +105,7 @@ async function fetchAgents(): Promise<AgentInfo[]> {
   }
 
   // 1. Gateway sessions — live agent sessions from ALL workspaces
-  //    sessions.db is global (~/.clawdbot/sessions.db), so all agents are included.
+  //    sessions.db is global (~/mission-control/data/mission-control.db), so all agents are included.
   try {
     const res = await gateway.getSessions();
     const sessions: any[] = res?.sessions ?? [];

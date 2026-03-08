@@ -132,7 +132,7 @@ function VirtualListInner<T>({
   if (isLoading) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-clawd-text-dim">{loadingMessage}</div>
+        <div className="text-mission-control-text-dim">{loadingMessage}</div>
       </div>
     );
   }
@@ -141,7 +141,7 @@ function VirtualListInner<T>({
   if (items.length === 0) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-clawd-text-dim">{emptyMessage}</div>
+        <div className="text-mission-control-text-dim">{emptyMessage}</div>
       </div>
     );
   }
@@ -258,7 +258,7 @@ export function VirtualGrid<T>({
   if (items.length === 0) {
     return (
       <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-clawd-text-dim">No items</div>
+        <div className="text-mission-control-text-dim">No items</div>
       </div>
     );
   }

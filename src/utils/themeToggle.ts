@@ -30,35 +30,35 @@ export function applyTheme(theme: Theme, accentColor: string) {
   
   // Apply theme colors
   if (actualTheme === 'dark') {
-    root.style.setProperty('--clawd-bg', '#0a0a0a');
-    root.style.setProperty('--clawd-surface', '#141414');
-    root.style.setProperty('--clawd-border', '#262626');
-    root.style.setProperty('--clawd-text', '#fafafa');
-    root.style.setProperty('--clawd-text-dim', '#a1a1aa');
+    root.style.setProperty('--mission-control-bg', '#0a0a0a');
+    root.style.setProperty('--mission-control-surface', '#141414');
+    root.style.setProperty('--mission-control-border', '#262626');
+    root.style.setProperty('--mission-control-text', '#fafafa');
+    root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
   } else {
-    root.style.setProperty('--clawd-bg', '#fafafa');
-    root.style.setProperty('--clawd-surface', '#ffffff');
-    root.style.setProperty('--clawd-border', '#e4e4e7');
-    root.style.setProperty('--clawd-text', '#18181b');
-    root.style.setProperty('--clawd-text-dim', '#71717a');
+    root.style.setProperty('--mission-control-bg', '#fafafa');
+    root.style.setProperty('--mission-control-surface', '#ffffff');
+    root.style.setProperty('--mission-control-border', '#e4e4e7');
+    root.style.setProperty('--mission-control-text', '#18181b');
+    root.style.setProperty('--mission-control-text-dim', '#71717a');
   }
-  
+
   // Apply accent color
-  root.style.setProperty('--clawd-accent', accentColor);
-  
+  root.style.setProperty('--mission-control-accent', accentColor);
+
   // Generate accent-dim (slightly darker)
   const hex = accentColor.replace('#', '');
   const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
   const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
   const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-  root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
+  root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
 }
 
 /**
  * Get current theme from localStorage
  */
 export function getCurrentTheme(): ThemeState {
-  const saved = safeStorage.getItem('froggo-settings');
+  const saved = safeStorage.getItem('mission-control-settings');
   if (saved) {
     try {
       const settings = JSON.parse(saved);
@@ -101,12 +101,12 @@ export function toggleTheme(): Theme {
   applyTheme(newTheme, currentState.accentColor);
   
   // Save to localStorage
-  const saved = safeStorage.getItem('froggo-settings');
+  const saved = safeStorage.getItem('mission-control-settings');
   if (saved) {
     try {
       const settings = JSON.parse(saved);
       settings.theme = newTheme;
-      safeStorage.setItem('froggo-settings', JSON.stringify(settings));
+      safeStorage.setItem('mission-control-settings', JSON.stringify(settings));
     } catch (_e) {
       // '[themeToggle] Failed to save theme'
     }

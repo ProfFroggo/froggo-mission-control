@@ -28,7 +28,7 @@ const typeConfig: Record<string, { icon: any; color: string; label: string }> = 
   tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
   email: { icon: Mail, color: 'text-error', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-success', label: 'Message' },
-  generic: { icon: FileText, color: 'text-clawd-text-dim', label: 'Generic' },
+  generic: { icon: FileText, color: 'text-mission-control-text-dim', label: 'Generic' },
 };
 
 // Default templates
@@ -171,14 +171,14 @@ export default function LibraryTemplatesTab() {
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-clawd-text-dim">
+          <p className="text-sm text-mission-control-text-dim">
             Reusable content templates
           </p>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90"
           >
             <Plus size={16} />
             New Template
@@ -188,19 +188,19 @@ export default function LibraryTemplatesTab() {
         {/* Search and filters */}
         <div className="flex gap-3">
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-9 pr-4 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent"
+              className="w-full pl-9 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
             />
           </div>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent"
+            className="px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
           >
             <option value="all">All Types</option>
             <option value="tweet">Tweets</option>
@@ -227,8 +227,8 @@ export default function LibraryTemplatesTab() {
                   key={template.id}
                   className={`p-4 rounded-xl border transition-all ${
                     isEditing
-                      ? 'bg-clawd-accent/5 border-clawd-accent/30'
-                      : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/30'
+                      ? 'bg-mission-control-accent/5 border-mission-control-accent/30'
+                      : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
                   {/* Header */}
@@ -239,7 +239,7 @@ export default function LibraryTemplatesTab() {
                         <input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="font-medium bg-transparent border-b border-clawd-accent focus:outline-none"
+                          className="font-medium bg-transparent border-b border-mission-control-accent focus:outline-none"
                         />
                       ) : (
                         <span className="font-medium">{template.name}</span>
@@ -247,12 +247,12 @@ export default function LibraryTemplatesTab() {
                     </div>
                     <button
                       onClick={() => handleStar(template.id)}
-                      className="p-1 hover:bg-clawd-border rounded"
+                      className="p-1 hover:bg-mission-control-border rounded"
                     >
                       {template.starred ? (
                         <Star size={14} className="text-warning fill-yellow-400" />
                       ) : (
-                        <StarOff size={14} className="text-clawd-text-dim" />
+                        <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
                     </button>
                   </div>
@@ -262,10 +262,10 @@ export default function LibraryTemplatesTab() {
                     <textarea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full h-24 bg-clawd-bg border border-clawd-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+                      className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
                     />
                   ) : (
-                    <p className="text-sm text-clawd-text-dim line-clamp-3 mb-3">
+                    <p className="text-sm text-mission-control-text-dim line-clamp-3 mb-3">
                       {template.content}
                     </p>
                   )}
@@ -276,7 +276,7 @@ export default function LibraryTemplatesTab() {
                       {template.tags.map(tag => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 bg-clawd-border text-clawd-text-dim text-xs rounded"
+                          className="px-2 py-0.5 bg-mission-control-border text-mission-control-text-dim text-xs rounded"
                         >
                           {tag}
                         </span>
@@ -286,7 +286,7 @@ export default function LibraryTemplatesTab() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-clawd-text-dim">
+                    <span className="text-xs text-mission-control-text-dim">
                       Used {template.usageCount}x
                     </span>
                     <div className="flex gap-1">
@@ -294,13 +294,13 @@ export default function LibraryTemplatesTab() {
                         <>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-2 py-1 text-xs text-clawd-text-dim hover:text-clawd-text"
+                            className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={handleSave}
-                            className="px-2 py-1 text-xs bg-clawd-accent text-white rounded"
+                            className="px-2 py-1 text-xs bg-mission-control-accent text-white rounded"
                           >
                             Save
                           </button>
@@ -309,17 +309,17 @@ export default function LibraryTemplatesTab() {
                         <>
                           <button
                             onClick={() => handleCopy(template)}
-                            className="p-1.5 hover:bg-clawd-border rounded"
+                            className="p-1.5 hover:bg-mission-control-border rounded"
                             title="Copy"
                           >
-                            <Copy size={14} className="text-clawd-text-dim" />
+                            <Copy size={14} className="text-mission-control-text-dim" />
                           </button>
                           <button
                             onClick={() => handleEdit(template)}
-                            className="p-1.5 hover:bg-clawd-border rounded"
+                            className="p-1.5 hover:bg-mission-control-border rounded"
                             title="Edit"
                           >
-                            <Edit3 size={14} className="text-clawd-text-dim" />
+                            <Edit3 size={14} className="text-mission-control-text-dim" />
                           </button>
                           <button
                             onClick={() => handleDelete(template.id)}
@@ -346,23 +346,23 @@ export default function LibraryTemplatesTab() {
             <h2 className="text-lg font-semibold mb-4">New Template</h2>
             <div className="space-y-4">
               <div>
-                <label htmlFor="template-name" className="block text-sm text-clawd-text-dim mb-1">Name</label>
+                <label htmlFor="template-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
                 <input
                   id="template-name"
                   type="text"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent"
+                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
                   placeholder="Template name"
                 />
               </div>
               <div>
-                <label htmlFor="template-type" className="block text-sm text-clawd-text-dim mb-1">Type</label>
+                <label htmlFor="template-type" className="block text-sm text-mission-control-text-dim mb-1">Type</label>
                 <select
                   id="template-type"
                   value={newTemplate.type}
                   onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as Template['type'] })}
-                  className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent"
+                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
                 >
                   <option value="tweet">Tweet</option>
                   <option value="email">Email</option>
@@ -371,12 +371,12 @@ export default function LibraryTemplatesTab() {
                 </select>
               </div>
               <div>
-                <label htmlFor="template-content" className="block text-sm text-clawd-text-dim mb-1">Content</label>
+                <label htmlFor="template-content" className="block text-sm text-mission-control-text-dim mb-1">Content</label>
                 <textarea
                   id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                  className="w-full h-32 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full h-32 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent resize-none"
                   placeholder="Use {variable} for placeholders"
                 />
               </div>
@@ -384,14 +384,14 @@ export default function LibraryTemplatesTab() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 text-clawd-text-dim hover:text-clawd-text"
+                className="px-4 py-2 text-mission-control-text-dim hover:text-mission-control-text"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!newTemplate.name || !newTemplate.content}
-                className="px-4 py-2 bg-clawd-accent text-white rounded-xl disabled:opacity-50"
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-xl disabled:opacity-50"
               >
                 Create
               </button>

@@ -8,7 +8,7 @@
   font-family: 'Georgia', 'Times New Roman', serif;
   font-size: 1.125rem;
   line-height: 1.8;
-  color: var(--clawd-text, #fafafa);
+  color: var(--mission-control-text, #fafafa);
 }
 
 .writing-editor .ProseMirror p {
@@ -53,16 +53,16 @@
 }
 
 .writing-editor .ProseMirror blockquote {
-  border-left: 3px solid var(--clawd-accent, #22c55e);
+  border-left: 3px solid var(--mission-control-accent, #22c55e);
   padding-left: 1em;
   margin-left: 0;
   margin-bottom: 0.75em;
-  color: var(--clawd-text-dim, #a1a1aa);
+  color: var(--mission-control-text-dim, #a1a1aa);
   font-style: italic;
 }
 
 .writing-editor .ProseMirror a {
-  color: var(--clawd-accent, #22c55e);
+  color: var(--mission-control-accent, #22c55e);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -80,7 +80,7 @@
 
 .writing-editor .ProseMirror hr {
   border: none;
-  border-top: 1px solid var(--clawd-border, #2a2a2a);
+  border-top: 1px solid var(--mission-control-border, #2a2a2a);
   margin: 1.5em 0;
 }
 
@@ -88,7 +88,7 @@
 .writing-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--clawd-text-dim, #a1a1aa);
+  color: var(--mission-control-text-dim, #a1a1aa);
   pointer-events: none;
   height: 0;
   opacity: 0.5;

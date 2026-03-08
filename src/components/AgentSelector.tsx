@@ -87,21 +87,21 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-clawd-bg/50 transition-all ${open ? 'bg-clawd-bg/50' : ''}`}
+        className={`flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-mission-control-bg/50 transition-all ${open ? 'bg-mission-control-bg/50' : ''}`}
       >
         <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
         <div className="text-left">
           <div className="font-semibold flex items-center gap-2">
             {selectedAgent.name}
-            <ChevronDown size={14} className={`text-clawd-text-dim transition-transform ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`text-mission-control-text-dim transition-transform ${open ? 'rotate-180' : ''}`} />
           </div>
-          <div className="text-xs text-clawd-text-dim">{selectedAgent.role}</div>
+          <div className="text-xs text-mission-control-text-dim">{selectedAgent.role}</div>
         </div>
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="px-3 py-2 text-xs font-medium text-clawd-text-dim border-b border-clawd-border">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim border-b border-mission-control-border">
             Switch Agent {loading && '(loading...)'}
           </div>
           <div className="max-h-80 overflow-y-auto py-1">
@@ -112,14 +112,14 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
                 <button
                   key={agent.id}
                   onClick={() => { onSelect(agent); setOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-clawd-bg/60 transition-colors ${
-                    isSelected ? 'bg-clawd-bg/40' : ''
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mission-control-bg/60 transition-colors ${
+                    isSelected ? 'bg-mission-control-bg/40' : ''
                   }`}
                 >
                   <AgentAvatar agentId={agent.id} size="md" ring={isSelected} />
                   <div className="flex-1 text-left min-w-0">
                     <div className="font-medium text-sm truncate">{agent.name}</div>
-                    <div className="text-xs text-clawd-text-dim truncate">{agent.role}</div>
+                    <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
                   </div>
                   {isSelected && (
                     <div className={`w-2 h-2 rounded-full ${agentTheme.dot}`} />

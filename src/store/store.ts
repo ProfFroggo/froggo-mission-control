@@ -7,13 +7,29 @@ import { createLogger } from '../utils/logger';
 import { showToast } from '../components/Toast';
 import { taskApi, agentApi, approvalApi, inboxApi, chatApi } from '@/lib/api';
 
+// Migrate old localStorage key on first load
+if (typeof window !== 'undefined') {
+  try {
+    const old = localStorage.getItem('clawd-dashboard');
+    if (old && !localStorage.getItem('mission-control-dashboard')) {
+      localStorage.setItem('mission-control-dashboard', old);
+    }
+    // Clean up old key regardless
+    localStorage.removeItem('clawd-dashboard');
+  } catch {
+    // QuotaExceededError or similar — clear stale data and continue
+    localStorage.removeItem('clawd-dashboard');
+    localStorage.removeItem('mission-control-dashboard');
+  }
+}
+
 const storeLogger = createLogger('Store');
 
 // Guard against concurrent updateTask calls for the same task ID
 // Prevents rollback state corruption when two calls race for the same task
 const pendingTaskUpdates = new Set<string>();
 
-export type TaskStatus = 'blocked' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
+export type TaskStatus = 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
 
 export interface TaskLabel {
@@ -52,13 +68,14 @@ export interface Task {
   status: TaskStatus;
   priority?: TaskPriority;
   project: string;
+  project_id?: string; // FK to projects.id
   labels?: string[]; // Label IDs
   assignedTo?: string;
   reviewerId?: string; // Review agent assigned to check work
   subtasks?: Subtask[];
   planningNotes?: string; // Planning/brainstorming notes
   tags?: string; // JSON string of tags array
-  reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes';
+  reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
   estimatedHours?: number;
@@ -75,6 +92,16 @@ export interface Task {
   stageName?: string;
   nextStage?: string;
   parentTaskId?: string;
+  recurrence?: TaskRecurrence | null;
+  recurrenceParentId?: string | null;
+}
+
+export interface TaskRecurrence {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number; // every N units
+  endType: 'never' | 'after' | 'on';
+  endAfter?: number; // occurrences remaining (counts down)
+  endDate?: number; // unix timestamp
 }
 
 export interface Agent {
@@ -87,7 +114,7 @@ export interface Agent {
   sessionKey?: string;
   currentTaskId?: string;
   lastActivity?: number;
-  trust_tier?: 'apprentice' | 'journeyman' | 'expert' | 'master';
+  trust_tier?: 'restricted' | 'apprentice' | 'worker' | 'trusted' | 'admin';
 }
 
 export interface Session {
@@ -98,7 +125,7 @@ export interface Session {
   messageCount: number;
 }
 
-// Real session from Clawdbot Gateway
+// Real session from mission-control DB
 export interface GatewaySession {
   key: string;
   kind: 'direct' | 'group';
@@ -260,7 +287,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
         break;
       }
       case 'task': {
-        // Notify agent to create task (tasks are managed by the agent/froggo-db)
+        // Notify agent to create task (tasks are managed by the agent/mission-control-db)
         await gateway.sendToSession('main', `[APPROVED] Create task: ${item.title}\n${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         break;
       }
@@ -285,7 +312,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 // No fallback agents - agents are loaded exclusively from the gateway registry
 // This prevents phantom/duplicate agents from appearing in the UI
 
-type PersistedStore = Pick<Store, 'activities' | 'xDrafts'>;
+type PersistedStore = Pick<Store, 'xDrafts'>;
 
 export const useStore = create<Store>()(
   persist<Store, [], [], PersistedStore>(
@@ -399,7 +426,7 @@ export const useStore = create<Store>()(
             // Enrich agent statuses from session data
             // Map session agent keys to dashboard agent IDs
             const agentKeyMap: Record<string, string> = {
-              'froggo': 'main',
+              'mission-control': 'main',
             };
             const resolveAgentId = (key: string): string | null => {
               const match = (key || '').match(/^agent:([^:]+)/);
@@ -477,66 +504,71 @@ export const useStore = create<Store>()(
         }
       },
 
-      tasks: [], // Empty - loaded from froggo-db only
+      tasks: [], // Empty - loaded from mission-control-db only
       taskCounts: { totalDone: 0, totalArchived: 0 },
       loadTasksFromDB: async () => {
+        const g = globalThis as any;
+        if (g.__taskLoadInFlight) return;
+        g.__taskLoadInFlight = true;
         try {
           get().setLoading('tasks', true);
           const result = await taskApi.getAll();
-          if (result?.success && Array.isArray(result.tasks)) {
-            // Convert froggo-db tasks to store format (backend already filters archived/cancelled)
-            const tasksWithoutSubtasks = result.tasks.map((t: { id: string; title: string; description?: string; status: string; priority?: string; project?: string; assigned_to?: string; reviewerId?: string; reviewer_id?: string; reviewStatus?: string; review_status?: string; planning_notes?: string; planningNotes?: string; due_date?: string; last_agent_update?: string; created_at?: number; updated_at?: number; last_activity_at?: number }) => ({
-              id: t.id,
-              title: t.title,
-              description: t.description || '',
-              status: t.status as TaskStatus,
-              priority: t.priority as TaskPriority | undefined,
-              project: t.project || 'General',
-              assignedTo: t.assigned_to === 'main' ? 'froggo' : t.assigned_to,
-              reviewerId: t.reviewerId || t.reviewer_id || undefined,
-              reviewStatus: t.reviewStatus || t.review_status || undefined,
-              planningNotes: t.planning_notes || t.planningNotes || undefined,
-              dueDate: t.due_date ? new Date(t.due_date).getTime() : undefined,
-              lastAgentUpdate: t.last_agent_update || undefined,
-              createdAt: t.created_at || Date.now(),
-              updatedAt: t.updated_at || Date.now(),
-              last_activity_at: t.last_activity_at || undefined,
-              subtasks: [] as Subtask[],
-            }));
-            
-            // Load subtasks in parallel with batching (10 at a time)
-            const BATCH_SIZE = 10;
-            const tasksWithSubtasks: Task[] = [];
-            
-            for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
-              const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
-              const batchResults = await Promise.all(
-                batch.map(async (task) => {
-                  try {
-                    const subtaskResult = await taskApi.getSubtasks(task.id);
-                    if (subtaskResult?.success) {
-                      return { ...task, subtasks: (subtaskResult.subtasks || []) as Subtask[] };
-                    }
-                  } catch { /* ignore error */ }
-                  return task;
-                })
-              );
-              tasksWithSubtasks.push(...batchResults as Task[]);
-            }
-            
-            // Update tasks and counts
-            set({ 
-              tasks: tasksWithSubtasks,
-              taskCounts: { 
-                totalDone: result.totalDone || 0, 
-                totalArchived: result.totalArchived || 0 
-              }
-            });
+          // API returns a plain array; support both plain array and legacy wrapped format
+          const taskArray: any[] = Array.isArray(result) ? result : (result?.tasks ?? []);
+          // Convert to store format — DB uses camelCase column names
+          const tasksWithoutSubtasks = taskArray.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description || '',
+            status: t.status as TaskStatus,
+            priority: t.priority as TaskPriority | undefined,
+            project: t.project || 'General',
+            project_id: t.project_id || undefined,
+            assignedTo: t.assignedTo === 'main' ? 'mission-control' : (t.assignedTo || undefined),
+            reviewerId: t.reviewerId || undefined,
+            reviewStatus: t.reviewStatus || undefined,
+            planningNotes: t.planningNotes || undefined,
+            dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+            lastAgentUpdate: t.lastAgentUpdate || undefined,
+            createdAt: t.createdAt || Date.now(),
+            updatedAt: t.updatedAt || Date.now(),
+            subtasks: [] as Subtask[],
+            recurrence: t.recurrence ?? null,
+            recurrenceParentId: t.recurrenceParentId ?? null,
+          }));
+
+          // Load subtasks in parallel with batching (10 at a time)
+          const BATCH_SIZE = 10;
+          const tasksWithSubtasks: Task[] = [];
+
+          for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
+            const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(
+              batch.map(async (task) => {
+                try {
+                  const subtaskResult = await taskApi.getSubtasks(task.id);
+                  // API returns plain array
+                  const subtasks = Array.isArray(subtaskResult) ? subtaskResult : (subtaskResult?.subtasks ?? []);
+                  return { ...task, subtasks: subtasks as Subtask[] };
+                } catch { /* ignore error */ }
+                return task;
+              })
+            );
+            tasksWithSubtasks.push(...batchResults as Task[]);
           }
+
+          set({
+            tasks: tasksWithSubtasks,
+            taskCounts: {
+              totalDone: taskArray.filter((t: any) => t.status === 'done').length,
+              totalArchived: taskArray.filter((t: any) => t.status === 'cancelled').length,
+            }
+          });
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
         } finally {
           get().setLoading('tasks', false);
+          setTimeout(() => { (globalThis as any).__taskLoadInFlight = false; }, 3000);
         }
       },
       addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -549,7 +581,7 @@ export const useStore = create<Store>()(
         set((s: Store) => ({
           tasks: [...s.tasks, newTask]
         }));
-        // Sync to froggo-db
+        // Sync to mission-control-db
         taskApi.create(newTask).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
       },
       updateTask: (id: string, updates: Partial<Task>) => {
@@ -572,8 +604,10 @@ export const useStore = create<Store>()(
 
         // Persist to database via API
         taskApi.update(id, updates)
-          .then((result: { success?: boolean; error?: string }) => {
-            if (!result?.success) {
+          .then((result: { success?: boolean; error?: string; id?: string }) => {
+            // API returns updated task object (has .id) or { success, error }
+            const failed = result?.error || (result && !result.id && result.success === false);
+            if (failed) {
               console.error('[Store] Task update failed:', result?.error);
               if (rollbackValues) {
                 set((s: Store) => ({
@@ -601,11 +635,12 @@ export const useStore = create<Store>()(
 
         // Status transition validation
         const VALID_TRANSITIONS: Record<string, string[]> = {
-          'todo': ['internal-review', 'in-progress'],
-          'internal-review': ['todo', 'in-progress'],
-          'in-progress': ['review', 'todo'],
-          'review': ['done', 'in-progress'],
-          'done': ['in-progress'],
+          'todo':             ['internal-review', 'human-review'],
+          'internal-review':  ['todo', 'in-progress'],
+          'in-progress':      ['review', 'todo', 'human-review'],
+          'review':           ['done', 'in-progress', 'human-review'],
+          'human-review':     ['in-progress', 'todo', 'internal-review'],
+          'done':             ['in-progress'],
         };
         const allowed = VALID_TRANSITIONS[task.status];
         if (allowed && !allowed.includes(status)) {
@@ -659,7 +694,7 @@ export const useStore = create<Store>()(
         }));
         // Broadcast status change to main session
         gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-        // Sync to froggo-db
+        // Sync to mission-control-db
         taskApi.update(task.id, { status }).catch((err: Error) => {
           console.error("[Store] Task move failed:", err);
           showToast('error', 'Task move failed', err.message);
@@ -708,7 +743,7 @@ export const useStore = create<Store>()(
             ? `[TASK_ASSIGNED] "${task.title}" assigned to ${agent.avatar} ${agent.name}`
             : `[TASK_UNASSIGNED] "${task.title}" unassigned`;
           gateway.sendToSession('main', msg).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-          // Sync to froggo-db
+          // Sync to mission-control-db
           taskApi.update(task.id, { assignedTo: agentId || '' }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           
           // Log activity to task_activity table
@@ -733,13 +768,12 @@ export const useStore = create<Store>()(
       loadSubtasksForTask: async (taskId: string) => {
         try {
           const result = await taskApi.getSubtasks(taskId);
-          if (result?.success) {
-            // Update the task in state with loaded subtasks
-            set((s: Store) => ({
-              tasks: s.tasks.map((t: Task) => t.id === taskId ? { ...t, subtasks: result.subtasks } : t)
-            }));
-            return result.subtasks || [];
-          }
+          // API returns plain array
+          const subtasks = Array.isArray(result) ? result : (result?.subtasks ?? []);
+          set((s: Store) => ({
+            tasks: s.tasks.map((t: Task) => t.id === taskId ? { ...t, subtasks } : t)
+          }));
+          return subtasks;
         } catch (error) {
           console.error('Failed to load subtasks:', error);
         }
@@ -790,7 +824,7 @@ export const useStore = create<Store>()(
           const parentTask = get().tasks.find((t: Task) => (t.subtasks || []).some((st: Subtask) => st.id === subtaskId));
           const parentTaskId = parentTask?.id || subtaskId; // fallback to subtaskId if not found
           const result = await taskApi.updateSubtask(parentTaskId, subtaskId, updates);
-          if (result?.success) {
+          if (result && !result.error) {
             // Update local state
             set((s: Store) => ({
               tasks: s.tasks.map((t: Task) => ({
@@ -837,9 +871,10 @@ export const useStore = create<Store>()(
       loadTaskActivity: async (taskId: string, limit?: number) => {
         try {
           const result = await taskApi.getActivity(taskId);
-          if (result?.success) {
-            return result.activities || [];
-          }
+          // API returns array directly
+          if (Array.isArray(result)) return result;
+          // Legacy shape
+          if (result?.success) return result.activities || [];
         } catch (error) {
           console.error('Failed to load task activity:', error);
         }
@@ -866,51 +901,35 @@ export const useStore = create<Store>()(
       fetchAgents: async () => {
         try {
           get().setLoading('agents', true);
-          // Fetch agents from gateway using the new API
           const result = await agentApi.getAll();
-          if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
-            // Map CLI fields (identityName, identityEmoji) to store fields (name, avatar)
-            interface CliAgent {
-              id: string;
-              identityName?: string;
-              identityEmoji?: string;
-              description?: string;
-              capabilities?: string[];
-              workspace?: string;
-              model?: string;
-            }
-            const agents: Agent[] = result.agents.map((cliAgent: CliAgent) => ({
-              id: cliAgent.id,
-              name: cliAgent.identityName || cliAgent.id,
-              avatar: cliAgent.identityEmoji || '🤖',
-              description: cliAgent.description || '',
-              status: 'idle' as Agent['status'],
-              capabilities: cliAgent.capabilities || [],
-              workspace: cliAgent.workspace,
-              model: cliAgent.model,
+          // REST API returns a plain array; gateway returns { success, agents }
+          const agentList: any[] = Array.isArray(result) ? result : (Array.isArray(result?.agents) ? result.agents : []);
+          if (agentList.length > 0) {
+            const agents: Agent[] = agentList.map((a: any) => ({
+              id: a.id,
+              name: a.name || a.identityName || a.id,
+              avatar: a.emoji || a.identityEmoji || '🤖',
+              description: a.role || a.description || '',
+              status: (a.status as Agent['status']) || 'idle',
+              capabilities: Array.isArray(a.capabilities) ? a.capabilities : [],
+              trust_tier: a.trust_tier,
             }));
 
             // Preserve runtime state (status/sessionKey/currentTaskId/lastActivity) from current agents
             const current = get().agents;
             const fresh = agents.map((agent: Agent) => {
               const existing = current.find((a: Agent) => a.id === agent.id);
-              // If agent exists, keep its runtime state, otherwise use fresh state
               return existing
                 ? { ...agent, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
                 : agent;
             });
 
-            // Set agents to ONLY gateway agents (no fallback, no phantom agents)
             set({ agents: fresh });
-          } else {
-            // If gateway unavailable, keep empty (no phantom agents)
-            if (result?.error) {
-              console.error('[Store] Gateway error:', result.error);
-            }
+          } else if (!Array.isArray(result) && result?.error) {
+            console.error('[Store] Agent fetch error:', result.error);
           }
         } catch (e) {
-          console.error('[Store] Failed to fetch agents from gateway:', e);
-          // On error, keep current agents (don't inject fallbacks)
+          console.error('[Store] Failed to fetch agents:', e);
         } finally {
           get().setLoading('agents', false);
         }
@@ -929,7 +948,7 @@ export const useStore = create<Store>()(
         if (!agent) return;
 
         try {
-          // Update froggo-db FIRST to prevent race with polling
+          // Update mission-control-db FIRST to prevent race with polling
           await taskApi.update(taskId, {
             status: 'in-progress',
             assignedTo: agentId
@@ -945,11 +964,15 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // IMMEDIATELY spawn agent via API (don't wait for DB triggers)
+          // IMMEDIATELY dispatch task to agent via task dispatch endpoint
           try {
-            await agentApi.spawn(agentId);
+            await fetch('/api/tasks/dispatch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ taskId }),
+            });
           } catch (_spawnErr) {
-            // Agent spawn failure is non-blocking — task still proceeds
+            // Dispatch failure is non-blocking — task status is already updated
           }
 
           get().addActivity({
@@ -992,7 +1015,7 @@ export const useStore = create<Store>()(
             }],
           }));
 
-          // Send task to Froggo to execute
+          // Send task to Mission Control to execute
           const workerPrompt = `## New Worker Task: ${name}
 
 **Worker ID:** ${workerId}
@@ -1206,19 +1229,15 @@ Start now.`;
 
     }),
     {
-      name: 'clawd-dashboard',
-      partialize: (s) => ({ 
-        // tasks removed - now sourced from froggo-db only
-        // approvals removed - now sourced from froggo-db inbox only
-        activities: s.activities.slice(0, 50),
-        // Don't persist isMuted - always start unmuted
-        // Persist X drafts (only non-posted ones - posted are removed by markXDraftPosted)
-        xDrafts: s.xDrafts,
+      name: 'mission-control-dashboard',
+      partialize: (s) => ({
+        // activities excluded — loaded from API on mount, too large for localStorage
+        // Persist X drafts only (non-posted; posted are removed by markXDraftPosted)
+        xDrafts: s.xDrafts.slice(0, 20),
       }),
       // Custom merge to ensure arrays are never undefined after hydration
       merge: (persistedState: unknown, currentState: Store): Store => ({
         ...currentState,
-        activities: (persistedState as { activities?: Activity[] })?.activities ?? currentState.activities ?? [],
         xDrafts: (persistedState as { xDrafts?: XDraft[] })?.xDrafts ?? currentState.xDrafts ?? [],
       }),
     }
@@ -1253,7 +1272,7 @@ if (gateway.connected) {
 }
 
 // TODO Phase 4: migrate — IPC task notifications not available in web; handled via gateway events
-// window.clawdbot.tasks.onNotification removed (no REST equivalent)
+// task notification IPC removed (no REST equivalent)
 
 gateway.on('chat', (payload: { final?: boolean; content?: string; sessionKey?: string }) => {
   if (payload?.final && payload?.content) {
@@ -1266,7 +1285,7 @@ gateway.on('chat', (payload: { final?: boolean; content?: string; sessionKey?: s
   }
 });
 
-// Listen for approval requests from Froggo
+// Listen for approval requests from Mission Control
 gateway.on('approval.request', (payload: { type: ApprovalType; title: string; content: string; context?: string; metadata?: ApprovalItem['metadata'] }) => {
   if (payload?.type && payload?.title && payload?.content) {
     useStore.getState().addApproval({
@@ -1322,7 +1341,7 @@ gateway.on('tasks.refresh', () => {
 // If events are missed, add specific gateway.on('event.name') listener.
 
 // TODO Phase 4: migrate — IPC gateway broadcasts not available in web; handled via gateway WebSocket events
-// window.clawdbot.gateway.onBroadcast removed (no REST equivalent)
+// gateway broadcast IPC removed (no REST equivalent)
 
 // Also check for approval patterns in chat messages
 gateway.on('chat.message', (payload: { content?: string; context?: string; metadata?: ApprovalItem['metadata'] }) => {

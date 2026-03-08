@@ -1,4 +1,4 @@
-# Froggo Dashboard - Complete User Guide
+# Mission Control Dashboard - Complete User Guide
 
 **Version:** 1.0.0  
 **Last Updated:** January 29, 2026
@@ -20,9 +20,9 @@
 
 ## Introduction
 
-### What is Froggo Dashboard?
+### What is Mission Control Dashboard?
 
-Froggo Dashboard is an AI-powered productivity hub that orchestrates specialized agents to handle your tasks, manage communications, and keep you organized. It combines:
+Mission Control Dashboard is an AI-powered productivity hub that orchestrates specialized agents to handle your tasks, manage communications, and keep you organized. It combines:
 
 - **Task Management** - Full Kanban board with agent assignment
 - **Agent Orchestration** - Coder, Writer, Researcher, and Chief agents
@@ -37,7 +37,7 @@ Froggo Dashboard is an AI-powered productivity hub that orchestrates specialized
 ✅ **Unified Interface** - All tools in one place  
 ✅ **Privacy-First** - Local processing, you own your data  
 ✅ **Keyboard-Driven** - Full keyboard navigation for power users  
-✅ **Context-Aware** - Froggo understands your workflow  
+✅ **Context-Aware** - Mission Control understands your workflow  
 
 ---
 
@@ -54,7 +54,7 @@ Froggo Dashboard is an AI-powered productivity hub that orchestrates specialized
 ### Installation
 
 1. **Download** the latest release from your distribution channel
-2. **Install** by dragging Froggo.app to Applications
+2. **Install** by dragging Mission Control.app to Applications
 3. **Launch** the application
 4. **Grant permissions** when prompted:
    - Microphone access (for voice features)
@@ -63,7 +63,7 @@ Froggo Dashboard is an AI-powered productivity hub that orchestrates specialized
 
 ### First Launch
 
-When you first open Froggo:
+When you first open Mission Control:
 
 1. **Welcome Tour** - Interactive walkthrough of core features (recommended)
 2. **Connect Accounts** - Link Google Calendar, email, and social media
@@ -78,7 +78,7 @@ When you first open Froggo:
 
 ### The Dashboard Philosophy
 
-Froggo operates on three principles:
+Mission Control operates on three principles:
 
 1. **Kanban-First Workflow** - All work flows through the task board
 2. **Agent Delegation** - Specialized agents for specialized work
@@ -86,7 +86,7 @@ Froggo operates on three principles:
 
 ### Agent System
 
-Froggo uses **specialized agents** that act as virtual team members:
+Mission Control uses **specialized agents** that act as virtual team members:
 
 | Agent | Role | Best For |
 |-------|------|----------|
@@ -441,8 +441,8 @@ For multi-tweet threads:
 **How to Use:**
 1. **Click the frog orb** to start listening
 2. **Speak naturally** - see real-time transcription
-3. **After silence detection** (~2s), message auto-sends to Froggo
-4. **Froggo responds** via text-to-speech (TTS)
+3. **After silence detection** (~2s), message auto-sends to Mission Control
+4. **Mission Control responds** via text-to-speech (TTS)
 5. **Listening auto-restarts** for continuous conversation
 6. **Click orb again** to stop
 
@@ -455,9 +455,9 @@ For multi-tweet threads:
 **Example Flow:**
 ```
 You: "Create a task to fix the login bug, priority high"
-Froggo: [TTS] "Created task 'Fix login bug' with priority P1. Assigned to Coder."
+Mission Control: [TTS] "Created task 'Fix login bug' with priority P1. Assigned to Coder."
 You: "Thanks. What's on my calendar today?"
-Froggo: [TTS] "You have 3 meetings: Stand-up at 9am, Client call at 2pm..."
+Mission Control: [TTS] "You have 3 meetings: Stand-up at 9am, Client call at 2pm..."
 ```
 
 #### 2. Meeting Eavesdrop Mode (Phone Icon)
@@ -472,7 +472,7 @@ Froggo: [TTS] "You have 3 meetings: Stand-up at 9am, Client call at 2pm..."
 4. **Click "Send Summary"** when meeting ends
    - Sends full transcript
    - Lists detected action items
-   - Froggo can create tasks from action items
+   - Mission Control can create tasks from action items
 5. **Click phone icon** to end
 
 **Perfect For:**
@@ -488,7 +488,7 @@ Access via gear icon:
 - **Speaking Rate** - Slow, Normal, Fast
 - **Silence Threshold** - How long to wait before auto-send (0.5-5s)
 - **Auto-Send** - Enable/disable automatic message sending
-- **Wake Word** - "Hey Froggo" detection (experimental)
+- **Wake Word** - "Hey Mission Control" detection (experimental)
 
 **Privacy Note:**
 All transcription runs **locally on your device** using Vosk. No audio is sent to the cloud.
@@ -497,11 +497,11 @@ All transcription runs **locally on your device** using Vosk. No audio is sent t
 
 ### 9. Chat (⌘9)
 
-**Purpose:** Direct conversation with Froggo
+**Purpose:** Direct conversation with Mission Control
 
 **How to Use:**
 
-Just type naturally! Froggo understands context and can:
+Just type naturally! Mission Control understands context and can:
 - Answer questions
 - Create tasks
 - Search your data
@@ -513,25 +513,25 @@ Just type naturally! Froggo understands context and can:
 
 ```
 You: What's on my calendar tomorrow?
-Froggo: You have 2 meetings tomorrow:
+Mission Control: You have 2 meetings tomorrow:
 - 10am: Team Sync (1 hour)
 - 2pm: Client Review (30 min)
 
 You: Create a task to prepare the client deck
-Froggo: Created task "Prepare client deck" in Todo.
+Mission Control: Created task "Prepare client deck" in Todo.
 Assigned to Writer. Priority P1. Want to add details?
 
 You: Yes, make it due tomorrow at 1pm
-Froggo: Updated task with due date: Jan 30, 1:00 PM.
+Mission Control: Updated task with due date: Jan 30, 1:00 PM.
 
 You: How many tasks did I complete this week?
-Froggo: You completed 23 tasks this week! 🎉
+Mission Control: You completed 23 tasks this week! 🎉
 Breakdown: 8 by Coder, 9 by Writer, 6 by Researcher.
 ```
 
 **Context Awareness:**
 
-Froggo has access to:
+Mission Control has access to:
 - ✅ Your task board and all tasks
 - ✅ Calendar and upcoming events
 - ✅ Recent emails and messages
@@ -542,7 +542,7 @@ Froggo has access to:
 **Message Actions:**
 - **Copy** - Copy message to clipboard
 - **Edit** - Edit your message (before sending)
-- **Regenerate** - Ask Froggo to rephrase
+- **Regenerate** - Ask Mission Control to rephrase
 - **Follow-up** - Quick reply shortcuts
 
 **Slash Commands:**
@@ -605,7 +605,7 @@ For each connected account:
 
 ### 11. Settings (⌘,)
 
-**Purpose:** Customize Froggo to your preferences
+**Purpose:** Customize Mission Control to your preferences
 
 **Sections:**
 
@@ -801,7 +801,7 @@ For each connected account:
 
 2. **Prep Task**
    - Voice: "Create prep task for 2pm client meeting"
-   - Froggo creates task, assigns to you or Researcher
+   - Mission Control creates task, assigns to you or Researcher
 
 **During Meeting:**
 
@@ -814,16 +814,16 @@ For each connected account:
 
 4. **Send Summary**
    - Click "Send Summary" button
-   - Froggo receives transcript + action items
+   - Mission Control receives transcript + action items
    - Ask: "Create tasks from action items"
 
-5. **Froggo Auto-Creates Tasks**
+5. **Mission Control Auto-Creates Tasks**
    - "Send deck to client" → Task for you
    - "Update pricing model" → Task for Coder
    - "Draft proposal" → Task for Writer
 
 6. **Follow-Up Email**
-   - Ask Froggo: "Draft follow-up email with meeting notes"
+   - Ask Mission Control: "Draft follow-up email with meeting notes"
    - Email goes to Inbox for review
    - Approve and send
 
@@ -965,11 +965,11 @@ Settings > Data & Privacy > Export Data
 
 **Automatic Backups:**
 
-Froggo backs up daily:
+Mission Control backs up daily:
 - Full database backup (3 AM)
 - Incremental backups (9 AM, 3 PM, 9 PM)
 - 30 days retention
-- Stored locally: `~/froggo/backups/`
+- Stored locally: `~/mission-control/backups/`
 
 **Restore:**
 1. Settings > Data & Privacy > Restore
@@ -1061,7 +1061,7 @@ Froggo backs up daily:
 1. Check task activity log for errors
 2. View agent logs (⌘6)
 3. If stuck: Reset to Todo and reassign
-4. Ask Froggo in Chat: "Why is task-XXX stuck?"
+4. Ask Mission Control in Chat: "Why is task-XXX stuck?"
 
 #### Voice Not Working
 
@@ -1126,7 +1126,7 @@ Froggo backs up daily:
 **Fix:**
 1. Go to System Preferences > Security & Privacy
 2. Grant requested permissions
-3. Restart Froggo
+3. Restart Mission Control
 
 ---
 
@@ -1134,14 +1134,14 @@ Froggo backs up daily:
 
 **In-App Help:**
 - Press `⌘?` for this help panel
-- Use Chat (⌘9) to ask Froggo
+- Use Chat (⌘9) to ask Mission Control
 - Check FAQ section for common questions
 
 **External Resources:**
-- Documentation: https://docs.froggo.ai
-- Video Tutorials: https://youtube.com/@froggo
-- Community: https://discord.gg/froggo
-- Support: support@froggo.ai
+- Documentation: https://docs.mission-control.ai
+- Video Tutorials: https://youtube.com/@mission-control
+- Community: https://discord.gg/mission-control
+- Support: support@mission-control.ai
 
 ---
 
@@ -1154,10 +1154,10 @@ See [KEYBOARD_SHORTCUTS_REFERENCE.md](./KEYBOARD_SHORTCUTS_REFERENCE.md) for com
 ### Data Storage
 
 All data stored locally in:
-- SQLite Database: `~/froggo/data/froggo.db`
-- Backups: `~/froggo/backups/`
-- Logs: `~/froggo/logs/`
-- Voice Models: `~/Library/Application Support/Froggo/models/`
+- SQLite Database: `~/mission-control/data/mission-control.db`
+- Backups: `~/mission-control/backups/`
+- Logs: `~/mission-control/logs/`
+- Voice Models: `~/Library/Application Support/Mission Control/models/`
 
 ### Privacy Policy
 
@@ -1169,4 +1169,4 @@ All data stored locally in:
 
 ---
 
-**Questions?** Press `⌘9` to chat with Froggo or press `⌘?` to search help articles.
+**Questions?** Press `⌘9` to chat with Mission Control or press `⌘?` to search help articles.

@@ -19,10 +19,14 @@ export async function POST(request: NextRequest) {
     }
 
     const reply = await new Promise<string>((resolve, reject) => {
+      // Unset CLAUDECODE so Claude CLI doesn't refuse to run inside a Claude Code session
+      const env = { ...process.env };
+      delete env.CLAUDECODE;
+
       const proc = spawn(
         CLAUDE_BIN,
         ['--print', '--model', 'claude-haiku-4-5-20251001'],
-        { stdio: ['pipe', 'pipe', 'pipe'] }
+        { stdio: ['pipe', 'pipe', 'pipe'], env }
       );
 
       let out = '';

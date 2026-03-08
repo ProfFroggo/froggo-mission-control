@@ -427,13 +427,13 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             {(() => {
               const theme = getAgentTheme(agent.id);
               return theme.pic ? (
-                <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-clawd-bg`}>
-                  <img src={`./agent-profiles/${theme.pic}`} alt={agent.name} className="w-full h-full object-cover"
+                <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
+                  <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
@@ -464,7 +464,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-clawd-text-dim">
+              <p className="text-xs text-mission-control-text-dim">
                 {sessionKey ? 'Real-time conversation with agent LLM' : 'Establishing connection...'}
               </p>
             </div>
@@ -476,7 +476,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 className={`p-2 rounded-lg transition-colors ${
                   isVoiceMode
                     ? 'bg-review-subtle text-review hover:bg-review-subtle'
-                    : 'hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                    : 'hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
                 title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
               >
@@ -485,7 +485,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             )}
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -505,8 +505,8 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
         {/* Quick Prompts */}
         {!isVoiceMode && messages.length <= 1 && !spawning && sessionKey && (
-          <div className="p-4 border-b border-clawd-border">
-            <h3 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2">
+          <div className="p-4 border-b border-mission-control-border">
+            <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase mb-2">
               Quick Prompts
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -516,9 +516,9 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   onClick={() => {
                     setInput(item.prompt);
                   }}
-                  className="flex items-center gap-2 p-2 text-sm bg-clawd-bg border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors text-left"
+                  className="flex items-center gap-2 p-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-left"
                 >
-                  <item.icon size={14} className="text-clawd-accent flex-shrink-0" />
+                  <item.icon size={14} className="text-mission-control-accent flex-shrink-0" />
                   <span className="truncate">{item.text}</span>
                 </button>
               ))}
@@ -570,7 +570,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                         ? 'text-info' 
                         : msg.role === 'assistant' 
                           ? 'text-emerald-500' 
-                          : 'text-clawd-text-dim'
+                          : 'text-mission-control-text-dim'
                     }`}>
                       {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? agent?.name : 'System'}
                     </div>
@@ -579,9 +579,9 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   {/* Message Bubble */}
                   <div className={`px-4 py-3 transition-all ${
                     msg.role === 'user' 
-                      ? 'bg-clawd-accent/50 text-white'
+                      ? 'bg-mission-control-accent/50 text-white'
                       : msg.role === 'assistant' 
-                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border shadow-sm' 
+                        ? 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border shadow-sm' 
                         : 'bg-warning-subtle border border-warning-border text-warning'
                   } ${
                     msg.role === 'user'
@@ -600,7 +600,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   {/* Timestamp */}
                   {isLastInGroup && (
                     <div className={`flex items-center gap-2 mt-1.5 px-1 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <span className="text-[10px] text-clawd-text-dim/80 font-medium">
+                      <span className="text-[10px] text-mission-control-text-dim/80 font-medium">
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
@@ -622,7 +622,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
                 </div>
               </div>
@@ -641,14 +641,14 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
-                    <span className="text-sm text-clawd-text-dim">Thinking...</span>
+                    <span className="text-sm text-mission-control-text-dim">Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -659,34 +659,34 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         </div>
 
         {/* Input */}
-        <div className={`p-4 border-t border-clawd-border ${isVoiceMode ? 'hidden' : ''}`}>
+        <div className={`p-4 border-t border-mission-control-border ${isVoiceMode ? 'hidden' : ''}`}>
           <div className="flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={sessionKey ? "Type your message... (Shift+Enter for new line)" : "Waiting for connection..."}
-              className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors"
+              className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
               rows={2}
               disabled={sending || !sessionKey}
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || sending || !sessionKey}
-              className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+              className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
               aria-label="Send message"
             >
               <Send size={20} />
             </button>
           </div>
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-xs text-clawd-text-dim">
+            <span className="text-xs text-mission-control-text-dim">
               💡 You&apos;re talking to a real LLM — ask anything relevant to this agent&apos;s role
             </span>
             {!sessionKey && !spawning && (
               <button
                 onClick={initChat}
-                className="text-xs text-clawd-accent hover:underline"
+                className="text-xs text-mission-control-accent hover:underline"
               >
                 Retry connection
               </button>

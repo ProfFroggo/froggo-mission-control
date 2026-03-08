@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
-import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
+import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import ContentBlock from './ContentBlock';
 import LiveActivity from './LiveActivity';
@@ -9,7 +9,7 @@ import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
 import CreateRoomModal from './CreateRoomModal';
 import ChatRoomView from './ChatRoomView';
-import { gateway, ConnectionState } from '../lib/gateway';
+import { gateway, forceReconnect, ConnectionState } from '../lib/gateway';
 import { chatApi } from '@/lib/api';
 import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
@@ -18,6 +18,8 @@ import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
 import EmptyState from './EmptyState';
+import ArtifactPanel from './ArtifactPanel';
+import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 
@@ -44,11 +46,12 @@ interface ContentBlock {
 
 interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
   content: string | ContentBlock[];
+  status?: string; // live streaming status: 'Thinking...', 'Using: Bash', etc.
 }
 
 export default function ChatPanel() {
   const { addActivity } = useStore();
-  const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
+  const { rooms, activeRoomId, setActiveRoom, createRoom, loadRooms } = useChatRoomStore();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
   const [messages, setMessages] = useState<StructuredChatMessage[]>([]);
@@ -67,17 +70,30 @@ export default function ChatPanel() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
-  const agents = useStore(s => s.agents);
-  const chatAgents = fetchAgentList();
-  const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(chatAgents.length > 0 ? chatAgents[0] : null);
+  const { agents: chatAgents } = useAgentList();
+  const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+
+  // Auto-extract artifacts from 1-1 chat messages
+  useArtifactExtraction(
+    messages.map(m => ({
+      id: m.id ?? '',
+      role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+      timestamp: m.timestamp,
+    })),
+    selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''
+  );
+
+  // Load chat rooms from DB on mount; always open on 1-1 chat (not a room)
+  useEffect(() => { loadRooms(); setActiveRoom(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update selectedAgent when agents load if not set
   useEffect(() => {
     if (!selectedAgent && chatAgents.length > 0) {
       setSelectedAgent(chatAgents[0]);
     }
-  }, [chatAgents, chatAgents.length, selectedAgent]);
+  }, [chatAgents, selectedAgent]);
   
   // Cache messages per agent so switching is instant
   const messageCacheRef = useRef<Map<string, StructuredChatMessage[]>>(new Map());
@@ -159,25 +175,46 @@ export default function ChatPanel() {
     showToast('Starred messages not available', 'error');
   };
 
-  // Load messages from database on mount (and when agent changes) - this is the source of truth
+  // Load messages from database whenever the selected agent changes (including initial selection)
   useEffect(() => {
     const loadFromDb = async () => {
       if (!selectedAgent) return;
-      // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
+      // Return cached messages immediately (agent switch already loaded them)
+      const cached = messageCacheRef.current.get(selectedAgent.id);
+      if (cached) {
+        setMessages(cached);
+        setHistoryLoaded(true);
+        return;
+      }
+      // Mark as loaded IMMEDIATELY to prevent race conditions
       setHistoryLoaded(true);
 
       try {
         const result = await chatApi.getMessages(selectedAgent.dbSessionKey);
         if (result?.success && result.messages?.length > 0) {
-          setMessages(result.messages);
-          messageCacheRef.current.set(selectedAgent.id, result.messages);
+          // Parse any messages saved as ContentBlock[] JSON — extract plain text
+          const normalized = result.messages.map((m: StructuredChatMessage) => {
+            if (m.role === 'assistant' && typeof m.content === 'string' && m.content.startsWith('[')) {
+              try {
+                const blocks = JSON.parse(m.content as string);
+                if (Array.isArray(blocks) && blocks.length > 0 && blocks[0]?.type) {
+                  const text = blocks.filter((b: ContentBlock) => b.type === 'text').map((b: ContentBlock) => b.text ?? '').join('');
+                  return { ...m, content: text || m.content };
+                }
+              } catch { /* not JSON, keep as-is */ }
+            }
+            // Normalize DB integer 0/1 → boolean, and clear any stale streaming state
+            return { ...m, streaming: false, status: undefined };
+          });
+          setMessages(normalized);
+          messageCacheRef.current.set(selectedAgent.id, normalized);
         }
       } catch (_err) {
         // DB load failed — start with empty messages
       }
     };
     loadFromDb();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- Only on mount - agent switching handled by handleAgentSwitch
+  }, [selectedAgent?.id]); // Re-run when agent first becomes available or changes
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
@@ -248,8 +285,9 @@ export default function ChatPanel() {
       const textContent = Array.isArray(msg.content)
         ? msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
         : msg.content;
-      return !isSystemReply(textContent) &&
-        (msg.streaming || (textContent && textContent.trim().length > 0));
+      // Keep streaming messages always; for done messages, only hide truly empty plain strings
+      const isEmpty = !msg.streaming && typeof msg.content === 'string' && textContent.trim().length === 0;
+      return !isSystemReply(textContent) && !isEmpty;
     });
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
@@ -544,7 +582,7 @@ export default function ChatPanel() {
           speak(finalTextContent);
         }
         
-        // Check for @Brain: routing - forward to main session (Brain/Froggo)
+        // Check for @Brain: routing - forward to main session (Brain/Mission Control)
         const brainMatch = finalTextContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
@@ -660,7 +698,8 @@ export default function ChatPanel() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if ((!text && attachments.length === 0) || !connected) return;
+    if (!text && attachments.length === 0) return;
+    if (!selectedAgent) return;
     
     // Clear suggestions when sending
     setSuggestedReplies([]);
@@ -737,26 +776,126 @@ export default function ChatPanel() {
     addActivity({ type: 'chat', message: `You: ${text.slice(0, 50)}...`, timestamp: Date.now() });
 
     try {
-      // Use streaming send - events will update the message
-      // Send full content including file contents
-      // Gateway routes to the session set via setSessionKey()
-      const runId = await gateway.sendChatStreaming(content);
-      if (runId) currentRunIdRef.current = runId;
-      
-      // Timeout fallback
-      setTimeout(() => {
-        if (loading && currentMsgIdRef.current === assistantId) {
-          const current = currentResponseRef.current;
-          setMessages(prev => prev.map(m => 
-            m.id === assistantId && m.streaming
-              ? { ...m, content: current || 'No response received', streaming: false } 
-              : m
-          ));
-          setLoading(false);
-          currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
+      // Stream from REST API — no gateway needed
+      const response = await fetch(`/api/agents/${selectedAgent.id}/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content, model: 'claude-sonnet-4-6', sessionKey: selectedAgent.dbSessionKey }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Stream error: ${response.status} ${response.statusText}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+      let structuredContent: ContentBlock[] | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (raw === '[DONE]') break;
+
+          try {
+            const evt = JSON.parse(raw);
+
+            if (evt.type === 'assistant' && Array.isArray(evt.message?.content)) {
+              const blocks: any[] = evt.message.content;
+              const thinking = blocks.find((b: any) => b.type === 'thinking');
+              const toolUse  = blocks.find((b: any) => b.type === 'tool_use');
+              const text     = blocks.filter((b: any) => b.type === 'text').map((b: any) => b.text ?? '').join('');
+
+              if (text) {
+                // Text turn — accumulate and show, keep streaming:true until done
+                accumulated += text;
+                structuredContent = null;
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+                ));
+              } else if (toolUse) {
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, status: `Using: ${toolUse.name}` } : m
+                ));
+              } else if (thinking) {
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, status: 'Thinking...' } : m
+                ));
+              }
+              // Never set streaming:false here — wait for done/result
+            } else if (evt.type === 'result' && typeof evt.result === 'string') {
+              // Definitive final text from Claude CLI — always authoritative
+              if (evt.result) {
+                accumulated = evt.result;
+                setMessages(prev => prev.map(m =>
+                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+                ));
+              }
+            } else if (evt.type === 'text' && typeof evt.text === 'string') {
+              // Fallback: non-JSON lines from stderr/stdout
+              accumulated += evt.text;
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: accumulated } : m
+              ));
+            } else if (evt.type === 'error' && typeof evt.text === 'string') {
+              // Server-side error (e.g. agent busy, spawn failure) — surface it
+              accumulated = evt.text;
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+              ));
+            } else if (evt.type === 'timeout') {
+              accumulated = 'Response timed out — the agent took too long. Please try again.';
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+              ));
+            } else if (evt.type === 'done') {
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, streaming: false, status: undefined } : m
+              ));
+              setLoading(false);
+            }
+
+            // Re-enable input once agent starts doing something
+            if (evt.type === 'assistant' || evt.type === 'text' || evt.type === 'result' || evt.type === 'error' || evt.type === 'timeout') {
+              setLoading(false);
+            }
+          } catch { /* skip malformed */ }
         }
-      }, 120000);
-      
+      }
+
+      // Finalize — if stream completed with no content, show error instead of disappearing
+      if (!accumulated) {
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId
+            ? { ...m, content: 'No response received. The session may have expired — please try again.', streaming: false }
+            : m
+        ));
+      } else {
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId ? { ...m, streaming: false } : m
+        ));
+      }
+      setLoading(false);
+      currentMsgIdRef.current = '';
+      currentResponseRef.current = accumulated;
+      currentContentRef.current = structuredContent ?? accumulated;
+
+      // Save to DB — always save plain text (not ContentBlock[] JSON)
+      if (accumulated && selectedAgent) {
+        saveMessageToDb('assistant', accumulated);
+      }
+
+      if (speakResponses) speak(accumulated);
+
     } catch (e: unknown) {
       const friendlyError = getUserFriendlyError(e, {
         action: 'send your message',
@@ -770,7 +909,7 @@ export default function ChatPanel() {
       setLoading(false);
       currentResponseRef.current = '';
       currentContentRef.current = '';
-      currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
+      currentMsgIdRef.current = '';
       showToast('error', 'Message failed', e instanceof Error ? e.message : 'Could not send message');
     }
   };
@@ -799,7 +938,7 @@ export default function ChatPanel() {
 
   const reconnect = () => {
     setHistoryLoaded(false);
-    gateway['reconnectNow']();
+    forceReconnect();
   };
 
   const getStatusText = () => {
@@ -827,7 +966,7 @@ export default function ChatPanel() {
   };
 
   const startTeamMeeting = () => {
-    const allAgentIds = agents.map(a => a.id);
+    const allAgentIds = chatAgents.map(a => a.id);
     const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     createRoom(`Team Meeting — ${timestamp}`, allAgentIds);
     setShowRoomList(false);
@@ -872,7 +1011,7 @@ export default function ChatPanel() {
 
   return (
     <div
-      className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-clawd-accent ring-inset' : ''}`}
+      className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
@@ -887,24 +1026,24 @@ export default function ChatPanel() {
     >
       {/* Drag overlay */}
       {isDragging && (
-        <div className="absolute inset-0 bg-clawd-accent/10 backdrop-blur-sm z-10 flex items-center justify-center">
+        <div className="absolute inset-0 bg-mission-control-accent/10 backdrop-blur-sm z-10 flex items-center justify-center">
           <div className="text-center">
-            <Paperclip size={48} className="mx-auto mb-2 text-clawd-accent" />
+            <Paperclip size={48} className="mx-auto mb-2 text-mission-control-accent" />
             <p className="text-lg font-medium">Drop files to attach</p>
           </div>
         </div>
       )}
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface">
         <div className="flex items-center gap-3 min-w-0">
           <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
           <div className="flex items-center gap-2 text-xs flex-shrink-0">
             <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-            <span className="text-clawd-text-dim">{getStatusText()}</span>
+            <span className="text-mission-control-text-dim">{getStatusText()}</span>
             {connectionState === 'disconnected' && (
               <button
                 onClick={reconnect}
-                className="text-clawd-accent hover:underline flex items-center gap-1"
+                className="text-mission-control-accent hover:underline flex items-center gap-1"
               >
                 <RefreshCw size={10} /> Reconnect
               </button>
@@ -916,7 +1055,7 @@ export default function ChatPanel() {
           <button
             onClick={() => setIsVoiceMode(!isVoiceMode)}
             className={`p-2 rounded-lg transition-colors ${
-              isVoiceMode ? 'bg-review-subtle text-review' : 'bg-clawd-border text-clawd-text-dim hover:text-review'
+              isVoiceMode ? 'bg-review-subtle text-review' : 'bg-mission-control-border text-mission-control-text-dim hover:text-review'
             }`}
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
           >
@@ -925,7 +1064,7 @@ export default function ChatPanel() {
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={`p-2 rounded-lg transition-colors ${
-              showSearch ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              showSearch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title={showSearch ? 'Hide search' : 'Search messages'}
           >
@@ -934,7 +1073,7 @@ export default function ChatPanel() {
           <button
             onClick={() => setSpeakResponses(!speakResponses)}
             className={`p-2 rounded-lg transition-colors ${
-              speakResponses ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim'
+              speakResponses ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim'
             }`}
             title={speakResponses ? 'Voice on' : 'Voice off'}
           >
@@ -942,12 +1081,12 @@ export default function ChatPanel() {
           </button>
           <button
             onClick={clearChat}
-            className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Clear chat"
           >
             <Trash2 size={16} />
           </button>
-          <div className="w-px h-5 bg-clawd-border mx-1" />
+          <div className="w-px h-5 bg-mission-control-border mx-1" />
           <button
             onClick={startTeamMeeting}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
@@ -959,20 +1098,20 @@ export default function ChatPanel() {
           <button
             onClick={() => setShowRoomList(!showRoomList)}
             className={`p-2 rounded-lg transition-colors relative ${
-              showRoomList ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              showRoomList ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title="Chat Rooms"
           >
             <Users size={16} />
             {rooms.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {rooms.length}
               </span>
             )}
           </button>
           <button
             onClick={() => setShowCreateRoom(true)}
-            className="p-2 rounded-lg bg-clawd-accent text-white hover:opacity-90 transition-opacity"
+            className="p-2 rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
             title="Create Chat Room"
           >
             <MessageSquarePlus size={16} />
@@ -980,21 +1119,25 @@ export default function ChatPanel() {
         </div>
       </div>
 
+      {/* Body — below header: chat left, artifact panel right */}
+      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+
       {/* Room List Dropdown */}
       {showRoomList && (
-        <div className="border-b border-clawd-border bg-clawd-surface/95 backdrop-blur-sm">
+        <div className="border-b border-mission-control-border bg-mission-control-surface/95 backdrop-blur-sm">
           <div className="p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">Chat Rooms</span>
+              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Chat Rooms</span>
               <button
                 onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
-                className="text-xs text-clawd-accent hover:underline flex items-center gap-1"
+                className="text-xs text-mission-control-accent hover:underline flex items-center gap-1"
               >
                 <MessageSquarePlus size={12} /> New Room
               </button>
             </div>
             {rooms.length === 0 ? (
-              <p className="text-sm text-clawd-text-dim py-3 text-center">
+              <p className="text-sm text-mission-control-text-dim py-3 text-center">
                 No rooms yet. Create one to start a multi-agent discussion!
               </p>
             ) : (
@@ -1003,7 +1146,7 @@ export default function ChatPanel() {
                   <button
                     key={room.id}
                     onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-clawd-bg border border-transparent hover:border-clawd-border transition-all text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-mission-control-bg border border-transparent hover:border-mission-control-border transition-all text-left"
                   >
                     <div className="flex -space-x-1.5">
                       {room.agents.slice(0, 3).map(id => (
@@ -1012,7 +1155,7 @@ export default function ChatPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{room.name}</div>
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         {room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
@@ -1027,7 +1170,7 @@ export default function ChatPanel() {
       {/* Voice Mode */}
       {isVoiceMode && (
         <VoiceChatPanel
-          agentId={selectedAgent.id === 'froggo' ? 'froggo' : selectedAgent.id}
+          agentId={selectedAgent.id === 'mission-control' ? 'mission-control' : selectedAgent.id}
           onSwitchToText={() => setIsVoiceMode(false)}
           embedded={true}
         />
@@ -1035,28 +1178,28 @@ export default function ChatPanel() {
 
       {/* Search Bar */}
       {!isVoiceMode && showSearch && (
-        <div className="px-4 py-3 border-b border-clawd-border bg-clawd-bg/50">
+        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-bg/50">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               aria-label="Search messages input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
-              className="w-full bg-clawd-surface border border-clawd-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-clawd-text-dim hover:text-clawd-text"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
               >
                 <X size={14} />
               </button>
             )}
           </div>
           {searchQuery && (
-            <div className="mt-2 text-xs text-clawd-text-dim">
+            <div className="mt-2 text-xs text-mission-control-text-dim">
               {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found
             </div>
           )}
@@ -1066,7 +1209,7 @@ export default function ChatPanel() {
       {/* Messages */}
       <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
         {messages.length === 0 ? (
-          <div className="text-center py-16 text-clawd-text-dim">
+          <div className="text-center py-16 text-mission-control-text-dim">
             <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
             <p className="text-lg font-medium mb-2">Hey! I&apos;m {selectedAgent.name}</p>
             <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
@@ -1075,7 +1218,7 @@ export default function ChatPanel() {
                 <button
                   key={q}
                   onClick={() => setInput(q)}
-                  className="px-3 py-1.5 text-sm bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                  className="px-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                 >
                   {q}
                 </button>
@@ -1092,7 +1235,7 @@ export default function ChatPanel() {
             const isUser = msg.role === 'user';
             const showAvatar = idx === 0 || filteredMessages[idx - 1]?.role !== msg.role;
             const isLastInGroup = idx === filteredMessages.length - 1 || filteredMessages[idx + 1]?.role !== msg.role;
-            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             const isStarred = starredMessageIds.has(msg.id ?? '');
             
             return (
@@ -1113,19 +1256,10 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Connection banner */}
-      {!isVoiceMode && connectionState === 'disconnected' && (
-        <div className="px-4 py-2 bg-error-subtle border-t border-error-border flex items-center justify-center gap-2 text-sm">
-          <WifiOff size={14} />
-          <span>Disconnected from gateway</span>
-          <button onClick={reconnect} className="text-clawd-accent hover:underline">
-            Reconnect
-          </button>
-        </div>
-      )}
+      {/* Connection banner removed — chat uses REST API, gateway is optional */}
 
       {/* Input */}
-      <div className={`p-4 border-t border-clawd-border bg-clawd-surface ${isVoiceMode ? 'hidden' : ''}`}>
+      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1134,7 +1268,7 @@ export default function ChatPanel() {
               return (
                 <div
                   key={att.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors cursor-pointer"
                   onClick={() => setPreviewFile(att)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewFile(att); } }}
                   title="Click to preview"
@@ -1142,16 +1276,16 @@ export default function ChatPanel() {
                   tabIndex={0}
                   aria-label={`Preview attachment ${att.name}`}
                 >
-                  <Icon size={16} className="text-clawd-accent" />
+                  <Icon size={16} className="text-mission-control-accent" />
                   <span className="text-sm truncate max-w-32">{att.name}</span>
-                  <span className="text-xs text-clawd-text-dim">
+                  <span className="text-xs text-mission-control-text-dim">
                     {(att.size / 1024).toFixed(1)}KB
                   </span>
                   <button
                     onClick={() => removeAttachment(att.id)}
-                    className="p-1 hover:bg-clawd-border rounded"
+                    className="p-1 hover:bg-mission-control-border rounded"
                   >
-                    <X size={14} className="text-clawd-text-dim" />
+                    <X size={14} className="text-mission-control-text-dim" />
                   </button>
                 </div>
               );
@@ -1163,11 +1297,11 @@ export default function ChatPanel() {
         {suggestedReplies.length > 0 && (
           <div className="mb-3">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles size={14} className="text-clawd-accent" />
-              <span className="text-xs text-clawd-text-dim">Suggested replies</span>
+              <Sparkles size={14} className="text-mission-control-accent" />
+              <span className="text-xs text-mission-control-text-dim">Suggested replies</span>
               <button
                 onClick={() => setSuggestedReplies([])}
-                className="ml-auto text-xs text-clawd-text-dim hover:text-clawd-text"
+                className="ml-auto text-xs text-mission-control-text-dim hover:text-mission-control-text"
               >
                 Clear
               </button>
@@ -1177,7 +1311,7 @@ export default function ChatPanel() {
                 <button
                   key={idx}
                   onClick={() => applySuggestion(suggestion)}
-                  className="px-3 py-2 bg-clawd-accent/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
+                  className="px-3 py-2 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg text-sm hover:border-mission-control-accent hover:bg-mission-control-accent/20 transition-all text-left"
                   title="Click to use this reply"
                 >
                   {suggestion}
@@ -1200,8 +1334,7 @@ export default function ChatPanel() {
           {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={!connected}
-            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-all"
+            className="p-3 rounded-xl bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all"
             title="Attach files"
           >
             <Paperclip size={20} />
@@ -1209,11 +1342,10 @@ export default function ChatPanel() {
 
           <button
             onClick={toggleVoice}
-            disabled={!connected}
             className={`p-3 rounded-xl transition-all ${
-              listening 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              listening
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             {listening ? <MicOff size={20} /> : <Mic size={20} />}
@@ -1222,35 +1354,34 @@ export default function ChatPanel() {
           {/* Suggest Replies button */}
           <button
             onClick={generateSuggestions}
-            disabled={!connected || messages.length === 0 || loadingSuggestions}
+            disabled={messages.length === 0 || loadingSuggestions}
             className={`p-3 rounded-xl transition-all ${
               loadingSuggestions
-                ? 'bg-clawd-accent text-white animate-pulse'
-                : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-accent/10'
+                ? 'bg-mission-control-accent text-white animate-pulse'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10'
             }`}
             title="AI suggested replies"
           >
             {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
           </button>
-          
+
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
-              aria-label={`ChatMessage input for ${selectedAgent.name}`}
+              aria-label={`Message ${selectedAgent.name}`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={connected ? `ChatMessage ${selectedAgent.name}...` : "Waiting for connection..."}
-              disabled={!connected}
+              placeholder={`Message ${selectedAgent.name}...`}
               rows={1}
-              className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
             />
           </div>
-          
+
           <button
             onClick={sendMessage}
-            disabled={(!input.trim() && attachments.length === 0) || !connected}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+            disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
+            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
@@ -1273,6 +1404,11 @@ export default function ChatPanel() {
 
       {/* Live Activity Indicator */}
       <LiveActivity sessionKey={selectedAgent?.dbSessionKey} />
+      </div>{/* end inner chat col */}
+
+      {/* Artifact Panel — right sidebar */}
+      <ArtifactPanel sessionId={selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''} />
+      </div>{/* end body row */}
     </div>
   );
 }
@@ -1311,7 +1447,7 @@ const MessageItem = memo(function MessageItem({
       {/* Avatar column - consistent width */}
       <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
         {isUser ? (
-          <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-10 h-10 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
@@ -1324,7 +1460,7 @@ const MessageItem = memo(function MessageItem({
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
           <div className={`text-xs font-medium mb-1 px-1 ${
-            isUser ? 'text-clawd-accent' : 'text-emerald-600'
+            isUser ? 'text-mission-control-accent' : 'text-emerald-600'
           }`}>
             {isUser ? 'You' : selectedAgent.name}
           </div>
@@ -1340,7 +1476,7 @@ const MessageItem = memo(function MessageItem({
                 className={`p-1.5 rounded-lg transition-all duration-100 ${
                   isStarred
                     ? 'bg-yellow-100 text-warning shadow-sm'
-                    : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-warning hover:bg-yellow-50 border border-clawd-border'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-yellow-50 border border-mission-control-border'
                 }`}
                 title={isStarred ? 'Unstar message' : 'Star message'}
               >
@@ -1365,7 +1501,7 @@ const MessageItem = memo(function MessageItem({
                     showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
                   }
                 }}
-                className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
+                className="p-1.5 rounded-lg bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border border border-mission-control-border transition-all"
                 title="Copy message"
               >
                 <Copy size={14} />
@@ -1377,23 +1513,22 @@ const MessageItem = memo(function MessageItem({
           <div
             className={`relative px-4 py-3 rounded-2xl shadow-sm ${
               isUser
-                ? 'bg-clawd-accent/50 text-white rounded-tr-sm'
-                : 'bg-clawd-surface text-clawd-text border border-clawd-border rounded-tl-sm'
+                ? 'bg-mission-control-accent/50 text-white rounded-tr-sm'
+                : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm'
             }`}
           >
-            {msg.streaming && !msg.content ? (
+            {!!msg.streaming && !msg.content && !msg.status ? (
               <div className="flex items-center gap-2 py-1">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '0ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '150ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-mission-control-text/70' : 'bg-mission-control-accent'}`} style={{ animationDelay: '300ms' }} />
                 </div>
-                <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
-                  Thinking...
+                <span className={`text-sm ${isUser ? 'text-white/80' : 'text-mission-control-text-dim'}`}>
+                  Waiting...
                 </span>
               </div>
             ) : msg.role === 'assistant' ? (
-              // Render structured content blocks if available, else fall back to markdown
               Array.isArray(msg.content) ? (
                 <div className="space-y-1">
                   {msg.content.map((block, idx) => (
@@ -1401,17 +1536,27 @@ const MessageItem = memo(function MessageItem({
                   ))}
                 </div>
               ) : (
-                <MarkdownMessage content={msg.content} />
+                <MarkdownMessage content={msg.content as string} />
               )
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed">
                 {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
               </div>
             )}
-            {msg.streaming && msg.content && (
+            {!!msg.streaming && msg.status && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim">
+                <div className="flex gap-0.5">
+                  <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span>{msg.status}</span>
+              </div>
+            )}
+            {!!msg.streaming && !!msg.content && !msg.status && (
               <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-clawd-text' : 'bg-clawd-accent'}`} />
-                <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-mission-control-text' : 'bg-mission-control-accent'}`} />
+                <span className={`text-xs ${isUser ? 'text-white/90' : 'text-mission-control-text-dim'}`}>
                   typing...
                 </span>
               </div>
@@ -1421,7 +1566,7 @@ const MessageItem = memo(function MessageItem({
         
         {/* Timestamp and status */}
         <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
-          <span className="text-xs text-clawd-text-dim font-medium">
+          <span className="text-xs text-mission-control-text-dim font-medium">
             {time}
           </span>
           {isStarred && (

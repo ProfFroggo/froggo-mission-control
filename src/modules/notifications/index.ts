@@ -11,18 +11,18 @@ import manifest from './module.json';
 
 const NotificationsPanel = lazy(() => import('../../components/NotificationsPanelV2'));
 
+ViewRegistry.register({
+  id: 'notifications',
+  label: 'Notifications',
+  icon: Bell,
+  component: NotificationsPanel,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'notifications',
-      label: 'Notifications',
-      icon: Bell,
-      component: NotificationsPanel,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);

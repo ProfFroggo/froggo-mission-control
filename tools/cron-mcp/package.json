@@ -1,7 +1,7 @@
 {
-  "name": "froggo-cron-mcp",
+  "name": "mission-control-cron-mcp",
   "version": "1.0.0",
-  "description": "Froggo cron scheduling MCP server",
+  "description": "Mission Control cron scheduling MCP server",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

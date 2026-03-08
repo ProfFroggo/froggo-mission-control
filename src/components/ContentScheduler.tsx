@@ -34,7 +34,7 @@ interface ScheduledItem {
 }
 
 const typeConfig: Record<ScheduledItemType, { icon: any; color: string; label: string }> = {
-  tweet: { icon: XIcon, color: 'text-clawd-text bg-clawd-text/10', label: 'Post' },
+  tweet: { icon: XIcon, color: 'text-mission-control-text bg-mission-control-text/10', label: 'Post' },
   email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
   message: { icon: Mail, color: 'text-review bg-review-subtle', label: 'Message' },
 };
@@ -285,15 +285,15 @@ export default function ContentScheduler() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/20 rounded-xl">
-              <Calendar size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <Calendar size={24} className="text-mission-control-accent" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Schedule Queue</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {pendingCount} pending • {sentCount} sent
               </p>
             </div>
@@ -303,14 +303,14 @@ export default function ContentScheduler() {
             <button
               onClick={loadSchedule}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
             >
               <Plus size={16} />
               Schedule New
@@ -326,8 +326,8 @@ export default function ContentScheduler() {
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 filter === f
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {f === 'pending' && `Pending (${pendingCount})`}
@@ -340,10 +340,10 @@ export default function ContentScheduler() {
 
       {/* Schedule Form */}
       {showForm && (
-        <div className="p-6 border-b border-clawd-border bg-clawd-bg">
+        <div className="p-6 border-b border-mission-control-border bg-mission-control-bg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</h3>
-            <button onClick={resetForm} className="p-1 hover:bg-clawd-border rounded">
+            <button onClick={resetForm} className="p-1 hover:bg-mission-control-border rounded">
               <X size={16} />
             </button>
           </div>
@@ -360,8 +360,8 @@ export default function ContentScheduler() {
                     onClick={() => setFormType(t)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                       formType === t
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     <Icon size={16} />
@@ -379,7 +379,7 @@ export default function ContentScheduler() {
                   value={formRecipient}
                   onChange={(e) => setFormRecipient(e.target.value)}
                   placeholder="Recipient email"
-                  className="px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   aria-label="Recipient email"
                 />
                 <input
@@ -387,7 +387,7 @@ export default function ContentScheduler() {
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
                   placeholder="Subject"
-                  className="px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   aria-label="Email subject"
                 />
               </div>
@@ -399,11 +399,11 @@ export default function ContentScheduler() {
               onChange={(e) => setFormContent(e.target.value)}
               placeholder={formType === 'tweet' ? 'What do you want to tweet?' : 'Email body...'}
               rows={3}
-              className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent resize-none"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               aria-label="Content"
             />
             {formType === 'tweet' && (
-              <div className="text-xs text-clawd-text-dim text-right">
+              <div className="text-xs text-mission-control-text-dim text-right">
                 {formContent.length}/280 characters
               </div>
             )}
@@ -415,7 +415,7 @@ export default function ContentScheduler() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
                 >
                   <Paperclip size={14} />
                   {mediaFile ? 'Change' : 'Attach'}
@@ -448,14 +448,14 @@ export default function ContentScheduler() {
                   aria-label="Drag and drop zone for media files"
                   className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                     isDragging 
-                      ? 'border-clawd-accent bg-clawd-accent/10' 
-                      : 'border-clawd-border hover:border-clawd-border/60'
+                      ? 'border-mission-control-accent bg-mission-control-accent/10' 
+                      : 'border-mission-control-border hover:border-mission-control-border/60'
                   }`}
                 >
-                  <p className="text-sm text-clawd-text-dim">
+                  <p className="text-sm text-mission-control-text-dim">
                     Drag & drop image or video, or click Attach button
                   </p>
-                  <p className="text-xs text-clawd-text-dim mt-1">
+                  <p className="text-xs text-mission-control-text-dim mt-1">
                     Images: JPG, PNG, GIF, WEBP (max 5MB) • Videos: MP4, MOV (max 50MB)
                   </p>
                 </div>
@@ -463,7 +463,7 @@ export default function ContentScheduler() {
               
               {/* Media Preview */}
               {mediaFile && (
-                <div className="border border-clawd-border rounded-lg p-3 bg-clawd-surface">
+                <div className="border border-mission-control-border rounded-lg p-3 bg-mission-control-surface">
                   <div className="flex items-start gap-3">
                     {/* Preview/Icon */}
                     <div className="flex-shrink-0">
@@ -474,11 +474,11 @@ export default function ContentScheduler() {
                           className="w-16 h-16 object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-clawd-border rounded-lg flex items-center justify-center">
+                        <div className="w-16 h-16 bg-mission-control-border rounded-lg flex items-center justify-center">
                           {mediaFile.type === 'image' ? (
-                            <ImageIcon size={24} className="text-clawd-text-dim" />
+                            <ImageIcon size={24} className="text-mission-control-text-dim" />
                           ) : (
-                            <Video size={24} className="text-clawd-text-dim" />
+                            <Video size={24} className="text-mission-control-text-dim" />
                           )}
                         </div>
                       )}
@@ -494,7 +494,7 @@ export default function ContentScheduler() {
                         )}
                         <span className="text-sm font-medium truncate">{mediaFile.fileName}</span>
                       </div>
-                      <p className="text-xs text-clawd-text-dim mt-1">
+                      <p className="text-xs text-mission-control-text-dim mt-1">
                         {(mediaFile.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -523,25 +523,25 @@ export default function ContentScheduler() {
             {/* Date/Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="schedule-date" className="block text-sm text-clawd-text-dim mb-1">Date</label>
+                <label htmlFor="schedule-date" className="block text-sm text-mission-control-text-dim mb-1">Date</label>
                 <input
                   id="schedule-date"
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   aria-label="Schedule date"
                 />
               </div>
               <div>
-                <label htmlFor="schedule-time" className="block text-sm text-clawd-text-dim mb-1">Time</label>
+                <label htmlFor="schedule-time" className="block text-sm text-mission-control-text-dim mb-1">Time</label>
                 <input
                   id="schedule-time"
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
-                  className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   aria-label="Schedule time"
                 />
               </div>
@@ -551,14 +551,14 @@ export default function ContentScheduler() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={resetForm}
-                className="px-4 py-2 bg-clawd-border text-clawd-text-dim rounded-lg hover:bg-clawd-border/80 transition-colors"
+                className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!formContent.trim() || !formDate || !formTime}
-                className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50"
               >
                 <Check size={16} />
                 {editingId ? 'Update' : 'Schedule'}
@@ -571,13 +571,13 @@ export default function ContentScheduler() {
       {/* Items list */}
       <div className="flex-1 overflow-y-auto p-6">
         {filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
             <Calendar size={64} className="opacity-20 mb-4" />
             <p className="text-lg">No scheduled items</p>
             <p className="text-sm">Schedule tweets and emails for later</p>
             <button
               onClick={() => setShowForm(true)}
-              className="mt-4 flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors"
+              className="mt-4 flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
             >
               <Plus size={16} />
               Schedule First Item
@@ -593,8 +593,8 @@ export default function ContentScheduler() {
               return (
                 <div
                   key={item.id}
-                  className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl ${
-                    isPending ? 'hover:border-clawd-accent/30' : 'opacity-70'
+                  className={`p-4 bg-mission-control-surface border border-mission-control-border rounded-xl ${
+                    isPending ? 'hover:border-mission-control-accent/30' : 'opacity-70'
                   } transition-colors`}
                 >
                   <div className="flex items-start gap-4">
@@ -606,11 +606,11 @@ export default function ContentScheduler() {
                           item.status === 'pending' ? 'bg-warning-subtle text-warning' :
                           item.status === 'sent' ? 'bg-success-subtle text-success' :
                           item.status === 'failed' ? 'bg-error-subtle text-error' :
-                          'bg-clawd-bg0/20 text-clawd-text-dim'
+                          'bg-mission-control-bg0/20 text-mission-control-text-dim'
                         }`}>
                           {item.status}
                         </span>
-                        <span className="text-xs text-clawd-text-dim flex items-center gap-1">
+                        <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                           <Clock size={14} />
                           {formatScheduledTime(item.scheduledFor)}
                         </span>
@@ -619,7 +619,7 @@ export default function ContentScheduler() {
                       <p className="text-sm mb-2">{item.content}</p>
                       
                       {item.metadata?.recipient && (
-                        <p className="text-xs text-clawd-text-dim">
+                        <p className="text-xs text-mission-control-text-dim">
                           To: {item.metadata.recipient}
                           {item.metadata.subject && ` • ${item.metadata.subject}`}
                         </p>
@@ -627,7 +627,7 @@ export default function ContentScheduler() {
                       
                       {/* Media indicator */}
                       {item.metadata?.mediaPath && (
-                        <div className="flex items-center gap-1 text-xs text-clawd-accent mt-1">
+                        <div className="flex items-center gap-1 text-xs text-mission-control-accent mt-1">
                           {item.metadata.mediaType === 'image' ? (
                             <ImageIcon size={14} />
                           ) : (
@@ -649,10 +649,10 @@ export default function ContentScheduler() {
                         </button>
                         <button
                           onClick={() => handleEdit(item)}
-                          className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Edit2 size={16} className="text-clawd-text-dim" />
+                          <Edit2 size={16} className="text-mission-control-text-dim" />
                         </button>
                         <button
                           onClick={() => handleCancel(item.id)}

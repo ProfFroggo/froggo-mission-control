@@ -78,9 +78,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     try {
       const prompt = buildSuggestionsPrompt(selectedItem);
       
-      // BUGFIX: Route to Froggo's main session (not dashboard session)
+      // BUGFIX: Route to Mission Control's main session (not dashboard session)
       const previousSessionKey = gateway.getSessionKey();
-      gateway.setSessionKey('main'); // Froggo's main session
+      gateway.setSessionKey('main'); // Mission Control's main session
       
       const response = await gateway.sendChat(prompt);
       
@@ -102,7 +102,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     try {
       const prompt = buildSentimentPrompt(selectedItem);
       
-      // BUGFIX: Route to Froggo's main session
+      // BUGFIX: Route to Mission Control's main session
       const previousSessionKey = gateway.getSessionKey();
       gateway.setSessionKey('main');
       
@@ -126,7 +126,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     try {
       const prompt = buildSummaryPrompt(selectedItem);
       
-      // BUGFIX: Route to Froggo's main session
+      // BUGFIX: Route to Mission Control's main session
       const previousSessionKey = gateway.getSessionKey();
       gateway.setSessionKey('main');
       
@@ -256,24 +256,24 @@ Provide a brief, actionable summary.`;
 
   if (!selectedItem) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-clawd-surface border-l border-clawd-border">
-        <div className="text-center text-clawd-text-dim px-8">
-          <div className="p-4 bg-clawd-accent/10 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-            <Sparkles size={48} className="text-clawd-accent opacity-50" />
+      <div className="flex-1 flex items-center justify-center bg-mission-control-surface border-l border-mission-control-border">
+        <div className="text-center text-mission-control-text-dim px-8">
+          <div className="p-4 bg-mission-control-accent/10 rounded-full w-24 h-24 mx-auto mb-4 flex items-center justify-center">
+            <Sparkles size={48} className="text-mission-control-accent opacity-50" />
           </div>
           <h3 className="text-lg font-medium mb-2">AI Assistance</h3>
           <p className="text-sm">Click the ✨ button on any inbox item to get:</p>
           <ul className="text-xs mt-3 space-y-1 text-left max-w-xs mx-auto">
             <li className="flex items-start gap-2">
-              <Zap size={14} className="text-clawd-accent mt-0.5 flex-shrink-0" />
+              <Zap size={14} className="text-mission-control-accent mt-0.5 flex-shrink-0" />
               <span>Smart compose suggestions in multiple tones</span>
             </li>
             <li className="flex items-start gap-2">
-              <TrendingUp size={14} className="text-clawd-accent mt-0.5 flex-shrink-0" />
+              <TrendingUp size={14} className="text-mission-control-accent mt-0.5 flex-shrink-0" />
               <span>Sentiment analysis and urgency detection</span>
             </li>
             <li className="flex items-start gap-2">
-              <MessageSquare size={14} className="text-clawd-accent mt-0.5 flex-shrink-0" />
+              <MessageSquare size={14} className="text-mission-control-accent mt-0.5 flex-shrink-0" />
               <span>Concise summaries with action items</span>
             </li>
           </ul>
@@ -304,16 +304,16 @@ Provide a brief, actionable summary.`;
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-clawd-surface border-l border-clawd-border max-w-md">
+    <div className="flex-1 flex flex-col bg-mission-control-surface border-l border-mission-control-border max-w-md">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-bg">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between bg-mission-control-bg">
         <div className="flex items-center gap-2">
-          <Sparkles size={20} className="text-clawd-accent" />
+          <Sparkles size={20} className="text-mission-control-accent" />
           <h2 className="font-semibold">AI Assistance</h2>
         </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
+          className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
           aria-label="Close panel"
         >
           <X size={16} />
@@ -321,13 +321,13 @@ Provide a brief, actionable summary.`;
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-clawd-border bg-clawd-bg">
+      <div className="flex border-b border-mission-control-border bg-mission-control-bg">
         <button
           onClick={() => setActiveTab('suggestions')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'suggestions'
-              ? 'border-clawd-accent text-clawd-accent'
-              : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <Zap size={16} className="inline mr-2" />
@@ -337,8 +337,8 @@ Provide a brief, actionable summary.`;
           onClick={() => setActiveTab('sentiment')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'sentiment'
-              ? 'border-clawd-accent text-clawd-accent'
-              : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <TrendingUp size={16} className="inline mr-2" />
@@ -348,8 +348,8 @@ Provide a brief, actionable summary.`;
           onClick={() => setActiveTab('summary')}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'summary'
-              ? 'border-clawd-accent text-clawd-accent'
-              : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <MessageSquare size={16} className="inline mr-2" />
@@ -361,7 +361,7 @@ Provide a brief, actionable summary.`;
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={32} className="animate-spin text-clawd-accent" />
+            <Loader2 size={32} className="animate-spin text-mission-control-accent" />
           </div>
         ) : (
           <>
@@ -369,24 +369,24 @@ Provide a brief, actionable summary.`;
             {activeTab === 'suggestions' && (
               <div className="space-y-3">
                 {suggestions.length === 0 ? (
-                  <div className="text-center py-8 text-clawd-text-dim text-sm">
+                  <div className="text-center py-8 text-mission-control-text-dim text-sm">
                     No suggestions generated yet
                   </div>
                 ) : (
                   suggestions.map((suggestion) => (
                     <div
                       key={suggestion.id}
-                      className="p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors"
+                      className="p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs px-2 py-1 bg-clawd-border rounded flex items-center gap-1">
+                        <span className="text-xs px-2 py-1 bg-mission-control-border rounded flex items-center gap-1">
                           <span>{toneIcons[suggestion.tone]}</span>
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleCopySuggestion(suggestion)}
-                            className="p-1.5 hover:bg-clawd-border rounded transition-colors"
+                            className="p-1.5 hover:bg-mission-control-border rounded transition-colors"
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
@@ -397,14 +397,14 @@ Provide a brief, actionable summary.`;
                           </button>
                           <button
                             onClick={() => handleApplySuggestion(suggestion)}
-                            className="p-1.5 hover:bg-clawd-accent rounded transition-colors"
+                            className="p-1.5 hover:bg-mission-control-accent rounded transition-colors"
                             title="Apply suggestion"
                           >
                             <ChevronRight size={14} />
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-clawd-text leading-relaxed">
+                      <p className="text-sm text-mission-control-text leading-relaxed">
                         {suggestion.text}
                       </p>
                     </div>
@@ -417,21 +417,21 @@ Provide a brief, actionable summary.`;
             {activeTab === 'sentiment' && sentiment && (
               <div className="space-y-4">
                 {/* Overall Sentiment */}
-                <div className="p-4 bg-clawd-bg border border-clawd-border rounded-lg">
-                  <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Overall Sentiment</h3>
+                <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                  <h3 className="text-xs font-medium text-mission-control-text-dim mb-2">Overall Sentiment</h3>
                   <div className="flex items-center gap-3">
                     <span className={`px-3 py-1.5 rounded-lg capitalize font-medium ${sentimentColors[sentiment.overall]}`}>
                       {sentiment.overall}
                     </span>
-                    <span className="text-sm text-clawd-text-dim">
+                    <span className="text-sm text-mission-control-text-dim">
                       {Math.round(sentiment.confidence * 100)}% confidence
                     </span>
                   </div>
                 </div>
 
                 {/* Urgency */}
-                <div className="p-4 bg-clawd-bg border border-clawd-border rounded-lg">
-                  <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Urgency Level</h3>
+                <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                  <h3 className="text-xs font-medium text-mission-control-text-dim mb-2">Urgency Level</h3>
                   <div className={`text-lg font-semibold capitalize ${urgencyColors[sentiment.urgency]}`}>
                     {sentiment.urgency}
                   </div>
@@ -439,13 +439,13 @@ Provide a brief, actionable summary.`;
 
                 {/* Keywords */}
                 {sentiment.keywords.length > 0 && (
-                  <div className="p-4 bg-clawd-bg border border-clawd-border rounded-lg">
-                    <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Key Topics</h3>
+                  <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                    <h3 className="text-xs font-medium text-mission-control-text-dim mb-2">Key Topics</h3>
                     <div className="flex flex-wrap gap-2">
                       {sentiment.keywords.map((keyword, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-1 bg-clawd-accent/20 text-clawd-accent rounded text-xs"
+                          className="px-2 py-1 bg-mission-control-accent/20 text-mission-control-accent rounded text-xs"
                         >
                           {keyword}
                         </span>
@@ -456,12 +456,12 @@ Provide a brief, actionable summary.`;
 
                 {/* Action Items */}
                 {sentiment.actionItems.length > 0 && (
-                  <div className="p-4 bg-clawd-bg border border-clawd-border rounded-lg">
-                    <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Detected Action Items</h3>
+                  <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                    <h3 className="text-xs font-medium text-mission-control-text-dim mb-2">Detected Action Items</h3>
                     <ul className="space-y-2">
                       {sentiment.actionItems.map((item, idx) => (
                         <li key={idx} className="text-sm flex items-start gap-2">
-                          <ChevronRight size={14} className="text-clawd-accent mt-0.5 flex-shrink-0" />
+                          <ChevronRight size={14} className="text-mission-control-accent mt-0.5 flex-shrink-0" />
                           <span>{item}</span>
                         </li>
                       ))}
@@ -473,13 +473,13 @@ Provide a brief, actionable summary.`;
 
             {/* Summary Tab */}
             {activeTab === 'summary' && (
-              <div className="p-4 bg-clawd-bg border border-clawd-border rounded-lg">
+              <div className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg">
                 {summary ? (
-                  <p className="text-sm leading-relaxed text-clawd-text">
+                  <p className="text-sm leading-relaxed text-mission-control-text">
                     {summary}
                   </p>
                 ) : (
-                  <p className="text-sm text-clawd-text-dim text-center py-4">
+                  <p className="text-sm text-mission-control-text-dim text-center py-4">
                     No summary generated yet
                   </p>
                 )}
@@ -490,11 +490,11 @@ Provide a brief, actionable summary.`;
       </div>
 
       {/* Footer Actions */}
-      <div className="p-4 border-t border-clawd-border bg-clawd-bg">
+      <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
         <button
           onClick={generateAssistance}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <>

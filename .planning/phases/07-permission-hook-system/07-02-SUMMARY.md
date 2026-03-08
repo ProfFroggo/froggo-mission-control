@@ -8,11 +8,11 @@
 
 ## Changes
 
-- `tools/hooks/review-gate.js`: PostToolUse hook (fires after mcp__froggo_db__task_update)
+- `tools/hooks/review-gate.js`: PostToolUse hook (fires after mcp__mission-control_db__task_update)
   - When task moves to 'review' status, logs clara_review_queued analytics event
   - Always outputs { decision: "approve" } — observes, doesn't block
 - `tools/hooks/session-sync.js`: Stop hook (fires at end of every session)
-  - Writes session summary to ~/froggo/memory/sessions/{date}-{agentId}-{id}.md
+  - Writes session summary to ~/mission-control/memory/sessions/{date}-{agentId}-{id}.md
   - Logs session_end analytics event
   - Updates agent_sessions table (active → inactive)
   - Creates vault directory if needed

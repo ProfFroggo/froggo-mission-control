@@ -53,9 +53,9 @@ export default function WidgetLoading({
   if (variant === 'spinner') {
     return (
       <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-        {Icon && <Icon size={compact ? 24 : 32} className="text-clawd-text-dim mb-3 opacity-50" />}
+        {Icon && <Icon size={compact ? 24 : 32} className="text-mission-control-text-dim mb-3 opacity-50" />}
         <Spinner size={compact ? 16 : 24} />
-        <p className={`text-clawd-text-dim mt-3 ${compact ? 'text-xs' : 'text-sm'}`}>
+        <p className={`text-mission-control-text-dim mt-3 ${compact ? 'text-xs' : 'text-sm'}`}>
           {title}
         </p>
       </div>
@@ -90,7 +90,7 @@ export default function WidgetLoading({
  */
 export function WidgetHeaderSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-3 p-4 border-b border-clawd-border ${className}`}>
+    <div className={`flex items-center gap-3 p-4 border-b border-mission-control-border ${className}`}>
       <Skeleton className="w-8 h-8 rounded-lg" />
       <Skeleton className="h-5 w-1/3" />
       <Skeleton className="h-4 w-16 ml-auto" />

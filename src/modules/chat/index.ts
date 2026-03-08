@@ -11,18 +11,18 @@ import manifest from './module.json';
 
 const ChatPanel = lazy(() => import('../../components/ChatPanel'));
 
+ViewRegistry.register({
+  id: 'chat',
+  label: 'Chat',
+  icon: MessageSquare,
+  component: ChatPanel,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'chat',
-      label: 'Chat',
-      icon: MessageSquare,
-      component: ChatPanel,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);

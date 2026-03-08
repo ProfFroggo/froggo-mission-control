@@ -1,5 +1,5 @@
 /* ============================================================
-   FROGGO DASHBOARD - DESIGN TOKENS
+   MISSION CONTROL DASHBOARD - DESIGN TOKENS
    ============================================================
    
    This file defines the complete design system token foundation.
@@ -103,17 +103,17 @@
      All color tokens - theme-aware and semantic */
   
   /* Base Theme Colors (already defined in index.css - reference here) */
-  /* --clawd-bg, --clawd-surface, --clawd-border, --clawd-text, etc. */
+  /* --mission-control-bg, --mission-control-surface, --mission-control-border, --mission-control-text, etc. */
   
   /* Background Variants */
-  --bg-subtle: color-mix(in srgb, var(--clawd-surface) 50%, var(--clawd-bg));
-  --bg-emphasis: color-mix(in srgb, var(--clawd-surface) 120%, var(--clawd-text));
+  --bg-subtle: color-mix(in srgb, var(--mission-control-surface) 50%, var(--mission-control-bg));
+  --bg-emphasis: color-mix(in srgb, var(--mission-control-surface) 120%, var(--mission-control-text));
   
   /* Interactive States */
-  --color-hover: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
-  --color-active: color-mix(in srgb, var(--clawd-surface) 80%, var(--clawd-text));
-  --color-disabled: color-mix(in srgb, var(--clawd-text-dim) 50%, transparent);
-  --color-focus: var(--clawd-accent);
+  --color-hover: color-mix(in srgb, var(--mission-control-surface) 90%, var(--mission-control-text));
+  --color-active: color-mix(in srgb, var(--mission-control-surface) 80%, var(--mission-control-text));
+  --color-disabled: color-mix(in srgb, var(--mission-control-text-dim) 50%, transparent);
+  --color-focus: var(--mission-control-accent);
   
   /* Status Colors - Extended with variants */
   --color-success: #22c55e;

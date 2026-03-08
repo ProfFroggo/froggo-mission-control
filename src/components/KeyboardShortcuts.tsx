@@ -175,20 +175,20 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
         onKeyDown={(e) => { e.stopPropagation(); }}
       >
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-clawd-accent/20 rounded-xl">
-                <Keyboard size={24} className="text-clawd-accent" />
+              <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+                <Keyboard size={24} className="text-mission-control-accent" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold">Keyboard Shortcuts</h2>
-                <p className="text-sm text-clawd-text-dim">Navigate faster with these shortcuts</p>
+                <p className="text-sm text-mission-control-text-dim">Navigate faster with these shortcuts</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-clawd-border rounded-xl transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-xl transition-colors"
             >
               <X size={20} />
             </button>
@@ -196,13 +196,13 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
 
           {/* Search */}
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search shortcuts..."
-              className="w-full pl-10 pr-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm focus:outline-none focus:border-clawd-accent"
+              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
             />
           </div>
         </div>
@@ -213,21 +213,21 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
             <div className="grid grid-cols-2 gap-6">
               {filteredShortcuts.map((section) => (
                 <div key={section.category} className="space-y-3">
-                  <h3 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wide sticky top-0 bg-clawd-surface pb-2">
+                  <h3 className="text-sm font-medium text-mission-control-text-dim uppercase tracking-wide sticky top-0 bg-mission-control-surface pb-2">
                     {section.category}
                   </h3>
                   <div className="space-y-2">
                     {section.items.map((shortcut, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-clawd-bg/50 transition-colors"
+                        className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
                       >
                         <span className="text-sm">{shortcut.action}</span>
                         <div className="flex items-center gap-1">
                           {shortcut.keys.map((key, keyIdx) => (
                             <kbd
                               key={keyIdx}
-                              className="px-2 py-1 text-xs bg-clawd-bg border border-clawd-border rounded-md font-mono shadow-sm"
+                              className="px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-md font-mono shadow-sm"
                             >
                               {key}
                             </kbd>
@@ -240,7 +240,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-clawd-text-dim">
+            <div className="text-center py-12 text-mission-control-text-dim">
               <Keyboard size={48} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm">No shortcuts found for &quot;{searchQuery}&quot;</p>
               <p className="text-xs mt-1">Try a different search term</p>
@@ -249,10 +249,10 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-clawd-border bg-clawd-bg">
-          <div className="flex items-center justify-between text-sm text-clawd-text-dim">
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
+          <div className="flex items-center justify-between text-sm text-mission-control-text-dim">
             <div className="flex items-center gap-4">
-              <span>Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded text-xs">Esc</kbd> to close</span>
+              <span>Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">Esc</kbd> to close</span>
               <span className="text-xs">• {filteredShortcuts.reduce((sum, s) => sum + s.items.length, 0)} shortcuts</span>
             </div>
             <span className="text-xs">⌘ = Cmd (macOS) / Ctrl (Windows/Linux)</span>

@@ -101,16 +101,27 @@ async function fetchAnalyticsData(days: number): Promise<IPCAnalyticsData> {
 
   try {
     const [taskStats, agentActivity] = await Promise.all([
-      analyticsApi.getTaskStats().catch(() => null),
+      analyticsApi.getTaskStats(days).catch(() => null),
       analyticsApi.getAgentActivity().catch(() => null),
     ]);
+
+    // agentActivity is now a Record<agentId, metrics> — convert to legacy array shape
+    const agentsArray = agentActivity && typeof agentActivity === 'object' && !Array.isArray(agentActivity)
+      ? Object.entries(agentActivity as Record<string, { totalTasks: number; completedTasks: number }>).map(([id, m]) => ({
+          agent: id,
+          total: m.totalTasks,
+          completed: m.completedTasks,
+        }))
+      : (Array.isArray(agentActivity)
+          ? agentActivity.map((a: { assignedTo: string; taskCount: number }) => ({ agent: a.assignedTo, total: a.taskCount, completed: 0 }))
+          : []);
 
     const result: IPCAnalyticsData = {
       success: true,
       days,
       completions: taskStats?.completions || [],
       created: taskStats?.created || [],
-      agents: agentActivity?.agents || [],
+      agents: agentsArray,
       projects: taskStats?.projects || [],
     };
 
@@ -210,8 +221,7 @@ export async function getAgentUtilization(): Promise<AgentUtilization[]> {
 export async function getTimeTrackingData(
   _projectFilter?: string
 ): Promise<TimeTrackingData[]> {
-  // Time tracking not available via REST API — return empty
-  console.warn('Not implemented: analytics.timeTracking (no REST equivalent)');
+  // Time tracking data is derived from task durations — return empty until REST route exists
   return [];
 }
 
@@ -219,11 +229,21 @@ export async function getTimeTrackingData(
  * Get productivity heatmap data
  */
 export async function getProductivityHeatmap(
-  _days: number = 30
+  days: number = 30
 ): Promise<ProductivityHeatmap[]> {
-  // Heatmap not available via REST API — return empty
-  console.warn('Not implemented: analytics.heatmap (no REST equivalent)');
-  return [];
+  try {
+    const result = await analyticsApi.getHeatmap(days).catch(() => null);
+    if (!result?.heatmap) return [];
+    return (result.heatmap as { dayOfWeek: number; hour: number; activityCount: number; date: string }[])
+      .map(r => ({
+        date: r.date,
+        dayOfWeek: r.dayOfWeek,
+        hour: r.hour,
+        activityCount: r.activityCount,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -351,8 +371,13 @@ export async function getTaskVelocity(days: number = 30): Promise<{
 /**
  * Get subtask completion statistics
  */
-export async function getSubtaskStats(): Promise<any[]> {
-  // Subtask stats not available via REST API — return empty
-  console.warn('Not implemented: analytics.subtaskStats (no REST equivalent)');
-  return [];
+export async function getSubtaskStats(): Promise<{
+  agent: string; total: number; completed: number; completionRate: number;
+}[]> {
+  try {
+    const result = await analyticsApi.getSubtaskStats().catch(() => null);
+    return result?.byAgent ?? [];
+  } catch {
+    return [];
+  }
 }

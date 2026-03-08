@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { formatTimeAgo } from '../../utils/formatting';
 import {
   FolderKanban, Plus, Search, RefreshCw, Archive,
   CheckCircle2, Clock, AlertCircle, ChevronRight,
   Users, FileText, Zap, MessageSquare, LayoutGrid, List
 } from 'lucide-react';
+import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
 import { Spinner } from '../LoadingStates';
@@ -21,15 +23,6 @@ const STATUS_CONFIG = {
   completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info-subtle border-info-border',         icon: CheckCircle2 },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface border-mission-control-border', icon: Archive },
 } as const;
-
-function formatRelativeTime(ts: number): string {
-  const diff = Date.now() - ts;
-  if (diff < 60_000) return 'just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  return new Date(ts).toLocaleDateString();
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`;
@@ -67,10 +60,10 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
           <div
-            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: `${project.color}20`, border: `1px solid ${project.color}40` }}
           >
-            {project.emoji}
+            {(() => { const ProjIcon = getProjectIcon(project.emoji); return <ProjIcon size={18} style={{ color: project.color }} />; })()}
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-mission-control-text-primary truncate group-hover:text-mission-control-accent transition-colors">
@@ -97,7 +90,7 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
             <span>{doneTasks}/{totalTasks} tasks</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-mission-control-bg1 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-mission-control-surface rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress}%`, backgroundColor: project.color }}
@@ -120,7 +113,7 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
             />
           ))}
           {(project.memberCount as number ?? 0) > 4 && (
-            <div className="w-5 h-5 rounded-full bg-mission-control-bg1 border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
+            <div className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
               +{(project.memberCount as number) - 4}
             </div>
           )}
@@ -139,7 +132,7 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
             </span>
           )}
           <span className="flex items-center gap-1">
-            <Clock size={11} /> {formatRelativeTime(lastActivity)}
+            <Clock size={11} /> {formatTimeAgo(lastActivity)}
           </span>
         </div>
       </div>
@@ -229,19 +222,21 @@ export default function ProjectsPanel() {
   return (
     <div className="flex flex-col h-full bg-mission-control-bg0">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface/50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
-          <FolderKanban size={20} className="text-mission-control-accent" />
+          <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <FolderKanban size={24} className="text-mission-control-accent" />
+          </div>
           <div>
-            <h1 className="text-base font-semibold text-mission-control-text-primary">Projects</h1>
-            <p className="text-xs text-mission-control-text-dim">{projects.filter(p => p.status === 'active').length} active</p>
+            <h1 className="text-xl font-semibold text-mission-control-text">Projects</h1>
+            <p className="text-sm text-mission-control-text-dim">{projects.filter(p => p.status === 'active').length} active</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => load(false)}
             disabled={refreshing}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-bg1 transition-colors"
+            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors"
             title="Refresh"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
@@ -249,14 +244,14 @@ export default function ProjectsPanel() {
           <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-bg1'}`}
+              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface'}`}
               title="Grid view"
             >
               <LayoutGrid size={14} />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-bg1'}`}
+              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface'}`}
               title="List view"
             >
               <List size={14} />
@@ -280,7 +275,7 @@ export default function ProjectsPanel() {
             placeholder="Search projects..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-sm bg-mission-control-bg1 border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+            className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
           />
         </div>
         <div className="flex items-center gap-1">
@@ -291,7 +286,7 @@ export default function ProjectsPanel() {
               className={`px-3 py-1 text-xs rounded-full transition-colors capitalize ${
                 statusFilter === s
                   ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-bg1'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface'
               }`}
             >
               {s === 'all' ? `All (${projects.filter(p => p.status !== 'archived').length})` : s}

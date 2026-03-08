@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { formatTimeAgo } from '../utils/formatting';
 import {
   Wifi, WifiOff, CheckCircle, Bot, ArrowRight, Calendar,
   Zap, Shield, AlertTriangle, Inbox,
@@ -18,16 +19,6 @@ interface DashboardProps {
 }
 
 // ── Utilities ──────────────────────────────────────────────
-
-function formatTimeAgo(ts: number): string {
-  if (!ts) return 'unknown';
-  const diff = Date.now() - ts;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-  return new Date(ts).toLocaleDateString();
-}
 
 function formatTokens(tokens: number): string {
   if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
@@ -61,12 +52,12 @@ function HeaderBar({ connected }: { connected: boolean }) {
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-clawd-border/50">
+    <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border/50">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-clawd-text to-clawd-accent bg-clip-text text-transparent">
+        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
           {greeting}, Kevin
         </h1>
-        <p className="text-sm text-clawd-text-dim mt-0.5">{dateStr}</p>
+        <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
         connected
@@ -96,7 +87,7 @@ function StatCard({ label, value, icon: Icon, color, pulse, onClick, sub }: Stat
   return (
     <button
       onClick={onClick}
-      className="flex-1 min-w-0 p-4 bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border hover:border-clawd-accent/50 transition-all group text-left"
+      className="flex-1 min-w-0 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border hover:border-mission-control-accent/50 transition-all group text-left"
     >
       <div className="flex items-center justify-between mb-2">
         <Icon size={18} className={color} />
@@ -105,8 +96,8 @@ function StatCard({ label, value, icon: Icon, color, pulse, onClick, sub }: Stat
         )}
       </div>
       <div className={`text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-clawd-text-dim mt-1 font-medium">{label}</div>
-      {sub && <div className="text-xs text-clawd-text-dim/70 mt-0.5">{sub}</div>}
+      <div className="text-xs text-mission-control-text-dim mt-1 font-medium">{label}</div>
+      {sub && <div className="text-xs text-mission-control-text-dim/70 mt-0.5">{sub}</div>}
     </button>
   );
 }
@@ -132,7 +123,7 @@ function StatStrip({
         label="Pending Approvals"
         value={pendingApprovals}
         icon={Inbox}
-        color={pendingApprovals > 0 ? 'text-orange-400' : 'text-clawd-text-dim'}
+        color={pendingApprovals > 0 ? 'text-orange-400' : 'text-mission-control-text-dim'}
         pulse={pendingApprovals > 0}
         onClick={() => onNavigate?.('approvals')}
       />
@@ -140,21 +131,21 @@ function StatStrip({
         label="In Progress"
         value={inProgressCount}
         icon={Activity}
-        color={inProgressCount > 0 ? 'text-blue-400' : 'text-clawd-text-dim'}
+        color={inProgressCount > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
         label="Done Today"
         value={completedToday}
         icon={CheckCircle}
-        color={completedToday > 0 ? 'text-emerald-400' : 'text-clawd-text-dim'}
+        color={completedToday > 0 ? 'text-emerald-400' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
         label="Active Agents"
         value={activeAgentCount}
         icon={Bot}
-        color={activeAgentCount > 0 ? 'text-green-400' : 'text-clawd-text-dim'}
+        color={activeAgentCount > 0 ? 'text-green-400' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('agents')}
         sub={`${totalAgentCount} total`}
       />
@@ -176,26 +167,26 @@ function ApprovalCard({
   const Icon = APPROVAL_ICONS[item.type] || FileText;
 
   return (
-    <div className="p-4 border-b border-clawd-border/30 hover:bg-clawd-bg/30 transition-colors">
+    <div className="p-4 border-b border-mission-control-border/30 hover:bg-mission-control-bg/30 transition-colors">
       <div className="flex items-start gap-3">
-        <div className="mt-1 p-2 rounded-lg bg-clawd-bg/50">
-          <Icon size={16} className="text-clawd-text-dim" />
+        <div className="mt-1 p-2 rounded-lg bg-mission-control-bg/50">
+          <Icon size={16} className="text-mission-control-text-dim" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">
+              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
                 {item.type}
               </span>
-              <h4 className="font-medium text-clawd-text mt-0.5 line-clamp-1">{item.title}</h4>
+              <h4 className="font-medium text-mission-control-text mt-0.5 line-clamp-1">{item.title}</h4>
             </div>
-            <span className="text-xs text-clawd-text-dim flex-shrink-0">
+            <span className="text-xs text-mission-control-text-dim flex-shrink-0">
               {formatTimeAgo(item.createdAt)}
             </span>
           </div>
-          <p className="text-sm text-clawd-text-dim mt-1 line-clamp-2">{item.content}</p>
+          <p className="text-sm text-mission-control-text-dim mt-1 line-clamp-2">{item.content}</p>
           {item.metadata?.to && (
-            <p className="text-xs text-clawd-text-dim/70 mt-1">To: {item.metadata.to}</p>
+            <p className="text-xs text-mission-control-text-dim/70 mt-1">To: {item.metadata.to}</p>
           )}
           <div className="flex items-center gap-2 mt-3">
             <button
@@ -206,7 +197,7 @@ function ApprovalCard({
             </button>
             <button
               onClick={() => onReject(item.id)}
-              className="px-4 py-1.5 bg-clawd-bg hover:bg-red-500/20 text-clawd-text-dim hover:text-red-400 text-xs font-medium rounded-lg border border-clawd-border transition-colors"
+              className="px-4 py-1.5 bg-mission-control-bg hover:bg-red-500/20 text-mission-control-text-dim hover:text-red-400 text-xs font-medium rounded-lg border border-mission-control-border transition-colors"
             >
               Reject
             </button>
@@ -231,12 +222,12 @@ function ApprovalsQueue({
   const pending = approvals.filter(a => a.status === 'pending');
 
   return (
-    <div className={`bg-clawd-surface/80 backdrop-blur-xl rounded-xl border overflow-hidden flex flex-col ${
-      pending.length > 0 ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-clawd-border'
+    <div className={`bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border overflow-hidden flex flex-col ${
+      pending.length > 0 ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-mission-control-border'
     }`}>
-      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Inbox size={16} className={pending.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} />
+          <Inbox size={16} className={pending.length > 0 ? 'text-orange-400' : 'text-mission-control-text-dim'} />
           <h2 className="font-semibold text-sm">Needs Your Decision</h2>
           {pending.length > 0 && (
             <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
@@ -246,7 +237,7 @@ function ApprovalsQueue({
         </div>
         <button
           onClick={() => onNavigate?.('approvals')}
-          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
         >
           View All <ArrowRight size={12} />
         </button>
@@ -256,8 +247,8 @@ function ApprovalsQueue({
         {pending.length === 0 ? (
           <div className="p-8 text-center">
             <CheckCircle size={32} className="mx-auto mb-2 text-emerald-400/50" />
-            <p className="text-sm text-clawd-text-dim font-medium">All caught up</p>
-            <p className="text-xs text-clawd-text-dim/70 mt-1">No pending approvals</p>
+            <p className="text-sm text-mission-control-text-dim font-medium">All caught up</p>
+            <p className="text-xs text-mission-control-text-dim/70 mt-1">No pending approvals</p>
           </div>
         ) : (
           pending.slice(0, 10).map(item => (
@@ -278,18 +269,18 @@ function ApprovalsQueue({
 
 function ActivityFeed({
   inProgressTasks,
-  agents,
+  agentMap,
   activities,
   onNavigate,
 }: {
   inProgressTasks: Task[];
-  agents: Agent[];
+  agentMap: Map<string, Agent>;
   activities: { id: string; type: string; message: string; timestamp: number }[];
   onNavigate?: (view: View) => void;
 }) {
   return (
-    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
-      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity size={16} className="text-blue-400" />
           <h2 className="font-semibold text-sm">What&apos;s Happening</h2>
@@ -301,7 +292,7 @@ function ActivityFeed({
         </div>
         <button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
         >
           All Tasks <ArrowRight size={12} />
         </button>
@@ -310,28 +301,28 @@ function ActivityFeed({
       <div className="flex-1 overflow-y-auto max-h-[400px]">
         {/* Active work */}
         {inProgressTasks.length > 0 && (
-          <div className="divide-y divide-clawd-border/30">
+          <div className="divide-y divide-mission-control-border/30">
             {inProgressTasks.slice(0, 6).map(task => {
-              const agent = agents.find(a => a.id === task.assignedTo);
+              const agent = agentMap.get(task.assignedTo ?? '');
               return (
                 <div
                   key={task.id}
-                  className="p-3 hover:bg-clawd-bg/30 transition-colors cursor-pointer"
+                  className="p-3 hover:bg-mission-control-bg/30 transition-colors cursor-pointer"
                   onClick={() => onNavigate?.('kanban')}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-clawd-text truncate">{task.title}</p>
+                      <p className="text-sm font-medium text-mission-control-text truncate">{task.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {agent && (
-                          <span className="flex items-center gap-1 text-xs text-clawd-text-dim">
+                          <span className="flex items-center gap-1 text-xs text-mission-control-text-dim">
                             <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
                             {agent.name}
                           </span>
                         )}
                         {task.updatedAt && (
-                          <span className="text-xs text-clawd-text-dim">{formatTimeAgo(task.updatedAt)}</span>
+                          <span className="text-xs text-mission-control-text-dim">{formatTimeAgo(task.updatedAt)}</span>
                         )}
                       </div>
                     </div>
@@ -347,20 +338,20 @@ function ActivityFeed({
 
         {/* Recent activity */}
         {activities.length > 0 && (
-          <div className={inProgressTasks.length > 0 ? 'border-t border-clawd-border/50' : ''}>
-            <div className="px-4 py-2 bg-clawd-bg/30">
-              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wider">Recent Activity</span>
+          <div className={inProgressTasks.length > 0 ? 'border-t border-mission-control-border/50' : ''}>
+            <div className="px-4 py-2 bg-mission-control-bg/30">
+              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Recent Activity</span>
             </div>
-            <div className="divide-y divide-clawd-border/20">
-              {activities.slice(0, 8).map(a => (
+            <div className="divide-y divide-mission-control-border/20">
+              {activities.map(a => (
                 <div key={a.id} className="px-4 py-2.5 flex items-start gap-3">
                   <span className="text-sm flex-shrink-0 mt-0.5">
                     {a.type === 'chat' ? '💬' : a.type === 'task' ? '📋' : a.type === 'agent' ? '🤖' : a.type === 'error' ? '⚠️' : '📡'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-clawd-text-dim line-clamp-1">{a.message}</p>
+                    <p className="text-xs text-mission-control-text-dim line-clamp-1">{a.message}</p>
                   </div>
-                  <span className="text-xs text-clawd-text-dim/50 flex-shrink-0">
+                  <span className="text-xs text-mission-control-text-dim/50 flex-shrink-0">
                     {formatTimeAgo(a.timestamp)}
                   </span>
                 </div>
@@ -371,8 +362,8 @@ function ActivityFeed({
 
         {inProgressTasks.length === 0 && activities.length === 0 && (
           <div className="p-8 text-center">
-            <Activity size={32} className="mx-auto mb-2 text-clawd-text-dim/30" />
-            <p className="text-sm text-clawd-text-dim">No active work right now</p>
+            <Activity size={32} className="mx-auto mb-2 text-mission-control-text-dim/30" />
+            <p className="text-sm text-mission-control-text-dim">No active work right now</p>
           </div>
         )}
       </div>
@@ -386,7 +377,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const res = await fetch('/api/schedule');
       if (res.ok) {
@@ -406,14 +397,13 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadEvents();
     const interval = setInterval(loadEvents, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadEvents]);
 
   const formatTime = (event: CalendarEvent): string => {
     if (event.start.date && !event.start.dateTime) return 'All day';
@@ -441,16 +431,22 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
     return videoEntry?.uri || null;
   };
 
+  // Pre-compute meeting links once per events change — avoids calling getMeetingLink per item in render
+  const eventsWithLinks = useMemo(() =>
+    events.map(e => ({ ...e, _link: getMeetingLink(e) })),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [events]);
+
   return (
-    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
-      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-blue-400" />
           <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
         </div>
         <button
           onClick={() => onNavigate?.('schedule')}
-          className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent-dim transition-colors"
+          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
         >
           Full Calendar <ChevronRight size={12} />
         </button>
@@ -459,34 +455,34 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
       <div className="flex-1 overflow-y-auto max-h-[300px]">
         {loading ? (
           <div className="p-6 text-center">
-            <Loader2 size={20} className="mx-auto mb-2 animate-spin text-clawd-text-dim" />
-            <p className="text-xs text-clawd-text-dim">Loading events...</p>
+            <Loader2 size={20} className="mx-auto mb-2 animate-spin text-mission-control-text-dim" />
+            <p className="text-xs text-mission-control-text-dim">Loading events...</p>
           </div>
-        ) : events.length === 0 ? (
+        ) : eventsWithLinks.length === 0 ? (
           <div className="p-6 text-center">
-            <Calendar size={28} className="mx-auto mb-2 text-clawd-text-dim/30" />
-            <p className="text-sm text-clawd-text-dim">No events today</p>
+            <Calendar size={28} className="mx-auto mb-2 text-mission-control-text-dim/30" />
+            <p className="text-sm text-mission-control-text-dim">No events today</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border/30">
-            {events.slice(0, 6).map(event => {
+          <div className="divide-y divide-mission-control-border/30">
+            {eventsWithLinks.slice(0, 6).map(event => {
               const happening = isNow(event);
-              const meetingLink = getMeetingLink(event);
+              const meetingLink = event._link;
               return (
                 <div
                   key={event.id}
-                  className={`p-3 hover:bg-clawd-bg/30 transition-colors ${
+                  className={`p-3 hover:bg-mission-control-bg/30 transition-colors ${
                     happening ? 'bg-info-subtle/30 border-l-2 border-l-blue-400' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-14 text-right flex-shrink-0 ${
-                      happening ? 'text-blue-400 font-semibold' : 'text-clawd-text-dim'
+                      happening ? 'text-blue-400 font-semibold' : 'text-mission-control-text-dim'
                     }`}>
                       <span className="text-xs">{formatTime(event)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${happening ? 'text-blue-400' : 'text-clawd-text'}`}>
+                      <p className={`text-sm font-medium truncate ${happening ? 'text-blue-400' : 'text-mission-control-text'}`}>
                         {event.summary}
                         {happening && (
                           <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-[10px] rounded-full font-bold">
@@ -495,7 +491,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                         )}
                       </p>
                       {event.location && (
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-clawd-text-dim">
+                        <div className="flex items-center gap-1 mt-0.5 text-xs text-mission-control-text-dim">
                           <MapPin size={10} />
                           <span className="truncate">{event.location}</span>
                         </div>
@@ -506,7 +502,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                         href={meetingLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-shrink-0 p-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent hover:text-white transition-all"
+                        className="flex-shrink-0 p-1.5 bg-mission-control-accent/20 text-mission-control-accent rounded-lg hover:bg-mission-control-accent hover:text-white transition-all"
                         title="Join meeting"
                         onClick={e => e.stopPropagation()}
                       >
@@ -517,13 +513,13 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                 </div>
               );
             })}
-            {events.length > 6 && (
+            {eventsWithLinks.length > 6 && (
               <div className="p-2 text-center">
                 <button
                   onClick={() => onNavigate?.('schedule')}
-                  className="text-xs text-clawd-accent hover:underline"
+                  className="text-xs text-mission-control-accent hover:underline"
                 >
-                  +{events.length - 6} more
+                  +{eventsWithLinks.length - 6} more
                 </button>
               </div>
             )}
@@ -553,7 +549,7 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
   const [sysStatus, setSysStatus] = useState<SystemStatus | null>(null);
   const [tokenSummary, setTokenSummary] = useState<TokenSummary | null>(null);
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     // System status
     try {
       const res = await fetch('/api/health');
@@ -591,14 +587,13 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
         }
       }
     } catch { /* ignore */ }
-  };
+  }, []);
 
   useEffect(() => {
     loadAll();
     const interval = setInterval(loadAll, 30000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadAll]);
 
   const activeSessions = gatewaySessions.filter(s => s.isActive);
   const health = sysStatus
@@ -606,14 +601,14 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
     : 'unknown';
 
   return (
-    <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-xl border border-clawd-border overflow-hidden flex flex-col">
-      <div className="p-4 border-b border-clawd-border/50 flex items-center justify-between">
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden flex flex-col">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield size={16} className={
             health === 'healthy' ? 'text-emerald-400' :
             health === 'warning' ? 'text-yellow-400' :
             health === 'critical' ? 'text-red-400' :
-            'text-clawd-text-dim'
+            'text-mission-control-text-dim'
           } />
           <h2 className="font-semibold text-sm">System Health</h2>
         </div>
@@ -621,7 +616,7 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
           health === 'healthy' ? 'text-emerald-400' :
           health === 'warning' ? 'text-yellow-400' :
           health === 'critical' ? 'text-red-400' :
-          'text-clawd-text-dim'
+          'text-mission-control-text-dim'
         }`}>
           {health === 'healthy' ? <CheckCircle size={12} /> :
            health === 'warning' ? <AlertTriangle size={12} /> :
@@ -636,7 +631,7 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
       <div className="p-4 space-y-3">
         {/* Gateway */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-clawd-text-dim">Gateway</span>
+          <span className="text-mission-control-text-dim">Gateway</span>
           <span className={connected ? 'text-emerald-400' : 'text-red-400'}>
             {connected ? 'Connected' : 'Disconnected'}
           </span>
@@ -644,21 +639,21 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
 
         {/* Sessions */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-clawd-text-dim">Active Sessions</span>
-          <span className="text-clawd-text">{activeSessions.length}</span>
+          <span className="text-mission-control-text-dim">Active Sessions</span>
+          <span className="text-mission-control-text">{activeSessions.length}</span>
         </div>
 
         {/* Watcher */}
         {sysStatus && (
           <>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-clawd-text-dim">Task Watcher</span>
+              <span className="text-mission-control-text-dim">Task Watcher</span>
               <span className={sysStatus.watcherRunning ? 'text-emerald-400' : 'text-red-400'}>
                 {sysStatus.watcherRunning ? 'Running' : 'Stopped'}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-clawd-text-dim">Safety Lock</span>
+              <span className="text-mission-control-text-dim">Safety Lock</span>
               <span className={sysStatus.killSwitchOn ? 'text-red-400' : 'text-emerald-400'}>
                 {sysStatus.killSwitchOn ? 'Engaged' : 'Normal'}
               </span>
@@ -668,23 +663,23 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
 
         {/* Token usage */}
         {tokenSummary && (
-          <div className="pt-3 border-t border-clawd-border/50 space-y-2">
+          <div className="pt-3 border-t border-mission-control-border/50 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-clawd-text-dim flex items-center gap-1">
+              <span className="text-mission-control-text-dim flex items-center gap-1">
                 <Zap size={10} /> Tokens Today
               </span>
-              <span className="text-clawd-text font-medium">{formatTokens(tokenSummary.totalTokens)}</span>
+              <span className="text-mission-control-text font-medium">{formatTokens(tokenSummary.totalTokens)}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-clawd-text-dim flex items-center gap-1">
+              <span className="text-mission-control-text-dim flex items-center gap-1">
                 <DollarSign size={10} /> Cost
               </span>
-              <span className="text-clawd-text font-medium">{formatCost(tokenSummary.totalCost)}</span>
+              <span className="text-mission-control-text font-medium">{formatCost(tokenSummary.totalCost)}</span>
             </div>
             {tokenSummary.topAgent && (
               <div className="flex items-center justify-between text-xs">
-                <span className="text-clawd-text-dim">Top Agent</span>
-                <span className="text-clawd-text capitalize">
+                <span className="text-mission-control-text-dim">Top Agent</span>
+                <span className="text-mission-control-text capitalize">
                   {tokenSummary.topAgent} ({formatTokens(tokenSummary.topAgentTokens || 0)})
                 </span>
               </div>
@@ -699,11 +694,17 @@ function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: Gateway
 // ── Main Dashboard ─────────────────────────────────────────
 
 export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
-  const {
-    connected, tasks, agents, activities, approvals,
-    fetchAgents, gatewaySessions, loadGatewaySessions,
-    approveItem, rejectItem, loadApprovals,
-  } = useStore();
+  const connected = useStore(s => s.connected);
+  const tasks = useStore(s => s.tasks);
+  const agents = useStore(s => s.agents);
+  const activities = useStore(s => s.activities);
+  const approvals = useStore(s => s.approvals);
+  const fetchAgents = useStore(s => s.fetchAgents);
+  const gatewaySessions = useStore(s => s.gatewaySessions);
+  const loadGatewaySessions = useStore(s => s.loadGatewaySessions);
+  const approveItem = useStore(s => s.approveItem);
+  const rejectItem = useStore(s => s.rejectItem);
+  const loadApprovals = useStore(s => s.loadApprovals);
 
   // Load data on mount
   useEffect(() => {
@@ -719,37 +720,41 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     }
   }, [connected, loadGatewaySessions]);
 
-  // Computed metrics
-  const inProgressTasks = useMemo(() => tasks.filter(t => t.status === 'in-progress'), [tasks]);
-  const completedToday = useMemo(() =>
-    tasks.filter(t =>
+  // Computed metrics — consolidated into grouped memos to reduce memo overhead
+  const derived = useMemo(() => {
+    const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
+    const completedToday = tasks.filter(t =>
       t.status === 'done' &&
       new Date(t.updatedAt).toDateString() === new Date().toDateString()
-    ).length,
-    [tasks]
-  );
+    ).length;
+    const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
+    const activeAgentCount = realAgents.filter(a => a.status === 'active').length;
+    return { inProgressTasks, completedToday, realAgents, activeAgentCount };
+  }, [tasks, agents]);
 
-  const realAgents = useMemo(() => agents.filter(a => !PHANTOM_AGENTS.includes(a.id)), [agents]);
   const activeSubagents = useMemo(() => gatewaySessions.filter(s => s.type === 'subagent' && s.isActive), [gatewaySessions]);
-  const activeAgentCount = useMemo(() => {
-    const activeFromRegistry = realAgents.filter(a => a.status === 'active').length;
-    return activeFromRegistry + activeSubagents.length;
-  }, [realAgents, activeSubagents]);
+  const totalActiveAgentCount = derived.activeAgentCount + activeSubagents.length;
 
   const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
 
+  // Pre-sliced activities list — avoids re-slicing on every render
+  const recentActivities = useMemo(() => activities.slice(0, 8), [activities]);
+
+  // Agent lookup map — O(1) agent resolution instead of O(n) find() in render loops
+  const agentMap = useMemo(() => new Map(agents.map(a => [a.id, a])), [agents]);
+
   return (
-    <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
+    <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
       <HeaderBar connected={connected} />
 
       {/* Stat Strip */}
       <StatStrip
         pendingApprovals={pendingApprovals.length}
-        inProgressCount={inProgressTasks.length}
-        completedToday={completedToday}
-        activeAgentCount={activeAgentCount}
-        totalAgentCount={realAgents.length}
+        inProgressCount={derived.inProgressTasks.length}
+        completedToday={derived.completedToday}
+        activeAgentCount={totalActiveAgentCount}
+        totalAgentCount={derived.realAgents.length}
         onNavigate={onNavigate}
       />
 
@@ -762,9 +767,9 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
           onNavigate={onNavigate}
         />
         <ActivityFeed
-          inProgressTasks={inProgressTasks}
-          agents={agents}
-          activities={activities}
+          inProgressTasks={derived.inProgressTasks}
+          agentMap={agentMap}
+          activities={recentActivities}
           onNavigate={onNavigate}
         />
       </div>

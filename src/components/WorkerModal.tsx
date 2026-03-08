@@ -169,7 +169,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
 
     try {
       const conversationHistory = chatMessages.map((m) => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Froggo 🐸, helping create a worker agent in the Clawdbot agent system. Have a natural conversation to gather:
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping create a worker agent in the mission-control agent system. Have a natural conversation to gather:
 
 - Worker name (clear, descriptive, e.g., "Twitter Content Scheduler", "Database Migration Helper")
 - Role/title (what they specialize in)
@@ -339,15 +339,15 @@ Be conversational, friendly, and help design an effective agent.`;
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Bot className="text-clawd-accent" size={24} />
+              <Bot className="text-mission-control-accent" size={24} />
               <h2 className="text-xl font-semibold">Create Worker Agent</h2>
             </div>
             <button 
               onClick={handleClose} 
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -360,15 +360,15 @@ Be conversational, friendly, and help design an effective agent.`;
               onClick={() => setMode('chat')}
               type="button"
               aria-pressed={mode === 'chat'}
-              aria-label="Chat with Froggo mode"
+              aria-label="Chat with Mission Control mode"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'chat'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <MessageSquare size={16} />
-              <span className="font-medium">Chat with Froggo</span>
+              <span className="font-medium">Chat with Mission Control</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
             </button>
             <button
@@ -378,8 +378,8 @@ Be conversational, friendly, and help design an effective agent.`;
               aria-label="Manual entry mode"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Edit3 size={16} />
@@ -400,12 +400,12 @@ Be conversational, friendly, and help design an effective agent.`;
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
-                          ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface border border-clawd-border'
+                          ? 'bg-mission-control-accent text-white'
+                          : 'bg-mission-control-surface border border-mission-control-border'
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-clawd-text-dim'}`}>
+                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-mission-control-text-dim'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
@@ -415,11 +415,11 @@ Be conversational, friendly, and help design an effective agent.`;
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
-                        <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
+                        <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+                        <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
                       </div>
                     </div>
                   </div>
@@ -428,10 +428,10 @@ Be conversational, friendly, and help design an effective agent.`;
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin text-clawd-accent" />
-                        <span className="text-sm text-clawd-text-dim">Froggo is thinking...</span>
+                        <Loader2 size={16} className="animate-spin text-mission-control-accent" />
+                        <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -443,9 +443,9 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Extracted Worker Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-clawd-accent/10 border border-clawd-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-3">
-                      <Sparkles size={16} className="text-clawd-accent" />
+                      <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Worker Agent Ready!</span>
                     </div>
                     <div className="space-y-2 text-sm mb-4">
@@ -469,7 +469,7 @@ Be conversational, friendly, and help design an effective agent.`;
                         <div className="flex items-center gap-2 flex-wrap">
                           <strong>Capabilities:</strong>
                           {extractedData.capabilities.map((cap, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-clawd-accent/20 rounded-full text-xs">
+                            <span key={i} className="px-2 py-0.5 bg-mission-control-accent/20 rounded-full text-xs">
                               {cap}
                             </span>
                           ))}
@@ -485,7 +485,7 @@ Be conversational, friendly, and help design an effective agent.`;
                     <button
                       onClick={handleCreateFromChat}
                       aria-label="Create and start worker agent"
-                      className="w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium flex items-center justify-center gap-2"
+                      className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <Zap size={16} />
                       Create & Start Worker
@@ -495,7 +495,7 @@ Be conversational, friendly, and help design an effective agent.`;
               )}
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-clawd-border">
+              <div className="p-6 border-t border-mission-control-border">
                 <div className="flex gap-3">
                   <textarea
                     ref={inputRef}
@@ -510,19 +510,19 @@ Be conversational, friendly, and help design an effective agent.`;
                     placeholder="Describe what you need this worker to do..."
                     rows={2}
                     disabled={isStreaming || conversationComplete}
-                    className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
+                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={handleChatSubmit}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
-                    className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
-                <div className="text-xs text-clawd-text-dim mt-2">
-                  Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Enter</kbd> to send,{' '}
-                  <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Shift+Enter</kbd> for new line
+                <div className="text-xs text-mission-control-text-dim mt-2">
+                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send,{' '}
+                  <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
               </div>
             </div>
@@ -532,60 +532,60 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Name & Role */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="worker-name" className="block text-sm text-clawd-text-dim mb-1">Worker Name *</label>
+                  <label htmlFor="worker-name" className="block text-sm text-mission-control-text-dim mb-1">Worker Name *</label>
                   <input
                     id="worker-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., Twitter Content Scheduler"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                     /* autoFocus removed for accessibility */
                   />
                 </div>
                 <div>
-                  <label htmlFor="worker-role" className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
+                  <label htmlFor="worker-role" className="block text-sm text-mission-control-text-dim mb-1">Role/Title</label>
                   <input
                     id="worker-role"
                     type="text"
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="e.g., Social Media Automation"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
 
               {/* Task Description */}
               <div>
-                <label htmlFor="worker-task-description" className="block text-sm text-clawd-text-dim mb-1">Task Description *</label>
+                <label htmlFor="worker-task-description" className="block text-sm text-mission-control-text-dim mb-1">Task Description *</label>
                 <textarea
                   id="worker-task-description"
                   value={taskDescription}
                   onChange={(e) => setTaskDescription(e.target.value)}
                   placeholder="What does this worker do? What workflows will they handle?"
                   rows={4}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
               </div>
 
               {/* Capabilities */}
               <div>
-                <label htmlFor="worker-capabilities" className="block text-sm text-clawd-text-dim mb-1">Capabilities</label>
+                <label htmlFor="worker-capabilities" className="block text-sm text-mission-control-text-dim mb-1">Capabilities</label>
                 <input
                   id="worker-capabilities"
                   type="text"
                   value={capabilities}
                   onChange={(e) => setCapabilities(e.target.value)}
                   placeholder="code, research, twitter, database (comma-separated)"
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
-                <div className="text-xs text-clawd-text-dim mt-1">Comma-separated list of skills/tools needed</div>
+                <div className="text-xs text-mission-control-text-dim mt-1">Comma-separated list of skills/tools needed</div>
               </div>
 
               {/* Model Selection */}
               <div>
-                <span className="block text-sm text-clawd-text-dim mb-1">Model</span>
+                <span className="block text-sm text-mission-control-text-dim mb-1">Model</span>
                 <div className="grid grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
                     <button
@@ -595,33 +595,33 @@ Be conversational, friendly, and help design an effective agent.`;
                       aria-pressed={model === opt.id}
                       className={`p-3 rounded-lg border text-left transition-all ${
                         model === opt.id
-                          ? 'border-clawd-accent bg-clawd-accent/10'
-                          : 'border-clawd-border hover:border-clawd-accent/50'
+                          ? 'border-mission-control-accent bg-mission-control-accent/10'
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        {model === opt.id && <CheckCircle size={16} className="text-clawd-accent" />}
+                        {model === opt.id && <CheckCircle size={16} className="text-mission-control-accent" />}
                         <span className="font-medium text-sm">{opt.label}</span>
                       </div>
-                      <p className="text-xs text-clawd-text-dim">{opt.description}</p>
+                      <p className="text-xs text-mission-control-text-dim">{opt.description}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
+              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+                  className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!name.trim() || !taskDescription.trim()}
-                  className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <Zap size={16} />
                   Create & Start

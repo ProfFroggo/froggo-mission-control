@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "mission-control-db": {
+      "command": "node",
+      "args": ["<PROJECT_ROOT>/tools/mission-control-db-mcp/dist/index.js"],
+      "env": {
+        "DB_PATH": "<HOME>/mission-control/data/mission-control.db"
+      }
+    },
+    "memory": {
+      "command": "node",
+      "args": ["<PROJECT_ROOT>/tools/memory-mcp/dist/index.js"],
+      "env": {
+        "VAULT_PATH": "<HOME>/mission-control/memory"
+      }
+    },
+    "cron": {
+      "command": "node",
+      "args": ["<PROJECT_ROOT>/tools/cron-mcp/dist/index.js"],
+      "env": {
+        "SCHEDULE_PATH": "<HOME>/mission-control/data/schedule.json"
+      }
+    }
+  }
+}

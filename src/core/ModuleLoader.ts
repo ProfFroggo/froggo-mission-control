@@ -8,7 +8,9 @@
 
 import { ServiceRegistry } from './ServiceRegistry';
 import { validateManifestSafe } from './manifestSchema';
-import { moduleApi } from '../lib/api';
+import { moduleApi, catalogApi } from '../lib/api';
+import { OPTIONAL_MODULE_IMPORTS } from '../modules/optional-registry';
+import type { CatalogModule } from '../types/catalog';
 
 // ─── Manifest types ─────────────────────────────────────────────
 
@@ -135,37 +137,41 @@ class ModuleLoaderClass {
   async initAll(): Promise<void> {
     if (this.initialized) return;
 
-    // Load disabled module state via REST API before initializing
-    let disabledModules: string[] = [];
-    let knownModules: string[] = [];
+    // Load optional modules that are installed+enabled in the catalog
+    let catalogModules: CatalogModule[] = [];
     try {
-      const stateResult = await moduleApi.getState() as { disabled?: string[]; known?: string[] } | undefined;
-      if (stateResult?.disabled) {
-        disabledModules = stateResult.disabled;
-      }
-      if (stateResult?.known) {
-        knownModules = stateResult.known;
-      }
+      catalogModules = await catalogApi.listModules() as CatalogModule[];
     } catch {
-      // State load failure is non-fatal — all modules init as enabled
+      // Catalog fetch failure is non-fatal — only core modules will load
+      console.warn('[ModuleLoader] Could not fetch catalog state — optional modules skipped');
+    }
+
+    // Dynamically import installed optional modules so they self-register
+    const installedOptional = catalogModules.filter(m => !m.core && m.installed && m.enabled);
+    for (const catalogMod of installedOptional) {
+      const importer = OPTIONAL_MODULE_IMPORTS[catalogMod.id];
+      if (importer) {
+        try {
+          await importer();
+        } catch (err) {
+          console.error(`[ModuleLoader] Failed to import optional module "${catalogMod.id}":`, err);
+        }
+      }
     }
 
     const sorted = this.topologicalSort();
 
     for (const reg of sorted) {
-      // Skip disabled modules — but never skip core modules regardless of state file
-      if (disabledModules.includes(reg.manifest.id) && !reg.manifest.core) {
-        reg.status = 'disposed';
-        console.debug(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
-        continue;
+      // Core modules always init; optional modules only if in catalog installed set
+      if (!reg.manifest.core) {
+        const catalogEntry = catalogModules.find(m => m.id === reg.manifest.id);
+        if (!catalogEntry?.installed || !catalogEntry?.enabled) {
+          reg.status = 'disposed';
+          console.debug(`[ModuleLoader] Skipped non-installed module "${reg.manifest.name}"`);
+          continue;
+        }
       }
-      // defaultDisabled: auto-disable modules on first encounter (not yet in known list)
-      if (reg.manifest.defaultDisabled && !reg.manifest.core && !knownModules.includes(reg.manifest.id)) {
-        reg.status = 'disposed';
-        console.debug(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
-        moduleApi.setState(reg.manifest.id, false).catch(() => { /* best-effort */ });
-        continue;
-      }
+
       reg.status = 'initializing';
       try {
         await reg.lifecycle.init();
@@ -174,7 +180,7 @@ class ModuleLoaderClass {
       } catch (err) {
         reg.status = 'error';
         reg.error = err instanceof Error ? err.message : String(err);
-        console.error(`[ModuleLoader] ❌ Failed to init "${reg.manifest.id}":`, err);
+        console.error(`[ModuleLoader] Failed to init "${reg.manifest.id}":`, err);
       }
     }
 
@@ -232,7 +238,7 @@ class ModuleLoaderClass {
       return;
     }
     if (reg.manifest.core) {
-      console.error(`[ModuleLoader] Cannot disable core module "${moduleId}"`);
+      console.warn(`[ModuleLoader] Cannot disable core module "${moduleId}"`);
       return;
     }
     this.dispose(moduleId);
@@ -252,6 +258,19 @@ class ModuleLoaderClass {
    * or at next app restart), handlers will re-register cleanly.
    */
   async enableModule(moduleId: string): Promise<void> {
+    // If not yet registered, dynamically import it first (first install)
+    if (!this.modules.has(moduleId)) {
+      const importer = OPTIONAL_MODULE_IMPORTS[moduleId];
+      if (importer) {
+        try {
+          await importer();
+        } catch (err) {
+          console.error(`[ModuleLoader] Failed to import module "${moduleId}":`, err);
+          return;
+        }
+      }
+    }
+
     const reg = this.modules.get(moduleId);
     if (!reg) {
       console.warn(`[ModuleLoader] enableModule: module "${moduleId}" not found`);

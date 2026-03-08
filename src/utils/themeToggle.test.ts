@@ -65,24 +65,24 @@ describe('themeToggle utilities', () => {
     it('should set CSS variables for dark theme', () => {
       applyTheme('dark', '#22c55e');
       
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-bg', '#0a0a0a');
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-surface', '#141414');
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-border', '#262626');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-bg', '#0a0a0a');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-surface', '#141414');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-border', '#262626');
     });
 
     it('should set CSS variables for light theme', () => {
       applyTheme('light', '#22c55e');
       
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-bg', '#fafafa');
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-surface', '#ffffff');
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-border', '#e4e4e7');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-bg', '#fafafa');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-surface', '#ffffff');
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-border', '#e4e4e7');
     });
 
     it('should set accent color CSS variable', () => {
       const accentColor = '#3b82f6';
       applyTheme('dark', accentColor);
       
-      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--clawd-accent', accentColor);
+      expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith('--mission-control-accent', accentColor);
     });
 
     it('should calculate accent-dim color', () => {
@@ -91,7 +91,7 @@ describe('themeToggle utilities', () => {
       
       // Should calculate a darker version of the accent color
       expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith(
-        '--clawd-accent-dim',
+        '--mission-control-accent-dim',
         expect.stringContaining('rgb')
       );
     });
@@ -182,7 +182,7 @@ describe('themeToggle utilities', () => {
       toggleTheme();
       
       expect(safeStorage.setItem).toHaveBeenCalledWith(
-        'froggo-settings',
+        'mission-control-settings',
         expect.stringContaining('"theme":"light"')
       );
     });
@@ -194,7 +194,7 @@ describe('themeToggle utilities', () => {
       toggleTheme();
       
       expect(safeStorage.setItem).toHaveBeenCalledWith(
-        'froggo-settings',
+        'mission-control-settings',
         expect.stringContaining('#ff0000')
       );
     });
@@ -206,7 +206,7 @@ describe('themeToggle utilities', () => {
       toggleTheme();
       
       expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith(
-        '--clawd-accent',
+        '--mission-control-accent',
         '#22c55e'
       );
     });
@@ -254,7 +254,7 @@ describe('themeToggle utilities', () => {
       colors.forEach(color => {
         applyTheme('dark', color);
         expect(mockDocument.documentElement.style.setProperty).toHaveBeenCalledWith(
-          '--clawd-accent',
+          '--mission-control-accent',
           color
         );
       });

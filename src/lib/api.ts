@@ -72,6 +72,9 @@ export const agentApi = {
   readModels: (id: string) => apiCall(`/agents/${id}/models`),
   writeModels: (id: string, config: any) =>
     apiCall(`/agents/${id}/models`, { method: 'PUT', body: config }),
+  getConfig: (id: string) => apiCall(`/agents/${id}/config`),
+  patchConfig: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/agents/${id}/config`, { method: 'PATCH', body: data }),
   create: (agent: { id: string; name: string; role: string; emoji?: string; color?: string; capabilities?: string[]; personality?: string }) =>
     apiCall('/agents', { method: 'POST', body: agent }),
   hire: (data: { id: string; name: string; emoji?: string; role: string; personality?: string; capabilities?: string[] }) =>
@@ -325,6 +328,8 @@ export const scheduleApi = {
 export const libraryApi = {
   getFiles: () => apiCall('/library/files') as Promise<{ files: any[] }>,
   getSkills: () => apiCall('/library/skills') as Promise<{ skills: any[] }>,
+  createSkill: (data: { name: string; slug?: string; content?: string; url?: string }) =>
+    apiCall('/library/skills', { method: 'POST', body: data }),
 };
 
 // ──────────────────────────────────────────────────

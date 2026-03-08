@@ -6,7 +6,7 @@
   "author": "Mission Control Team",
   "icon": "FolderKanban",
   "category": "productivity",
-  "core": false,
+  "core": true,
   "defaultDisabled": false,
 
   "views": [

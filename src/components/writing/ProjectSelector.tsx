@@ -65,27 +65,27 @@ export default function ProjectSelector() {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-clawd-bg">
+    <div className="h-full overflow-y-auto bg-mission-control-bg">
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-clawd-text">Writing Projects</h1>
-            <p className="text-sm text-clawd-text-dim mt-1">
+            <h1 className="text-2xl font-bold text-mission-control-text">Writing Projects</h1>
+            <p className="text-sm text-mission-control-text-dim mt-1">
               {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={startWizard}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors"
             >
               <Wand2 size={16} />
               Plan with AI
             </button>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-clawd-border text-clawd-text-dim text-sm font-medium hover:border-clawd-accent transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm font-medium hover:border-mission-control-accent transition-colors"
             >
               {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? 'Cancel' : 'New Project'}
@@ -95,10 +95,10 @@ export default function ProjectSelector() {
 
         {/* Create form */}
         {showForm && (
-          <div className="mb-8 p-4 rounded-xl border border-clawd-border bg-clawd-surface">
+          <div className="mb-8 p-4 rounded-xl border border-mission-control-border bg-mission-control-surface">
             <div className="space-y-4">
               <div>
-                <label htmlFor="project-title" className="block text-xs font-medium text-clawd-text-dim mb-1.5">
+                <label htmlFor="project-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Title
                 </label>
                 <input
@@ -108,11 +108,11 @@ export default function ProjectSelector() {
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="My Writing Project"
-                  className="w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
+                  className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
               <div>
-                <span className="block text-xs font-medium text-clawd-text-dim mb-1.5">
+                <span className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Type
                 </span>
                 <div className="flex gap-2">
@@ -120,8 +120,8 @@ export default function ProjectSelector() {
                     onClick={() => setType('memoir')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                       type === 'memoir'
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border text-clawd-text-dim hover:border-clawd-text-dim'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
                     }`}
                   >
                     <BookOpen size={16} />
@@ -131,8 +131,8 @@ export default function ProjectSelector() {
                     onClick={() => setType('novel')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                       type === 'novel'
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border text-clawd-text-dim hover:border-clawd-text-dim'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
                     }`}
                   >
                     <BookText size={16} />
@@ -143,7 +143,7 @@ export default function ProjectSelector() {
               <button
                 onClick={handleCreate}
                 disabled={!title.trim() || creating}
-                className="px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {creating ? 'Creating...' : 'Create Project'}
               </button>
@@ -157,10 +157,10 @@ export default function ProjectSelector() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="p-4 rounded-xl border border-clawd-border bg-clawd-surface animate-pulse"
+                className="p-4 rounded-xl border border-mission-control-border bg-mission-control-surface animate-pulse"
               >
-                <div className="h-5 w-48 bg-clawd-border rounded mb-2" />
-                <div className="h-3 w-32 bg-clawd-border rounded" />
+                <div className="h-5 w-48 bg-mission-control-border rounded mb-2" />
+                <div className="h-3 w-32 bg-mission-control-border rounded" />
               </div>
             ))}
           </div>
@@ -169,8 +169,8 @@ export default function ProjectSelector() {
         {/* Empty state */}
         {!projectsLoading && projects.length === 0 && (
           <div className="text-center py-16">
-            <BookOpen size={48} className="mx-auto text-clawd-text-dim/30 mb-4" />
-            <p className="text-clawd-text-dim text-sm">
+            <BookOpen size={48} className="mx-auto text-mission-control-text-dim/30 mb-4" />
+            <p className="text-mission-control-text-dim text-sm">
               No writing projects yet. Create your first project to start writing.
             </p>
           </div>
@@ -183,12 +183,12 @@ export default function ProjectSelector() {
               <button
                 key={project.id}
                 onClick={() => openProject(project.id)}
-                className="w-full text-left p-4 rounded-xl border border-clawd-border bg-clawd-surface hover:border-clawd-accent/40 hover:shadow-card transition-all group"
+                className="w-full text-left p-4 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:shadow-card transition-all group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-clawd-text truncate">
+                      <h3 className="text-sm font-semibold text-mission-control-text truncate">
                         {project.title}
                       </h3>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${
@@ -200,7 +200,7 @@ export default function ProjectSelector() {
                         {project.type}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
+                    <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
                       <span>{project.chapterCount} {project.chapterCount === 1 ? 'chapter' : 'chapters'}</span>
                       <span>{project.wordCount.toLocaleString()} words</span>
                       <span>Created {relativeTime(project.createdAt)}</span>
@@ -208,7 +208,7 @@ export default function ProjectSelector() {
                   </div>
                   <button
                     onClick={(e) => handleDelete(e, project)}
-                    className="p-1.5 rounded-lg text-clawd-text-dim/0 group-hover:text-clawd-text-dim hover:!text-error hover:bg-error-subtle transition-all"
+                    className="p-1.5 rounded-lg text-mission-control-text-dim/0 group-hover:text-mission-control-text-dim hover:!text-error hover:bg-error-subtle transition-all"
                     title="Delete project"
                   >
                     <Trash2 size={14} />

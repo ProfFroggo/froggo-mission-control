@@ -23,7 +23,7 @@ const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
 
 export default function XTabBar({ activeTab, onTabChange }: XTabBarProps) {
   return (
-    <div className="flex items-center gap-1 px-4 py-2 border-b border-clawd-border bg-clawd-surface overflow-x-auto">
+    <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface overflow-x-auto">
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -31,7 +31,7 @@ export default function XTabBar({ activeTab, onTabChange }: XTabBarProps) {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
             activeTab === tab.id
               ? 'bg-info-subtle text-info font-medium'
-              : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg-alt'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
           }`}
         >
           {tab.icon}

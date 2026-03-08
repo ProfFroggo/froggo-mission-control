@@ -179,9 +179,9 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
 
   return (
     <div className="fixed bottom-20 right-4 z-40 w-80 max-w-sm">
-      <div className="bg-clawd-surface/95 backdrop-blur-sm border border-clawd-border rounded-lg shadow-lg overflow-hidden">
-        <div className="px-3 py-2 border-b border-clawd-border">
-          <span className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wide">
+      <div className="bg-mission-control-surface/95 backdrop-blur-sm border border-mission-control-border rounded-lg shadow-lg overflow-hidden">
+        <div className="px-3 py-2 border-b border-mission-control-border">
+          <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">
             Live Activity
           </span>
         </div>
@@ -189,7 +189,7 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
           {activities.map((activity) => (
             <div
               key={activity.id}
-              className={`px-3 py-2 flex items-center gap-2 border-b border-clawd-border/50 last:border-b-0 ${
+              className={`px-3 py-2 flex items-center gap-2 border-b border-mission-control-border/50 last:border-b-0 ${
                 activity.status === 'complete' ? 'opacity-60' : ''
               }`}
             >
@@ -212,14 +212,14 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
                   )}
                 </div>
                 {activity.status !== 'active' && (
-                  <div className="text-[10px] text-clawd-text-dim">
+                  <div className="text-[10px] text-mission-control-text-dim">
                     {activity.status === 'complete' ? 'Done' : 'Failed'}
                   </div>
                 )}
               </div>
               
               {activity.type === 'tool_use' && activity.status === 'active' && (
-                <Code size={12} className="text-clawd-text-dim" />
+                <Code size={12} className="text-mission-control-text-dim" />
               )}
             </div>
           ))}

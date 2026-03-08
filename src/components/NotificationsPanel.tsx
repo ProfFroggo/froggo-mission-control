@@ -25,7 +25,7 @@ const sourceConfig: Record<string, { icon: any; color: string; label: string }> 
   discord: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Discord' },
   email: { icon: Mail, color: 'text-error bg-error-subtle', label: 'Email' },
   calendar: { icon: Calendar, color: 'text-warning bg-warning-subtle', label: 'Calendar' },
-  system: { icon: Bell, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'System' },
+  system: { icon: Bell, color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'System' },
 };
 
 export default function NotificationsPanel() {
@@ -139,11 +139,11 @@ export default function NotificationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/20 rounded-xl">
-              <Bell size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <Bell size={24} className="text-mission-control-accent" />
             </div>
             <div>
               <h1 className="text-heading-2">Notifications</h1>
@@ -155,7 +155,7 @@ export default function NotificationsPanel() {
           <button
             onClick={loadNotifications}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -170,8 +170,8 @@ export default function NotificationsPanel() {
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 filter === f
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {f === 'all' && `All (${notifications.length})`}
@@ -202,8 +202,8 @@ export default function NotificationsPanel() {
                     notif.urgent
                       ? 'bg-error-subtle border-error-border'
                       : notif.read
-                      ? 'bg-clawd-bg border-clawd-border opacity-60'
-                      : 'bg-clawd-surface border-clawd-border shadow-card'
+                      ? 'bg-mission-control-bg border-mission-control-border opacity-60'
+                      : 'bg-mission-control-surface border-mission-control-border shadow-card'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -218,8 +218,8 @@ export default function NotificationsPanel() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-clawd-text-dim truncate">{notif.description}</p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-clawd-text-dim">
+                      <p className="text-sm text-mission-control-text-dim truncate">{notif.description}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim">
                         <span className={`px-1.5 py-0.5 rounded ${config.color.replace('text-', 'bg-').replace('/10', '/20')}`}>
                           {config.label}
                         </span>
@@ -241,7 +241,7 @@ export default function NotificationsPanel() {
                       )}
                       <button
                         onClick={() => handleDismiss(notif)}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors text-clawd-text-dim"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim"
                         title="Dismiss"
                       >
                         <X size={16} />

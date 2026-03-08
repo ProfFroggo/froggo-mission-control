@@ -147,30 +147,30 @@ export default function AnalyticsPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col p-4">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-heading-2 flex items-center gap-2">
-            <BarChart3 className="text-clawd-accent" size={20} />
-            Analytics & Insights
-          </h2>
-          <p className="text-secondary mt-1">
-            Comprehensive productivity tracking and performance metrics
-          </p>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <BarChart3 size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-mission-control-text">Analytics & Insights</h1>
+            <p className="text-sm text-mission-control-text-dim">Comprehensive productivity tracking and performance metrics</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Time range selector */}
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['7d', '30d', '90d'] as const).map((range) => (
               <button
                 key={range}
                 onClick={() => setTimeRange(range)}
                 className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                   timeRange === range
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
@@ -180,7 +180,7 @@ export default function AnalyticsPanel() {
 
           <button
             onClick={loadAnalytics}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -188,13 +188,16 @@ export default function AnalyticsPanel() {
 
           <button
             onClick={exportData}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
           >
             <Download size={16} />
             Export
           </button>
         </div>
       </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-4">
 
       {/* View selector */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
@@ -210,8 +213,8 @@ export default function AnalyticsPanel() {
             onClick={() => setView(id as AnalyticsView)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
               view === id
-                ? 'bg-clawd-accent text-white'
-                : 'bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text hover:border-clawd-accent/50'
+                ? 'bg-mission-control-accent text-white'
+                : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
             }`}
           >
             <Icon size={16} />
@@ -226,7 +229,7 @@ export default function AnalyticsPanel() {
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Target size={20} className="text-info" />
                   <TrendingUp size={16} className="text-success" />
@@ -240,7 +243,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Users size={20} className="text-review" />
                   <Zap size={16} className="text-warning" />
@@ -254,7 +257,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Clock size={20} className="text-warning" />
                   <Activity size={16} className="text-success" />
@@ -268,7 +271,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
                   <TrendingUp size={20} className="text-success" />
                   <Zap size={16} className="text-info" />
@@ -294,9 +297,9 @@ export default function AnalyticsPanel() {
 
             {/* Subtask Progress */}
             {subtaskStats.length > 0 && (
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
                 <h3 className="text-heading-3 mb-4 flex items-center gap-2">
-                  <Target size={16} className="text-clawd-accent" />
+                  <Target size={16} className="text-mission-control-accent" />
                   Active Tasks - Subtask Progress
                 </h3>
                 <div className="space-y-3">
@@ -307,18 +310,18 @@ export default function AnalyticsPanel() {
                           {stat.taskTitle}
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-clawd-bg rounded-full h-2">
+                          <div className="flex-1 bg-mission-control-bg rounded-full h-2">
                             <div
-                              className="bg-clawd-accent rounded-full h-2 transition-all"
+                              className="bg-mission-control-accent rounded-full h-2 transition-all"
                               style={{ width: `${stat.completionRate}%` }}
                             />
                           </div>
-                          <span className="text-xs text-clawd-text-dim w-16 text-right">
+                          <span className="text-xs text-mission-control-text-dim w-16 text-right">
                             {stat.completedSubtasks}/{stat.totalSubtasks}
                           </span>
                         </div>
                       </div>
-                      <div className="text-sm font-medium text-clawd-accent w-12 text-right">
+                      <div className="text-sm font-medium text-mission-control-accent w-12 text-right">
                         {stat.completionRate}%
                       </div>
                     </div>
@@ -335,16 +338,16 @@ export default function AnalyticsPanel() {
         
         {view === 'projects' && (
           <div className="space-y-6">
-            <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
               <h3 className="text-heading-3 mb-4 flex items-center gap-2">
-                <Calendar size={16} className="text-clawd-accent" />
+                <Calendar size={16} className="text-mission-control-accent" />
                 Project Statistics
               </h3>
               <div className="space-y-4">
                 {projectStats.map((project) => (
                   <div
                     key={project.project}
-                    className="p-4 bg-clawd-bg rounded-xl"
+                    className="p-4 bg-mission-control-bg rounded-xl"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -354,7 +357,7 @@ export default function AnalyticsPanel() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-clawd-accent">
+                        <div className="text-2xl font-bold text-mission-control-accent">
                           {project.completedTasks > 0 
                             ? Math.round((project.completedTasks / project.totalTasks) * 100)
                             : 0}%
@@ -365,19 +368,19 @@ export default function AnalyticsPanel() {
 
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <div className="text-clawd-text-dim">In Progress</div>
+                        <div className="text-mission-control-text-dim">In Progress</div>
                         <div className="font-medium text-info">
                           {project.inProgressTasks}
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Avg Time</div>
+                        <div className="text-mission-control-text-dim">Avg Time</div>
                         <div className="font-medium text-warning">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Total Time</div>
+                        <div className="text-mission-control-text-dim">Total Time</div>
                         <div className="font-medium text-review">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
@@ -385,9 +388,9 @@ export default function AnalyticsPanel() {
                     </div>
 
                     {/* Progress bar */}
-                    <div className="mt-3 bg-clawd-border rounded-full h-2">
+                    <div className="mt-3 bg-mission-control-border rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-clawd-accent to-blue-400 rounded-full h-2 transition-all"
+                        className="bg-gradient-to-r from-mission-control-accent to-blue-400 rounded-full h-2 transition-all"
                         style={{
                           width: `${project.totalTasks > 0 
                             ? (project.completedTasks / project.totalTasks) * 100 
@@ -401,6 +404,8 @@ export default function AnalyticsPanel() {
             </div>
           </div>
         )}
+      </div>
+
       </div>
     </div>
   );

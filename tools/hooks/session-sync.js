@@ -7,9 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const VAULT_PATH = process.env.VAULT_PATH || path.join(os.homedir(), 'mission-control', 'memory');
-const DB_PATH = process.env.MC_DB_PATH || path.join(os.homedir(), 'mission-control', 'data', 'mission-control.db');
-const QMD_BIN = process.env.QMD_BIN || '/opt/homebrew/bin/qmd';
+const VAULT_PATH = process.env.VAULT_PATH || path.join(os.homedir(), 'mission-control');
+const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'mission-control', 'data', 'mission-control.db');
+const QMD_BIN = process.env.QMD_BIN || path.join(os.homedir(), '.npm-global', 'bin', 'qmd');
 
 // Read hook input from stdin
 let hookInput = '';
@@ -44,7 +44,7 @@ function syncSession(data) {
   ].filter(line => line !== undefined).join('\n');
 
   // Write to vault sessions folder
-  const sessionsDir = path.join(VAULT_PATH, 'sessions');
+  const sessionsDir = path.join(VAULT_PATH, 'memory', 'sessions');
   if (!fs.existsSync(sessionsDir)) {
     fs.mkdirSync(sessionsDir, { recursive: true });
   }
@@ -63,8 +63,11 @@ function syncSession(data) {
   // Log analytics event to DB (non-fatal)
   try {
     if (fs.existsSync(DB_PATH)) {
-      const eventJson = JSON.stringify({ agent_id: agentId, session_id: sessionId, timestamp: now.toISOString() });
-      execSync(`sqlite3 "${DB_PATH}" "INSERT INTO analytics_events (id, event_type, agent_id, metadata, created_at) VALUES ('$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || echo ${Date.now()})', 'session_sync', '${agentId}', '${eventJson.replace(/'/g, "''")}', '${now.toISOString()}');"`, { timeout: 5000 });
+      const Database = require('better-sqlite3');
+      const db = new Database(DB_PATH);
+      db.prepare(`INSERT INTO analytics_events (event_type, timestamp, metadata) VALUES (?, ?, ?)`)
+        .run('session_sync', Date.now(), JSON.stringify({ agent_id: agentId, session_id: sessionId }));
+      db.close();
     }
   } catch {
     // DB may not exist yet — not fatal

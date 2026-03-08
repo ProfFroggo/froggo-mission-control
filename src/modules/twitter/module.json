@@ -1,12 +1,11 @@
 {
   "id": "twitter",
-  "name": "X Publishing",
+  "name": "Social Media",
   "version": "1.0.0",
-  "description": "Compose, post, schedule, and manage tweets and threads via the X API.",
-  "author": "Froggo Team",
+  "description": "Full social media command center — publish, research, plan, drafts, calendar, mentions, reply-guy, content mix, automations, analytics, Reddit, and campaigns.",
+  "author": "Mission Control Team",
   "icon": "Share2",
   "category": "social",
-
   "credentials": [
     {
       "id": "api_key",
@@ -37,16 +36,14 @@
       "type": "oauth_token"
     }
   ],
-
   "views": [
     {
       "id": "twitter",
       "label": "Social Media",
       "icon": "Share2",
-      "entrypoint": "./views/XPanel.tsx"
+      "entrypoint": "./index.tsx"
     }
   ],
-
   "ipcChannels": {
     "handle": [
       "x:publish:post",
@@ -61,15 +58,18 @@
       "module-twitter:health:check"
     ]
   },
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
-    "ipc": ["x:*", "module-twitter:*"],
-    "filesystem": ["$DATA_DIR/"],
+    "ipc": [
+      "x:*",
+      "module-twitter:*"
+    ],
+    "filesystem": [
+      "$DATA_DIR/"
+    ],
     "network": true,
     "shell": true
   }

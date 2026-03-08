@@ -137,19 +137,19 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-6 border-b border-mission-control-border flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold flex items-center gap-2">
               <Activity size={24} />
               Agent Comparison
             </h2>
-            <p className="text-sm text-clawd-text-dim">
+            <p className="text-sm text-mission-control-text-dim">
               Comparing {agentIds.length} agents
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             aria-label="Close modal"
           >
             <X size={16} />
@@ -160,7 +160,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-clawd-text-dim">Loading comparison...</div>
+              <div className="text-mission-control-text-dim">Loading comparison...</div>
             </div>
           ) : (
             <div className="space-y-6">
@@ -171,12 +171,12 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                   if (!agentData) return null;
 
                   return (
-                    <div key={agentId} className="bg-clawd-bg rounded-lg p-4 text-center">
+                    <div key={agentId} className="bg-mission-control-bg rounded-lg p-4 text-center">
                       <div className="mb-2">
                         {(() => {
                           const theme = getAgentTheme(agentId);
                           return theme.pic ? (
-                            <img src={`./agent-profiles/${theme.pic}`} alt={agentData.name} className="w-12 h-12 rounded-xl object-cover mx-auto ring-2 ring-white/10"
+                            <img src={`/api/agents/${agentId}/avatar`} alt={agentData.name} className="w-12 h-12 rounded-xl object-cover mx-auto ring-2 ring-white/10"
                               onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement('span'), { className: 'text-4xl', textContent: agentData.avatar })); }} />
                           ) : (
                             <span className="text-4xl">{agentData.avatar}</span>
@@ -191,7 +191,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Success Rate */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-text-dim uppercase mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
                   <TrendingUp size={16} />
                   Success Rate
                 </h3>
@@ -202,11 +202,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('successRate') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-success' : ''}`}>
+                      <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-success' : ''}`}>
                         <div className="text-3xl font-bold text-success mb-1">
                           {Math.round(agentData.successRate * 100)}%
                         </div>
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           {isWinner && '👑 Best'}
                         </div>
                       </div>
@@ -217,7 +217,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Average Time */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-text-dim uppercase mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
                   <Clock size={16} />
                   Average Completion Time
                 </h3>
@@ -227,11 +227,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     if (!agentData) return null;
 
                     return (
-                      <div key={agentId} className="bg-clawd-bg rounded-lg p-4">
+                      <div key={agentId} className="bg-mission-control-bg rounded-lg p-4">
                         <div className="text-3xl font-bold text-info mb-1">
                           {agentData.avgTime}
                         </div>
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           per task
                         </div>
                       </div>
@@ -242,7 +242,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Total Tasks */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-text-dim uppercase mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
                   <CheckCircle size={16} />
                   Total Tasks Completed
                 </h3>
@@ -253,11 +253,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('totalTasks') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-review' : ''}`}>
+                      <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-review' : ''}`}>
                         <div className="text-3xl font-bold text-review mb-1">
                           {agentData.totalTasks}
                         </div>
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           {isWinner && '👑 Most Productive'}
                         </div>
                       </div>
@@ -268,7 +268,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Skills Comparison */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-text-dim uppercase mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
                   <Award size={16} />
                   Skills Inventory
                 </h3>
@@ -278,18 +278,18 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     if (!agentData) return null;
 
                     return (
-                      <div key={agentId} className="bg-clawd-bg rounded-lg p-4">
+                      <div key={agentId} className="bg-mission-control-bg rounded-lg p-4">
                         <div className="text-lg font-bold mb-2">
                           {agentData.skills.length} Skills
                         </div>
                         <div className="space-y-1">
                           {agentData.skills.slice(0, 5).map((skill, i) => (
-                            <div key={i} className="text-xs px-2 py-1 bg-clawd-surface rounded">
+                            <div key={i} className="text-xs px-2 py-1 bg-mission-control-surface rounded">
                               {skill}
                             </div>
                           ))}
                           {agentData.skills.length > 5 && (
-                            <div className="text-xs text-clawd-text-dim text-center">
+                            <div className="text-xs text-mission-control-text-dim text-center">
                               +{agentData.skills.length - 5} more
                             </div>
                           )}
@@ -302,7 +302,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
               {/* Recent Activity */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-text-dim uppercase mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3 flex items-center gap-2">
                   <Activity size={16} />
                   Recent Activity
                 </h3>
@@ -313,11 +313,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('recentActivity') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-warning' : ''}`}>
+                      <div key={agentId} className={`bg-mission-control-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-warning' : ''}`}>
                         <div className="text-3xl font-bold text-warning mb-1">
                           {agentData.recentActivity}
                         </div>
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           {isWinner ? '👑 Most Active' : 'recent tasks'}
                         </div>
                       </div>
@@ -352,10 +352,10 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-clawd-border flex justify-end">
+        <div className="p-4 border-t border-mission-control-border flex justify-end">
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             Close
           </button>

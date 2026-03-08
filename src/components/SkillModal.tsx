@@ -275,7 +275,7 @@ Return ONLY a JSON array of suggestions:
 
     try {
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Froggo 🐸, helping design a new skill for the agent system. Have a natural conversation to gather:
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping design a new skill for the agent system. Have a natural conversation to gather:
 
 - Skill name (clear, action-oriented, e.g., "GitHub PR Review", "Market Research")
 - Category (automation/development/research/content/integration/analysis)
@@ -548,15 +548,15 @@ ${skillData.instructions}
         role="presentation"
       >
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Brain className="text-clawd-accent" size={24} />
+              <Brain className="text-mission-control-accent" size={24} />
               <h2 className="text-xl font-semibold">Add New Skill</h2>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -569,8 +569,8 @@ ${skillData.instructions}
               onClick={() => setMode('suggest')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'suggest'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Lightbulb size={16} />
@@ -581,8 +581,8 @@ ${skillData.instructions}
               onClick={() => setMode('dialogue')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'dialogue'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <MessageSquare size={16} />
@@ -592,8 +592,8 @@ ${skillData.instructions}
               onClick={() => setMode('manual')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Edit3 size={16} />
@@ -607,12 +607,12 @@ ${skillData.instructions}
           {mode === 'suggest' ? (
             // Suggest Mode
             <div className="p-6 space-y-4 overflow-y-auto h-full">
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-4">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-4">
                 <div className="flex items-start gap-3">
-                  <Search className="text-clawd-accent mt-1" size={20} />
+                  <Search className="text-mission-control-accent mt-1" size={20} />
                   <div>
                     <h3 className="font-semibold mb-1">Analyzing your workflow...</h3>
-                    <p className="text-sm text-clawd-text-dim">
+                    <p className="text-sm text-mission-control-text-dim">
                       Based on your recent tasks, here are some skills that could boost your productivity.
                     </p>
                   </div>
@@ -621,15 +621,15 @@ ${skillData.instructions}
 
               {loadingSuggestions ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="animate-spin text-clawd-accent" size={32} />
-                  <span className="ml-3 text-clawd-text-dim">Analyzing patterns...</span>
+                  <Loader2 className="animate-spin text-mission-control-accent" size={32} />
+                  <span className="ml-3 text-mission-control-text-dim">Analyzing patterns...</span>
                 </div>
               ) : suggestions.length > 0 ? (
                 <div className="space-y-3">
                   {suggestions.map((suggestion, idx) => (
                     <div
                       key={idx}
-                      className="bg-clawd-surface border border-clawd-border rounded-xl p-4 hover:border-clawd-accent/50 transition-all cursor-pointer group"
+                      className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/50 transition-all cursor-pointer group"
                       onClick={() => handleSelectSuggestion(suggestion)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectSuggestion(suggestion); } }}
                       role="button"
@@ -642,38 +642,38 @@ ${skillData.instructions}
                             {suggestion.skillType === 'research' && <Search size={16} className="text-review" />}
                             {suggestion.skillType === 'content' && <Edit3 size={16} className="text-success" />}
                             <h4 className="font-semibold">{suggestion.name}</h4>
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-border text-clawd-text-dim">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
                               {suggestion.category}
                             </span>
                           </div>
-                          <p className="text-sm text-clawd-text-dim">{suggestion.reason}</p>
+                          <p className="text-sm text-mission-control-text-dim">{suggestion.reason}</p>
                         </div>
                         <Sparkles 
                           size={20} 
-                          className="text-clawd-accent opacity-0 group-hover:opacity-100 transition-opacity ml-3 mt-1" 
+                          className="text-mission-control-accent opacity-0 group-hover:opacity-100 transition-opacity ml-3 mt-1" 
                         />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-clawd-text-dim">
+                <div className="text-center py-12 text-mission-control-text-dim">
                   <Lightbulb size={48} className="mx-auto mb-4 opacity-50" />
                   <p>No suggestions yet. Complete some tasks first!</p>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
+              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <button
                   onClick={handleClose}
-                  className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+                  className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={loadSuggestions}
                   disabled={loadingSuggestions}
-                  className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {loadingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                   Refresh Suggestions
@@ -693,12 +693,12 @@ ${skillData.instructions}
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
-                          ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface border border-clawd-border'
+                          ? 'bg-mission-control-accent text-white'
+                          : 'bg-mission-control-surface border border-mission-control-border'
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-clawd-text-dim'}`}>
+                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-mission-control-text-dim'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
@@ -708,11 +708,11 @@ ${skillData.instructions}
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
-                        <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
+                        <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+                        <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
                       </div>
                     </div>
                   </div>
@@ -721,10 +721,10 @@ ${skillData.instructions}
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin text-clawd-accent" />
-                        <span className="text-sm text-clawd-text-dim">Froggo is thinking...</span>
+                        <Loader2 size={16} className="animate-spin text-mission-control-accent" />
+                        <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -736,9 +736,9 @@ ${skillData.instructions}
               {/* Extracted Skill Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-clawd-accent/10 border border-clawd-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle size={16} className="text-clawd-accent" />
+                      <CheckCircle size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Skill Ready!</span>
                     </div>
                     <div className="space-y-1 text-sm">
@@ -749,7 +749,7 @@ ${skillData.instructions}
                     </div>
                     <button
                       onClick={handleCreateFromChat}
-                      className="mt-3 w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium"
+                      className="mt-3 w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
                     >
                       Create Skill & Implementation Task
                     </button>
@@ -758,7 +758,7 @@ ${skillData.instructions}
               )}
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-clawd-border">
+              <div className="p-6 border-t border-mission-control-border">
                 <div className="flex gap-3">
                   <textarea
                     ref={inputRef}
@@ -773,18 +773,18 @@ ${skillData.instructions}
                     placeholder="Describe the skill you want to add..."
                     rows={2}
                     disabled={isStreaming || conversationComplete}
-                    className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
+                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={handleChatSubmit}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
-                    className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
-                <div className="text-xs text-clawd-text-dim mt-2">
-                  Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Shift+Enter</kbd> for new line
+                <div className="text-xs text-mission-control-text-dim mt-2">
+                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
               </div>
             </div>
@@ -793,69 +793,69 @@ ${skillData.instructions}
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="skill-name" className="block text-sm text-clawd-text-dim mb-1">Skill Name *</label>
+                  <label htmlFor="skill-name" className="block text-sm text-mission-control-text-dim mb-1">Skill Name *</label>
                   <input
                     id="skill-name"
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g., GitHub PR Review"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="skill-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                  <label htmlFor="skill-category" className="block text-sm text-mission-control-text-dim mb-1">Category</label>
                   <input
                     id="skill-category"
                     type="text"
                     value={category}
                     onChange={e => setCategory(e.target.value)}
                     placeholder="e.g., automation, research"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="skill-description" className="block text-sm text-clawd-text-dim mb-1">Description</label>
+                <label htmlFor="skill-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
                 <textarea
                   id="skill-description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="What does this skill do? When should it be used?"
                   rows={2}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
               </div>
 
               <div>
-                <label htmlFor="skill-instructions" className="block text-sm text-clawd-text-dim mb-1">Instructions *</label>
+                <label htmlFor="skill-instructions" className="block text-sm text-mission-control-text-dim mb-1">Instructions *</label>
                 <textarea
                   id="skill-instructions"
                   value={instructions}
                   onChange={e => setInstructions(e.target.value)}
                   placeholder="Step-by-step instructions for executing this skill. Include commands, tools, and workflows."
                   rows={12}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none font-mono text-sm"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none font-mono text-sm"
                 />
-                <div className="text-xs text-clawd-text-dim mt-1">
+                <div className="text-xs text-mission-control-text-dim mt-1">
                   Tip: Use markdown formatting. This will be saved to SKILL.md
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
+              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+                  className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!name.trim() || !instructions.trim()}
-                  className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <CheckCircle size={16} />
                   Create Skill & Task

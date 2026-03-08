@@ -1,4 +1,4 @@
-# Requirements: Froggo.app v9.0 — Complete Platform
+# Requirements: Mission Control.app v9.0 — Complete Platform
 
 **Defined:** 2026-02-28
 **Core Value:** A complete, production-grade AI agent platform — fast, secure, polished, with onboarding and extensibility.
@@ -91,8 +91,8 @@ Requirements for v9.0 release. Each maps to roadmap phases.
 
 ### Plugin SDK
 
-- [ ] **PSDK-01**: Stable API surface defined (froggo-sdk types package)
-- [ ] **PSDK-02**: Plugin scaffolder CLI (create-froggo-plugin)
+- [ ] **PSDK-01**: Stable API surface defined (mission-control-sdk types package)
+- [ ] **PSDK-02**: Plugin scaffolder CLI (create-mission-control-plugin)
 - [ ] **PSDK-03**: Plugin developer documentation (getting started, API reference, examples)
 - [ ] **PSDK-04**: Sample plugin (working example demonstrating all SDK features)
 - [ ] **PSDK-05**: Plugin validation and loading from external directories

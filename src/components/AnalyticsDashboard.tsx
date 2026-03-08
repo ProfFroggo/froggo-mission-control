@@ -26,7 +26,6 @@ const TokenUsageWidget = lazy(() => import('./TokenUsageWidget'));
 const AdvancedAgentComparison = lazy(() => import('./AdvancedAgentComparison'));
 
 // Lightweight components - regular imports
-import SessionsFilter from './SessionsFilter';
 import TimeTrackingPanel from './TimeTrackingPanel';
 import ProductivityHeatmap from './ProductivityHeatmap';
 import ReportsPanel from './ReportsPanel';
@@ -43,8 +42,7 @@ type Tab =
   | 'benchmarks'
   | 'time'
   | 'heatmap'
-  | 'reports'
-  | 'sessions';
+  | 'reports';
 
 interface TabConfig {
   id: Tab;
@@ -114,19 +112,13 @@ const TABS: TabConfig[] = [
     icon: FileText,
     description: 'Generate reports',
   },
-  {
-    id: 'sessions',
-    label: 'Sessions',
-    icon: Activity,
-    description: 'Active sessions',
-  },
 ];
 
 // Loading fallback component
 function ChartSkeleton() {
   return (
     <div className="h-full flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-clawd-text-dim">
+      <div className="flex flex-col items-center gap-3 text-mission-control-text-dim">
         <Loader2 size={32} className="animate-spin" />
         <p className="text-sm">Loading charts...</p>
       </div>
@@ -176,7 +168,7 @@ export default function AnalyticsDashboard() {
   return (
     <div className="h-full flex flex-col">
       {/* Header with tabs */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/20 rounded-xl">
@@ -184,7 +176,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <h1 className="text-xl font-semibold">Analytics Dashboard</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 Comprehensive productivity insights and performance metrics
               </p>
             </div>
@@ -194,7 +186,7 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowAgentComparison(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
               title="Compare Agents"
             >
               <GitCompare size={16} />
@@ -203,7 +195,7 @@ export default function AnalyticsDashboard() {
 
             <button
               onClick={handleRefresh}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh Data"
             >
               <RefreshCw size={16} />
@@ -211,7 +203,7 @@ export default function AnalyticsDashboard() {
 
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
             >
               <Download size={16} />
               <span className="text-sm">Export</span>
@@ -229,8 +221,8 @@ export default function AnalyticsDashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap group ${
                   activeTab === tab.id
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
                 }`}
                 title={tab.description}
               >
@@ -255,7 +247,6 @@ export default function AnalyticsDashboard() {
           {activeTab === 'time' && <TimeTrackingPanel />}
           {activeTab === 'heatmap' && <ProductivityHeatmap />}
           {activeTab === 'reports' && <ReportsPanel />}
-          {activeTab === 'sessions' && <SessionsFilter />}
         </Suspense>
       </div>
 

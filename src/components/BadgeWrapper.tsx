@@ -35,8 +35,8 @@ export default function BadgeWrapper({
 
   // Variant classes (background + text color)
   const variantClasses = {
-    'primary': 'bg-clawd-accent text-white',
-    'secondary': 'bg-clawd-border text-clawd-text',
+    'primary': 'bg-mission-control-accent text-white',
+    'secondary': 'bg-mission-control-border text-mission-control-text',
     'danger': 'bg-red-500 text-white',
     'warning': 'bg-orange-500 text-white',
     'success': 'bg-green-500 text-white',
@@ -124,8 +124,8 @@ export function DotBadge({
   if (!show) return null;
 
   const variantClasses = {
-    'primary': 'bg-clawd-accent',
-    'secondary': 'bg-clawd-border',
+    'primary': 'bg-mission-control-accent',
+    'secondary': 'bg-mission-control-border',
     'danger': 'bg-red-500',
     'warning': 'bg-orange-500',
     'success': 'bg-green-500',

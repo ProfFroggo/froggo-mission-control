@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, X, ExternalLink, TrendingUp, Palette, Code, DollarSign, TestTube, Share2, Tag, Edit2 } from 'lucide-react';
+import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette, Code, BookOpen } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
@@ -8,7 +8,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 import { libraryApi } from '../lib/api';
 
-type FileCategory = 'marketing' | 'design' | 'dev' | 'research' | 'finance' | 'test-logs' | 'content' | 'social' | 'other';
+type FileCategory = 'code' | 'design' | 'docs' | 'campaigns' | 'projects' | 'other';
 type ViewMode = 'grid' | 'list';
 
 interface LibraryFileItem {
@@ -26,15 +26,12 @@ interface LibraryFileItem {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  marketing:   { icon: TrendingUp,  color: 'text-pink-400 bg-pink-500/10',   label: 'Marketing' },
-  design:      { icon: Palette,     color: 'text-purple-400 bg-purple-500/10', label: 'UI/Design' },
-  dev:         { icon: Code,        color: 'text-green-400 bg-green-500/10',  label: 'Dev' },
-  research:    { icon: Search,      color: 'text-cyan-400 bg-cyan-500/10',    label: 'Research' },
-  finance:     { icon: DollarSign,  color: 'text-amber-400 bg-amber-500/10',  label: 'Finance' },
-  'test-logs': { icon: TestTube,    color: 'text-orange-400 bg-orange-500/10', label: 'Test Logs' },
-  content:     { icon: FileText,    color: 'text-blue-400 bg-blue-500/10',    label: 'Content' },
-  social:      { icon: Share2,      color: 'text-indigo-400 bg-indigo-500/10', label: 'Social' },
-  other:       { icon: File,        color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
+  code:      { icon: Code,      color: 'text-green-400 bg-green-500/10',    label: 'Code' },
+  design:    { icon: Palette,   color: 'text-purple-400 bg-purple-500/10',  label: 'Design' },
+  docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',      label: 'Docs' },
+  campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',      label: 'Campaigns' },
+  projects:  { icon: FolderOpen,color: 'text-amber-400 bg-amber-500/10',    label: 'Projects' },
+  other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'Other' },
 };
 
 const getFileIcon = (mimeType?: string) => {
@@ -165,7 +162,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     try {
       const result = await fetch(`/api/library?action=view&id=${encodeURIComponent(file.id)}`).then(r => r.ok ? r.json() : { success: false, error: 'Failed to load file' });
       if (result?.success) {
-        setViewerContent(result);
+        const mime = file.mimeType || '';
+        const viewType = mime.startsWith('image/') ? 'image'
+          : (mime.startsWith('text/') || mime.includes('json') || mime.includes('javascript') || mime.includes('typescript') || mime.includes('python') || mime.includes('shellscript'))
+          ? 'text' : 'binary';
+        setViewerContent({ ...result, viewType });
       } else {
         showToast('error', 'View failed', result?.error || 'Unknown error');
         setViewerOpen(false);
@@ -178,13 +179,6 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   };
 
-  const handleDownloadFile = async (file: LibraryFileItem) => {
-    showToast('info', 'File download not available in web mode');
-  };
-
-  const openInDefaultApp = () => {
-    showToast('info', 'Open in default app not available in web mode');
-  };
 
   // Inline editing handlers
   const handleCategoryChange = async (file: LibraryFileItem, newCategory: string) => {
@@ -282,7 +276,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   return (
     <div
-      className={`h-full flex flex-col transition-all ${isDragOver ? 'ring-4 ring-clawd-accent ring-inset bg-clawd-accent/5' : ''}`}
+      className={`h-full flex flex-col transition-all ${isDragOver ? 'ring-4 ring-mission-control-accent ring-inset bg-mission-control-accent/5' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -297,32 +291,32 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     >
       {/* Drag overlay */}
       {isDragOver && (
-        <div className="absolute inset-0 bg-clawd-accent/10 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-clawd-surface p-8 rounded-2xl border-2 border-dashed border-clawd-accent shadow-glow-lg">
-            <Upload size={64} className="text-clawd-accent mx-auto mb-4" />
-            <p className="text-xl font-medium text-clawd-accent">Drop files here</p>
+        <div className="absolute inset-0 bg-mission-control-accent/10 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-mission-control-surface p-8 rounded-2xl border-2 border-dashed border-mission-control-accent shadow-glow-lg">
+            <Upload size={64} className="text-mission-control-accent mx-auto mb-4" />
+            <p className="text-xl font-medium text-mission-control-accent">Drop files here</p>
           </div>
         </div>
       )}
 
       {/* Toolbar */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-clawd-text-dim">
-            {files.length} files • Marketing, Design, Dev and more
+          <p className="text-sm text-mission-control-text-dim">
+            {files.length} files • Code, Design, Docs, Campaigns, Projects
           </p>
           <div className="flex gap-2">
             <button
               onClick={loadFiles}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
             <button
               onClick={handleUpload}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
             >
               <Upload size={16} />
               Upload
@@ -333,25 +327,25 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {/* Search and view toggle */}
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search files..."
-              className="w-full pl-10 pr-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
             />
           </div>
           <div className="flex gap-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim'}`}
             >
               <List size={16} />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim'}`}
             >
               <Grid size={16} />
             </button>
@@ -362,7 +356,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         <div className="flex gap-2 mt-4 flex-wrap">
           {(['all', ...Object.keys(categoryConfig)] as const).map((cat) => {
             const catConfig = cat === 'all'
-              ? { icon: FolderOpen, color: 'text-clawd-text', label: 'All' }
+              ? { icon: FolderOpen, color: 'text-mission-control-text', label: 'All' }
               : categoryConfig[cat];
             const Icon = catConfig.icon;
             const count = categoryCounts[cat] ?? 0;
@@ -372,8 +366,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 onClick={() => setSelectedCategory(cat as FileCategory | 'all')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   selectedCategory === cat
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <Icon size={14} />
@@ -385,7 +379,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       </div>
 
       {/* File list */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {loading && files.length === 0 ? (
           <SkeletonList count={5} />
         ) : loadError ? (
@@ -396,7 +390,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             action={
               <button
                 onClick={handleUpload}
-                className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
               >
                 <Plus size={16} />
                 Add first file
@@ -404,160 +398,75 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             }
           />
         ) : viewMode === 'list' ? (
-          <div className="space-y-2">
-            {filteredFiles.map((file) => {
+          <div className="rounded-lg border border-mission-control-border overflow-hidden">
+            {/* Table header */}
+            <div className="grid gap-0 border-b border-mission-control-border bg-mission-control-bg px-3 py-1.5" style={{gridTemplateColumns:'1rem 1fr 6rem 5rem 5rem 3.5rem'}}>
+              <span/>
+              <span className="text-xs text-mission-control-text-dim font-medium">Name</span>
+              <span className="text-xs text-mission-control-text-dim font-medium">Category</span>
+              <span className="text-xs text-mission-control-text-dim font-medium text-right">Size</span>
+              <span className="text-xs text-mission-control-text-dim font-medium text-right">Modified</span>
+              <span/>
+            </div>
+            {filteredFiles.map((file, idx) => {
               const FileIcon = getFileIcon(file.mimeType);
               const catConf = categoryConfig[file.category] || categoryConfig.other;
-              const fileTags = file.tags || [];
-              const tagInputVal = tagInputs[file.id] || '';
-              const projectVal = projectInputs[file.id] !== undefined ? projectInputs[file.id] : (file.project || '');
+              const CatIcon = catConf.icon;
+              const isLast = idx === filteredFiles.length - 1;
 
               return (
                 <div
                   key={file.id}
-                  className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 transition-colors ${
-                    selectedFile?.id === file.id ? 'border-clawd-accent' : ''
-                  }`}
+                  className={`group grid items-center gap-0 px-3 py-1.5 hover:bg-mission-control-surface/60 transition-colors cursor-pointer ${
+                    !isLast ? 'border-b border-mission-control-border/50' : ''
+                  } ${selectedFile?.id === file.id ? 'bg-mission-control-accent/5' : ''}`}
+                  style={{gridTemplateColumns:'1rem 1fr 6rem 5rem 5rem 3.5rem'}}
+                  onClick={() => handleViewFile(file)}
                 >
-                  {/* Main row - clickable to open viewer */}
-                  <div
-                    onClick={() => handleViewFile(file)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
-                    role="button"
-                    tabIndex={0}
-                    className="flex items-center gap-4 cursor-pointer"
-                  >
-                    <div className={`p-3 rounded-lg flex-shrink-0 ${catConf.color}`}>
-                      <FileIcon size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{file.name}</div>
-                      <div className="text-sm text-clawd-text-dim flex items-center gap-2">
-                        <span>{formatSize(file.size)}</span>
-                        <span>•</span>
-                        <span>
-                          {file.updatedAt
-                            ? new Date(file.updatedAt).toLocaleDateString()
-                            : file.createdAt
-                            ? new Date(file.createdAt).toLocaleDateString()
-                            : 'No date'}
-                        </span>
-                        {file.linkedTasks && file.linkedTasks.length > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <Link size={14} />
-                              {file.linkedTasks.length} tasks
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleLinkToTask(file); }}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
-                        title="Link to task"
-                      >
-                        <Link size={16} className="text-clawd-text-dim" />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
-                        className="p-2 hover:bg-error-subtle rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} className="text-error" />
-                      </button>
-                    </div>
+                  {/* File type icon */}
+                  <FileIcon size={12} className="text-mission-control-text-dim flex-shrink-0" />
+
+                  {/* Name */}
+                  <span className="text-xs font-medium truncate px-2 text-left hover:text-mission-control-accent transition-colors">
+                    {file.name}
+                  </span>
+
+                  {/* Category badge */}
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <select
+                      value={file.category || 'other'}
+                      onChange={(e) => { e.stopPropagation(); handleCategoryChange(file, e.target.value); }}
+                      className="text-xs text-mission-control-text-dim bg-transparent border-0 p-0 focus:outline-none cursor-pointer w-full"
+                    >
+                      {Object.entries(categoryConfig).map(([key, val]) => (
+                        <option key={key} value={key}>{val.label}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Inline editing row */}
-                  <div
-                    className="mt-3 pt-3 border-t border-clawd-border flex flex-wrap items-center gap-3"
-                  >
-                    {/* Category dropdown */}
-                    <div className="flex items-center gap-1.5">
-                      <Edit2 size={12} className="text-clawd-text-dim flex-shrink-0" />
-                      <select
-                        value={file.category || 'other'}
-                        onChange={(e) => { e.stopPropagation(); handleCategoryChange(file, e.target.value); }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-clawd-bg border border-clawd-border rounded text-sm px-2 py-1 text-clawd-text focus:outline-none focus:border-clawd-accent cursor-pointer"
-                      >
-                        {Object.entries(categoryConfig).map(([key, val]) => (
-                          <option key={key} value={key}>{val.label}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Size */}
+                  <span className="text-xs text-mission-control-text-dim text-right tabular-nums">{formatSize(file.size)}</span>
 
-                    {/* Tags */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Tag size={12} className="text-clawd-text-dim flex-shrink-0" />
-                      {fileTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent text-xs rounded-full flex items-center gap-1"
-                        >
-                          {tag}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleTagRemove(file, tag); }}
-                            className="hover:text-white transition-colors ml-0.5"
-                            title={`Remove tag "${tag}"`}
-                          >
-                            <X size={10} />
-                          </button>
-                        </span>
-                      ))}
-                      <input
-                        type="text"
-                        value={tagInputVal}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setTagInputs(prev => ({ ...prev, [file.id]: e.target.value }));
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleTagAdd(file, tagInputVal);
-                          }
-                        }}
-                        placeholder="+ tag"
-                        className="text-xs text-clawd-text-dim bg-clawd-bg border border-clawd-border rounded px-2 py-0.5 w-16 focus:outline-none focus:border-clawd-accent focus:w-24 transition-all"
-                      />
-                    </div>
+                  {/* Date */}
+                  <span className="text-xs text-mission-control-text-dim text-right tabular-nums">
+                    {file.updatedAt ? new Date(file.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  </span>
 
-                    {/* Project */}
-                    <div className="flex items-center gap-1.5">
-                      <FolderOpen size={12} className="text-clawd-text-dim flex-shrink-0" />
-                      <input
-                        type="text"
-                        value={projectVal}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setProjectInputs(prev => ({ ...prev, [file.id]: e.target.value }));
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleProjectSave(file);
-                          }
-                        }}
-                        onBlur={() => handleProjectSave(file)}
-                        placeholder="Project..."
-                        className="text-xs text-clawd-text-dim bg-transparent border-b border-transparent hover:border-clawd-border focus:border-clawd-accent focus:outline-none w-24 transition-colors"
-                      />
-                    </div>
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => handleLinkToTask(file)} className="p-1 hover:bg-mission-control-border rounded transition-colors" title="Link to task">
+                      <Link size={11} className="text-mission-control-text-dim" />
+                    </button>
+                    <button onClick={() => handleDelete(file)} className="p-1 hover:bg-error-subtle rounded transition-colors" title="Delete">
+                      <Trash2 size={11} className="text-error" />
+                    </button>
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
             {filteredFiles.map((file) => {
               const FileIcon = getFileIcon(file.mimeType);
               const catConf = categoryConfig[file.category] || categoryConfig.other;
@@ -569,15 +478,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
                   role="button"
                   tabIndex={0}
-                  className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
-                    selectedFile?.id === file.id ? 'border-clawd-accent' : ''
+                  className={`p-3 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/40 cursor-pointer transition-colors group ${
+                    selectedFile?.id === file.id ? 'border-mission-control-accent' : ''
                   }`}
                 >
-                  <div className={`p-4 rounded-lg ${catConf.color} mb-3`}>
-                    <FileIcon size={32} className="mx-auto" />
+                  <div className={`p-2.5 rounded-lg ${catConf.color} mb-2 flex items-center justify-center`}>
+                    <FileIcon size={20} />
                   </div>
-                  <div className="font-medium truncate text-sm">{file.name}</div>
-                  <div className="text-xs text-clawd-text-dim mt-1">{formatSize(file.size)}</div>
+                  <div className="text-xs font-medium truncate leading-tight">{file.name}</div>
+                  <div className="text-xs text-mission-control-text-dim mt-0.5">{formatSize(file.size)}</div>
                 </div>
               );
             })}
@@ -588,33 +497,27 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       {/* File Viewer Modal */}
       {viewerOpen && selectedFile && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <div className="flex-1 min-w-0 mr-4">
                 <h3 className="font-bold text-lg truncate">{selectedFile.name}</h3>
-                <p className="text-sm text-clawd-text-dim mt-1">
+                <p className="text-sm text-mission-control-text-dim mt-1">
                   {formatSize(selectedFile.size)} • {selectedFile.mimeType || 'Unknown type'}
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={openInDefaultApp}
-                  className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
-                  title="Open in default app"
-                >
-                  <ExternalLink size={20} className="text-clawd-text-dim" />
-                </button>
-                <button
-                  onClick={() => handleDownloadFile(selectedFile)}
-                  className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors"
+                <a
+                  href={`/api/library?action=raw&id=${encodeURIComponent(selectedFile.id)}`}
+                  download={selectedFile.name}
+                  className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
                 >
                   <Download size={16} />
                   Download
-                </button>
+                </a>
                 <button
                   onClick={() => setViewerOpen(false)}
-                  className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                  className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -625,10 +528,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             <div className="flex-1 overflow-auto p-6">
               {viewerLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <RefreshCw size={32} className="text-clawd-text-dim animate-spin" />
+                  <RefreshCw size={32} className="text-mission-control-text-dim animate-spin" />
                 </div>
               ) : viewerContent?.viewType === 'text' ? (
-                <pre className="text-sm bg-clawd-bg p-4 rounded-lg overflow-auto whitespace-pre-wrap font-mono">
+                <pre className="text-sm bg-mission-control-bg p-4 rounded-lg overflow-auto whitespace-pre-wrap font-mono">
                   {viewerContent.content}
                 </pre>
               ) : viewerContent?.viewType === 'image' ? (
@@ -641,21 +544,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 </div>
               ) : viewerContent?.viewType === 'binary' ? (
                 <div className="text-center py-12">
-                  <File size={64} className="text-clawd-text-dim mx-auto mb-4" />
-                  <p className="text-clawd-text-dim mb-6">
+                  <File size={64} className="text-mission-control-text-dim mx-auto mb-4" />
+                  <p className="text-mission-control-text-dim mb-6">
                     This file type cannot be previewed.<br />
                     Click Download to save it.
                   </p>
-                  <button
-                    onClick={() => handleDownloadFile(selectedFile)}
-                    className="flex items-center gap-2 px-6 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors mx-auto"
+                  <a
+                    href={`/api/library?action=raw&id=${encodeURIComponent(selectedFile.id)}`}
+                    download={selectedFile.name}
+                    className="flex items-center gap-2 px-6 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors mx-auto"
                   >
                     <Download size={20} />
                     Download File
-                  </button>
+                  </a>
                 </div>
               ) : (
-                <div className="text-center py-12 text-clawd-text-dim">
+                <div className="text-center py-12 text-mission-control-text-dim">
                   Failed to load file content
                 </div>
               )}
@@ -663,13 +567,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
             {/* Footer with metadata */}
             {selectedFile.linkedTasks && selectedFile.linkedTasks.length > 0 && (
-              <div className="p-4 border-t border-clawd-border bg-clawd-bg/50">
-                <p className="text-sm text-clawd-text-dim mb-2">Linked to tasks:</p>
+              <div className="p-4 border-t border-mission-control-border bg-mission-control-bg/50">
+                <p className="text-sm text-mission-control-text-dim mb-2">Linked to tasks:</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedFile.linkedTasks.map(taskId => (
                     <span
                       key={taskId}
-                      className="px-2 py-1 bg-clawd-border rounded text-xs font-mono"
+                      className="px-2 py-1 bg-mission-control-border rounded text-xs font-mono"
                     >
                       {taskId}
                     </span>

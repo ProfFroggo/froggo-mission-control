@@ -58,7 +58,7 @@ export function ValidatedInput({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-clawd-text">
+        <label className="block text-sm font-medium text-mission-control-text">
           {label}
           {rules.some(r => r.type === 'required') && (
             <span className="text-error ml-1">*</span>
@@ -73,13 +73,13 @@ export function ValidatedInput({
           onChange={handleChange}
           onBlur={handleBlur}
           className={`
-            w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text placeholder-clawd-text-dim
+            w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text placeholder-mission-control-text-dim
             focus:outline-none focus:ring-2 transition-all
             ${hasError 
               ? 'border-red-500 focus:ring-error/50' 
               : isValid && showValidation
                 ? 'border-green-500 focus:ring-success/50'
-                : 'border-clawd-border focus:ring-clawd-accent'
+                : 'border-mission-control-border focus:ring-mission-control-accent'
             }
             ${className}
           `}
@@ -94,7 +94,7 @@ export function ValidatedInput({
       </div>
 
       {helpText && !hasError && (
-        <p className="text-xs text-clawd-text-dim">{helpText}</p>
+        <p className="text-xs text-mission-control-text-dim">{helpText}</p>
       )}
 
       {hasError && validationResult.error && (
@@ -155,14 +155,14 @@ export function ValidatedTextarea({
     <div className="space-y-1">
       {label && (
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-clawd-text">
+          <label className="block text-sm font-medium text-mission-control-text">
             {label}
             {rules.some(r => r.type === 'required') && (
               <span className="text-error ml-1">*</span>
             )}
           </label>
           {showCharCount && maxLength && (
-            <span className={`text-xs ${isNearLimit ? 'text-warning' : 'text-clawd-text-dim'}`}>
+            <span className={`text-xs ${isNearLimit ? 'text-warning' : 'text-mission-control-text-dim'}`}>
               {charCount} / {maxLength}
             </span>
           )}
@@ -176,18 +176,18 @@ export function ValidatedTextarea({
         onBlur={handleBlur}
         maxLength={maxLength}
         className={`
-          w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text placeholder-clawd-text-dim
+          w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text placeholder-mission-control-text-dim
           focus:outline-none focus:ring-2 transition-all resize-vertical
           ${hasError 
             ? 'border-red-500 focus:ring-error/50' 
-            : 'border-clawd-border focus:ring-clawd-accent'
+            : 'border-mission-control-border focus:ring-mission-control-accent'
           }
           ${className}
         `}
       />
 
       {helpText && !hasError && (
-        <p className="text-xs text-clawd-text-dim">{helpText}</p>
+        <p className="text-xs text-mission-control-text-dim">{helpText}</p>
       )}
 
       {hasError && validationResult.error && (
@@ -243,7 +243,7 @@ export function ValidatedSelect({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-clawd-text">
+        <label className="block text-sm font-medium text-mission-control-text">
           {label}
           {rules.some(r => r.type === 'required') && (
             <span className="text-error ml-1">*</span>
@@ -257,11 +257,11 @@ export function ValidatedSelect({
         onChange={handleChange}
         onBlur={handleBlur}
         className={`
-          w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text
+          w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text
           focus:outline-none focus:ring-2 transition-all cursor-pointer
           ${hasError 
             ? 'border-red-500 focus:ring-error/50' 
-            : 'border-clawd-border focus:ring-clawd-accent'
+            : 'border-mission-control-border focus:ring-mission-control-accent'
           }
           ${className}
         `}
@@ -274,7 +274,7 @@ export function ValidatedSelect({
       </select>
 
       {helpText && !hasError && (
-        <p className="text-xs text-clawd-text-dim">{helpText}</p>
+        <p className="text-xs text-mission-control-text-dim">{helpText}</p>
       )}
 
       {hasError && validationResult.error && (

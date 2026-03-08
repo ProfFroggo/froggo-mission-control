@@ -21,7 +21,7 @@ interface ScheduledItem {
 }
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  tweet: { icon: XIcon, color: 'text-clawd-text', bg: 'bg-clawd-text/10' },
+  tweet: { icon: XIcon, color: 'text-mission-control-text', bg: 'bg-mission-control-text/10' },
   email: { icon: Mail, color: 'text-error', bg: 'bg-error-subtle' },
   message: { icon: MessageSquare, color: 'text-success', bg: 'bg-success-subtle' },
   post: { icon: Calendar, color: 'text-review', bg: 'bg-review-subtle' },
@@ -109,7 +109,7 @@ export default function ContentCalendar() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-review-subtle rounded-xl">
@@ -117,7 +117,7 @@ export default function ContentCalendar() {
             </div>
             <div>
               <h1 className="text-xl font-semibold">Content Calendar</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 Schedule and manage your content
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function ContentCalendar() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode(viewMode === 'month' ? 'week' : 'month')}
-              className="px-3 py-1.5 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:text-clawd-text"
+              className="px-3 py-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text"
             >
               {viewMode === 'month' ? 'Week View' : 'Month View'}
             </button>
@@ -135,7 +135,7 @@ export default function ContentCalendar() {
                 showToast('info', 'Select a date on the calendar to schedule content');
                 setSelectedDate(new Date());
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90"
             >
               <Plus size={16} />
               Schedule
@@ -147,14 +147,14 @@ export default function ContentCalendar() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigateMonth(-1)}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <ChevronLeft size={20} />
           </button>
           <h2 className="text-lg font-medium">{monthName}</h2>
           <button
             onClick={() => navigateMonth(1)}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <ChevronRight size={20} />
           </button>
@@ -166,7 +166,7 @@ export default function ContentCalendar() {
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center text-xs text-clawd-text-dim font-medium py-2">
+            <div key={day} className="text-center text-xs text-mission-control-text-dim font-medium py-2">
               {day}
             </div>
           ))}
@@ -176,7 +176,7 @@ export default function ContentCalendar() {
         <div className="grid grid-cols-7 gap-2">
           {days.map((date, idx) => {
             if (!date) {
-              return <div key={`empty-${idx}`} className="min-h-24 bg-clawd-bg/30 rounded-xl" />;
+              return <div key={`empty-${idx}`} className="min-h-24 bg-mission-control-bg/30 rounded-xl" />;
             }
 
             const dayItems = getItemsForDate(date);
@@ -194,16 +194,16 @@ export default function ContentCalendar() {
                 aria-pressed={selectedDate?.toDateString() === date.toDateString()}
                 className={`min-h-24 p-2 rounded-xl border cursor-pointer transition-all ${
                   today
-                    ? 'bg-clawd-accent/10 border-clawd-accent/30'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30'
                     : selectedDate?.toDateString() === date.toDateString()
-                    ? 'bg-clawd-surface border-clawd-accent/50'
+                    ? 'bg-mission-control-surface border-mission-control-accent/50'
                     : past
-                    ? 'bg-clawd-bg/50 border-transparent opacity-60'
-                    : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/30'
+                    ? 'bg-mission-control-bg/50 border-transparent opacity-60'
+                    : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
                 }`}
               >
                 {/* Date number */}
-                <div className={`text-sm font-medium mb-1 ${today ? 'text-clawd-accent' : ''}`}>
+                <div className={`text-sm font-medium mb-1 ${today ? 'text-mission-control-accent' : ''}`}>
                   {date.getDate()}
                 </div>
 
@@ -223,7 +223,7 @@ export default function ContentCalendar() {
                     );
                   })}
                   {dayItems.length > 3 && (
-                    <div className="text-xs text-clawd-text-dim">
+                    <div className="text-xs text-mission-control-text-dim">
                       +{dayItems.length - 3} more
                     </div>
                   )}
@@ -236,21 +236,21 @@ export default function ContentCalendar() {
 
       {/* Selected date panel */}
       {selectedDate && (
-        <div className="border-t border-clawd-border bg-clawd-surface p-4">
+        <div className="border-t border-mission-control-border bg-mission-control-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium">
               {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
             </h3>
             <button
               onClick={() => setSelectedDate(null)}
-              className="text-clawd-text-dim hover:text-clawd-text"
+              className="text-mission-control-text-dim hover:text-mission-control-text"
             >
               ×
             </button>
           </div>
 
           {getItemsForDate(selectedDate).length === 0 ? (
-            <div className="text-center py-4 text-clawd-text-dim">
+            <div className="text-center py-4 text-mission-control-text-dim">
               <p className="text-sm">No content scheduled for this date</p>
             </div>
           ) : (
@@ -261,24 +261,24 @@ export default function ContentCalendar() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 p-2 bg-clawd-bg rounded-lg"
+                    className="flex items-center gap-3 p-2 bg-mission-control-bg rounded-lg"
                   >
                     <div className={`p-1.5 rounded ${config.bg}`}>
                       <Icon size={14} className={config.color} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{item.title}</div>
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         {new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                     <div className="flex gap-1">
                       <button
                         onClick={() => showToast('info', `Preview: ${item.content}`)}
-                        className="p-1 hover:bg-clawd-border rounded"
+                        className="p-1 hover:bg-mission-control-border rounded"
                         title="Preview"
                       >
-                        <Eye size={14} className="text-clawd-text-dim" />
+                        <Eye size={14} className="text-mission-control-text-dim" />
                       </button>
                     </div>
                   </div>

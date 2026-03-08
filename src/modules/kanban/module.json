@@ -1,15 +1,13 @@
 {
-  "id": "froggo-kanban",
+  "id": "kanban",
   "name": "Tasks",
   "version": "1.0.0",
   "description": "Kanban task board for project and workflow management.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Kanban",
   "category": "productivity",
   "core": true,
-
   "credentials": [],
-
   "views": [
     {
       "id": "kanban",
@@ -18,12 +16,10 @@
       "entrypoint": "./views/Kanban.tsx"
     }
   ],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],

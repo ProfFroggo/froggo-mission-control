@@ -32,7 +32,7 @@ interface GlobalSearchProps {
 
 type FilterType = 'all' | 'task' | 'fact' | 'message' | 'email' | 'session' | 'calendar' | 'tweet' | 'agent';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
-type StatusFilter = 'all' | 'todo' | 'in-progress' | 'done' | 'blocked';
+type StatusFilter = 'all' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done';
 
 const typeIcons = {
   task: CheckSquare,
@@ -68,7 +68,7 @@ const typeLabels = {
 };
 
 const statusColors = {
-  todo: 'text-clawd-text-dim',
+  todo: 'text-mission-control-text-dim',
   'in-progress': 'text-info',
   done: 'text-success',
   blocked: 'text-error',
@@ -91,7 +91,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
   // Load search history from localStorage
   useEffect(() => {
-    const history = localStorage.getItem('froggo-search-history');
+    const history = localStorage.getItem('mission-control-search-history');
     if (history) {
       try {
         setSearchHistory(JSON.parse(history));
@@ -107,7 +107,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     
     const updated = [q, ...searchHistory.filter(h => h !== q)].slice(0, 10);
     setSearchHistory(updated);
-    localStorage.setItem('froggo-search-history', JSON.stringify(updated));
+    localStorage.setItem('mission-control-search-history', JSON.stringify(updated));
   }, [searchHistory]);
 
   // Focus input when opened
@@ -361,7 +361,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
   const clearHistory = () => {
     setSearchHistory([]);
-    localStorage.removeItem('froggo-search-history');
+    localStorage.removeItem('mission-control-search-history');
   };
 
   if (!isOpen) return null;
@@ -378,14 +378,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       aria-label="Close search"
     >
       <div 
-        className="w-full max-w-3xl bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200"
+        className="w-full max-w-3xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
-          <Search size={20} className="text-clawd-accent flex-shrink-0" />
+        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+          <Search size={20} className="text-mission-control-accent flex-shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -394,41 +394,41 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             onKeyDown={handleKeyDown}
             placeholder="Search everything... (⌘K or ⌘F)"
             aria-label="Search input"
-            className="flex-1 bg-transparent text-lg outline-none placeholder-clawd-text-dim"
+            className="flex-1 bg-transparent text-lg outline-none placeholder-mission-control-text-dim"
           />
           <div className="flex items-center gap-2">
             {loading && (
-              <div className="w-5 h-5 border-2 border-clawd-accent border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-mission-control-accent border-t-transparent rounded-full animate-spin" />
             )}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-1.5 hover:bg-clawd-border rounded-lg transition-colors relative ${
-                showFilters ? 'bg-clawd-border' : ''
+              className={`p-1.5 hover:bg-mission-control-border rounded-lg transition-colors relative ${
+                showFilters ? 'bg-mission-control-border' : ''
               }`}
               title="Toggle filters (Tab)"
             >
-              <Filter size={16} className={activeFilters > 0 ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
+              <Filter size={16} className={activeFilters > 0 ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
               {activeFilters > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-clawd-bg text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-mission-control-bg text-xs rounded-full flex items-center justify-center font-bold">
                   {activeFilters}
                 </span>
               )}
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
             >
-              <X size={16} className="text-clawd-text-dim" />
+              <X size={16} className="text-mission-control-text-dim" />
             </button>
           </div>
         </div>
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="p-4 border-b border-clawd-border bg-clawd-bg/50 space-y-3">
+          <div className="p-4 border-b border-mission-control-border bg-mission-control-bg/50 space-y-3">
             <div className="flex items-center gap-2">
-              <Hash size={14} className="text-clawd-text-dim" />
-              <span className="text-sm text-clawd-text-dim font-medium">Type:</span>
+              <Hash size={14} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text-dim font-medium">Type:</span>
               <div className="flex gap-1 flex-wrap">
                 {(['all', 'task', 'fact', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
                   <button
@@ -436,8 +436,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     onClick={() => setTypeFilter(type)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       typeFilter === type
-                        ? 'bg-clawd-accent text-clawd-bg font-medium'
-                        : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
+                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
+                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
                     }`}
                   >
                     {type === 'all' ? 'All' : typeLabels[type as keyof typeof typeLabels]}
@@ -447,8 +447,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             </div>
 
             <div className="flex items-center gap-2">
-              <Clock size={14} className="text-clawd-text-dim" />
-              <span className="text-sm text-clawd-text-dim font-medium">Date:</span>
+              <Clock size={14} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text-dim font-medium">Date:</span>
               <div className="flex gap-1">
                 {(['all', 'today', 'week', 'month'] as DateFilter[]).map(date => (
                   <button
@@ -456,8 +456,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     onClick={() => setDateFilter(date)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       dateFilter === date
-                        ? 'bg-clawd-accent text-clawd-bg font-medium'
-                        : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
+                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
+                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
                     }`}
                   >
                     {date.charAt(0).toUpperCase() + date.slice(1)}
@@ -467,17 +467,17 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             </div>
 
             <div className="flex items-center gap-2">
-              <Zap size={14} className="text-clawd-text-dim" />
-              <span className="text-sm text-clawd-text-dim font-medium">Status:</span>
+              <Zap size={14} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text-dim font-medium">Status:</span>
               <div className="flex gap-1">
-                {(['all', 'todo', 'in-progress', 'done', 'blocked'] as StatusFilter[]).map(status => (
+                {(['all', 'todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] as StatusFilter[]).map(status => (
                   <button
                     key={status}
                     onClick={() => setStatusFilter(status)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       statusFilter === status
-                        ? 'bg-clawd-accent text-clawd-bg font-medium'
-                        : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
+                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
+                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
                     }`}
                   >
                     {status === 'all' ? 'All' : status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
@@ -495,12 +495,12 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-clawd-text-dim" />
-                  <span className="text-sm font-medium text-clawd-text-dim">Recent Searches</span>
+                  <Clock size={16} className="text-mission-control-text-dim" />
+                  <span className="text-sm font-medium text-mission-control-text-dim">Recent Searches</span>
                 </div>
                 <button
                   onClick={clearHistory}
-                  className="text-xs text-clawd-text-dim hover:text-clawd-accent transition-colors"
+                  className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
                 >
                   Clear
                 </button>
@@ -517,10 +517,10 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     role="button"
                     tabIndex={0}
                     className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 ${
-                      index === selectedIndex ? 'bg-clawd-accent/10 text-clawd-accent' : 'hover:bg-clawd-bg/50'
+                      index === selectedIndex ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'hover:bg-mission-control-bg/50'
                     }`}
                   >
-                    <Clock size={14} className="text-clawd-text-dim" />
+                    <Clock size={14} className="text-mission-control-text-dim" />
                     <span className="text-sm">{item}</span>
                   </div>
                 ))}
@@ -537,7 +537,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
           {/* No Results */}
           {filteredResults.length === 0 && query.length >= 2 && !loading && !showHistory && (
-            <div className="p-12 text-center text-clawd-text-dim">
+            <div className="p-12 text-center text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-lg mb-2">No results found</p>
               <p className="text-sm">Try adjusting your search or filters</p>
@@ -546,12 +546,12 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
           {/* Empty State */}
           {filteredResults.length === 0 && query.length < 2 && !showHistory && (
-            <div className="p-12 text-center text-clawd-text-dim">
+            <div className="p-12 text-center text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm mb-4">Type at least 2 characters to search</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {Object.entries(typeLabels).map(([key, label]) => (
-                  <span key={key} className="px-3 py-1.5 bg-clawd-border rounded-lg text-xs">
+                  <span key={key} className="px-3 py-1.5 bg-mission-control-border rounded-lg text-xs">
                     {label}
                   </span>
                 ))}
@@ -571,10 +571,10 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(result); } }}
                 role="button"
                 tabIndex={0}
-                className={`p-4 border-b border-clawd-border cursor-pointer transition-all group ${
+                className={`p-4 border-b border-mission-control-border cursor-pointer transition-all group ${
                   index === selectedIndex 
-                    ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent' 
-                    : 'hover:bg-clawd-bg/50 border-l-2 border-l-transparent'
+                    ? 'bg-mission-control-accent/10 border-l-2 border-l-mission-control-accent' 
+                    : 'hover:bg-mission-control-bg/50 border-l-2 border-l-transparent'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -588,7 +588,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                         {typeLabels[result.type]}
                       </span>
                       {result.status && (
-                        <span className={`text-xs ${statusColors[result.status as keyof typeof statusColors] || 'text-clawd-text-dim'}`}>
+                        <span className={`text-xs ${statusColors[result.status as keyof typeof statusColors] || 'text-mission-control-text-dim'}`}>
                           • {result.status}
                         </span>
                       )}
@@ -597,17 +597,17 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     {/* SECURITY: sanitizeSearchSnippet (DOMPurify) allows only <mark> tags; all other HTML stripped */}
                     {result.snippet?.includes('<mark>') ? (
                       <div
-                        className="text-sm text-clawd-text-dim line-clamp-2"
+                        className="text-sm text-mission-control-text-dim line-clamp-2"
                         dangerouslySetInnerHTML={{
                           __html: sanitizeSearchSnippet(result.snippet)
                         }}
                       />
                     ) : (
-                      <p className="text-sm text-clawd-text-dim truncate">
+                      <p className="text-sm text-mission-control-text-dim truncate">
                         {result.snippet}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-clawd-text-dim">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-mission-control-text-dim">
                       {result.source && <span>{result.source}</span>}
                       {result.timestamp && (
                         <>
@@ -618,7 +618,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                       {result.score !== undefined && result.score > 0 && (
                         <>
                           <span>•</span>
-                          <span className="text-clawd-accent font-medium">
+                          <span className="text-mission-control-accent font-medium">
                             {result.score.toFixed(2)} relevance
                           </span>
                         </>
@@ -627,8 +627,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                   </div>
                   <ChevronRight 
                     size={16} 
-                    className={`text-clawd-text-dim flex-shrink-0 transition-transform ${
-                      index === selectedIndex ? 'translate-x-1 text-clawd-accent' : 'opacity-0 group-hover:opacity-100'
+                    className={`text-mission-control-text-dim flex-shrink-0 transition-transform ${
+                      index === selectedIndex ? 'translate-x-1 text-mission-control-accent' : 'opacity-0 group-hover:opacity-100'
                     }`}
                   />
                 </div>
@@ -638,22 +638,22 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-clawd-border bg-clawd-bg/50 flex items-center justify-between text-xs text-clawd-text-dim">
+        <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/50 flex items-center justify-between text-xs text-mission-control-text-dim">
           <div className="flex gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">↑↓</kbd>
               Navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">↵</kbd>
               Select
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Tab</kbd>
+              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Tab</kbd>
               Filters
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-clawd-border rounded">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Esc</kbd>
               Close
             </span>
           </div>

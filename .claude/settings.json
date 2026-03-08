@@ -38,8 +38,8 @@
       "command": "node",
       "args": ["/Users/kevin.macarthur/git/mission-control-nextjs/tools/memory-mcp/dist/index.js"],
       "env": {
-        "VAULT_PATH": "/Users/kevin.macarthur/mission-control/memory",
-        "QMD_BIN": "/opt/homebrew/bin/qmd",
+        "VAULT_PATH": "/Users/kevin.macarthur/mission-control",
+        "QMD_BIN": "/Users/kevin.macarthur/.npm-global/bin/qmd",
         "LOG_DIR": "/Users/kevin.macarthur/mission-control/logs"
       }
     }
@@ -53,9 +53,14 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__mission-control_db__task_update",
+        "matcher": "mcp__mission-control-db__task_update",
         "type": "command",
         "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/review-gate.js"
+      },
+      {
+        "matcher": "mcp__mission-control-db__chat_post",
+        "type": "command",
+        "command": "node /Users/kevin.macarthur/git/mission-control-nextjs/tools/hooks/agent-wake.js"
       }
     ],
     "Stop": [

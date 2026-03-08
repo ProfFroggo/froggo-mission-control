@@ -193,12 +193,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
 
     // Ensure gateway is connected before sending
     if (!gateway.connected) {
-      setError('Not connected to Froggo. Trying to reconnect...');
+      setError('Not connected to Mission Control. Trying to reconnect...');
       gateway.connect();
       // Wait briefly for connection
       await new Promise(resolve => setTimeout(resolve, 1000));
       if (!gateway.connected) {
-        setError('Failed to connect to Froggo. Please check that the dashboard is running.');
+        setError('Failed to connect to Mission Control. Please check that the dashboard is running.');
         return;
       }
     }
@@ -338,13 +338,13 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface">
+    <div className="flex flex-col h-full bg-mission-control-surface">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border">
+      <div className="p-4 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-info" />
-            <h3 className="text-sm font-semibold text-clawd-text">Agent Chat</h3>
+            <h3 className="text-sm font-semibold text-mission-control-text">Agent Chat</h3>
           </div>
           <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
             isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
@@ -357,7 +357,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
             {safeDisplayName}
           </span>
-          <span className="px-2 py-1 text-xs bg-clawd-bg-alt text-clawd-text-dim rounded-full">
+          <span className="px-2 py-1 text-xs bg-mission-control-bg-alt text-mission-control-text-dim rounded-full">
             {tab}
           </span>
         </div>
@@ -372,15 +372,15 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {!historyLoaded ? (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
             <Loader2 className="w-6 h-6 animate-spin mb-2" />
             <p className="text-sm">Loading history...</p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
-            <Users className="w-12 h-12 text-clawd-text-dim mb-3" />
-            <p className="font-medium text-clawd-text">Start a conversation</p>
-            <p className="text-sm mt-1 text-clawd-text">
+          <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
+            <Users className="w-12 h-12 text-mission-control-text-dim mb-3" />
+            <p className="font-medium text-mission-control-text">Start a conversation</p>
+            <p className="text-sm mt-1 text-mission-control-text">
               Chat with {safeDisplayName} about {tab}
             </p>
           </div>
@@ -394,14 +394,14 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 <div
                   className={`max-w-[90%] rounded-lg p-3 ${
                     msg.role === 'user'
-                      ? 'bg-clawd-accent/50 text-white'
+                      ? 'bg-mission-control-accent/50 text-white'
                       : msg.error
                       ? 'bg-error-subtle border border-error-border text-error'
-                      : 'bg-clawd-bg-alt text-clawd-text'
+                      : 'bg-mission-control-bg-alt text-mission-control-text'
                   }`}
                 >
                   {msg.role === 'agent' && msg.agentName && (
-                    <div className="text-xs text-clawd-text-dim mb-1 flex items-center gap-1">
+                    <div className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1">
                       <span>{msg.agentName}</span>
                       {msg.streaming && (
                         <span className="flex items-center gap-1">
@@ -420,7 +420,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                   </div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-clawd-text-dim' : 'text-clawd-text-dim'
+                      msg.role === 'user' ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim'
                     }`}
                   >
                     {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -437,7 +437,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
         <div className="flex gap-2">
           <input
             type="text"
@@ -445,18 +445,18 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Ask ${safeDisplayName} about ${tab}...`}
-            className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+            className="flex-1 bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
             disabled={loading}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="bg-clawd-accent hover:bg-clawd-accent-dim text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-mission-control-accent hover:bg-mission-control-accent-dim text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
         </div>
-        <p className="text-xs text-clawd-text-dim mt-2">
+        <p className="text-xs text-mission-control-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>

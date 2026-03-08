@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const members = db.prepare(`
-      SELECT pm.*, a.name AS agentName, a.emoji AS agentEmoji
+      SELECT pm.*, a.name AS agentName, a.avatar AS agentEmoji
       FROM project_members pm
       LEFT JOIN agents a ON a.id = pm.agentId
       WHERE pm.projectId = ?

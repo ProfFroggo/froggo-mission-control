@@ -1,12 +1,12 @@
-# Contributing to Froggo Dashboard
+# Contributing to Mission Control Dashboard
 
-Thanks for your interest in contributing to Froggo! This guide will help you get started.
+Thanks for your interest in contributing to Mission Control! This guide will help you get started.
 
 ## Getting Started
 
 1. **Fork and clone** the repository
 2. **Install dependencies**: `npm install`
-3. **Run dev build**: `npm run electron:dev`
+3. **Run dev build**: `npm run dev`
 4. **Make changes** in a feature branch
 5. **Test your changes**: `npm run test:run`
 6. **Submit a pull request** to the `dev` branch
@@ -22,7 +22,7 @@ Thanks for your interest in contributing to Froggo! This guide will help you get
 
 ## Design System
 
-Froggo uses a centralized design token system for consistent UI. **All styling should use design tokens**, not hardcoded values.
+Mission Control uses a centralized design token system for consistent UI. **All styling should use design tokens**, not hardcoded values.
 
 ### Design Tokens Location
 
@@ -35,8 +35,8 @@ All design tokens are defined in [`src/design-tokens.css`](src/design-tokens.css
 // Use CSS variables
 <div style={{ 
   padding: 'var(--space-component)',
-  backgroundColor: 'var(--clawd-surface)',
-  color: 'var(--clawd-text)'
+  backgroundColor: 'var(--mission-control-surface)',
+  color: 'var(--mission-control-text)'
 }}>
 
 // Use semantic utility classes
@@ -60,7 +60,7 @@ All design tokens are defined in [`src/design-tokens.css`](src/design-tokens.css
 
 - **Spacing**: `--space-inline`, `--space-stack`, `--space-component`, `--space-section`
 - **Typography**: `--text-heading`, `--text-body`, `--text-small`, `--text-caption`
-- **Colors**: `--clawd-bg`, `--clawd-surface`, `--clawd-text`, `--clawd-accent`
+- **Colors**: `--mission-control-bg`, `--mission-control-surface`, `--mission-control-text`, `--mission-control-accent`
 - **Semantic Colors**: `--color-success`, `--color-error`, `--color-warning`, `--color-info`
 - **Borders**: `--radius-sm`, `--radius`, `--radius-lg`
 - **Shadows**: `--shadow-sm`, `--shadow`, `--shadow-md`, `--shadow-lg`
@@ -84,16 +84,18 @@ document.documentElement.classList.toggle('light');
 
 ## Path Management
 
-**NEVER hardcode paths.** Always use path exports from `electron/paths.ts`.
+**NEVER hardcode paths.** Use `os.homedir()` and `path.join()` for filesystem paths on the server side, or environment variables where appropriate.
 
 **✅ DO:**
 ```tsx
-import { userDataDir, dbPath } from '../electron/paths';
+import { homedir } from 'os';
+import path from 'path';
+const dbPath = path.join(homedir(), 'mission-control', 'data', 'mission-control.db');
 ```
 
 **❌ DON'T:**
 ```tsx
-const dbPath = '/Users/worker/froggo/froggo.db';
+const dbPath = '/Users/worker/mission-control/mission-control.db';
 ```
 
 See [`docs/WORKSPACE-STRUCTURE.md`](docs/WORKSPACE-STRUCTURE.md) for details.
@@ -172,14 +174,15 @@ Write tests for:
 
 **Development build:**
 ```bash
-npm run build:dev
-# Output: release/dev/mac-arm64/Froggo Dev.app
+npm run dev
+# Serves at http://localhost:3000
 ```
 
 **Production build:**
 ```bash
-npm run build:prod
-# Output: release/prod/mac-arm64/Froggo.app
+npm run build
+npm run start
+# Serves at http://localhost:3000
 ```
 
 **NEVER build production from `dev` branch.** Only `main` → production.
@@ -189,7 +192,7 @@ npm run build:prod
 Before submitting a PR:
 
 - [ ] Code follows design system (uses tokens, not hardcoded values)
-- [ ] No hardcoded paths (uses `electron/paths.ts`)
+- [ ] No hardcoded paths (uses `os.homedir()` + `path.join()`)
 - [ ] All tests pass (`npm run test:run`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] TypeScript compiles with no errors
@@ -202,7 +205,7 @@ Before submitting a PR:
 
 If your change affects the database schema:
 
-1. **Use `froggo-db` CLI**, never edit the DB directly
+1. **Use `mission-control-db` CLI**, never edit the DB directly
 2. Document the change in PR description
 3. Test migration on a copy of production data
 4. Add rollback instructions

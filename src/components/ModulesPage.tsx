@@ -573,17 +573,21 @@ export default function ModulesPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-mission-control-text">Modules</h1>
-        <p className="text-mission-control-text-dim mt-1 text-sm">
-          Manage installed modules, configure credentials, and toggle features
-        </p>
+      <div className="px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <Puzzle size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-mission-control-text">Modules</h1>
+            <p className="text-sm text-mission-control-text-dim">Manage installed modules, configure credentials, and toggle features</p>
+          </div>
+        </div>
       </div>
-
       {/* View tabs */}
-      <div className="flex border-b border-mission-control-border -mt-2">
+      <div className="flex border-b border-mission-control-border px-6">
         <button
           type="button"
           onClick={() => setView('installed')}
@@ -607,6 +611,7 @@ export default function ModulesPage() {
           <Library size={15} /> Library
         </button>
       </div>
+      <div className="p-6 space-y-6">
 
       {/* Library view */}
       {view === 'library' && (
@@ -689,6 +694,7 @@ export default function ModulesPage() {
         cancelLabel={confirmConfig.cancelLabel}
         type={confirmConfig.type}
       />
+      </div>
     </div>
   );
 }

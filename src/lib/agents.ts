@@ -1,5 +1,5 @@
 // Agent Management System
-// Spawns and manages real sub-agents via Clawdbot gateway
+// Spawns and manages sub-agents via Claude CLI
 
 import { gateway } from './gateway';
 import { useStore } from '../store/store';
@@ -63,7 +63,7 @@ You are a dynamic worker agent spawned for a specific task.
 ## Identity
 - **Name:** ${name}
 - **ID:** ${workerId}
-- **Spawned by:** Froggo
+- **Spawned by:** Mission Control
 
 ## Behavior
 1. Focus ONLY on the assigned task

@@ -44,9 +44,9 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const didExecute = useRef(false);
 
-  // Dynamic valid agents from store (exclude froggo, main - orchestrators only)
+  // Dynamic valid agents from store (exclude mission-control, main - orchestrators only)
   // Clara and other agents CAN be assigned tasks
-  const VALID_AGENTS = agents.filter(a => !['froggo', 'main'].includes(a.id)).map(a => a.id);
+  const VALID_AGENTS = agents.filter(a => !['mission-control', 'main'].includes(a.id)).map(a => a.id);
 
   const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -83,8 +83,8 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       const result = await taskApi.getAll();
       const allTasks = Array.isArray(result) ? result : (result?.tasks || []);
       return allTasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
-    } catch (e) {
-      // '[HealthCheck] fetchTasks error:', e;
+    } catch {
+      // fetchTasks failed — return empty array
     }
     return [];
   };
@@ -102,19 +102,19 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
     setScanProgress(20);
 
     // === CRITICAL: Workflow Violations ===
-    
-    // 1. BLOCKED TASKS (critical - should never have blocked tasks lingering)
-    const blockedTasks = allTasks.filter(t => t.status === 'blocked');
-    if (blockedTasks.length > 0) {
+
+    // 1. STALE HUMAN-REVIEW (tasks waiting for human > 24h)
+    const staleHumanReview = allTasks.filter(t => t.status === 'human-review' && (Date.now() - (t.updatedAt || 0)) > 86400000);
+    if (staleHumanReview.length > 0) {
       foundIssues.push({
-        id: 'blocked-tasks',
+        id: 'stale-human-review',
         type: 'workflow',
         severity: 'critical',
-        title: `${blockedTasks.length} task(s) in BLOCKED status`,
-        description: blockedTasks.map(t => `"${t.title?.slice(0, 30)}..."`).slice(0, 3).join(', '),
-        taskIds: blockedTasks.map(t => t.id),
-        action: `Review ${blockedTasks.length} blocked task(s) - move to todo or cancel`,
-        actionVerb: 'Identifying blocked tasks'
+        title: `${staleHumanReview.length} task(s) waiting for human review > 24h`,
+        description: staleHumanReview.map(t => `"${t.title?.slice(0, 30)}..."`).slice(0, 3).join(', '),
+        taskIds: staleHumanReview.map(t => t.id),
+        action: `Review ${staleHumanReview.length} task(s) in human-review — approve, reject, or move back`,
+        actionVerb: 'Identifying stale human-review tasks'
       });
     }
     setScanProgress(25);
@@ -415,7 +415,6 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
           setExecutionLog(prev => [...prev, `✓ Converted ${fixed} priorit${fixed === 1 ? 'y' : 'ies'}`]);
         }
       } catch (e) {
-        // '[HealthCheck] Execution error:', e;
         setExecutionLog(prev => [...prev, `✗ Error: ${String(e)}`]);
       }
       await delay(400);
@@ -432,7 +431,6 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       await loadTasksFromDB();
       setExecutionLog(prev => [...prev, '✓ Board refreshed']);
     } catch (e) {
-      // '[HealthCheck] Refresh error:', e;
       setExecutionLog(prev => [...prev, `✗ Refresh failed: ${e}`]);
     }
 
@@ -458,19 +456,19 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-clawd-border flex-shrink-0">
+        <div className="p-4 border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-start gap-3">
-            <AgentAvatar agentId="froggo" size="lg" />
+            <AgentAvatar agentId="mission-control" size="lg" />
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Board Health Check</h2>
-                <button onClick={handleClose} className="p-1.5 hover:bg-clawd-bg rounded-lg transition-colors">
+                <button onClick={handleClose} className="p-1.5 hover:bg-mission-control-bg rounded-lg transition-colors">
                   <X size={18} />
                 </button>
               </div>
-              <p className="text-sm text-clawd-text-dim mt-0.5">
+              <p className="text-sm text-mission-control-text-dim mt-0.5">
                 {phase === 'scanning' && 'Scanning...'}
                 {phase === 'proposing' && `Found ${criticalCount} critical, ${warningCount} warnings`}
                 {phase === 'executing' && 'Working...'}
@@ -490,8 +488,8 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
                 <Loader2 size={18} className="text-success animate-spin" />
                 <span className="text-sm">Checking {tasks.length} active tasks</span>
               </div>
-              <div className="h-1.5 bg-clawd-bg rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 transition-all" style={{ width: `${scanProgress}%` }} />
+              <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
+                <div className="h-full bg-success transition-all" style={{ width: `${scanProgress}%` }} />
               </div>
             </div>
           )}
@@ -499,7 +497,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
           {/* Proposing */}
           {phase === 'proposing' && (
             <div className="space-y-3">
-              <div className="text-xs text-clawd-text-dim mb-2">
+              <div className="text-xs text-mission-control-text-dim mb-2">
                 Found {issues.length} issue{issues.length !== 1 ? 's' : ''}:
               </div>
               
@@ -573,7 +571,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
             <div className="text-center py-8">
               <Sparkles size={32} className="text-success mx-auto mb-3" />
               <div className="font-medium text-success">Board is healthy!</div>
-              <div className="text-sm text-clawd-text-dim mt-1">No issues found</div>
+              <div className="text-sm text-mission-control-text-dim mt-1">No issues found</div>
             </div>
           )}
 
@@ -584,9 +582,9 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
                 <CheckCircle size={32} className="text-success mx-auto mb-2" />
                 <div className="font-medium text-success">Cleanup complete!</div>
               </div>
-              <div className="bg-clawd-bg rounded-lg p-3 space-y-1">
+              <div className="bg-mission-control-bg rounded-lg p-3 space-y-1">
                 {executionLog.filter(l => l.startsWith('✓') || l.startsWith('Skipped')).map((log, idx) => (
-                  <div key={idx} className="text-sm text-clawd-text-dim">{log}</div>
+                  <div key={idx} className="text-sm text-mission-control-text-dim">{log}</div>
                 ))}
               </div>
             </div>
@@ -597,20 +595,20 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
         {/* Footer */}
         {phase === 'proposing' && (
-          <div className="border-t border-clawd-border p-4 flex-shrink-0 space-y-3">
+          <div className="border-t border-mission-control-border p-4 flex-shrink-0 space-y-3">
             <input
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleConfirm()}
               placeholder="Feedback? (e.g., 'skip duplicates') or just proceed..."
-              className="w-full px-3 py-2 bg-clawd-bg rounded-lg border border-clawd-border text-sm focus:outline-none focus:border-clawd-accent"
+              className="w-full px-3 py-2 bg-mission-control-bg rounded-lg border border-mission-control-border text-sm focus:outline-none focus:border-mission-control-accent"
             />
             <div className="flex gap-2">
-              <button onClick={handleClose} className="flex-1 px-4 py-2 bg-clawd-bg border border-clawd-border text-sm rounded-lg hover:border-clawd-text-dim">
+              <button onClick={handleClose} className="flex-1 px-4 py-2 bg-mission-control-bg border border-mission-control-border text-sm rounded-lg hover:border-mission-control-text-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
                 Cancel
               </button>
-              <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
+              <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-success text-white text-sm font-medium rounded-xl hover:bg-success/90 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
                 <Check size={16} /> Proceed
               </button>
             </div>
@@ -618,8 +616,8 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
         )}
 
         {phase === 'done' && (
-          <div className="border-t border-clawd-border p-4 flex-shrink-0">
-            <button onClick={handleClose} className="w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim">
+          <div className="border-t border-mission-control-border p-4 flex-shrink-0">
+            <button onClick={handleClose} className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
               Done
             </button>
           </div>

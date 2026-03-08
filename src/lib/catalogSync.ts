@@ -90,13 +90,29 @@ export function syncCatalogAgents(db: Database.Database): void {
 
   syncAll();
 
-  // Auto-mark agents as installed if they exist in the agents table
+  // Auto-provision core agents into the agents table — they are always active,
+  // never need manual hire, and cannot be uninstalled.
+  try {
+    db.prepare(`
+      INSERT OR IGNORE INTO agents (id, name, role, emoji, color, capabilities, personality, status, created_at)
+      SELECT ca.id, ca.name, COALESCE(ca.role, 'Agent'), COALESCE(ca.emoji, '🤖'),
+             '#00BCD4', ca.capabilities, COALESCE(ca.defaultPersonality, ''), 'idle', unixepoch()
+      FROM catalog_agents ca
+      WHERE ca.core = 1
+    `).run();
+
+    // Always mark core agents as installed
+    db.prepare(`UPDATE catalog_agents SET installed = 1 WHERE core = 1`).run();
+  } catch { /* agents table may not exist in tests */ }
+
+  // Auto-mark non-core agents as installed if they exist in the agents table
   // (agents table is the source of truth for "hired" status)
   try {
     db.prepare(`
       UPDATE catalog_agents
       SET installed = 1
-      WHERE id IN (SELECT id FROM agents WHERE status != 'archived')
+      WHERE core = 0
+        AND id IN (SELECT id FROM agents WHERE status != 'archived')
         AND installed = 0
     `).run();
   } catch { /* agents table may not exist in tests */ }

@@ -94,13 +94,13 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
   };
 
   return (
-    <div className="w-80 h-full flex flex-col bg-clawd-surface border-l border-clawd-border flex-shrink-0">
+    <div className="w-80 h-full flex flex-col bg-mission-control-surface border-l border-mission-control-border flex-shrink-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-clawd-border">
-        <h3 className="text-xs font-semibold text-clawd-text uppercase tracking-wide">Versions</h3>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
+        <h3 className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">Versions</h3>
         <button
           onClick={onClose}
-          className="p-1 text-clawd-text-dim hover:text-clawd-text rounded transition-colors"
+          className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
           title="Close versions panel"
         >
           <X size={14} />
@@ -108,7 +108,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
       </div>
 
       {/* Save button */}
-      <div className="px-3 py-2 border-b border-clawd-border">
+      <div className="px-3 py-2 border-b border-mission-control-border">
         <button
           onClick={() => {
             saveDialog.showConfirm({
@@ -119,7 +119,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
             }, handleSaveConfirm);
           }}
           disabled={!activeChapterId}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Saves the current chapter content as a version snapshot"
         >
           <Save size={13} />
@@ -130,22 +130,22 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
       {/* Version list */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-clawd-text-dim">
+          <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
             <Loader2 size={16} className="animate-spin" />
           </div>
         ) : versions.length === 0 ? (
-          <div className="px-3 py-6 text-center text-xs text-clawd-text-dim">
+          <div className="px-3 py-6 text-center text-xs text-mission-control-text-dim">
             <p>No versions saved yet.</p>
             <p className="mt-1">Save a snapshot before making major edits.</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border/50">
+          <div className="divide-y divide-mission-control-border/50">
             {versions.map((v) => (
-              <div key={v.id} className="px-3 py-2 group hover:bg-clawd-border/30 transition-colors">
+              <div key={v.id} className="px-3 py-2 group hover:bg-mission-control-border/30 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-clawd-text truncate">{v.label}</div>
-                    <div className="text-[10px] text-clawd-text-dim mt-0.5">
+                    <div className="text-xs font-medium text-mission-control-text truncate">{v.label}</div>
+                    <div className="text-[10px] text-mission-control-text-dim mt-0.5">
                       {formatTime(v.createdAt)} &middot; {v.wordCount.toLocaleString()} words
                     </div>
                   </div>
@@ -153,7 +153,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     <button
                       onClick={() => handleCompare(v.id)}
                       disabled={diffLoading}
-                      className="p-1 text-clawd-text-dim hover:text-clawd-accent rounded transition-colors"
+                      className="p-1 text-mission-control-text-dim hover:text-mission-control-accent rounded transition-colors"
                       title="Compare with current"
                     >
                       <GitCompare size={13} />
@@ -168,7 +168,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                           type: 'warning',
                         }, handleRestoreConfirm);
                       }}
-                      className="p-1 text-clawd-text-dim hover:text-warning rounded transition-colors"
+                      className="p-1 text-mission-control-text-dim hover:text-warning rounded transition-colors"
                       title="Restore this version"
                     >
                       <RotateCcw size={13} />
@@ -183,7 +183,7 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                           type: 'danger',
                         }, handleDeleteConfirm);
                       }}
-                      className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
+                      className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                       title="Delete this version"
                     >
                       <Trash2 size={13} />

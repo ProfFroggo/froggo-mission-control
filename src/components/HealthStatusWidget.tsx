@@ -76,7 +76,7 @@ export default function HealthStatusWidget() {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
         <XCircle size={32} className="text-error mb-2" />
-        <p className="text-xs text-clawd-text-dim text-center">{error}</p>
+        <p className="text-xs text-mission-control-text-dim text-center">{error}</p>
       </div>
     );
   }
@@ -84,8 +84,8 @@ export default function HealthStatusWidget() {
   if (!status) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
-        <Shield size={32} className="text-clawd-text-dim/50 mb-2" />
-        <p className="text-xs text-clawd-text-dim">No data</p>
+        <Shield size={32} className="text-mission-control-text-dim/50 mb-2" />
+        <p className="text-xs text-mission-control-text-dim">No data</p>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function HealthStatusWidget() {
           health === 'warning' ? 'text-warning' :
           'text-error'
         } />
-        <h3 className="text-sm font-semibold text-clawd-text">System Health</h3>
+        <h3 className="text-sm font-semibold text-mission-control-text">System Health</h3>
       </div>
 
       {/* Main status */}
@@ -130,7 +130,7 @@ export default function HealthStatusWidget() {
                health === 'warning' ? 'Minor Issues' :
                'Critical Alert'}
             </div>
-            <div className="text-xs text-clawd-text-dim">
+            <div className="text-xs text-mission-control-text-dim">
               {health === 'healthy' ? 'Everything operating normally' :
                health === 'warning' ? 'Review recommended' :
                'Immediate attention needed'}
@@ -139,10 +139,10 @@ export default function HealthStatusWidget() {
         </div>
 
         {/* Status details */}
-        <div className="space-y-2 pt-2 border-t border-clawd-border">
+        <div className="space-y-2 pt-2 border-t border-mission-control-border">
           {/* Watcher status */}
           <div className="flex items-center justify-between text-xs">
-            <span className="text-clawd-text-dim">Task Watcher</span>
+            <span className="text-mission-control-text-dim">Task Watcher</span>
             <span className={status.watcherRunning ? 'text-success' : 'text-error'}>
               {status.watcherRunning ? 'Running' : 'Stopped'}
             </span>
@@ -150,7 +150,7 @@ export default function HealthStatusWidget() {
 
           {/* Kill switch */}
           <div className="flex items-center justify-between text-xs">
-            <span className="text-clawd-text-dim">Safety Lock</span>
+            <span className="text-mission-control-text-dim">Safety Lock</span>
             <span className={status.killSwitchOn ? 'text-error' : 'text-success'}>
               {status.killSwitchOn ? 'Engaged' : 'Normal'}
             </span>
@@ -158,13 +158,13 @@ export default function HealthStatusWidget() {
 
           {/* Active tasks */}
           <div className="flex items-center justify-between text-xs">
-            <span className="text-clawd-text-dim">Active Tasks</span>
+            <span className="text-mission-control-text-dim">Active Tasks</span>
             <div className="flex items-center gap-1.5">
               {status.inProgressTasks > 0 && (
                 <Loader size={12} className="text-info animate-spin" />
               )}
               <span className={
-                status.inProgressTasks === 0 ? 'text-clawd-text-dim' :
+                status.inProgressTasks === 0 ? 'text-mission-control-text-dim' :
                 status.inProgressTasks > 10 ? 'text-warning' :
                 'text-info'
               }>
@@ -176,7 +176,7 @@ export default function HealthStatusWidget() {
       </div>
 
       {/* Last updated */}
-      <div className="mt-3 pt-3 border-t border-clawd-border text-xs text-clawd-text-dim text-center">
+      <div className="mt-3 pt-3 border-t border-mission-control-border text-xs text-mission-control-text-dim text-center">
         Auto-refreshing every 30s
       </div>
     </div>

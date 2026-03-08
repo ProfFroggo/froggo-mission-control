@@ -4,25 +4,25 @@
  */
 
 import { lazy } from 'react';
-import { Inbox } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest, type ModuleLifecycle } from '../../core/ModuleLoader';
 import { ViewRegistry } from '../../core/ViewRegistry';
 import manifest from './module.json';
 
-const InboxPanel = lazy(() => import('../../components/InboxPanel'));
+const ApprovalQueuePanel = lazy(() => import('../../components/ApprovalQueuePanel'));
+
+ViewRegistry.register({
+  id: 'approvals',
+  label: 'Approvals',
+  icon: ShieldAlert,
+  component: ApprovalQueuePanel,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
 
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'approvals',
-      label: 'Approvals',
-      icon: Inbox,
-      component: InboxPanel,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);

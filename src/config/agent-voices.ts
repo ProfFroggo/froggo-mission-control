@@ -30,7 +30,7 @@ export const agentVoices: Record<string, VoiceProfile> = {
     gender: 'female',
     age: 'young',
   },
-  froggo: {
+  'mission-control': {
     gender: 'male',
     age: 'middle-aged',
   },

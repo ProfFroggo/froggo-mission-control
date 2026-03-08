@@ -57,11 +57,11 @@ function SortableSession({ sessionKey, children }: { sessionKey: string; childre
 }
 
 const CHANNELS: { id: ChannelFilter; label: string; icon: string; color: string }[] = [
-  { id: 'all', label: 'All', icon: '📋', color: 'text-clawd-text' },
+  { id: 'all', label: 'All', icon: '📋', color: 'text-mission-control-text' },
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-success' },
   { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-info' },
   { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-review' },
-  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-clawd-text-dim' },
+  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-mission-control-text-dim' },
   { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-warning' },
 ];
 
@@ -141,12 +141,12 @@ export default function SessionsFilter() {
   const loadFolders = async () => {
     try {
       // Folders managed via localStorage in web mode
-      const stored = localStorage.getItem('froggo-folders');
+      const stored = localStorage.getItem('mission-control-folders');
       const folderList = stored ? JSON.parse(stored) : [];
       setFolders(folderList);
 
       // Load folder assignments from localStorage
-      const storedAssignments = localStorage.getItem('froggo-folder-assignments');
+      const storedAssignments = localStorage.getItem('mission-control-folder-assignments');
       if (storedAssignments) {
         setFolderAssignments(JSON.parse(storedAssignments));
       }
@@ -158,7 +158,7 @@ export default function SessionsFilter() {
   const loadNotificationSettings = async () => {
     try {
       // Notification settings stored in localStorage in web mode
-      const stored = localStorage.getItem('froggo-notification-settings');
+      const stored = localStorage.getItem('mission-control-notification-settings');
       if (stored) {
         setNotificationSettings(JSON.parse(stored));
       }
@@ -170,7 +170,7 @@ export default function SessionsFilter() {
   const loadPinnedSessions = async () => {
     try {
       // Pins stored in localStorage in web mode
-      const stored = localStorage.getItem('froggo-pinned-sessions');
+      const stored = localStorage.getItem('mission-control-pinned-sessions');
       const orderedKeys: string[] = stored ? JSON.parse(stored) : [];
       const pinSet = new Set<string>(orderedKeys);
       setPinnedSessions(pinSet);
@@ -183,7 +183,7 @@ export default function SessionsFilter() {
   const loadSnoozedSessions = async () => {
     try {
       // Snooze stored in localStorage in web mode
-      const stored = localStorage.getItem('froggo-snoozed-sessions');
+      const stored = localStorage.getItem('mission-control-snoozed-sessions');
       if (stored) {
         setSnoozedSessions(JSON.parse(stored));
       }
@@ -195,7 +195,7 @@ export default function SessionsFilter() {
   const togglePin = async (sessionKey: string) => {
     try {
       // Pins stored in localStorage in web mode
-      const stored = localStorage.getItem('froggo-pinned-sessions');
+      const stored = localStorage.getItem('mission-control-pinned-sessions');
       const pins: string[] = stored ? JSON.parse(stored) : [];
       const idx = pins.indexOf(sessionKey);
       if (idx >= 0) {
@@ -203,7 +203,7 @@ export default function SessionsFilter() {
       } else {
         pins.push(sessionKey);
       }
-      localStorage.setItem('froggo-pinned-sessions', JSON.stringify(pins));
+      localStorage.setItem('mission-control-pinned-sessions', JSON.stringify(pins));
       await loadPinnedSessions();
     } catch (error) {
       // '[SessionsFilter] Failed to toggle pin:', error;
@@ -240,7 +240,7 @@ export default function SessionsFilter() {
     // Save to backend
     try {
       // Pins stored in localStorage in web mode
-      localStorage.setItem('froggo-pinned-sessions', JSON.stringify(newOrder));
+      localStorage.setItem('mission-control-pinned-sessions', JSON.stringify(newOrder));
     } catch (error) {
       // '[SessionsFilter] Failed to reorder pins:', error;
       await loadPinnedSessions();
@@ -464,9 +464,9 @@ export default function SessionsFilter() {
       for (const sessionKey of selectedSessions) {
         try {
           // Mark read stored in localStorage in web mode
-          const readKeys = JSON.parse(localStorage.getItem('froggo-read-sessions') || '[]');
+          const readKeys = JSON.parse(localStorage.getItem('mission-control-read-sessions') || '[]');
           if (!readKeys.includes(sessionKey)) readKeys.push(sessionKey);
-          localStorage.setItem('froggo-read-sessions', JSON.stringify(readKeys));
+          localStorage.setItem('mission-control-read-sessions', JSON.stringify(readKeys));
           successCount++;
         } catch (error) {
           errorCount++;
@@ -500,9 +500,9 @@ export default function SessionsFilter() {
     try {
       logger.debug('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
       // Folder assignments stored in localStorage in web mode
-      const assignments = JSON.parse(localStorage.getItem('froggo-folder-assignments') || '{}');
+      const assignments = JSON.parse(localStorage.getItem('mission-control-folder-assignments') || '{}');
       assignments[sessionKey] = folderId;
-      localStorage.setItem('froggo-folder-assignments', JSON.stringify(assignments));
+      localStorage.setItem('mission-control-folder-assignments', JSON.stringify(assignments));
       await loadFolders();
     } catch (error) {
       // '[SessionsFilter] Error assigning folder:', error;
@@ -518,16 +518,16 @@ export default function SessionsFilter() {
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <MessageSquare size={20} />
             Sessions
-            <span className="text-sm font-normal text-clawd-text-dim">
+            <span className="text-sm font-normal text-mission-control-text-dim">
               ({filteredSessions.length})
             </span>
             {selectedSessions.size > 0 && (
-              <span className="text-sm font-medium text-clawd-accent">
+              <span className="text-sm font-medium text-mission-control-accent">
                 {selectedSessions.size} selected
               </span>
             )}
@@ -537,7 +537,7 @@ export default function SessionsFilter() {
               onClick={() => setShowSnoozed(!showSnoozed)}
               className={`p-2 rounded-lg transition-colors ${
                 showSnoozed 
-                  ? 'hover:bg-clawd-border' 
+                  ? 'hover:bg-mission-control-border' 
                   : 'bg-info-subtle text-info border border-info-border'
               }`}
               title={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
@@ -548,8 +548,8 @@ export default function SessionsFilter() {
               onClick={toggleBulkMode}
               className={`p-2 rounded-lg transition-colors ${
                 bulkMode 
-                  ? 'bg-clawd-accent text-white' 
-                  : 'hover:bg-clawd-border'
+                  ? 'bg-mission-control-accent text-white' 
+                  : 'hover:bg-mission-control-border'
               }`}
               title={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
             >
@@ -557,7 +557,7 @@ export default function SessionsFilter() {
             </button>
             <button
               onClick={fetchSessions}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh"
             >
               <RefreshCw size={16} />
@@ -567,18 +567,18 @@ export default function SessionsFilter() {
 
         {/* Bulk Action Toolbar */}
         {bulkMode && (
-          <div className="mb-4 p-3 bg-clawd-bg border border-clawd-border rounded-lg">
+          <div className="mb-4 p-3 bg-mission-control-bg border border-mission-control-border rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <button
                   onClick={selectAll}
-                  className="text-xs px-3 py-1.5 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg transition-colors"
+                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                 >
                   Select All ({filteredSessions.length})
                 </button>
                 <button
                   onClick={selectNone}
-                  className="text-xs px-3 py-1.5 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg transition-colors"
+                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                   disabled={selectedSessions.size === 0}
                 >
                   Clear Selection
@@ -625,20 +625,20 @@ export default function SessionsFilter() {
         {/* Search */}
         <div className="relative mb-3">
           <label htmlFor="sessions-search" className="sr-only">Search sessions</label>
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
           <input
             id="sessions-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search sessions..."
-            className="w-full bg-clawd-bg border border-clawd-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
               aria-label="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-clawd-text-dim hover:text-clawd-text"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
             >
               <X size={14} />
             </button>
@@ -653,15 +653,15 @@ export default function SessionsFilter() {
               onClick={() => setFilter(ch.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
                 filter === ch.id
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <span>{ch.icon}</span>
               <span>{ch.label}</span>
               {ch.count > 0 && (
                 <span className={`text-xs px-1.5 rounded-full ${
-                  filter === ch.id ? 'bg-clawd-text/20' : 'bg-clawd-bg'
+                  filter === ch.id ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
                 }`}>
                   {ch.count}
                 </span>
@@ -682,7 +682,7 @@ export default function SessionsFilter() {
       {/* Sessions List */}
       <div className="flex-1 overflow-y-auto">
         {filteredSessions.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <MessageSquare size={32} className="mx-auto mb-3 opacity-50" />
             <p>{search || filter !== 'all' ? 'No matching sessions' : 'No active sessions'}</p>
           </div>
@@ -690,21 +690,21 @@ export default function SessionsFilter() {
           <>
             {/* Pinned Sessions Section */}
             {pinnedSessionsList.length > 0 && (
-              <div className="bg-gradient-to-b from-clawd-accent/5 to-transparent">
-                <div className="sticky top-0 z-10 px-4 py-2 bg-clawd-surface/95 backdrop-blur-sm border-b border-clawd-accent/20 flex items-center justify-between">
+              <div className="bg-gradient-to-b from-mission-control-accent/5 to-transparent">
+                <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface/95 backdrop-blur-sm border-b border-mission-control-accent/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Pin size={14} className="text-clawd-accent fill-current" />
-                    <span className="text-xs font-semibold text-clawd-accent uppercase tracking-wide">
+                    <Pin size={14} className="text-mission-control-accent fill-current" />
+                    <span className="text-xs font-semibold text-mission-control-accent uppercase tracking-wide">
                       Pinned ({pinnedSessionsList.length}/10)
                     </span>
                   </div>
-                  <span className="text-xs text-clawd-text-dim flex items-center gap-1">
+                  <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                     <span className="hidden sm:inline">Drag to reorder</span>
-                    <span className="text-clawd-accent">⇅</span>
+                    <span className="text-mission-control-accent">⇅</span>
                   </span>
                 </div>
                 <SortableContext items={pinnedOrder} strategy={verticalListSortingStrategy}>
-                  <div className="divide-y divide-clawd-border/50">
+                  <div className="divide-y divide-mission-control-border/50">
                     {pinnedSessionsList.map((session: any) => {
                       const channel = getSessionChannel(session);
                       const channelInfo = CHANNELS.find(c => c.id === channel) || CHANNELS[0];
@@ -720,8 +720,8 @@ export default function SessionsFilter() {
                   <div
                     className={`p-4 transition-colors group ${
                       selectedSessions.has(session.key) 
-                        ? 'bg-clawd-accent/10 border-l-2 border-clawd-accent' 
-                        : 'hover:bg-clawd-bg/50'
+                        ? 'bg-mission-control-accent/10 border-l-2 border-mission-control-accent' 
+                        : 'hover:bg-mission-control-bg/50'
                     }`}
                   >
                   <div className="flex items-start gap-3">
@@ -731,17 +731,17 @@ export default function SessionsFilter() {
                           type="checkbox"
                           checked={selectedSessions.has(session.key)}
                           onChange={() => toggleSessionSelection(session.key)}
-                          className="w-4 h-4 rounded border-clawd-border bg-clawd-bg text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 cursor-pointer"
+                          className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
                         />
                       </div>
                     )}
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/30 rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-full text-xs">
                             <Pin size={14} className="fill-current" />
                             Pinned
                           </span>
@@ -765,8 +765,8 @@ export default function SessionsFilter() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-clawd-text-dim flex-wrap">
-                        <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-clawd-border`}>
+                      <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                           {channelInfo.label}
                         </span>
                         <span className="flex items-center gap-1">
@@ -795,7 +795,7 @@ export default function SessionsFilter() {
                         </div>
                       )}
                       {session.model && (
-                        <div className="text-xs text-clawd-text-dim mt-1 truncate">
+                        <div className="text-xs text-mission-control-text-dim mt-1 truncate">
                           {session.model.split('/').pop()}
                         </div>
                       )}
@@ -806,7 +806,7 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           togglePin(session.key);
                         }}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${pinnedSessions.has(session.key) ? 'text-clawd-accent' : ''}`}
+                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${pinnedSessions.has(session.key) ? 'text-mission-control-accent' : ''}`}
                         title={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
                       >
                         <Pin size={14} className={pinnedSessions.has(session.key) ? 'fill-current' : ''} />
@@ -816,7 +816,7 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
+                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                         title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                       >
                         {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
@@ -826,7 +826,7 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
+                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                         title="Notification settings"
                       >
                         {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
@@ -836,12 +836,12 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           setShowFolderSelector(session.key);
                         }}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Assign to folders"
                       >
                         <Tag size={14} />
                       </button>
-                      <ArrowRight size={16} className="text-clawd-text-dim mt-2" />
+                      <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                           </div>
                         </div>
                       </div>
@@ -857,13 +857,13 @@ export default function SessionsFilter() {
         {unpinnedSessionsList.length > 0 && (
           <>
             {pinnedSessionsList.length > 0 && (
-              <div className="sticky top-0 z-10 px-4 py-2 bg-clawd-surface border-b border-clawd-border">
-                <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">
+              <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface border-b border-mission-control-border">
+                <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
                   All Conversations ({unpinnedSessionsList.length})
                 </span>
               </div>
             )}
-            <div className="divide-y divide-clawd-border">
+            <div className="divide-y divide-mission-control-border">
               {unpinnedSessionsList.map((session: any) => {
                 const channel = getSessionChannel(session);
                 const channelInfo = CHANNELS.find(c => c.id === channel) || CHANNELS[0];
@@ -883,8 +883,8 @@ export default function SessionsFilter() {
                     <div
                       className={`p-4 transition-colors group ${
                         selectedSessions.has(session.key) 
-                          ? 'bg-clawd-accent/10 border-l-2 border-clawd-accent' 
-                          : 'hover:bg-clawd-bg/50'
+                          ? 'bg-mission-control-accent/10 border-l-2 border-mission-control-accent' 
+                          : 'hover:bg-mission-control-bg/50'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -894,14 +894,14 @@ export default function SessionsFilter() {
                               type="checkbox"
                               checked={selectedSessions.has(session.key)}
                               onChange={() => toggleSessionSelection(session.key)}
-                              className="w-4 h-4 rounded border-clawd-border bg-clawd-bg text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 cursor-pointer"
+                              className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
                             />
                           </div>
                         )}
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
                               <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
@@ -922,8 +922,8 @@ export default function SessionsFilter() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-clawd-text-dim flex-wrap">
-                            <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-clawd-border`}>
+                          <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
+                            <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                               {channelInfo.label}
                             </span>
                             <span className="flex items-center gap-1">
@@ -952,7 +952,7 @@ export default function SessionsFilter() {
                             </div>
                           )}
                           {session.model && (
-                            <div className="text-xs text-clawd-text-dim mt-1 truncate">
+                            <div className="text-xs text-mission-control-text-dim mt-1 truncate">
                               {session.model.split('/').pop()}
                             </div>
                           )}
@@ -963,7 +963,7 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               togglePin(session.key);
                             }}
-                            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Pin conversation"
                           >
                             <Pin size={14} />
@@ -973,7 +973,7 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
+                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                             title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                           >
                             {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
@@ -983,7 +983,7 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
+                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                             title="Notification settings"
                           >
                             {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
@@ -993,12 +993,12 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               setShowFolderSelector(session.key);
                             }}
-                            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Assign to folders"
                           >
                             <Tag size={14} />
                           </button>
-                          <ArrowRight size={16} className="text-clawd-text-dim mt-2" />
+                          <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                         </div>
                       </div>
                     </div>
@@ -1045,7 +1045,7 @@ export default function SessionsFilter() {
           aria-label="Close modal"
         >
           <div
-            className="w-full max-w-3xl h-[80vh] bg-clawd-surface rounded-lg shadow-xl overflow-hidden"
+            className="w-full max-w-3xl h-[80vh] bg-mission-control-surface rounded-lg shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"

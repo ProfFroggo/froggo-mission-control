@@ -9,28 +9,21 @@ export interface PanelConfig {
   order: number;
 }
 
-const STORAGE_KEY = 'froggo-panel-config';
+const STORAGE_KEY = 'mission-control-panel-config';
 
+// Core nav items only — always present regardless of module state.
+// Optional module panels are added dynamically via syncWithViewRegistry()
+// once ModuleLoader has initialized installed modules.
 const DEFAULT_PANELS: PanelConfig[] = [
-  { id: 'dashboard', label: 'Dashboard', visible: true, order: 0 },
-  { id: 'inbox', label: 'Inbox', visible: true, order: 1 },
-  { id: 'analytics', label: 'Analytics', visible: true, order: 2 },
-  { id: 'kanban', label: 'Tasks', visible: true, order: 3 },
-  { id: 'agents', label: 'Agents', visible: true, order: 4 },
-  { id: 'twitter', label: 'Social Media', visible: true, order: 5 },
-  { id: 'meetings', label: 'Meetings', visible: true, order: 6 },
-  { id: 'voicechat', label: 'Voice Chat', visible: true, order: 7 },
-  { id: 'chat', label: 'Chat', visible: true, order: 8 },
-  { id: 'accounts', label: 'Accounts', visible: true, order: 9 },
-  { id: 'approvals', label: 'Approvals', visible: true, order: 10 },
-  { id: 'codeagent', label: 'Dev', visible: true, order: 11 },
-  { id: 'library', label: 'Library', visible: true, order: 12 },
-  { id: 'schedule', label: 'Schedule', visible: true, order: 13 },
-  { id: 'notifications', label: 'Notifications', visible: true, order: 14 },
-  { id: 'writing', label: 'Writing', visible: true, order: 15 },
-  { id: 'finance', label: 'Finance', visible: true, order: 16 },
-  { id: 'modulebuilder', label: 'Module Builder', visible: true, order: 17 },
-  { id: 'toolbar', label: 'Floating Toolbar', visible: true, order: 18 },
+  { id: 'dashboard',     label: 'Dashboard',        visible: true, order: 0 },
+  { id: 'inbox',         label: 'Inbox',             visible: true, order: 1 },
+  { id: 'kanban',        label: 'Tasks',             visible: true, order: 2 },
+  { id: 'chat',          label: 'Chat',              visible: true, order: 3 },
+  { id: 'approvals',     label: 'Approvals',         visible: true, order: 4 },
+  { id: 'agents',        label: 'Agents',            visible: true, order: 5 },
+  { id: 'notifications', label: 'Notifications',     visible: true, order: 6 },
+  { id: 'modules',       label: 'Modules',           visible: true, order: 7 },
+  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true, order: 8 },
 ];
 
 function loadFromStorage(): PanelConfig[] {
@@ -39,26 +32,29 @@ function loadFromStorage(): PanelConfig[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Merge with defaults to pick up any new panels added later
         const stored = new Map(parsed.map((p: PanelConfig) => [p.id, p]));
         const merged: PanelConfig[] = [];
         let maxOrder = parsed.length;
-        
-        // First add all stored panels in their order
+
+        // Restore stored panels — keep order/visibility preferences
         for (const p of parsed) {
           const def = DEFAULT_PANELS.find(d => d.id === p.id);
           if (def) {
+            // Core panel — always include
             merged.push({ ...def, ...p, label: def.label });
+          } else {
+            // Optional panel — include as-is (ViewRegistry will validate on sync)
+            merged.push(p);
           }
         }
-        
-        // Then add any new defaults not in storage
+
+        // Add any new core defaults not yet in storage
         for (const def of DEFAULT_PANELS) {
           if (!stored.has(def.id)) {
             merged.push({ ...def, order: maxOrder++ });
           }
         }
-        
+
         return merged;
       }
     }
@@ -127,16 +123,27 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
     set({ panels: defaults });
   },
   syncWithViewRegistry: () => {
-    // Auto-discover views from ViewRegistry not yet in panel config
+    // Sync panel list with ViewRegistry:
+    // - Add panels for newly installed module views
+    // - Remove panels for views no longer in ViewRegistry (uninstalled modules)
+    // - Never remove core panels (dashboard, toolbar, and DEFAULT_PANELS ids)
     const allViews = ViewRegistry.getAll();
-    
+    const registeredViewIds = new Set(allViews.map(v => v.id));
+    const coreIds = new Set(DEFAULT_PANELS.map(p => p.id));
+
     set((state) => {
-      const existing = new Set(state.panels.map((p: PanelConfig) => p.id));
-      let maxOrder = Math.max(...state.panels.map((p: PanelConfig) => p.order), 0);
+      // Strip panels for uninstalled module views (not in ViewRegistry, not core)
+      const filtered = state.panels.filter(p =>
+        coreIds.has(p.id) || registeredViewIds.has(p.id)
+      );
+
+      // Add panels for newly registered views not yet in list
+      const existing = new Set(filtered.map(p => p.id));
+      let maxOrder = Math.max(...filtered.map(p => p.order), 0);
       const newPanels: PanelConfig[] = [];
 
       for (const view of allViews) {
-        if (!existing.has(view.id) && view.id !== 'comms') { // skip aliases
+        if (!existing.has(view.id) && view.id !== 'comms') {
           newPanels.push({
             id: view.id,
             label: view.label,
@@ -146,8 +153,8 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
         }
       }
 
-      if (newPanels.length > 0) {
-        const merged = [...state.panels, ...newPanels];
+      const merged = [...filtered, ...newPanels];
+      if (merged.length !== state.panels.length || newPanels.length > 0) {
         saveToStorage(merged);
         return { panels: merged };
       }

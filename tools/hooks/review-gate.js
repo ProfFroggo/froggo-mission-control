@@ -1,16 +1,36 @@
 #!/usr/bin/env node
 /**
- * Froggo Clara Review Gate Hook (PostToolUse)
+ * Mission Control Clara Review Gate Hook (PostToolUse)
  *
- * Fires after mcp__froggo_db__task_update
- * If task moved to 'review' status, logs a note that Clara should review it.
- * Always outputs { "decision": "approve" } so original tool call proceeds.
+ * Fires after mcp__mission-control_db__task_update
+ * If task moved to 'review' status, triggers Clara to review it automatically.
+ * Always outputs { "decision": "approve" } so the original tool call proceeds.
  */
 
-const path = require('path');
-const os = require('os');
+const http = require('http');
 
-const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'froggo/data/froggo.db');
+async function triggerClaraReview(taskId) {
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ taskId });
+    const req = http.request({
+      host: '127.0.0.1',
+      port: 3000,
+      path: '/api/agents/clara/review',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      res.resume();
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(3000, () => { req.destroy(); resolve(false); });
+    req.write(body);
+    req.end();
+  });
+}
 
 async function main() {
   let input = '';
@@ -27,23 +47,14 @@ async function main() {
     const taskId = toolInput.id || toolInput.taskId;
 
     if (status === 'review' && taskId) {
-      // Log analytics event — Clara should review this task
-      try {
-        const Database = require('better-sqlite3');
-        const db = new Database(DB_PATH);
-        db.prepare(`
-          INSERT INTO analytics_events (type, agentId, data, timestamp)
-          VALUES ('clara_review_queued', 'system', ?, ?)
-        `).run(JSON.stringify({ taskId, triggeredBy: 'review-gate-hook' }), Date.now());
-      } catch (e) {
-        // Silently ignore DB errors
-      }
+      // Fire-and-forget: trigger Clara review via the platform API
+      triggerClaraReview(taskId).catch(() => {});
     }
-  } catch (e) {
+  } catch {
     // Silently ignore parse errors
   }
 
-  // Always approve — this hook observes, doesn't block
+  // Always approve — this hook observes and triggers, doesn't block
   process.stdout.write(JSON.stringify({ decision: 'approve' }));
 }
 

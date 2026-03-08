@@ -210,15 +210,15 @@ export default function AnalyticsOverview() {
     <div className="h-full overflow-y-auto p-6">
       {/* Time range selector */}
       <div className="flex justify-end mb-6">
-        <div className="flex bg-clawd-border rounded-xl p-1">
+        <div className="flex bg-mission-control-border rounded-xl p-1">
           {(['7d', '30d', 'all'] as const).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 timeRange === range
-                  ? 'bg-clawd-accent text-white'
-                  : 'text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Time'}
@@ -234,7 +234,7 @@ export default function AnalyticsOverview() {
           return (
             <div
               key={idx}
-              className="p-4 bg-clawd-surface border border-clawd-border rounded-2xl"
+              className="p-4 bg-mission-control-surface border border-mission-control-border rounded-2xl"
             >
               <div className="flex items-center justify-between mb-3">
                 <Icon size={20} className={stat.color} />
@@ -242,7 +242,7 @@ export default function AnalyticsOverview() {
                   <div className={`flex items-center gap-1 text-xs ${
                     stat.trend === 'up' ? 'text-success' :
                     stat.trend === 'down' ? 'text-error' :
-                    'text-clawd-text-dim'
+                    'text-mission-control-text-dim'
                   }`}>
                     {stat.trend === 'up' && <ArrowUp size={14} />}
                     {stat.trend === 'down' && <ArrowDown size={14} />}
@@ -252,24 +252,24 @@ export default function AnalyticsOverview() {
                 )}
               </div>
               <div className="text-2xl font-bold mb-1">{stat.value}</div>
-              <div className="text-sm text-clawd-text-dim">{stat.label}</div>
+              <div className="text-sm text-mission-control-text-dim">{stat.label}</div>
             </div>
           );
         })}
       </div>
 
       {/* Activity Chart - Real Data */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 mb-6">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">Task Activity</h2>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.green }} />
-              <span className="text-clawd-text-dim">Completed</span>
+              <span className="text-mission-control-text-dim">Completed</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: CHART_COLORS.blue }} />
-              <span className="text-clawd-text-dim">Created</span>
+              <span className="text-mission-control-text-dim">Created</span>
             </div>
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function AnalyticsOverview() {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-64 flex items-center justify-center text-clawd-text-dim">
+          <div className="h-64 flex items-center justify-center text-mission-control-text-dim">
             No task data available for this period
           </div>
         )}
@@ -313,9 +313,9 @@ export default function AnalyticsOverview() {
       {/* Agent Activity + Project Progress */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Agent Utilization */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Users size={16} className="text-clawd-accent" />
+            <Users size={16} className="text-mission-control-accent" />
             Agent Activity
           </h3>
           {agents.length > 0 ? (
@@ -326,11 +326,11 @@ export default function AnalyticsOverview() {
                   <div key={idx} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="truncate max-w-[150px]">{agent.agent}</span>
-                      <span className="text-clawd-text-dim">{agent.completed}/{agent.total} ({pct}%)</span>
+                      <span className="text-mission-control-text-dim">{agent.completed}/{agent.total} ({pct}%)</span>
                     </div>
-                    <div className="h-2 bg-clawd-bg rounded-full overflow-hidden">
+                    <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-clawd-accent rounded-full transition-all"
+                        className="h-full bg-mission-control-accent rounded-full transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -339,14 +339,14 @@ export default function AnalyticsOverview() {
               })}
             </div>
           ) : (
-            <div className="text-sm text-clawd-text-dim py-4 text-center">No agent data for this period</div>
+            <div className="text-sm text-mission-control-text-dim py-4 text-center">No agent data for this period</div>
           )}
         </div>
 
         {/* Project Progress */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <FolderKanban size={16} className="text-clawd-accent" />
+            <FolderKanban size={16} className="text-mission-control-accent" />
             Project Progress
           </h3>
           {projects.length > 0 ? (
@@ -355,9 +355,9 @@ export default function AnalyticsOverview() {
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="truncate max-w-[150px]">{proj.project}</span>
-                    <span className="text-clawd-text-dim">{proj.completed}/{proj.total} ({proj.completion_rate}%)</span>
+                    <span className="text-mission-control-text-dim">{proj.completed}/{proj.total} ({proj.completion_rate}%)</span>
                   </div>
-                  <div className="h-2 bg-clawd-bg rounded-full overflow-hidden">
+                  <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                     <div
                       className="h-full bg-green-500 rounded-full transition-all"
                       style={{ width: `${proj.completion_rate}%` }}
@@ -367,22 +367,22 @@ export default function AnalyticsOverview() {
               ))}
             </div>
           ) : (
-            <div className="text-sm text-clawd-text-dim py-4 text-center">No project data for this period</div>
+            <div className="text-sm text-mission-control-text-dim py-4 text-center">No project data for this period</div>
           )}
         </div>
       </div>
 
       {/* Real insights from data */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp size={16} className="text-clawd-accent" />
+            <TrendingUp size={16} className="text-mission-control-accent" />
             Insights
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
+            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Most productive day</span>
-              <span className="text-sm font-medium text-clawd-accent">
+              <span className="text-sm font-medium text-mission-control-accent">
                 {dailyData.length > 0
                   ? (() => {
                       const best = dailyData.reduce((max, d) => d.completed > max.completed ? d : max, dailyData[0]);
@@ -391,38 +391,38 @@ export default function AnalyticsOverview() {
                   : '-'}
               </span>
             </div>
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
+            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total completed</span>
-              <span className="text-sm font-medium text-clawd-accent">
+              <span className="text-sm font-medium text-mission-control-accent">
                 {dailyData.reduce((sum, d) => sum + d.completed, 0)} tasks
               </span>
             </div>
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
+            <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total created</span>
-              <span className="text-sm font-medium text-clawd-accent">
+              <span className="text-sm font-medium text-mission-control-accent">
                 {dailyData.reduce((sum, d) => sum + d.created, 0)} tasks
               </span>
             </div>
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Calendar size={16} className="text-clawd-accent" />
+            <Calendar size={16} className="text-mission-control-accent" />
             Top Agents
           </h3>
           <div className="space-y-3">
             {agents.length > 0 ? agents.slice(0, 3).map((agent, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
+              <div key={idx} className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
                 <span className="text-sm truncate max-w-[150px]">
                   {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {agent.agent}
                 </span>
-                <span className="text-sm font-medium text-clawd-accent">
+                <span className="text-sm font-medium text-mission-control-accent">
                   {agent.completed} done
                 </span>
               </div>
             )) : (
-              <div className="text-sm text-clawd-text-dim py-4 text-center">No agent data</div>
+              <div className="text-sm text-mission-control-text-dim py-4 text-center">No agent data</div>
             )}
           </div>
         </div>

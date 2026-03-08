@@ -104,22 +104,22 @@ export default function ConfirmDialog({
       preventBackdropClose={isProcessing}
     >
       {/* Header */}
-      <div className="flex items-start gap-4 p-6 border-b border-clawd-border">
+      <div className="flex items-start gap-4 p-6 border-b border-mission-control-border">
         <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
           <Icon size={24} className={iconColor} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-clawd-text">{title}</h3>
-          <p id="confirm-dialog-message" className="text-sm text-clawd-text-dim mt-1">{message}</p>
+          <h3 className="text-lg font-semibold text-mission-control-text">{title}</h3>
+          <p id="confirm-dialog-message" className="text-sm text-mission-control-text-dim mt-1">{message}</p>
         </div>
         <button
           onClick={handleClose}
           disabled={isProcessing}
-          className="p-1 hover:bg-clawd-border rounded transition-colors disabled:opacity-50"
+          className="p-1 hover:bg-mission-control-border rounded transition-colors disabled:opacity-50"
           aria-label="Close dialog"
           type="button"
         >
-          <X size={20} className="text-clawd-text-dim" />
+          <X size={20} className="text-mission-control-text-dim" />
         </button>
       </div>
 
@@ -127,7 +127,7 @@ export default function ConfirmDialog({
       <BaseModalBody>
         {requireInput && (
           <div className="space-y-2">
-            <label htmlFor="confirm-input" className="block text-sm font-medium text-clawd-text">
+            <label htmlFor="confirm-input" className="block text-sm font-medium text-mission-control-text">
               {requireInput.hint}
             </label>
             <input
@@ -136,7 +136,7 @@ export default function ConfirmDialog({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput.placeholder}
-              className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
               disabled={isProcessing}

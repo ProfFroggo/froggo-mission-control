@@ -3,19 +3,25 @@ import { Copy, Check } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
-interface MarkdownMessageProps {
-  content: string;
+interface MentionData {
+  ids: string[];
+  names: Record<string, string>; // id -> display name
 }
 
-export default function MarkdownMessage({ content }: MarkdownMessageProps) {
+interface MarkdownMessageProps {
+  content: string;
+  mentions?: MentionData;
+}
+
+export default function MarkdownMessage({ content, mentions }: MarkdownMessageProps) {
   return (
     <div className="max-w-none leading-relaxed text-left text-sm">
-      {parseMarkdown(content)}
+      {parseMarkdown(content, mentions)}
     </div>
   );
 }
 
-function parseMarkdown(text: string): React.ReactNode[] {
+function parseMarkdown(text: string, mentions?: MentionData): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
   const lines = text.split('\n');
   let i = 0;
@@ -42,17 +48,17 @@ function parseMarkdown(text: string): React.ReactNode[] {
 
     // Headers (scaled down for chat context)
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-sm font-semibold mt-3 mb-1.5 text-clawd-text">{line.slice(4)}</h3>);
+      elements.push(<h3 key={key++} className="text-sm font-semibold mt-3 mb-1.5 text-mission-control-text">{line.slice(4)}</h3>);
       i++;
       continue;
     }
     if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-base font-semibold mt-3 mb-2 text-clawd-text">{line.slice(3)}</h2>);
+      elements.push(<h2 key={key++} className="text-base font-semibold mt-3 mb-2 text-mission-control-text">{line.slice(3)}</h2>);
       i++;
       continue;
     }
     if (line.startsWith('# ')) {
-      elements.push(<h1 key={key++} className="text-lg font-bold mt-3 mb-2 text-clawd-text">{line.slice(2)}</h1>);
+      elements.push(<h1 key={key++} className="text-lg font-bold mt-3 mb-2 text-mission-control-text">{line.slice(2)}</h1>);
       i++;
       continue;
     }
@@ -67,7 +73,7 @@ function parseMarkdown(text: string): React.ReactNode[] {
       elements.push(
         <ul key={key++} className="list-disc list-inside my-2 space-y-2 pl-1">
           {listItems.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">{formatInline(item)}</li>
+            <li key={idx} className="leading-relaxed">{formatInline(item, mentions)}</li>
           ))}
         </ul>
       );
@@ -84,7 +90,7 @@ function parseMarkdown(text: string): React.ReactNode[] {
       elements.push(
         <ol key={key++} className="list-decimal list-inside my-2 space-y-2 pl-1">
           {listItems.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">{formatInline(item)}</li>
+            <li key={idx} className="leading-relaxed">{formatInline(item, mentions)}</li>
           ))}
         </ol>
       );
@@ -98,7 +104,7 @@ function parseMarkdown(text: string): React.ReactNode[] {
     }
 
     // Regular paragraph
-    elements.push(<p key={key++} className="my-1.5 leading-relaxed">{formatInline(line)}</p>);
+    elements.push(<p key={key++} className="my-1.5 leading-relaxed">{formatInline(line, mentions)}</p>);
     i++;
   }
 
@@ -136,10 +142,29 @@ function escapeHtml(text: string): string {
  * - Failed URL validation degrades to plain text (safe fallback)
  * 
  * AUDIT: 2026-03-03 - Reviewed and approved (LOW RISK - SECURE)
- * See: /Users/worker/froggo-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
+ * See: /Users/worker/mission-control-library/reports/dangerouslySetInnerHTML-security-audit-2026-03-03.md
  */
-function formatInline(text: string): React.ReactNode {
+function formatInline(text: string, mentions?: MentionData): React.ReactNode {
   let remaining = escapeHtml(text);
+
+  // @mentions — highlighted pill badges (applied before bold so agent names don't get mangled)
+  if (mentions) {
+    // @all
+    remaining = remaining.replace(
+      /@all\b/gi,
+      `<span class="inline font-medium px-1.5 py-0.5 rounded bg-mission-control-accent/20 text-mission-control-accent">@all</span>`
+    );
+    // Per-agent @Name or @id
+    mentions.ids.forEach(id => {
+      const name = mentions.names[id] || id;
+      const safeId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      remaining = remaining.replace(
+        new RegExp(`@${safeName}\\b|@${safeId}\\b`, 'gi'),
+        `<span class="inline font-medium px-1.5 py-0.5 rounded bg-mission-control-border/60 text-mission-control-text">$&</span>`
+      );
+    });
+  }
 
   // Bold **text** - restore tags after escaping
   remaining = remaining.replace(/\*\*(.+?)\*\*/g, (_, content) => {
@@ -148,7 +173,7 @@ function formatInline(text: string): React.ReactNode {
 
   // Inline code `code`
   remaining = remaining.replace(/`([^`]+)`/g, (_, content) => {
-    return `<code class="px-1.5 py-0.5 bg-clawd-border rounded text-sm font-mono text-clawd-accent font-semibold">${content}</code>`;
+    return `<code class="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold">${content}</code>`;
   });
 
   // Links [text](url) - with XSS protection for URLs
@@ -160,7 +185,7 @@ function formatInline(text: string): React.ReactNode {
       // Return plain text if URL is unsafe
       return `[${linkText}](${escapeHtml(url)})`;
     }
-    return `<a href="${sanitizedUrl}" class="text-clawd-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+    return `<a href="${sanitizedUrl}" class="text-mission-control-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   });
 
   // SECURITY: content is escapeHtml()'d first; only safe tags (strong/code/a) are re-introduced
@@ -182,14 +207,14 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   };
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden bg-clawd-bg border border-clawd-border shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2 bg-clawd-surface/50 border-b border-clawd-border/50">
-        <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">
+    <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
+      <div className="flex items-center justify-between px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
+        <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
           {language || 'code'}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-clawd-border/50 hover:text-clawd-text transition-all"
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-mission-control-border/50 hover:text-mission-control-text transition-all"
           title="Copy code"
         >
           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
@@ -197,7 +222,7 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
         </button>
       </div>
       <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="font-mono text-clawd-text">{code}</code>
+        <code className="font-mono text-mission-control-text">{code}</code>
       </pre>
     </div>
   );

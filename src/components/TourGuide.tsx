@@ -148,10 +148,10 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
   const handleComplete = () => {
     // Mark tour as completed in localStorage
     try {
-      const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
+      const completed = JSON.parse(localStorage.getItem('mission-control-tours-completed') || '[]');
       if (tour && !completed.includes(tour.id)) {
         completed.push(tour.id);
-        localStorage.setItem('froggo-tours-completed', JSON.stringify(completed));
+        localStorage.setItem('mission-control-tours-completed', JSON.stringify(completed));
       }
     } catch {
       // Ignore localStorage errors
@@ -188,7 +188,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
       {/* Highlight border */}
       {highlightRect && (
         <div
-          className="absolute border-2 border-clawd-accent rounded-lg animate-pulse"
+          className="absolute border-2 border-mission-control-accent rounded-lg animate-pulse"
           style={{
             top: highlightRect.top - 4,
             left: highlightRect.left - 4,
@@ -201,23 +201,23 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
       {/* Tooltip */}
       <div
-        className="absolute w-[400px] bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl"
+        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
         }}
       >
         {/* Header */}
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div>
             <h3 className="font-semibold">{step.title}</h3>
-            <p className="text-xs text-clawd-text-dim mt-0.5">
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               Step {currentStep + 1} of {tour.steps.length}
             </p>
           </div>
           <button
             onClick={onSkip}
-            className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <X size={16} />
           </button>
@@ -225,24 +225,24 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
         {/* Content */}
         <div className="p-4">
-          <p className="text-sm text-clawd-text leading-relaxed">{step.content}</p>
+          <p className="text-sm text-mission-control-text leading-relaxed">{step.content}</p>
         </div>
 
         {/* Progress bar */}
         <div className="px-4 pb-2">
-          <div className="h-1 bg-clawd-border rounded-full overflow-hidden">
+          <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-clawd-accent transition-all duration-300"
+              className="h-full bg-mission-control-accent transition-all duration-300"
               style={{ width: `${((currentStep + 1) / tour.steps.length) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-clawd-border flex items-center justify-between">
+        <div className="p-4 border-t border-mission-control-border flex items-center justify-between">
           <button
             onClick={onSkip}
-            className="text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Skip Tour
           </button>
@@ -250,13 +250,13 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
             <button
               onClick={handlePrevious}
               disabled={currentStep === 0}
-              className="p-2 rounded-lg hover:bg-clawd-border transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
             >
               {currentStep === tour.steps.length - 1 ? (
                 <>
@@ -284,11 +284,11 @@ export const tours: Record<string, Tour> = {
   gettingStarted: {
     id: 'getting-started',
     name: 'Getting Started',
-    description: 'Learn the basics of Froggo Dashboard',
+    description: 'Learn the basics of Mission Control Dashboard',
     steps: [
       {
         target: 'nav[role="navigation"]',
-        title: 'Welcome to Froggo!',
+        title: 'Welcome to Mission Control!',
         content: 'This sidebar is your navigation hub. Use ⌘1-9 to quickly jump between panels.',
         position: 'right',
       },
@@ -374,7 +374,7 @@ export const tours: Record<string, Tour> = {
       {
         target: '[data-voice-transcript]',
         title: 'Live Transcription',
-        content: 'Your speech appears here in real-time. After a pause, it automatically sends to Froggo.',
+        content: 'Your speech appears here in real-time. After a pause, it automatically sends to Mission Control.',
         position: 'top',
       },
       {
@@ -417,7 +417,7 @@ export function useTour() {
 
   const hasCompletedTour = (tourId: string): boolean => {
     try {
-      const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
+      const completed = JSON.parse(localStorage.getItem('mission-control-tours-completed') || '[]');
       return completed.includes(tourId);
     } catch {
       return false;

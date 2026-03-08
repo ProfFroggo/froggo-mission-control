@@ -51,7 +51,7 @@ export default function LogsTab() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `clawdbot-logs-${new Date().toISOString().slice(0, 10)}.log`;
+    a.download = `mission-control-logs-${new Date().toISOString().slice(0, 10)}.log`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -68,28 +68,28 @@ export default function LogsTab() {
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => setPolling(!polling)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            polling ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim'
+            polling ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim'
           }`}>
           {polling ? <Pause size={14} /> : <Play size={14} />}
           {polling ? 'Live' : 'Paused'}
         </button>
         <button type="button" onClick={() => setAutoScroll(!autoScroll)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            autoScroll ? 'bg-clawd-accent/20 text-clawd-accent' : 'bg-clawd-border text-clawd-text-dim'
+            autoScroll ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'
           }`}>
           <ArrowDown size={14} /> Auto-scroll
         </button>
         <button type="button" onClick={handleDownload}
-          className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:bg-clawd-border/80">
+          className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/80">
           <Download size={14} /> Download
         </button>
         <button type="button" onClick={() => setLines([])}
-          className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:bg-clawd-border/80">
+          className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/80">
           Clear
         </button>
         <div className="flex-1" />
         {fileInfo && (
-          <span className="text-xs text-clawd-text-dim">
+          <span className="text-xs text-mission-control-text-dim">
             {fileInfo.file.split('/').pop()} • {formatSize(fileInfo.size)} • {lines.length} lines
           </span>
         )}
@@ -98,21 +98,21 @@ export default function LogsTab() {
       {/* Log Viewer */}
       <div
         ref={logRef}
-        className="h-[500px] overflow-y-auto bg-clawd-bg border border-clawd-border rounded-xl p-3 font-mono text-xs"
+        className="h-[500px] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-xl p-3 font-mono text-xs"
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex items-center justify-center h-full text-mission-control-text-dim">
             <RefreshCw size={20} className="animate-spin mr-2" /> Loading logs...
           </div>
         ) : lines.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-clawd-text-dim">No log output</div>
+          <div className="flex items-center justify-center h-full text-mission-control-text-dim">No log output</div>
         ) : lines.map((line, i) => {
           const isError = /\berror\b/i.test(line);
           const isWarn = /\bwarn/i.test(line);
           const isDebug = /\bdebug\b/i.test(line);
           return (
             <div key={i} className={`py-0.5 leading-relaxed whitespace-pre-wrap break-all ${
-              isError ? 'text-error' : isWarn ? 'text-warning' : isDebug ? 'text-info/60' : 'text-clawd-text-dim'
+              isError ? 'text-error' : isWarn ? 'text-warning' : isDebug ? 'text-info/60' : 'text-mission-control-text-dim'
             }`}>
               {line}
             </div>

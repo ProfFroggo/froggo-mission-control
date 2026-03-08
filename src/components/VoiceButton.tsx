@@ -59,7 +59,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
       className={`p-2 rounded-xl transition-colors ${
         listening 
           ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-accent hover:text-white'
+          : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-accent hover:text-white'
       } disabled:opacity-50`}
       title={listening ? 'Stop listening' : 'Voice input'}
     >

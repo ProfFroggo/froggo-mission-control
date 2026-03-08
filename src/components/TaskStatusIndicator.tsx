@@ -61,9 +61,9 @@ const STATUS_CONFIG: Record<AgentStatus, {
     animate: true,
   },
   ready: {
-    color: 'bg-clawd-text-dim',
-    bgColor: 'bg-clawd-text-dim/20',
-    pulseColor: 'bg-clawd-text-dim/30',
+    color: 'bg-mission-control-text-dim',
+    bgColor: 'bg-mission-control-text-dim/20',
+    pulseColor: 'bg-mission-control-text-dim/30',
     label: 'Ready',
     emoji: '⚪',
     animate: false,
@@ -234,7 +234,7 @@ const TaskStatusIndicator = memo(function TaskStatusIndicator({
           statusInfo.status === 'active' ? 'text-success' :
           statusInfo.status === 'paused' ? 'text-warning' :
           statusInfo.status === 'stuck' ? 'text-error' :
-          'text-clawd-text-dim'
+          'text-mission-control-text-dim'
         }`}>
           {config.label}
           {statusInfo.agentName ? ` · ${statusInfo.agentName}` : ''}

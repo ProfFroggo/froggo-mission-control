@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
-import { agentApi, catalogApi } from '../lib/api';
+import { catalogApi } from '../lib/api';
 
 interface HRAgentCreationModalProps {
   onClose: () => void;
@@ -60,11 +60,8 @@ Rules:
 
 function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'db',        label: 'Register in agent database', detail: 'mission-control.db agents table',          status: 'pending' },
-    { id: 'soul',      label: 'Write soul file',            detail: '.claude/agents/{id}.md',                   status: 'pending' },
-    { id: 'workspace', label: 'Create agent workspace',     detail: '~/mission-control/agents/{id}/',           status: 'pending' },
-    { id: 'catalog',   label: 'Add to agent catalog',       detail: '.catalog/agents/{id}.json',                status: 'pending' },
-    { id: 'activate',  label: 'Set agent status active',    detail: 'Mark as idle, ready',                      status: 'pending' },
+    { id: 'catalog',   label: 'Add to agent catalog',       detail: 'catalog/agents/{id}.json',                status: 'pending' },
+    { id: 'workspace', label: 'Create workspace & register', detail: '~/mission-control/agents/{id}/ + agents table', status: 'pending' },
   ];
 }
 
@@ -90,8 +87,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     stepsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [creationSteps]);
 
-  // Kick off conversation
+  // Kick off conversation — ref guard prevents React Strict Mode double-invoke
+  const initCalledRef = useRef(false);
   useEffect(() => {
+    if (initCalledRef.current) return;
+    initCalledRef.current = true;
     askHR('');
   }, []);
 
@@ -123,7 +123,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       const res = await fetch('/api/agents/hr/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: prompt }),
+        body: JSON.stringify({ message: prompt, sessionKey: 'hr-agent-creation' }),
       });
       const raw = await res.json();
       let reply = raw?.response || raw?.content || raw?.message || raw?.text || '';
@@ -214,75 +214,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationDone(false);
     setCreationError(null);
 
-    // v3.0 soul template: YAML frontmatter + structured markdown
-    const modelSlug = cfg.capabilities.some(c => c.toLowerCase().includes('code') || c.toLowerCase().includes('engineer'))
-      ? 'claude-sonnet-4-6'
-      : 'claude-haiku-4-5-20251001';
-
-    const soulContent = `---
-name: ${cfg.id}
-description: >-
-  ${cfg.role}. ${cfg.capabilities.slice(0, 3).join(', ')}.
-model: ${modelSlug}
-permissionMode: default
-maxTurns: 40
-memory: user
----
-
-# ${cfg.emoji} ${cfg.name}
-
-You are ${cfg.name}, a ${cfg.role} on the Mission Control team.
-
-## Personality
-${cfg.personality}
-
-## Capabilities
-${cfg.capabilities.map(c => `- ${c}`).join('\n')}
-
-## Core Rules
-- Check the task board before starting work
-- Post activity on every meaningful decision
-- Update task status when done
-- Communicate blockers immediately
-
-## MCP Tools
-Use \`mcp__mission-control_db__*\` tools for task and agent management.
-Use \`mcp__memory__*\` tools for memory operations.
-
-## Workspace
-Your workspace: \`~/mission-control/agents/${cfg.id}/\`
-- \`SOUL.md\` — your identity (this file)
-- \`MEMORY.md\` — your persistent memory
-`;
-
     const stepFns: Array<{ id: string; fn: () => Promise<void> }> = [
-      {
-        id: 'db',
-        fn: () => agentApi.create({
-          id: cfg.id,
-          name: cfg.name,
-          role: cfg.role,
-          emoji: cfg.emoji,
-          color: cfg.color,
-          capabilities: cfg.capabilities,
-          personality: cfg.personality,
-        }),
-      },
-      {
-        id: 'soul',
-        fn: () => agentApi.writeSoul(cfg.id, soulContent),
-      },
-      {
-        id: 'workspace',
-        fn: () => agentApi.hire({
-          id: cfg.id,
-          name: cfg.name,
-          emoji: cfg.emoji,
-          role: cfg.role,
-          personality: cfg.personality,
-          capabilities: cfg.capabilities,
-        }),
-      },
       {
         id: 'catalog',
         fn: () => catalogApi.registerAgent({
@@ -293,11 +225,22 @@ Your workspace: \`~/mission-control/agents/${cfg.id}/\`
           description: cfg.role,
           capabilities: cfg.capabilities,
           category: 'custom',
+          model: 'sonnet',
+          version: '1.0.0',
         }),
       },
       {
-        id: 'activate',
-        fn: () => agentApi.updateStatus(cfg.id, 'idle'),
+        // hire route: creates workspace + SOUL.md + CLAUDE.md + registers in agents table + marks catalog installed=1
+        id: 'workspace',
+        fn: () => catalogApi.hireAgent({
+          id: cfg.id,
+          name: cfg.name,
+          emoji: cfg.emoji,
+          role: cfg.role,
+          personality: cfg.personality,
+          capabilities: cfg.capabilities,
+          color: cfg.color,
+        }),
       },
     ];
 

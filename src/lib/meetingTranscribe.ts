@@ -1,7 +1,7 @@
 /**
  * Meeting Transcription Service
  * Uses Gemini AI Transcribe API for real-time meeting transcription with speaker labels
- * Adapted for Froggo Dashboard (uses in-memory storage in web mode)
+ * Adapted for Mission Control Dashboard (uses in-memory storage in web mode)
  */
 
 // @ts-expect-error - @google/genai types not yet available

@@ -148,10 +148,10 @@ export default function ProjectEditor() {
         </div>
       </Panel>
 
-      <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
+      <Separator className="w-2 bg-mission-control-border hover:bg-mission-control-accent data-[separator=active]:bg-mission-control-accent transition-colors cursor-col-resize group flex items-center justify-center">
         <div className="flex items-center gap-px">
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-mission-control-text-dim/30 group-hover:bg-mission-control-text/50 group-data-[separator=active]:bg-mission-control-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-mission-control-text-dim/30 group-hover:bg-mission-control-text/50 group-data-[separator=active]:bg-mission-control-text/70 transition-colors" />
         </div>
       </Separator>
 
@@ -170,10 +170,10 @@ export default function ProjectEditor() {
         <ChatPane />
       </Panel>
 
-      <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
+      <Separator className="w-2 bg-mission-control-border hover:bg-mission-control-accent data-[separator=active]:bg-mission-control-accent transition-colors cursor-col-resize group flex items-center justify-center">
         <div className="flex items-center gap-px">
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-mission-control-text-dim/30 group-hover:bg-mission-control-text/50 group-data-[separator=active]:bg-mission-control-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-mission-control-text-dim/30 group-hover:bg-mission-control-text/50 group-data-[separator=active]:bg-mission-control-text/70 transition-colors" />
         </div>
       </Separator>
 
@@ -189,7 +189,7 @@ export default function ProjectEditor() {
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
             <button
               onClick={toggleChaptersPanel}
-              className="p-1.5 rounded transition-colors bg-clawd-surface text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
+              className="p-1.5 rounded transition-colors bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title={isChaptersCollapsed ? 'Show chapters sidebar' : 'Hide chapters sidebar'}
             >
               {isChaptersCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
@@ -198,8 +198,8 @@ export default function ProjectEditor() {
               onClick={toggleChatPanel}
               className={`p-1.5 rounded transition-colors ${
                 isChatCollapsed
-                  ? 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
-                  : 'bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30'
+                  ? 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
+                  : 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
               }`}
               title={isChatCollapsed ? 'Show chat pane' : 'Hide chat pane'}
             >
@@ -214,8 +214,8 @@ export default function ProjectEditor() {
                 onClick={toggleVersion}
                 className={`p-1.5 rounded transition-colors ${
                   versionOpen
-                    ? 'bg-clawd-accent/20 text-clawd-accent'
-                    : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
+                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                    : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
                 }`}
                 title={versionOpen ? 'Hide version history' : 'Show version history'}
               >
@@ -226,8 +226,8 @@ export default function ProjectEditor() {
               onClick={toggleContext}
               className={`p-1.5 rounded transition-colors ${
                 contextOpen
-                  ? 'bg-clawd-accent/20 text-clawd-accent'
-                  : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                  : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
               }`}
               title={contextOpen ? 'Hide context panel' : 'Show context panel'}
             >
@@ -240,7 +240,7 @@ export default function ProjectEditor() {
             {activeChapterId ? (
               <ChapterEditor />
             ) : (
-              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+              <div className="flex items-center justify-center h-full text-mission-control-text-dim">
                 <div className="text-center space-y-1">
                   <p className="text-sm">Select a chapter to start writing</p>
                   <p className="text-xs">or create a new chapter from the sidebar</p>

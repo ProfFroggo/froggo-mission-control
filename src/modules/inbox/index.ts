@@ -11,28 +11,28 @@ import manifest from './module.json';
 
 const CommsInbox3Pane = lazy(() => import('../../components/CommsInbox3Pane'));
 
+// Register synchronously at import time — sidebar shows immediately
+ViewRegistry.register({
+  id: 'inbox',
+  label: 'Inbox',
+  icon: Mail,
+  component: CommsInbox3Pane,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+ViewRegistry.register({
+  id: 'comms',
+  label: 'Communications',
+  icon: Mail,
+  component: CommsInbox3Pane,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'inbox',
-      label: 'Inbox',
-      icon: Mail,
-      component: CommsInbox3Pane,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-    // Preserve 'comms' alias — same component, different route ID for backward compat
-    ViewRegistry.register({
-      id: 'comms',
-      label: 'Communications',
-      icon: Mail,
-      component: CommsInbox3Pane,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     // Removes both 'inbox' and 'comms' views (both share moduleId: manifest.id)

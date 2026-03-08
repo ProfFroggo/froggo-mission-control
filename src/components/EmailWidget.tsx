@@ -14,7 +14,7 @@ interface EmailAccount {
 
 export default function EmailWidget() {
   const { emailAccounts } = useUserSettings();
-  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-clawd-text-dim' }));
+  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-mission-control-text-dim' }));
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,13 +68,13 @@ export default function EmailWidget() {
   };
 
   return (
-    <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+    <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Mail size={16} className="text-success" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full flex-shrink-0 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full flex-shrink-0 whitespace-nowrap">
               {totalUnread} unread
             </span>
           )}
@@ -87,14 +87,14 @@ export default function EmailWidget() {
         <button
           onClick={fetchEmail}
           disabled={loading}
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
           title="Refresh"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      <div className="divide-y divide-clawd-border">
+      <div className="divide-y divide-mission-control-border">
         {loading && accounts.length === 0 ? (
           <WidgetLoading 
             variant="spinner" 
@@ -103,18 +103,18 @@ export default function EmailWidget() {
             compact 
           />
         ) : error ? (
-          <div className="p-6 text-center text-clawd-text-dim">
+          <div className="p-6 text-center text-mission-control-text-dim">
             <AlertCircle size={24} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
-            <button onClick={fetchEmail} className="mt-2 text-xs text-clawd-accent hover:underline">
+            <button onClick={fetchEmail} className="mt-2 text-xs text-mission-control-accent hover:underline">
               Try again
             </button>
           </div>
         ) : accounts.length === 0 ? (
-          <div className="p-6 text-center text-clawd-text-dim">
+          <div className="p-6 text-center text-mission-control-text-dim">
             <Inbox size={24} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">Click refresh to check email</p>
-            <button onClick={fetchEmail} className="mt-2 text-xs text-clawd-accent hover:underline">
+            <button onClick={fetchEmail} className="mt-2 text-xs text-mission-control-accent hover:underline">
               Fetch now
             </button>
           </div>
@@ -124,7 +124,7 @@ export default function EmailWidget() {
               key={account.email}
               onClick={() => quickCheck(account.label)}
               onKeyDown={(e) => { if (e.key === 'Enter') quickCheck(account.label); }}
-              className="w-full p-3 hover:bg-clawd-bg/50 transition-colors cursor-pointer group text-left"
+              className="w-full p-3 hover:bg-mission-control-bg/50 transition-colors cursor-pointer group text-left"
               aria-label={`Quick check ${account.label} account`}
             >
               <div className="flex items-center justify-between">
@@ -134,7 +134,7 @@ export default function EmailWidget() {
                   </span>
                   <div>
                     <div className="font-medium text-sm">{account.label}</div>
-                    <div className="text-xs text-clawd-text-dim truncate">{account.email}</div>
+                    <div className="text-xs text-mission-control-text-dim truncate">{account.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function EmailWidget() {
                     </span>
                   )}
                   {account.unread > 0 && (
-                    <span className="text-xs px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
+                    <span className="text-xs px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                       {account.unread}
                     </span>
                   )}
@@ -163,7 +163,7 @@ export default function EmailWidget() {
       </div>
 
       {lastFetch > 0 && (
-        <div className="px-4 py-2 border-t border-clawd-border text-xs text-clawd-text-dim">
+        <div className="px-4 py-2 border-t border-mission-control-border text-xs text-mission-control-text-dim">
           Updated {new Date(lastFetch).toLocaleTimeString()}
         </div>
       )}

@@ -92,7 +92,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
     ? 'text-red-500'
     : isWarning
     ? 'text-yellow-500'
-    : 'text-clawd-text-dim';
+    : 'text-mission-control-text-dim';
 
   // Auto-resize textarea
   useEffect(() => {
@@ -112,11 +112,11 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
       <div className="flex items-start gap-2">
         {showThread && (
           <div className="flex flex-col items-center pt-3 flex-shrink-0">
-            <div className="w-8 h-8 bg-clawd-accent rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-mission-control-accent rounded-full flex items-center justify-center">
               <span className="text-xs font-semibold text-white">{index + 1}</span>
             </div>
             {index < total - 1 && (
-              <div className="w-0.5 bg-clawd-border flex-1 mt-1 min-h-[16px]" />
+              <div className="w-0.5 bg-mission-control-border flex-1 mt-1 min-h-[16px]" />
             )}
           </div>
         )}
@@ -129,10 +129,10 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
               placeholder={placeholder}
               rows={3}
               disabled={disabled}
-              className={`w-full bg-clawd-surface text-clawd-text placeholder-clawd-text-dim border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 resize-none transition-colors ${
+              className={`w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 resize-none transition-colors ${
                 isOverLimit
                   ? 'border-red-500 focus:ring-red-500'
-                  : 'border-clawd-border focus:ring-clawd-accent'
+                  : 'border-mission-control-border focus:ring-mission-control-accent'
               }`}
               style={{ minHeight: '72px' }}
             />
@@ -145,7 +145,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
           <button
             onClick={() => onRemove(index)}
             disabled={disabled}
-            className="mt-2 p-2 text-clawd-text-dim hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-40"
+            className="mt-2 p-2 text-mission-control-text-dim hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-40"
             title="Remove tweet"
           >
             <Trash2 className="w-4 h-4" />
@@ -473,21 +473,21 @@ export default function XPublishComposer() {
   const showThread = mode === 'thread';
 
   return (
-    <div ref={composerRef} className="flex flex-col h-full bg-clawd-bg">
+    <div ref={composerRef} className="flex flex-col h-full bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-mission-control-border">
         <div className="flex items-center gap-3">
-          <Send className="w-5 h-5 text-clawd-accent" />
-          <h3 className="text-lg font-semibold text-clawd-text">Post to X</h3>
+          <Send className="w-5 h-5 text-mission-control-accent" />
+          <h3 className="text-lg font-semibold text-mission-control-text">Post to X</h3>
         </div>
         {/* Mode toggle */}
-        <div className="flex items-center bg-clawd-surface border border-clawd-border rounded-lg overflow-hidden">
+        <div className="flex items-center bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
           <button
             onClick={() => switchToMode('single')}
             className={`px-4 py-1.5 text-sm font-medium transition-colors ${
               mode === 'single'
-                ? 'bg-clawd-accent text-white'
-                : 'text-clawd-text-dim hover:text-clawd-text'
+                ? 'bg-mission-control-accent text-white'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             Single Tweet
@@ -496,8 +496,8 @@ export default function XPublishComposer() {
             onClick={() => switchToMode('thread')}
             className={`px-4 py-1.5 text-sm font-medium transition-colors ${
               mode === 'thread'
-                ? 'bg-clawd-accent text-white'
-                : 'text-clawd-text-dim hover:text-clawd-text'
+                ? 'bg-mission-control-accent text-white'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             Thread
@@ -515,7 +515,7 @@ export default function XPublishComposer() {
                 {failedPosts.length} scheduled post{failedPosts.length > 1 ? 's' : ''} failed to publish
               </span>
             </div>
-            <div className="text-xs text-clawd-text-dim mt-1 space-y-1">
+            <div className="text-xs text-mission-control-text-dim mt-1 space-y-1">
               {failedPosts.slice(0, 3).map(fp => (
                 <div key={fp.id} className="truncate">
                   "{fp.content.slice(0, 60)}{fp.content.length > 60 ? '...' : ''}" — {fp.error || 'Unknown error'}
@@ -524,7 +524,7 @@ export default function XPublishComposer() {
             </div>
             <button
               onClick={() => setFailedPosts([])}
-              className="mt-2 text-xs text-clawd-text-dim hover:text-clawd-text underline"
+              className="mt-2 text-xs text-mission-control-text-dim hover:text-mission-control-text underline"
             >
               Dismiss
             </button>
@@ -549,7 +549,7 @@ export default function XPublishComposer() {
             ) : (
               <span>
                 {rateLimit.remaining} post{rateLimit.remaining !== 1 ? 's' : ''} remaining today
-                <span className="text-clawd-text-dim/50 ml-1">(resets on restart)</span>
+                <span className="text-mission-control-text-dim/50 ml-1">(resets on restart)</span>
               </span>
             )}
           </div>
@@ -568,13 +568,13 @@ export default function XPublishComposer() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={posting || schedulingLoading}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-surface border border-dashed border-clawd-border rounded-lg transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface border border-dashed border-mission-control-border rounded-lg transition-colors disabled:opacity-40"
             >
               <Image className="w-4 h-4" />
               Attach Image/Video
             </button>
           ) : (
-            <div className="flex items-start gap-3 p-3 bg-clawd-surface border border-clawd-border rounded-lg">
+            <div className="flex items-start gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg">
               {/* Preview */}
               {mediaPreviewUrl && mediaFile.type.startsWith('image/') && (
                 <img
@@ -584,14 +584,14 @@ export default function XPublishComposer() {
                 />
               )}
               {mediaPreviewUrl && mediaFile.type.startsWith('video/') && (
-                <div className="w-16 h-16 bg-clawd-bg-alt rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Image className="w-6 h-6 text-clawd-text-dim" />
+                <div className="w-16 h-16 bg-mission-control-bg-alt rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Image className="w-6 h-6 text-mission-control-text-dim" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-clawd-text truncate">{mediaFile.name}</p>
+                <p className="text-sm text-mission-control-text truncate">{mediaFile.name}</p>
                 {uploadingMedia && (
-                  <div className="flex items-center gap-1.5 mt-1 text-xs text-clawd-text-dim">
+                  <div className="flex items-center gap-1.5 mt-1 text-xs text-mission-control-text-dim">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     Uploading...
                   </div>
@@ -606,7 +606,7 @@ export default function XPublishComposer() {
               <button
                 onClick={clearMedia}
                 disabled={posting || schedulingLoading}
-                className="text-clawd-text-dim hover:text-clawd-text transition-colors disabled:opacity-40 flex-shrink-0"
+                className="text-mission-control-text-dim hover:text-mission-control-text transition-colors disabled:opacity-40 flex-shrink-0"
                 title="Remove media"
               >
                 <X className="w-4 h-4" />
@@ -636,7 +636,7 @@ export default function XPublishComposer() {
           <button
             onClick={addTweet}
             disabled={posting}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-surface border border-dashed border-clawd-border rounded-lg w-full transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface border border-dashed border-mission-control-border rounded-lg w-full transition-colors disabled:opacity-40"
           >
             <Plus className="w-4 h-4" />
             Add tweet to thread
@@ -645,8 +645,8 @@ export default function XPublishComposer() {
 
         {/* Schedule datetime picker */}
         {scheduling && (
-          <div className="p-4 bg-clawd-surface border border-clawd-border rounded-lg space-y-3">
-            <label className="block text-sm font-medium text-clawd-text">
+          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
+            <label className="block text-sm font-medium text-mission-control-text">
               Schedule for
               {editingScheduledId && (
                 <span className="text-xs text-yellow-400 ml-2">(editing scheduled post)</span>
@@ -657,7 +657,7 @@ export default function XPublishComposer() {
               value={scheduledAt}
               min={getMinScheduleTime()}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm text-clawd-text focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
             />
             {scheduleResult && !scheduleResult.success && (
               <div className="flex items-center gap-2 text-sm text-red-400">
@@ -668,7 +668,7 @@ export default function XPublishComposer() {
             <button
               onClick={handleScheduleSubmit}
               disabled={isScheduleDisabled || !scheduledAt}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent hover:bg-clawd-accent/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors"
             >
               {schedulingLoading ? (
                 <>
@@ -699,19 +699,19 @@ export default function XPublishComposer() {
         {showConfirm && (
           <div className="flex items-center gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
             <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-            <span className="text-sm text-clawd-text flex-1">
+            <span className="text-sm text-mission-control-text flex-1">
               {mode === 'single' ? 'Post this tweet to X?' : `Post this ${tweets.filter(t => t.trim()).length}-tweet thread to X?`}
               {' '}This cannot be undone.
             </span>
             <button
               onClick={() => { setShowConfirm(false); handlePost(); }}
-              className="px-4 py-1.5 bg-clawd-accent text-white text-sm font-medium rounded-lg hover:bg-clawd-accent/80 transition-colors"
+              className="px-4 py-1.5 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
             >
               Confirm
             </button>
             <button
               onClick={() => setShowConfirm(false)}
-              className="px-4 py-1.5 bg-clawd-surface text-clawd-text-dim text-sm font-medium rounded-lg hover:bg-clawd-surface/80 transition-colors border border-clawd-border"
+              className="px-4 py-1.5 bg-mission-control-surface text-mission-control-text-dim text-sm font-medium rounded-lg hover:bg-mission-control-surface/80 transition-colors border border-mission-control-border"
             >
               Cancel
             </button>
@@ -767,8 +767,8 @@ export default function XPublishComposer() {
         {/* Scheduled posts list */}
         {!loadingScheduled && scheduled.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-clawd-text">
-              <Clock className="w-4 h-4 text-clawd-accent" />
+            <div className="flex items-center gap-2 text-sm font-medium text-mission-control-text">
+              <Clock className="w-4 h-4 text-mission-control-accent" />
               Scheduled Posts
             </div>
             <div className="space-y-2">
@@ -783,31 +783,31 @@ export default function XPublishComposer() {
                 return (
                   <div
                     key={post.id}
-                    className={`flex items-start gap-3 p-3 bg-clawd-surface border rounded-lg ${
+                    className={`flex items-start gap-3 p-3 bg-mission-control-surface border rounded-lg ${
                       editingScheduledId === post.id
                         ? 'border-yellow-500/50 bg-yellow-500/5'
-                        : 'border-clawd-border'
+                        : 'border-mission-control-border'
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-clawd-text truncate">
+                      <p className="text-sm text-mission-control-text truncate">
                         {displayContent?.slice(0, 80) || '(empty)'}
                         {displayContent && displayContent.length > 80 ? '…' : ''}
                       </p>
-                      <p className="text-xs text-clawd-text-dim mt-0.5">
+                      <p className="text-xs text-mission-control-text-dim mt-0.5">
                         {formatScheduledTime(post.scheduled_time)}
                       </p>
                     </div>
                     <button
                       onClick={() => editScheduledPost(post)}
-                      className="px-2 py-1 text-xs text-clawd-accent hover:bg-clawd-accent/10 rounded transition-colors flex-shrink-0"
+                      className="px-2 py-1 text-xs text-mission-control-accent hover:bg-mission-control-accent/10 rounded transition-colors flex-shrink-0"
                       title="Edit scheduled post"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleCancelScheduled(post.id)}
-                      className="text-clawd-text-dim hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"
+                      className="text-mission-control-text-dim hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"
                       title="Cancel scheduled post"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -821,13 +821,13 @@ export default function XPublishComposer() {
       </div>
 
       {/* Action buttons */}
-      <div className="px-6 pb-6 pt-4 border-t border-clawd-border space-y-3">
+      <div className="px-6 pb-6 pt-4 border-t border-mission-control-border space-y-3">
         <div className="flex items-center gap-3">
           {/* Post button — shows confirmation first */}
           <button
             onClick={() => setShowConfirm(true)}
             disabled={isPostDisabled}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
             {posting ? (
               <>
@@ -855,8 +855,8 @@ export default function XPublishComposer() {
             disabled={isScheduleDisabled}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               scheduling
-                ? 'bg-clawd-accent/20 text-clawd-accent border border-clawd-accent/40'
-                : 'bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg-alt'
+                ? 'bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/40'
+                : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
             }`}
             title="Schedule for later"
           >

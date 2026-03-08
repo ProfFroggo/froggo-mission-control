@@ -1,15 +1,13 @@
 {
-  "id": "froggo-chat",
+  "id": "chat",
   "name": "Chat",
   "version": "1.0.0",
   "description": "Real-time AI chat with agents and contacts.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "MessageSquare",
   "category": "communications",
   "core": true,
-
   "credentials": [],
-
   "views": [
     {
       "id": "chat",
@@ -18,12 +16,10 @@
       "entrypoint": "./views/ChatPanel.tsx"
     }
   ],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],

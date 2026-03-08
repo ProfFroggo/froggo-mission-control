@@ -1,13 +1,13 @@
 {
   "agents": [
     {
-      "id": "froggo",
-      "name": "Froggo",
+      "id": "mission-control",
+      "name": "Mission Control",
       "emoji": "\ud83d\udc38",
       "role": "General Assistant",
       "color": "#4CAF50",
-      "profilePath": "./froggo.json",
-      "imagePath": "./froggo.svg"
+      "profilePath": "./mission-control.json",
+      "imagePath": "./mission-control.svg"
     },
     {
       "id": "coder",

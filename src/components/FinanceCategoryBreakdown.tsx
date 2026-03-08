@@ -92,10 +92,10 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
   const total = breakdown.reduce((sum, r) => sum + r.total, 0);
 
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide">
           Spend by Category
         </h3>
         {/* Period selector */}
@@ -106,8 +106,8 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
               onClick={() => setSelectedDays(days)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 selectedDays === days
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-bg-alt text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text'
               }`}
               aria-label={`Show ${label} breakdown`}
             >
@@ -119,12 +119,12 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
 
       {/* Loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-clawd-text-dim">
+        <div className="flex items-center justify-center py-8 gap-2 text-mission-control-text-dim">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading breakdown...</span>
         </div>
       ) : breakdown.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-clawd-text-dim">
+        <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-dim">
           <TrendingDown className="w-10 h-10 mb-2" />
           <p className="text-sm">No spending data for this period</p>
         </div>
@@ -154,8 +154,8 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
                     String(label).charAt(0).toUpperCase() + String(label).slice(1)
                   }
                   contentStyle={{
-                    background: 'var(--clawd-surface)',
-                    border: '1px solid var(--clawd-border)',
+                    background: 'var(--mission-control-surface)',
+                    border: '1px solid var(--mission-control-border)',
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -176,15 +176,15 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
                     style={{ background: row.color }}
                   />
                   {/* Name */}
-                  <span className="flex-1 text-clawd-text capitalize truncate">
+                  <span className="flex-1 text-mission-control-text capitalize truncate">
                     {row.category}
                   </span>
                   {/* Pct */}
-                  <span className="text-clawd-text-dim text-xs w-8 text-right flex-shrink-0">
+                  <span className="text-mission-control-text-dim text-xs w-8 text-right flex-shrink-0">
                     {pct.toFixed(0)}%
                   </span>
                   {/* Amount */}
-                  <span className="text-clawd-text font-medium text-right flex-shrink-0 w-20">
+                  <span className="text-mission-control-text font-medium text-right flex-shrink-0 w-20">
                     {formatCurrency(row.total)}
                   </span>
                 </div>

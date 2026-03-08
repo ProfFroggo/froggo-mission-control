@@ -39,7 +39,26 @@ const SCHEDULE_PATH = process.env.SCHEDULE_PATH || path.join(HOME, 'mission-cont
 const LOG_PATH = process.env.LOG_PATH || path.join(HOME, 'mission-control/logs/cron.log');
 const CLAUDE_BIN = process.env.CLAUDE_BIN || path.join(HOME, '.npm-global/bin/claude');
 const DB_PATH = process.env.DB_PATH || path.join(HOME, 'mission-control/data/mission-control.db');
+const PID_PATH = path.join(HOME, 'mission-control/logs/cron-daemon.pid');
 const CHECK_INTERVAL = 60_000;        // 1 minute — schedule job check
+
+// ── Single-instance lock ──────────────────────────────────────────────────────
+// Prevent duplicate daemons from running concurrently.
+try {
+  if (fs.existsSync(PID_PATH)) {
+    const existingPid = parseInt(fs.readFileSync(PID_PATH, 'utf8').trim(), 10);
+    if (existingPid && existingPid !== process.pid) {
+      try { process.kill(existingPid, 0); // Check if process is alive
+        console.error(`Cron daemon already running (PID ${existingPid}). Exiting.`);
+        process.exit(0);
+      } catch { /* stale PID — proceed */ }
+    }
+  }
+  fs.mkdirSync(path.dirname(PID_PATH), { recursive: true });
+  fs.writeFileSync(PID_PATH, String(process.pid));
+} catch (e) {
+  console.error('PID lock error:', e.message);
+}
 const STUCK_CHECK_INTERVAL = 30 * 60_000; // 30 minutes — stuck task sweep
 const STUCK_THRESHOLD_MS = 4 * 60 * 60_000; // 4 hours in-progress = stuck
 
@@ -110,35 +129,115 @@ function cronMatches(expr, date) {
   );
 }
 
+// ── Chat message persistence ──────────────────────────────────────────────────
+
+function saveChatMessage(sessionKey, role, content) {
+  const database = getDb();
+  if (!database) return;
+  try {
+    const agentId = sessionKey.replace(/^(cron:|inbox:)/, '');
+    const now = Date.now();
+    // Session must exist before message (FK constraint: messages.sessionKey → sessions.key)
+    database.prepare(
+      `INSERT OR IGNORE INTO sessions (key, agentId, createdAt, lastActivity, messageCount)
+       VALUES (?, ?, ?, ?, 0)`
+    ).run(sessionKey, agentId, now, now);
+    database.prepare(
+      `UPDATE sessions SET lastActivity = ?, messageCount = messageCount + 1 WHERE key = ?`
+    ).run(now, sessionKey);
+    const id = `cron-${now}-${Math.random().toString(36).slice(2, 7)}`;
+    database.prepare(
+      `INSERT OR IGNORE INTO messages (id, sessionKey, role, content, timestamp, channel)
+       VALUES (?, ?, ?, ?, ?, 'cron')`
+    ).run(id, sessionKey, role, content, now);
+  } catch (e) {
+    log(`saveChatMessage error: ${e.message}`);
+  }
+}
+
 // ── Job execution ─────────────────────────────────────────────────────────────
 
-function runApiJob(job) {
+// Route generic/unknown targets to mission-control
+const GENERIC_TARGETS = new Set(['isolated', 'main', 'froggo']);
+
+async function runApiJob(job) {
   const payload = job.payload || {};
   const message = payload.message || 'Check your tasks and report status.';
   const model = payload.model || 'claude-haiku-4-5-20251001';
-  const sessionTarget = job.sessionTarget || 'isolated';
+  const rawTarget = job.sessionTarget || 'mission-control';
+  const agentId = GENERIC_TARGETS.has(rawTarget) ? 'mission-control' : rawTarget;
+  const sessionKey = `cron:${agentId}`;
 
-  const isGeneric = sessionTarget === 'isolated' || sessionTarget === 'main';
-  const agentCwd = isGeneric
-    ? HOME
-    : path.join(HOME, 'mission-control', 'agents', sessionTarget);
+  log(`Dispatching cron job "${job.name}" → agent=${agentId} session=${sessionKey}`);
 
-  const cwd = fs.existsSync(agentCwd) ? agentCwd : HOME;
+  // Save the trigger message to chat so it's visible in UI
+  saveChatMessage(sessionKey, 'user', `[Scheduled: ${job.name}] ${message}`);
 
-  log(`Running API job ${job.id} (${job.name}): model=${model} cwd=${cwd}`);
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ message, model, sessionKey });
+    const req = http.request({
+      host: '127.0.0.1',
+      port: 3000,
+      path: `/api/agents/${agentId}/stream`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let buf = '';
+      let accumulated = '';
 
-  const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+      res.on('data', chunk => {
+        buf += chunk.toString();
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (raw === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(raw);
+            if (evt.type === 'assistant' && evt.message?.content) {
+              for (const block of evt.message.content) {
+                if (block.type === 'text') accumulated += block.text;
+              }
+            } else if (evt.type === 'text' && evt.text) {
+              accumulated += evt.text;
+            } else if (evt.type === 'error') {
+              log(`[${job.id}] agent error: ${evt.text}`);
+              accumulated += `[Error: ${evt.text}]`;
+            }
+          } catch {}
+        }
+      });
 
-  const proc = spawn(
-    CLAUDE_BIN,
-    ['--print', '--model', model, '--dangerously-skip-permissions', message],
-    { cwd, env: cleanEnv, detached: true, stdio: ['ignore', 'pipe', 'pipe'] }
-  );
+      res.on('end', () => {
+        if (accumulated) {
+          log(`[${job.id}] ${agentId} responded (${accumulated.length} chars)`);
+          saveChatMessage(sessionKey, 'agent', accumulated);
+        } else {
+          log(`[${job.id}] ${agentId} produced no response`);
+        }
+        resolve();
+      });
+    });
 
-  proc.stdout.on('data', d => log(`[${job.id}] ${d.toString().trim()}`));
-  proc.stderr.on('data', d => log(`[${job.id}] ERR: ${d.toString().trim()}`));
-  proc.on('close', code => log(`[${job.id}] exited ${code}`));
-  proc.unref();
+    req.on('error', err => {
+      log(`[${job.id}] Stream request error: ${err.message}`);
+      resolve();
+    });
+
+    // 3-minute timeout per job
+    req.setTimeout(180_000, () => {
+      log(`[${job.id}] Timed out after 3 min`);
+      req.destroy();
+      resolve();
+    });
+
+    req.write(body);
+    req.end();
+  });
 }
 
 function runLegacyJob(job) {
@@ -222,7 +321,7 @@ function checkJobs() {
     if (!job.enabled) return job;
 
     if (isDue(job, now)) {
-      runApiJob(job);
+      runApiJob(job).catch(e => log(`[${job.id}] runApiJob error: ${e.message}`));
       updated = true;
       const nextRunAtMs = computeNextRun(job, now);
       const newState = { ...job.state, lastRunAtMs: now, nextRunAtMs };
@@ -318,5 +417,10 @@ setInterval(checkJobs, CHECK_INTERVAL);
 checkStuckTasks();
 setInterval(checkStuckTasks, STUCK_CHECK_INTERVAL);
 
-process.on('SIGTERM', () => { log('Cron daemon shutting down.'); process.exit(0); });
-process.on('SIGINT',  () => { log('Cron daemon shutting down.'); process.exit(0); });
+function shutdown() {
+  log('Cron daemon shutting down.');
+  try { fs.unlinkSync(PID_PATH); } catch {}
+  process.exit(0);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT',  shutdown);

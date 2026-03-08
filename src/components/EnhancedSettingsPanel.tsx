@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield, 
+import {
+  Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
-  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive
+  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
@@ -123,7 +123,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
 ];
 
 const defaultSettings: Settings = {
-  gatewayUrl: 'ws://127.0.0.1:18789',
+  gatewayUrl: '',
   gatewayToken: '',
   voiceEnabled: true,
   voiceSpeed: 1.0,
@@ -202,26 +202,26 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.classList.add(actualTheme);
   
   if (actualTheme === 'dark') {
-    root.style.setProperty('--clawd-bg', '#0a0a0a');
-    root.style.setProperty('--clawd-surface', '#141414');
-    root.style.setProperty('--clawd-border', '#262626');
-    root.style.setProperty('--clawd-text', '#fafafa');
-    root.style.setProperty('--clawd-text-dim', '#a1a1aa');
+    root.style.setProperty('--mission-control-bg', '#0a0a0a');
+    root.style.setProperty('--mission-control-surface', '#141414');
+    root.style.setProperty('--mission-control-border', '#262626');
+    root.style.setProperty('--mission-control-text', '#fafafa');
+    root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
   } else {
-    root.style.setProperty('--clawd-bg', '#fafafa');
-    root.style.setProperty('--clawd-surface', '#ffffff');
-    root.style.setProperty('--clawd-border', '#e4e4e7');
-    root.style.setProperty('--clawd-text', '#18181b');
-    root.style.setProperty('--clawd-text-dim', '#71717a');
+    root.style.setProperty('--mission-control-bg', '#fafafa');
+    root.style.setProperty('--mission-control-surface', '#ffffff');
+    root.style.setProperty('--mission-control-border', '#e4e4e7');
+    root.style.setProperty('--mission-control-text', '#18181b');
+    root.style.setProperty('--mission-control-text-dim', '#71717a');
   }
   
-  root.style.setProperty('--clawd-accent', accentColor);
+  root.style.setProperty('--mission-control-accent', accentColor);
   
   const hex = accentColor.replace('#', '');
   const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
   const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
   const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-  root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
+  root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
 
   const fontMap: Record<string, string> = {
     system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -229,8 +229,8 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
     'roboto-mono': '"Roboto Mono", Consolas, Monaco, "Courier New", monospace',
     'sf-pro': '"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
   };
-  root.style.setProperty('--clawd-font', fontMap[fontFamily] || fontMap.system);
-  root.style.setProperty('--clawd-font-size', `${fontSize}px`);
+  root.style.setProperty('--mission-control-font', fontMap[fontFamily] || fontMap.system);
+  root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
 type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'window';
@@ -253,17 +253,17 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between mb-3 group"
       >
-        <h2 className="text-heading-3 flex items-center gap-2 group-hover:text-clawd-accent transition-colors">
+        <h2 className="text-heading-3 flex items-center gap-2 group-hover:text-mission-control-accent transition-colors">
           {icon}
           {title}
         </h2>
-        {isOpen ? <ChevronDown size={16} className="text-clawd-text-dim" /> : <ChevronRight size={16} className="text-clawd-text-dim" />}
+        {isOpen ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
       </button>
       {description && (
-        <p className="text-sm text-clawd-text-dim mb-3">{description}</p>
+        <p className="text-sm text-mission-control-text-dim mb-3">{description}</p>
       )}
       {isOpen && (
-        <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
           {children}
         </div>
       )}
@@ -280,14 +280,14 @@ function Tooltip({ text }: { text: string }) {
       <button
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        className="text-clawd-text-dim hover:text-clawd-accent transition-colors"
+        className="text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
       >
         <Info size={14} />
       </button>
       {show && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg shadow-lg text-xs whitespace-nowrap">
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-lg text-xs whitespace-nowrap">
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-clawd-border" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-mission-control-border" />
         </div>
       )}
     </div>
@@ -299,7 +299,7 @@ export default function EnhancedSettingsPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [searchQuery, setSearchQuery] = useState('');
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = safeStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
@@ -331,7 +331,7 @@ export default function EnhancedSettingsPanel() {
   }, [settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize]);
 
   const handleSave = async () => {
-    safeStorage.setItem('froggo-settings', JSON.stringify(settings));
+    safeStorage.setItem('mission-control-settings', JSON.stringify(settings));
 
     try {
       await settingsApi.set('automation', {
@@ -353,7 +353,7 @@ export default function EnhancedSettingsPanel() {
   const handleReset = () => {
     if (confirm('Reset all settings to defaults? This cannot be undone.')) {
       setSettings(defaultSettings);
-      safeStorage.removeItem('froggo-settings');
+      safeStorage.removeItem('mission-control-settings');
       showToast('info', 'Settings reset', 'All settings restored to defaults');
     }
   };
@@ -364,7 +364,7 @@ export default function EnhancedSettingsPanel() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `froggo-settings-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `mission-control-settings-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
     showToast('success', 'Settings exported', 'Download started');
@@ -490,7 +490,7 @@ export default function EnhancedSettingsPanel() {
               <h1 className="text-heading-2 mb-2 flex items-center gap-2">
                 <Settings size={24} /> Settings
               </h1>
-              <p className="text-secondary">Configure Froggo dashboard preferences</p>
+              <p className="text-secondary">Configure Mission Control dashboard preferences</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -498,7 +498,7 @@ export default function EnhancedSettingsPanel() {
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   saved 
                     ? 'bg-success-subtle text-success' 
-                    : 'bg-clawd-accent text-white hover:bg-clawd-accent-dim'
+                    : 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim'
                 }`}
               >
                 {saved ? <Check size={16} /> : <Save size={16} />}
@@ -509,36 +509,36 @@ export default function EnhancedSettingsPanel() {
 
           {/* Search Bar */}
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               placeholder="Search settings..."
               aria-label="Search settings input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+              className="w-full pl-10 pr-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
             />
           </div>
 
           {/* Setting Presets */}
           {!searchQuery && (
             <div className="mt-4 flex gap-2">
-              <span className="text-sm text-clawd-text-dim self-center">Quick presets:</span>
+              <span className="text-sm text-mission-control-text-dim self-center">Quick presets:</span>
               <button
                 onClick={() => applyPreset('minimal')}
-                className="px-3 py-1 text-sm bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
               >
                 Minimal
               </button>
               <button
                 onClick={() => applyPreset('default')}
-                className="px-3 py-1 text-sm bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
               >
                 Default
               </button>
               <button
                 onClick={() => applyPreset('poweruser')}
-                className="px-3 py-1 text-sm bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                className="px-3 py-1 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
               >
                 Power User
               </button>
@@ -548,7 +548,7 @@ export default function EnhancedSettingsPanel() {
 
         {/* Tabs */}
         {!searchQuery && (
-          <div className="flex gap-2 mb-6 border-b border-clawd-border overflow-x-auto pb-0">
+          <div className="flex gap-2 mb-6 border-b border-mission-control-border overflow-x-auto pb-0">
             {[
               { id: 'general', label: 'General', icon: null },
               { id: 'appearance', label: 'Appearance', icon: <Palette size={14} /> },
@@ -568,8 +568,8 @@ export default function EnhancedSettingsPanel() {
                 onClick={() => setActiveTab(tab.id as Tab)}
                 className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
                   activeTab === tab.id
-                    ? 'border-clawd-accent text-clawd-accent'
-                    : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {tab.icon}
@@ -597,15 +597,15 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
                   <div className="text-sm text-gray-400 space-y-1">
-                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">froggo-db &middot; memory &middot; cron</span></div>
+                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">mission-control-db &middot; memory &middot; cron</span></div>
                     <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
                     <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
-                    <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/froggo/memory/</span></div>
+                    <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/mission-control/memory/</span></div>
                   </div>
-                  <div className="flex items-center gap-2 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
+                  <div className="flex items-center gap-2 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
                     <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
                     <span className="text-sm font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
-                    {connected && <span className="text-xs text-clawd-text-dim ml-auto">Active</span>}
+                    {connected && <span className="text-xs text-mission-control-text-dim ml-auto">Active</span>}
                   </div>
                 </div>
               </CollapsibleSection>
@@ -620,7 +620,7 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label htmlFor="default-panel" className="block text-sm text-clawd-text-dim">Default Panel on Startup</label>
+                      <label htmlFor="default-panel" className="block text-sm text-mission-control-text-dim">Default Panel on Startup</label>
                       <Tooltip text="This panel will open when you launch the app" />
                     </div>
                     <select
@@ -628,17 +628,17 @@ export default function EnhancedSettingsPanel() {
                       aria-label="Default panel on startup select"
                       value={settings.defaultPanel}
                       onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
-                      className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                     >
-                      <option value="dashboard">🎯 Dashboard</option>
-                      <option value="inbox">📥 Inbox</option>
-                      <option value="comms">💬 Communications</option>
-                      <option value="analytics">📊 Analytics</option>
-                      <option value="kanban">✅ Tasks (Kanban)</option>
-                      <option value="agents">🤖 Agents</option>
-                      <option value="twitter">𝕏 Social Media</option>
-                      <option value="voice">🎙️ Voice</option>
-                      <option value="chat">💭 Chat</option>
+                      <option value="dashboard">Dashboard</option>
+                      <option value="inbox">Inbox</option>
+                      <option value="comms">Communications</option>
+                      <option value="analytics">Analytics</option>
+                      <option value="kanban">Tasks (Kanban)</option>
+                      <option value="agents">Agents</option>
+                      <option value="twitter">Social Media</option>
+                      <option value="voice">Voice</option>
+                      <option value="chat">Chat</option>
                     </select>
                   </div>
                 </div>
@@ -655,7 +655,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Voice Responses</div>
-                      <div className="text-sm text-clawd-text-dim">Read responses aloud</div>
+                      <div className="text-sm text-mission-control-text-dim">Read responses aloud</div>
                     </div>
                     <Toggle 
                       checked={settings.voiceEnabled}
@@ -664,7 +664,7 @@ export default function EnhancedSettingsPanel() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label htmlFor="speech-speed" className="block text-sm text-clawd-text-dim">
+                      <label htmlFor="speech-speed" className="block text-sm text-mission-control-text-dim">
                         Speech Speed: {settings.voiceSpeed.toFixed(1)}x
                       </label>
                       <Tooltip text="Adjust voice playback speed" />
@@ -681,7 +681,7 @@ export default function EnhancedSettingsPanel() {
                       className="w-full"
                       disabled={!settings.voiceEnabled}
                     />
-                    <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                       <span>0.5x (Slow)</span>
                       <span>1.0x (Normal)</span>
                       <span>2.0x (Fast)</span>
@@ -701,7 +701,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Auto Refresh</div>
-                      <div className="text-sm text-clawd-text-dim">Automatically refresh sessions list</div>
+                      <div className="text-sm text-mission-control-text-dim">Automatically refresh sessions list</div>
                     </div>
                     <Toggle
                       checked={settings.autoRefresh}
@@ -710,7 +710,7 @@ export default function EnhancedSettingsPanel() {
                   </div>
                   {settings.autoRefresh && (
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-2">
+                      <label className="block text-sm text-mission-control-text-dim mb-2">
                         Refresh Interval: {settings.refreshInterval}s
                       </label>
                       <input
@@ -723,7 +723,7 @@ export default function EnhancedSettingsPanel() {
                         onChange={(e) => setSettings(s => ({ ...s, refreshInterval: parseInt(e.target.value) }))}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                      <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                         <span>10s (Fast)</span>
                         <span>30s (Balanced)</span>
                         <span>120s (Slow)</span>
@@ -744,14 +744,14 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex gap-3">
                     <button
                       onClick={handleExport}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                     >
                       <Download size={16} />
                       Export Settings
                     </button>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                     >
                       <Upload size={16} />
                       Import Settings
@@ -764,7 +764,7 @@ export default function EnhancedSettingsPanel() {
                       className="hidden"
                     />
                   </div>
-                  <p className="text-xs text-clawd-text-dim">
+                  <p className="text-xs text-mission-control-text-dim">
                     Export your settings to backup or transfer to another device
                   </p>
                 </div>
@@ -784,7 +784,7 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="color-mode-select" className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
+                    <label htmlFor="color-mode-select" className="block text-sm text-mission-control-text-dim mb-2">Color Mode</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['dark', 'light', 'system'] as const).map((t) => (
                         <button
@@ -795,14 +795,14 @@ export default function EnhancedSettingsPanel() {
                               // Apply theme immediately
                               applyTheme(t, s.accentColor, s.fontFamily, s.fontSize);
                               // Save to localStorage immediately
-                              safeStorage.setItem('froggo-settings', JSON.stringify(newSettings));
+                              safeStorage.setItem('mission-control-settings', JSON.stringify(newSettings));
                               return newSettings;
                             });
                           }}
                           className={`py-3 px-4 rounded-lg border transition-colors ${
                             settings.theme === t 
-                              ? 'border-clawd-accent bg-clawd-accent/20 text-clawd-accent' 
-                              : 'border-clawd-border hover:border-clawd-accent/50'
+                              ? 'border-mission-control-accent bg-mission-control-accent/20 text-mission-control-accent' 
+                              : 'border-mission-control-border hover:border-mission-control-accent/50'
                           }`}
                         >
                           {t === 'dark' && <Moon size={16} className="inline mr-2" />}
@@ -814,7 +814,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="accent-color-picker" className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
+                    <label htmlFor="accent-color-picker" className="block text-sm text-mission-control-text-dim mb-2">Accent Color</label>
                     <div className="flex gap-2 flex-wrap mb-3">
                       {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                         <button
@@ -829,16 +829,16 @@ export default function EnhancedSettingsPanel() {
                       ))}
                     </div>
                     <div className="flex items-center gap-2">
-                      <label htmlFor="custom-accent-color" className="text-sm text-clawd-text-dim">Custom:</label>
+                      <label htmlFor="custom-accent-color" className="text-sm text-mission-control-text-dim">Custom:</label>
                       <input
                         id="custom-accent-color"
                         type="color"
                         aria-label="Custom accent color picker"
                         value={settings.accentColor}
                         onChange={(e) => setSettings(s => ({ ...s, accentColor: e.target.value }))}
-                        className="h-10 w-20 rounded-lg border border-clawd-border cursor-pointer"
+                        className="h-10 w-20 rounded-lg border border-mission-control-border cursor-pointer"
                       />
-                      <span className="text-sm font-mono text-clawd-text-dim">{settings.accentColor}</span>
+                      <span className="text-sm font-mono text-mission-control-text-dim">{settings.accentColor}</span>
                     </div>
                   </div>
                 </div>
@@ -853,13 +853,13 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="font-family" className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
+                    <label htmlFor="font-family" className="block text-sm text-mission-control-text-dim mb-2">Font Family</label>
                     <select
                       id="font-family"
                       aria-label="Font family select"
                       value={settings.fontFamily}
                       onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
-                      className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                     >
                       <option value="system">System Default</option>
                       <option value="inter">Inter</option>
@@ -868,7 +868,7 @@ export default function EnhancedSettingsPanel() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">
+                    <label className="block text-sm text-mission-control-text-dim mb-2">
                       Font Size: {settings.fontSize}px
                     </label>
                     <input
@@ -881,17 +881,17 @@ export default function EnhancedSettingsPanel() {
                       onChange={(e) => setSettings(s => ({ ...s, fontSize: parseInt(e.target.value) }))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                       <span>Small (12px)</span>
                       <span>Medium (14px)</span>
                       <span>Large (18px)</span>
                     </div>
                   </div>
-                  <div className="mt-4 p-4 bg-clawd-bg rounded-lg border border-clawd-border">
+                  <div className="mt-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
                     <p className="mb-2" style={{ fontSize: `${settings.fontSize}px` }}>
                       The quick brown fox jumps over the lazy dog
                     </p>
-                    <p className="text-xs text-clawd-text-dim">Preview of current font settings</p>
+                    <p className="text-xs text-mission-control-text-dim">Preview of current font settings</p>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -917,20 +917,20 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-clawd-text-dim">Click any shortcut to edit</span>
+                    <span className="text-sm text-mission-control-text-dim">Click any shortcut to edit</span>
                     <button
                       onClick={resetShortcuts}
-                      className="text-sm text-clawd-text-dim hover:text-clawd-accent transition-colors flex items-center gap-1"
+                      className="text-sm text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1"
                     >
                       <RotateCcw size={14} />
                       Reset to Defaults
                     </button>
                   </div>
                   {settings.keyboardShortcuts.map((shortcut) => (
-                    <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-clawd-border last:border-0">
+                    <div key={shortcut.id} className="flex items-center justify-between py-3 border-b border-mission-control-border last:border-0">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{shortcut.name}</div>
-                        <div className="text-xs text-clawd-text-dim">{shortcut.description}</div>
+                        <div className="text-xs text-mission-control-text-dim">{shortcut.description}</div>
                       </div>
                       <div className="flex items-center gap-2">
                         {editingShortcut === shortcut.id ? (
@@ -947,23 +947,23 @@ export default function EnhancedSettingsPanel() {
                                 setEditingShortcut(null);
                               }
                             }}
-                            className="w-24 px-2 py-1 text-center bg-clawd-bg border border-clawd-accent rounded text-sm"
+                            className="w-24 px-2 py-1 text-center bg-mission-control-bg border border-mission-control-accent rounded text-sm"
                           />
                         ) : (
                           <button
                             onClick={() => setEditingShortcut(shortcut.id)}
-                            className="px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded text-sm font-mono hover:border-clawd-accent transition-colors"
+                            className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded text-sm font-mono hover:border-mission-control-accent transition-colors"
                           >
-                            {shortcut.modifiers.map(m => m === 'cmd' ? '⌘' : m === 'shift' ? '⇧' : m === 'alt' ? '⌥' : '⌃').join('')}
+                            {shortcut.modifiers.map(m => m === 'cmd' ? 'Cmd+' : m === 'shift' ? 'Shift+' : m === 'alt' ? 'Alt+' : 'Ctrl+').join('')}
                             {shortcut.currentKey.toUpperCase()}
                           </button>
                         )}
                       </div>
                     </div>
                   ))}
-                  <div className="pt-4 text-xs text-clawd-text-dim space-y-1">
+                  <div className="pt-4 text-xs text-mission-control-text-dim space-y-1">
                     <p>• Press Enter to save or Escape to cancel</p>
-                    <p>• ⌘ = Command • ⇧ = Shift • ⌥ = Option • ⌃ = Control</p>
+                    <p>• Cmd = Command • Shift = Shift • Alt = Option • Ctrl = Control</p>
                   </div>
                 </div>
               </CollapsibleSection>
@@ -984,7 +984,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Enable Caching</div>
-                      <div className="text-sm text-clawd-text-dim">Cache responses for faster loading</div>
+                      <div className="text-sm text-mission-control-text-dim">Cache responses for faster loading</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableCache}
@@ -994,7 +994,7 @@ export default function EnhancedSettingsPanel() {
 
                   {settings.performance.enableCache && (
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-2">
+                      <label className="block text-sm text-mission-control-text-dim mb-2">
                         Cache Size: {settings.performance.cacheSize} MB
                       </label>
                       <input
@@ -1007,7 +1007,7 @@ export default function EnhancedSettingsPanel() {
                         onChange={(e) => setSettings(s => ({ ...s, performance: { ...s.performance, cacheSize: parseInt(e.target.value) } }))}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                      <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                         <span>50 MB</span>
                         <span>500 MB</span>
                       </div>
@@ -1015,7 +1015,7 @@ export default function EnhancedSettingsPanel() {
                   )}
 
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">
+                    <label className="block text-sm text-mission-control-text-dim mb-2">
                       Max Concurrent Requests: {settings.performance.maxConcurrentRequests}
                     </label>
                     <input
@@ -1033,7 +1033,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Lazy Loading</div>
-                      <div className="text-sm text-clawd-text-dim">Load content as needed</div>
+                      <div className="text-sm text-mission-control-text-dim">Load content as needed</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableLazyLoading}
@@ -1044,7 +1044,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Animations</div>
-                      <div className="text-sm text-clawd-text-dim">Enable UI animations</div>
+                      <div className="text-sm text-mission-control-text-dim">Enable UI animations</div>
                     </div>
                     <Toggle
                       checked={settings.performance.animationsEnabled}
@@ -1055,7 +1055,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">List Virtualization</div>
-                      <div className="text-sm text-clawd-text-dim">Render only visible items in long lists</div>
+                      <div className="text-sm text-mission-control-text-dim">Render only visible items in long lists</div>
                     </div>
                     <Toggle
                       checked={settings.performance.enableVirtualization}
@@ -1088,7 +1088,7 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm text-clawd-text-dim">
+                      <label className="block text-sm text-mission-control-text-dim">
                         Data Retention: {settings.data.retentionDays} days
                       </label>
                       <Tooltip text="Data older than this will be automatically deleted" />
@@ -1103,7 +1103,7 @@ export default function EnhancedSettingsPanel() {
                       onChange={(e) => setSettings(s => ({ ...s, data: { ...s.data, retentionDays: parseInt(e.target.value) } }))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-clawd-text-dim mt-1">
+                    <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
                       <span>30 days</span>
                       <span>180 days</span>
                       <span>1 year</span>
@@ -1113,7 +1113,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Auto Cleanup</div>
-                      <div className="text-sm text-clawd-text-dim">Automatically delete old data</div>
+                      <div className="text-sm text-mission-control-text-dim">Automatically delete old data</div>
                     </div>
                     <Toggle
                       checked={settings.data.autoCleanup}
@@ -1122,7 +1122,7 @@ export default function EnhancedSettingsPanel() {
                   </div>
 
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">
+                    <label className="block text-sm text-mission-control-text-dim mb-2">
                       Max Log File Size: {settings.data.maxLogSize} MB
                     </label>
                     <input
@@ -1140,7 +1140,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Usage Analytics</div>
-                      <div className="text-sm text-clawd-text-dim">Collect anonymous usage data</div>
+                      <div className="text-sm text-mission-control-text-dim">Collect anonymous usage data</div>
                     </div>
                     <Toggle
                       checked={settings.data.enableAnalytics}
@@ -1174,7 +1174,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Reduce Motion</div>
-                      <div className="text-sm text-clawd-text-dim">Minimize animations and transitions</div>
+                      <div className="text-sm text-mission-control-text-dim">Minimize animations and transitions</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.reduceMotion}
@@ -1185,7 +1185,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">High Contrast</div>
-                      <div className="text-sm text-clawd-text-dim">Increase color contrast</div>
+                      <div className="text-sm text-mission-control-text-dim">Increase color contrast</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.highContrast}
@@ -1196,7 +1196,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Large Text</div>
-                      <div className="text-sm text-clawd-text-dim">Use larger text sizes throughout</div>
+                      <div className="text-sm text-mission-control-text-dim">Use larger text sizes throughout</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.largeText}
@@ -1207,7 +1207,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Screen Reader Optimized</div>
-                      <div className="text-sm text-clawd-text-dim">Optimize for screen readers</div>
+                      <div className="text-sm text-mission-control-text-dim">Optimize for screen readers</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.screenReaderOptimized}
@@ -1218,7 +1218,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Keyboard Navigation Hints</div>
-                      <div className="text-sm text-clawd-text-dim">Show keyboard shortcuts in UI</div>
+                      <div className="text-sm text-mission-control-text-dim">Show keyboard shortcuts in UI</div>
                     </div>
                     <Toggle
                       checked={settings.accessibility.keyboardNavigationHints}
@@ -1244,7 +1244,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Launch on Startup</div>
-                      <div className="text-sm text-clawd-text-dim">Start app when you log in</div>
+                      <div className="text-sm text-mission-control-text-dim">Start app when you log in</div>
                     </div>
                     <Toggle
                       checked={settings.window.launchOnStartup}
@@ -1255,7 +1255,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Start Minimized</div>
-                      <div className="text-sm text-clawd-text-dim">Launch app minimized to tray</div>
+                      <div className="text-sm text-mission-control-text-dim">Launch app minimized to tray</div>
                     </div>
                     <Toggle
                       checked={settings.window.startMinimized}
@@ -1266,7 +1266,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Minimize to Tray</div>
-                      <div className="text-sm text-clawd-text-dim">Minimize to system tray instead of taskbar</div>
+                      <div className="text-sm text-mission-control-text-dim">Minimize to system tray instead of taskbar</div>
                     </div>
                     <Toggle
                       checked={settings.window.minimizeToTray}
@@ -1277,7 +1277,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Close to Tray</div>
-                      <div className="text-sm text-clawd-text-dim">Keep app running in background when closed</div>
+                      <div className="text-sm text-mission-control-text-dim">Keep app running in background when closed</div>
                     </div>
                     <Toggle
                       checked={settings.window.closeToTray}
@@ -1288,7 +1288,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Always on Top</div>
-                      <div className="text-sm text-clawd-text-dim">Keep window above other windows</div>
+                      <div className="text-sm text-mission-control-text-dim">Keep window above other windows</div>
                     </div>
                     <Toggle
                       checked={settings.window.alwaysOnTop}
@@ -1299,7 +1299,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Remember Window Position</div>
-                      <div className="text-sm text-clawd-text-dim">Restore window position on launch</div>
+                      <div className="text-sm text-mission-control-text-dim">Restore window position on launch</div>
                     </div>
                     <Toggle
                       checked={settings.window.rememberWindowPosition}
@@ -1332,7 +1332,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Developer Mode</div>
-                      <div className="text-sm text-clawd-text-dim">Enable developer features</div>
+                      <div className="text-sm text-mission-control-text-dim">Enable developer features</div>
                     </div>
                     <Toggle
                       checked={settings.developer.devMode}
@@ -1343,7 +1343,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Show Debug Info</div>
-                      <div className="text-sm text-clawd-text-dim">Display debug information in UI</div>
+                      <div className="text-sm text-mission-control-text-dim">Display debug information in UI</div>
                     </div>
                     <Toggle
                       checked={settings.developer.showDebugInfo}
@@ -1355,7 +1355,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Experimental Features</div>
-                      <div className="text-sm text-clawd-text-dim">Enable features in development</div>
+                      <div className="text-sm text-mission-control-text-dim">Enable features in development</div>
                     </div>
                     <Toggle
                       checked={settings.developer.enableExperimentalFeatures}
@@ -1367,7 +1367,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Verbose Logging</div>
-                      <div className="text-sm text-clawd-text-dim">Enable detailed console logs</div>
+                      <div className="text-sm text-mission-control-text-dim">Enable detailed console logs</div>
                     </div>
                     <Toggle
                       checked={settings.developer.verboseLogging}
@@ -1379,7 +1379,7 @@ export default function EnhancedSettingsPanel() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Performance Metrics</div>
-                      <div className="text-sm text-clawd-text-dim">Show render times and stats</div>
+                      <div className="text-sm text-mission-control-text-dim">Show render times and stats</div>
                     </div>
                     <Toggle
                       checked={settings.developer.showPerformanceMetrics}
@@ -1410,7 +1410,7 @@ export default function EnhancedSettingsPanel() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 bg-clawd-bg rounded-lg border-2 border-clawd-border">
+                  <div className="flex items-center justify-between p-4 bg-mission-control-bg rounded-lg border-2 border-mission-control-border">
                     <div>
                       <div className="font-medium flex items-center gap-2">
                         Kill Switch
@@ -1420,7 +1420,7 @@ export default function EnhancedSettingsPanel() {
                           <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded font-bold">BLOCKED</span>
                         )}
                       </div>
-                      <div className="text-sm text-clawd-text-dim">
+                      <div className="text-sm text-mission-control-text-dim">
                         {settings.externalActionsEnabled 
                           ? 'External actions will be executed when approved' 
                           : 'All external actions blocked (safe mode)'}
@@ -1438,7 +1438,7 @@ export default function EnhancedSettingsPanel() {
                     <>
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <label className="block text-sm text-clawd-text-dim">
+                          <label className="block text-sm text-mission-control-text-dim">
                             Tweet Rate Limit: {settings.rateLimitTweets}/hour
                           </label>
                           <Tooltip text="Maximum tweets per hour to prevent spam" />
@@ -1456,7 +1456,7 @@ export default function EnhancedSettingsPanel() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <label className="block text-sm text-clawd-text-dim">
+                          <label className="block text-sm text-mission-control-text-dim">
                             Email Rate Limit: {settings.rateLimitEmails}/hour
                           </label>
                           <Tooltip text="Maximum emails per hour to prevent spam" />
@@ -1475,11 +1475,11 @@ export default function EnhancedSettingsPanel() {
 
                       <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                         <div className="flex items-start gap-2">
-                          <span className="text-xl">🤖</span>
+                          <Bot size={20} className="text-info flex-shrink-0" />
                           <div className="flex-1">
                             <div className="font-medium text-info mb-2">Smart Account Selection</div>
                             <div className="text-sm text-info space-y-2">
-                              <p>Froggo intelligently chooses accounts based on context:</p>
+                              <p>Mission Control intelligently chooses accounts based on context:</p>
                               <ul className="list-disc list-inside space-y-1 ml-2 text-xs">
                                 <li>Reply-to matching for email threads</li>
                                 <li>Calendar selection based on invite</li>
@@ -1499,17 +1499,17 @@ export default function EnhancedSettingsPanel() {
 
         {/* Actions */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup'].includes(activeTab) && (
-          <div className="flex gap-3 mt-8 sticky bottom-0 bg-clawd-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-clawd-border">
+          <div className="flex gap-3 mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
             <button
               onClick={handleSave}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors"
             >
               {saved ? <Check size={16} /> : <Save size={16} />}
               {saved ? 'Saved!' : 'Save Settings'}
             </button>
             <button
               onClick={handleReset}
-              className="px-6 py-3 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors flex items-center gap-2"
             >
               <RotateCcw size={16} />
               Reset All

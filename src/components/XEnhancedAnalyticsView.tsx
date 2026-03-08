@@ -240,12 +240,12 @@ export function XEnhancedAnalyticsView() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <BarChart2 size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
-          <p className="text-clawd-text font-medium mb-1">Could not load analytics</p>
-          <p className="text-sm text-clawd-text-dim">Check your X API credentials.</p>
+          <BarChart2 size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
+          <p className="text-mission-control-text font-medium mb-1">Could not load analytics</p>
+          <p className="text-sm text-mission-control-text-dim">Check your X API credentials.</p>
           <button
             onClick={loadData}
-            className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg text-sm hover:bg-clawd-accent/90 transition-colors"
+            className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/90 transition-colors"
           >
             Retry
           </button>
@@ -255,29 +255,29 @@ export function XEnhancedAnalyticsView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg overflow-hidden">
+    <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border shrink-0">
+      <div className="p-4 border-b border-mission-control-border shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/10 rounded-xl">
-              <BarChart2 size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/10 rounded-xl">
+              <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-clawd-text">Enhanced Analytics</h1>
-              <p className="text-sm text-clawd-text-dim">Deep insights for your social media performance</p>
+              <h1 className="text-xl font-semibold text-mission-control-text">Enhanced Analytics</h1>
+              <p className="text-sm text-mission-control-text-dim">Deep insights for your social media performance</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex bg-clawd-surface rounded-lg p-1 border border-clawd-border">
+            <div className="flex bg-mission-control-surface rounded-lg p-1 border border-mission-control-border">
               {(['7d', '30d', '90d'] as const).map((range) => (
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                     timeRange === range
-                      ? 'bg-clawd-accent text-white'
-                      : 'text-clawd-text-dim hover:text-clawd-text'
+                      ? 'bg-mission-control-accent text-white'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
                   {range === '7d' ? '7D' : range === '30d' ? '30D' : '90D'}
@@ -286,7 +286,7 @@ export function XEnhancedAnalyticsView() {
             </div>
             <button
               onClick={loadData}
-              className="p-2 rounded-lg border border-clawd-border hover:bg-clawd-surface transition-colors text-clawd-text-dim"
+              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim"
               title="Refresh"
             >
               <RefreshCw size={16} />
@@ -307,8 +307,8 @@ export function XEnhancedAnalyticsView() {
               onClick={() => setView(id as AnalyticsView)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 view === id
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
               }`}
             >
               <Icon size={16} />
@@ -324,38 +324,38 @@ export function XEnhancedAnalyticsView() {
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <MessageCircle size={16} className="text-info" />
-                  <span className="text-sm text-clawd-text-dim">Total Posts</span>
+                  <span className="text-sm text-mission-control-text-dim">Total Posts</span>
                 </div>
-                <div className="text-2xl font-bold text-clawd-text">{data.summary.totalPosts}</div>
+                <div className="text-2xl font-bold text-mission-control-text">{data.summary.totalPosts}</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <Eye size={16} className="text-clawd-accent" />
-                  <span className="text-sm text-clawd-text-dim">Impressions</span>
+                  <Eye size={16} className="text-mission-control-accent" />
+                  <span className="text-sm text-mission-control-text-dim">Impressions</span>
                 </div>
-                <div className="text-2xl font-bold text-clawd-text">{formatNumber(data.summary.totalImpressions)}</div>
+                <div className="text-2xl font-bold text-mission-control-text">{formatNumber(data.summary.totalImpressions)}</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp size={16} className="text-success" />
-                  <span className="text-sm text-clawd-text-dim">Engagement Rate</span>
+                  <span className="text-sm text-mission-control-text-dim">Engagement Rate</span>
                 </div>
                 <div className="text-2xl font-bold text-success">{data.summary.engagementRate.toFixed(2)}%</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Users size={16} className="text-purple-500" />
-                  <span className="text-sm text-clawd-text-dim">Followers</span>
+                  <span className="text-sm text-mission-control-text-dim">Followers</span>
                 </div>
                 <div className="text-2xl font-bold text-purple-500">{formatNumber(data.summary.followerCount)}</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity size={16} className="text-warning" />
-                  <span className="text-sm text-clawd-text-dim">Avg Likes/Tweet</span>
+                  <span className="text-sm text-mission-control-text-dim">Avg Likes/Tweet</span>
                 </div>
                 <div className="text-2xl font-bold text-warning">{data.summary.avgLikesPerTweet.toFixed(1)}</div>
               </div>
@@ -364,9 +364,9 @@ export function XEnhancedAnalyticsView() {
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Impressions Over Time */}
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
-                <h3 className="font-semibold text-clawd-text mb-4 flex items-center gap-2">
-                  <Eye size={16} className="text-clawd-accent" />
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
+                  <Eye size={16} className="text-mission-control-accent" />
                   Impressions Over Time
                 </h3>
                 <div className="h-64">
@@ -392,8 +392,8 @@ export function XEnhancedAnalyticsView() {
               </div>
 
               {/* Follower Growth */}
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
-                <h3 className="font-semibold text-clawd-text mb-4 flex items-center gap-2">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
                   <Users size={16} className="text-purple-500" />
                   Follower Growth
                 </h3>
@@ -416,8 +416,8 @@ export function XEnhancedAnalyticsView() {
 
             {/* Content Type Performance */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
-                <h3 className="font-semibold text-clawd-text mb-4 flex items-center gap-2">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
                   <BarChart2 size={16} className="text-info" />
                   Content Type Distribution
                 </h3>
@@ -447,8 +447,8 @@ export function XEnhancedAnalyticsView() {
                 </div>
               </div>
 
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
-                <h3 className="font-semibold text-clawd-text mb-4 flex items-center gap-2">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
                   <TrendingUp size={16} className="text-success" />
                   Engagement by Content Type
                 </h3>
@@ -470,9 +470,9 @@ export function XEnhancedAnalyticsView() {
             </div>
 
             {/* Top Suggestions Preview */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-clawd-text flex items-center gap-2">
+                <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <Lightbulb size={16} className="text-warning" />
                   Top Insights
                 </h3>
@@ -485,19 +485,19 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {data.suggestions.slice(0, 3).map((suggestion) => (
-                  <div key={suggestion.id} className="p-4 bg-clawd-bg rounded-xl">
+                  <div key={suggestion.id} className="p-4 bg-mission-control-bg rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xl">{suggestion.icon}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
                         suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
-                        'bg-clawd-border text-clawd-text-dim'
+                        'bg-mission-control-border text-mission-control-text-dim'
                       }`}>
                         {suggestion.impact} impact
                       </span>
                     </div>
-                    <div className="font-medium text-clawd-text text-sm">{suggestion.title}</div>
-                    <div className="text-xs text-clawd-text-dim mt-1 line-clamp-2">{suggestion.description}</div>
+                    <div className="font-medium text-mission-control-text text-sm">{suggestion.title}</div>
+                    <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{suggestion.description}</div>
                   </div>
                 ))}
               </div>
@@ -508,45 +508,45 @@ export function XEnhancedAnalyticsView() {
         {view === 'posts' && (
           <div className="space-y-4">
             {/* Average Metrics Bar */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-              <div className="text-sm text-clawd-text-dim mb-3">Average Post Performance</div>
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+              <div className="text-sm text-mission-control-text-dim mb-3">Average Post Performance</div>
               <div className="flex items-center gap-6 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Eye size={14} className="text-clawd-accent" />
-                  <span className="text-clawd-text">{formatFullNumber(avgMetrics.impressions)}</span>
-                  <span className="text-xs text-clawd-text-dim">impressions</span>
+                  <Eye size={14} className="text-mission-control-accent" />
+                  <span className="text-mission-control-text">{formatFullNumber(avgMetrics.impressions)}</span>
+                  <span className="text-xs text-mission-control-text-dim">impressions</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Heart size={14} className="text-review" />
-                  <span className="text-clawd-text">{avgMetrics.likes}</span>
-                  <span className="text-xs text-clawd-text-dim">likes</span>
+                  <span className="text-mission-control-text">{avgMetrics.likes}</span>
+                  <span className="text-xs text-mission-control-text-dim">likes</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Repeat size={14} className="text-success" />
-                  <span className="text-clawd-text">{avgMetrics.retweets}</span>
-                  <span className="text-xs text-clawd-text-dim">retweets</span>
+                  <span className="text-mission-control-text">{avgMetrics.retweets}</span>
+                  <span className="text-xs text-mission-control-text-dim">retweets</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MessageCircle size={14} className="text-info" />
-                  <span className="text-clawd-text">{avgMetrics.replies}</span>
-                  <span className="text-xs text-clawd-text-dim">replies</span>
+                  <span className="text-mission-control-text">{avgMetrics.replies}</span>
+                  <span className="text-xs text-mission-control-text-dim">replies</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MousePointer size={14} className="text-purple-500" />
-                  <span className="text-clawd-text">{avgMetrics.clicks}</span>
-                  <span className="text-xs text-clawd-text-dim">clicks</span>
+                  <span className="text-mission-control-text">{avgMetrics.clicks}</span>
+                  <span className="text-xs text-mission-control-text-dim">clicks</span>
                 </div>
               </div>
             </div>
 
             {/* Post List */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-clawd-border">
-                <h3 className="font-semibold text-clawd-text">Individual Post Performance</h3>
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-mission-control-border">
+                <h3 className="text-sm font-semibold text-mission-control-text">Individual Post Performance</h3>
               </div>
-              <div className="divide-y divide-clawd-border">
+              <div className="divide-y divide-mission-control-border">
                 {data.postMetrics.map((post) => (
-                  <div key={post.id} className="p-4 hover:bg-clawd-bg/50 transition-colors">
+                  <div key={post.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
                     <div className="flex items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -554,52 +554,52 @@ export function XEnhancedAnalyticsView() {
                             post.type === 'thread' ? 'bg-success-subtle text-success' :
                             post.type === 'reply' ? 'bg-info-subtle text-info' :
                             post.type === 'quote' ? 'bg-purple-subtle text-purple-500' :
-                            'bg-clawd-accent/20 text-clawd-accent'
+                            'bg-mission-control-accent/20 text-mission-control-accent'
                           }`}>
                             {post.type}
                           </span>
-                          <span className="text-xs text-clawd-text-dim">
+                          <span className="text-xs text-mission-control-text-dim">
                             {new Date(post.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-sm text-clawd-text line-clamp-2">{post.content}</p>
+                        <p className="text-sm text-mission-control-text line-clamp-2">{post.content}</p>
                       </div>
                       <div className="shrink-0 flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-lg font-semibold text-clawd-text">{formatNumber(post.impressions)}</div>
-                          <div className="text-xs text-clawd-text-dim">impr</div>
+                          <div className="text-lg font-semibold text-mission-control-text">{formatNumber(post.impressions)}</div>
+                          <div className="text-xs text-mission-control-text-dim">impr</div>
                         </div>
                         <div className="text-right">
                           <div className={`text-lg font-semibold flex items-center justify-end gap-1 ${getPerformanceClass(post.impressions, avgMetrics.impressions)}`}>
                             {getPerformanceIcon(post.impressions, avgMetrics.impressions)}
                             {formatNumber(post.impressions)}
                           </div>
-                          <div className="text-xs text-clawd-text-dim">vs avg</div>
+                          <div className="text-xs text-mission-control-text-dim">vs avg</div>
                         </div>
                         <div className="grid grid-cols-4 gap-3 text-center">
                           <div>
                             <div className="flex items-center justify-center gap-1 text-review">
                               <Heart size={12} />
                             </div>
-                            <div className="text-xs font-medium text-clawd-text">{post.likes}</div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.likes}</div>
                           </div>
                           <div>
                             <div className="flex items-center justify-center gap-1 text-success">
                               <Repeat size={12} />
                             </div>
-                            <div className="text-xs font-medium text-clawd-text">{post.retweets}</div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.retweets}</div>
                           </div>
                           <div>
                             <div className="flex items-center justify-center gap-1 text-info">
                               <MessageCircle size={12} />
                             </div>
-                            <div className="text-xs font-medium text-clawd-text">{post.replies}</div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
                           </div>
                           <div>
                             <div className="flex items-center justify-center gap-1 text-purple-500">
                               <MousePointer size={12} />
                             </div>
-                            <div className="text-xs font-medium text-clawd-text">{post.clicks}</div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.clicks}</div>
                           </div>
                         </div>
                       </div>
@@ -614,12 +614,12 @@ export function XEnhancedAnalyticsView() {
         {view === 'heatmap' && (
           <div className="space-y-6">
             {/* Posting Frequency Heatmap */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
-              <h3 className="font-semibold text-clawd-text mb-2 flex items-center gap-2">
-                <Calendar size={16} className="text-clawd-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <h3 className="font-semibold text-mission-control-text mb-2 flex items-center gap-2">
+                <Calendar size={16} className="text-mission-control-accent" />
                 Optimal Posting Times
               </h3>
-              <p className="text-sm text-clawd-text-dim mb-4">
+              <p className="text-sm text-mission-control-text-dim mb-4">
                 Engagement heatmap showing when your audience is most active
               </p>
               
@@ -628,7 +628,7 @@ export function XEnhancedAnalyticsView() {
                   {/* Hour labels */}
                   <div className="flex ml-12 mb-2">
                     {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
-                      <div key={hour} className="flex-1 text-xs text-clawd-text-dim text-center">
+                      <div key={hour} className="flex-1 text-xs text-mission-control-text-dim text-center">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
                     ))}
@@ -637,7 +637,7 @@ export function XEnhancedAnalyticsView() {
                   {/* Heatmap grid */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
                     <div key={day} className="flex items-center mb-1">
-                      <div className="w-10 text-xs text-clawd-text-dim text-right pr-2">{day}</div>
+                      <div className="w-10 text-xs text-mission-control-text-dim text-right pr-2">{day}</div>
                       <div className="flex-1 flex gap-0.5">
                         {Array.from({ length: 24 }, (_, hour) => {
                           const cellData = data.heatmapData.find(h => h.day === day && h.hour === hour);
@@ -660,7 +660,7 @@ export function XEnhancedAnalyticsView() {
                   
                   {/* Legend */}
                   <div className="flex items-center justify-end gap-2 mt-4">
-                    <span className="text-xs text-clawd-text-dim">Low</span>
+                    <span className="text-xs text-mission-control-text-dim">Low</span>
                     <div className="flex gap-0.5">
                       {[0.2, 0.4, 0.6, 0.8, 1].map((intensity) => (
                         <div
@@ -670,7 +670,7 @@ export function XEnhancedAnalyticsView() {
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-clawd-text-dim">High</span>
+                    <span className="text-xs text-mission-control-text-dim">High</span>
                   </div>
                 </div>
               </div>
@@ -678,29 +678,29 @@ export function XEnhancedAnalyticsView() {
 
             {/* Best Times Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap size={16} className="text-warning" />
-                  <span className="text-sm text-clawd-text-dim">Best Day</span>
+                  <span className="text-sm text-mission-control-text-dim">Best Day</span>
                 </div>
-                <div className="text-2xl font-bold text-clawd-text">Tuesday</div>
-                <div className="text-sm text-clawd-text-dim">Highest average engagement</div>
+                <div className="text-2xl font-bold text-mission-control-text">Tuesday</div>
+                <div className="text-sm text-mission-control-text-dim">Highest average engagement</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock size={16} className="text-info" />
-                  <span className="text-sm text-clawd-text-dim">Best Time</span>
+                  <span className="text-sm text-mission-control-text-dim">Best Time</span>
                 </div>
-                <div className="text-2xl font-bold text-clawd-text">2:00 PM</div>
-                <div className="text-sm text-clawd-text-dim">Peak engagement window</div>
+                <div className="text-2xl font-bold text-mission-control-text">2:00 PM</div>
+                <div className="text-sm text-mission-control-text-dim">Peak engagement window</div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar size={16} className="text-success" />
-                  <span className="text-sm text-clawd-text-dim">Best Day + Time</span>
+                  <span className="text-sm text-mission-control-text-dim">Best Day + Time</span>
                 </div>
-                <div className="text-2xl font-bold text-clawd-text">Tue 8-10 PM</div>
-                <div className="text-sm text-clawd-text-dim">Optimal posting slot</div>
+                <div className="text-2xl font-bold text-mission-control-text">Tue 8-10 PM</div>
+                <div className="text-sm text-mission-control-text-dim">Optimal posting slot</div>
               </div>
             </div>
           </div>
@@ -708,7 +708,7 @@ export function XEnhancedAnalyticsView() {
 
         {view === 'insights' && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-clawd-text flex items-center gap-2">
+            <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
               <Lightbulb size={16} className="text-warning" />
               AI-Powered Suggestions
             </h3>
@@ -716,22 +716,22 @@ export function XEnhancedAnalyticsView() {
               {data.suggestions.map((suggestion) => (
                 <div
                   key={suggestion.id}
-                  className="bg-clawd-surface border border-clawd-border rounded-xl p-5"
+                  className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5"
                 >
                   <div className="flex items-start gap-4">
                     <div className="text-3xl">{suggestion.icon}</div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-clawd-text">{suggestion.title}</h4>
+                        <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                           suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
                           suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
-                          'bg-clawd-border text-clawd-text-dim'
+                          'bg-mission-control-border text-mission-control-text-dim'
                         }`}>
                           {suggestion.impact} impact
                         </span>
                       </div>
-                      <p className="text-sm text-clawd-text-dim">{suggestion.description}</p>
+                      <p className="text-sm text-mission-control-text-dim">{suggestion.description}</p>
                     </div>
                   </div>
                 </div>

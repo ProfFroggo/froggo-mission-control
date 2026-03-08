@@ -76,11 +76,11 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
       {/* Left Pane (Agent Chat) */}
       {!leftCollapsed && (
         <>
-          <div style={{ width: `${leftWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden relative">
+          <div style={{ width: `${leftWidth}%` }} className="flex-shrink-0 border-r border-mission-control-border overflow-hidden relative">
             {children[0]}
             <button
               onClick={() => setLeftCollapsed(true)}
-              className="absolute top-2 right-2 p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors z-10"
+              className="absolute top-2 right-2 p-1 bg-mission-control-bg-alt hover:bg-mission-control-border rounded-md text-mission-control-text-dim hover:text-mission-control-text transition-colors z-10"
               title="Collapse agent chat"
             >
               <PanelLeftClose size={14} />
@@ -100,10 +100,10 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
 
       {/* Left Collapsed Indicator */}
       {leftCollapsed && (
-        <div className="flex-shrink-0 border-r border-clawd-border flex items-start pt-2 px-1">
+        <div className="flex-shrink-0 border-r border-mission-control-border flex items-start pt-2 px-1">
           <button
             onClick={() => setLeftCollapsed(false)}
-            className="p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="p-1 bg-mission-control-bg-alt hover:bg-mission-control-border rounded-md text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Expand agent chat"
           >
             <PanelLeftOpen size={14} />
@@ -112,7 +112,7 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
       )}
 
       {/* Center Pane (Content Editor) */}
-      <div style={{ width: `${effectiveCenterWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden flex-1">
+      <div style={{ width: `${effectiveCenterWidth}%` }} className="flex-shrink-0 border-r border-mission-control-border overflow-hidden flex-1">
         {children[1]}
       </div>
 
@@ -130,7 +130,7 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
             {children[2]}
             <button
               onClick={() => setRightCollapsed(true)}
-              className="absolute top-2 left-2 p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors z-10"
+              className="absolute top-2 left-2 p-1 bg-mission-control-bg-alt hover:bg-mission-control-border rounded-md text-mission-control-text-dim hover:text-mission-control-text transition-colors z-10"
               title="Collapse approval queue"
             >
               <PanelRightClose size={14} />
@@ -141,10 +141,10 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
 
       {/* Right Collapsed Indicator */}
       {!hideRightPane && rightCollapsed && (
-        <div className="flex-shrink-0 border-l border-clawd-border flex items-start pt-2 px-1">
+        <div className="flex-shrink-0 border-l border-mission-control-border flex items-start pt-2 px-1">
           <button
             onClick={() => setRightCollapsed(false)}
-            className="p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="p-1 bg-mission-control-bg-alt hover:bg-mission-control-border rounded-md text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Expand approval queue"
           >
             <PanelRightOpen size={14} />

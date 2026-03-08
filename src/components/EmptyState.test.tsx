@@ -117,7 +117,7 @@ describe('EmptyState', () => {
 
       const button = screen.getByRole('button', { name: 'Secondary' });
       expect(button).toBeInTheDocument();
-      expect(button).toHaveClass('bg-clawd-border');
+      expect(button).toHaveClass('bg-mission-control-border');
     });
 
     it('should render primary variant button by default', () => {
@@ -129,7 +129,7 @@ describe('EmptyState', () => {
       );
 
       const button = screen.getByRole('button', { name: 'Primary' });
-      expect(button).toHaveClass('bg-clawd-accent');
+      expect(button).toHaveClass('bg-mission-control-accent');
     });
 
     it('should render React element as action', () => {

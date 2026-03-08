@@ -28,7 +28,7 @@ export function XImageAttachButton({ onImagesSelected, existingImages, disabled 
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        className="flex items-center gap-2 px-3 py-2 text-sm bg-clawd-bg-alt text-clawd-text-dim hover:text-clawd-text border border-clawd-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-3 py-2 text-sm bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Image className="w-4 h-4" />
         Attach Image
@@ -56,11 +56,11 @@ export function XImageThumbnails({ paths, maxDisplay = 4 }: XImageThumbnailsProp
           key={idx}
           src={filePath.startsWith('blob:') || filePath.startsWith('data:') ? filePath : `file://${filePath}`}
           alt={`Attachment ${idx + 1}`}
-          className="w-16 h-16 object-cover rounded-lg border border-clawd-border"
+          className="w-16 h-16 object-cover rounded-lg border border-mission-control-border"
         />
       ))}
       {remaining > 0 && (
-        <span className="text-xs text-clawd-text-dim">+{remaining} more</span>
+        <span className="text-xs text-mission-control-text-dim">+{remaining} more</span>
       )}
     </div>
   );

@@ -43,7 +43,7 @@ const CACHE_TTL = 60000; // 1 minute
 
 // Agent ID mapping (dashboard id → personality key)
 const AGENT_PERSONALITY_MAP: Record<string, string> = {
-  froggo: 'main',
+  'mission-control': 'main',
   'senior-coder': 'coder', // Senior Coder uses coder personality (promoted from coder)
   coder: 'coder',
   researcher: 'researcher',
@@ -140,7 +140,6 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
 
 async function loadAgentMemory(_agentId: string): Promise<string | null> {
   // Memory file reading requires filesystem access; not available in web mode
-  console.warn('Not implemented: agent memory loading (no filesystem access)');
   return null;
 }
 

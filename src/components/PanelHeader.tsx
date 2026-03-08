@@ -73,8 +73,8 @@ export default function PanelHeader({
     <div
       className={`
         ${variantStyles[variant]}
-        ${border ? 'border-b border-clawd-border' : ''}
-        ${gradient ? 'bg-gradient-to-r from-clawd-surface to-clawd-bg' : 'bg-clawd-surface'}
+        ${border ? 'border-b border-mission-control-border' : ''}
+        ${gradient ? 'bg-gradient-to-r from-mission-control-surface to-mission-control-bg' : 'bg-mission-control-surface'}
       `}
     >
       {/* Title Row */}
@@ -85,7 +85,7 @@ export default function PanelHeader({
           {Icon && (
             <div className="flex-shrink-0">
               {typeof Icon === 'function' ? (
-                <Icon size={variant === 'compact' ? 20 : variant === 'large' ? 28 : 24} className="text-clawd-accent" />
+                <Icon size={variant === 'compact' ? 20 : variant === 'large' ? 28 : 24} className="text-mission-control-accent" />
               ) : (
                 Icon
               )}
@@ -97,7 +97,7 @@ export default function PanelHeader({
             <h1 className={`${titleStyles[variant]} truncate flex items-center gap-2`}>
               {title}
               {badge !== undefined && (
-                <span className="px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full text-sm font-normal">
+                <span className="px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full text-sm font-normal">
                   {badge}
                 </span>
               )}
@@ -127,10 +127,10 @@ export default function PanelHeader({
                     disabled:opacity-50 disabled:cursor-not-allowed
                     ${
                       action.variant === 'primary'
-                        ? 'bg-clawd-accent text-white hover:bg-clawd-accent/90 shadow-glow'
+                        ? 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90 shadow-glow'
                         : action.variant === 'ghost'
-                        ? 'hover:bg-clawd-border text-clawd-text'
-                        : 'bg-clawd-bg border border-clawd-border hover:border-clawd-accent/50 text-clawd-text'
+                        ? 'hover:bg-mission-control-border text-mission-control-text'
+                        : 'bg-mission-control-bg border border-mission-control-border hover:border-mission-control-accent/50 text-mission-control-text'
                     }
                   `}
                 >
@@ -143,7 +143,7 @@ export default function PanelHeader({
                   )}
                   {action.label && <span>{action.label}</span>}
                   {action.kbd && (
-                    <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">
+                    <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">
                       {action.kbd}
                     </kbd>
                   )}
@@ -156,10 +156,10 @@ export default function PanelHeader({
 
       {/* Stats Row (if provided) */}
       {stats && stats.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-clawd-text-dim">
+        <div className="flex items-center gap-4 text-sm text-mission-control-text-dim">
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-1.5">
-              <span className={stat.color || 'text-clawd-text'}>{stat.value}</span>
+              <span className={stat.color || 'text-mission-control-text'}>{stat.value}</span>
               <span>{stat.label}</span>
             </div>
           ))}

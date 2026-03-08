@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
-import { Eye, EyeOff, Volume2, VolumeX, Keyboard, Type, Minus, Plus, Check } from 'lucide-react';
+import { Eye, EyeOff, Volume2, VolumeX, Keyboard, Type, Minus, Plus, Check, Lightbulb } from 'lucide-react';
 
 export default function AccessibilitySettings() {
   const { settings, updateSettings, announce } = useAccessibility();
@@ -40,34 +40,34 @@ export default function AccessibilitySettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-clawd-text mb-2">
+        <h2 className="text-xl font-semibold text-mission-control-text mb-2">
           Accessibility Settings
         </h2>
-        <p className="text-sm text-clawd-text-dim">
+        <p className="text-sm text-mission-control-text-dim">
           Configure accessibility features for better usability
         </p>
       </div>
 
       {/* Visual Settings */}
       <section aria-labelledby="visual-settings-heading">
-        <h3 id="visual-settings-heading" className="text-lg font-medium text-clawd-text mb-4">
+        <h3 id="visual-settings-heading" className="text-lg font-medium text-mission-control-text mb-4">
           Visual
         </h3>
         
         <div className="space-y-4">
           {/* Reduced Motion */}
-          <div className="flex items-center justify-between p-4 bg-clawd-surface border border-clawd-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
             <div className="flex items-center gap-3">
               {settings.reducedMotion ? (
-                <EyeOff size={20} className="text-clawd-text-dim" aria-hidden="true" />
+                <EyeOff size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               ) : (
-                <Eye size={20} className="text-clawd-text-dim" aria-hidden="true" />
+                <Eye size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               )}
               <div>
-                <label htmlFor="reduced-motion" className="text-sm font-medium text-clawd-text cursor-pointer">
+                <label htmlFor="reduced-motion" className="text-sm font-medium text-mission-control-text cursor-pointer">
                   Reduce Motion
                 </label>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Minimize animations and transitions
                 </p>
               </div>
@@ -82,12 +82,12 @@ export default function AccessibilitySettings() {
                 announce(newValue ? 'Reduced motion enabled' : 'Reduced motion disabled');
               }}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.reducedMotion ? 'bg-clawd-accent' : 'bg-clawd-border'
+                settings.reducedMotion ? 'bg-mission-control-accent' : 'bg-mission-control-border'
               }`}
               aria-label="Toggle reduced motion"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
                   settings.reducedMotion ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -96,14 +96,14 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* High Contrast */}
-          <div className="flex items-center justify-between p-4 bg-clawd-surface border border-clawd-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
             <div className="flex items-center gap-3">
-              <Eye size={20} className="text-clawd-text-dim" aria-hidden="true" />
+              <Eye size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
-                <label htmlFor="high-contrast" className="text-sm font-medium text-clawd-text cursor-pointer">
+                <label htmlFor="high-contrast" className="text-sm font-medium text-mission-control-text cursor-pointer">
                   High Contrast Mode
                 </label>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Increase color contrast for better visibility
                 </p>
               </div>
@@ -118,12 +118,12 @@ export default function AccessibilitySettings() {
                 announce(newValue ? 'High contrast mode enabled' : 'High contrast mode disabled');
               }}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.highContrast ? 'bg-clawd-accent' : 'bg-clawd-border'
+                settings.highContrast ? 'bg-mission-control-accent' : 'bg-mission-control-border'
               }`}
               aria-label="Toggle high contrast mode"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
                   settings.highContrast ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -132,14 +132,14 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* Font Size */}
-          <div className="p-4 bg-clawd-surface border border-clawd-border rounded-xl">
+          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
             <div className="flex items-center gap-3 mb-4">
-              <Type size={20} className="text-clawd-text-dim" aria-hidden="true" />
+              <Type size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div className="flex-1">
-                <span className="text-sm font-medium text-clawd-text">
+                <span className="text-sm font-medium text-mission-control-text">
                   Font Size
                 </span>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Adjust text size: {settings.fontSize}%
                 </p>
               </div>
@@ -149,7 +149,7 @@ export default function AccessibilitySettings() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleFontSizeChange(Math.max(75, settings.fontSize - 25))}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={settings.fontSize <= 75}
                 aria-label="Decrease font size"
               >
@@ -167,8 +167,8 @@ export default function AccessibilitySettings() {
                     onClick={() => handleFontSizeChange(option.value)}
                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       settings.fontSize === option.value
-                        ? 'bg-clawd-accent text-white'
-                        : 'bg-clawd-border text-clawd-text hover:bg-clawd-border/80'
+                        ? 'bg-mission-control-accent text-white'
+                        : 'bg-mission-control-border text-mission-control-text hover:bg-mission-control-border/80'
                     }`}
                     aria-label={`Set font size to ${option.label} (${option.value}%)`}
                     aria-pressed={settings.fontSize === option.value}
@@ -183,7 +183,7 @@ export default function AccessibilitySettings() {
 
               <button
                 onClick={() => handleFontSizeChange(Math.min(150, settings.fontSize + 25))}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={settings.fontSize >= 150}
                 aria-label="Increase font size"
               >
@@ -196,20 +196,20 @@ export default function AccessibilitySettings() {
 
       {/* Keyboard & Navigation */}
       <section aria-labelledby="keyboard-settings-heading">
-        <h3 id="keyboard-settings-heading" className="text-lg font-medium text-clawd-text mb-4">
+        <h3 id="keyboard-settings-heading" className="text-lg font-medium text-mission-control-text mb-4">
           Keyboard & Navigation
         </h3>
         
         <div className="space-y-4">
           {/* Keyboard Navigation Indicators */}
-          <div className="flex items-center justify-between p-4 bg-clawd-surface border border-clawd-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
             <div className="flex items-center gap-3">
-              <Keyboard size={20} className="text-clawd-text-dim" aria-hidden="true" />
+              <Keyboard size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
-                <label htmlFor="keyboard-nav" className="text-sm font-medium text-clawd-text cursor-pointer">
+                <label htmlFor="keyboard-nav" className="text-sm font-medium text-mission-control-text cursor-pointer">
                   Show Keyboard Focus
                 </label>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Display visible focus indicators when using keyboard
                 </p>
               </div>
@@ -224,12 +224,12 @@ export default function AccessibilitySettings() {
                 announce(newValue ? 'Keyboard focus indicators enabled' : 'Keyboard focus indicators disabled');
               }}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.keyboardNavVisible ? 'bg-clawd-accent' : 'bg-clawd-border'
+                settings.keyboardNavVisible ? 'bg-mission-control-accent' : 'bg-mission-control-border'
               }`}
               aria-label="Toggle keyboard focus indicators"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
                   settings.keyboardNavVisible ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -241,24 +241,24 @@ export default function AccessibilitySettings() {
 
       {/* Screen Reader */}
       <section aria-labelledby="screen-reader-heading">
-        <h3 id="screen-reader-heading" className="text-lg font-medium text-clawd-text mb-4">
+        <h3 id="screen-reader-heading" className="text-lg font-medium text-mission-control-text mb-4">
           Screen Reader
         </h3>
         
         <div className="space-y-4">
           {/* Enable announcements */}
-          <div className="flex items-center justify-between p-4 bg-clawd-surface border border-clawd-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
             <div className="flex items-center gap-3">
               {settings.screenReaderEnabled ? (
-                <Volume2 size={20} className="text-clawd-text-dim" aria-hidden="true" />
+                <Volume2 size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               ) : (
-                <VolumeX size={20} className="text-clawd-text-dim" aria-hidden="true" />
+                <VolumeX size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               )}
               <div>
-                <label htmlFor="screen-reader" className="text-sm font-medium text-clawd-text cursor-pointer">
+                <label htmlFor="screen-reader" className="text-sm font-medium text-mission-control-text cursor-pointer">
                   Enhanced Announcements
                 </label>
-                <p className="text-xs text-clawd-text-dim">
+                <p className="text-xs text-mission-control-text-dim">
                   Enable additional screen reader announcements
                 </p>
               </div>
@@ -273,12 +273,12 @@ export default function AccessibilitySettings() {
                 announce(newValue ? 'Screen reader announcements enabled' : 'Screen reader announcements disabled');
               }}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.screenReaderEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
+                settings.screenReaderEnabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
               }`}
               aria-label="Toggle screen reader announcements"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
                   settings.screenReaderEnabled ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -287,8 +287,8 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* Test announcements */}
-          <div className="p-4 bg-clawd-surface border border-clawd-border rounded-xl">
-            <label htmlFor="test-announcement" className="text-sm font-medium text-clawd-text block mb-2">
+          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+            <label htmlFor="test-announcement" className="text-sm font-medium text-mission-control-text block mb-2">
               Test Screen Reader Announcement
             </label>
             <div className="flex gap-2">
@@ -300,19 +300,19 @@ export default function AccessibilitySettings() {
                 onChange={(e) => setTestAnnouncement(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleTestAnnouncement()}
                 placeholder="Enter message to announce..."
-                className="flex-1 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                className="flex-1 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
                 aria-describedby="test-announcement-help"
               />
               <button
                 onClick={handleTestAnnouncement}
                 disabled={!testAnnouncement.trim()}
-                className="px-4 py-2 bg-clawd-accent text-white rounded-lg text-sm font-medium hover:bg-clawd-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 aria-label="Announce test message"
               >
                 Announce
               </button>
             </div>
-            <p id="test-announcement-help" className="text-xs text-clawd-text-dim mt-2">
+            <p id="test-announcement-help" className="text-xs text-mission-control-text-dim mt-2">
               Test how screen readers will announce messages
             </p>
           </div>
@@ -326,7 +326,7 @@ export default function AccessibilitySettings() {
         aria-label="Accessibility information"
       >
         <p className="text-sm text-info">
-          <strong>💡 Tip:</strong> Use keyboard shortcuts to navigate efficiently. Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">⌘?</kbd> to view all shortcuts.
+          <strong><Lightbulb size={14} className="inline mr-1" />Tip:</strong> Use keyboard shortcuts to navigate efficiently. Press <kbd className="px-2 py-1 bg-mission-control-border rounded text-xs">Cmd?</kbd> to view all shortcuts.
         </p>
       </div>
     </div>

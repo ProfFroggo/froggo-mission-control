@@ -33,11 +33,8 @@ export async function DELETE(
     db.prepare('DELETE FROM messages WHERE sessionKey = ?').run(key);
     const result = db.prepare('DELETE FROM sessions WHERE key = ?').run(key);
 
-    if (result.changes === 0) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
+    // Idempotent — deleting a non-existent session is not an error
+    return NextResponse.json({ success: true, deleted: result.changes > 0 });
   } catch (error) {
     console.error('DELETE /api/chat/sessions/[key] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

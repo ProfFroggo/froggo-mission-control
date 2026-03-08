@@ -6,7 +6,7 @@
 
 /* Global focus visible styles - WCAG 2.1 Level AA compliant */
 *:focus-visible {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -16,7 +16,7 @@
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--clawd-accent);
+  background: var(--mission-control-accent);
   color: white;
   padding: 8px 16px;
   text-decoration: none;
@@ -34,7 +34,7 @@
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 2px;
 }
 
@@ -42,15 +42,15 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 2px;
-  border-color: var(--clawd-accent);
+  border-color: var(--mission-control-accent);
 }
 
 /* Custom focus for cards and interactive elements */
 .card:focus-visible,
 .card-interactive:focus-visible {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 3px;
 }
 
@@ -92,11 +92,11 @@ select:focus-visible {
 /* Enhanced contrast for high contrast mode */
 @media (prefers-contrast: high) {
   :root {
-    --clawd-border: #555555;
+    --mission-control-border: #555555;
   }
   
   :root.light {
-    --clawd-border: #999999;
+    --mission-control-border: #999999;
   }
   
   button,
@@ -109,7 +109,7 @@ select:focus-visible {
   .glass-dark,
   .glass-card,
   .glass-modal {
-    background: var(--clawd-surface);
+    background: var(--mission-control-surface);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border-width: 2px;
@@ -146,7 +146,7 @@ select:focus-visible {
 
 /* Indicate keyboard navigation mode */
 body.keyboard-nav *:focus {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 2px;
 }
 
@@ -175,7 +175,7 @@ body:not(.keyboard-nav) *:focus {
 /* Ensure text meets WCAG AA standards (4.5:1 for normal text) */
 .text-dim {
   /* Adjusted for better contrast */
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   opacity: 0.9;
 }
 
@@ -215,8 +215,8 @@ a:focus {
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 12px;
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: 6px;
   font-size: 12px;
   white-space: nowrap;
@@ -228,7 +228,7 @@ a:focus {
 
 /* Keyboard-accessible drag handles */
 .drag-handle:focus-visible {
-  outline: 3px solid var(--clawd-accent);
+  outline: 3px solid var(--mission-control-accent);
   outline-offset: 2px;
   cursor: grab;
 }
@@ -304,7 +304,7 @@ aside {
 /* Support up to 200% zoom */
 @media (min-resolution: 2dppx) {
   body {
-    font-size: calc(var(--clawd-font-size) * 1.1);
+    font-size: calc(var(--mission-control-font-size) * 1.1);
   }
 }
 
@@ -328,21 +328,11 @@ button.inline {
 /* ========== STATUS MESSAGES ========== */
 
 /* Visual indicators for status */
-[role="status"],
 [role="alert"] {
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid var(--clawd-border);
-}
-
-[role="alert"] {
+  border: 1px solid #ef4444;
   background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
-}
-
-[role="status"] {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: var(--clawd-accent);
 }
 
 /* ========== PRINT STYLES ========== */

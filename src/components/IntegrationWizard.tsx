@@ -81,7 +81,7 @@ function ProgressDots({ total, current }: { total: number; current: number }) {
         <span
           key={i}
           className={`w-2 h-2 rounded-full transition-colors ${
-            i <= current ? 'bg-clawd-accent' : 'bg-clawd-border'
+            i <= current ? 'bg-mission-control-accent' : 'bg-mission-control-border'
           }`}
         />
       ))}
@@ -112,14 +112,14 @@ function IntroStep({
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-clawd-accent/10 flex items-center justify-center flex-shrink-0">
-          <Plug size={20} className="text-clawd-accent" />
+        <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
+          <Plug size={20} className="text-mission-control-accent" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-clawd-text">
+          <h3 className="text-base font-semibold text-mission-control-text">
             Set up {moduleName}
           </h3>
-          <p className="text-sm text-clawd-text-dim mt-0.5">
+          <p className="text-sm text-mission-control-text-dim mt-0.5">
             {credentials.length === 0
               ? 'No credentials required. Click Next to activate.'
               : `We'll collect ${credentials.length} credential${credentials.length !== 1 ? 's' : ''} and verify the connection.`}
@@ -129,17 +129,17 @@ function IntroStep({
 
       {credentials.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-clawd-text-dim uppercase tracking-wider">
+          <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
             Required credentials
           </p>
           <ul className="space-y-2">
             {credentials.map((cred) => (
               <li
                 key={cred.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-clawd-surface border border-clawd-border"
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
               >
-                <span className="text-sm text-clawd-text">{cred.label}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-border text-clawd-text-dim">
+                <span className="text-sm text-mission-control-text">{cred.label}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
                   {typeBadge(cred.type)}
                 </span>
               </li>
@@ -167,12 +167,12 @@ function CredentialStep({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-base font-semibold text-clawd-text">{credential.label}</h3>
+        <h3 className="text-base font-semibold text-mission-control-text">{credential.label}</h3>
         {credential.description && (
-          <p className="text-sm text-clawd-text-dim mt-1">{credential.description}</p>
+          <p className="text-sm text-mission-control-text-dim mt-1">{credential.description}</p>
         )}
         {credential.required && (
-          <p className="text-xs text-clawd-accent mt-1">Required</p>
+          <p className="text-xs text-mission-control-accent mt-1">Required</p>
         )}
       </div>
       <input
@@ -188,7 +188,7 @@ function CredentialStep({
         }
         autoComplete="off"
         autoFocus
-        className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2.5 text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent text-sm"
+        className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2.5 text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
       />
     </div>
   );
@@ -216,8 +216,8 @@ function ReviewStep({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-clawd-text">Review &amp; Test</h3>
-        <p className="text-sm text-clawd-text-dim mt-0.5">
+        <h3 className="text-base font-semibold text-mission-control-text">Review &amp; Test</h3>
+        <p className="text-sm text-mission-control-text-dim mt-0.5">
           Verify your credentials look correct, then test the connection.
         </p>
       </div>
@@ -228,11 +228,11 @@ function ReviewStep({
           {credentials.map((cred) => (
             <div
               key={cred.id}
-              className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-clawd-surface border border-clawd-border"
+              className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
             >
-              <span className="text-sm text-clawd-text">{cred.label}</span>
-              <span className="text-xs font-mono text-clawd-text-dim">
-                {values[cred.id] ? maskValue(values[cred.id]) : <em className="text-clawd-text-dim not-italic">not set</em>}
+              <span className="text-sm text-mission-control-text">{cred.label}</span>
+              <span className="text-xs font-mono text-mission-control-text-dim">
+                {values[cred.id] ? maskValue(values[cred.id]) : <em className="text-mission-control-text-dim not-italic">not set</em>}
               </span>
             </div>
           ))}
@@ -252,7 +252,7 @@ function ReviewStep({
 
         {/* Status area */}
         {testing && (
-          <div className="flex items-center gap-2 text-clawd-text-dim text-sm">
+          <div className="flex items-center gap-2 text-mission-control-text-dim text-sm">
             <Spinner size={14} />
             <span>Testing connection...</span>
           </div>
@@ -272,8 +272,8 @@ function ReviewStep({
                   <span>{testResult.error || 'Connection failed'}</span>
                 </div>
                 {testResult.diagnosis && (
-                  <div className="px-3 py-2.5 rounded-lg bg-clawd-surface border border-clawd-border text-sm text-clawd-text-dim">
-                    <p className="text-xs font-medium text-clawd-text-dim uppercase tracking-wider mb-1">
+                  <div className="px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text-dim">
+                    <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
                       Suggested fix
                     </p>
                     {testResult.diagnosis}
@@ -281,7 +281,7 @@ function ReviewStep({
                 )}
                 <button
                   onClick={onReenter}
-                  className="text-xs text-clawd-accent hover:underline"
+                  className="text-xs text-mission-control-accent hover:underline"
                   type="button"
                 >
                   Re-enter credentials
@@ -328,7 +328,7 @@ export default function IntegrationWizard({
 
     (async () => {
       try {
-        const result = await (window as any).clawdbot.modules.invoke(
+        const result = await (window as any).clawdbot?.modules?.invoke?.(
           'module:integration:get',
           moduleId,
         );
@@ -369,14 +369,14 @@ export default function IntegrationWizard({
 
     try {
       // Store the credential
-      await (window as any).clawdbot.modules.invoke(
+      await (window as any).clawdbot?.modules?.invoke?.(
         'module:cred:store',
         moduleId,
         credential.id,
         value,
       );
       // Save wizard progress (masked placeholder — not real secret)
-      await (window as any).clawdbot.modules.invoke(
+      await (window as any).clawdbot?.modules?.invoke?.(
         'module:integration:upsert',
         moduleId,
         currentStep + 1,
@@ -409,7 +409,7 @@ export default function IntegrationWizard({
     setTestResult(null);
 
     try {
-      const result = (await (window as any).clawdbot.modules.invoke(
+      const result = (await (window as any).clawdbot?.modules?.invoke?.(
         'module:health:test',
         moduleId,
         healthCheck ?? null,
@@ -423,7 +423,7 @@ export default function IntegrationWizard({
 
         // Attempt LLM diagnosis — non-critical, best-effort
         try {
-          const diagResult = (await (window as any).clawdbot.modules.invoke(
+          const diagResult = (await (window as any).clawdbot?.modules?.invoke?.(
             'ai:generateReply',
             {
               threadMessages: [
@@ -461,7 +461,7 @@ export default function IntegrationWizard({
 
   const handleFinish = async () => {
     try {
-      await (window as any).clawdbot.modules.invoke('module:integration:complete', moduleId);
+      await (window as any).clawdbot?.modules?.invoke?.('module:integration:complete', moduleId);
     } catch {
       // Non-fatal — complete the wizard regardless
     }
@@ -498,16 +498,16 @@ export default function IntegrationWizard({
       ariaLabel={`Integration wizard for ${moduleName}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-mission-control-border">
         <div>
-          <h2 className="text-lg font-semibold text-clawd-text">{stepTitle()}</h2>
+          <h2 className="text-lg font-semibold text-mission-control-text">{stepTitle()}</h2>
           <div className="mt-2">
             <ProgressDots total={totalSteps} current={currentStep} />
           </div>
         </div>
         <button
           onClick={onCancel}
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors text-clawd-text-dim hover:text-clawd-text"
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
           type="button"
           aria-label="Cancel setup"
         >

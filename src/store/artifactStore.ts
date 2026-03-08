@@ -1,10 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 // ---- Array Bounds ---------------------------------------------------------
-// Prevent unbounded growth of persisted artifact data.
-const MAX_ARTIFACTS = 200;
-const MAX_VERSIONS_PER_ARTIFACT = 50;
+const MAX_ARTIFACTS = 100;
+const MAX_VERSIONS_PER_ARTIFACT = 10;
 // ---------------------------------------------------------------------------
 
 export type ArtifactType = 'code' | 'image' | 'file' | 'text' | 'diagram' | 'data';
@@ -53,19 +51,19 @@ interface ArtifactState {
   deleteArtifact: (id: string) => void;
   clearArtifacts: () => void;
   clearSessionArtifacts: (sessionId: string) => void;
-  
+
   // Version management
   addVersion: (artifactId: string, content: string, messageId: string, changeDescription?: string) => void;
   revertToVersion: (artifactId: string, version: number) => void;
   getVersionHistory: (artifactId: string) => ArtifactVersion[];
-  
+
   // Selection and UI state
   selectArtifact: (id: string | null) => void;
   toggleCollapse: () => void;
   setCollapsed: (collapsed: boolean) => void;
   setFilterBySession: (sessionId: string | null) => void;
   setSearchQuery: (query: string) => void;
-  
+
   // Getters
   getArtifact: (id: string) => Artifact | undefined;
   getSessionArtifacts: (sessionId: string) => Artifact[];
@@ -73,183 +71,172 @@ interface ArtifactState {
 }
 
 export const useArtifactStore = create<ArtifactState>()(
-  persist(
-    (set, get) => ({
-      artifacts: [],
-      selectedArtifactId: null,
-      isCollapsed: false,
-      filterBySession: null,
-      searchQuery: '',
+  (set, get) => ({
+    artifacts: [],
+    selectedArtifactId: null,
+    isCollapsed: false,
+    filterBySession: null,
+    searchQuery: '',
 
-      addArtifact: (artifact) => {
-        const id = `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newArtifact: Artifact = {
-          ...artifact,
-          id,
-          versions: [
-            {
-              version: 1,
-              content: artifact.content,
-              timestamp: artifact.timestamp,
-              messageId: artifact.messageId,
-            },
-          ],
-          currentVersion: 1,
-        };
-        
-        set((state) => ({
-          artifacts: [...state.artifacts, newArtifact].slice(-MAX_ARTIFACTS),
-          // Auto-select if this is the first artifact or panel is not collapsed
-          selectedArtifactId: state.artifacts.length === 0 || !state.isCollapsed
-            ? id
-            : state.selectedArtifactId,
-        }));
-      },
+    addArtifact: (artifact) => {
+      const id = `artifact-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newArtifact: Artifact = {
+        ...artifact,
+        id,
+        versions: [
+          {
+            version: 1,
+            content: artifact.content,
+            timestamp: artifact.timestamp,
+            messageId: artifact.messageId,
+          },
+        ],
+        currentVersion: 1,
+      };
 
-      updateArtifact: (id, updates) => {
-        set((state) => ({
-          artifacts: state.artifacts.map((artifact) =>
-            artifact.id === id ? { ...artifact, ...updates } : artifact
-          ),
-        }));
-      },
+      set((state) => ({
+        artifacts: [...state.artifacts, newArtifact].slice(-MAX_ARTIFACTS),
+        // Auto-select if this is the first artifact or panel is not collapsed
+        selectedArtifactId: state.artifacts.length === 0 || !state.isCollapsed
+          ? id
+          : state.selectedArtifactId,
+      }));
+    },
 
-      deleteArtifact: (id) => {
-        set((state) => ({
-          artifacts: state.artifacts.filter((a) => a.id !== id),
+    updateArtifact: (id, updates) => {
+      set((state) => ({
+        artifacts: state.artifacts.map((artifact) =>
+          artifact.id === id ? { ...artifact, ...updates } : artifact
+        ),
+      }));
+    },
+
+    deleteArtifact: (id) => {
+      set((state) => ({
+        artifacts: state.artifacts.filter((a) => a.id !== id),
+        selectedArtifactId:
+          state.selectedArtifactId === id ? null : state.selectedArtifactId,
+      }));
+    },
+
+    clearArtifacts: () => {
+      set({ artifacts: [], selectedArtifactId: null });
+    },
+
+    clearSessionArtifacts: (sessionId) => {
+      set((state) => {
+        const newArtifacts = state.artifacts.filter(
+          (a) => a.sessionId !== sessionId
+        );
+        return {
+          artifacts: newArtifacts,
           selectedArtifactId:
-            state.selectedArtifactId === id ? null : state.selectedArtifactId,
-        }));
-      },
+            state.artifacts.find((a) => a.id === state.selectedArtifactId)?.sessionId === sessionId
+              ? null
+              : state.selectedArtifactId,
+        };
+      });
+    },
 
-      clearArtifacts: () => {
-        set({ artifacts: [], selectedArtifactId: null });
-      },
+    addVersion: (artifactId, content, messageId, changeDescription) => {
+      set((state) => ({
+        artifacts: state.artifacts.map((artifact) => {
+          if (artifact.id === artifactId) {
+            const newVersion = artifact.currentVersion + 1;
+            return {
+              ...artifact,
+              content,
+              versions: [
+                ...artifact.versions,
+                {
+                  version: newVersion,
+                  content,
+                  timestamp: Date.now(),
+                  messageId,
+                  changeDescription,
+                },
+              ].slice(-MAX_VERSIONS_PER_ARTIFACT),
+              currentVersion: newVersion,
+            };
+          }
+          return artifact;
+        }),
+      }));
+    },
 
-      clearSessionArtifacts: (sessionId) => {
-        set((state) => {
-          const newArtifacts = state.artifacts.filter(
-            (a) => a.sessionId !== sessionId
-          );
-          return {
-            artifacts: newArtifacts,
-            selectedArtifactId:
-              state.artifacts.find((a) => a.id === state.selectedArtifactId)?.sessionId === sessionId
-                ? null
-                : state.selectedArtifactId,
-          };
-        });
-      },
-
-      addVersion: (artifactId, content, messageId, changeDescription) => {
-        set((state) => ({
-          artifacts: state.artifacts.map((artifact) => {
-            if (artifact.id === artifactId) {
-              const newVersion = artifact.currentVersion + 1;
+    revertToVersion: (artifactId, version) => {
+      set((state) => ({
+        artifacts: state.artifacts.map((artifact) => {
+          if (artifact.id === artifactId) {
+            const targetVersion = artifact.versions.find((v) => v.version === version);
+            if (targetVersion) {
               return {
                 ...artifact,
-                content,
-                versions: [
-                  ...artifact.versions,
-                  {
-                    version: newVersion,
-                    content,
-                    timestamp: Date.now(),
-                    messageId,
-                    changeDescription,
-                  },
-                ].slice(-MAX_VERSIONS_PER_ARTIFACT),
-                currentVersion: newVersion,
+                content: targetVersion.content,
+                currentVersion: version,
               };
             }
-            return artifact;
-          }),
-        }));
-      },
+          }
+          return artifact;
+        }),
+      }));
+    },
 
-      revertToVersion: (artifactId, version) => {
-        set((state) => ({
-          artifacts: state.artifacts.map((artifact) => {
-            if (artifact.id === artifactId) {
-              const targetVersion = artifact.versions.find((v) => v.version === version);
-              if (targetVersion) {
-                return {
-                  ...artifact,
-                  content: targetVersion.content,
-                  currentVersion: version,
-                };
-              }
-            }
-            return artifact;
-          }),
-        }));
-      },
+    getVersionHistory: (artifactId) => {
+      const artifact = get().artifacts.find((a) => a.id === artifactId);
+      return artifact?.versions || [];
+    },
 
-      getVersionHistory: (artifactId) => {
-        const artifact = get().artifacts.find((a) => a.id === artifactId);
-        return artifact?.versions || [];
-      },
+    selectArtifact: (id) => {
+      set({ selectedArtifactId: id });
+    },
 
-      selectArtifact: (id) => {
-        set({ selectedArtifactId: id });
-      },
+    toggleCollapse: () => {
+      set((state) => ({ isCollapsed: !state.isCollapsed }));
+    },
 
-      toggleCollapse: () => {
-        set((state) => ({ isCollapsed: !state.isCollapsed }));
-      },
+    setCollapsed: (collapsed) => {
+      set({ isCollapsed: collapsed });
+    },
 
-      setCollapsed: (collapsed) => {
-        set({ isCollapsed: collapsed });
-      },
+    setFilterBySession: (sessionId) => {
+      set({ filterBySession: sessionId });
+    },
 
-      setFilterBySession: (sessionId) => {
-        set({ filterBySession: sessionId });
-      },
+    setSearchQuery: (query) => {
+      set({ searchQuery: query });
+    },
 
-      setSearchQuery: (query) => {
-        set({ searchQuery: query });
-      },
+    getArtifact: (id) => {
+      return get().artifacts.find((a) => a.id === id);
+    },
 
-      getArtifact: (id) => {
-        return get().artifacts.find((a) => a.id === id);
-      },
+    getSessionArtifacts: (sessionId) => {
+      return get().artifacts.filter((a) => a.sessionId === sessionId);
+    },
 
-      getSessionArtifacts: (sessionId) => {
-        return get().artifacts.filter((a) => a.sessionId === sessionId);
-      },
+    getFilteredArtifacts: () => {
+      const { artifacts, filterBySession, searchQuery } = get();
+      let filtered = artifacts;
 
-      getFilteredArtifacts: () => {
-        const { artifacts, filterBySession, searchQuery } = get();
-        let filtered = artifacts;
+      // Filter by session
+      if (filterBySession) {
+        filtered = filtered.filter((a) => a.sessionId === filterBySession);
+      }
 
-        // Filter by session
-        if (filterBySession) {
-          filtered = filtered.filter((a) => a.sessionId === filterBySession);
-        }
+      // Filter by search query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (a) =>
+            a.title.toLowerCase().includes(query) ||
+            a.content.toLowerCase().includes(query) ||
+            a.tags?.some((tag) => tag.toLowerCase().includes(query))
+        );
+      }
 
-        // Filter by search query
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filtered = filtered.filter(
-            (a) =>
-              a.title.toLowerCase().includes(query) ||
-              a.content.toLowerCase().includes(query) ||
-              a.tags?.some((tag) => tag.toLowerCase().includes(query))
-          );
-        }
-
-        // Sort by timestamp (newest first)
-        return filtered.sort((a, b) => b.timestamp - a.timestamp);
-      },
-    }),
-    {
-      name: 'artifact-storage',
-      // Only persist essential state, not UI state. Cap artifacts to prevent
-      // unbounded localStorage growth.
-      partialize: (state) => ({
-        artifacts: state.artifacts.slice(-MAX_ARTIFACTS),
-        isCollapsed: state.isCollapsed,
-      }),
-    }
-  )
+      // Sort by timestamp (newest first)
+      return filtered.sort((a, b) => b.timestamp - a.timestamp);
+    },
+  })
 );

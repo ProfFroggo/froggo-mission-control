@@ -2,7 +2,7 @@ name: Build Electron App
 
 on:
   push:
-    branches: [ main, froggo-main ]  # Support both main branches
+    branches: [ main, mission-control-main ]  # Support both main branches
   workflow_dispatch:  # Allow manual triggers
 
 jobs:
@@ -39,8 +39,8 @@ jobs:
       - name: Upload macOS build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: froggo-macos-arm64
-          path: release/mac-arm64/Froggo.app
+          name: mission-control-macos-arm64
+          path: release/mac-arm64/Mission Control.app
           if-no-files-found: error
           retention-days: 30
 
@@ -50,9 +50,9 @@ jobs:
           echo "Commit: ${{ github.sha }}" >> release-info.txt
           echo "Branch: ${{ github.ref_name }}" >> release-info.txt
           echo "Triggered by: ${{ github.actor }}" >> release-info.txt
-          if [ -f "release/mac-arm64/Froggo.app/Contents/Info.plist" ]; then
+          if [ -f "release/mac-arm64/Mission Control.app/Contents/Info.plist" ]; then
             echo "App version:" >> release-info.txt
-            /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "release/mac-arm64/Froggo.app/Contents/Info.plist" >> release-info.txt
+            /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "release/mac-arm64/Mission Control.app/Contents/Info.plist" >> release-info.txt
           fi
           cat release-info.txt
 

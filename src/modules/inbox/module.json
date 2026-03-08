@@ -1,15 +1,13 @@
 {
-  "id": "froggo-inbox",
+  "id": "inbox",
   "name": "Inbox",
   "version": "1.0.0",
   "description": "Unified communications inbox with 3-pane layout for messages across all channels.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Mail",
   "category": "communications",
   "core": true,
-
   "credentials": [],
-
   "views": [
     {
       "id": "inbox",
@@ -24,12 +22,10 @@
       "entrypoint": "./views/CommsInbox3Pane.tsx"
     }
   ],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],

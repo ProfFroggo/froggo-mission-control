@@ -1,5 +1,5 @@
 /**
- * Centralized help content for the Froggo Dashboard
+ * Centralized help content for the Mission Control Dashboard
  * Searchable, categorized, context-aware help system
  */
 
@@ -10,7 +10,6 @@ export interface HelpArticle {
   content: string;
   keywords: string[];
   relatedTo?: string[]; // Related panel/feature IDs
-  videoUrl?: string;
   lastUpdated?: string;
 }
 
@@ -26,154 +25,70 @@ export interface QuickTip {
   id: string;
   title: string;
   description: string;
-  icon?: string;
 }
 
 export const helpArticles: HelpArticle[] = [
   // Getting Started
   {
     id: 'getting-started',
-    title: 'Getting Started with Froggo',
+    title: 'Getting Started with Mission Control',
     category: 'Getting Started',
-    content: `Welcome to Froggo, your AI-powered productivity dashboard!
+    content: `Welcome to Mission Control — your AI agent orchestration platform.
 
 **First Steps:**
 1. Explore the sidebar panels using ⌘1-9 keyboard shortcuts
 2. Try the Command Palette (⌘K) for quick navigation
-3. Check your Inbox (⌘1) for communications
-4. View your dashboard (⌘2) for overview and stats
-5. View your tasks in the Kanban board (⌘4)
+3. Open the Agents panel to see your active agents
+4. Create your first task in the Kanban board
+5. Chat directly with Mission Control agent
 
-**Key Features:**
-- **Inbox**: 3-pane communications view for email, WhatsApp, Telegram, Discord
-- **Dashboard**: Overview of your day, calendar, and quick stats
-- **Analytics**: Dashboard analytics and metrics
-- **Tasks**: Full kanban board with agent assignment
-- **Agents**: Manage Coder, Writer, Researcher, and Chief agents
-- **X**: Compose tweets and check mentions
-- **Voice**: Real-time voice transcription and meeting assistant
-- **Chat**: Direct conversation with Froggo
-- **Approvals**: Approve tweets, emails, and agent-generated content
+**Key Panels:**
+- **Inbox**: Approval queue for agent-generated content
+- **Dashboard**: System overview and agent activity
+- **Tasks**: Kanban board with full task lifecycle
+- **Agents**: Manage agents, view sessions, set permissions
+- **Chat Rooms**: Real-time rooms for agent-to-agent and human-to-agent comms
+- **Projects**: Organize tasks into projects with dedicated workspaces
+- **Approvals**: Review agent actions before they execute
 
-Use this help panel (⌘?) anytime you need guidance!`,
+**How agents run:**
+Mission Control spawns Claude Code CLI processes per agent. Each agent has a persistent session — conversations carry full history automatically. Sessions are kept alive with background keepalive pings so context is never lost.
+
+Use this help panel (⌘?) anytime you need guidance.`,
     keywords: ['start', 'begin', 'intro', 'welcome', 'first', 'new', 'overview'],
-    videoUrl: 'https://example.com/getting-started',
-    lastUpdated: '2026-01-28'
-  },
-  
-  // Dashboard
-  {
-    id: 'dashboard-overview',
-    title: 'Dashboard Overview',
-    category: 'Dashboard',
-    content: `The Dashboard (⌘2) is your command center.
-
-**Widgets:**
-- **Calendar**: Today's meetings and events from Google Calendar
-- **Email**: Recent unread emails from connected accounts
-- **Quick Stats**: Task completion, agent activity, and system status
-- **Quick Actions**: Floating action buttons for common tasks
-
-**Quick Actions:**
-- 🔍 Global Search (⌘K)
-- ➕ New Task
-- 👤 Add Contact
-- 📚 Add Skill
-- ✅ Approve All (bulk approve inbox items)
-
-**Customization:**
-Go to Settings (⌘,) to customize your dashboard layout, theme, and default panel.`,
-    keywords: ['dashboard', 'home', 'overview', 'widgets', 'calendar', 'email', 'stats'],
-    relatedTo: ['dashboard'],
-    lastUpdated: '2026-01-28'
+    lastUpdated: '2026-03-08'
   },
 
-  // Inbox & Approvals
+  // Task Lifecycle
   {
-    id: 'inbox-approvals',
-    title: 'Communications Inbox',
-    category: 'Inbox',
-    content: `The Inbox (⌘1) is your 3-pane communications hub for email, WhatsApp, Telegram, and Discord.
-
-**Layout:**
-- **Left Pane**: Account/folder selector (Gmail, WhatsApp, Telegram, Discord, X DMs)
-- **Center Pane**: Message/conversation list
-- **Right Pane**: Message detail with inline reply
-
-**Features:**
-- Multi-account email support (Gmail)
-- Unified messaging across platforms
-- Search and filter messages
-- AI-assisted reply composition
-- Inline message threading
-
-The Approval Queue (⌘0) shows agent-generated content awaiting your review.
-
-**What Gets Approved:**
-- Tweets composed by agents
-- Outgoing emails
-- Calendar event responses
-- Scheduled posts
-
-**Keyboard Navigation:**
-- J/K: Navigate between items
-- A: Approve selected item
-- R: Reject item
-- X: Defer (decide later)
-- ⌘⇧A: Approve all visible items
-
-**Workflow:**
-1. Review item content and metadata
-2. Edit if needed before approving
-3. Approve or reject
-4. Item is executed or discarded
-
-**Auto-Approval:**
-You can enable auto-approval for trusted content in Settings > Automation.`,
-    keywords: ['inbox', 'approve', 'approval', 'review', 'tweet', 'email', 'pending'],
-    relatedTo: ['inbox'],
-    videoUrl: 'https://example.com/inbox-workflow',
-    lastUpdated: '2026-01-28'
-  },
-
-  // Tasks & Kanban
-  {
-    id: 'kanban-tasks',
-    title: 'Task Management & Kanban',
+    id: 'task-lifecycle',
+    title: 'Task Lifecycle & Workflow',
     category: 'Tasks',
-    content: `The Kanban board (⌘5) is your task management system.
+    content: `Every task flows through a defined lifecycle with built-in quality gates.
 
-**Task Workflow:**
-Todo → In Progress → Review → Done
+**Lifecycle:**
+todo → internal-review → in-progress → review → human-review → done
 
-**Creating Tasks:**
-1. Press N or click "+ New Task"
-2. Add title, description, and priority
-3. Assign to an agent (Coder, Writer, Researcher, Chief)
-4. Add subtasks for complex work
-5. Task auto-moves through workflow stages
+**Stage Descriptions:**
 
-**Agent Assignment:**
-- **Coder**: Software development, debugging, code review
-- **Writer**: Content creation, social posts, documentation
-- **Researcher**: Web research, analysis, summarization
-- **Chief**: Lead engineer for complex projects (GSD methodology)
+**todo** — Task created. Set up planning, subtasks (2+), and assign an agent. Then move to internal-review.
 
-**Keyboard Shortcuts:**
-- N: New task
-- ⌘I: Task details
-- ⌘Enter: Complete task
-- ⌘⇧D: Duplicate task
-- ⌘B: Bookmark/star task
+**internal-review** — Clara's quality gate. Clara verifies the plan is clear, subtasks are defined, and the right agent is assigned before work begins. Clara will send back to todo with notes if the plan is incomplete.
 
-**Task Filters:**
-- Filter by status, priority, agent, or tags
-- Search tasks with ⌘K
-- View task activity log for full history`,
-    keywords: ['kanban', 'tasks', 'todo', 'workflow', 'agent', 'assign', 'subtasks', 'project'],
-    relatedTo: ['kanban', 'agents'],
-    videoUrl: 'https://example.com/kanban-guide',
-    lastUpdated: '2026-01-28'
+**in-progress** — Agent is working. The assigned agent spawns, reads its task, and executes subtasks. Progress is logged via task activity.
+
+**review** — Agent has submitted. Clara verifies ALL planned work was completed. If incomplete, Clara sends back to in-progress with specific notes. If complete, advances to done or human-review.
+
+**human-review** — Required for external actions (tweets, emails, deploys) or when the agent is genuinely blocked and needs a human to unblock. Check the notes to understand what's needed.
+
+**done** — Task complete and verified.
+
+**Important:** There is no "blocked" status. If work is blocked, move to human-review so a human can investigate and unblock.
+
+**Skipping internal-review is blocked by MCP** — you must let Clara validate before work starts.`,
+    keywords: ['lifecycle', 'workflow', 'status', 'todo', 'review', 'done', 'internal-review', 'in-progress', 'human-review', 'clara', 'blocked'],
+    relatedTo: ['kanban', 'tasks'],
+    lastUpdated: '2026-03-08'
   },
 
   // Agents
@@ -181,156 +96,186 @@ Todo → In Progress → Review → Done
     id: 'agents-system',
     title: 'Agent System',
     category: 'Agents',
-    content: `Froggo can spawn specialized agents to handle tasks.
+    content: `Mission Control runs a team of specialized Claude Code CLI agents.
 
-**Available Agents:**
+**Your Agents:**
 
-**Coder (💻)**
-- Writes, reviews, and debugs code
-- Runs tests and builds
-- Git operations
-- Tech stack: TypeScript, React, Node.js, Python
+**Mission Control**
+- Your primary orchestrator and chief of staff
+- Answers questions, breaks down goals, delegates work
+- Creates and assigns tasks to other agents
+- Chat with Mission Control directly from the Chat tab
 
-**Writer (✍️)**
-- Creates content (tweets, blog posts, docs)
-- Edits and proofreads
-- Social media management
-- Maintains consistent voice
+**Coder**
+- Software development, debugging, code review
+- Runs tests, git operations, build pipelines
+- Writes and edits code across the full stack
 
-**Researcher (🔍)**
-- Web research and analysis
-- Data gathering
-- Summarization
-- Competitive analysis
+**Clara**
+- Quality reviewer — runs automatically on every task
+- Validates plans at internal-review stage
+- Verifies completed work at review stage
+- Approves or rejects with specific, actionable notes
 
-**Chief (👨‍💻)**
-- Lead engineer for complex projects
+**Chief**
+- Lead architect for complex multi-phase projects
 - Uses GSD (Get Shit Done) methodology
-- Breaks down projects into phases
-- Spawns sub-agents for execution
+- Breaks projects into milestones and phases
+- Spawns and coordinates sub-agents
 
-**How It Works:**
-1. Create a task in Kanban
-2. Assign to appropriate agent
-3. Agent receives task context and spawns
-4. Agent executes work and logs progress
-5. Task moves to Review when complete
-6. You review and approve deliverables
+**HR**
+- Team and people operations
+- Onboarding, policy documentation, scheduling
 
-**Monitoring:**
-- View active agent sessions in Agents panel (⌘6)
-- Check task activity logs for progress updates
-- Agents log all actions for full transparency`,
-    keywords: ['agent', 'coder', 'writer', 'researcher', 'chief', 'ai', 'spawn', 'assign'],
+**Trust Tiers:**
+Each agent has a trust tier that controls what tools it can use:
+- restricted: read-only, limited MCP access
+- apprentice: read/write, MCP DB tools
+- worker: full dev tools, web access, bash
+- trusted: full access including notebooks
+- admin: unrestricted
+
+Set trust tiers in Agents > select agent > Permissions tab.
+
+**Sessions:**
+Each agent maintains a persistent Claude CLI session per chat surface. Sessions are kept alive automatically with background pings every 25 minutes so you never lose conversation context.`,
+    keywords: ['agent', 'coder', 'clara', 'chief', 'hr', 'mission-control', 'ai', 'spawn', 'assign', 'trust', 'tier', 'permissions'],
     relatedTo: ['agents', 'kanban'],
-    videoUrl: 'https://example.com/agents-explained',
-    lastUpdated: '2026-01-28'
+    lastUpdated: '2026-03-08'
   },
 
-  // Voice Chat
+  // Kanban
   {
-    id: 'voice-chat',
-    title: 'Voice Chat',
-    category: 'Voice',
-    content: `Voice Chat (⌘8) provides real-time bidirectional voice conversations with agents via Gemini Live.
+    id: 'kanban-tasks',
+    title: 'Kanban Board',
+    category: 'Tasks',
+    content: `The Kanban board (Tasks panel) is your task management center.
 
-**Features:**
-- Select any agent to talk to
-- Real-time audio streaming (speak and hear responses)
-- Camera and screen sharing support
-- Text input during calls
-- Tool calling (create tasks, spawn agents, check status)
-- Full conversation history per agent
+**Creating Tasks:**
+1. Click "+ New Task" or press N
+2. Add title, description, and priority (P0-P3)
+3. Assign to an agent
+4. Add 2+ subtasks for complex work
+5. Move to internal-review when ready — Clara validates before work starts
 
-**How to use:**
-1. Select an agent from the dropdown
-2. Press the call button to connect
-3. Speak naturally — the agent hears and responds in real-time
-4. Use camera/screen share buttons during a call for visual context
-5. Press end call when done
+**Task Priority:**
+- P0: Critical / on-fire
+- P1: High — do today
+- P2: Normal (default)
+- P3: Low / someday
 
-**Privacy:**
-All transcription runs locally on your device using Vosk. No cloud processing.`,
-    keywords: ['voice', 'speech', 'transcription', 'vosk', 'meeting', 'audio', 'microphone', 'tts'],
-    relatedTo: ['voice'],
-    videoUrl: 'https://example.com/voice-assistant',
-    lastUpdated: '2026-01-28'
+**Subtasks:**
+Add subtasks to break complex work into trackable steps. Agents work through subtasks systematically and mark each complete as they go.
+
+**Task Detail Panel:**
+Click any task to open the detail view:
+- Overview tab: edit task fields, view progress
+- Activity tab: full log of all agent actions
+- Subtasks tab: manage subtask checklist
+- Chat tab: per-task conversation thread with the assigned agent
+
+**Filters:**
+Filter the board by status, priority, agent, or search by keyword. View by kanban columns or as a flat list.`,
+    keywords: ['kanban', 'tasks', 'todo', 'workflow', 'agent', 'assign', 'subtasks', 'project', 'priority', 'filter'],
+    relatedTo: ['kanban', 'agents'],
+    lastUpdated: '2026-03-08'
   },
 
-  // Chat
+  // Chat & Rooms
   {
-    id: 'chat-panel',
-    title: 'Chat with Froggo',
+    id: 'chat-rooms',
+    title: 'Chat & Chat Rooms',
     category: 'Chat',
-    content: `Chat panel (⌘9) for direct conversation with Froggo.
+    content: `Two ways to communicate with agents: direct chat and rooms.
 
-**How to Use:**
-- Type naturally - no special commands needed
-- Froggo understands context from your workspace
-- Reference tasks, contacts, calendar events, etc.
-- Froggo can perform actions (create tasks, send messages, etc.)
+**Direct Agent Chat:**
+Click any agent in the Agents panel and open the Chat tab. This is a persistent 1-on-1 conversation with that agent. The session carries full history — the agent remembers everything from previous messages.
 
-**Message Actions:**
-- Edit messages before sending
-- Copy responses
-- Regenerate if you want a different answer
-- Export conversation history
+**Mission Control Chat:**
+The main Chat panel is a direct line to the Mission Control orchestrator agent. Use it to:
+- Ask questions about tasks, projects, or system state
+- Give high-level goals — Mission Control breaks them down
+- Request status updates across all agents
+- Trigger delegation to specialized agents
 
-**Tips:**
-- Be specific about what you want
-- Froggo can see your calendar, tasks, and inbox
-- Ask Froggo to explain features or troubleshoot
-- Use "Froggo, can you..." for polite requests
+**Chat Rooms:**
+Rooms are shared spaces for agent-to-agent and human-to-agent collaboration. Create rooms for specific projects or topics. Multiple agents can participate in the same room.
 
-**Context Awareness:**
-Froggo has access to:
-- Your task board and projects
-- Calendar and upcoming meetings
-- Recent emails and messages
-- Agent activity
-- System status`,
-    keywords: ['chat', 'conversation', 'talk', 'message', 'ask', 'froggo', 'ai'],
+Agents can message each other directly using:
+mcp__mission-control-db__chat_post { roomId: "agent:{target}", agentId: "{from}", content: "..." }
+
+**Per-Task Chat:**
+Each task has its own Chat tab in the Task Detail Panel. Open a task and switch to Chat to have a focused conversation with the assigned agent about that specific task.
+
+**Session Continuity:**
+Each chat surface (direct, room, task) maintains its own independent persistent session. You can have parallel conversations with the same agent across different surfaces without them interfering.`,
+    keywords: ['chat', 'conversation', 'room', 'message', 'talk', 'mission-control', 'direct', 'task chat'],
     relatedTo: ['chat'],
-    lastUpdated: '2026-01-28'
+    lastUpdated: '2026-03-08'
   },
 
-  // X/Twitter
+  // Projects
   {
-    id: 'twitter-panel',
-    title: 'Social Media Integration',
-    category: 'Social Media',
-    content: `The X panel (⌘7) manages your Twitter presence.
+    id: 'projects',
+    title: 'Projects',
+    category: 'Projects',
+    content: `Projects group related tasks into a structured workspace.
 
-**Features:**
-- Compose new tweets
-- View mentions and replies
-- Schedule tweets for later
-- Check engagement stats
-- Search your timeline
+**Creating a Project:**
+1. Go to the Projects module (install via Modules Library if not visible)
+2. Click "New Project" — opens the creation wizard
+3. Set name, description, and team members
+4. A dedicated chat room is created automatically
+5. A library folder is created at ~/mission-control/library/projects/{id}/
 
-**Compose Tweet:**
-1. Press ⌘N or click "New Tweet"
-2. Write your tweet (280 chars)
-3. Add media if desired
-4. Option to schedule for later
-5. Submit for approval (goes to Inbox)
+**Project Workspace:**
+Each project has its own workspace view with:
+- Filtered task board showing only project tasks
+- Project-specific chat room
+- File browser for project library files
+- Dispatch controls to spawn agents on project tasks
 
-**Smart Scheduling:**
-- Content calendar suggests optimal posting times
-- Queue multiple tweets
-- Agent can compose tweets from task instructions
+**Linking Tasks:**
+Assign tasks to a project when creating them. Agents working within a project context write their output files to the project library folder.
 
-**Safety:**
-All tweets require approval before posting (unless auto-approval enabled in Settings).
+**Dispatch:**
+Use the project dispatch modal to spawn an agent on all open project tasks at once, or select specific tasks to execute.`,
+    keywords: ['projects', 'workspace', 'organize', 'group', 'tasks', 'library', 'dispatch'],
+    relatedTo: ['projects'],
+    lastUpdated: '2026-03-08'
+  },
 
-**Keyboard Shortcuts:**
-- ⌘N: New tweet
-- ⌘Enter: Send/submit
-- ⌘⇧R: Retweet
-- ⌘L: Like`,
-    keywords: ['twitter', 'x', 'tweet', 'social', 'post', 'mentions', 'timeline'],
-    relatedTo: ['twitter'],
-    lastUpdated: '2026-01-28'
+  // Approvals
+  {
+    id: 'approvals',
+    title: 'Approvals & Inbox',
+    category: 'Approvals',
+    content: `The Approvals panel holds agent-created items awaiting your review.
+
+**What Needs Approval:**
+Agents call mcp__mission-control-db__approval_create before taking any external action:
+- Tweets and social posts
+- Outgoing emails
+- Deploys and destructive operations
+- Any action flagged for human sign-off
+
+**Approval Flow:**
+1. Agent submits approval request with context
+2. Item appears in the Approvals panel
+3. Review the content and agent's reasoning
+4. Approve → agent proceeds with the action
+5. Reject → agent receives your feedback and can revise
+
+**Keyboard Navigation:**
+- J/K: Navigate between items
+- A: Approve selected
+- R: Reject selected
+
+**The Hook:**
+A PostToolUse hook fires on every mcp__mission-control-db__task_update that moves a task into review status. This automatically triggers Clara's review cycle — you don't need to manually trigger Clara.`,
+    keywords: ['approvals', 'inbox', 'approve', 'reject', 'review', 'tweet', 'email', 'hook', 'clara'],
+    relatedTo: ['inbox', 'approvals'],
+    lastUpdated: '2026-03-08'
   },
 
   // Keyboard Shortcuts
@@ -341,96 +286,47 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
     content: `Master these keyboard shortcuts for maximum efficiency.
 
 **Navigation (⌘1-9):**
-- ⌘1: Inbox (Communications)
+- ⌘1: Inbox / Approvals
 - ⌘2: Dashboard
 - ⌘3: Analytics
 - ⌘4: Tasks (Kanban)
 - ⌘5: Agents
-- ⌘6: Social Media
-- ⌘7: Voice
-- ⌘8: Chat
-- ⌘9: Connected Accounts
-- ⌘0: Approvals
+- ⌘6: Chat Rooms
+- ⌘7: Projects
+- ⌘8: Voice
+- ⌘9: Settings
+- ⌘0: Connected Accounts
 
 **Global Actions:**
-- ⌘K: Global search
-- ⌘P: Command palette
+- ⌘K: Global search / command palette
 - ⌘?: Keyboard shortcuts help
 - ⌘,: Settings
-- ⌘M: Toggle mute
 - ⌘N: New (context-aware)
-- ⌘S: Save/submit
+- ⌘S: Save / submit
 
-**Appearance & Navigation:**
-- ⌘⇧D: Toggle dark/light mode (quick theme switch)
+**Appearance:**
+- ⌘⇧D: Toggle dark/light mode
+
+**Scroll Navigation:**
 - ⌥↑: Scroll up
 - ⌥↓: Scroll down
 - ⌥⇞: Scroll page up
 - ⌥⇟: Scroll page down
 
-**Quick Actions:**
-- ⌘⇧M: Quick message
-- ⌘⇧N: Add contact
-- ⌘⇧K: Add skill
-- ⌘⇧S: Starred messages
-
 **Task Management:**
 - N: New task
-- ⌘I: Task info
 - ⌘Enter: Complete
-- ⌘B: Bookmark
+- ⌘B: Bookmark / star
 
-**Inbox Navigation:**
+**Approval Navigation:**
 - J: Next item
 - K: Previous item
 - A: Approve
 - R: Reject
-- X: Defer
 
 Press ⌘? anytime to view the full shortcut reference.`,
     keywords: ['keyboard', 'shortcuts', 'hotkey', 'keys', 'navigation', 'productivity', 'theme', 'scroll'],
-    lastUpdated: '2026-01-30'
-  },
-
-  // Theme Toggle & Scroll Navigation
-  {
-    id: 'theme-scroll-hotkeys',
-    title: 'Theme Toggle & Scroll Navigation',
-    category: 'Productivity',
-    content: `Quickly switch themes and navigate without using your mouse.
-
-**Theme Toggle (⌘⇧D):**
-Press ⌘⇧D (Cmd+Shift+D) to instantly toggle between dark and light mode. This works from any page and shows a toast notification confirming the change.
-
-**Why use it?**
-- Quick testing of light/dark mode designs
-- Switch based on time of day or lighting conditions
-- No need to open Settings panel
-- Works everywhere in the app
-
-**Scroll Navigation (⌥ + Arrows):**
-Use Option/Alt key with arrow keys to scroll through content:
-- ⌥↑ (Option+Up): Scroll up smoothly
-- ⌥↓ (Option+Down): Scroll down smoothly
-- ⌥⇞ (Option+Page Up): Scroll up by page
-- ⌥⇟ (Option+Page Down): Scroll down by page
-
-**Why use it?**
-- Keyboard-only navigation
-- Precise scrolling without mouse/trackpad
-- Faster than reaching for mouse
-- Smooth scroll animation for comfort
-
-**Pro Tips:**
-- Use theme toggle during screen sharing to improve visibility
-- Combine scroll navigation with other keyboard shortcuts for full hands-on-keyboard workflow
-- Theme preference is saved automatically
-- Scroll amount is optimized for readability
-
-These features are designed for power users who prefer keyboard navigation and frequent testing workflows.`,
-    keywords: ['theme', 'dark', 'light', 'toggle', 'scroll', 'navigation', 'keyboard', 'hotkey', 'accessibility'],
-    relatedTo: ['settings', 'dashboard'],
-    lastUpdated: '2026-01-30'
+    lastUpdated: '2026-03-08'
   },
 
   // Settings
@@ -438,129 +334,130 @@ These features are designed for power users who prefer keyboard navigation and f
     id: 'settings-customization',
     title: 'Settings & Customization',
     category: 'Customization',
-    content: `Customize Froggo to your preferences (⌘,).
+    content: `Customize Mission Control to your preferences (⌘,).
 
 **Appearance:**
 - Theme: Dark, Light, or System
-- Accent color: Choose your brand color
-- Default panel: Set startup view
-- Sidebar order: Rearrange panels
+- Accent color
+- Default panel on startup
 
-**Accounts:**
-- Connect Google Calendar
-- Add email accounts
-- Link social media
-- Configure webhooks
+**Agent Security:**
+- Set global disallowed tools (applies to all agents)
+- Per-agent disallowed tool overrides
+- Trust tier controls what tool categories each agent can access
 
-**Automation:**
-- Auto-approval rules
-- Scheduled tasks
-- Agent triggers
-- Notification preferences
+**Modules:**
+Install optional modules from the Modules Library:
+- Projects module
+- Additional panel types
 
-**Privacy & Security:**
-- Voice transcription (local only)
-- Data retention policies
-- Export your data
-- Session management
+**Crons & Automation:**
+Background jobs run automatically:
+- Task dispatcher (every 5 min): picks up assigned tasks and dispatches agents
+- Clara review cron (every 3 min): sweeps tasks in review status and triggers Clara
+- Session keepalive (every 25 min): pings active CLI sessions to prevent expiry
 
-**Integrations:**
-- GitHub, GitLab
-- Slack, Discord, Telegram
-- Notion, Linear
-- Custom webhooks
+**MCP Servers:**
+Two MCP servers are configured automatically:
+- mission-control-db: 17 tools for tasks, chat, approvals, schedules
+- memory: 4 tools for reading/writing the memory vault (~/mission-control/memory/)
 
-Settings sync across devices when logged in.`,
-    keywords: ['settings', 'preferences', 'customize', 'theme', 'appearance', 'config'],
+**Agent Files:**
+Each agent reads from ~/mission-control/agents/{agent-id}/:
+- SOUL.md: Agent identity, responsibilities, and behavior rules
+- MEMORY.md: Agent-specific persistent memory
+
+Edit these files directly to tune agent behavior.`,
+    keywords: ['settings', 'preferences', 'customize', 'theme', 'appearance', 'config', 'modules', 'cron', 'mcp', 'soul', 'memory'],
     relatedTo: ['settings'],
-    lastUpdated: '2026-01-28'
+    lastUpdated: '2026-03-08'
   }
 ];
 
 export const faqs: FAQItem[] = [
   {
-    id: 'faq-what-is-froggo',
-    question: 'What is Froggo?',
-    answer: 'Froggo is an AI-powered productivity dashboard that orchestrates specialized agents to handle your tasks, manage communications, and keep you organized. Think of it as your personal AI chief of staff.',
+    id: 'faq-what-is-mission-control',
+    question: 'What is Mission Control?',
+    answer: 'Mission Control is an AI agent orchestration platform that runs a team of specialized Claude Code CLI agents to handle your tasks, manage communications, and execute work autonomously. Think of it as a command center for your AI team.',
     category: 'General',
-    keywords: ['what', 'about', 'froggo', 'intro']
+    keywords: ['what', 'about', 'mission-control', 'intro']
   },
   {
-    id: 'faq-agents-vs-manual',
-    question: 'When should I use an agent vs. doing it myself?',
-    answer: 'Use agents for: repetitive tasks, research-heavy work, code generation, content creation, and anything that benefits from AI assistance. Do it yourself for: creative decisions, sensitive communications, strategic planning, and anything requiring personal judgment.',
+    id: 'faq-how-agents-run',
+    question: 'How do agents actually run?',
+    answer: 'Each agent is a Claude Code CLI process spawned on demand. The server uses --print --output-format stream-json --verbose to get a real-time JSON event stream. Sessions are identified by a server-side session ID and resumed with --resume on subsequent messages so the agent retains full conversation history.',
     category: 'Agents',
-    keywords: ['agent', 'when', 'use', 'vs', 'manual']
+    keywords: ['agent', 'how', 'run', 'cli', 'claude', 'session', 'process']
+  },
+  {
+    id: 'faq-task-lifecycle',
+    question: 'What is the task lifecycle?',
+    answer: 'todo → internal-review → in-progress → review → human-review → done. Clara validates plans at internal-review before work starts, and verifies completed work at review before marking done. Skipping internal-review is blocked by MCP.',
+    category: 'Tasks',
+    keywords: ['task', 'lifecycle', 'status', 'workflow', 'stages']
   },
   {
     id: 'faq-approval-required',
-    question: 'Why do tweets and emails need approval?',
-    answer: 'Safety first! Agents can make mistakes, so all external communications require your review. You can enable auto-approval for trusted content types in Settings > Automation.',
-    category: 'Inbox',
-    keywords: ['approval', 'why', 'review', 'tweet', 'email']
+    question: 'Why do some agent actions need approval?',
+    answer: 'Agents call approval_create before taking any external action (tweets, emails, deploys). This gives you a chance to review and approve before the action is executed. The Approvals panel collects these requests.',
+    category: 'Approvals',
+    keywords: ['approval', 'why', 'review', 'external', 'action']
   },
   {
     id: 'faq-task-stuck',
-    question: 'My task is stuck "In Progress" - what happened?',
-    answer: 'If a task is stuck, the agent may have encountered an error or lost context. Check the task activity log for details. You can manually reset the task to "Todo" and respawn the agent, or ask Froggo in Chat to investigate.',
+    question: 'My task is stuck "In Progress" — what happened?',
+    answer: 'Check the task activity log for the last action the agent took. Common causes: agent hit a tool permission error, session expired mid-task (rare with keepalive), or the agent is waiting on a dependency. Move to human-review if you need to unblock it manually. There is no blocked status — human-review is the correct state for genuinely stuck work.',
     category: 'Tasks',
-    keywords: ['stuck', 'task', 'in progress', 'agent', 'not moving']
+    keywords: ['stuck', 'task', 'in progress', 'agent', 'not moving', 'blocked']
   },
   {
-    id: 'faq-voice-not-working',
-    question: 'Voice transcription isn\'t working',
-    answer: 'Check: 1) Microphone permissions in browser, 2) Correct microphone selected in Voice settings, 3) Vosk model downloaded (should auto-download). If still broken, check browser console for errors.',
-    category: 'Voice',
-    keywords: ['voice', 'not working', 'microphone', 'transcription', 'broken']
+    id: 'faq-agent-cost',
+    question: 'Do agents cost money to run?',
+    answer: 'Agents use Claude Code CLI which runs under your Anthropic subscription (Claude Max or Claude for Work). There is no per-call API billing — costs are covered by your plan. Token usage per agent session is tracked and visible in the Agents panel.',
+    category: 'Agents',
+    keywords: ['cost', 'money', 'price', 'api', 'usage', 'subscription', 'billing']
   },
   {
     id: 'faq-keyboard-shortcuts',
     question: 'How do I see all keyboard shortcuts?',
-    answer: 'Press ⌘? (Cmd+Shift+/) to open the keyboard shortcuts reference. You can also find them in Settings > Keyboard.',
+    answer: 'Press ⌘? (Cmd+Shift+/) to open the keyboard shortcuts reference. Common ones: ⌘K for global search, ⌘1-9 for panel navigation, N for new task, ⌘, for settings.',
     category: 'Productivity',
     keywords: ['keyboard', 'shortcuts', 'hotkeys', 'how']
   },
   {
     id: 'faq-data-privacy',
     question: 'Where is my data stored?',
-    answer: 'All data is stored locally in SQLite databases on your machine. Voice transcription runs locally using Vosk (no cloud). Agent conversations go through the Clawdbot gateway but are not stored externally. You own your data.',
+    answer: 'All data is stored locally in a SQLite database at ~/mission-control/data/mission-control.db. Agent memory is stored in ~/mission-control/memory/ (an Obsidian-compatible vault). Agent output files go to ~/mission-control/library/. Nothing is stored externally beyond the Claude CLI sessions on Anthropic\'s servers.',
     category: 'Privacy',
-    keywords: ['data', 'privacy', 'storage', 'security', 'where']
+    keywords: ['data', 'privacy', 'storage', 'security', 'where', 'local']
   },
   {
-    id: 'faq-agent-cost',
-    question: 'Do agents cost money to run?',
-    answer: 'Agents use the Claude API through Anthropic. Costs are minimal for typical usage (~$0.01-0.10 per task). You can monitor usage in Settings > API Usage.',
+    id: 'faq-session-context',
+    question: 'Do agents remember previous conversations?',
+    answer: 'Yes. Each agent maintains a persistent Claude CLI session per chat surface (direct chat, room, or task). A background keepalive service pings each active session every 25 minutes to prevent Anthropic\'s server-side session expiry. If a session does expire, the last 40 messages are injected as context when the fresh session starts.',
     category: 'Agents',
-    keywords: ['cost', 'money', 'price', 'api', 'usage']
+    keywords: ['memory', 'context', 'remember', 'session', 'history', 'keepalive', 'expire']
   },
   {
-    id: 'faq-multiple-accounts',
-    question: 'Can I connect multiple email/calendar accounts?',
-    answer: 'Yes! Go to Settings > Connected Accounts (⌘0) to add multiple Google accounts, calendars, and email addresses. The dashboard will aggregate data from all connected sources.',
-    category: 'Accounts',
-    keywords: ['multiple', 'accounts', 'email', 'calendar', 'google']
+    id: 'faq-clara-review',
+    question: 'What does Clara do?',
+    answer: 'Clara is the quality reviewer. She runs automatically at two lifecycle stages: (1) internal-review — validates that the plan, subtasks, and agent assignment are correct before work begins; (2) review — verifies that all planned work was completed before marking done. Clara can reject and send tasks back with specific notes.',
+    category: 'Agents',
+    keywords: ['clara', 'review', 'quality', 'gate', 'approve', 'reject', 'auto']
   },
   {
-    id: 'faq-mobile-app',
-    question: 'Is there a mobile app?',
-    answer: 'Not yet, but it\'s on the roadmap! For now, you can access Froggo via mobile browser (responsive design). Voice features work best on desktop.',
-    category: 'General',
-    keywords: ['mobile', 'app', 'phone', 'ios', 'android']
-  },
-  {
-    id: 'faq-offline-mode',
-    question: 'Does Froggo work offline?',
-    answer: 'Partially. You can view cached data and use voice transcription offline. However, agent execution, chat, and API features require internet. Full offline mode is planned for future releases.',
-    category: 'General',
-    keywords: ['offline', 'internet', 'connection', 'work']
+    id: 'faq-mcp-tools',
+    question: 'What MCP tools do agents have access to?',
+    answer: 'Two MCP servers: (1) mission-control-db with 17 tools covering tasks, chat, approvals, schedules, inbox, and agent status. (2) memory with 4 tools (memory_search, memory_recall, memory_write, memory_read) for the QMD-powered memory vault. Tool access is gated by each agent\'s trust tier.',
+    category: 'Agents',
+    keywords: ['mcp', 'tools', 'tools', 'access', 'database', 'memory']
   },
   {
     id: 'faq-export-data',
     question: 'Can I export my data?',
-    answer: 'Yes! Go to Settings > Data & Privacy > Export Data. You can export tasks, conversations, contacts, and all database contents as JSON or CSV.',
+    answer: 'The raw SQLite database is at ~/mission-control/data/mission-control.db — you can query it directly with sqlite3 or any SQLite client. Agent memory is plain Markdown files in ~/mission-control/memory/ and is fully portable.',
     category: 'Privacy',
-    keywords: ['export', 'data', 'download', 'backup']
+    keywords: ['export', 'data', 'download', 'backup', 'sqlite', 'portable']
   }
 ];
 
@@ -569,56 +466,48 @@ export const quickTips: QuickTip[] = [
     id: 'tip-command-palette',
     title: 'Use Command Palette',
     description: 'Press ⌘K to quickly navigate anywhere or perform actions without touching the mouse.',
-    icon: '⚡'
   },
   {
     id: 'tip-task-subtasks',
-    title: 'Break Down Complex Tasks',
-    description: 'Add subtasks to complex projects. Agents work through them systematically.',
-    icon: '📋'
+    title: 'Always Add Subtasks',
+    description: 'Tasks need 2+ subtasks before Clara will pass internal-review. Break work down before assigning.',
   },
   {
-    id: 'tip-voice-meeting',
-    title: 'Use Voice for Meetings',
-    description: 'Enable meeting eavesdrop mode to transcribe calls and auto-detect action items.',
-    icon: '🎙️'
+    id: 'tip-task-chat',
+    title: 'Per-Task Chat',
+    description: 'Open any task and switch to the Chat tab for a focused conversation with the assigned agent about that specific task.',
   },
   {
     id: 'tip-global-search',
     title: 'Search Everything',
-    description: 'Global search (⌘K) finds tasks, contacts, messages, skills, and more instantly.',
-    icon: '🔍'
+    description: 'Global search (⌘K) finds tasks, agents, rooms, and more instantly across all panels.',
   },
   {
     id: 'tip-agent-assignment',
-    title: 'Assign the Right Agent',
-    description: 'Coder for code, Writer for content, Researcher for analysis. Choose wisely!',
-    icon: '🤖'
+    title: 'Pick the Right Agent',
+    description: 'Coder for code, Clara auto-runs reviews, Chief for complex multi-phase projects. Mission Control orchestrates everything.',
   },
   {
-    id: 'tip-inbox-keyboard',
+    id: 'tip-approval-keyboard',
     title: 'Approve with Keyboard',
-    description: 'Use J/K to navigate inbox and A/R to approve/reject. Lightning fast!',
-    icon: '⌨️'
+    description: 'Use J/K to navigate approvals and A/R to approve/reject. Faster than clicking.',
   },
   {
     id: 'tip-theme-toggle',
     title: 'Quick Theme Switch',
-    description: 'Press ⌘⇧D to instantly toggle between dark and light mode. Perfect for testing or adjusting to lighting conditions!',
-    icon: '🌓'
+    description: 'Press ⌘⇧D to instantly toggle between dark and light mode.',
   },
   {
-    id: 'tip-scroll-navigation',
-    title: 'Keyboard Scrolling',
-    description: 'Use ⌥↑/↓ (Option+Arrows) to scroll smoothly without touching your mouse. Full keyboard workflow!',
-    icon: '⬆️'
+    id: 'tip-soul-edit',
+    title: 'Tune Agent Behavior',
+    description: 'Edit ~/mission-control/agents/{agent-id}/SOUL.md to change how an agent thinks and what it prioritizes.',
   }
 ];
 
 // Context-aware help: returns relevant articles based on current panel
 export function getContextHelp(panel: string): HelpArticle[] {
-  return helpArticles.filter(article => 
-    article.relatedTo?.includes(panel) || 
+  return helpArticles.filter(article =>
+    article.relatedTo?.includes(panel) ||
     article.category.toLowerCase() === panel.toLowerCase()
   );
 }

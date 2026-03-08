@@ -40,7 +40,7 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     // Load from localStorage
-    const saved = safeStorage.getItem('froggo-a11y-settings');
+    const saved = safeStorage.getItem('mission-control-a11y-settings');
     if (saved) {
       try {
         return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
@@ -63,7 +63,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
   const updateSettings = useCallback((newSettings: Partial<AccessibilitySettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
-      safeStorage.setItem('froggo-a11y-settings', JSON.stringify(updated));
+      safeStorage.setItem('mission-control-a11y-settings', JSON.stringify(updated));
       return updated;
     });
   }, []);
@@ -119,7 +119,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Font size
     document.documentElement.style.setProperty(
-      '--clawd-font-size',
+      '--mission-control-font-size',
       `${14 * (settings.fontSize / 100)}px`
     );
 

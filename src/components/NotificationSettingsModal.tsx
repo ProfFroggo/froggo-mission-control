@@ -243,17 +243,17 @@ export default function NotificationSettingsModal({
     >
       <div className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-6 border-b border-mission-control-border flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Bell size={24} />
               Notification Settings
             </h2>
-            <p className="text-sm text-clawd-text-dim mt-1">
+            <p className="text-sm text-mission-control-text-dim mt-1">
               {sessionName}
             </p>
             {hasCustomSettings && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-clawd-accent/20 text-clawd-accent rounded-full text-xs mt-2">
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-mission-control-accent/20 text-mission-control-accent rounded-full text-xs mt-2">
                 <Settings size={14} />
                 Custom settings active
               </span>
@@ -261,7 +261,7 @@ export default function NotificationSettingsModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Close (ESC)"
             aria-label="Close modal"
           >
@@ -277,14 +277,14 @@ export default function NotificationSettingsModal({
               <BellOff size={20} className="text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium text-warning">Conversation Muted</p>
-                <p className="text-sm text-clawd-text-dim mt-1">
+                <p className="text-sm text-mission-control-text-dim mt-1">
                   Until {new Date(muteUntil).toLocaleString()}
                 </p>
               </div>
               <button
                 onClick={handleUnmute}
                 disabled={saving}
-                className="px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm hover:bg-clawd-accent/80 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/80 transition-colors disabled:opacity-50"
               >
                 Unmute
               </button>
@@ -292,7 +292,7 @@ export default function NotificationSettingsModal({
           )}
 
           {/* Quick Mute Actions */}
-          <div className="bg-clawd-bg rounded-lg p-4">
+          <div className="bg-mission-control-bg rounded-lg p-4">
             <h3 className="font-medium mb-3 flex items-center gap-2">
               <ZapOff size={16} />
               Quick Mute
@@ -301,28 +301,28 @@ export default function NotificationSettingsModal({
               <button
                 onClick={() => handleQuickMute(1)}
                 disabled={saving}
-                className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 1 hour
               </button>
               <button
                 onClick={() => handleQuickMute(4)}
                 disabled={saving}
-                className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 4 hours
               </button>
               <button
                 onClick={() => handleQuickMute(24)}
                 disabled={saving}
-                className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 24 hours
               </button>
               <button
                 onClick={() => handleQuickMute(168)}
                 disabled={saving}
-                className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
+                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
               >
                 1 week
               </button>
@@ -339,7 +339,7 @@ export default function NotificationSettingsModal({
               id="notification-level"
               value={notificationLevel}
               onChange={(e) => setNotificationLevel(e.target.value)}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="all">All messages</option>
               <option value="mentions">Mentions only</option>
@@ -360,7 +360,7 @@ export default function NotificationSettingsModal({
                   type="checkbox"
                   checked={soundEnabled}
                   onChange={(e) => setSoundEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-clawd-accent"
+                  className="w-4 h-4 accent-mission-control-accent"
                 />
                 <span>Enable notification sounds</span>
               </label>
@@ -368,7 +368,7 @@ export default function NotificationSettingsModal({
                 <select
                   value={soundType}
                   onChange={(e) => setSoundType(e.target.value)}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 >
                   <option value="default">Default</option>
                   <option value="subtle">Subtle</option>
@@ -385,7 +385,7 @@ export default function NotificationSettingsModal({
                 type="checkbox"
                 checked={desktopNotifications}
                 onChange={(e) => setDesktopNotifications(e.target.checked)}
-                className="w-4 h-4 accent-clawd-accent"
+                className="w-4 h-4 accent-mission-control-accent"
               />
               <span className="flex items-center gap-2">
                 <Bell size={16} />
@@ -406,7 +406,7 @@ export default function NotificationSettingsModal({
                   type="checkbox"
                   checked={quietHoursEnabled}
                   onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-clawd-accent"
+                  className="w-4 h-4 accent-mission-control-accent"
                 />
                 <span>Enable quiet hours</span>
               </label>
@@ -416,14 +416,14 @@ export default function NotificationSettingsModal({
                     type="time"
                     value={quietStart}
                     onChange={(e) => setQuietStart(e.target.value)}
-                    className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
-                  <span className="text-clawd-text-dim">to</span>
+                  <span className="text-mission-control-text-dim">to</span>
                   <input
                     type="time"
                     value={quietEnd}
                     onChange={(e) => setQuietEnd(e.target.value)}
-                    className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               )}
@@ -444,11 +444,11 @@ export default function NotificationSettingsModal({
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="Add keyword..."
-                  className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+                  className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={addKeyword}
-                  className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 transition-colors"
+                  className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
                 >
                   Add
                 </button>
@@ -458,7 +458,7 @@ export default function NotificationSettingsModal({
                   {keywordAlerts.map((keyword) => (
                     <span
                       key={keyword}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-clawd-border rounded-full text-sm"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-border rounded-full text-sm"
                     >
                       #{keyword}
                       <button
@@ -484,7 +484,7 @@ export default function NotificationSettingsModal({
               id="priority-level"
               value={priorityLevel}
               onChange={(e) => setPriorityLevel(e.target.value)}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="low">Low</option>
               <option value="normal">Normal</option>
@@ -503,7 +503,7 @@ export default function NotificationSettingsModal({
               id="notification-frequency"
               value={notificationFrequency}
               onChange={(e) => setNotificationFrequency(e.target.value)}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="instant">Instant</option>
               <option value="batched_15m">Batched (15 minutes)</option>
@@ -519,7 +519,7 @@ export default function NotificationSettingsModal({
                 type="checkbox"
                 checked={showMessagePreview}
                 onChange={(e) => setShowMessagePreview(e.target.checked)}
-                className="w-4 h-4 accent-clawd-accent"
+                className="w-4 h-4 accent-mission-control-accent"
               />
               <span>Show message preview in notifications</span>
             </label>
@@ -528,7 +528,7 @@ export default function NotificationSettingsModal({
                 type="checkbox"
                 checked={badgeCountEnabled}
                 onChange={(e) => setBadgeCountEnabled(e.target.checked)}
-                className="w-4 h-4 accent-clawd-accent"
+                className="w-4 h-4 accent-mission-control-accent"
               />
               <span>Increment unread badge count</span>
             </label>
@@ -542,14 +542,14 @@ export default function NotificationSettingsModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes about these settings..."
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
               rows={3}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-clawd-border flex items-center justify-between">
+        <div className="p-6 border-t border-mission-control-border flex items-center justify-between">
           <div>
             {hasCustomSettings && (
               <button
@@ -566,14 +566,14 @@ export default function NotificationSettingsModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-bg transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {saving ? (
                 <>Saving...</>
