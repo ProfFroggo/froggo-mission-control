@@ -265,6 +265,7 @@ function FilesTab({ project }: { project: Project }) {
   const [memoryResults, setMemoryResults] = useState<any[]>([]);
   const [memoryQuery, setMemoryQuery] = useState('');
   const [memoryLoading, setMemoryLoading] = useState(false);
+  const [memoryUnavailable, setMemoryUnavailable] = useState(false);
   const [activeSection, setActiveSection] = useState<'files' | 'memory'>('files');
   const [uploading, setUploading] = useState(false);
 
@@ -301,14 +302,31 @@ function FilesTab({ project }: { project: Project }) {
   const handleMemorySearch = async () => {
     if (!memoryQuery.trim()) return;
     setMemoryLoading(true);
+    setMemoryUnavailable(false);
     try {
-      const res = await fetch('/api/memory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: memoryQuery, limit: 10 }),
-      });
+      const res = await fetch(
+        `/api/memory/search?q=${encodeURIComponent(memoryQuery)}&limit=10`
+      );
       const data = await res.json();
-      setMemoryResults(Array.isArray(data) ? data : data.results ?? []);
+      if (data.searchUnavailable) {
+        setMemoryUnavailable(true);
+        setMemoryResults([]);
+      } else {
+        // results may be a raw string (qmd/rg output) or an array
+        const raw = data.results ?? '';
+        if (Array.isArray(raw)) {
+          setMemoryResults(raw);
+        } else if (typeof raw === 'string' && raw.trim()) {
+          // Split by separator used for ripgrep/grep fallbacks
+          const entries = raw.split('\n\n---\n\n').map((chunk: string) => {
+            const [firstLine, ...rest] = chunk.split('\n');
+            return { path: firstLine, content: rest.join('\n').trim() };
+          });
+          setMemoryResults(entries);
+        } else {
+          setMemoryResults([]);
+        }
+      }
     } catch {
       setMemoryResults([]);
     } finally {
@@ -393,7 +411,18 @@ function FilesTab({ project }: { project: Project }) {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {memoryResults.length === 0 ? (
+            {memoryUnavailable ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                <p className="text-sm text-warning font-medium mb-1">Search unavailable</p>
+                <p className="text-xs text-mission-control-text-dim">
+                  Install qmd for full-text search, or ensure ripgrep is available.
+                  <br />
+                  <span className="font-mono text-mission-control-text-dim/80">brew install profroggo/tap/qmd</span>
+                  <br />
+                  See Settings for more options.
+                </p>
+              </div>
+            ) : memoryResults.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center text-mission-control-text-dim">
                 <p className="text-sm">Search the memory vault for project-related knowledge.</p>
               </div>
