@@ -586,7 +586,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     const criticalFailed = sysCheck.database === 'fail';
     const checks: Array<{ key: keyof Omit<SystemCheckState, 'agentCount'>; label: string; critical?: boolean }> = [
       { key: 'cli', label: 'Claude CLI installed' },
-      { key: 'database', label: 'Task database found', critical: true },
+      { key: 'database', label: sysCheck.database === 'fail' ? 'Task database not found' : 'Task database', critical: true },
       { key: 'mcp', label: 'MCP servers configured' },
       { key: 'agents', label: `Agent souls on disk${sysCheck.agentCount > 0 ? ` (${sysCheck.agentCount})` : ''}` },
     ];
@@ -631,7 +631,6 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         )}
         {criticalFailed && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-4 text-xs text-red-400 space-y-1">
-            <p className="font-medium">Task database not found</p>
             <p className="text-mission-control-text-dim">Run <code className="font-mono text-red-300">mission-control restart</code> in your terminal, then click Re-check.</p>
           </div>
         )}

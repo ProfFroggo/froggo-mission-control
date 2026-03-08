@@ -221,6 +221,52 @@ function scaffoldLibrary(base) {
   }
 }
 
+// ── Native module check ───────────────────────────────────────────────────────
+// Ensures better-sqlite3 is compiled for the current Node.js version.
+// Runs once at startup — if the .node binding is missing, rebuilds automatically.
+function ensureNativeModules() {
+  const modPath = path.join(INSTALL_DIR, 'node_modules', 'better-sqlite3');
+  if (!existsSync(modPath)) return; // not installed, skip
+  try {
+    require(modPath); // will throw if binding is missing
+    return; // already works
+  } catch (e) {
+    if (!String(e).includes('bindings')) return; // different error, skip
+  }
+  warn('better-sqlite3 native binding missing — rebuilding for Node.js ' + process.version);
+  const nodeGypBin = (() => {
+    const pnpmDir = path.join(INSTALL_DIR, 'node_modules', '.pnpm');
+    if (existsSync(pnpmDir)) {
+      try {
+        const entries = require('fs').readdirSync(pnpmDir).filter(e => e.startsWith('node-gyp@'));
+        for (const e of entries) {
+          const p = path.join(pnpmDir, e, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
+          if (existsSync(p)) return p;
+        }
+      } catch {}
+    }
+    const flat = path.join(INSTALL_DIR, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
+    return existsSync(flat) ? flat : null;
+  })();
+  if (!nodeGypBin) { warn('node-gyp not found — run: cd ' + modPath + ' && node-gyp rebuild'); return; }
+  const { realpathSync } = require('fs');
+  let realModPath;
+  try {
+    realModPath = path.dirname(realpathSync(path.join(modPath, 'package.json')));
+  } catch {
+    realModPath = modPath;
+  }
+  const r = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
+    cwd: realModPath, stdio: 'inherit',
+    env: { ...process.env, npm_config_node_gyp: nodeGypBin },
+  });
+  if (r.status === 0) {
+    success('better-sqlite3 rebuilt successfully');
+  } else {
+    warn('Rebuild failed — run: cd "' + realModPath + '" && node-gyp rebuild');
+  }
+}
+
 // ── Commands ─────────────────────────────────────────────────────────────────
 
 async function cmdSetup(force = false) {
@@ -926,6 +972,9 @@ async function main() {
   const args = process.argv.slice(2);
   const cmd  = args[0] || '';
   const flag = args[1] || '';
+
+  // Ensure native modules are compiled for this Node.js version on every run
+  ensureNativeModules();
 
   switch (cmd) {
     case '':

@@ -185,22 +185,39 @@ for (const mod of ['better-sqlite3', 'keytar']) {
   info(`Rebuilding ${mod} at ${modDir}...`);
   const result = spawnSync(process.execPath, [nodeGypBin, 'rebuild'], {
     cwd: modDir,
-    stdio: 'inherit',
+    stdio: 'pipe',
     env: { ...process.env, npm_config_node_gyp: nodeGypBin },
   });
 
-  if (result.status === 0) {
+  // Verify the binding actually loads after rebuild — the real test
+  function bindingLoads() {
+    try {
+      const pkg = JSON.parse(require('fs').readFileSync(require('path').join(modDir, 'package.json'), 'utf-8'));
+      const main = require('path').join(modDir, pkg.main || 'index.js');
+      require(main); // will throw if .node file is missing
+      return true;
+    } catch { return false; }
+  }
+
+  if (result.status === 0 && bindingLoads()) {
     success(`${mod} compiled`);
   } else {
-    // Fallback: npm rebuild (targets all locations)
-    const r2 = spawnSync(process.execPath, [
-      path.join(ROOT, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-      'rebuild', mod,
-    ], { cwd: ROOT, stdio: 'inherit' });
-    if (r2.status !== 0) {
-      warn(`${mod} rebuild failed — run: cd ${modDir} && node-gyp rebuild`);
-    } else {
+    // First fallback: npm rebuild via npx
+    const r2 = spawnSync('npm', ['rebuild', mod, '--prefix', ROOT],
+      { cwd: ROOT, stdio: 'pipe', shell: true });
+    if (r2.status === 0 && bindingLoads()) {
       success(`${mod} compiled (via npm rebuild)`);
+    } else {
+      // Second fallback: node-gyp directly with explicit node version
+      const r3 = spawnSync(process.execPath, [nodeGypBin, 'rebuild',
+        `--target=${process.versions.node}`, '--arch=arm64', '--dist-url=https://nodejs.org/dist'],
+        { cwd: modDir, stdio: 'pipe', env: { ...process.env, npm_config_node_gyp: nodeGypBin } });
+      if (r3.status === 0 && bindingLoads()) {
+        success(`${mod} compiled (direct rebuild)`);
+      } else {
+        warn(`${mod} rebuild failed — run manually: cd "${modDir}" && node-gyp rebuild`);
+        if (result.stderr) warn(result.stderr.toString().slice(0, 300));
+      }
     }
   }
 }
