@@ -278,9 +278,82 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 }
 
 /**
+ * Dispatch a navigate event so App.tsx can switch the active panel
+ * without coupling TourGuide to the view state directly.
+ */
+function navigateTo(view: string) {
+  window.dispatchEvent(new CustomEvent('tour-navigate', { detail: { view } }));
+}
+
+/**
  * Predefined tours for common workflows
  */
 export const tours: Record<string, Tour> = {
+  /** 8-stop platform tour launched from the onboarding wizard */
+  platformTour: {
+    id: 'platform-tour',
+    name: 'Platform Tour',
+    description: 'An 8-stop guided tour of Mission Control',
+    steps: [
+      {
+        target: '[data-view="dashboard"]',
+        title: 'Dashboard',
+        content: 'Your command center. Agent status cards give you a live health snapshot, the activity feed shows recent events, and quick-action buttons let you jump straight into work.',
+        position: 'right',
+        action: () => navigateTo('dashboard'),
+      },
+      {
+        target: '[data-view="kanban"]',
+        title: 'Tasks',
+        content: 'The Kanban board tracks every piece of work. Create a task, assign it to an agent, and watch it move through Todo → In Progress → Review → Done automatically.',
+        position: 'right',
+        action: () => navigateTo('kanban'),
+      },
+      {
+        target: '[data-view="agents"]',
+        title: 'Agents',
+        content: 'All your AI agents live here. Start a chat, check their status indicators, or hire new specialists from the catalog — each agent has a defined role and skill set.',
+        position: 'right',
+        action: () => navigateTo('agents'),
+      },
+      {
+        target: '[data-view="inbox"]',
+        title: 'Inbox',
+        content: 'Agents send messages, approval requests, and notifications here. Review their output, approve actions, or send them back with feedback — all in one place.',
+        position: 'right',
+        action: () => navigateTo('inbox'),
+      },
+      {
+        target: '[data-view="memory"]',
+        title: 'Memory',
+        content: 'The shared knowledge base your agents read and write. Browse session history, search the vault, and open notes directly in Obsidian for deeper editing.',
+        position: 'right',
+        action: () => navigateTo('memory'),
+      },
+      {
+        target: '[data-view="library"]',
+        title: 'Library',
+        content: 'Every file, code snippet, and document your agents produce lands here. Organized by category so you can find and share outputs without digging through file systems.',
+        position: 'right',
+        action: () => navigateTo('library'),
+      },
+      {
+        target: '[data-view="analytics"]',
+        title: 'Analytics',
+        content: 'Token usage charts, per-agent activity breakdowns, and cost tracking. See exactly how your AI budget is being spent and which agents are doing the heavy lifting.',
+        position: 'right',
+        action: () => navigateTo('analytics'),
+      },
+      {
+        target: '[data-view="settings"]',
+        title: 'Settings',
+        content: 'API keys, permissions, connected accounts, and theme preferences all live here. You can also restart this tour at any time from the General tab.',
+        position: 'right',
+        action: () => navigateTo('settings'),
+      },
+    ],
+  },
+
   gettingStarted: {
     id: 'getting-started',
     name: 'Getting Started',
@@ -393,6 +466,9 @@ export const tours: Record<string, Tour> = {
   },
 };
 
+/** localStorage key for tour completion */
+export const TOUR_COMPLETED_KEY = 'mission-control:tour-completed';
+
 /**
  * Hook to manage tour state
  */
@@ -407,7 +483,15 @@ export function useTour() {
     setActiveTour(tour);
   };
 
+  const startPlatformTour = () => {
+    setActiveTour(tours.platformTour);
+  };
+
   const completeTour = () => {
+    // Mark platform tour as completed when it finishes
+    if (activeTour?.id === 'platform-tour') {
+      localStorage.setItem(TOUR_COMPLETED_KEY, 'true');
+    }
     setActiveTour(null);
   };
 
@@ -427,6 +511,7 @@ export function useTour() {
   return {
     activeTour,
     startTour,
+    startPlatformTour,
     completeTour,
     skipTour,
     hasCompletedTour,

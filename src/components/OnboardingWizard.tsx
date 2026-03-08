@@ -6,7 +6,6 @@ import {
   Loader,
   Mic,
   Camera,
-  Database,
   ArrowLeft,
   ArrowRight,
   Sparkles,
@@ -24,6 +23,8 @@ import {
   LayoutDashboard,
   AlertTriangle,
   RotateCcw,
+  Map,
+  SkipForward,
 } from 'lucide-react';
 
 interface OnboardingWizardProps {
@@ -483,9 +484,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const goNext = () => setCurrentStep(s => Math.min(s + 1, STEP_COUNT - 1));
   const goBack = () => setCurrentStep(s => Math.max(s - 1, 0));
 
-  const handleFinish = () => {
+  const handleFinish = (startTour = false) => {
     localStorage.setItem(STORAGE_KEY, 'true');
-    onComplete(false); // Tour is placeholder in Phase 76
+    onComplete(startTour);
   };
 
   const handleSkip = () => {
@@ -1034,24 +1035,72 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     );
   };
 
-  // STEP 8 — Interactive Tour (Placeholder for Phase 76)
-  const renderTourPlaceholder = () => (
-    <div className="flex flex-col items-center text-center py-6">
-      <div className="w-16 h-16 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mb-5">
-        <LayoutDashboard size={32} className="text-mission-control-accent" />
+  // STEP 8 — Interactive Tour Launch
+  const TOUR_STOPS = [
+    { label: 'Dashboard', desc: 'Agent status, activity feed, quick actions' },
+    { label: 'Tasks', desc: 'Kanban board, assign to agents, status lifecycle' },
+    { label: 'Agents', desc: 'Chat, status indicators, hire from catalog' },
+    { label: 'Inbox', desc: 'Agent messages, approvals, notifications' },
+    { label: 'Memory', desc: 'Knowledge base, session history, Obsidian vault' },
+    { label: 'Library', desc: 'Files, code snippets, agent documents' },
+    { label: 'Analytics', desc: 'Token usage, agent activity, cost tracking' },
+    { label: 'Settings', desc: 'API keys, permissions, connected accounts' },
+  ];
+
+  const renderTourLaunch = () => (
+    <div className="py-6">
+      <div className="flex items-center gap-2 mb-1">
+        <Map size={18} className="text-mission-control-accent" />
+        <h2 className="text-xl font-bold text-mission-control-text">Interactive Tour</h2>
       </div>
-      <h2 className="text-xl font-bold text-mission-control-text mb-2">Interactive Tour</h2>
-      <p className="text-mission-control-text-dim text-sm max-w-sm mb-4">
-        A guided tour of Mission Control is coming soon. For now, explore the panels from the sidebar.
+      <p className="text-mission-control-text-dim text-sm mb-5">
+        Take an 8-stop tour of Mission Control and discover what each panel does.
       </p>
-      <div className="w-full max-w-xs p-3 rounded-lg bg-mission-control-bg border border-mission-control-border text-xs text-mission-control-text-dim text-left">
-        <p className="font-medium text-mission-control-text mb-1">Quick tips:</p>
-        <ul className="space-y-1">
-          <li>• Use the sidebar to navigate between modules</li>
-          <li>• Open Chat to start talking to agents</li>
-          <li>• Use Kanban to create and track tasks</li>
-          <li>• Check Approvals for pending agent actions</li>
-        </ul>
+
+      <div className="space-y-1.5 mb-5">
+        {TOUR_STOPS.map((stop, i) => (
+          <div
+            key={stop.label}
+            className="flex items-start gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border"
+          >
+            <span className="text-xs font-mono text-mission-control-accent mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-mission-control-text">{stop.label}</span>
+              <p className="text-xs text-mission-control-text-dim">{stop.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2 mt-1">
+        <button
+          onClick={() => { handleFinish(true); }}
+          className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+        >
+          <Map size={14} />
+          Start Tour
+        </button>
+        <button
+          onClick={() => { handleFinish(false); }}
+          className="flex items-center justify-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors py-1"
+        >
+          <SkipForward size={12} />
+          Skip tour — go straight to Dashboard
+        </button>
+      </div>
+
+      {/* Back nav row */}
+      <div className="mt-4 pt-4 border-t border-mission-control-border">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={goBack}
+            className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          >
+            <ArrowLeft size={14} />
+            Back
+          </button>
+          <span className="text-xs text-mission-control-text-dim">9 / {STEP_COUNT}</span>
+        </div>
       </div>
     </div>
   );
@@ -1067,7 +1116,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         Mission Control is configured and ready. Head to the Dashboard to get started.
       </p>
       <button
-        onClick={handleFinish}
+        onClick={() => { handleFinish(false); }}
         className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
       >
         Go to Dashboard
@@ -1084,12 +1133,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     renderObsidianAndPermissions,
     renderAgentModulePicker,
     renderInstallChecklist,
-    renderTourPlaceholder,
+    renderTourLaunch,
     renderDone,
   ];
 
-  // First and last steps have their own nav; middle steps use shared chrome
-  const showSharedNav = currentStep > 0 && currentStep < STEP_COUNT - 1;
+  // First, last, and tour-launch (step 8) steps have their own nav; middle steps use shared chrome
+  const showSharedNav = currentStep > 0 && currentStep < STEP_COUNT - 1 && currentStep !== 8;
 
   // Block Continue on step 1 if critical DB is missing
   const criticalFailed = currentStep === 1 && sysCheck.database === 'fail';
