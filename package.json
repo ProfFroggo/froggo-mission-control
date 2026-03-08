@@ -1,6 +1,6 @@
 {
   "name": "froggo-mission-control",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "Self-hosted AI agent platform for Claude Code CLI. Multi-agent orchestration, task management, Gmail, Calendar, Kanban and more.",
   "keywords": [
     "claude",
@@ -59,7 +59,8 @@
     "APPROVAL_RULES.md",
     "README.md",
     "ecosystem.config.js",
-    "install.sh"
+    "install.sh",
+    "templates/"
   ],
   "scripts": {
     "postinstall": "node scripts/postinstall.js",

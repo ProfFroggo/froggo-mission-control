@@ -19,7 +19,7 @@
 'use strict';
 
 const { execSync, spawnSync, spawn } = require('child_process');
-const { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } = require('fs');
+const { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } = require('fs');
 const path   = require('path');
 const os     = require('os');
 const http   = require('http');
@@ -315,6 +315,25 @@ async function cmdSetup(force = false) {
     ].join('\n'));
   }
   success('Memory vault ready');
+
+  // ── Seed knowledge base ────────────────────────────────────────────────
+  const knowledgeSrcDir = path.join(INSTALL_DIR, 'templates', 'knowledge');
+  const knowledgeDestDir = path.join(MC_MEMORY, 'knowledge');
+  if (existsSync(knowledgeSrcDir)) {
+    const knowledgeFiles = readdirSync(knowledgeSrcDir).filter(f => f.endsWith('.md'));
+    let seeded = 0;
+    for (const file of knowledgeFiles) {
+      const dest = path.join(knowledgeDestDir, file);
+      if (!existsSync(dest)) {
+        try {
+          const content = readFileSync(path.join(knowledgeSrcDir, file), 'utf-8');
+          writeFileSync(dest, content);
+          seeded++;
+        } catch { /* skip */ }
+      }
+    }
+    if (seeded > 0) success(`Seeded ${seeded} knowledge base articles`);
+  }
 
   // ── Write .env ──────────────────────────────────────────────────────────
   step('Writing configuration');
