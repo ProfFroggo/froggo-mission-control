@@ -11,14 +11,16 @@
 
 Mission Control is your personal AI operations center. It ships with:
 
-- **15 agents** — Hire from the catalog: Inbox, Coder, Designer, Researcher, Clara (QA), Chief, HR, Writer, Social Manager, Finance, Growth Director, Discord Manager, Voice, Senior Coder, and the Mission Control orchestrator
-- **18 modules** — Install what you need: Kanban, Analytics, Approvals, Chat Rooms, Calendar, Gmail Inbox, Finance, Library, Projects, Voice, Writing, Meetings, and more
+- **15 agents** — Hire from the catalog: Inbox, Coder, Senior Coder, Designer, Researcher, Clara (QA), Chief, HR, Writer, Social Manager, Finance, Growth Director, Discord Manager, Voice, and the Mission Control orchestrator
+- **Modular dashboard** — Install what you need: Kanban, Analytics, Approvals, Chat Rooms, Schedule, Gmail Inbox, Finance, Library, Projects, Voice, Writing, Meetings, and more
+- **Task pipeline** — Full lifecycle: `todo → internal-review → in-progress → agent-review → done`, with Clara QA gates before work starts and after it completes
+- **Projects** — Kanban boards, agent dispatch, shared chat rooms, file library — all linked
+- **Memory vault** — Obsidian-compatible knowledge base that agents read/write across sessions, pre-seeded with platform documentation
 - **Comms Inbox** — Gmail integration with AI-powered triage (Smart Inbox)
-- **Google Calendar** — Today's schedule widget and full Epic Calendar view
-- **Task system** — Full lifecycle: todo → internal-review → in-progress → review → human-review → done, with agent auto-dispatch and Clara QA gate
-- **Projects** — Kanban boards, agent dispatch, shared chat rooms, file library
-- **Memory vault** — Obsidian-compatible knowledge base that agents read/write across sessions
+- **Google Calendar** — Today's schedule widget and full calendar view
 - **Voice** — Real-time voice interface via Gemini Live
+- **Agent trust tiers** — Mission Control runs with full trust; Clara and HR as workers; all others as apprentices with scoped permissions
+- **OS keychain** — API keys stored securely in the system keychain (macOS Keychain / Linux Secret Service), never in plaintext
 - **MCP servers** — Native Claude Code CLI integration for task management, memory search, and scheduling
 
 ---
@@ -29,14 +31,14 @@ Mission Control is your personal AI operations center. It ships with:
 |---|---|---|
 | **Node.js** | 20+ | [nodejs.org](https://nodejs.org) |
 | **Claude Code CLI** | Latest | [install guide](https://docs.anthropic.com/claude-code) — requires active Claude subscription |
+| **Obsidian** | Latest | Auto-installed via `brew install --cask obsidian`. Required for memory vault. |
 | **Git** | Any | For cloning + updates |
 | **macOS** or **Linux** | — | Windows not tested |
 
 **Optional:**
 - **Gemini API key** — Required for Voice. Free at [aistudio.google.com](https://aistudio.google.com/app/apikey)
 - **Google Workspace** — Gmail + Calendar integration (OAuth setup in the app wizard)
-- **QMD** — Hybrid BM25/vector memory search (`brew install profroggo/tap/qmd` once available). Falls back to ripgrep automatically if not installed.
-- **Obsidian** — For browsing the memory vault (any vault reader works)
+- **QMD** — Hybrid BM25/vector memory search. Auto-installed via `brew install profroggo/tap/qmd`. Falls back to ripgrep automatically if not installed.
 
 ---
 
@@ -45,27 +47,30 @@ Mission Control is your personal AI operations center. It ships with:
 ### Option A — npm (recommended)
 
 ```bash
-# Step 1 — install the package (2–3 min, fully automatic)
+# Step 1 — install the package (3–5 min, fully automatic)
 npm install -g froggo-mission-control
 
-# Step 2 — run first-time setup (non-interactive, ~1 min)
+# Step 2 — run first-time setup (~1 min)
 mission-control
 ```
 
 **What `npm install -g` does automatically:**
 - Downloads the package and all dependencies
 - Compiles the 3 MCP servers (`mission-control-db-mcp`, `memory-mcp`, `cron-mcp`)
+- Installs QMD memory search and Obsidian (via Homebrew on macOS)
 - Runs `next build` — full production build of the dashboard
 
 **What `mission-control` (first run) does automatically:**
 1. Checks prerequisites — Node.js 20+, Claude Code CLI
-2. Creates the `~/mission-control/` directory tree
-3. Bootstraps 4 core agent workspaces from catalog templates (main, clara, coder, writer)
-4. Generates `CLAUDE.md`, `.claude/settings.json`, and `.mcp.json` in `~/mission-control/`
-5. Creates empty data files (`schedule.json`, `google-tokens.json`)
-6. Writes `.env`
-7. Installs a **LaunchAgent** (macOS) or **systemd service** (Linux)
-8. Starts the server and opens your browser to `http://localhost:3000/setup`
+2. Creates the full `~/mission-control/` directory tree (agents, data, library, memory, logs)
+3. Scaffolds the complete library structure with all output folders
+4. Bootstraps 4 core agent workspaces from catalog templates (mission-control, clara, coder, writer)
+5. Pre-seeds `~/mission-control/memory/knowledge/` with 6 platform documentation articles
+6. Generates `CLAUDE.md`, `.claude/settings.json`, and `.mcp.json` in `~/mission-control/`
+7. Creates data files (`schedule.json`, `google-tokens.json`)
+8. Writes `.env`
+9. Installs a **LaunchAgent** (macOS) or **two systemd services** (Linux) — app + cron daemon
+10. Starts the server and opens your browser to `http://localhost:3000/setup`
 
 No interactive prompts. No API keys in the terminal. Everything continues in the browser.
 
@@ -83,12 +88,14 @@ cd froggo-Mission-Control
 - Checks prerequisites (Node.js 20+, Claude Code CLI, Git)
 - Installs all npm dependencies
 - Compiles the 3 MCP servers
+- Installs QMD and Obsidian
 - Builds the Next.js dashboard (`next build`)
-- Creates the full `~/mission-control/` directory tree
+- Creates the full `~/mission-control/` directory tree and library structure
 - Bootstraps core agent workspaces from catalog templates
+- Pre-seeds the knowledge base
 - Generates `.env`, `.mcp.json`, and `.claude/settings.json` configured for your machine
 - Sets up an Obsidian-compatible memory vault skeleton
-- Installs a **LaunchAgent** (macOS) or **systemd service** (Linux) — persistent, auto-start at login, auto-restart on crash
+- Installs a **LaunchAgent** (macOS) or **systemd services** (Linux) — persistent, auto-start at login, auto-restart on crash
 - Opens `http://localhost:3000/setup` in your browser
 
 ---
@@ -98,11 +105,11 @@ cd froggo-Mission-Control
 After the CLI opens your browser, the wizard walks you through 10 steps:
 
 1. **Welcome** — what Mission Control does and what you're about to set up
-2. **System Check** — verifies CLI, database, MCP servers, and agent files are ready (auto-pass)
+2. **System Check** — verifies CLI, database, MCP servers, and agent files are ready
 3. **Agent Permissions** — review the tool permissions agents need; confirm to unlock autonomous operation
 4. **Gemini API Key** — paste and validate (skippable — voice features won't work without it)
 5. **Google Workspace** — connect Gmail and Calendar via OAuth (skippable)
-6. **Obsidian Vault** — open the memory vault in Obsidian for native browsing (skippable)
+6. **Obsidian & Permissions** — open the memory vault in Obsidian; grant mic/camera for voice
 7. **Agent & Module Picker** — 4 core agents pre-selected; choose optional agents and modules from the catalog
 8. **Animated Setup Checklist** — live progress as your selected agents and modules are installed
 9. **Interactive Tour** — guided walkthrough of every panel (re-launchable from Settings anytime)
@@ -115,25 +122,34 @@ After the CLI opens your browser, the wizard walks you through 10 steps:
 ```
 ~/mission-control/
 ├── data/
-│   ├── mission-control.db     # SQLite database (all tasks, agents, chat, etc.)
+│   ├── mission-control.db     # SQLite database (tasks, agents, chat, approvals, etc.)
 │   ├── google-tokens.json     # Google OAuth tokens (auto-managed)
 │   └── schedule.json          # Cron job schedule
 ├── memory/                    # Obsidian-compatible agent memory vault
+│   ├── knowledge/             # Pre-seeded platform docs (architecture, MCP tools, task lifecycle, etc.)
 │   ├── agents/                # Per-agent memory files
-│   ├── knowledge/             # Knowledge base articles
 │   ├── sessions/              # Session logs
-│   └── daily/                 # Daily notes
+│   ├── daily/                 # Daily notes
+│   └── templates/             # Note templates
 ├── library/                   # All agent output files
 │   ├── code/
 │   ├── design/
-│   └── docs/
-├── agents/                    # Per-agent workspaces (CLAUDE.md, SOUL.md, MEMORY.md)
-│   ├── main/                  # Mission Control orchestrator
+│   │   ├── ui/
+│   │   ├── images/
+│   │   └── media/
+│   ├── docs/
+│   │   ├── research/
+│   │   ├── presentations/
+│   │   └── strategies/
+│   ├── campaigns/             # Per-campaign folders (auto-created)
+│   └── projects/              # Per-project folders (auto-created)
+├── agents/                    # Per-agent workspaces (CLAUDE.md, SOUL.md, MEMORY.md, DIRECTORIES.md)
+│   ├── mission-control/       # Orchestrator
 │   ├── clara/                 # QA review gate
 │   ├── coder/                 # Code execution
 │   └── writer/                # Content & docs
 ├── .claude/
-│   └── settings.json          # Tool permissions + MCP server registrations
+│   └── settings.json          # Tool permissions + MCP server registrations + hooks
 ├── .mcp.json                  # MCP server config for Claude Code sessions
 └── CLAUDE.md                  # Project context for all agent sessions
 
@@ -150,13 +166,15 @@ froggo-Mission-Control/
 │   └── api/                   # 100+ API endpoints
 ├── src/
 │   ├── components/            # React UI components
-│   ├── lib/                   # Server-side logic (db, env, agent dispatch)
+│   ├── lib/                   # Server-side logic (db, env, dispatch, keychain)
 │   ├── modules/               # Pluggable feature modules
-│   ├── stores/                # Zustand client stores
+│   ├── store/                 # Zustand client stores
 │   └── types/                 # TypeScript types
 ├── catalog/
 │   ├── agents/                # Agent manifests + soul files + avatars (WebP)
 │   └── modules/               # Module manifests
+├── templates/
+│   └── knowledge/             # Knowledge base articles seeded on install
 ├── tools/
 │   ├── mission-control-db-mcp/  # MCP server: task/agent/chat DB tools
 │   ├── memory-mcp/              # MCP server: memory vault read/write/search
@@ -164,6 +182,7 @@ froggo-Mission-Control/
 │   └── hooks/                   # Claude Code CLI hooks
 ├── .claude/
 │   ├── CLAUDE.md              # Platform instructions for agents
+│   ├── agents/                # Agent definition files (trust tiers, tools, MCP)
 │   ├── settings.json.template # Claude Code settings template
 │   └── skills/                # Reusable skill files for agents
 ├── bin/
@@ -208,9 +227,31 @@ Agents are Claude Code CLI subprocesses spawned by Mission Control. Each agent h
 - A **soul file** (`catalog/agents/{id}/soul.md`) — personality, responsibilities, output paths
 - A **CLAUDE.md** (`catalog/agents/{id}/claude.md`) — boot sequence and MCP tool access
 - A **manifest** (`catalog/agents/{id}/manifest.json`) — model, capabilities, required APIs/tools
+- A **definition file** (`.claude/agents/{id}.md`) — trust tier, tools, MCP servers
 - Access to MCP tools: `mcp__mission-control_db__*` for tasks/chat, `mcp__memory__*` for the vault
 
 The platform dispatches tasks to agents automatically. Agents report progress via MCP, update task status, and store learnings in the memory vault.
+
+### Agent trust tiers
+
+| Tier | Who | Permissions |
+|------|-----|-------------|
+| **Trusted** | Mission Control | Full tool access, bypass permissions |
+| **Worker** | Clara, HR | Full tool access, bypass permissions |
+| **Apprentice** | All other agents | Default scoped permissions |
+
+### Task pipeline
+
+```
+todo → internal-review → in-progress → agent-review → done
+             ↕                              ↕
+        human-review                  human-review
+     (needs human input)         (external dependency)
+```
+
+- Clara reviews every task **before** work begins (internal-review gate) and **after** (agent-review gate)
+- Agents cannot move tasks directly to `done` — only Clara can
+- `human-review` replaces any notion of "blocked" — always has a path forward
 
 ---
 
@@ -220,7 +261,7 @@ Three MCP servers ship with Mission Control and are auto-configured during insta
 
 | Server | Tools | Purpose |
 |---|---|---|
-| `mission-control_db` | `task_create`, `task_update`, `task_list`, `chat_post`, `chat_read`, `approval_create` + more | Read/write the platform database |
+| `mission-control_db` | `task_create`, `task_update`, `task_list`, `task_add_activity`, `chat_post`, `chat_read`, `approval_create` + more | Read/write the platform database |
 | `memory` | `memory_search`, `memory_recall`, `memory_write`, `memory_read` | Hybrid BM25/vector memory vault |
 | `cron` | `schedule_create`, `schedule_list` | Schedule recurring jobs |
 
@@ -250,13 +291,25 @@ Voice uses [Gemini Live](https://ai.google.dev/gemini-api/docs/live) for real-ti
 ## Memory search
 
 Memory search uses a cascading backend:
-1. **QMD** (preferred) — hybrid BM25/vector search. Install: `brew install profroggo/tap/qmd`
+1. **QMD** (preferred) — hybrid BM25/vector search. Auto-installed via `brew install profroggo/tap/qmd`
 2. **ripgrep** — fast full-text fallback. Install: `brew install ripgrep`
 3. **None** — shows a clear "search unavailable" message in the UI with install instructions
 
 ---
 
+## Security
+
+- **API keys** are stored in the OS keychain (macOS Keychain / Linux Secret Service) via `keytar`, never in plaintext SQLite
+- **Agent permissions** are scoped by trust tier — new agents start as apprentices
+- **External actions** (emails, deploys, tweets) require human approval before execution
+- **Approval tiers** (0–3) gate actions from read-only to external writes
+
+---
+
 ## Troubleshooting
+
+**Build failed during install**
+- Run `mission-control build` to retry the Next.js build
 
 **Agents won't spawn**
 - Check `CLAUDE_BIN`: `which claude` should return a path
