@@ -276,7 +276,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                     msg.role === 'user'
-                      ? 'bg-mission-control-accent/50 text-white rounded-tr-sm'
+                      ? 'bg-mission-control-accent text-white rounded-tr-sm'
                       : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm'
                   }`}
                 >

@@ -1137,7 +1137,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             {callTranscript.map((entry, i) => (
               <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
-                  entry.role === 'user' ? 'bg-mission-control-accent/50 text-white'
+                  entry.role === 'user' ? 'bg-mission-control-accent text-white'
                   : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-[10px]'
                   : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
@@ -1237,7 +1237,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-xl ${
                   msg.role === 'user'
-                    ? 'bg-mission-control-accent/50 text-white'
+                    ? 'bg-mission-control-accent text-white'
                     : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
                   {msg.content}

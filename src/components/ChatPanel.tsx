@@ -1513,7 +1513,7 @@ const MessageItem = memo(function MessageItem({
           <div
             className={`relative px-4 py-3 rounded-2xl shadow-sm ${
               isUser
-                ? 'bg-mission-control-accent/50 text-white rounded-tr-sm'
+                ? 'bg-mission-control-accent text-white rounded-tr-sm'
                 : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm'
             }`}
           >

@@ -728,7 +728,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <div
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
-                        ? 'bg-mission-control-accent/50 text-white rounded-tr-sm'
+                        ? 'bg-mission-control-accent text-white rounded-tr-sm'
                         : `bg-mission-control-surface/90 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm shadow-sm`
                     }`}
                   >
