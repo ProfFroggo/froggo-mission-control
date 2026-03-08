@@ -32,7 +32,7 @@ function buildClaraSystemPrompt(): string {
   return prompt;
 }
 
-function spawnClaraReview(task: Record<string, unknown>): void {
+export function spawnClaraReview(task: Record<string, unknown>): void {
   if (inReview.has(task.id as string)) return;
   inReview.add(task.id as string);
 

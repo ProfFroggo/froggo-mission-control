@@ -173,7 +173,10 @@ async function main() {
   }
 }
 
-main().catch(() => {
-  // Hooks must never crash — output approve on error
-  process.stdout.write(JSON.stringify({ decision: 'approve' }));
+main().catch((err) => {
+  process.stderr.write(`[approval-hook] Unexpected crash: ${err}\n`);
+  process.stdout.write(JSON.stringify({
+    decision: 'block',
+    reason: 'Approval hook crashed unexpectedly. Check hook logs and retry.',
+  }));
 });

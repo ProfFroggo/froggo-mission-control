@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2 } from 'lucide-react';
 import { agentApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
@@ -220,6 +220,16 @@ interface AgentManagementModalProps {
 interface APIKey { id: string; name: string; service: string; key: string; createdAt: string }
 interface Skill { id: string; name: string; slug: string; description: string }
 
+interface McpServerEntry {
+  id: string;
+  name: string;
+  transport: 'stdio' | 'http';
+  command?: string;
+  args?: string[];
+  url?: string;
+  env?: Record<string, string>;
+}
+
 type AddSkillMode = 'url' | 'text' | null;
 
 export default function AgentManagementModal({ isOpen, onClose, agentId, agentName }: AgentManagementModalProps) {
@@ -252,6 +262,12 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const [activeTools, setActiveTools] = useState<string[]>([]);
   const [toolsDirty, setToolsDirty] = useState(false);
 
+  // MCP Servers
+  const [mcpServers, setMcpServers] = useState<McpServerEntry[]>([]);
+  const [mcpDirty, setMcpDirty] = useState(false);
+  const [showAddMcp, setShowAddMcp] = useState(false);
+  const [newMcp, setNewMcp] = useState({ name: '', transport: 'stdio' as 'stdio' | 'http', command: 'npx', args: '', url: '', env: '' });
+
   // API Keys
   const [allApiKeys, setAllApiKeys] = useState<APIKey[]>([]);
   const [activeApiKeys, setActiveApiKeys] = useState<string[]>([]);
@@ -273,6 +289,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     setLoading(true);
     setSoulDirty(false); setModelDirty(false); setSkillsDirty(false);
     setToolsDirty(false); setApiKeysDirty(false); setPermDirty(false);
+    setMcpDirty(false); setShowAddMcp(false);
     setShowRestartBanner(false); setAddSkillMode(null);
 
     Promise.allSettled([
@@ -291,6 +308,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
         setActiveTools(c?.tools || []);
         setActiveApiKeys(c?.apiKeys || []);
         setTrustTier(c?.trustTier || 'apprentice');
+        setMcpServers(c?.mcpServers || []);
       }
       if (skillsR.status === 'fulfilled') setAllSkills((skillsR.value as any)?.skills || []);
       if (keysR.status === 'fulfilled') {
@@ -357,6 +375,46 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
       showToast('Tool access saved', 'success');
     } catch { showToast('Failed to save tools', 'error'); }
     finally { setSaving(false); }
+  };
+
+  const saveMcp = async () => {
+    setSaving(true);
+    try {
+      await agentApi.patchConfig(agentId, { mcpServers });
+      setMcpDirty(false);
+      showToast('MCP servers saved', 'success');
+    } catch { showToast('Failed to save MCP servers', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const addMcpServer = () => {
+    if (!newMcp.name.trim()) return;
+    const envMap: Record<string, string> = {};
+    newMcp.env.trim().split('\n').filter(l => l.includes('=')).forEach(l => {
+      const idx = l.indexOf('=');
+      envMap[l.slice(0, idx).trim()] = l.slice(idx + 1).trim();
+    });
+    const entry: McpServerEntry = {
+      id: `mcp-${Date.now()}`,
+      name: newMcp.name.trim(),
+      transport: newMcp.transport,
+      ...(newMcp.transport === 'stdio' ? {
+        command: newMcp.command.trim() || 'npx',
+        args: newMcp.args.trim() ? newMcp.args.trim().split(/\s+/) : [],
+      } : {
+        url: newMcp.url.trim(),
+      }),
+      ...(Object.keys(envMap).length > 0 ? { env: envMap } : {}),
+    };
+    setMcpServers(prev => [...prev, entry]);
+    setMcpDirty(true);
+    setShowAddMcp(false);
+    setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' });
+  };
+
+  const removeMcpServer = (id: string) => {
+    setMcpServers(prev => prev.filter(s => s.id !== id));
+    setMcpDirty(true);
   };
 
   const saveApiKeys = async () => {
@@ -481,7 +539,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     { id: 'soul',        label: 'Soul',        dirty: soulDirty },
     { id: 'model',       label: 'Model',       dirty: modelDirty },
     { id: 'skills',      label: 'Skills',      dirty: skillsDirty },
-    { id: 'tools',       label: 'Tools',       dirty: toolsDirty },
+    { id: 'tools',       label: 'Tools',       dirty: toolsDirty || mcpDirty },
     { id: 'api',         label: 'API Keys',    dirty: apiKeysDirty },
     { id: 'permissions', label: 'Permissions', dirty: permDirty },
   ];
@@ -750,6 +808,120 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   <button type="button" onClick={saveTools} disabled={!toolsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
                     {saving ? 'Saving…' : 'Save Tool Access'}
                   </button>
+
+                  {/* ── Custom MCP Servers ── */}
+                  <div className="border-t border-mission-control-border pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <Server size={13} className="text-mission-control-text-dim" />
+                        <span className="text-xs font-medium text-mission-control-text-primary">Custom MCP Servers</span>
+                      </div>
+                      {!showAddMcp && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddMcp(true)}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
+                        >
+                          <Plus size={11} /> Add Server
+                        </button>
+                      )}
+                    </div>
+
+                    {mcpServers.length > 0 && (
+                      <div className="space-y-2">
+                        {mcpServers.map(server => (
+                          <div key={server.id} className="flex items-center justify-between border border-mission-control-border rounded-lg px-3 py-2">
+                            <div className="min-w-0">
+                              <span className="text-xs font-medium text-mission-control-text-primary">{server.name}</span>
+                              <p className="text-xs text-mission-control-text-dim font-mono mt-0.5 truncate">
+                                {server.transport === 'stdio'
+                                  ? `stdio: ${server.command} ${(server.args || []).join(' ')}`
+                                  : `http: ${server.url}`}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeMcpServer(server.id)}
+                              className="flex-shrink-0 ml-3 text-mission-control-text-dim hover:text-error transition-colors"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {mcpServers.length === 0 && !showAddMcp && (
+                      <p className="text-xs text-mission-control-text-dim">No custom MCP servers configured.</p>
+                    )}
+
+                    {showAddMcp && (
+                      <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-mission-control-text-primary">New MCP Server</span>
+                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                        </div>
+                        <input
+                          className={`${inputBase} text-xs`}
+                          placeholder="Server name (e.g. Filesystem MCP)"
+                          value={newMcp.name}
+                          onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))}
+                        />
+                        <select
+                          className={`${inputBase} text-xs`}
+                          value={newMcp.transport}
+                          onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}
+                        >
+                          <option value="stdio">stdio — local process</option>
+                          <option value="http">HTTP / SSE — remote endpoint</option>
+                        </select>
+                        {newMcp.transport === 'stdio' ? (
+                          <>
+                            <input
+                              className={`${inputBase} text-xs font-mono`}
+                              placeholder="Command (e.g. npx, node, python)"
+                              value={newMcp.command}
+                              onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))}
+                            />
+                            <input
+                              className={`${inputBase} text-xs font-mono`}
+                              placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)"
+                              value={newMcp.args}
+                              onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))}
+                            />
+                          </>
+                        ) : (
+                          <input
+                            className={`${inputBase} text-xs font-mono`}
+                            placeholder="URL (e.g. https://mcp.example.com)"
+                            value={newMcp.url}
+                            onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))}
+                          />
+                        )}
+                        <textarea
+                          className={`${inputBase} text-xs font-mono resize-none`}
+                          placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'}
+                          rows={3}
+                          value={newMcp.env}
+                          onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))}
+                        />
+                        <button
+                          type="button"
+                          onClick={addMcpServer}
+                          disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}
+                          className="btn-primary text-xs disabled:opacity-40"
+                        >
+                          Add Server
+                        </button>
+                      </div>
+                    )}
+
+                    {mcpDirty && (
+                      <button type="button" onClick={saveMcp} disabled={saving} className="btn-primary text-sm disabled:opacity-40">
+                        {saving ? 'Saving…' : 'Save MCP Servers'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 

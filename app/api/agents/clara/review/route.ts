@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runReviewCycle } from '@/lib/claraReviewCron';
+import { runReviewCycle, spawnClaraReview } from '@/lib/claraReviewCron';
+import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Trigger Clara review for a specific task or sweep all pending
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}));
-  const { taskId } = body;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const { taskId } = body as { taskId?: string };
 
-  if (taskId) {
-    // Single task: import and use the shared spawn logic
-    const { runReviewCycle: _ } = await import('@/lib/claraReviewCron');
-    void _;
-    // For single-task trigger, just run the full sweep — it will pick it up
-    // (The sweep already deduplicates via inReview set)
+    if (taskId) {
+      const task = getDb()
+        .prepare(`SELECT id, title, description, assignedTo, progress, lastAgentUpdate FROM tasks WHERE id = ? AND status = 'review'`)
+        .get(taskId) as Record<string, unknown> | undefined;
+      if (!task) return NextResponse.json({ error: 'Task not found or not in review status' }, { status: 404 });
+      spawnClaraReview(task);
+      return NextResponse.json({ queued: 1, taskId });
+    }
+
+    const { queued } = runReviewCycle();
+    return NextResponse.json({ queued });
+  } catch (err) {
+    console.error('[clara-review] Error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  const { queued } = runReviewCycle();
-  return NextResponse.json({ queued });
 }

@@ -35,6 +35,10 @@ export async function GET(_req: NextRequest, { params }: Params) {
     let capabilities: string[] = [];
     try { capabilities = JSON.parse(agent.capabilities || '[]'); } catch { /* */ }
 
+    const mcpRaw = db.prepare('SELECT value FROM settings WHERE key = ?').get(settingKey(id, 'mcpServers')) as { value: string } | undefined;
+    let mcpServers: unknown[] = [];
+    try { if (mcpRaw?.value) { const p = JSON.parse(mcpRaw.value); if (Array.isArray(p)) mcpServers = p; } } catch { /* */ }
+
     return NextResponse.json({
       model: agent.model || 'sonnet',
       trustTier: agent.trust_tier || 'apprentice',
@@ -42,6 +46,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       skills: getSettingArray(db, settingKey(id, 'skills')),
       tools: getSettingArray(db, settingKey(id, 'tools')),
       apiKeys: getSettingArray(db, settingKey(id, 'apiKeys')),
+      mcpServers,
     });
   } catch (error) {
     console.error('GET /api/agents/:id/config error:', error);
@@ -74,8 +79,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       db.prepare('UPDATE agents SET trust_tier = ? WHERE id = ?').run(body.trustTier, id);
     }
 
-    // skills, tools, apiKeys → settings table
-    for (const field of ['skills', 'tools', 'apiKeys'] as const) {
+    // skills, tools, apiKeys, mcpServers → settings table
+    for (const field of ['skills', 'tools', 'apiKeys', 'mcpServers'] as const) {
       if (Array.isArray(body[field])) {
         const key = settingKey(id, field);
         const value = JSON.stringify(body[field]);
