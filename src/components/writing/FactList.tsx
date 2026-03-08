@@ -56,7 +56,7 @@ export default function FactList() {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {facts.length === 0 && editingId !== 'new-fact' && (
-          <p className="text-[11px] text-clawd-text-dim text-center py-4">No facts yet</p>
+          <p className="text-[11px] text-mission-control-text-dim text-center py-4">No facts yet</p>
         )}
 
         {facts.map((fact) =>
@@ -70,7 +70,7 @@ export default function FactList() {
           ) : (
             <div
               key={fact.id}
-              className="group p-2 rounded bg-clawd-bg/30 hover:bg-clawd-bg/60 transition-colors"
+              className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-bg/60 transition-colors"
             >
               <div className="flex items-start justify-between gap-1">
                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
@@ -80,24 +80,24 @@ export default function FactList() {
                     {statusLabel[fact.status] ?? '?'}
                   </span>
                   {(factSourceMap[fact.id]?.length || 0) > 0 && (
-                    <span className="flex items-center gap-0.5 text-[9px] text-clawd-text-dim flex-shrink-0" title={`${factSourceMap[fact.id].length} linked source(s)`}>
+                    <span className="flex items-center gap-0.5 text-[9px] text-mission-control-text-dim flex-shrink-0" title={`${factSourceMap[fact.id].length} linked source(s)`}>
                       <Link2 size={9} />
                       {factSourceMap[fact.id].length}
                     </span>
                   )}
-                  <span className="text-[10px] text-clawd-text line-clamp-2">{fact.claim}</span>
+                  <span className="text-[10px] text-mission-control-text line-clamp-2">{fact.claim}</span>
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
                     onClick={() => setEditingId(fact.id)}
-                    className="p-0.5 rounded text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
                   </button>
                   <button
                     onClick={() => handleDelete(fact.id)}
-                    className="p-0.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
@@ -105,7 +105,7 @@ export default function FactList() {
                 </div>
               </div>
               {fact.source && (
-                <p className="text-[9px] text-clawd-text-dim mt-0.5 ml-5">source: {fact.source}</p>
+                <p className="text-[9px] text-mission-control-text-dim mt-0.5 ml-5">source: {fact.source}</p>
               )}
             </div>
           ),
@@ -120,10 +120,10 @@ export default function FactList() {
       </div>
 
       {editingId !== 'new-fact' && (
-        <div className="p-2 border-t border-clawd-border flex-shrink-0">
+        <div className="p-2 border-t border-mission-control-border flex-shrink-0">
           <button
             onClick={() => setEditingId('new-fact')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text transition-colors"
+            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Fact

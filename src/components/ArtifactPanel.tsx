@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,6 +50,45 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   } = useArtifactStore();
 
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+
+  // Resize state — all stable refs, no useCallback needed
+  const MIN_WIDTH = 280;
+  const MAX_WIDTH = 800;
+  const [width, setWidth] = useState(() => {
+    const saved = localStorage.getItem('artifact-panel-width');
+    return saved ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, parseInt(saved, 10))) : 384;
+  });
+  const widthRef = useRef(width);
+  const dragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  // Keep widthRef in sync so mousedown can read current width without being in deps
+  useEffect(() => { widthRef.current = width; }, [width]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      const delta = dragStartX.current - e.clientX;
+      const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, dragStartWidth.current + delta));
+      setWidth(next);
+      dragStartWidth.current = next;
+      dragStartX.current = e.clientX;
+    };
+    const onMouseUp = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem('artifact-panel-width', String(dragStartWidth.current));
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []); // stable — only refs and stable setWidth used inside
 
   // Filter artifacts by session if provided
   const displayArtifacts = sessionId
@@ -104,14 +143,14 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       case 'code':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span className="font-mono">{artifact.metadata?.language || 'code'}</span>
               {artifact.metadata?.filename && (
-                <span className="ml-auto text-clawd-text-dim">{artifact.metadata.filename}</span>
+                <span className="ml-auto text-mission-control-text-dim">{artifact.metadata.filename}</span>
               )}
             </div>
-            <div className="bg-clawd-bg border border-clawd-border rounded-lg p-4 overflow-x-auto">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
               </pre>
@@ -122,11 +161,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       case 'image':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Image</span>
             </div>
-            <div className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <img
                 src={artifact.content}
                 alt={artifact.title}
@@ -139,11 +178,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       case 'diagram':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Diagram (Mermaid)</span>
             </div>
-            <div className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={`\`\`\`mermaid\n${artifact.content}\n\`\`\``} />
             </div>
           </div>
@@ -152,11 +191,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       case 'data':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>Data</span>
             </div>
-            <div className="bg-clawd-bg border border-clawd-border rounded-lg p-4 overflow-x-auto">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm font-mono whitespace-pre-wrap break-words">
                 <code>{artifact.content}</code>
               </pre>
@@ -169,11 +208,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       default:
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
               <Icon size={14} />
               <span>{artifact.type}</span>
             </div>
-            <div className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={artifact.content} />
             </div>
           </div>
@@ -185,12 +224,12 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     return (
       <button
         onClick={toggleCollapse}
-        className="fixed right-0 top-1/2 -translate-y-1/2 bg-clawd-surface border-l border-y border-clawd-border rounded-l-lg p-2 hover:bg-clawd-bg transition-colors z-10"
+        className="fixed right-0 top-1/2 -translate-y-1/2 bg-mission-control-surface border-l border-y border-mission-control-border rounded-l-lg p-2 hover:bg-mission-control-bg transition-colors z-10"
         title="Open Artifacts"
       >
-        <ChevronLeft size={20} className="text-clawd-text-dim" />
+        <ChevronLeft size={20} className="text-mission-control-text-dim" />
         {displayArtifacts.length > 0 && (
-          <span className="absolute -top-1 -left-1 w-5 h-5 bg-clawd-accent text-white text-xs rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -left-1 w-5 h-5 bg-mission-control-accent text-white text-xs rounded-full flex items-center justify-center">
             {displayArtifacts.length}
           </span>
         )}
@@ -199,24 +238,42 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   }
 
   return (
-    <div className="w-96 border-l border-clawd-border bg-clawd-surface flex flex-col h-full">
+    <div
+      className="relative border-l border-mission-control-border bg-mission-control-surface flex flex-col h-full flex-shrink-0"
+      style={{ width }}
+    >
+      {/* Resize handle */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          dragging.current = true;
+          dragStartX.current = e.clientX;
+          dragStartWidth.current = widthRef.current;
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+        }}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-mission-control-accent/40 transition-colors z-10 group"
+        title="Drag to resize"
+      >
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-mission-control-border group-hover:bg-mission-control-accent/60 transition-colors" />
+      </div>
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText size={18} className="text-clawd-accent" />
+          <FileText size={18} className="text-mission-control-accent" />
           <h3 className="font-semibold text-sm">Artifacts</h3>
           {displayArtifacts.length > 0 && (
-            <span className="px-2 py-0.5 bg-clawd-bg text-xs rounded-full text-clawd-text-dim">
+            <span className="px-2 py-0.5 bg-mission-control-bg text-xs rounded-full text-mission-control-text-dim">
               {displayArtifacts.length}
             </span>
           )}
         </div>
         <button
           onClick={toggleCollapse}
-          className="p-1.5 rounded hover:bg-clawd-border transition-colors"
+          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
           title="Collapse panel"
         >
-          <ChevronRight size={18} className="text-clawd-text-dim" />
+          <ChevronRight size={18} className="text-mission-control-text-dim" />
         </button>
       </div>
 
@@ -224,13 +281,13 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       {selectedArtifact ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Artifact Header */}
-          <div className="p-4 border-b border-clawd-border space-y-3">
+          <div className="p-4 border-b border-mission-control-border space-y-3">
             <div className="flex items-start justify-between gap-2">
               <button
                 onClick={() => selectArtifact(null)}
-                className="p-1 rounded hover:bg-clawd-border transition-colors flex-shrink-0"
+                className="p-1 rounded hover:bg-mission-control-border transition-colors flex-shrink-0"
               >
-                <ChevronLeft size={16} className="text-clawd-text-dim" />
+                <ChevronLeft size={16} className="text-mission-control-text-dim" />
               </button>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-sm truncate">{selectedArtifact.title}</h4>
@@ -238,7 +295,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                   <span className={`px-2 py-0.5 rounded text-xs border ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
                     {selectedArtifact.type}
                   </span>
-                  <span className="text-xs text-clawd-text-dim">
+                  <span className="text-xs text-mission-control-text-dim">
                     v{selectedArtifact.currentVersion}
                   </span>
                 </div>
@@ -249,7 +306,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleCopy(selectedArtifact.content)}
-                className="flex-1 px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors text-xs flex items-center justify-center gap-1.5"
+                className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-xs flex items-center justify-center gap-1.5"
                 title="Copy content"
               >
                 <Copy size={14} />
@@ -257,7 +314,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
               </button>
               <button
                 onClick={() => handleDownload(selectedArtifact)}
-                className="flex-1 px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors text-xs flex items-center justify-center gap-1.5"
+                className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-xs flex items-center justify-center gap-1.5"
                 title="Download"
               >
                 <Download size={14} />
@@ -267,8 +324,8 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
                 className={`px-3 py-1.5 border rounded-lg transition-colors text-xs flex items-center justify-center gap-1.5 ${
                   showVersionHistory
-                    ? 'bg-clawd-accent text-white border-clawd-accent'
-                    : 'bg-clawd-bg border-clawd-border hover:bg-clawd-border'
+                    ? 'bg-mission-control-accent text-white border-mission-control-accent'
+                    : 'bg-mission-control-bg border-mission-control-border hover:bg-mission-control-border'
                 }`}
                 title="Version history"
               >
@@ -291,7 +348,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
 
           {/* Version History */}
           {showVersionHistory && (
-            <div className="p-4 border-b border-clawd-border bg-clawd-bg">
+            <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
               <h5 className="text-xs font-semibold mb-2">Version History</h5>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {selectedArtifact.versions.map((v) => (
@@ -299,13 +356,13 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                     key={v.version}
                     className={`w-full text-left px-2 py-1.5 rounded text-xs ${
                       v.version === selectedArtifact.currentVersion
-                        ? 'bg-clawd-accent/20 border border-clawd-accent/30'
-                        : 'bg-clawd-bg'
+                        ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
+                        : 'bg-mission-control-bg'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">v{v.version}</span>
-                      <span className="text-clawd-text-dim">
+                      <span className="text-mission-control-text-dim">
                         {new Date(v.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -313,7 +370,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                       </span>
                     </div>
                     {v.changeDescription && (
-                      <p className="text-clawd-text-dim mt-0.5">{v.changeDescription}</p>
+                      <p className="text-mission-control-text-dim mt-0.5">{v.changeDescription}</p>
                     )}
                   </div>
                 ))}
@@ -329,7 +386,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {displayArtifacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-clawd-text-dim">
+            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-mission-control-text-dim">
               <FileText size={48} className="mb-4 opacity-30" />
               <p className="text-sm font-medium mb-2">No Artifacts Yet</p>
               <p className="text-xs">
@@ -345,7 +402,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                   <button
                     key={artifact.id}
                     onClick={() => selectArtifact(artifact.id)}
-                    className="w-full text-left p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors"
+                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
                   >
                     <div className="flex items-start gap-2">
                       <div className={`p-2 rounded border ${colorClass} flex-shrink-0`}>
@@ -354,10 +411,10 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium text-sm truncate">{artifact.title}</h5>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-clawd-text-dim">
+                          <span className="text-xs text-mission-control-text-dim">
                             v{artifact.currentVersion}
                           </span>
-                          <span className="text-xs text-clawd-text-dim">
+                          <span className="text-xs text-mission-control-text-dim">
                             {new Date(artifact.timestamp).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -365,7 +422,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                           </span>
                         </div>
                         {artifact.metadata?.language && (
-                          <span className="text-xs text-clawd-text-dim font-mono">
+                          <span className="text-xs text-mission-control-text-dim font-mono">
                             {artifact.metadata.language}
                           </span>
                         )}

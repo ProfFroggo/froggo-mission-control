@@ -40,10 +40,10 @@ function WidgetError({ widgetName }: { widgetName: string }) {
  */
 function WidgetLoading() {
   return (
-    <div className="rounded-lg border border-clawd-border bg-clawd-bg0 p-4">
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
       <div className="flex items-center gap-3">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-clawd-accent border-t-transparent" />
-        <span className="text-sm text-clawd-text-dim">Loading widget...</span>
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-mission-control-accent border-t-transparent" />
+        <span className="text-sm text-mission-control-text-dim">Loading widget...</span>
       </div>
     </div>
   );
@@ -87,7 +87,7 @@ export default function WidgetLoader({ agentId, trustTier }: WidgetLoaderProps) 
 
   return (
     <div className="mt-6 space-y-4">
-      <h3 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider">
+      <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wider">
         Agent Widgets
       </h3>
       <div className="space-y-3">
@@ -121,17 +121,17 @@ function WidgetPlaceholder({
   agentId: string;
 }) {
   return (
-    <div className="rounded-lg border border-clawd-border bg-clawd-bg0 p-4">
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg0 p-4">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-clawd-accent/10 text-clawd-accent">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-mission-control-accent/10 text-mission-control-accent">
             {widget.icon || '📦'}
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-sm">{widget.name}</h4>
-          <p className="text-xs text-clawd-text-dim mt-1">{widget.description}</p>
-          <div className="mt-3 text-xs text-clawd-text-dim">
+          <p className="text-xs text-mission-control-text-dim mt-1">{widget.description}</p>
+          <div className="mt-3 text-xs text-mission-control-text-dim">
             <span className="px-2 py-1 rounded bg-info-subtle text-info">
               Widget: {widget.id}
             </span>

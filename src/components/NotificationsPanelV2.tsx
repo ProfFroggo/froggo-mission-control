@@ -35,7 +35,7 @@ const priorityBadges: Record<string, { color: string; label: string }> = {
   urgent: { color: 'bg-red-500 text-white', label: 'Urgent' },
   high: { color: 'bg-orange-500 text-white', label: 'High' },
   normal: { color: 'bg-info-subtle text-info', label: 'Normal' },
-  low: { color: 'bg-clawd-bg0/20 text-clawd-text-dim', label: 'Low' },
+  low: { color: 'bg-mission-control-bg0/20 text-mission-control-text-dim', label: 'Low' },
 };
 
 export default function NotificationsPanelV2() {
@@ -151,18 +151,18 @@ export default function NotificationsPanelV2() {
     return (
       <div className="h-full flex flex-col">
         {/* Settings Header */}
-        <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+        <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
               <div>
-                <h1 className="text-xl font-semibold">Notification Settings</h1>
-                <p className="text-sm text-clawd-text-dim">Configure notification preferences</p>
+                <h1 className="text-lg font-semibold text-mission-control-text">Notification Settings</h1>
+                <p className="text-sm text-mission-control-text-dim">Configure notification preferences</p>
               </div>
             </div>
           </div>
@@ -178,10 +178,10 @@ export default function NotificationsPanelV2() {
               return (
                 <div
                   key={pref.type}
-                  className="p-4 bg-clawd-surface border border-clawd-border rounded-xl"
+                  className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl"
                 >
                   <div className="flex items-start gap-3">
-                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-clawd-bg0/10 text-clawd-text-dim'} />
+                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
                     
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
@@ -225,7 +225,7 @@ export default function NotificationsPanelV2() {
                             value={pref.min_priority}
                             disabled={!pref.enabled}
                             onChange={(e) => handleTogglePreference(pref.type, 'min_priority', e.target.value)}
-                            className="bg-clawd-border rounded px-2 py-1 text-xs"
+                            className="bg-mission-control-border rounded px-2 py-1 text-xs"
                           >
                             <option value="low">Low</option>
                             <option value="normal">Normal</option>
@@ -248,11 +248,11 @@ export default function NotificationsPanelV2() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/20 rounded-xl relative">
-              <Bell size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl relative">
+              <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
                 <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {stats.unread > 9 ? '9+' : stats.unread}
@@ -260,8 +260,8 @@ export default function NotificationsPanelV2() {
               )}
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Notifications</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <h1 className="text-lg font-semibold text-mission-control-text">Notifications</h1>
+              <p className="text-sm text-mission-control-text-dim">
                 {stats.total} total • {stats.unread} unread
                 {stats.urgent > 0 && ` • ${stats.urgent} urgent`}
               </p>
@@ -272,7 +272,7 @@ export default function NotificationsPanelV2() {
             {stats.unread > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
                 title="Mark all as read"
               >
                 <CheckCheck size={14} />
@@ -283,7 +283,7 @@ export default function NotificationsPanelV2() {
             <button
               onClick={loadNotifications}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
@@ -291,7 +291,7 @@ export default function NotificationsPanelV2() {
             
             <button
               onClick={() => setShowSettings(true)}
-              className="p-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="p-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
               title="Settings"
             >
               <Settings size={16} />
@@ -313,8 +313,8 @@ export default function NotificationsPanelV2() {
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   filter === f
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)} ({count || 0})
@@ -345,8 +345,8 @@ export default function NotificationsPanelV2() {
                     notif.priority === 'urgent'
                       ? 'bg-error-subtle border-error-border shadow-lg'
                       : notif.read
-                      ? 'bg-clawd-bg border-clawd-border opacity-60'
-                      : 'bg-clawd-surface border-clawd-border shadow-card hover:shadow-card-hover'
+                      ? 'bg-mission-control-bg border-mission-control-border opacity-60'
+                      : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
                   }`}
                   onClick={() => handleNavigate(notif)}
                   onKeyDown={(e) => {
@@ -360,7 +360,7 @@ export default function NotificationsPanelV2() {
                   aria-label={`Notification: ${notif.title}`}
                 >
                   <div className="flex items-start gap-3">
-                    <IconBadge icon={Icon} size={16} color={config?.color || 'bg-clawd-bg0/10 text-clawd-text-dim'} />
+                    <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -377,14 +377,14 @@ export default function NotificationsPanelV2() {
                         )}
                       </div>
                       
-                      <p className="text-sm text-clawd-text-dim">{notif.message}</p>
+                      <p className="text-sm text-mission-control-text-dim">{notif.message}</p>
                       
                       {notif.description && (
-                        <p className="text-xs text-clawd-text-dim mt-1 opacity-75">{notif.description}</p>
+                        <p className="text-xs text-mission-control-text-dim mt-1 opacity-75">{notif.description}</p>
                       )}
                       
-                      <div className="flex items-center gap-2 mt-2 text-xs text-clawd-text-dim flex-wrap">
-                        <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color.replace('text-', 'bg-').replace('/10', '/20') || 'bg-clawd-bg0/20'}`}>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">
+                        <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color.replace('text-', 'bg-').replace('/10', '/20') || 'bg-mission-control-bg0/20'}`}>
                           {config?.label || notif.type}
                         </span>
                         <Clock size={10} />
@@ -423,7 +423,7 @@ export default function NotificationsPanelV2() {
                           e.stopPropagation();
                           handleDismiss(notif.id);
                         }}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors text-clawd-text-dim"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim"
                         title="Dismiss"
                       >
                         <X size={16} />

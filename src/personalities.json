@@ -1,9 +1,0 @@
-{
-  "designer": {
-    "name": "Designer",
-    "emoji": "🎨",
-    "role": "UI/UX & Graphic Design",
-    "description": "Creative designer for UI mockups and visual feedback",
-    "model": "claude-sonnet-4-5"
-  }
-}

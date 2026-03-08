@@ -16,17 +16,17 @@ export default function ContextPanel() {
   const { activeTab, setActiveTab, loading } = useMemoryStore();
 
   return (
-    <div className="w-72 h-full flex flex-col bg-clawd-surface border-l border-clawd-border flex-shrink-0">
+    <div className="w-72 h-full flex flex-col bg-mission-control-surface border-l border-mission-control-border flex-shrink-0">
       {/* Tab bar */}
-      <div className="flex border-b border-clawd-border flex-shrink-0">
+      <div className="flex border-b border-mission-control-border flex-shrink-0">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 text-[10px] font-medium transition-colors ${
               activeTab === key
-                ? 'bg-clawd-accent/20 text-clawd-accent border-b-2 border-clawd-accent'
-                : 'text-clawd-text-dim hover:bg-clawd-border/30 hover:text-clawd-text'
+                ? 'bg-mission-control-accent/20 text-mission-control-accent border-b-2 border-mission-control-accent'
+                : 'text-mission-control-text-dim hover:bg-mission-control-border/30 hover:text-mission-control-text'
             }`}
           >
             <Icon size={12} />
@@ -39,7 +39,7 @@ export default function ContextPanel() {
       <div className="flex-1 min-h-0 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-clawd-text-dim" />
+            <Loader2 className="w-5 h-5 animate-spin text-mission-control-text-dim" />
           </div>
         ) : (
           <>

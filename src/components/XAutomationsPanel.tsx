@@ -127,7 +127,7 @@ export default function XAutomationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-review-subtle rounded-xl">
@@ -135,7 +135,7 @@ export default function XAutomationsPanel() {
             </div>
             <div>
               <h1 className="text-xl font-semibold">X Automations</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {automations.length} automation{automations.length !== 1 ? 's' : ''} • 
                 {automations.filter(a => a.enabled).length} active
               </p>
@@ -146,7 +146,7 @@ export default function XAutomationsPanel() {
               setEditingAutomation(null);
               setShowBuilder(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/80 transition-colors"
           >
             <Plus size={16} />
             New Automation
@@ -157,12 +157,12 @@ export default function XAutomationsPanel() {
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
         {loading ? (
-          <div className="text-center py-12 text-clawd-text-dim">
+          <div className="text-center py-12 text-mission-control-text-dim">
             <Settings size={48} className="mx-auto mb-4 opacity-30 animate-spin" />
             <p>Loading automations...</p>
           </div>
         ) : automations.length === 0 ? (
-          <div className="text-center py-12 text-clawd-text-dim">
+          <div className="text-center py-12 text-mission-control-text-dim">
             <Zap size={48} className="mx-auto mb-4 opacity-30" />
             <p className="mb-2">No automations yet</p>
             <p className="text-sm mb-4">
@@ -170,7 +170,7 @@ export default function XAutomationsPanel() {
             </p>
             <button
               onClick={() => setShowBuilder(true)}
-              className="px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/80 transition-colors"
+              className="px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/80 transition-colors"
             >
               Create Your First Automation
             </button>
@@ -185,18 +185,18 @@ export default function XAutomationsPanel() {
               return (
                 <div
                   key={automation.id}
-                  className={`flex-shrink-0 w-96 bg-clawd-surface rounded-xl border-2 transition-all ${
+                  className={`flex-shrink-0 w-96 bg-mission-control-surface rounded-xl border-2 transition-all ${
                     automation.enabled 
                       ? 'border-success-border hover:border-success-border' 
-                      : 'border-clawd-border hover:border-clawd-border/80'
+                      : 'border-mission-control-border hover:border-mission-control-border/80'
                   }`}
                 >
                   <div className="p-4">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-success-subtle' : 'bg-clawd-border'}`}>
-                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-clawd-text-dim'} />}
+                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-success-subtle' : 'bg-mission-control-border'}`}>
+                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-mission-control-text-dim'} />}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -208,7 +208,7 @@ export default function XAutomationsPanel() {
                             )}
                           </div>
                           {automation.description && (
-                            <p className="text-sm text-clawd-text-dim">{automation.description}</p>
+                            <p className="text-sm text-mission-control-text-dim">{automation.description}</p>
                           )}
                         </div>
                       </div>
@@ -231,7 +231,7 @@ export default function XAutomationsPanel() {
                             setEditingAutomation(automation);
                             setShowBuilder(true);
                           }}
-                          className="p-2 rounded-lg bg-clawd-border hover:bg-clawd-border/80 transition-colors"
+                          className="p-2 rounded-lg bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
                           title="Edit"
                         >
                           <Edit size={16} />
@@ -247,21 +247,21 @@ export default function XAutomationsPanel() {
                     </div>
                     
                     {/* Automation Flow */}
-                    <div className="flex items-center gap-3 text-sm mb-3 p-3 bg-clawd-bg rounded-lg">
+                    <div className="flex items-center gap-3 text-sm mb-3 p-3 bg-mission-control-bg rounded-lg">
                       <div className="flex items-center gap-2">
-                        <span className="text-clawd-text-dim">IF</span>
+                        <span className="text-mission-control-text-dim">IF</span>
                         <span className="px-2 py-1 bg-info-subtle text-info rounded">
                           {automation.trigger_type}
                         </span>
                         {trigger.keywords && (
-                          <span className="text-clawd-text-dim">
+                          <span className="text-mission-control-text-dim">
                             {'"' + trigger.keywords.join(', ') + '"'}
                           </span>
                         )}
                       </div>
-                      <span className="text-clawd-text-dim">→</span>
+                      <span className="text-mission-control-text-dim">→</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-clawd-text-dim">THEN</span>
+                        <span className="text-mission-control-text-dim">THEN</span>
                         <div className="flex gap-1">
                           {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
                             <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded">
@@ -273,7 +273,7 @@ export default function XAutomationsPanel() {
                     </div>
                     
                     {/* Stats */}
-                    <div className="flex items-center gap-6 text-xs text-clawd-text-dim">
+                    <div className="flex items-center gap-6 text-xs text-mission-control-text-dim">
                       <div className="flex items-center gap-1">
                         <CheckCircle size={14} />
                         {automation.total_executions} executions
@@ -385,13 +385,13 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
-      <div className="bg-clawd-surface border border-clawd-border rounded-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border">
+        <div className="p-6 border-b border-mission-control-border">
           <h2 className="text-xl font-semibold mb-2">
             {automation ? 'Edit Automation' : 'Create Automation'}
           </h2>
-          <p className="text-sm text-clawd-text-dim">
+          <p className="text-sm text-mission-control-text-dim">
             Build an IFTTT-style automation to automate X engagement
           </p>
         </div>
@@ -407,7 +407,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Auto-thank new followers"
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
             />
           </div>
           
@@ -419,12 +419,12 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this automation do?"
               rows={2}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent resize-none"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
             />
           </div>
           
           {/* Trigger Section */}
-          <div className="border-t border-clawd-border pt-6">
+          <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="px-3 py-1 bg-info-subtle text-info rounded-lg text-sm">IF</span>
               Trigger
@@ -437,7 +437,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   id="automation-trigger"
                   value={triggerType}
                   onChange={(e) => setTriggerType(e.target.value as any)}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                 >
                   <option value="mention">Someone mentions me</option>
                   <option value="keyword">Tweet contains keywords</option>
@@ -460,7 +460,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                       keywords: e.target.value.split(',').map((k: string) => k.trim()).filter(Boolean)
                     })}
                     placeholder="bitcoin, crypto, web3"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   />
                 </div>
               )}
@@ -472,7 +472,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     id="automation-interval"
                     value={triggerConfig.interval || '1h'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, interval: e.target.value })}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   >
                     <option value="15m">Every 15 minutes</option>
                     <option value="30m">Every 30 minutes</option>
@@ -491,7 +491,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     id="automation-follower-action"
                     value={triggerConfig.action || 'follow'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, action: e.target.value })}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   >
                     <option value="follow">New follower</option>
                     <option value="unfollow">Lost follower</option>
@@ -502,7 +502,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           </div>
           
           {/* Actions Section */}
-          <div className="border-t border-clawd-border pt-6">
+          <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="px-3 py-1 bg-success-subtle text-success rounded-lg text-sm">THEN</span>
               Actions
@@ -510,7 +510,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={action.id || `action-${index}`} className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+                <div key={action.id || `action-${index}`} className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-3">
                       <select
@@ -520,7 +520,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                           newActions[index] = { ...action, type: e.target.value as any };
                           setActions(newActions);
                         }}
-                        className="w-full bg-clawd-surface border border-clawd-border rounded-lg p-2 text-sm"
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm"
                       >
                         <option value="reply">Reply to tweet</option>
                         <option value="like">Like tweet</option>
@@ -542,7 +542,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                           }}
                           placeholder="Message template... Use {{username}}, {{tweet}}, etc."
                           rows={3}
-                          className="w-full bg-clawd-surface border border-clawd-border rounded-lg p-2 text-sm resize-none"
+                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none"
                         />
                       )}
                       
@@ -559,7 +559,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                             setActions(newActions);
                           }}
                           placeholder="List ID or name"
-                          className="w-full bg-clawd-surface border border-clawd-border rounded-lg p-2 text-sm"
+                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm"
                         />
                       )}
                     </div>
@@ -577,7 +577,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <button
               onClick={() => setActions([...actions, { type: 'reply', config: {} }])}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
             >
               <Plus size={14} />
               Add Action
@@ -585,7 +585,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           </div>
           
           {/* Rate Limits */}
-          <div className="border-t border-clawd-border pt-6">
+          <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4">Rate Limits</h3>
             
             <div className="grid grid-cols-2 gap-4">
@@ -598,7 +598,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   onChange={(e) => setMaxPerHour(parseInt(e.target.value) || 0)}
                   min="1"
                   max="100"
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3"
                 />
               </div>
               
@@ -611,7 +611,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   onChange={(e) => setMaxPerDay(parseInt(e.target.value) || 0)}
                   min="1"
                   max="1000"
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3"
                 />
               </div>
             </div>
@@ -619,8 +619,8 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         </div>
         
         {/* Footer */}
-        <div className="p-6 border-t border-clawd-border flex items-center justify-between">
-          <p className="text-sm text-clawd-text-dim">
+        <div className="p-6 border-t border-mission-control-border flex items-center justify-between">
+          <p className="text-sm text-mission-control-text-dim">
             <AlertCircle size={14} className="inline mr-1" />
             Automations run in the background. Be mindful of X&apos;s rate limits.
           </p>
@@ -628,14 +628,14 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors"
+              className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !name.trim() || actions.length === 0}
-              className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-50 transition-colors"
             >
               {saving ? 'Saving...' : automation ? 'Update' : 'Create'}
             </button>

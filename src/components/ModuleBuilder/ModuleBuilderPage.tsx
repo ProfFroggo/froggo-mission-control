@@ -42,12 +42,12 @@ export default function ModuleBuilderPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
-        <h1 className="text-lg font-semibold text-clawd-text">Module Builder</h1>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <h1 className="text-lg font-semibold text-mission-control-text">Module Builder</h1>
         <div className="flex gap-2">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-opacity"
           >
             <Plus size={14} /> New Module
           </button>

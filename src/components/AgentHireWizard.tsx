@@ -23,7 +23,7 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
   const [step, setStep] = useState<Step>('review');
   const [role, setRole] = useState(agent.role ?? '');
   const [personality, setPersonality] = useState(agent.defaultPersonality ?? '');
-  const [userContext, setUserContext] = useState('');
+  const [userContext, setUserContext] = useState(agent.description ?? '');
   const [error, setError] = useState<string | null>(null);
 
   const modelBadge = MODEL_BADGE[agent.model] ?? MODEL_BADGE.sonnet;
@@ -199,12 +199,12 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
               <label className="flex items-center gap-1.5 text-xs font-medium text-mission-control-text-dim mb-1.5">
                 <Bot size={12} /> Personality or working style
               </label>
-              <input
-                type="text"
+              <textarea
                 value={personality}
                 onChange={e => setPersonality(e.target.value)}
                 placeholder="e.g. Direct, data-driven, bias to action"
-                className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                rows={3}
+                className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               />
             </div>
 

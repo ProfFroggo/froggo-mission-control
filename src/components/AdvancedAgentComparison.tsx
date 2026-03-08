@@ -164,7 +164,7 @@ export default function AdvancedAgentComparison({
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
     if (value < threshold) return <ArrowDownRight size={16} className="text-error" />;
-    return <Minus size={16} className="text-clawd-text-dim" />;
+    return <Minus size={16} className="text-mission-control-text-dim" />;
   };
 
   return (
@@ -189,8 +189,8 @@ export default function AdvancedAgentComparison({
                 onClick={() => toggleAgent(metric.agent)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   selectedAgents.includes(metric.agent)
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent'
                 }`}
                 disabled={
                   !selectedAgents.includes(metric.agent) && selectedAgents.length >= 5
@@ -208,7 +208,7 @@ export default function AdvancedAgentComparison({
         {selectedAgents.length > 0 ? (
           <>
             {/* Radar Chart */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4">Performance Radar</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <RadarChart data={getRadarData()}>
@@ -231,7 +231,7 @@ export default function AdvancedAgentComparison({
             </div>
 
             {/* Bar Comparison */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4">Task Completion Comparison</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getComparisonData()}>
@@ -253,10 +253,10 @@ export default function AdvancedAgentComparison({
             </div>
 
             {/* Detailed Metrics Table */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-clawd-bg border-b border-clawd-border">
+                  <thead className="bg-mission-control-bg border-b border-mission-control-border">
                     <tr>
                       <th className="text-left p-4 text-sm font-medium">Agent</th>
                       <th className="text-right p-4 text-sm font-medium">
@@ -294,7 +294,7 @@ export default function AdvancedAgentComparison({
                       return (
                         <tr
                           key={agentName}
-                          className="border-b border-clawd-border last:border-b-0"
+                          className="border-b border-mission-control-border last:border-b-0"
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-2">
@@ -340,14 +340,14 @@ export default function AdvancedAgentComparison({
                               <span className="text-info font-medium">
                                 {agent.efficiency.toFixed(2)}
                               </span>
-                              <span className="text-xs text-clawd-text-dim">
+                              <span className="text-xs text-mission-control-text-dim">
                                 tasks/h
                               </span>
                             </div>
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <div className="w-24 bg-clawd-bg rounded-full h-2">
+                              <div className="w-24 bg-mission-control-bg rounded-full h-2">
                                 <div
                                   className="bg-review rounded-full h-2 transition-all"
                                   style={{ width: `${agent.consistency}%` }}
@@ -367,14 +367,14 @@ export default function AdvancedAgentComparison({
             </div>
 
             {/* Insights */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-clawd-accent" />
+                <Award size={16} className="text-mission-control-accent" />
                 Key Insights
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-1">Top Performer</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-1">Top Performer</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
                       ? metrics.reduce((a, b) =>
@@ -382,24 +382,24 @@ export default function AdvancedAgentComparison({
                         ).agent
                       : 'N/A'}
                   </div>
-                  <div className="text-sm text-clawd-text-dim mt-1">
+                  <div className="text-sm text-mission-control-text-dim mt-1">
                     Most tasks completed
                   </div>
                 </div>
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-1">Most Efficient</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-1">Most Efficient</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
                       ? metrics.reduce((a, b) => (a.efficiency > b.efficiency ? a : b))
                           .agent
                       : 'N/A'}
                   </div>
-                  <div className="text-sm text-clawd-text-dim mt-1">
+                  <div className="text-sm text-mission-control-text-dim mt-1">
                     Best tasks per hour ratio
                   </div>
                 </div>
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-1">Highest Rate</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-1">Highest Rate</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
                       ? metrics.reduce((a, b) =>
@@ -407,19 +407,19 @@ export default function AdvancedAgentComparison({
                         ).agent
                       : 'N/A'}
                   </div>
-                  <div className="text-sm text-clawd-text-dim mt-1">
+                  <div className="text-sm text-mission-control-text-dim mt-1">
                     Best completion percentage
                   </div>
                 </div>
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-1">Most Consistent</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-1">Most Consistent</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
                       ? metrics.reduce((a, b) => (a.consistency > b.consistency ? a : b))
                           .agent
                       : 'N/A'}
                   </div>
-                  <div className="text-sm text-clawd-text-dim mt-1">
+                  <div className="text-sm text-mission-control-text-dim mt-1">
                     Most reliable timing
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export default function AdvancedAgentComparison({
             </div>
           </>
         ) : (
-          <div className="py-12 text-center text-clawd-text-dim">
+          <div className="py-12 text-center text-mission-control-text-dim">
             Select at least one agent to view comparison
           </div>
         )}

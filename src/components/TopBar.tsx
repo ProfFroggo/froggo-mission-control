@@ -95,7 +95,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   return (
     <>
       <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-surface/80 backdrop-blur-xl border-b border-clawd-border/50 transition-all duration-200" 
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200" 
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}

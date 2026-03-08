@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { id } = await params;
     const db = getDb();
     const members = db.prepare(`
-      SELECT pm.*, a.name AS agentName, a.emoji AS agentEmoji, a.status AS agentStatus
+      SELECT pm.*, a.name AS agentName, a.avatar AS agentEmoji, a.status AS agentStatus
       FROM project_members pm
       LEFT JOIN agents a ON a.id = pm.agentId
       WHERE pm.projectId = ?

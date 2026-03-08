@@ -334,7 +334,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     <div
       role="toolbar"
       aria-label="Writing feedback tools"
-      className="bg-clawd-surface border border-clawd-border rounded-lg shadow-lg p-3 min-w-[320px] max-w-[480px]"
+      className="bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-3 min-w-[320px] max-w-[480px]"
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Agent picker row + fact check */}
@@ -343,7 +343,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
         <button
           onClick={handleFactCheck}
           disabled={streaming}
-          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Fact-check highlighted claim"
         >
           <ShieldCheck className="w-3 h-3" />
@@ -368,13 +368,13 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
               : selectedAgent === 'researcher' ? 'What should be checked?'
               : 'How should this be rewritten?'
           }
-          className="flex-1 bg-clawd-bg border border-clawd-border rounded px-2 py-1.5 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent"
+          className="flex-1 bg-mission-control-bg border border-mission-control-border rounded px-2 py-1.5 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
           disabled={streaming}
         />
         <button
           onClick={handleSend}
           disabled={streaming || !instructions.trim()}
-          className="px-2 py-1.5 rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-2 py-1.5 rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
@@ -382,7 +382,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
       {/* Streaming content (raw text while streaming) */}
       {streaming && streamContent && (
-        <div className="mt-2 text-sm text-clawd-text-dim max-h-[200px] overflow-y-auto">
+        <div className="mt-2 text-sm text-mission-control-text-dim max-h-[200px] overflow-y-auto">
           <pre className="whitespace-pre-wrap font-sans">{streamContent}</pre>
         </div>
       )}
@@ -395,7 +395,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           ))}
           <button
             onClick={handleDismiss}
-            className="text-xs text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Dismiss
           </button>

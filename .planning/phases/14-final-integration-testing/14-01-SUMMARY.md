@@ -21,7 +21,7 @@
 - /api/sessions: EXISTS
 
 ### MCP Servers
-- tools/froggo-db-mcp/src/index.ts: EXISTS
+- tools/mission-control-db-mcp/src/index.ts: EXISTS
 - tools/memory-mcp/src/index.ts: EXISTS
 - tools/cron-mcp/src/index.ts: EXISTS
 

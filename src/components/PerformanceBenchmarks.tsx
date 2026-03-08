@@ -174,7 +174,7 @@ export default function PerformanceBenchmarks() {
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable', positive: boolean) => {
     if (trend === 'stable')
-      return <Minus size={16} className="text-clawd-text-dim" />;
+      return <Minus size={16} className="text-mission-control-text-dim" />;
     if (trend === 'up')
       return (
         <ArrowUp
@@ -193,7 +193,7 @@ export default function PerformanceBenchmarks() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-clawd-text-dim">
+        <div className="flex items-center gap-2 text-mission-control-text-dim">
           <RefreshCw size={20} className="animate-spin" />
           Loading benchmarks...
         </div>
@@ -211,24 +211,24 @@ export default function PerformanceBenchmarks() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="text-clawd-accent" size={20} />
+            <TrendingUp className="text-mission-control-accent" size={20} />
             Performance Benchmarks
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Track performance trends over time
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['wow', 'mom', 'yoy'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setCompareMode(mode)}
                 className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                   compareMode === mode
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {mode === 'wow'
@@ -242,7 +242,7 @@ export default function PerformanceBenchmarks() {
 
           <button
             onClick={loadBenchmarks}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -255,14 +255,14 @@ export default function PerformanceBenchmarks() {
         {metrics.map((metric) => (
           <div
             key={metric.label}
-            className="bg-clawd-surface border border-clawd-border rounded-xl p-4"
+            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
           >
-            <div className="text-sm text-clawd-text-dim mb-1">{metric.label}</div>
+            <div className="text-sm text-mission-control-text-dim mb-1">{metric.label}</div>
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-2xl font-bold">
                 {metric.current.toLocaleString()}
               </span>
-              <span className="text-sm text-clawd-text-dim">{metric.unit}</span>
+              <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
             </div>
             <div className="flex items-center gap-2">
               {getTrendIcon(metric.trend, metric.positive)}
@@ -276,7 +276,7 @@ export default function PerformanceBenchmarks() {
                     ? metric.positive
                       ? 'text-error'
                       : 'text-success'
-                    : 'text-clawd-text-dim'
+                    : 'text-mission-control-text-dim'
                 }`}
               >
                 {metric.change > 0 ? '+' : ''}
@@ -284,7 +284,7 @@ export default function PerformanceBenchmarks() {
                 {metric.changePercent.toFixed(1)}%)
               </span>
             </div>
-            <div className="text-xs text-clawd-text-dim mt-1">
+            <div className="text-xs text-mission-control-text-dim mt-1">
               vs previous period
             </div>
           </div>
@@ -294,17 +294,17 @@ export default function PerformanceBenchmarks() {
       {/* Trend Charts */}
       <div className="space-y-6">
         {/* Tasks Completed Trend */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Tasks Completed Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={benchmarks}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
               <YAxis stroke={CHART_AXIS.stroke} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--clawd-surface)',
-                  border: '1px solid var(--clawd-border)',
+                  backgroundColor: 'var(--mission-control-surface)',
+                  border: '1px solid var(--mission-control-border)',
                   borderRadius: '8px',
                 }}
               />
@@ -322,17 +322,17 @@ export default function PerformanceBenchmarks() {
         </div>
 
         {/* Completion Rate Trend */}
-        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Completion Rate Trend</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={benchmarks}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
               <YAxis stroke={CHART_AXIS.stroke} domain={[0, 100]} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--clawd-surface)',
-                  border: '1px solid var(--clawd-border)',
+                  backgroundColor: 'var(--mission-control-surface)',
+                  border: '1px solid var(--mission-control-border)',
                   borderRadius: '8px',
                 }}
                 formatter={(value: any) => `${value}%`}
@@ -352,17 +352,17 @@ export default function PerformanceBenchmarks() {
 
         {/* Average Time & Total Hours */}
         <div className="grid grid-cols-2 gap-6">
-          <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <h3 className="font-semibold mb-4">Avg Completion Time</h3>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={benchmarks}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
                 <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
                 <YAxis stroke={CHART_AXIS.stroke} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'var(--clawd-surface)',
-                    border: '1px solid var(--clawd-border)',
+                    backgroundColor: 'var(--mission-control-surface)',
+                    border: '1px solid var(--mission-control-border)',
                     borderRadius: '8px',
                   }}
                   formatter={(value: any) => `${value}h`}
@@ -378,17 +378,17 @@ export default function PerformanceBenchmarks() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <h3 className="font-semibold mb-4">Total Hours Logged</h3>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={benchmarks}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
                 <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
                 <YAxis stroke={CHART_AXIS.stroke} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'var(--clawd-surface)',
-                    border: '1px solid var(--clawd-border)',
+                    backgroundColor: 'var(--mission-control-surface)',
+                    border: '1px solid var(--mission-control-border)',
                     borderRadius: '8px',
                   }}
                   formatter={(value: any) => `${value}h`}
@@ -407,9 +407,9 @@ export default function PerformanceBenchmarks() {
       </div>
 
       {/* Insights */}
-      <div className="mt-6 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Calendar size={16} className="text-clawd-accent" />
+          <Calendar size={16} className="text-mission-control-accent" />
           Period Insights
         </h3>
         <div className="space-y-3">
@@ -429,7 +429,7 @@ export default function PerformanceBenchmarks() {
                     ? 'bg-success-subtle border border-success-border'
                     : isNegative
                     ? 'bg-error-subtle border border-error-border'
-                    : 'bg-clawd-bg border border-clawd-border'
+                    : 'bg-mission-control-bg border border-mission-control-border'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -442,7 +442,7 @@ export default function PerformanceBenchmarks() {
                           ? 'text-success'
                           : isNegative
                           ? 'text-error'
-                          : 'text-clawd-text-dim'
+                          : 'text-mission-control-text-dim'
                       }
                     >
                       {metric.trend === 'up'

@@ -3,8 +3,16 @@ import { getDb } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   const db = getDb();
-  const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
-  const since = parseInt(request.nextUrl.searchParams.get('since') || '0');
+  const rawLimit = request.nextUrl.searchParams.get('limit');
+  const limit = rawLimit ? parseInt(rawLimit) : 20;
+  if (isNaN(limit) || limit < 1 || limit > 200) {
+    return NextResponse.json({ error: 'Invalid limit' }, { status: 400 });
+  }
+  const rawSince = request.nextUrl.searchParams.get('since');
+  const since = rawSince ? parseInt(rawSince) : 0;
+  if (isNaN(since) || since < 0) {
+    return NextResponse.json({ error: 'Invalid since' }, { status: 400 });
+  }
   const notifications = db.prepare(
     'SELECT * FROM analytics_events WHERE event_type = ? AND timestamp > ? ORDER BY timestamp DESC LIMIT ?'
   ).all('notification', since, limit);

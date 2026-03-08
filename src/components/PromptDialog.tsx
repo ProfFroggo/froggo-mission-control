@@ -126,11 +126,11 @@ export default function PromptDialog({
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-clawd-text">{title}</h2>
+          <h2 className="text-lg font-semibold text-mission-control-text">{title}</h2>
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1 rounded hover:bg-clawd-bg-subtle text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="p-1 rounded hover:bg-mission-control-bg-subtle text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             aria-label="Close"
           >
             <X size={20} />
@@ -139,7 +139,7 @@ export default function PromptDialog({
 
         {/* Message */}
         {message && (
-          <p className="text-sm text-clawd-text-dim mb-4">{message}</p>
+          <p className="text-sm text-mission-control-text-dim mb-4">{message}</p>
         )}
 
         {/* Input */}
@@ -151,7 +151,7 @@ export default function PromptDialog({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={4}
-            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:border-transparent resize-none"
+            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent resize-none"
             disabled={isSubmitting}
           />
         ) : (
@@ -162,7 +162,7 @@ export default function PromptDialog({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:border-transparent"
+            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent"
             disabled={isSubmitting}
           />
         )}
@@ -177,7 +177,7 @@ export default function PromptDialog({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg-subtle rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-subtle rounded-lg transition-colors"
           >
             {cancelLabel}
           </button>
@@ -185,7 +185,7 @@ export default function PromptDialog({
             onClick={handleSubmit}
             loading={isSubmitting || loading}
             disabled={!value.trim()}
-            className="px-4 py-2 text-sm font-medium bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmLabel}
           </LoadingButton>

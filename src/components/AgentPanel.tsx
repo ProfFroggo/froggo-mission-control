@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
+import { PROTECTED_AGENTS } from '../lib/agentConfig';
 import { useShallow } from 'zustand/react/shallow';
 import { gateway } from '../lib/gateway';
-import WorkerModal from './WorkerModal';
+import HRAgentCreationModal from './HRAgentCreationModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
 import AgentChatModal from './AgentChatModal';
@@ -195,9 +196,6 @@ export default function AgentPanel() {
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
 
-  // Infrastructure agents that must never be stopped from UI
-  const PROTECTED_AGENTS = ['mission-control', 'main', 'clara'];
-
   // Skip phantom/legacy agents — use exclusion so new agents auto-appear
   const PHANTOM_AGENTS = ['main', 'chat-agent'];
   const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
@@ -232,13 +230,16 @@ export default function AgentPanel() {
       <div className="w-full">
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="icon-text text-heading-2 tracking-tight mb-1">
-              <Bot size={24} className="flex-shrink-0" /> Agents
-            </h1>
-            <p className="text-secondary">
-              {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running · {realSubagents.length} total
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <Bot size={24} className="text-mission-control-accent" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-mission-control-text">Agents</h1>
+              <p className="text-sm text-mission-control-text-dim">
+                {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running · {realSubagents.length} total
+              </p>
+            </div>
           </div>
           <div className="icon-text gap-2">
             {view === 'active' && compareAgents.length >= 2 && (
@@ -396,7 +397,7 @@ export default function AgentPanel() {
                       <div className={`relative flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
                         {theme.pic ? (
                           <img
-                            src={`./agent-profiles/${theme.pic}`}
+                            src={`/api/agents/${agent.id}/avatar`}
                             alt={agent.name}
                             className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }}
@@ -410,19 +411,24 @@ export default function AgentPanel() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-lg leading-tight">{agent.name}</h3>
-                          <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
-                            {sc.label}
-                          </span>
+                          {!sc.hideDot && (
+                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
+                              {sc.label}
+                            </span>
+                          )}
                           {/* Trust tier badge */}
                           {agent.trust_tier && (
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              agent.trust_tier === 'master' ? 'bg-review-subtle text-review' :
-                              agent.trust_tier === 'expert' ? 'bg-warning/20 text-amber-400' :
-                              'bg-mission-control-bg0/20 text-mission-control-text-dim'
+                              agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
+                              agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
+                              agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
+                              agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
+                              'bg-mission-control-border text-mission-control-text-dim'
                             }`}>
-                              {agent.trust_tier === 'master' ? 'Master' :
-                               agent.trust_tier === 'expert' ? 'Expert' :
-                               agent.trust_tier === 'journeyman' ? 'Journeyman' :
+                              {agent.trust_tier === 'admin'      ? 'Admin' :
+                               agent.trust_tier === 'trusted'    ? 'Trusted' :
+                               agent.trust_tier === 'worker'     ? 'Worker' :
+                               agent.trust_tier === 'restricted' ? 'Restricted' :
                                'Apprentice'}
                             </span>
                           )}
@@ -504,7 +510,7 @@ export default function AgentPanel() {
                         >
                           <Play size={12} className="inline" /> Enable
                         </button>
-                      ) : !PROTECTED_AGENTS.includes(agent.id) ? (
+                      ) : !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id); }}
@@ -686,7 +692,7 @@ export default function AgentPanel() {
                 <div key={agent.id} className="rounded-lg border border-mission-control-border p-3 flex items-center gap-3 overflow-hidden">
                   <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden bg-mission-control-bg">
                     {getTheme(agent.id).pic ? (
-                      <img src={`./agent-profiles/${getTheme(agent.id).pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
+                      <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
                     ) : null}
                     <span className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-xl`}>{agent.avatar}</span>
                   </div>
@@ -703,7 +709,7 @@ export default function AgentPanel() {
                       title="Re-enable agent for dispatcher">
                       <Play size={12} className="inline mr-1" /> Enable
                     </button>
-                  ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id) ? (
+                  ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
                     <button type="button" onClick={() => handleAgentStop(agent.id)}
                       className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
                       title="Disable agent — dispatcher will stop spawning it">
@@ -723,7 +729,7 @@ export default function AgentPanel() {
         </>)} {/* end active view */}
 
         {/* Modals */}
-        <WorkerModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+        {showCreateModal && <HRAgentCreationModal onClose={() => setShowCreateModal(false)} />}
         {selectedAgent && <AgentDetailModal agentId={selectedAgent} onClose={() => setSelectedAgent(null)} />}
         {showCompare && compareAgents.length >= 2 && (
           <AgentCompareModal agentIds={compareAgents} onClose={() => { setShowCompare(false); setCompareAgents([]); }} />

@@ -77,13 +77,13 @@ export default function DebugTab() {
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* Gateway Connection */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Activity size={16} className="text-clawd-accent" />
+            <Activity size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
           </div>
-          <button type="button" onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
             <RefreshCw size={14} /> Reconnect
           </button>
         </div>
@@ -92,60 +92,60 @@ export default function DebugTab() {
             <StateIcon size={24} className={stateColor[gwState]} />
             <div>
               <div className={`font-medium ${stateColor[gwState]}`}>{gwState.charAt(0).toUpperCase() + gwState.slice(1)}</div>
-              <div className="text-sm text-clawd-text-dim">Session: {gateway.getSessionKey()}</div>
+              <div className="text-sm text-mission-control-text-dim">Session: {gateway.getSessionKey()}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Active Sessions */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Terminal size={16} className="text-clawd-accent" />
+            <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </div>
-          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80" aria-label="Refresh sessions">
+          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80" aria-label="Refresh sessions">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
-        <div className="divide-y divide-clawd-border max-h-64 overflow-y-auto">
+        <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
           {sessions.length === 0 ? (
-            <div className="p-4 text-center text-clawd-text-dim">No sessions</div>
+            <div className="p-4 text-center text-mission-control-text-dim">No sessions</div>
           ) : sessions.map((s: any, i: number) => (
-            <div key={i} className="p-3 flex items-center gap-3 hover:bg-clawd-bg/50">
+            <div key={i} className="p-3 flex items-center gap-3 hover:bg-mission-control-bg/50">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-clawd-bg0'
+                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-mission-control-bg0'
               }`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{s.label || s.key || s.sessionKey}</div>
-                <div className="text-xs text-clawd-text-dim">{s.channel || s.kind || 'unknown'} • {formatTimeAgo(s.updatedAt || s.createdAt)}</div>
+                <div className="text-xs text-mission-control-text-dim">{s.channel || s.kind || 'unknown'} • {formatTimeAgo(s.updatedAt || s.createdAt)}</div>
               </div>
-              {s.model && <div className="text-xs text-clawd-text-dim">{s.model}</div>}
+              {s.model && <div className="text-xs text-mission-control-text-dim">{s.model}</div>}
             </div>
           ))}
         </div>
       </div>
 
       {/* Recent Logs */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle size={16} className="text-clawd-accent" />
+            <AlertCircle size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
           </div>
-          <button type="button" onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
             <RefreshCw size={14} /> Load More
           </button>
         </div>
-        <div className="max-h-80 overflow-y-auto p-2 bg-clawd-bg font-mono text-xs">
+        <div className="max-h-80 overflow-y-auto p-2 bg-mission-control-bg font-mono text-xs">
           {logs.length === 0 ? (
-            <div className="p-4 text-center text-clawd-text-dim">No logs</div>
+            <div className="p-4 text-center text-mission-control-text-dim">No logs</div>
           ) : logs.map((line, i) => {
             const isError = /\berror\b/i.test(line);
             const isWarn = /\bwarn/i.test(line);
             return (
-              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-error' : isWarn ? 'text-warning' : 'text-clawd-text-dim'}`}>
+              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-error' : isWarn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                 {line}
               </div>
             );

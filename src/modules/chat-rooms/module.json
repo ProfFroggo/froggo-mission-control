@@ -1,7 +1,0 @@
-{
-  "id": "chat-rooms",
-  "name": "Chat Rooms",
-  "description": "Inter-agent communication rooms",
-  "version": "1.0.0",
-  "enabled": true
-}

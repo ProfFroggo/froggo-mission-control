@@ -38,18 +38,18 @@ export async function POST(
     const db = getDb();
     const body = await request.json();
 
-    const { agentId, content, replyTo } = body;
+    const { agentId, content, replyTo, role, mentionedAgents, messageId, timestamp } = body;
 
     if (!agentId || !content) {
       return NextResponse.json({ error: 'agentId and content are required' }, { status: 400 });
     }
 
-    const now = Date.now();
+    const now = timestamp ?? Date.now();
 
     const result = db.prepare(`
-      INSERT INTO chat_room_messages (roomId, agentId, content, replyTo, timestamp)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(roomId, agentId, content, replyTo ?? null, now);
+      INSERT INTO chat_room_messages (roomId, agentId, content, replyTo, timestamp, role, mentionedAgents, messageId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(roomId, agentId, content, replyTo ?? null, now, role ?? 'agent', JSON.stringify(mentionedAgents ?? []), messageId ?? null);
 
     const message = db.prepare('SELECT * FROM chat_room_messages WHERE id = ?').get(result.lastInsertRowid);
     return NextResponse.json(message, { status: 201 });

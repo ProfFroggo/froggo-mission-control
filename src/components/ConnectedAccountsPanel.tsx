@@ -15,7 +15,7 @@ const logger = createLogger('ConnectedAccounts');
 const ChannelsTab = lazy(() => import('./ChannelsTab').catch((err) => {
   logger.error('Failed to load ChannelsTab:', err);
   return {
-    default: () => <div className="text-center py-8 text-clawd-text-dim">Failed to load Channels tab</div>
+    default: () => <div className="text-center py-8 text-mission-control-text-dim">Failed to load Channels tab</div>
   };
 }));
 
@@ -289,7 +289,7 @@ export default function ConnectedAccountsPanel() {
           <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
             <LinkIcon size={24} /> Connected Accounts
           </h1>
-          <p className="text-clawd-text-dim">
+          <p className="text-mission-control-text-dim">
             Manage your Google, iCloud, Microsoft, and other connected accounts
           </p>
           <div className="flex gap-2 mt-4">
@@ -299,8 +299,8 @@ export default function ConnectedAccountsPanel() {
                 onClick={() => setPanelTab(tab)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                   panelTab === tab
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {tab === 'accounts' ? '🔗 Accounts' : '📡 Channels'}
@@ -310,7 +310,7 @@ export default function ConnectedAccountsPanel() {
         </div>
 
         {panelTab === 'channels' && (
-          <Suspense fallback={<div className="text-center py-8 text-clawd-text-dim"><RefreshCw size={24} className="mx-auto animate-spin mb-2" />Loading channels...</div>}>
+          <Suspense fallback={<div className="text-center py-8 text-mission-control-text-dim"><RefreshCw size={24} className="mx-auto animate-spin mb-2" />Loading channels...</div>}>
             <ChannelsTab />
           </Suspense>
         )}
@@ -324,7 +324,7 @@ export default function ConnectedAccountsPanel() {
             <div className="flex-1">
               <h3 className="font-semibold text-info mb-1">Smart Account Selection</h3>
               <p className="text-sm text-info">
-                <strong>No default accounts!</strong> Froggo intelligently chooses which account to use based on context.
+                <strong>No default accounts!</strong> Mission Control intelligently chooses which account to use based on context.
                 Every account is equal - selection is context-aware and intelligent.
               </p>
             </div>
@@ -344,11 +344,11 @@ export default function ConnectedAccountsPanel() {
                 { priority: 6, rule: 'Capability Match', description: 'Uses accounts with required data type (email, calendar, etc)', example: 'Ensures account can handle the action' },
                 { priority: 7, rule: 'Context-Free', description: 'No context available - suggests adding more info', example: 'Last resort - indicates missing context' },
               ].map((rule) => (
-                <div key={rule.priority} className="flex gap-3 p-2 bg-clawd-bg rounded">
+                <div key={rule.priority} className="flex gap-3 p-2 bg-mission-control-bg rounded">
                   <div className="text-info font-bold text-sm w-6">{rule.priority}</div>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{rule.rule}</div>
-                    <div className="text-xs text-clawd-text-dim">{rule.description}</div>
+                    <div className="text-xs text-mission-control-text-dim">{rule.description}</div>
                     <div className="text-xs text-info mt-1">Example: {rule.example}</div>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ export default function ConnectedAccountsPanel() {
         <div className="mb-6 flex gap-3">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             <Plus size={16} />
             Add Account
@@ -370,7 +370,7 @@ export default function ConnectedAccountsPanel() {
           <button
             onClick={handleImportGoogle}
             disabled={importingGoogle}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors disabled:opacity-50"
           >
             {importingGoogle ? <RefreshCw size={16} className="animate-spin" /> : <Database size={16} />}
             Import Google Accounts
@@ -378,7 +378,7 @@ export default function ConnectedAccountsPanel() {
 
           <button
             onClick={loadAccounts}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
           >
             <RefreshCw size={16} />
             Refresh
@@ -387,20 +387,20 @@ export default function ConnectedAccountsPanel() {
 
         {/* Accounts List */}
         {loading ? (
-          <div className="text-center py-12 text-clawd-text-dim">
+          <div className="text-center py-12 text-mission-control-text-dim">
             <RefreshCw size={32} className="mx-auto mb-3 animate-spin" />
             <p>Loading accounts...</p>
           </div>
         ) : accounts.length === 0 ? (
-          <div className="text-center py-12 bg-clawd-surface rounded-xl border border-clawd-border">
-            <LinkIcon size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-50" />
+          <div className="text-center py-12 bg-mission-control-surface rounded-xl border border-mission-control-border">
+            <LinkIcon size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-50" />
             <h3 className="text-lg font-medium mb-2">No accounts connected</h3>
-            <p className="text-clawd-text-dim mb-4">
+            <p className="text-mission-control-text-dim mb-4">
               Add your first account to get started
             </p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
             >
               <Plus size={16} />
               Add Account
@@ -411,7 +411,7 @@ export default function ConnectedAccountsPanel() {
             {accounts.map((account) => (
               <div
                 key={account.id}
-                className="bg-clawd-surface rounded-xl border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer group"
+                className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 hover:border-mission-control-accent transition-colors cursor-pointer group"
                 onClick={() => handleAccountClick(account)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAccountClick(account); } }}
                 role="button"
@@ -445,7 +445,7 @@ export default function ConnectedAccountsPanel() {
                           return (
                             <span
                               key={type}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type] || 'bg-mission-control-bg0/20 text-mission-control-text-dim border-mission-control-border/30'}`}
                             >
                               <Icon size={14} />
                               {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -455,11 +455,11 @@ export default function ConnectedAccountsPanel() {
                       </div>
 
                       {/* Meta Info */}
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         <span>Last sync: {formatRelativeTime(account.lastSyncTime)}</span>
                         {account.skillName && (
                           <span className="ml-3">
-                            Skill: <code className="text-clawd-accent">{account.skillName}</code>
+                            Skill: <code className="text-mission-control-accent">{account.skillName}</code>
                           </span>
                         )}
                       </div>
@@ -472,7 +472,7 @@ export default function ConnectedAccountsPanel() {
                           e.stopPropagation();
                           handleRefresh(account.id);
                         }}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Refresh connection"
                       >
                         <RefreshCw size={16} />
@@ -487,7 +487,7 @@ export default function ConnectedAccountsPanel() {
                       >
                         <Trash2 size={16} />
                       </button>
-                      <ChevronRight size={20} className="text-clawd-text-dim" />
+                      <ChevronRight size={20} className="text-mission-control-text-dim" />
                     </div>
                   </div>
                 </div>
@@ -510,7 +510,7 @@ export default function ConnectedAccountsPanel() {
           aria-label="Close account detail modal"
         >
           <div 
-            className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
+            className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -523,21 +523,21 @@ export default function ConnectedAccountsPanel() {
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">{selectedAccount.email}</h2>
-                  <p className="text-sm text-clawd-text-dim">
+                  <p className="text-sm text-mission-control-text-dim">
                     {(selectedAccount.accountType || 'Unknown').charAt(0).toUpperCase() + (selectedAccount.accountType || 'unknown').slice(1)} Account
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowDetailModal(false)}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Connection Status */}
-            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+            <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Shield size={16} />
                 <h3 className="font-medium">Connection Status</h3>
@@ -563,7 +563,7 @@ export default function ConnectedAccountsPanel() {
             </div>
 
             {/* Data Types Accessed */}
-            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+            <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Database size={16} />
                 <h3 className="font-medium">Data Types Accessed</h3>
@@ -574,7 +574,7 @@ export default function ConnectedAccountsPanel() {
                   return (
                     <div
                       key={type}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type] || 'bg-mission-control-bg0/20 text-mission-control-text-dim border-mission-control-border/30'}`}
                     >
                       <Icon size={16} />
                       <span className="capitalize">{type}</span>
@@ -586,14 +586,14 @@ export default function ConnectedAccountsPanel() {
 
             {/* Permissions Granted */}
             {selectedAccount.grantedScopes && selectedAccount.grantedScopes.length > 0 && (
-              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
                   <Key size={16} />
                   <h3 className="font-medium">Permissions Granted</h3>
                 </div>
                 <div className="space-y-1">
                   {selectedAccount.grantedScopes.map((scope, idx) => (
-                    <div key={idx} className="text-sm text-clawd-text-dim flex items-center gap-2">
+                    <div key={idx} className="text-sm text-mission-control-text-dim flex items-center gap-2">
                       <CheckCircle size={14} className="text-success" />
                       <code className="text-xs">{scope}</code>
                     </div>
@@ -604,7 +604,7 @@ export default function ConnectedAccountsPanel() {
 
             {/* Detailed Permissions */}
             {selectedAccountPermissions.length > 0 && (
-              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
                   <Key size={16} />
                   <h3 className="font-medium">Detailed Permissions</h3>
@@ -613,11 +613,11 @@ export default function ConnectedAccountsPanel() {
                   {selectedAccountPermissions.map((perm) => (
                     <div key={perm.id} className="text-sm">
                       <div className="font-medium">{perm.permissionType}</div>
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         <code>{perm.permissionScope}</code>
                       </div>
                       {perm.lastUsedAt && (
-                        <div className="text-xs text-clawd-text-dim">
+                        <div className="text-xs text-mission-control-text-dim">
                           Last used: {formatRelativeTime(perm.lastUsedAt)}
                         </div>
                       )}
@@ -628,19 +628,19 @@ export default function ConnectedAccountsPanel() {
             )}
 
             {/* Sync Information */}
-            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+            <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Clock size={16} />
                 <h3 className="font-medium">Sync Information</h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-clawd-text-dim">Last Sync:</span>
+                  <span className="text-mission-control-text-dim">Last Sync:</span>
                   <span>{formatDate(selectedAccount.lastSyncTime)}</span>
                 </div>
                 {selectedAccount.lastSyncStatus && (
                   <div className="flex justify-between">
-                    <span className="text-clawd-text-dim">Status:</span>
+                    <span className="text-mission-control-text-dim">Status:</span>
                     <span className={
                       selectedAccount.lastSyncStatus === 'success' ? 'text-success' :
                       selectedAccount.lastSyncStatus === 'partial' ? 'text-warning' :
@@ -651,7 +651,7 @@ export default function ConnectedAccountsPanel() {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-clawd-text-dim">Account Created:</span>
+                  <span className="text-mission-control-text-dim">Account Created:</span>
                   <span>{formatDate(selectedAccount.createdAt)}</span>
                 </div>
               </div>
@@ -664,7 +664,7 @@ export default function ConnectedAccountsPanel() {
                   handleRefresh(selectedAccount.id);
                   setShowDetailModal(false);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
               >
                 <RefreshCw size={16} />
                 Refresh Connection
@@ -695,7 +695,7 @@ export default function ConnectedAccountsPanel() {
           aria-label="Close add account modal"
         >
           <div 
-            className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full"
+            className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 max-w-2xl w-full"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -706,7 +706,7 @@ export default function ConnectedAccountsPanel() {
               <button
                 onClick={() => !addingAccount && setShowAddModal(false)}
                 disabled={addingAccount}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
               >
                 <X size={20} />
               </button>
@@ -723,15 +723,15 @@ export default function ConnectedAccountsPanel() {
                     disabled={!type.available}
                     className={`w-full p-4 rounded-lg border transition-colors text-left ${
                       selectedType === type.type
-                        ? 'border-clawd-accent bg-clawd-accent/10'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10'
+                        : 'border-mission-control-border hover:border-mission-control-accent/50'
                     } ${!type.available ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{type.icon}</span>
                       <div className="flex-1">
                         <div className="font-medium">{type.name}</div>
-                        <div className="text-sm text-clawd-text-dim">
+                        <div className="text-sm text-mission-control-text-dim">
                           {type.supportedDataTypes.join(', ')}
                         </div>
                         {!type.available && type.requiresSkill && (
@@ -741,7 +741,7 @@ export default function ConnectedAccountsPanel() {
                         )}
                       </div>
                       {selectedType === type.type && (
-                        <CheckCircle size={20} className="text-clawd-accent" />
+                        <CheckCircle size={20} className="text-mission-control-accent" />
                       )}
                     </div>
                   </button>
@@ -751,9 +751,9 @@ export default function ConnectedAccountsPanel() {
 
             {/* Setup Instructions */}
             {selectedType && (
-              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="mb-6 p-4 bg-mission-control-bg rounded-lg">
                 <h3 className="font-medium mb-2">Setup Instructions</h3>
-                <div className="text-sm text-clawd-text-dim space-y-2">
+                <div className="text-sm text-mission-control-text-dim space-y-2">
                   <p>1. Click &quot;Continue&quot; to start the authentication process</p>
                   <p>2. A browser window will open for OAuth authentication</p>
                   <p>3. Sign in and grant the requested permissions</p>
@@ -767,14 +767,14 @@ export default function ConnectedAccountsPanel() {
               <button
                 onClick={() => setShowAddModal(false)}
                 disabled={addingAccount}
-                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text-dim rounded-lg hover:bg-clawd-border/80 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddAccount}
                 disabled={!selectedType || addingAccount}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
               >
                 {addingAccount ? (
                   <>

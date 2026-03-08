@@ -13,20 +13,20 @@ import manifest from './module.json';
 
 const AgentPanel = lazy(() => import('../../components/AgentPanel'));
 
+ViewRegistry.register({
+  id: 'agents',
+  label: 'Agents',
+  icon: Bot,
+  component: AgentPanel,
+  moduleId: 'agent-mgmt',
+  category: 'agent',
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'agents',
-      label: 'Agents',
-      icon: Bot,
-      component: AgentPanel,
-      moduleId: 'froggo-agent-mgmt',
-      category: 'agent',
-      description: manifest.description,
-    });
-  },
+  async init() {},
   dispose() {
-    ViewRegistry.unregisterModule('froggo-agent-mgmt');
+    ViewRegistry.unregisterModule('agent-mgmt');
   },
 };
 

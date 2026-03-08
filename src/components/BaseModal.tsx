@@ -207,14 +207,13 @@ export default function BaseModal({
       />
 
       {/* Modal Container - Proper z-index layering and responsive padding */}
-      <button
-        className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none bg-transparent border-0 cursor-default"
+      <div
+        className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
         onClick={handleBackdropClick}
         onKeyDown={(e) => {
           if (e.key === 'Escape') handleBackdropClick(e as any);
         }}
-        aria-label="Close modal"
-        type="button"
+        role="presentation"
       >
         {/* Modal Content - Enhanced responsive sizing and transitions */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
@@ -243,17 +242,17 @@ export default function BaseModal({
           {showCloseButton && closeButtonPosition === 'floating' && (
             <button
               onClick={handleClose}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-clawd-surface/90 hover:bg-clawd-border rounded-lg transition-all duration-200 shadow-lg backdrop-blur-sm hover:scale-105"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-mission-control-surface/90 hover:bg-mission-control-border rounded-lg transition-all duration-200 shadow-lg backdrop-blur-sm hover:scale-105"
               aria-label={closeButtonLabel}
               type="button"
             >
-              <X size={16} className="text-clawd-text hover:text-clawd-accent" />
+              <X size={16} className="text-mission-control-text hover:text-mission-control-accent" />
             </button>
           )}
 
           {children}
         </div>
-      </button>
+      </div>
     </>
   );
 }
@@ -281,18 +280,18 @@ export function BaseModalHeader({
   className = '',
 }: BaseModalHeaderProps) {
   return (
-    <div className={`flex items-start gap-3 p-6 border-b border-clawd-border ${className}`}>
+    <div className={`flex items-start gap-3 p-6 border-b border-mission-control-border ${className}`}>
       {icon && (
         <div className="flex-shrink-0 mt-0.5">
           {icon}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold text-clawd-text">
+        <h2 className="text-lg sm:text-xl font-semibold text-mission-control-text">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             {subtitle}
           </p>
         )}
@@ -300,11 +299,11 @@ export function BaseModalHeader({
       {showCloseButton && onClose && (
         <button
           onClick={onClose}
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors flex-shrink-0"
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           aria-label={closeButtonLabel}
           type="button"
         >
-          <X size={16} className="text-clawd-text-dim hover:text-clawd-text" />
+          <X size={16} className="text-mission-control-text-dim hover:text-mission-control-text" />
         </button>
       )}
     </div>
@@ -355,7 +354,7 @@ export function BaseModalFooter({ children, className = '', align = 'right' }: B
   }[align];
 
   return (
-    <div className={`flex flex-wrap items-center gap-3 p-6 border-t border-clawd-border ${alignClass} ${className}`}>
+    <div className={`flex flex-wrap items-center gap-3 p-6 border-t border-mission-control-border ${alignClass} ${className}`}>
       {children}
     </div>
   );
@@ -396,10 +395,10 @@ export function BaseModalButton({
   }[size];
   
   const variantStyles = {
-    primary: 'bg-clawd-accent text-white hover:bg-clawd-accent-dim',
-    secondary: 'bg-clawd-surface border border-clawd-border hover:bg-clawd-border',
+    primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim',
+    secondary: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
     danger: 'bg-red-500 text-white hover:bg-red-600',
-    ghost: 'hover:bg-clawd-border',
+    ghost: 'hover:bg-mission-control-border',
   }[variant];
 
   return (

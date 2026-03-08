@@ -36,7 +36,7 @@ type View = string;
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
     // Load default panel from settings
-    const saved = safeStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
         const settings = JSON.parse(saved);
@@ -60,29 +60,68 @@ function App() {
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
-  const { toggleMuted, loadApprovals, fetchAgents } = useStore();
+  const toggleMuted = useStore(s => s.toggleMuted);
+  const loadApprovals = useStore(s => s.loadApprovals);
+  const fetchAgents = useStore(s => s.fetchAgents);
+  const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const toolbarVisible = usePanelConfigStore(s => s.panels.find(p => p.id === 'toolbar')?.visible ?? true);
 
-  // Load approvals and agents on app launch
+  // Load core data on app launch so all views (Dashboard, etc.) have real stats
   useEffect(() => {
     loadApprovals();
     fetchAgents();
-  }, [loadApprovals, fetchAgents]);
+    loadTasksFromDB();
+  }, [loadApprovals, fetchAgents, loadTasksFromDB]);
 
-  // Initialize all registered modules, then sync sidebar with new views
+  // Handle Google OAuth callback — ?code= lands on the root page after redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (!code) return;
+
+    // Clear URL params immediately
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Exchange code for tokens
+    fetch('/api/google/auth/callback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('success', 'Gmail Connected', data.email ? `Connected as ${data.email}` : 'Google account connected');
+          // Switch to inbox view
+          setCurrentView('inbox');
+        } else {
+          showToast('error', 'Google Auth Failed', data.error ?? 'Failed to connect Google account');
+        }
+      })
+      .catch(() => {
+        showToast('error', 'Google Auth Failed', 'Could not complete authentication');
+      });
+  }, []);
+
+  // Initialize all registered modules, then sync sidebar with optional module views.
+  // No cleanup — modules are registered at module-level and live for the app lifetime.
+  // disposeAll() in cleanup wipes ViewRegistry in React Strict Mode double-invoke,
+  // causing the nav to show only 1–3 items on reload.
   const syncPanels = usePanelConfigStore(s => s.syncWithViewRegistry);
   useEffect(() => {
+    // Sync immediately — core modules already registered synchronously at import time
+    syncPanels();
+    // Then init optional modules and sync again to pick up any new views
     ModuleLoader.initAll()
       .then(() => syncPanels())
       .catch(err => {
         console.error('[App] Module initialization failed:', err);
       });
-    return () => { ModuleLoader.disposeAll(); };
   }, [syncPanels]);
 
   // Apply saved theme and accent color on startup
   useEffect(() => {
-    const saved = safeStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
         const settings = JSON.parse(saved);
@@ -101,26 +140,26 @@ function App() {
         
         // Apply theme colors
         if (actualTheme === 'dark') {
-          root.style.setProperty('--clawd-bg', '#0a0a0a');
-          root.style.setProperty('--clawd-surface', '#141414');
-          root.style.setProperty('--clawd-border', '#262626');
-          root.style.setProperty('--clawd-text', '#fafafa');
-          root.style.setProperty('--clawd-text-dim', '#a1a1aa');
+          root.style.setProperty('--mission-control-bg', '#0a0a0a');
+          root.style.setProperty('--mission-control-surface', '#141414');
+          root.style.setProperty('--mission-control-border', '#262626');
+          root.style.setProperty('--mission-control-text', '#fafafa');
+          root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
         } else {
-          root.style.setProperty('--clawd-bg', '#fafafa');
-          root.style.setProperty('--clawd-surface', '#ffffff');
-          root.style.setProperty('--clawd-border', '#e4e4e7');
-          root.style.setProperty('--clawd-text', '#18181b');
-          root.style.setProperty('--clawd-text-dim', '#71717a');
+          root.style.setProperty('--mission-control-bg', '#fafafa');
+          root.style.setProperty('--mission-control-surface', '#ffffff');
+          root.style.setProperty('--mission-control-border', '#e4e4e7');
+          root.style.setProperty('--mission-control-text', '#18181b');
+          root.style.setProperty('--mission-control-text-dim', '#71717a');
         }
-        
+
         // Apply accent color
-        root.style.setProperty('--clawd-accent', accentColor);
+        root.style.setProperty('--mission-control-accent', accentColor);
         const hex = accentColor.replace('#', '');
         const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
         const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
         const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-        root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
+        root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
       } catch (e) {
         // '[App] Failed to apply saved theme:', e;
       }
@@ -139,16 +178,6 @@ function App() {
     };
     window.addEventListener('navigate-library', handleNavigateLibrary);
     return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
-  }, []);
-
-  // Deep link: ?install=module-id → navigate to marketplace
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const installId = params.get('install');
-    if (installId) {
-      sessionStorage.setItem('marketplace-pending-install', installId);
-      setCurrentView('marketplace');
-    }
   }, []);
 
   // Global keyboard shortcuts
@@ -336,12 +365,12 @@ function App() {
       {/* Skip navigation link for keyboard accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-clawd-accent focus:text-white focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-mission-control-accent focus:text-white focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2"
       >
         Skip to main content
       </a>
 
-      <div className="flex h-screen bg-clawd-bg">
+      <div className="flex h-screen bg-mission-control-bg">
         {/* TopBar removed */}
 
         {/* Sidebar */}

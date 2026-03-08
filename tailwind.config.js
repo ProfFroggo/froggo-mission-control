@@ -11,20 +11,20 @@ export default {
         '8xl': '90rem',
       },
       borderColor: {
-        DEFAULT: 'var(--clawd-border, #2a2a2a)',
+        DEFAULT: 'var(--mission-control-border, #2a2a2a)',
       },
       colors: {
-        'clawd': {
-          bg: 'var(--clawd-bg, #0a0a0a)',
-          surface: 'var(--clawd-surface, #141414)',
-          border: 'var(--clawd-border, #2a2a2a)', /* Pure neutral gray */
-          accent: 'var(--clawd-accent, #22c55e)',
-          'accent-dim': 'var(--clawd-accent-dim, #16a34a)',
-          text: 'var(--clawd-text, #fafafa)',
-          'text-dim': 'var(--clawd-text-dim, #a1a1aa)',
-          'bg-alt': 'var(--clawd-bg-alt, #1a1a1a)',
-          'bg0': 'var(--clawd-bg0, #0a0a0a)',
-          'card': 'var(--clawd-card, #141414)',
+        'mission-control': {
+          bg: 'var(--mission-control-bg, #0a0a0a)',
+          surface: 'var(--mission-control-surface, #141414)',
+          border: 'var(--mission-control-border, #2a2a2a)', /* Pure neutral gray */
+          accent: 'var(--mission-control-accent, #22c55e)',
+          'accent-dim': 'var(--mission-control-accent-dim, #16a34a)',
+          text: 'var(--mission-control-text, #fafafa)',
+          'text-dim': 'var(--mission-control-text-dim, #a1a1aa)',
+          'bg-alt': 'var(--mission-control-bg-alt, #1a1a1a)',
+          'bg0': 'var(--mission-control-bg0, #0a0a0a)',
+          'card': 'var(--mission-control-card, #141414)',
         },
         // ── Design Token Bridge ──────────────────────────────────
         // Maps CSS custom property tokens → Tailwind utilities.

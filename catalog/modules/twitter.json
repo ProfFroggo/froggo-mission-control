@@ -1,0 +1,24 @@
+{
+  "id": "twitter",
+  "name": "Social Media",
+  "description": "Full social media command center — publish, research, plan, drafts, calendar, mentions, reply-guy, content mix, automations, analytics, Reddit, and campaigns.",
+  "version": "1.0.0",
+  "category": "social",
+  "icon": "📣",
+  "responsibleAgent": "social-manager",
+  "requiredAgents": [
+    "social-manager"
+  ],
+  "requiredNpm": [],
+  "requiredApis": [
+    "TWITTER_API_KEY",
+    "TWITTER_API_SECRET",
+    "TWITTER_ACCESS_TOKEN",
+    "TWITTER_ACCESS_TOKEN_SECRET"
+  ],
+  "requiredSkills": [
+    "x-twitter-strategy"
+  ],
+  "requiredCli": [],
+  "core": false
+}

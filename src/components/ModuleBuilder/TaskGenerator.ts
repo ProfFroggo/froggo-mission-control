@@ -1,5 +1,5 @@
 /**
- * TaskGenerator — Takes a completed ModuleSpec and generates froggo-db
+ * TaskGenerator — Takes a completed ModuleSpec and generates mission-control-db
  * task-add + subtask-add calls via Electron IPC.
  */
 
@@ -110,12 +110,16 @@ function buildSubtasks(spec: ModuleSpec): GeneratedSubtask[] {
   });
 
   // 9. Registration
-  if (spec.hasNavigation && spec.type !== 'service') {
-    subtasks.push({
-      title: `Register ${spec.name} in CoreViews and sidebar`,
-      description: `Add to CoreViews.tsx with icon: ${spec.icon || 'auto-select'}. Add sidebar navigation entry.`,
-    });
-  }
+  subtasks.push({
+    title: `Register ${spec.name} module in optional-registry and catalog`,
+    description: [
+      `1. Add entry to src/modules/optional-registry.ts: \`'${spec.id}': () => import('./${spec.id}')\``,
+      `2. Create catalog manifest at catalog/modules/${spec.id}.json with id, name, version, description, category, icon, core: false, responsibleAgent, requiredApis, requiredAgents, requiredNpm fields.`,
+      `3. Do NOT add to src/modules/index.ts (that is for core modules only).`,
+      `4. Do NOT hardcode in CoreViews.tsx or Sidebar — the module self-registers via ViewRegistry in its index.ts lifecycle.init().`,
+      `5. After creating the catalog manifest, the module will appear in the Modules page and can be installed from there.`,
+    ].join(' '),
+  });
 
   // 10. Commit
   subtasks.push({

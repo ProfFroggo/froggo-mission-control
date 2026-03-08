@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
+import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
 
 function parseInboxItem(row: Record<string, unknown>) {
   if (!row) return row;
@@ -79,11 +80,16 @@ export async function POST(request: NextRequest) {
       const triggerMsg = `New inbox item received. Title: "${title}". Type: ${type || 'unknown'}. Channel: ${channel || 'unknown'}. Please triage this item, assign priority, and update its status.`;
       const proc = spawn(
         '/Users/kevin.macarthur/.npm-global/bin/claude',
-        ['--print', '--model', 'claude-haiku-4-5-20251001', '--dangerously-skip-permissions', triggerMsg],
+        ['--print', '--model', 'claude-haiku-4-5-20251001',
+          '--allowedTools', TIER_TOOLS['worker'].join(','),
+          '--disallowedTools', loadDisallowedTools('inbox').join(','),
+          triggerMsg],
         { cwd: existsSync(inboxCwd) ? inboxCwd : homedir(), env: { ...cleanEnv } as NodeJS.ProcessEnv, detached: true, stdio: ['ignore', 'ignore', 'ignore'] }
       );
       proc.unref();
-    } catch { /* fire-and-forget — never fail the request */ }
+    } catch (err) {
+      console.warn('[inbox] Failed to trigger inbox agent:', err instanceof Error ? err.message : String(err));
+    }
 
     return NextResponse.json(parseInboxItem(item), { status: 201 });
   } catch (error) {

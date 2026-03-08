@@ -6,7 +6,7 @@ import { join } from 'path';
 
 const CATALOG_AGENTS_DIR = join(
   process.env.MC_PROJECT_ROOT || '/Users/kevin.macarthur/git/mission-control-nextjs',
-  '.catalog',
+  'catalog',
   'agents'
 );
 
@@ -25,7 +25,7 @@ export async function GET() {
 
 // POST /api/catalog/agents
 // Register a custom-created agent in the catalog.
-// Writes .catalog/agents/{id}.json manifest and upserts into catalog_agents with installed=1.
+// Writes catalog/agents/{id}.json manifest and upserts into catalog_agents with installed=1.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

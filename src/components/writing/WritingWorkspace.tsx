@@ -71,11 +71,11 @@ export default function WritingWorkspace() {
     return (
       <div className="h-full flex flex-col">
         {showResumePrompt && pendingWizard && (
-          <div className="mx-4 mt-4 p-3 rounded-lg border border-clawd-accent/30 bg-clawd-accent/5 flex items-center gap-3">
-            <AlertCircle size={18} className="text-clawd-accent flex-shrink-0" />
+          <div className="mx-4 mt-4 p-3 rounded-lg border border-mission-control-accent/30 bg-mission-control-accent/5 flex items-center gap-3">
+            <AlertCircle size={18} className="text-mission-control-accent flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-clawd-text font-medium">Unfinished book plan</p>
-              <p className="text-xs text-clawd-text-dim truncate">
+              <p className="text-sm text-mission-control-text font-medium">Unfinished book plan</p>
+              <p className="text-xs text-mission-control-text-dim truncate">
                 {pendingWizard.brainDump
                   ? `"${pendingWizard.brainDump.slice(0, 80)}${pendingWizard.brainDump.length > 80 ? '...' : ''}"`
                   : 'In progress'}
@@ -83,14 +83,14 @@ export default function WritingWorkspace() {
             </div>
             <button
               onClick={handleResume}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-clawd-accent text-white text-xs font-medium hover:bg-clawd-accent-dim transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-accent text-white text-xs font-medium hover:bg-mission-control-accent-dim transition-colors flex-shrink-0"
             >
               <RotateCcw size={12} />
               Resume
             </button>
             <button
               onClick={handleDiscard}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-clawd-border text-xs text-clawd-text-dim hover:text-error hover:border-error-border transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-mission-control-border text-xs text-mission-control-text-dim hover:text-error hover:border-error-border transition-colors flex-shrink-0"
             >
               <Trash2 size={12} />
               Discard
@@ -106,7 +106,7 @@ export default function WritingWorkspace() {
 
   // Active project — full editor with chapter sidebar
   return (
-    <div className="h-full bg-clawd-bg">
+    <div className="h-full bg-mission-control-bg">
       <ProjectEditor />
     </div>
   );

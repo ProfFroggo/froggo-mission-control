@@ -24,7 +24,7 @@ export function Spinner({ size = 16, className = '' }: SpinnerProps) {
   return (
     <Loader2 
       size={size} 
-      className={`animate-spin text-clawd-accent ${className}`} 
+      className={`animate-spin text-mission-control-accent ${className}`} 
     />
   );
 }
@@ -56,13 +56,13 @@ export function LoadingButton({
   icon,
   type = 'button',
 }: LoadingButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:ring-offset-2 focus:ring-offset-clawd-bg disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2 focus:ring-offset-mission-control-bg disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantStyles = {
-    primary: 'bg-clawd-accent text-white hover:opacity-90',
-    secondary: 'bg-clawd-surface border border-clawd-border text-clawd-text hover:border-clawd-accent',
+    primary: 'bg-mission-control-accent text-white hover:opacity-90',
+    secondary: 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:border-mission-control-accent',
     danger: 'bg-red-500 text-white hover:bg-red-600',
-    ghost: 'text-clawd-text hover:bg-clawd-surface',
+    ghost: 'text-mission-control-text hover:bg-mission-control-surface',
   };
   
   const sizeStyles = {
@@ -114,7 +114,7 @@ export function Skeleton({ className = '', width = 'w-full', height = 'h-4', rou
 
   return (
     <div 
-      className={`${width} ${height} ${roundedStyles[rounded]} bg-clawd-border animate-pulse ${className}`}
+      className={`${width} ${height} ${roundedStyles[rounded]} bg-mission-control-border animate-pulse ${className}`}
     />
   );
 }
@@ -122,7 +122,7 @@ export function Skeleton({ className = '', width = 'w-full', height = 'h-4', rou
 // Task Card Skeleton
 export function TaskCardSkeleton() {
   return (
-    <div className="bg-clawd-surface rounded-lg border border-clawd-border p-3 space-y-3">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <Skeleton height="h-5" width="w-3/4" />
         <Skeleton height="h-5" width="w-5" rounded="sm" />
@@ -140,7 +140,7 @@ export function TaskCardSkeleton() {
 // Table Row Skeleton
 export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
   return (
-    <tr className="border-b border-clawd-border">
+    <tr className="border-b border-mission-control-border">
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <Skeleton height="h-4" width={i === 0 ? 'w-3/4' : 'w-1/2'} />
@@ -153,7 +153,7 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
 // Agent Card Skeleton
 export function AgentCardSkeleton() {
   return (
-    <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4 space-y-3">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
       <div className="flex items-center gap-3">
         <Skeleton height="h-12" width="w-12" rounded="full" />
         <div className="flex-1 space-y-2">
@@ -170,7 +170,7 @@ export function AgentCardSkeleton() {
 // Session Card Skeleton
 export function SessionCardSkeleton() {
   return (
-    <div className="bg-clawd-surface rounded-lg border border-clawd-border p-3 space-y-2">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-2">
       <div className="flex items-center gap-2">
         <Skeleton height="h-8" width="w-8" rounded="full" />
         <div className="flex-1 space-y-1">
@@ -197,10 +197,10 @@ export function LoadingOverlay({ message = 'Loading...', fullScreen = false }: L
     : 'absolute inset-0';
 
   return (
-    <div className={`${containerClass} bg-clawd-bg/80 backdrop-blur-sm flex items-center justify-center`}>
-      <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 flex flex-col items-center gap-3 shadow-xl">
+    <div className={`${containerClass} bg-mission-control-bg/80 backdrop-blur-sm flex items-center justify-center`}>
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 flex flex-col items-center gap-3 shadow-xl">
         <Spinner size={32} />
-        <p className="text-clawd-text font-medium">{message}</p>
+        <p className="text-mission-control-text font-medium">{message}</p>
       </div>
     </div>
   );
@@ -225,13 +225,13 @@ export function ProgressBar({ progress, label, showPercentage = true, className 
     <div className={`w-full ${className}`}>
       {(label || showPercentage) && (
         <div className="flex justify-between items-center mb-2">
-          {label && <span className="text-sm text-clawd-text">{label}</span>}
-          {showPercentage && <span className="text-sm text-clawd-text-dim">{clampedProgress}%</span>}
+          {label && <span className="text-sm text-mission-control-text">{label}</span>}
+          {showPercentage && <span className="text-sm text-mission-control-text-dim">{clampedProgress}%</span>}
         </div>
       )}
-      <div className="w-full h-2 bg-clawd-border rounded-full overflow-hidden">
+      <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
         <div
-          className="h-full bg-clawd-accent transition-all duration-300 ease-out"
+          className="h-full bg-mission-control-accent transition-all duration-300 ease-out"
           style={{ width: `${clampedProgress}%` }}
           role="progressbar"
           aria-valuenow={clampedProgress}
@@ -259,7 +259,7 @@ export function InlineLoader({ text, size = 'md' }: InlineLoaderProps) {
   return (
     <div className="flex items-center gap-2">
       <Spinner size={sizeMap[size]} />
-      {text && <span className={`text-clawd-text-dim ${textSizeMap[size]}`}>{text}</span>}
+      {text && <span className={`text-mission-control-text-dim ${textSizeMap[size]}`}>{text}</span>}
     </div>
   );
 }
@@ -273,7 +273,7 @@ interface PulsingDotProps {
   size?: number;
 }
 
-export function PulsingDot({ color = 'bg-clawd-accent', size = 8 }: PulsingDotProps) {
+export function PulsingDot({ color = 'bg-mission-control-accent', size = 8 }: PulsingDotProps) {
   return (
     <span className="relative flex">
       <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${color} opacity-75`} style={{ width: size, height: size }} />

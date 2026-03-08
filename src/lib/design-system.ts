@@ -134,9 +134,9 @@ export const SEMANTIC_COLORS = {
     border: 'border-info-border',
   },
   primary: {
-    text: 'text-clawd-accent',
-    bg: 'bg-clawd-accent/10',
-    border: 'border-clawd-accent/30',
+    text: 'text-mission-control-accent',
+    bg: 'bg-mission-control-accent/10',
+    border: 'border-mission-control-accent/30',
   },
 } as const;
 
@@ -196,9 +196,9 @@ export const PRIORITY_COLORS = {
     label: 'Medium',
   },
   p3: {
-    text: 'text-clawd-text-dim',
-    bg: 'bg-clawd-bg/20',
-    border: 'border-clawd-border/30',
+    text: 'text-mission-control-text-dim',
+    bg: 'bg-mission-control-bg/20',
+    border: 'border-mission-control-border/30',
     label: 'Low',
   },
 } as const;

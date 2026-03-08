@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Froggo Dashboard will be documented in this file.
+All notable changes to Mission Control Dashboard will be documented in this file.
 
 ---
 
@@ -90,15 +90,15 @@ All notable changes to Froggo Dashboard will be documented in this file.
 - Keyboard shortcuts (⌘1-8, ⌘K, ⌘⇧S)
 - Morning Brief modal
 - Task notification system
-- froggo-db integration
+- mission-control-db integration
 - Multi-channel support (Discord, Telegram, WhatsApp, Web)
 
 #### Tech Stack
 - Electron + React + TypeScript
 - Tailwind CSS
 - Zustand state management
-- SQLite (froggo.db)
-- OpenClaw Gateway backend
+- SQLite (mission-control.db)
+- Claude CLI backend
 
 ---
 

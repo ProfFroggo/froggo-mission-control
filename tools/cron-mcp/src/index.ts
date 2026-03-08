@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-const SCHEDULE_PATH = process.env.SCHEDULE_PATH || path.join(os.homedir(), 'froggo/data/schedule.json');
+const SCHEDULE_PATH = process.env.SCHEDULE_PATH || path.join(os.homedir(), 'mission-control/data/schedule.json');
 
 function readSchedule() {
   try {
@@ -22,7 +22,7 @@ function writeSchedule(jobs: any[]) {
 }
 
 const server = new Server(
-  { name: 'froggo-cron-mcp', version: '1.0.0' },
+  { name: 'mission-control-cron-mcp', version: '1.0.0' },
   { capabilities: { tools: {} } }
 );
 

@@ -16,7 +16,7 @@ interface IconBadgeProps {
 export default function IconBadge({ 
   icon: Icon, 
   size = 18, 
-  color = 'bg-clawd-bg/10 text-clawd-text-dim',
+  color = 'bg-mission-control-bg/10 text-mission-control-text-dim',
   rounded = 'lg',
   className = '',
   'aria-label': ariaLabel

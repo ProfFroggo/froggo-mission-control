@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, RefreshCw, ListTodo } from 'lucide-react';
 import EpicCalendar from './EpicCalendar';
+import TaskScheduler from './TaskScheduler';
 import ContentScheduler from './ContentScheduler';
 import CronTab from './CronTab';
 import { Spinner } from './LoadingStates';
@@ -8,7 +9,7 @@ import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
 
-type ScheduleTab = 'calendar' | 'scheduler' | 'crons';
+type ScheduleTab = 'calendar' | 'tasks' | 'scheduler' | 'crons';
 
 export default function SchedulePanel() {
   const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
@@ -65,25 +66,36 @@ export default function SchedulePanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Tab Header */}
-      <div className="border-b border-clawd-border bg-clawd-surface">
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center px-4">
           <button
             onClick={() => setActiveTab('calendar')}
             className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
               activeTab === 'calendar'
-                ? 'text-clawd-accent border-clawd-accent'
-                : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
+                ? 'text-mission-control-accent border-mission-control-accent'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
             }`}
           >
             <Calendar size={16} />
             Calendar
           </button>
           <button
+            onClick={() => setActiveTab('tasks')}
+            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+              activeTab === 'tasks'
+                ? 'text-mission-control-accent border-mission-control-accent'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
+          >
+            <ListTodo size={16} />
+            Task Scheduler
+          </button>
+          <button
             onClick={() => setActiveTab('scheduler')}
             className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
               activeTab === 'scheduler'
-                ? 'text-clawd-accent border-clawd-accent'
-                : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
+                ? 'text-mission-control-accent border-mission-control-accent'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
             }`}
           >
             <Clock size={16} />
@@ -93,8 +105,8 @@ export default function SchedulePanel() {
             onClick={() => setActiveTab('crons')}
             className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
               activeTab === 'crons'
-                ? 'text-clawd-accent border-clawd-accent'
-                : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
+                ? 'text-mission-control-accent border-mission-control-accent'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
             }`}
           >
             <RefreshCw size={16} />
@@ -107,6 +119,7 @@ export default function SchedulePanel() {
       <div className="flex-1 overflow-hidden">
         <ErrorBoundary componentName={`Schedule-${activeTab}`}>
           {activeTab === 'calendar' && <EpicCalendar />}
+          {activeTab === 'tasks' && <TaskScheduler />}
           {activeTab === 'scheduler' && <ContentScheduler />}
           {activeTab === 'crons' && <CronTab />}
         </ErrorBoundary>

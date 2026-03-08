@@ -5,7 +5,6 @@ import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import ArtifactPanel from './ArtifactPanel';
-import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { useStore } from '../store/store';
@@ -28,7 +27,7 @@ interface ChatRoomViewProps {
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
 
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
-  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents, deleteRoom } = useChatRoomStore();
+  const { rooms, addMessage, updateMessage, updateRoomAgents, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
@@ -68,6 +67,13 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [stopped, setStopped] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const turnResponseCountRef = useRef(0);
+
+  // Load message history from DB when opening a room (only if empty)
+  useEffect(() => {
+    if (room && room.messages.length === 0) {
+      loadMessages(roomId);
+    }
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -134,7 +140,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else if (att.type.startsWith('image/')) {
         try {
-          const uploadDir = '/Users/worker/froggo/uploads';
+          const uploadDir = '/Users/worker/mission-control/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           console.warn('Not implemented: fs.writeBase64 for image upload', tempPath);
           parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
@@ -143,7 +149,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else if (att.type === 'application/pdf') {
         try {
-          const uploadDir = '/Users/worker/froggo/uploads';
+          const uploadDir = '/Users/worker/mission-control/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
           parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
@@ -152,7 +158,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else {
         try {
-          const uploadDir = '/Users/worker/froggo/uploads';
+          const uploadDir = '/Users/worker/mission-control/uploads';
           const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           console.warn('Not implemented: fs.writeBase64 for file upload', tempPath);
           parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
@@ -191,7 +197,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setStopped(false);
     setLoading(true);
     const mentioned = extractMentions(lastUserMsg.content, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('froggo') ? ['froggo'] : room.agents);
+    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
     await routeToAgents(targets, lastUserMsg.content);
   };
 
@@ -245,7 +251,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       ? "1. You can use tools when needed, but keep explanations brief (1-3 sentences)."
       : "1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.";
 
-    const coordinatorRule = forAgent === 'froggo'
+    const coordinatorRule = forAgent === 'mission-control'
       ? `\n6. You are the COORDINATOR. You can @tag any agent to pull them into conversation or assign work.
 7. To END a conversation thread, respond WITHOUT any @tags — this signals the discussion is done.
 8. If agents are going back and forth unproductively, rein them in with a final statement (no @tags).`
@@ -259,7 +265,8 @@ ${toolRule}
 2. Do NOT repeat, echo, or paraphrase what other agents said. Add YOUR OWN unique perspective only.
 3. If you have nothing new to add, just say so briefly.
 4. Do NOT copy another agent's message structure or content.
-5. Only @tag another agent if you have a QUESTION for them. Do NOT @tag when making statements or acknowledgments — untagged responses end the thread.${coordinatorRule}
+5. Only @tag another agent if you have a QUESTION for them. Do NOT @tag when making statements or acknowledgments — untagged responses end the thread.
+6. ARTIFACTS: For any code, files, scripts, or structured data — wrap them in fenced code blocks (\`\`\`language ... \`\`\`). They will be automatically extracted to the Artifact Canvas for the user to view, copy, and download. Use \`\`\`mermaid for diagrams and \`\`\`json for data.${coordinatorRule}
 
 ## Conversation so far:
 ${lines.join('\n')}
@@ -271,7 +278,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
    *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
   const sendToAgent = (agentId: string, prompt: string): Promise<string> => {
     return new Promise<string>((resolve) => {
-      const msgId = `rm-${Date.now()}-${agentId}`;
+      const msgId = `rm-${Date.now()}-${agentId}-${Math.random().toString(36).slice(2, 6)}`;
       let content = '';
       let settled = false;
 
@@ -315,40 +322,62 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       // Use IIFE to avoid async Promise executor
       (async () => {
         try {
-          const sessionKey = `agent:${agentId}:room:${roomId}`;
+          abortControllerRef.current = new AbortController();
+          const response = await fetch(`/api/agents/${agentId}/stream`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: prompt, model: 'claude-sonnet-4-6', sessionKey: `${roomId}-${agentId}` }),
+            signal: abortControllerRef.current?.signal,
+          });
 
-          await gateway.sendChatWithCallbacks(prompt, sessionKey, {
-          onDelta: (delta) => {
-            content += delta;
-            pendingContentRef.current = content;
-            updateMessage(roomId, msgId, { content });
-          },
-          onMessage: (msg) => {
-            content = msg;
-            pendingContentRef.current = content;
-            updateMessage(roomId, msgId, { content });
-          },
-          onEnd: () => {
-            clearTimeout(timer);
-            // Finalize message
-            if (!content || !content.trim()) {
-              updateMessage(roomId, msgId, { streaming: false, content: '' });
-            } else {
-              updateMessage(roomId, msgId, { streaming: false, content });
+          if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const parts = buf.split('\n\n');
+            buf = parts.pop() ?? '';
+            for (const part of parts) {
+              if (!part.startsWith('data: ')) continue;
+              const raw = part.slice(6).trim();
+              if (raw === '[DONE]') { clearTimeout(timer); settle(); return; }
+              try {
+                const evt = JSON.parse(raw);
+                if (evt.type === 'assistant' && evt.message?.content) {
+                  for (const block of evt.message.content) {
+                    if (block.type === 'text') {
+                      content += block.text;
+                      pendingContentRef.current = content;
+                      updateMessage(roomId, msgId, { content });
+                    }
+                  }
+                } else if (evt.type === 'result' && evt.result) {
+                  content = evt.result;
+                  pendingContentRef.current = content;
+                  updateMessage(roomId, msgId, { content });
+                } else if (evt.type === 'error' && evt.text) {
+                  content = evt.text;
+                  pendingContentRef.current = content;
+                } else if (evt.type === 'timeout') {
+                  content = 'Response timed out — please try again.';
+                  pendingContentRef.current = content;
+                } else if (evt.type === 'done') {
+                  clearTimeout(timer);
+                  updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+                  settle();
+                  return;
+                }
+              } catch { /* ignore parse errors */ }
             }
-            settle();
-          },
-          onError: (error) => {
-            clearTimeout(timer);
-            updateMessage(roomId, msgId, {
-              content: `Error: ${error}`,
-              streaming: false,
-            });
-            settle();
-          },
-        });
-
-        setSessionKey(roomId, agentId, sessionKey);
+          }
+          clearTimeout(timer);
+          updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+          settle();
         } catch (e: unknown) {
           clearTimeout(timer);
           updateMessage(roomId, msgId, {
@@ -381,10 +410,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       if (responseContent?.trim()) {
         const mentioned = extractMentions(responseContent, room.agents);
         const targets = mentioned.filter(id => id !== next.agentId);
-        
-        if (targets.length > 0) {
-          console.log(`[ChatRoom] ${next.agentId} mentioned:`, targets.map(id => agentName(id)));
-        }
         
         for (const target of targets) {
           queue.push({ agentId: target, content: responseContent, fromAgent: next.agentId });
@@ -429,9 +454,9 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     setAttachments([]);
 
     // Determine which agents to address
-    // When no @mention, only route to froggo (orchestrator) to avoid waking all agents
+    // When no @mention, only route to mission-control (orchestrator) to avoid waking all agents
     const mentioned = extractMentions(text, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('froggo') ? ['froggo'] : room.agents);
+    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
 
     setStopped(false);
     setLoading(true);
@@ -484,7 +509,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
   if (!room) {
     return (
-      <div className="h-full flex items-center justify-center text-clawd-text-dim">
+      <div className="h-full flex items-center justify-center text-mission-control-text-dim">
         <p>Room not found</p>
       </div>
     );
@@ -514,11 +539,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         <div className={`p-4 border-b flex items-center gap-3 ${
           isTeamMeeting
             ? 'bg-warning/10 border-amber-500/30'
-            : 'bg-clawd-surface border-clawd-border'
+            : 'bg-mission-control-surface border-mission-control-border'
         }`}>
         <button
           onClick={onBack}
-          className="p-2 rounded-lg hover:bg-clawd-border transition-colors"
+          className="p-2 rounded-lg hover:bg-mission-control-border transition-colors"
           title="Back to chat"
         >
           <ArrowLeft size={18} />
@@ -539,7 +564,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-amber-500' : ''}`}>
               {isTeamMeeting && '🏢 '}{room.name}
             </h2>
-            <p className="text-xs text-clawd-text-dim">
+            <p className="text-xs text-mission-control-text-dim">
               {isTeamMeeting
                 ? `All ${room.agents.length} agents present`
                 : `You + ${room.agents.map(id => agentName(id)).join(', ')}`
@@ -555,7 +580,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border border-white/80 dark:border-white" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-clawd-surface text-clawd-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-mission-control-surface text-mission-control-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
               </div>
@@ -585,7 +610,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           {/* Manage members */}
           <button
             onClick={() => setShowManageMembers(true)}
-            className="p-2 rounded-lg text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
             title="Manage members"
           >
             <UserPlus size={18} />
@@ -596,7 +621,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             className={`p-2 rounded-lg transition-colors ${
               voiceMode
                 ? 'bg-success-subtle text-success ring-1 ring-success/50'
-                : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
             }`}
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
           >
@@ -617,7 +642,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             className={`p-2 rounded-lg transition-colors ${
               isTeamMeeting
                 ? 'text-amber-400 hover:text-error hover:bg-error-subtle'
-                : 'text-clawd-text-dim hover:text-error hover:bg-error-subtle'
+                : 'text-mission-control-text-dim hover:text-error hover:bg-error-subtle'
             }`}
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
           >
@@ -634,7 +659,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {room.messages.length === 0 ? (
-          <div className="text-center py-16 text-clawd-text-dim">
+          <div className="text-center py-16 text-mission-control-text-dim">
             {isTeamMeeting ? (
               <>
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
@@ -646,7 +671,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 </p>
                 <div className="flex flex-wrap justify-center gap-2 mb-6 max-w-md mx-auto">
                   {room.agents.map(id => (
-                    <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-clawd-surface border border-clawd-border rounded-full text-xs">
+                    <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-surface border border-mission-control-border rounded-full text-xs">
                       <AgentAvatar agentId={id} size="xs" />
                       <span>{agentName(id)}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-success" />
@@ -654,7 +679,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   ))}
                 </div>
                 <p className="text-xs mb-4">
-                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone, or <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
+                  Use <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone, or <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
                   {["@all Let's discuss the sprint plan", "@all Team status update", "@Chief What are the priorities?"].map((q, i) => (
@@ -676,8 +701,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
                 <p className="text-xs">
-                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
-                  or <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
+                  Use <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
+                  or <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
               </>
             )}
@@ -704,7 +729,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 {/* Avatar */}
                 <div className={`flex-shrink-0 w-9 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-9 h-9 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-9 h-9 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold">
                       K
                     </div>
                   ) : msg.agentId ? (
@@ -716,7 +741,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] min-w-[100px]`}>
                   {showAvatar && (
                     <div className={`text-xs font-medium mb-1 px-1 ${
-                      isUser ? 'text-clawd-accent' : (theme?.text || 'text-clawd-text-dim')
+                      isUser ? 'text-mission-control-accent' : (theme?.text || 'text-mission-control-text-dim')
                     }`}>
                       {isUser ? 'Kevin' : (msg.agentId ? agentName(msg.agentId) : 'Agent')}
                     </div>
@@ -724,23 +749,26 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <div
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
-                        ? 'bg-clawd-accent/50 text-white rounded-tr-sm'
-                        : `bg-clawd-surface/90 backdrop-blur-sm border ${theme?.border || 'border-clawd-border'} rounded-tl-sm shadow-sm`
+                        ? 'bg-mission-control-accent/50 text-white rounded-tr-sm'
+                        : `bg-mission-control-surface/90 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
                       <div className="flex items-center gap-2 py-1">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-sm text-clawd-text-dim">
+                        <span className="text-sm text-mission-control-text-dim">
                           {msg.agentId ? agentName(msg.agentId) : 'Agent'} is thinking...
                         </span>
                       </div>
                     ) : !isUser ? (
-                      <MarkdownMessage content={msg.content} />
+                      <MarkdownMessage
+                        content={msg.content}
+                        mentions={{ ids: room.agents, names: Object.fromEntries(room.agents.map(id => [id, agentName(id)])) }}
+                      />
                     ) : (
                       <MentionText 
                         text={msg.content} 
@@ -750,12 +778,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     )}
                     {msg.streaming && msg.content && (
                       <div className="flex items-center gap-1.5 mt-2 opacity-60">
-                        <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-pulse" />
-                        <span className="text-xs text-clawd-text-dim">typing...</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-pulse" />
+                        <span className="text-xs text-mission-control-text-dim">typing...</span>
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-clawd-text-dim mt-1 px-1">{time}</span>
+                  <span className="text-xs text-mission-control-text-dim mt-1 px-1">{time}</span>
                 </div>
               </div>
             );
@@ -765,11 +793,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         {/* Typing indicators for agents */}
         {typingAgents.size > 0 && !room.messages.some(m => m.streaming) && (
-          <div className="flex items-center gap-2 text-sm text-clawd-text-dim pl-12">
+          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim pl-12">
             <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" />
+              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
             {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
           </div>
@@ -780,7 +808,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Input */}
       <div
-        className="p-4 border-t border-clawd-border bg-clawd-surface relative"
+        className="p-4 border-t border-mission-control-border bg-mission-control-surface relative"
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
         role="button"
@@ -814,14 +842,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               return (
                 <div key={att.id} className="relative group">
                   {isImage && att.dataUrl ? (
-                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-clawd-border">
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-mission-control-border">
                       <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg">
-                      <Icon size={16} className="text-clawd-accent" />
+                    <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                      <Icon size={16} className="text-mission-control-accent" />
                       <span className="text-sm truncate max-w-32">{att.name}</span>
-                      <span className="text-xs text-clawd-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
+                      <span className="text-xs text-mission-control-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
                     </div>
                   )}
                   <button
@@ -838,7 +866,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         {/* @ Mention autocomplete */}
         {showMentions && filteredAgents.length > 0 && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl overflow-hidden">
             {filteredAgents.map(id => {
               // Special case for @all
               if (id === 'all') {
@@ -846,13 +874,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <button
                     key="all"
                     onClick={() => insertMention('all')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-clawd-bg transition-colors border-b border-clawd-border"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border"
                   >
-                    <div className="w-8 h-8 rounded-full bg-clawd-accent/20 flex items-center justify-center">
-                      <UsersRound size={16} className="text-clawd-accent" />
+                    <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
+                      <UsersRound size={16} className="text-mission-control-accent" />
                     </div>
-                    <span className="font-medium text-sm text-clawd-accent">all</span>
-                    <span className="text-xs text-clawd-text-dim">Notify all {room.agents.length} agents</span>
+                    <span className="font-medium text-sm text-mission-control-accent">all</span>
+                    <span className="text-xs text-mission-control-text-dim">Notify all {room.agents.length} agents</span>
                   </button>
                 );
               }
@@ -863,11 +891,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 <button
                   key={id}
                   onClick={() => insertMention(id)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-clawd-bg transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors"
                 >
                   <AgentAvatar agentId={id} size="sm" />
                   <span className={`font-medium text-sm ${theme.text}`}>{agent?.name || id}</span>
-                  <span className="text-xs text-clawd-text-dim">{agent?.description}</span>
+                  <span className="text-xs text-mission-control-text-dim">{agent?.description}</span>
                 </button>
               );
             })}
@@ -877,7 +905,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         <div className="flex items-center gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors self-stretch flex items-center"
+            className="p-3 rounded-xl bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors self-stretch flex items-center"
             title="Attach file"
           >
             <Paperclip size={20} />
@@ -885,7 +913,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           <button
             onClick={() => setShowMentions(!showMentions)}
             className={`p-3 rounded-xl transition-all self-stretch flex items-center ${
-              showMentions ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              showMentions ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title="Mention an agent"
           >
@@ -900,14 +928,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               onKeyDown={handleKeyDown}
               placeholder={`Message the room... (use @name to mention)`}
               rows={1}
-              className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
             />
           </div>
 
           <button
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
+            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
           >
             <Send size={20} />
           </button>
@@ -926,14 +954,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           aria-label="Close member management"
         >
           <div 
-            className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" 
             onClick={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
             role="presentation"
           >
-            <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+            <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <button onClick={() => setShowManageMembers(false)} className="text-clawd-text-dim hover:text-clawd-text text-lg">✕</button>
+              <button onClick={() => setShowManageMembers(false)} className="text-mission-control-text-dim hover:text-mission-control-text text-lg">✕</button>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -949,22 +977,22 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       if (updated.length > 0) updateRoomAgents(roomId, updated);
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                      inRoom ? 'bg-clawd-accent/10 ring-1 ring-clawd-accent/30' : 'hover:bg-clawd-bg'
+                      inRoom ? 'bg-mission-control-accent/10 ring-1 ring-mission-control-accent/30' : 'hover:bg-mission-control-bg'
                     }`}
                   >
                     <AgentAvatar agentId={agent.id} size="sm" />
                     <div className="flex-1 text-left">
-                      <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-clawd-text-dim'}`}>{agent.name}</span>
-                      <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
+                      <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-mission-control-text-dim'}`}>{agent.name}</span>
+                      <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success-subtle text-success' : 'bg-clawd-bg text-clawd-text-dim'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success-subtle text-success' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
                       {inRoom ? 'In room' : 'Add'}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <div className="p-3 border-t border-clawd-border text-center text-xs text-clawd-text-dim">
+            <div className="p-3 border-t border-mission-control-border text-center text-xs text-mission-control-text-dim">
               {room.agents.length} agent{room.agents.length !== 1 ? 's' : ''} in room
             </div>
           </div>

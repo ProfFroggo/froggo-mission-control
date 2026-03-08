@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Froggo Tiered Approval Hook (PreToolUse)
+ * Mission Control Tiered Approval Hook (PreToolUse)
  *
  * Reads: { tool_name, tool_input } from stdin
  * Outputs: { decision: "approve" | "block", reason?: string }
@@ -15,7 +15,7 @@
 const path = require('path');
 const os = require('os');
 
-const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'froggo/data/froggo.db');
+const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'mission-control/data/mission-control.db');
 
 // Lazy-load better-sqlite3 — it may not be in PATH from hook context
 let db = null;
@@ -70,12 +70,12 @@ function createApprovalRecord(toolName, toolInput) {
 // Tier 0: Always auto-approve (reads, tests, MCP reads)
 const TIER_0_TOOLS = new Set([
   'Read', 'Glob', 'Grep', 'LS',
-  'mcp__froggo_db__task_list',
-  'mcp__froggo_db__approval_check',
-  'mcp__froggo_db__inbox_list',
-  'mcp__froggo_db__agent_status',
-  'mcp__froggo_db__chat_read',
-  'mcp__froggo_db__chat_rooms_list',
+  'mcp__mission-control_db__task_list',
+  'mcp__mission-control_db__approval_check',
+  'mcp__mission-control_db__inbox_list',
+  'mcp__mission-control_db__agent_status',
+  'mcp__mission-control_db__chat_read',
+  'mcp__mission-control_db__chat_rooms_list',
   'mcp__memory__memory_search',
   'mcp__memory__memory_recall',
 ]);
@@ -118,16 +118,16 @@ function getTier(toolName, toolInput) {
   if (['Edit', 'Write', 'MultiEdit'].includes(toolName)) return 1;
 
   // MCP writes
-  if (toolName === 'mcp__froggo_db__task_update') {
+  if (toolName === 'mcp__mission-control_db__task_update') {
     // Tier 2 if moving to 'done'
     const status = toolInput?.status;
     if (status === 'done') return 2;
     return 1;
   }
-  if (toolName === 'mcp__froggo_db__task_create') return 1;
-  if (toolName === 'mcp__froggo_db__task_add_activity') return 0;
-  if (toolName === 'mcp__froggo_db__approval_create') return 1;
-  if (toolName === 'mcp__froggo_db__chat_post') return 1;
+  if (toolName === 'mcp__mission-control_db__task_create') return 1;
+  if (toolName === 'mcp__mission-control_db__task_add_activity') return 0;
+  if (toolName === 'mcp__mission-control_db__approval_create') return 1;
+  if (toolName === 'mcp__mission-control_db__chat_post') return 1;
   if (toolName === 'mcp__memory__memory_write') return 1;
 
   // Default: Tier 1

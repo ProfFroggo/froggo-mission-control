@@ -11,18 +11,18 @@ import manifest from './module.json';
 
 const KanbanPanel = lazy(() => import('../../components/Kanban'));
 
+ViewRegistry.register({
+  id: 'kanban',
+  label: 'Tasks',
+  icon: Kanban,
+  component: KanbanPanel,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'kanban',
-      label: 'Tasks',
-      icon: Kanban,
-      component: KanbanPanel,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);

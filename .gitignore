@@ -24,6 +24,7 @@ coverage/
 
 # Build artifacts
 tsconfig.node.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # ML models (download separately)
 resources/models/
@@ -31,3 +32,6 @@ resources/models/
 # Memory (internal)
 memory/
 .planning/
+
+# Machine-specific MCP config (use .mcp.json.example as template)
+.mcp.json

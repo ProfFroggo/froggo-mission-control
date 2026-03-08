@@ -7,13 +7,13 @@ import LibrarySkillsTab from './LibrarySkillsTab';
 type LibraryTab = 'files' | 'templates' | 'skills';
 
 const tabs: Array<{ id: LibraryTab; label: string; icon: any }> = [
-  { id: 'skills', label: 'Skills', icon: Lightbulb },
-  { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'files', label: 'Files', icon: FolderOpen },
+  { id: 'templates', label: 'Templates', icon: FileText },
+  { id: 'skills', label: 'Skills', icon: Lightbulb },
 ];
 
 export default function LibraryPanel() {
-  const [activeTab, setActiveTab] = useState<LibraryTab>('templates');
+  const [activeTab, setActiveTab] = useState<LibraryTab>('files');
   const [navigatePath, setNavigatePath] = useState<string | null>(null);
 
   // Check for navigation path from HRSection or other sources
@@ -27,17 +27,17 @@ export default function LibraryPanel() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-clawd-bg">
+    <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header with Tabs */}
-      <div className="border-b border-clawd-border bg-clawd-surface">
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="p-6 pb-0">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-clawd-accent/20 rounded-xl">
-              <FolderOpen size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <FolderOpen size={24} className="text-mission-control-accent" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Library</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 Skills, templates, files, and resources
               </p>
             </div>
@@ -56,8 +56,8 @@ export default function LibraryPanel() {
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
                 activeTab === id
-                  ? 'border-clawd-accent text-clawd-accent'
-                  : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <Icon size={16} />

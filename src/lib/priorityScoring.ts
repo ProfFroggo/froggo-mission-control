@@ -2,7 +2,7 @@
  * Priority Scoring System for Inbox
  * 
  * Scores messages based on:
- * - Sender importance (from froggo-db VIP system or metadata)
+ * - Sender importance (from mission-control-db VIP system or metadata)
  * - Urgency keywords in title/content
  * - Time sensitivity (age of message)
  * - Message type priority
@@ -68,7 +68,7 @@ const URGENCY_KEYWORDS = {
   'time sensitive': 12,
   'quick': 8,
   'waiting': 8,
-  'blocked': 12,
+  'human-review': 12,
   
   // Questions/requests (5-8 points)
   'question': 5,
@@ -86,7 +86,7 @@ const URGENCY_KEYWORDS = {
 };
 
 // Important senders (name/identifier → base score)
-// Important sender roles (generic — specific people are configured via VIP system in froggo-db)
+// Important sender roles (generic — specific people are configured via VIP system in mission-control-db)
 const IMPORTANT_SENDERS: Record<string, number> = {
   'boss': 20,
   'manager': 15,

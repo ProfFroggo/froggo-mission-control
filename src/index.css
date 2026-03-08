@@ -14,6 +14,9 @@
 /* Import component patterns */
 @import './component-patterns.css';
 
+/* Import global form element styles — dark theme for inputs/selects/textareas */
+@import './forms.css';
+
 /* Import dashboard redesign styles */
 @import './dashboard-redesign.css';
 
@@ -23,18 +26,18 @@
 
 /* Theme CSS Variables */
 :root {
-  --clawd-bg: #0a0a0a;
-  --clawd-surface: #141414;
-  --clawd-border: #2a2a2a; /* Pure gray, no purple/blue tint */
-  --clawd-text: #fafafa;
-  --clawd-text-dim: #a1a1aa;
-  --clawd-accent: #22c55e;
-  --clawd-accent-dim: #16a34a;
-  --clawd-bg-alt: #1a1a1a;   /* Alternate bg: between bg (#0a0a0a) and surface (#141414), used for input backgrounds */
-  --clawd-bg0: #0a0a0a;      /* Deepest background, same as --clawd-bg, used for status dots and inactive states */
-  --clawd-card: #141414;     /* Card background, same as --clawd-surface, used for message bubbles and cards */
-  --clawd-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --clawd-font-size: 14px;
+  --mission-control-bg: #0a0a0a;
+  --mission-control-surface: #141414;
+  --mission-control-border: #2a2a2a; /* Pure gray, no purple/blue tint */
+  --mission-control-text: #fafafa;
+  --mission-control-text-dim: #a1a1aa;
+  --mission-control-accent: #22c55e;
+  --mission-control-accent-dim: #16a34a;
+  --mission-control-bg-alt: #1a1a1a;   /* Alternate bg: between bg (#0a0a0a) and surface (#141414), used for input backgrounds */
+  --mission-control-bg0: #0a0a0a;      /* Deepest background, same as --mission-control-bg, used for status dots and inactive states */
+  --mission-control-card: #141414;     /* Card background, same as --mission-control-surface, used for message bubbles and cards */
+  --mission-control-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mission-control-font-size: 14px;
   
   /* Status colors (theme-independent) */
   --color-success: #22c55e;
@@ -59,14 +62,14 @@
 
 /* Light theme */
 :root.light {
-  --clawd-bg: #fafafa;
-  --clawd-surface: #ffffff;
-  --clawd-border: #e4e4e7;
-  --clawd-text: #18181b;
-  --clawd-text-dim: #52525b; /* Improved from #71717a for better contrast (7.8:1 vs 5.9:1) */
-  --clawd-bg-alt: #f4f4f5;   /* Light alternate bg: slightly darker than white for input backgrounds */
-  --clawd-bg0: #fafafa;      /* Deepest background in light mode */
-  --clawd-card: #ffffff;     /* Card background in light mode */
+  --mission-control-bg: #fafafa;
+  --mission-control-surface: #ffffff;
+  --mission-control-border: #e4e4e7;
+  --mission-control-text: #18181b;
+  --mission-control-text-dim: #52525b; /* Improved from #71717a for better contrast (7.8:1 vs 5.9:1) */
+  --mission-control-bg-alt: #f4f4f5;   /* Light alternate bg: slightly darker than white for input backgrounds */
+  --mission-control-bg0: #fafafa;      /* Deepest background in light mode */
+  --mission-control-card: #ffffff;     /* Card background in light mode */
 }
 
 * {
@@ -77,8 +80,10 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: var(--clawd-font);
-  font-size: var(--clawd-font-size);
+  font-family: var(--mission-control-font);
+  font-size: var(--mission-control-font-size);
+  background-color: var(--mission-control-bg);
+  color: var(--mission-control-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -94,12 +99,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--clawd-border);
+  background: var(--mission-control-border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--clawd-border) 80%, var(--clawd-text));
+  background: color-mix(in srgb, var(--mission-control-border) 80%, var(--mission-control-text));
 }
 
 /* Hide scrollbar utility */
@@ -114,24 +119,24 @@ body {
 
 /* Glassmorphism styles */
 .glass {
-  background: color-mix(in srgb, var(--clawd-surface) 80%, transparent);
+  background: color-mix(in srgb, var(--mission-control-surface) 80%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--clawd-border);
+  border: 1px solid var(--mission-control-border);
 }
 
 .glass-dark {
-  background: color-mix(in srgb, var(--clawd-bg) 40%, transparent);
+  background: color-mix(in srgb, var(--mission-control-bg) 40%, transparent);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid color-mix(in srgb, var(--clawd-border) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
 }
 
 .glass-card {
-  background: color-mix(in srgb, var(--clawd-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--mission-control-surface) 70%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--clawd-border) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
 }
 
 /* Dark theme modal */
@@ -140,7 +145,7 @@ body {
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid rgba(38, 38, 38, 0.3);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--clawd-border-glass);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--mission-control-border-glass);
 }
 
 /* Light theme modal */
@@ -238,7 +243,7 @@ body {
      ============================================ */
   
   .card {
-    @apply bg-clawd-surface border border-clawd-border rounded-xl;
+    @apply bg-mission-control-surface border border-mission-control-border rounded-xl;
     @apply shadow-card transition-all duration-200;
     @apply p-4; /* Standard card padding */
   }
@@ -248,7 +253,7 @@ body {
   }
   
   .card-interactive {
-    @apply bg-clawd-surface border border-clawd-border rounded-xl;
+    @apply bg-mission-control-surface border border-mission-control-border rounded-xl;
     @apply shadow-card transition-all duration-200;
     @apply hover:shadow-card-hover hover:-translate-y-0.5;
     @apply cursor-pointer;
@@ -256,40 +261,40 @@ body {
   }
   
   .card-sm {
-    @apply bg-clawd-surface border border-clawd-border rounded-lg;
+    @apply bg-mission-control-surface border border-mission-control-border rounded-lg;
     @apply shadow-card transition-all duration-200;
     @apply p-3; /* Small card padding */
   }
   
   .card-lg {
-    @apply bg-clawd-surface border border-clawd-border rounded-2xl;
+    @apply bg-mission-control-surface border border-mission-control-border rounded-2xl;
     @apply shadow-card-lg;
     @apply p-6; /* Large card padding */
   }
   
   /* Theme-aware utility classes */
   .text-muted {
-    @apply text-clawd-text-dim;
+    @apply text-mission-control-text-dim;
   }
   
   .bg-subtle {
-    background: color-mix(in srgb, var(--clawd-surface) 50%, var(--clawd-bg));
+    background: color-mix(in srgb, var(--mission-control-surface) 50%, var(--mission-control-bg));
   }
   
   .bg-hover {
-    background: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
+    background: color-mix(in srgb, var(--mission-control-surface) 90%, var(--mission-control-text));
   }
   
   .border-subtle {
-    @apply border-clawd-border;
+    @apply border-mission-control-border;
   }
   
   .accent-bg-subtle {
-    background: color-mix(in srgb, var(--clawd-accent) 10%, transparent);
+    background: color-mix(in srgb, var(--mission-control-accent) 10%, transparent);
   }
   
   .accent-bg {
-    background: color-mix(in srgb, var(--clawd-accent) 20%, transparent);
+    background: color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
   }
   
   /* ============================================
@@ -325,14 +330,14 @@ body {
   }
   
   .btn-primary {
-    @apply bg-clawd-accent text-white rounded-xl;
-    @apply hover:bg-clawd-accent-dim hover:shadow-glow;
+    @apply bg-mission-control-accent text-white rounded-xl;
+    @apply hover:bg-mission-control-accent-dim hover:shadow-glow;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
   }
 
   .btn-secondary {
-    @apply bg-clawd-border text-clawd-text rounded-xl;
+    @apply bg-mission-control-border text-mission-control-text rounded-xl;
     @apply hover:brightness-125;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
@@ -364,7 +369,7 @@ body {
   .voice-orb-pulse::after {
     content: '';
     @apply absolute inset-0 rounded-full;
-    @apply border-2 border-clawd-accent;
+    @apply border-2 border-mission-control-accent;
     animation: pulse-ring 2s ease-out infinite;
   }
   
@@ -429,19 +434,19 @@ body {
   /* Icon Buttons - Consistent sizing and centering */
   .icon-btn {
     @apply inline-flex items-center justify-center p-2 rounded-lg;
-    @apply transition-all duration-150 hover:bg-clawd-border;
+    @apply transition-all duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
   .icon-btn-sm {
     @apply inline-flex items-center justify-center p-1.5 rounded-lg;
-    @apply transition-all duration-150 hover:bg-clawd-border;
+    @apply transition-all duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
   .icon-btn-lg {
     @apply inline-flex items-center justify-center p-3 rounded-lg;
-    @apply transition-all duration-150 hover:bg-clawd-border;
+    @apply transition-all duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
@@ -563,8 +568,8 @@ body {
 
 /* Search result highlighting */
 mark {
-  background-color: color-mix(in srgb, var(--clawd-accent) 30%, transparent);
-  color: var(--clawd-accent);
+  background-color: color-mix(in srgb, var(--mission-control-accent) 30%, transparent);
+  color: var(--mission-control-accent);
   font-weight: 500;
   padding: 0 2px;
   border-radius: 2px;
@@ -595,8 +600,8 @@ mark {
 }
 
 .react-grid-item > .react-resizable-handle::after {
-  border-right-color: var(--clawd-border-glass-hover) !important;
-  border-bottom-color: var(--clawd-border-glass-hover) !important;
+  border-right-color: var(--mission-control-border-glass-hover) !important;
+  border-bottom-color: var(--mission-control-border-glass-hover) !important;
 }
 
 .react-resizable-handle {

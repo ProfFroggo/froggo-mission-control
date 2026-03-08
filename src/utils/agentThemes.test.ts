@@ -15,7 +15,7 @@ import {
 describe('agentThemes utilities', () => {
   describe('agentThemes', () => {
     it('should have themes for known agents', () => {
-      expect(agentThemes['froggo']).toBeDefined();
+      expect(agentThemes['mission-control']).toBeDefined();
       expect(agentThemes['coder']).toBeDefined();
       expect(agentThemes['researcher']).toBeDefined();
       expect(agentThemes['writer']).toBeDefined();
@@ -26,7 +26,7 @@ describe('agentThemes utilities', () => {
     });
 
     it('should have required properties for each theme', () => {
-      const theme = agentThemes['froggo'];
+      const theme = agentThemes['mission-control'];
       expect(theme).toHaveProperty('color');
       expect(theme).toHaveProperty('border');
       expect(theme).toHaveProperty('bg');
@@ -37,14 +37,14 @@ describe('agentThemes utilities', () => {
     });
 
     it('should have unique colors for each agent', () => {
-      // Some agents intentionally share colors (froggo/main, social-manager/social_media_manager)
+      // Some agents intentionally share colors (mission-control/main, social-manager/social_media_manager)
       const colors = Object.values(agentThemes).map(t => t.color);
       const uniqueColors = new Set(colors);
       expect(uniqueColors.size).toBe(colors.length - 2); // 2 shared pairs
     });
 
-    it('should use green theme for froggo and main', () => {
-      expect(agentThemes['froggo'].color).toBe('#4CAF50');
+    it('should use green theme for mission-control and main', () => {
+      expect(agentThemes['mission-control'].color).toBe('#4CAF50');
       expect(agentThemes['main'].color).toBe('#4CAF50');
     });
   });
@@ -52,10 +52,10 @@ describe('agentThemes utilities', () => {
   describe('defaultTheme', () => {
     it('should have fallback properties', () => {
       expect(defaultTheme.color).toBe('#666');
-      expect(defaultTheme.border).toBe('border-clawd-border');
-      expect(defaultTheme.bg).toBe('bg-clawd-surface');
-      expect(defaultTheme.text).toBe('text-clawd-text-dim');
-      expect(defaultTheme.ring).toBe('ring-clawd-border');
+      expect(defaultTheme.border).toBe('border-mission-control-border');
+      expect(defaultTheme.bg).toBe('bg-mission-control-surface');
+      expect(defaultTheme.text).toBe('text-mission-control-text-dim');
+      expect(defaultTheme.ring).toBe('ring-mission-control-border');
       expect(defaultTheme.dot).toBe('bg-gray-400');
       expect(defaultTheme.pic).toBe('');
     });
@@ -133,9 +133,9 @@ describe('agentThemes utilities', () => {
 
   describe('getAgentTheme', () => {
     it('should return hardcoded theme for known agents', () => {
-      const froggoTheme = getAgentTheme('froggo');
-      expect(froggoTheme.color).toBe('#4CAF50');
-      expect(froggoTheme.border).toBe('border-green-500/40');
+      const mission-controlTheme = getAgentTheme('mission-control');
+      expect(mission-controlTheme.color).toBe('#4CAF50');
+      expect(mission-controlTheme.border).toBe('border-green-500/40');
     });
 
     it('should return hardcoded theme for case-insensitive known agents', () => {
@@ -162,7 +162,7 @@ describe('agentThemes utilities', () => {
 
   describe('getAgentColor', () => {
     it('should return color hex for known agent', () => {
-      const color = getAgentColor('froggo');
+      const color = getAgentColor('mission-control');
       expect(color).toBe('#4CAF50');
     });
 
@@ -192,7 +192,7 @@ describe('agentThemes utilities', () => {
     it('should have unique pictures for each agent', () => {
       const pics = Object.values(agentThemes).map(t => t.pic);
       const uniquePics = new Set(pics);
-      // froggo and main share the same pic
+      // mission-control and main share the same pic
       expect(uniquePics.size).toBe(pics.length - 1);
     });
   });

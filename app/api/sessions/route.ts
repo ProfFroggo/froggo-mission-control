@@ -13,6 +13,6 @@ export async function GET() {
     return NextResponse.json(sessions);
   } catch (error) {
     console.error('GET /api/sessions error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json([]);
   }
 }

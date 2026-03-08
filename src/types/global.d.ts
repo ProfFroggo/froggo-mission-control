@@ -47,7 +47,7 @@ declare global {
   // Task Types
   // ============================================
 
-  type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'internal-review' | 'blocked' | 'human-review' | 'failed' | 'cancelled';
+  type TaskStatus = 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
   type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3';
 
   interface Task {
@@ -310,6 +310,11 @@ declare global {
       }>;
     };
     colorId?: string;
+    organizer?: string;       // organizer email
+    htmlLink?: string;        // link to event in Google Calendar
+    status?: string;
+    recurrence?: string[];
+    recurringEventId?: string;
   }
 
   interface CalendarCacheEntry {
@@ -615,7 +620,7 @@ declare global {
   }
 
   // ============================================
-  // Finance Account type (used by Window.clawdbot.finance.account.*)
+  // Finance Account type (legacy — was used by Window.clawdbot.finance.account.*)
   interface FinanceAccount {
     id: string;
     name: string;
@@ -627,7 +632,7 @@ declare global {
     updated_at: number;
   }
 
-  // Finance Recurring type (used by Window.clawdbot.finance.recurring.*)
+  // Finance Recurring type (legacy — was used by Window.clawdbot.finance.recurring.*)
   interface FinanceRecurring {
     id: string;
     account_id: string | null;
@@ -778,6 +783,7 @@ declare global {
     electron?: {
       execute: (command: string) => Promise<{ stdout?: string; stderr?: string; error?: string }>;
     };
+    /** @deprecated Legacy Electron IPC interface — not used in Next.js platform */
     clawdbot: {
       // App lifecycle events
       app: {
@@ -818,7 +824,7 @@ declare global {
       };
       // API keys (legacy)
       getOpenAIKey: () => Promise<string | null>;
-      // Task sync to froggo-db
+      // Task sync to mission-control-db
       tasks: {
         sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (taskId: string, updates: { status?: string; assignedTo?: string; reviewStatus?: string; priority?: string; title?: string; description?: string; planningNotes?: string }) => Promise<{ success: boolean; error?: string }>;
@@ -863,7 +869,7 @@ declare global {
       rejections: {
         log: (rejection: { type: string; title: string; content?: string; reason?: string }) => Promise<{ success: boolean }>;
       };
-      // Inbox (froggo-db backed)
+      // Inbox (mission-control-db backed)
       inbox: {
         list: (status?: string) => Promise<{ success: boolean; items: InboxItem[] }>;
         add: (item: { type: string; title: string; content: string; context?: string; channel?: string }) => Promise<{ success: boolean }>;
@@ -1005,7 +1011,7 @@ declare global {
         log: (args?: { agent?: string; limit?: number; since?: number }) => Promise<{ success: boolean; entries?: any[]; error?: string }>;
         budget: (agent: string) => Promise<any>;
       };
-      // Analytics (real data from froggo.db)
+      // Analytics (real data from mission-control.db)
       analytics: {
         getData: (timeRange: string) => Promise<any>;
         subtaskStats: () => Promise<any>;
@@ -1246,8 +1252,8 @@ declare global {
         expired: () => Promise<{ success: boolean; snoozes?: SnoozeEntry[]; error?: string }>;
         history: (sessionKey: string, limit?: number) => Promise<{ success: boolean; history?: SnoozeEntry[]; error?: string }>;
       };
-      // Froggo DB direct queries
-      froggo: {
+      // Mission Control DB direct queries
+      'mission-control': {
         query: (sql: string, params?: unknown[]) => Promise<{ success: boolean; rows?: unknown[]; error?: string }>;
       };
       // System notifications

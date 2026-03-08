@@ -858,7 +858,7 @@ function buildAgentTools(): GeminiTool[] {
         type: 'object',
         properties: {
           task_id: { type: 'string', description: 'Task ID' },
-          status: { type: 'string', description: 'New status', enum: ['todo', 'in-progress', 'done', 'blocked'] },
+          status: { type: 'string', description: 'New status', enum: ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] },
           priority: { type: 'string', description: 'New priority', enum: ['low', 'medium', 'high', 'critical'] },
           assigned_to: { type: 'string', description: 'New assignee' },
         },
@@ -872,7 +872,7 @@ function buildAgentTools(): GeminiTool[] {
         type: 'object',
         properties: {
           agent_id: { type: 'string', description: 'Filter by agent' },
-          status: { type: 'string', description: 'Filter by status', enum: ['todo', 'in-progress', 'done', 'blocked', 'all'] },
+          status: { type: 'string', description: 'Filter by status', enum: ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done', 'all'] },
         },
       },
     },

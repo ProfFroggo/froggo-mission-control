@@ -13,7 +13,7 @@ import { ModuleProvider } from '../../../core/ModuleContext';
 
 export default function FinanceModuleView() {
   return (
-    <ModuleProvider moduleId="froggo-finance">
+    <ModuleProvider moduleId="finance">
       <OriginalFinancePanel />
     </ModuleProvider>
   );

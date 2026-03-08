@@ -30,20 +30,20 @@ export function getChartColor(index: number): string {
 
 // Axis styling constants — uses CSS variables for theme adaptation
 export const CHART_AXIS = {
-  stroke: 'var(--clawd-text-dim)',
+  stroke: 'var(--mission-control-text-dim)',
   fontSize: 10,
 };
 
 // Grid styling constants — uses CSS variables for theme adaptation
 export const CHART_GRID = {
-  stroke: 'var(--clawd-border)',
+  stroke: 'var(--mission-control-border)',
   strokeDasharray: '3 3',
 };
 
 // Tooltip styling constants (for Recharts contentStyle prop) — uses CSS variables for theme adaptation
 export const CHART_TOOLTIP = {
-  backgroundColor: 'var(--clawd-surface)',
-  border: '1px solid var(--clawd-border)',
+  backgroundColor: 'var(--mission-control-surface)',
+  border: '1px solid var(--mission-control-border)',
   borderRadius: '8px',
-  color: 'var(--clawd-text)',
+  color: 'var(--mission-control-text)',
 };

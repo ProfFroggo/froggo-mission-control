@@ -1,15 +1,13 @@
 {
-  "id": "froggo-dev",
+  "id": "dev",
   "name": "Dev",
   "version": "1.0.0",
   "description": "Code agent dashboard for development tasks and AI-assisted coding.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Code",
   "category": "agent",
   "defaultDisabled": true,
-
   "credentials": [],
-
   "views": [
     {
       "id": "codeagent",
@@ -18,12 +16,10 @@
       "entrypoint": "./views/CodeAgentDashboard.tsx"
     }
   ],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],

@@ -19,11 +19,16 @@ export async function GET() {
       setTimeout(() => { socket.destroy(); reject(); }, 500);
     }).catch(() => {});
 
-    // Count loaded personality files
-    const { readdirSync } = await import('fs');
+    // Count agents with soul files in workspace
+    const { readdirSync, existsSync: fsExists } = await import('fs');
     const { join } = await import('path');
-    const agentsDir = join(process.cwd(), '.claude', 'agents');
-    agentCount = readdirSync(agentsDir).filter(f => f.endsWith('.md')).length;
+    const { homedir } = await import('os');
+    const agentsDir = join(homedir(), 'mission-control', 'agents');
+    if (fsExists(agentsDir)) {
+      agentCount = readdirSync(agentsDir, { withFileTypes: true })
+        .filter(e => e.isDirectory() && fsExists(join(agentsDir, e.name, 'SOUL.md')))
+        .length;
+    }
   } catch {
     // ignore
   }

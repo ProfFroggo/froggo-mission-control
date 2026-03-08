@@ -1,6 +1,6 @@
 /**
- * Voice logging service for Froggo Dashboard
- * Logs voice actions to froggo.db via the gateway API
+ * Voice logging service for Mission Control Dashboard
+ * Logs voice actions to mission-control.db via the gateway API
  */
 
 import type { AgentType } from '../lib/multiAgentVoice';

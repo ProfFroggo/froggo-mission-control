@@ -12,7 +12,7 @@
 - `tools/memory-mcp/tsconfig.json`: TypeScript config
 - `tools/memory-mcp/src/index.ts`: Standalone MCP server with StdioServerTransport
   - 3 tools: memory_search, memory_recall, memory_write
-  - VAULT_PATH env var (default: ~/froggo/memory/)
+  - VAULT_PATH env var (default: ~/mission-control/memory/)
   - QMD_BIN env var (default: qmd)
   - Uses `qmd search` / `qmd vsearch` with grep fallback if qmd not installed
   - memory_write appends to Obsidian vault markdown files

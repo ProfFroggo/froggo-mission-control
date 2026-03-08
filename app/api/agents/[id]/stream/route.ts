@@ -29,8 +29,31 @@ function readCached(cache: Map<string, CacheEntry>, path: string): string | null
 
 const CHAT_SUFFIX = `\n\n---
 You are in chat mode. Respond conversationally and stay in character.
-Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
-Artifacts: Wrap code/scripts/data in fenced code blocks.`;
+Task management: Use mcp__mission-control-db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
+Artifacts: Wrap code/scripts/data in fenced code blocks.
+
+## Agent-to-Agent Messaging
+To message another agent directly, use:
+  mcp__mission-control-db__chat_post { roomId: "agent:{target-id}", agentId: "{your-id}", content: "..." }
+This immediately wakes the target agent. Use it to delegate work, ask questions, or send results.
+Agent IDs: mission-control, coder, clara, chief, hr
+
+## Memory Protocol (mandatory)
+After EVERY message, call mcp__memory__memory_write if ANY of the following are true:
+- A task was created, updated, or discussed
+- A decision was made or a direction was set
+- A bug, gotcha, or technical insight came up
+- The user shared context, priorities, or preferences
+- You completed or planned work
+
+Write to the appropriate category:
+- decision → architectural or product decisions
+- gotcha → bugs, traps, things that went wrong
+- pattern → reusable approaches or conventions
+- daily → task progress, status updates, what was worked on
+- agent → agent-specific memory (use agent: "<your-id>")
+
+Use mcp__memory__memory_recall at the START of each conversation to load relevant context before responding.`;
 
 function buildSystemPrompt(id: string): string | null {
   const dir = join(HOME, 'mission-control', 'agents', id);
@@ -71,19 +94,25 @@ type G = typeof globalThis & { _agentSessions?: Map<string, SessionEntry> };
 const sessions: Map<string, SessionEntry> = (globalThis as G)._agentSessions
   ?? ((globalThis as G)._agentSessions = new Map());
 
-// Reap sessions inactive for 30 minutes
-setInterval(() => {
-  const cutoff = Date.now() - 30 * 60_000;
-  for (const [id, s] of sessions) {
-    if (s.lastActivity < cutoff) sessions.delete(id);
-  }
-}, 60_000).unref();
+// Reap sessions inactive for 30 minutes (singleton — guard against HMR re-registration)
+if (!(globalThis as any)._reapInterval) {
+  (globalThis as any)._reapInterval = setInterval(() => {
+    const cutoff = Date.now() - 30 * 60_000;
+    for (const [id, s] of sessions) {
+      if (s.lastActivity < cutoff) sessions.delete(id);
+    }
+  }, 60_000);
+  (globalThis as any)._reapInterval.unref();
+}
+
+const MAX_SESSION_AGE_MS = 60 * 60_000; // 1 hour — older sessions are likely expired on Anthropic's servers
 
 function loadSessionFromDb(agentId: string): SessionEntry | null {
   try {
     const row = getDb().prepare('SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?')
       .get(agentId, 'active') as { sessionId: string; lastActivity: number } | undefined;
     if (!row?.sessionId) return null;
+    if (Date.now() - row.lastActivity > MAX_SESSION_AGE_MS) return null; // expired — start fresh
     return { sessionId: row.sessionId, soulMtime: 0, lastActivity: row.lastActivity };
   } catch { return null; }
 }
@@ -102,11 +131,107 @@ function soulMtime(id: string): number {
   return existsSync(p) ? statSync(p).mtimeMs : 0;
 }
 
+// ── Agent tool permissions ───────────────────────────────────────────────────
+// Mirrors the trust-tier system in taskDispatcher.ts.
+// No --dangerously-skip-permissions — each tier explicitly states what it may use.
+// Permissions are set per-agent in the Agent Management UI (Permissions tab).
+
+const MCP_DB_TOOLS = [
+  // Claude CLI normalizes server name underscores to hyphens in tool IDs
+  'mcp__mission-control-db__task_list', 'mcp__mission-control-db__task_get',
+  'mcp__mission-control-db__task_create', 'mcp__mission-control-db__task_update',
+  'mcp__mission-control-db__task_add_activity', 'mcp__mission-control-db__task_add_attachment',
+  'mcp__mission-control-db__approval_create', 'mcp__mission-control-db__approval_check',
+  'mcp__mission-control-db__inbox_list', 'mcp__mission-control-db__agent_status',
+  'mcp__mission-control-db__chat_post', 'mcp__mission-control-db__chat_read',
+  'mcp__mission-control-db__chat_rooms_list', 'mcp__mission-control-db__subtask_create',
+  'mcp__mission-control-db__subtask_update', 'mcp__mission-control-db__schedule_create',
+  'mcp__mission-control-db__schedule_list',
+];
+const MCP_MEMORY_TOOLS = [
+  'mcp__memory__memory_search', 'mcp__memory__memory_recall',
+  'mcp__memory__memory_write', 'mcp__memory__memory_read',
+];
+const MCP_GOOGLE_TOOLS = [
+  'mcp__google-workspace__auth_clear', 'mcp__google-workspace__auth_refreshToken',
+  'mcp__google-workspace__calendar_createEvent', 'mcp__google-workspace__calendar_deleteEvent',
+  'mcp__google-workspace__calendar_findFreeTime', 'mcp__google-workspace__calendar_getEvent',
+  'mcp__google-workspace__calendar_list', 'mcp__google-workspace__calendar_listEvents',
+  'mcp__google-workspace__calendar_respondToEvent', 'mcp__google-workspace__calendar_updateEvent',
+  'mcp__google-workspace__chat_findDmByEmail', 'mcp__google-workspace__chat_findSpaceByName',
+  'mcp__google-workspace__chat_getMessages', 'mcp__google-workspace__chat_listSpaces',
+  'mcp__google-workspace__chat_listThreads', 'mcp__google-workspace__chat_sendDm',
+  'mcp__google-workspace__chat_sendMessage', 'mcp__google-workspace__chat_setUpSpace',
+  'mcp__google-workspace__docs_appendText', 'mcp__google-workspace__docs_create',
+  'mcp__google-workspace__docs_extractIdFromUrl', 'mcp__google-workspace__docs_find',
+  'mcp__google-workspace__docs_getText', 'mcp__google-workspace__docs_insertText',
+  'mcp__google-workspace__docs_move', 'mcp__google-workspace__docs_replaceText',
+  'mcp__google-workspace__drive_downloadFile', 'mcp__google-workspace__drive_findFolder',
+  'mcp__google-workspace__drive_search',
+  'mcp__google-workspace__gmail_createDraft', 'mcp__google-workspace__gmail_downloadAttachment',
+  'mcp__google-workspace__gmail_get', 'mcp__google-workspace__gmail_listLabels',
+  'mcp__google-workspace__gmail_modify', 'mcp__google-workspace__gmail_search',
+  'mcp__google-workspace__gmail_send', 'mcp__google-workspace__gmail_sendDraft',
+  'mcp__google-workspace__people_getMe', 'mcp__google-workspace__people_getUserProfile',
+  'mcp__google-workspace__sheets_find', 'mcp__google-workspace__sheets_getMetadata',
+  'mcp__google-workspace__sheets_getRange', 'mcp__google-workspace__sheets_getText',
+  'mcp__google-workspace__slides_find', 'mcp__google-workspace__slides_getMetadata',
+  'mcp__google-workspace__slides_getText',
+  'mcp__google-workspace__time_getCurrentDate', 'mcp__google-workspace__time_getCurrentTime',
+  'mcp__google-workspace__time_getTimeZone',
+];
+const BASH_SAFE_TOOLS = [
+  'Bash(npm run *)', 'Bash(npm test *)', 'Bash(npx vitest *)', 'Bash(npx playwright *)',
+  'Bash(tsc *)', 'Bash(node *)',
+  'Bash(git status)', 'Bash(git diff *)', 'Bash(git add *)', 'Bash(git commit *)',
+  'Bash(git log *)', 'Bash(git branch *)', 'Bash(git checkout *)', 'Bash(git stash *)',
+  'Bash(cat *)', 'Bash(ls *)', 'Bash(mkdir *)', 'Bash(cp *)', 'Bash(mv *)',
+  'Bash(head *)', 'Bash(tail *)', 'Bash(wc *)', 'Bash(grep *)', 'Bash(find *)',
+  'Bash(echo *)', 'Bash(qmd *)', 'Bash(sqlite3 *)', 'Bash(tmux *)',
+  'Bash(bash tools/*)', 'Bash(sh tools/*)',
+];
+const CHAT_TIER_TOOLS: Record<string, string[]> = {
+  restricted: ['Read', 'Glob', 'Grep', ...MCP_DB_TOOLS.filter(t => t !== 'mcp__mission-control_db__task_create'), 'mcp__memory__memory_search', 'mcp__memory__memory_recall', 'mcp__memory__memory_read'],
+  apprentice:  ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
+  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
+  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
+  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
+};
+const CHAT_DEFAULT_DISALLOWED = [
+  'Bash(rm -rf *)', 'Bash(sudo *)', 'Bash(curl *)', 'Bash(wget *)',
+  'Bash(git push --force *)', 'Bash(git reset --hard *)',
+  'Bash(chmod *)', 'Bash(chown *)', 'Bash(kill *)', 'Bash(pkill *)',
+];
+
+function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: string[] } {
+  let trustTier = 'apprentice';
+  let disallowed = [...CHAT_DEFAULT_DISALLOWED];
+  try {
+    const db = getDb();
+    const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(agentId) as { trust_tier?: string } | undefined;
+    trustTier = agentRow?.trust_tier ?? 'apprentice';
+    const globalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('security.disallowedTools') as { value: string } | undefined;
+    if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch { /* use default */ } }
+    const agentRow2 = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.disallowedTools`) as { value: string } | undefined;
+    if (agentRow2?.value) { try { disallowed = [...new Set([...disallowed, ...JSON.parse(agentRow2.value)])]; } catch { /* ignore */ } }
+  } catch { /* use defaults */ }
+  return { allowed: CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'], disallowed };
+}
+
 // ── Per-agent spawn lock ─────────────────────────────────────────────────────
 // Prevents duplicate concurrent streams to the same agent.
-type G2 = typeof globalThis & { _agentLocks?: Set<string> };
-const agentLocks: Set<string> = (globalThis as G2)._agentLocks
-  ?? ((globalThis as G2)._agentLocks = new Set());
+// Uses timestamps so stale locks (from HMR / crashes) auto-expire after 3 min.
+const LOCK_TTL_MS = 3 * 60_000;
+type G2 = typeof globalThis & { _agentLocks?: Map<string, number> };
+const agentLocks: Map<string, number> = (globalThis as G2)._agentLocks
+  ?? ((globalThis as G2)._agentLocks = new Map());
+
+function lockHeld(id: string): boolean {
+  const ts = agentLocks.get(id);
+  if (!ts) return false;
+  if (Date.now() - ts > LOCK_TTL_MS) { agentLocks.delete(id); return false; }
+  return true;
+}
 
 // ── Route ──────────────────────────────────────────────────────────────────
 export async function POST(
@@ -122,17 +247,20 @@ export async function POST(
     );
   }
 
-  const { message, model } = await request.json();
+  const { message, model, sessionKey: surfaceKey } = await request.json();
+  // Each chat surface gets its own persistent session (1-1 vs room vs room-agent).
+  // surfaceKey is provided by the client; fall back to agentId for legacy callers.
+  const sessionKey = surfaceKey || id;
 
   // Reject if another stream is already active for this agent
-  if (agentLocks.has(id)) {
+  if (lockHeld(id)) {
     return new Response(
-      `data: ${JSON.stringify({ type: 'error', text: `Agent ${id} is already processing a message. Please wait.` })}\n\ndata: [DONE]\n\n`,
+      `data: ${JSON.stringify({ type: 'error', text: `Agent ${id} is busy — please wait a moment and try again.` })}\n\ndata: [DONE]\n\n`,
       { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' } }
     );
   }
 
-  agentLocks.add(id);
+  agentLocks.set(id, Date.now());
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
@@ -145,27 +273,32 @@ export async function POST(
         const chatModel = model || 'claude-haiku-4-5-20251001';
         const sm = soulMtime(id);
 
-        // Get session ID for conversation continuity (null = new session)
-        // Check in-memory pool first, fall back to DB if not found
-        let existing = sessions.get(id);
+        // Get session ID for conversation continuity (null = new session).
+        // Keyed by sessionKey (surface-specific) so 1-1 chat and rooms don't share context.
+        let existing = sessions.get(sessionKey);
         if (!existing) {
-          const fromDb = loadSessionFromDb(id);
+          const fromDb = loadSessionFromDb(sessionKey);
           if (fromDb) {
             existing = { ...fromDb, soulMtime: sm };
-            sessions.set(id, existing);
+            sessions.set(sessionKey, existing);
           }
         }
         const resumeId = (existing && existing.soulMtime === sm) ? existing.sessionId : null;
 
         const dir = join(HOME, 'mission-control', 'agents', id);
-        const cwd = existsSync(dir) ? dir : HOME;
+        // For new sessions: use HOME so the agent's CLAUDE.md boot sequence is NOT triggered.
+        // The --system-prompt arg already injects the agent's identity and personality.
+        // For resumed sessions: CLAUDE.md isn't re-read anyway, so cwd doesn't matter.
+        const cwd = resumeId && existsSync(dir) ? dir : HOME;
 
+        const { allowed, disallowed } = resolveAgentTools(id);
         const args = [
           '--print',                        // non-interactive, exits after response
           '--output-format', 'stream-json', // JSON event stream on stdout
           '--verbose',                      // required by stream-json format
           '--model', chatModel,
-          '--dangerously-skip-permissions',
+          '--allowedTools', allowed.join(','),
+          '--disallowedTools', disallowed.join(','),
         ];
 
         if (resumeId) {
@@ -191,6 +324,7 @@ export async function POST(
         proc.stdin.end();
 
         let buf = '';
+        let resultReceived = false;
 
         proc.stdout.on('data', (data: Buffer) => {
           buf += data.toString();
@@ -202,17 +336,24 @@ export async function POST(
               const parsed = JSON.parse(line) as {
                 type?: string; session_id?: string;
                 input_tokens?: number; output_tokens?: number;
+                result?: string; is_error?: boolean;
               };
               enc(parsed);
               if (parsed.type === 'result') {
+                // Treat is_error with empty result as a failed resume — trigger retry below
+                if (parsed.is_error && !parsed.result) {
+                  // leave resultReceived=false so the stale-resume retry fires
+                } else {
+                  resultReceived = true;
+                }
                 // Save session ID for the next message (in-memory + DB)
                 if (parsed.session_id) {
-                  sessions.set(id, {
+                  sessions.set(sessionKey, {
                     sessionId: parsed.session_id,
                     soulMtime: sm,
                     lastActivity: Date.now(),
                   });
-                  persistSessionToDb(id, parsed.session_id, chatModel);
+                  persistSessionToDb(sessionKey, parsed.session_id, chatModel);
                 }
                 // Log token usage
                 const inputT  = parsed.input_tokens  ?? 0;
@@ -228,14 +369,17 @@ export async function POST(
                 }
               }
             } catch {
-              enc({ type: 'text', text: line });
+              // Forward non-JSON lines as text, but drop stray numeric exit-code lines (e.g. bare "0")
+              const trimmed = line.trim();
+              if (trimmed && !/^\d+$/.test(trimmed)) {
+                enc({ type: 'text', text: line });
+              }
             }
           }
         });
 
-        proc.stderr.on('data', (data: Buffer) => {
-          const text = data.toString().trim();
-          if (text) enc({ type: 'debug', text });
+        proc.stderr.on('data', (_data: Buffer) => {
+          // Suppress debug output — not displayed by client
         });
 
         const timeout = setTimeout(() => {
@@ -245,21 +389,93 @@ export async function POST(
           try { controller.close(); } catch { /* already closed */ }
         }, 120_000);
 
-        proc.on('close', (code) => {
-          agentLocks.delete(id);
-          clearTimeout(timeout);
+        const finishStream = (code: number | null) => {
+          agentLocks.delete(id); // release lock
           enc({ type: 'done', code: code ?? 0 });
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           try { controller.close(); } catch { /* already closed */ }
+          try { getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run('idle', Date.now(), id); } catch {}
+        };
 
-          try {
-            getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?')
-              .run('idle', Date.now(), id);
-          } catch { /* non-critical */ }
+        proc.on('close', (code) => {
+          clearTimeout(timeout);
+
+          // Stale --resume session: clear it and immediately retry with a fresh session.
+          // Inject recent conversation history into the system prompt so context is preserved
+          // without keepalive pings (which would pollute the session history).
+          if (!resultReceived && resumeId) {
+            sessions.delete(sessionKey);
+            try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
+
+            // Build history context from last 20 stored messages for this surface
+            let historyContext = '';
+            try {
+              const rows = getDb()
+                .prepare(`SELECT role, content FROM messages
+                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 40`)
+                .all(sessionKey) as { role: string; content: string }[];
+              if (rows.length > 0) {
+                // Older messages get truncated more aggressively; recent ones stay fuller
+                const reversed = rows.reverse();
+                const history = reversed.map((r, i) => {
+                  const speaker = r.role === 'user' ? 'User' : 'Assistant';
+                  // Last 10 messages: 800 chars each; earlier: 300 chars
+                  const limit = i >= reversed.length - 10 ? 800 : 300;
+                  return `${speaker}: ${r.content.slice(0, limit)}`;
+                }).join('\n');
+                historyContext = `\n\n---\n## Conversation context (session restored after expiry)\n${history}\n---`;
+              }
+            } catch { /* non-critical — proceed without history */ }
+
+            const freshArgs = [
+              '--print', '--output-format', 'stream-json', '--verbose',
+              '--model', chatModel,
+              '--allowedTools', allowed.join(','),
+              '--disallowedTools', disallowed.join(','),
+            ];
+            const sp = (buildSystemPrompt(id) ?? '') + historyContext;
+            if (sp) freshArgs.push('--system-prompt', sp);
+
+            const fresh = spawn(CLAUDE_BIN, freshArgs, { cwd: HOME, env: cleanEnv, stdio: 'pipe' });
+            fresh.stdin.write(message);
+            fresh.stdin.end();
+
+            let freshBuf = '';
+            fresh.stdout.on('data', (data: Buffer) => {
+              freshBuf += data.toString();
+              const lines = freshBuf.split('\n');
+              freshBuf = lines.pop() ?? '';
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                  const p = JSON.parse(line) as { type?: string; session_id?: string; input_tokens?: number; output_tokens?: number };
+                  enc(p);
+                  if (p.type === 'result' && p.session_id) {
+                    sessions.set(sessionKey, { sessionId: p.session_id, soulMtime: sm, lastActivity: Date.now() });
+                    persistSessionToDb(sessionKey, p.session_id, chatModel);
+                  }
+                } catch {
+                  const t = line.trim();
+                  if (t && !/^\d+$/.test(t)) enc({ type: 'text', text: line });
+                }
+              }
+            });
+            fresh.stderr.on('data', () => {});
+            const freshTimeout = setTimeout(() => {
+              fresh.kill();
+              enc({ type: 'timeout', text: 'Response timed out' });
+              finishStream(null);
+            }, 120_000);
+            fresh.on('close', (c) => { clearTimeout(freshTimeout); finishStream(c); });
+            fresh.on('error', (err) => { clearTimeout(freshTimeout); enc({ type: 'error', text: err.message }); finishStream(null); });
+            return; // fresh process handles stream completion
+          }
+
+          finishStream(code);
         });
 
         proc.on('error', (err) => {
-          agentLocks.delete(id);
+          agentLocks.delete(id); // release lock
           clearTimeout(timeout);
           enc({ type: 'error', text: err.message });
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -267,7 +483,7 @@ export async function POST(
         });
 
       } catch (err: unknown) {
-        agentLocks.delete(id);
+        agentLocks.delete(id); // release lock
         enc({ type: 'error', text: err instanceof Error ? err.message : String(err) });
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();

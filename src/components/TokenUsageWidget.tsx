@@ -101,7 +101,7 @@ export default function TokenUsageWidget() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{data.agent}</p>
           <p className="text-sm text-info">Input: {data.inputTokens.toLocaleString()}</p>
           <p className="text-sm text-review">Output: {data.outputTokens.toLocaleString()}</p>
@@ -117,7 +117,7 @@ export default function TokenUsageWidget() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Loading token data...</div>
+        <div className="text-mission-control-text-dim">Loading token data...</div>
       </div>
     );
   }
@@ -125,7 +125,7 @@ export default function TokenUsageWidget() {
   if (summaryData?.error || !summaryData?.by_agent) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">No token data available</div>
+        <div className="text-mission-control-text-dim">No token data available</div>
       </div>
     );
   }
@@ -144,24 +144,24 @@ export default function TokenUsageWidget() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Zap className="text-clawd-accent" size={20} />
+            <Zap className="text-mission-control-accent" size={20} />
             Token Usage
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Token burn rate and budget tracking
           </p>
         </div>
 
         {/* Period selector */}
-        <div className="flex bg-clawd-border rounded-lg p-1">
+        <div className="flex bg-mission-control-border rounded-lg p-1">
           {(['today', '7d', '30d'] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                 period === p
-                  ? 'bg-clawd-accent text-white'
-                  : 'text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {p === 'today' ? 'Today' : p}
@@ -172,49 +172,49 @@ export default function TokenUsageWidget() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <Zap size={16} className="text-warning" />
             Total Tokens
           </div>
           <div className="text-2xl font-bold text-warning">
             {totalTokens.toLocaleString()}
           </div>
-          <div className="text-sm text-clawd-text-dim mt-1">
+          <div className="text-sm text-mission-control-text-dim mt-1">
             {summaryData.by_agent.reduce((sum, d) => sum + d.calls, 0)} calls
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <DollarSign size={16} className="text-success" />
             Total Cost
           </div>
           <div className="text-2xl font-bold text-success">
             ${totalCost.toFixed(2)}
           </div>
-          <div className="text-sm text-clawd-text-dim mt-1">
+          <div className="text-sm text-mission-control-text-dim mt-1">
             {period === 'today' ? 'Today' : `Last ${period}`}
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <TrendingUp size={16} className="text-info" />
             Top Consumer
           </div>
           <div className="text-xl font-bold">
             {topConsumer?.agent || 'None'}
           </div>
-          <div className="text-sm text-clawd-text-dim mt-1">
+          <div className="text-sm text-mission-control-text-dim mt-1">
             {topConsumer?.total_all.toLocaleString() || '0'} tokens
           </div>
         </div>
       </div>
 
       {/* Burn Rate Bar Chart */}
-      <div className="flex-1 bg-clawd-surface border border-clawd-border rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-medium text-clawd-text-dim mb-4">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
+        <h3 className="text-sm font-medium text-mission-control-text-dim mb-4">
           Per-Agent Token Consumption
         </h3>
         <ResponsiveContainer width="100%" height={300}>
@@ -256,8 +256,8 @@ export default function TokenUsageWidget() {
       </div>
 
       {/* Budget Status Section */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-        <h3 className="text-sm font-medium text-clawd-text-dim mb-4 flex items-center gap-2">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+        <h3 className="text-sm font-medium text-mission-control-text-dim mb-4 flex items-center gap-2">
           <Shield size={16} className="text-info" />
           Budget Status
         </h3>
@@ -285,7 +285,7 @@ export default function TokenUsageWidget() {
                       </span>
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm text-clawd-text-dim">No budget set</div>
+                      <div className="text-sm text-mission-control-text-dim">No budget set</div>
                     </div>
                   </div>
                 );
@@ -324,12 +324,12 @@ export default function TokenUsageWidget() {
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-clawd-text-dim">
+                    <div className="text-sm text-mission-control-text-dim">
                       {budget.used_today.toLocaleString()} / {budget.daily_limit.toLocaleString()} tokens
                       <span className="ml-2 text-xs">({percentage.toFixed(1)}%)</span>
                     </div>
                   </div>
-                  <div className="bg-clawd-border rounded-full h-2 overflow-hidden">
+                  <div className="bg-mission-control-border rounded-full h-2 overflow-hidden">
                     <div
                       className="h-full transition-all duration-300"
                       style={{

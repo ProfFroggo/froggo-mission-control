@@ -7,17 +7,17 @@
 
 ## Objective
 
-Verify `~/froggo/data/froggo.db` creates correctly with all tables and seed data.
+Verify `~/mission-control/data/mission-control.db` creates correctly with all tables and seed data.
 
 ## Verification Results
 
-- **DB path**: `/Users/kevin.macarthur/froggo/data/froggo.db` ✓ created
+- **DB path**: `/Users/kevin.macarthur/mission-control/data/mission-control.db` ✓ created
 - **Tables**: 18 user tables (+ sqlite_sequence internal) ✓
   - agent_sessions, agents, analytics_events, approvals, chat_room_messages, chat_rooms, inbox, library_files, messages, module_state, scheduled_items, sessions, settings, subtasks, task_activity, task_attachments, task_labels, tasks
 - **Agents**: 13 seeded ✓
 - **Chat rooms**: 4 seeded (general, code-review, planning, incidents) ✓
 - **WAL mode**: confirmed
-- **Directory auto-created**: `~/froggo/data/` created on first run ✓
+- **Directory auto-created**: `~/mission-control/data/` created on first run ✓
 
 ## Outcome
 

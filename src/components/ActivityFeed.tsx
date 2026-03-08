@@ -114,11 +114,11 @@ const ActivityFeed = memo(function ActivityFeed() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare size={16} />
           <span className="font-medium">Activity Feed</span>
-          <span className="text-xs text-clawd-text-dim">
+          <span className="text-xs text-mission-control-text-dim">
             {activities.length} sessions
           </span>
         </div>
@@ -126,7 +126,7 @@ const ActivityFeed = memo(function ActivityFeed() {
           <button
             onClick={fetchSessions}
             disabled={loading || !connected}
-            className="p-1.5 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -136,11 +136,11 @@ const ActivityFeed = memo(function ActivityFeed() {
 
       {/* Filters */}
       {channels.length > 1 && (
-        <div className="p-2 border-b border-clawd-border flex gap-1 overflow-x-auto">
+        <div className="p-2 border-b border-mission-control-border flex gap-1 overflow-x-auto">
           <button
             onClick={() => setFilter(null)}
             className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-              !filter ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              !filter ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             All
@@ -152,7 +152,7 @@ const ActivityFeed = memo(function ActivityFeed() {
                 key={ch}
                 onClick={() => setFilter(ch)}
                 className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-                  filter === ch ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                  filter === ch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {info.icon} {info.label}
@@ -165,24 +165,24 @@ const ActivityFeed = memo(function ActivityFeed() {
       {/* Activity List */}
       <div className="flex-1 overflow-y-auto">
         {!connected ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <div className="text-2xl mb-2">🔌</div>
             <p>Connecting to gateway...</p>
           </div>
         ) : filteredActivities.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <div className="text-2xl mb-2">📭</div>
             <p>No activity yet</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border">
+          <div className="divide-y divide-mission-control-border">
             {filteredActivities.map((activity) => {
               const info = getChannelInfo(activity.channel);
               return (
                 <div
                   key={activity.id}
-                  className={`p-3 hover:bg-clawd-surface/50 transition-colors cursor-pointer ${
-                    activity.unread ? 'bg-clawd-accent/5' : ''
+                  className={`p-3 hover:bg-mission-control-surface/50 transition-colors cursor-pointer ${
+                    activity.unread ? 'bg-mission-control-accent/5' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -201,11 +201,11 @@ const ActivityFeed = memo(function ActivityFeed() {
                           {info.label}
                         </span>
                         {activity.unread && (
-                          <span className="w-2 h-2 bg-clawd-accent rounded-full" />
+                          <span className="w-2 h-2 bg-mission-control-accent rounded-full" />
                         )}
                       </div>
                       {activity.lastMessage && (
-                        <p className="text-xs text-clawd-text-dim truncate">
+                        <p className="text-xs text-mission-control-text-dim truncate">
                           {activity.lastMessageRole === 'assistant' && '🐸 '}
                           {activity.lastMessage}
                         </p>
@@ -213,7 +213,7 @@ const ActivityFeed = memo(function ActivityFeed() {
                     </div>
 
                     {/* Time */}
-                    <span className="text-[10px] text-clawd-text-dim whitespace-nowrap">
+                    <span className="text-[10px] text-mission-control-text-dim whitespace-nowrap">
                       {formatTime(activity.timestamp)}
                     </span>
                   </div>

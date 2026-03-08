@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { zustandSafeStorage } from '../utils/safeStorage';
+
+// Migrate old localStorage key on first load
+if (typeof window !== 'undefined' && localStorage.getItem('clawd-user-settings') && !localStorage.getItem('mission-control-user-settings')) {
+  localStorage.setItem('mission-control-user-settings', localStorage.getItem('clawd-user-settings')!);
+}
 
 export interface UserIdentity {
   name: string;
@@ -35,7 +41,8 @@ export const useUserSettings = create<UserSettingsState>()(
       reset: () => set({ ...defaults }),
     }),
     {
-      name: 'clawd-user-settings',
+      name: 'mission-control-user-settings',
+      storage: zustandSafeStorage,
       partialize: (state) => {
         const { updateSettings: _updateSettings, reset: _reset, ...data } = state;
         return data;

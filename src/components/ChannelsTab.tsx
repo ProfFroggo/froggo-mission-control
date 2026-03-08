@@ -104,22 +104,22 @@ export default function ChannelsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-clawd-text-dim">
+        <div className="text-sm text-mission-control-text-dim">
           {channels.length} channel{channels.length !== 1 ? 's' : ''} •{' '}
           {channels.reduce((n, c) => n + c.accounts.filter(a => a.connected).length, 0)} connected accounts
         </div>
         <button onClick={loadChannels} disabled={loading}
-          className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
       </div>
 
       {loading && channels.length === 0 ? (
-        <div className="flex items-center justify-center py-12 text-clawd-text-dim">
+        <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
           <RefreshCw size={24} className="animate-spin mr-3" /> Loading channels...
         </div>
       ) : channels.length === 0 ? (
-        <div className="text-center py-12 text-clawd-text-dim">
+        <div className="text-center py-12 text-mission-control-text-dim">
           <MessageSquare size={48} className="mx-auto opacity-20 mb-4" />
           <p>No channels configured</p>
         </div>
@@ -132,9 +132,9 @@ export default function ChannelsTab() {
             const hasError = channel.accounts.some(a => a.lastError);
 
             return (
-              <div key={channel.id} className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden">
+              <div key={channel.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
                 <div
-                  className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
+                  className="p-4 flex items-center gap-4 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
                   onClick={() => setExpandedChannel(isExpanded ? null : channel.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedChannel(isExpanded ? null : channel.id); } }}
                   role="button"
@@ -145,14 +145,14 @@ export default function ChannelsTab() {
                   <span className="text-2xl">{CHANNEL_ICONS[channel.id] || '📡'}</span>
                   <div className="flex-1">
                     <div className="font-medium">{channel.label}</div>
-                    <div className="text-xs text-clawd-text-dim">
+                    <div className="text-xs text-mission-control-text-dim">
                       {connectedCount}/{totalCount} account{totalCount !== 1 ? 's' : ''} connected
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {hasError && <span className="w-2 h-2 rounded-full bg-error" title="Has errors" />}
                     <span className={`px-2 py-0.5 rounded text-xs ${
-                      connectedCount > 0 ? 'bg-success-subtle text-success' : 'bg-clawd-bg0/20 text-clawd-text-dim'
+                      connectedCount > 0 ? 'bg-success-subtle text-success' : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
                     }`}>
                       {connectedCount > 0 ? 'Online' : 'Offline'}
                     </span>
@@ -161,20 +161,20 @@ export default function ChannelsTab() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-clawd-border">
+                  <div className="border-t border-mission-control-border">
                     {channel.accounts.length === 0 ? (
-                      <div className="p-4 text-sm text-clawd-text-dim">No accounts configured</div>
+                      <div className="p-4 text-sm text-mission-control-text-dim">No accounts configured</div>
                     ) : channel.accounts.map((account, i) => (
-                      <div key={i} className="p-4 border-b border-clawd-border last:border-b-0 hover:bg-clawd-bg/30">
+                      <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-bg/30">
                         <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-clawd-bg0/20'}`}>
-                            {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-clawd-text-dim" />}
+                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg0/20'}`}>
+                            {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}
                           </div>
                           <div className="flex-1">
                             <div className="text-sm font-medium">{account.name || account.accountId}</div>
-                            <div className="text-xs text-clawd-text-dim flex flex-wrap gap-x-3 gap-y-0.5">
+                            <div className="text-xs text-mission-control-text-dim flex flex-wrap gap-x-3 gap-y-0.5">
                               {account.enabled !== undefined && (
-                                <span className={account.enabled ? 'text-success' : 'text-clawd-text-dim'}>
+                                <span className={account.enabled ? 'text-success' : 'text-mission-control-text-dim'}>
                                   {account.enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                               )}
@@ -192,7 +192,7 @@ export default function ChannelsTab() {
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); handleLogout(channel.id, account.accountId); }}
-                            className="p-2 hover:bg-error-subtle text-clawd-text-dim hover:text-error rounded-lg transition-colors"
+                            className="p-2 hover:bg-error-subtle text-mission-control-text-dim hover:text-error rounded-lg transition-colors"
                             title="Logout"
                           >
                             <LogOut size={14} />

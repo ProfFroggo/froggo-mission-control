@@ -73,10 +73,10 @@ export default function MentionText({ text, agentIds, agentNames, currentUserId 
           key={`mention-${i}`}
           className={`font-medium px-1.5 py-0.5 rounded ${
             isAll
-              ? 'bg-clawd-accent/20 text-clawd-accent'
+              ? 'bg-mission-control-accent/20 text-mission-control-accent'
               : isSelf
-              ? 'bg-clawd-accent/20 text-clawd-accent'
-              : 'bg-clawd-border/50 text-clawd-text'
+              ? 'bg-mission-control-accent/20 text-mission-control-accent'
+              : 'bg-mission-control-border/50 text-mission-control-text'
           }`}
         >
           {mention.text}

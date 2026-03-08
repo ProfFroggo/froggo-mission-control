@@ -90,20 +90,20 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
   };
 
   return (
-    <div className="bg-clawd-surface rounded-lg border border-clawd-border max-w-md w-full">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-md w-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
-          <Folder size={16} className="text-clawd-accent" />
+          <Folder size={16} className="text-mission-control-accent" />
           <div>
             <h3 className="font-semibold">Assign to Folders</h3>
-            <p className="text-xs text-clawd-text-dim truncate">{getSessionName()}</p>
+            <p className="text-xs text-mission-control-text-dim truncate">{getSessionName()}</p>
           </div>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <X size={16} />
           </button>
@@ -114,16 +114,16 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
       <div className="max-h-96 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center p-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-clawd-accent border-t-transparent" />
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-mission-control-accent border-t-transparent" />
           </div>
         ) : allFolders.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <Folder size={32} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">No folders available</p>
             <p className="text-xs mt-1">Create a folder first</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border">
+          <div className="divide-y divide-mission-control-border">
             {allFolders.map((folder) => {
               const assigned = isAssigned(folder.id);
               const isWorking = assigningId === folder.id;
@@ -133,7 +133,7 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
                   key={folder.id}
                   onClick={() => handleToggle(folder.id, folder.name)}
                   disabled={isWorking}
-                  className="w-full p-3 flex items-center gap-3 hover:bg-clawd-bg/50 transition-colors disabled:opacity-50 text-left"
+                  className="w-full p-3 flex items-center gap-3 hover:bg-mission-control-bg/50 transition-colors disabled:opacity-50 text-left"
                 >
                   <div className="text-2xl">{folder.icon}</div>
                   <div className="flex-1 min-w-0">
@@ -145,20 +145,20 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
                       />
                     </div>
                     {folder.conversation_count !== undefined && (
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         {folder.conversation_count} conversation{folder.conversation_count !== 1 ? 's' : ''}
                       </div>
                     )}
                   </div>
                   <div className="flex-shrink-0">
                     {isWorking ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-clawd-accent border-t-transparent" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-mission-control-accent border-t-transparent" />
                     ) : assigned ? (
-                      <div className="w-5 h-5 bg-clawd-accent rounded flex items-center justify-center">
+                      <div className="w-5 h-5 bg-mission-control-accent rounded flex items-center justify-center">
                         <Check size={14} className="text-white" />
                       </div>
                     ) : (
-                      <div className="w-5 h-5 border-2 border-clawd-border rounded" />
+                      <div className="w-5 h-5 border-2 border-mission-control-border rounded" />
                     )}
                   </div>
                 </button>
@@ -169,8 +169,8 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-clawd-border bg-clawd-bg/50">
-        <div className="text-xs text-clawd-text-dim">
+      <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/50">
+        <div className="text-xs text-mission-control-text-dim">
           {assignedFolders.length > 0 ? (
             <span>
               In {assignedFolders.length} folder{assignedFolders.length !== 1 ? 's' : ''}:{' '}

@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
+import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -43,7 +44,13 @@ export async function POST(request: NextRequest) {
 
     try {
       const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
-      const proc = spawn(CLAUDE_BIN, ['--print', '--model', model, '--dangerously-skip-permissions', message], {
+      const agentId = isGeneric ? 'mission-control' : sessionTarget;
+      const allowedTools = TIER_TOOLS['worker'];
+      const disallowedTools = loadDisallowedTools(agentId);
+      const proc = spawn(CLAUDE_BIN, ['--print', '--model', model,
+        '--allowedTools', allowedTools.join(','),
+        '--disallowedTools', disallowedTools.join(','),
+        message], {
         cwd: existsSync(agentCwd) ? agentCwd : homedir(),
         env: { ...cleanEnv } as NodeJS.ProcessEnv,
         detached: true,

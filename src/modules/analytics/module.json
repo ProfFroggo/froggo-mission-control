@@ -1,13 +1,12 @@
 {
-  "id": "froggo-analytics",
+  "id": "analytics",
   "name": "Analytics",
   "version": "1.0.0",
   "description": "Dashboard analytics, heatmaps, token usage, productivity metrics, and performance tracking.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "BarChart2",
   "category": "productivity",
   "credentials": [],
-
   "views": [
     {
       "id": "analytics",
@@ -16,7 +15,6 @@
       "entrypoint": "./views/AnalyticsDashboard.tsx"
     }
   ],
-
   "ipcChannels": {
     "handle": [
       "analytics:getData",
@@ -25,15 +23,18 @@
       "analytics:timeTracking"
     ]
   },
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
-    "ipc": ["analytics:*", "tokens:*"],
-    "filesystem": ["$DATA_DIR/analytics/"],
+    "ipc": [
+      "analytics:*",
+      "tokens:*"
+    ],
+    "filesystem": [
+      "$DATA_DIR/analytics/"
+    ],
     "network": false,
     "shell": false
   }

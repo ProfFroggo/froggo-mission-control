@@ -245,14 +245,14 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         role="presentation"
       >
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border flex items-center justify-between bg-clawd-surface sticky top-0 z-10">
+        <div className="p-6 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-info-subtle rounded-xl">
               <Calendar size={20} className="text-info" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Calendar Sources</h3>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {sources.filter(s => s.enabled).length} of {sources.length} enabled
               </p>
             </div>
@@ -261,14 +261,14 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             <button
               onClick={loadSources}
               disabled={refreshing}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh sources"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             >
               <X size={16} />
             </button>
@@ -276,16 +276,16 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         </div>
 
         {/* Quick Actions */}
-        <div className="px-6 py-3 border-b border-clawd-border bg-clawd-bg/50 flex items-center gap-2">
+        <div className="px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50 flex items-center gap-2">
           <button
             onClick={selectAll}
-            className="text-sm px-3 py-1.5 bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
           >
             Select All
           </button>
           <button
             onClick={deselectAll}
-            className="text-sm px-3 py-1.5 bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
           >
             Deselect All
           </button>
@@ -294,7 +294,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         {/* Sources List */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
-            <div className="text-center py-8 text-clawd-text-dim">
+            <div className="text-center py-8 text-mission-control-text-dim">
               <RefreshCw size={32} className="mx-auto mb-4 animate-spin" />
               <p>Loading calendar sources...</p>
             </div>
@@ -302,7 +302,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             <div className="space-y-6">
               {Object.entries(groupedSources).map(([type, typeSources]) => (
                 <div key={type}>
-                  <h4 className="text-sm font-medium text-clawd-text-dim mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-mission-control-text-dim mb-3 flex items-center gap-2">
                     {typeIcons[type]}
                     {typeLabels[type]}
                   </h4>
@@ -313,15 +313,15 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                         onClick={() => toggleSource(source.id)}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                           source.enabled
-                            ? 'border-clawd-border bg-clawd-bg/50 hover:bg-clawd-bg'
-                            : 'border-clawd-border/50 opacity-50 hover:opacity-75'
+                            ? 'border-mission-control-border bg-mission-control-bg/50 hover:bg-mission-control-bg'
+                            : 'border-mission-control-border/50 opacity-50 hover:opacity-75'
                         }`}
                       >
                         {/* Toggle Indicator */}
                         <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                           source.enabled
-                            ? 'bg-clawd-accent border-clawd-accent'
-                            : 'border-clawd-border'
+                            ? 'bg-mission-control-accent border-mission-control-accent'
+                            : 'border-mission-control-border'
                         }`}>
                           {source.enabled && <Eye size={14} className="text-white" />}
                         </div>
@@ -336,15 +336,15 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                         <div className="flex-1 text-left">
                           <div className="font-medium">{source.name}</div>
                           {source.account && (
-                            <div className="text-xs text-clawd-text-dim">{source.account}</div>
+                            <div className="text-xs text-mission-control-text-dim">{source.account}</div>
                           )}
                         </div>
 
                         {/* Status Icon */}
                         {source.enabled ? (
-                          <Eye size={16} className="text-clawd-accent flex-shrink-0" />
+                          <Eye size={16} className="text-mission-control-accent flex-shrink-0" />
                         ) : (
-                          <EyeOff size={16} className="text-clawd-text-dim flex-shrink-0" />
+                          <EyeOff size={16} className="text-mission-control-text-dim flex-shrink-0" />
                         )}
                       </button>
                     ))}
@@ -356,16 +356,16 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-clawd-border flex justify-end gap-2 bg-clawd-surface">
+        <div className="p-6 border-t border-mission-control-border flex justify-end gap-2 bg-mission-control-surface">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors"
+            className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             <Calendar size={16} />
             Apply Filters

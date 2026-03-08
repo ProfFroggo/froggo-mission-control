@@ -46,7 +46,7 @@ export default function TaskTrendsChart() {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{label}</p>
           {payload.map((entry: any) => (
             <p key={entry.name} className="text-sm" style={{ color: entry.color }}>
@@ -162,7 +162,7 @@ export default function TaskTrendsChart() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Loading trends...</div>
+        <div className="text-mission-control-text-dim">Loading trends...</div>
       </div>
     );
   }
@@ -179,25 +179,25 @@ export default function TaskTrendsChart() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="text-clawd-accent" size={20} />
+            <TrendingUp className="text-mission-control-accent" size={20} />
             Task Completion Trends
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Track task creation and completion over time
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Chart type selector */}
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['area', 'line', 'bar'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setChartType(type)}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
                   chartType === type
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {type}
@@ -206,15 +206,15 @@ export default function TaskTrendsChart() {
           </div>
 
           {/* Time range selector */}
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {([7, 30, 90] as const).map((days) => (
               <button
                 key={days}
                 onClick={() => setTimeRange(days)}
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                   timeRange === days
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {days}d
@@ -226,22 +226,22 @@ export default function TaskTrendsChart() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Total Created</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Total Created</div>
           <div className="text-2xl font-bold text-info">{totalCreated}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Total Completed</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Total Completed</div>
           <div className="text-2xl font-bold text-success">{totalCompleted}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Avg Completion Rate</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Avg Completion Rate</div>
           <div className="text-2xl font-bold text-review">{avgCompletionRate}%</div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="flex-1 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <ResponsiveContainer width="100%" height="100%">
           {renderChart()}
         </ResponsiveContainer>

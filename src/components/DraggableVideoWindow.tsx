@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Minimize2, Maximize2, Monitor, Video, Move } from 'lucide-react';
+import { X, Minimize2, Maximize2, Monitor, Video, Move, Camera } from 'lucide-react';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('VideoWindow');
@@ -115,7 +115,7 @@ export default function DraggableVideoWindow({
     return (
       <div
         ref={containerRef}
-        className="fixed z-50 bg-clawd-surface border-2 border-clawd-border rounded-lg shadow-2xl cursor-pointer"
+        className="fixed z-50 bg-mission-control-surface border-2 border-mission-control-border rounded-lg shadow-2xl cursor-pointer"
         style={{
           left: position.x,
           top: position.y,
@@ -128,7 +128,7 @@ export default function DraggableVideoWindow({
       >
         <div className="flex items-center gap-2 px-3 py-2">
           {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
-          <span className="text-xs font-medium text-clawd-text">
+          <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
           </span>
           <button
@@ -136,7 +136,7 @@ export default function DraggableVideoWindow({
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim hover:text-error transition-colors"
+            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-error transition-colors"
             aria-label="Close video window"
           >
             <X size={14} />
@@ -151,8 +151,8 @@ export default function DraggableVideoWindow({
       ref={containerRef}
       className={`fixed z-50 bg-black border-2 shadow-2xl ${
         viewMode === 'fullwidth'
-          ? 'border-clawd-accent rounded-none'
-          : 'border-clawd-border rounded-xl'
+          ? 'border-mission-control-accent rounded-none'
+          : 'border-mission-control-border rounded-xl'
       }`}
       style={
         viewMode === 'fullwidth'
@@ -172,9 +172,9 @@ export default function DraggableVideoWindow({
         aria-label="Drag video window"
       >
         <div className="flex items-center gap-2">
-          <Move size={12} className="text-clawd-text-dim" />
-          <span className="text-xs font-medium text-white">
-            {videoMode === 'camera' ? '📹 Camera' : '🖥️ Screen'}
+          <Move size={12} className="text-mission-control-text-dim" />
+          <span className="text-xs font-medium text-white flex items-center gap-1">
+            {videoMode === 'camera' ? <><Camera size={14} className="inline" />Camera</> : <><Monitor size={14} className="inline" />Screen</>}
           </span>
         </div>
         
@@ -189,14 +189,14 @@ export default function DraggableVideoWindow({
           )}
           <button
             onClick={minimize}
-            className="p-1 rounded hover:bg-clawd-text/10 text-clawd-text transition-colors"
+            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title="Minimize"
           >
             <Minimize2 size={14} />
           </button>
           <button
             onClick={toggleViewMode}
-            className="p-1 rounded hover:bg-clawd-text/10 text-clawd-text transition-colors"
+            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
           >
             <Maximize2 size={14} />

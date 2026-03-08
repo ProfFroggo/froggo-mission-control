@@ -181,16 +181,16 @@ export default function RealTimeAnalytics() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Radio className="text-clawd-accent" size={20} />
+            <Radio className="text-mission-control-accent" size={20} />
             Real-Time Analytics
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Live metrics updating every 10 seconds
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-clawd-text-dim">
+          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
             <span>Last update:</span>
             <span className="font-medium">{formatTimestamp(lastUpdate)}</span>
           </div>
@@ -200,11 +200,11 @@ export default function RealTimeAnalytics() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isLive
                 ? 'bg-success-subtle text-success border border-success-border'
-                : 'bg-clawd-surface border border-clawd-border'
+                : 'bg-mission-control-surface border border-mission-control-border'
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${isLive ? 'bg-success animate-pulse' : 'bg-clawd-text-dim'}`}
+              className={`w-2 h-2 rounded-full ${isLive ? 'bg-success animate-pulse' : 'bg-mission-control-text-dim'}`}
             />
             {isLive ? 'Live' : 'Paused'}
           </button>
@@ -220,7 +220,7 @@ export default function RealTimeAnalytics() {
           return (
             <div
               key={metric.label}
-              className="bg-clawd-surface border border-clawd-border rounded-xl p-4"
+              className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <Icon size={16} className={metric.color} />
@@ -231,10 +231,10 @@ export default function RealTimeAnalytics() {
 
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-3xl font-bold">{metric.value}</span>
-                <span className="text-sm text-clawd-text-dim">{metric.unit}</span>
+                <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
               </div>
 
-              <div className="text-sm text-clawd-text-dim mb-3">{metric.label}</div>
+              <div className="text-sm text-mission-control-text-dim mb-3">{metric.label}</div>
 
               {/* Sparkline */}
               <div className="h-8 flex items-end gap-0.5">
@@ -255,20 +255,20 @@ export default function RealTimeAnalytics() {
       </div>
 
       {/* Live Events Feed */}
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 flex-1">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 flex-1">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-clawd-accent" />
+            <Activity size={16} className="text-mission-control-accent" />
             Live Activity Feed
           </h3>
-          <div className="text-sm text-clawd-text-dim">
+          <div className="text-sm text-mission-control-text-dim">
             Last {liveEvents.length} events
           </div>
         </div>
 
         <div className="space-y-2">
           {liveEvents.length === 0 ? (
-            <div className="py-8 text-center text-clawd-text-dim">
+            <div className="py-8 text-center text-mission-control-text-dim">
               Waiting for activity...
             </div>
           ) : (
@@ -277,7 +277,7 @@ export default function RealTimeAnalytics() {
               return (
                 <div
                   key={event.id}
-                  className="flex items-start gap-3 p-3 bg-clawd-bg rounded-lg hover:bg-clawd-border transition-colors"
+                  className="flex items-start gap-3 p-3 bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors"
                 >
                   <div className={`p-2 rounded-lg ${event.color.replace('text-', 'bg-')}/20`}>
                     <Icon size={16} className={event.color} />
@@ -286,11 +286,11 @@ export default function RealTimeAnalytics() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div className="font-medium truncate">{event.title}</div>
-                      <div className="text-xs text-clawd-text-dim whitespace-nowrap">
+                      <div className="text-xs text-mission-control-text-dim whitespace-nowrap">
                         {formatTimestamp(event.timestamp)}
                       </div>
                     </div>
-                    <div className="text-sm text-clawd-text-dim truncate">
+                    <div className="text-sm text-mission-control-text-dim truncate">
                       {event.description}
                     </div>
                   </div>
@@ -303,30 +303,30 @@ export default function RealTimeAnalytics() {
 
       {/* System Status */}
       <div className="mt-6 grid grid-cols-3 gap-4">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-clawd-text-dim mb-1">System Status</div>
+              <div className="text-sm text-mission-control-text-dim mb-1">System Status</div>
               <div className="font-medium text-success">Operational</div>
             </div>
             <CheckCircle size={24} className="text-success" />
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-clawd-text-dim mb-1">Uptime</div>
+              <div className="text-sm text-mission-control-text-dim mb-1">Uptime</div>
               <div className="font-medium">99.9%</div>
             </div>
             <TrendingUp size={24} className="text-info" />
           </div>
         </div>
 
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-clawd-text-dim mb-1">Avg Response</div>
+              <div className="text-sm text-mission-control-text-dim mb-1">Avg Response</div>
               <div className="font-medium">0.8s</div>
             </div>
             <Clock size={24} className="text-review" />

@@ -62,13 +62,13 @@ export default function HRSection() {
               🎓
             </div>
             <div className="flex-1">
-              <h2 className="font-bold text-clawd-text flex items-center gap-2">
+              <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
                   Agent Management
                 </span>
               </h2>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 I help you build and train the best possible team.
               </p>
             </div>
@@ -76,30 +76,30 @@ export default function HRSection() {
 
           {/* Quick Stats */}
           {teamHealth && (
-            <div className="grid grid-cols-4 gap-px bg-clawd-border/30">
-              <div className="p-3 bg-clawd-bg">
-                <div className="text-lg font-bold text-clawd-text">{teamHealth.totalAgents}</div>
-                <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
+            <div className="grid grid-cols-4 gap-px bg-mission-control-border/30">
+              <div className="p-3 bg-mission-control-bg">
+                <div className="text-lg font-bold text-mission-control-text">{teamHealth.totalAgents}</div>
+                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Users size={10} /> Agents
                 </div>
               </div>
-              <div className="p-3 bg-clawd-bg">
-                <div className="text-lg font-bold text-clawd-text">{teamHealth.avgProficiency}</div>
-                <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
+              <div className="p-3 bg-mission-control-bg">
+                <div className="text-lg font-bold text-mission-control-text">{teamHealth.avgProficiency}</div>
+                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Target size={10} /> Avg Skill
                 </div>
               </div>
-              <div className="p-3 bg-clawd-bg">
-                <div className="text-lg font-bold text-clawd-text">{teamHealth.recentTrainings}</div>
-                <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
+              <div className="p-3 bg-mission-control-bg">
+                <div className="text-lg font-bold text-mission-control-text">{teamHealth.recentTrainings}</div>
+                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <BookOpen size={10} /> Total Trainings
                 </div>
               </div>
-              <div className="p-3 bg-clawd-bg">
+              <div className="p-3 bg-mission-control-bg">
                 <div className={`text-lg font-bold ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-amber-400' : 'text-success'}`}>
                   {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '✓'}
                 </div>
-                <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   {teamHealth.agentsNeedingTraining.length > 0 ? <AlertTriangle size={10} /> : <CheckCircle size={10} />}
                   Gaps
                 </div>

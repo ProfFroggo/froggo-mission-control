@@ -215,26 +215,26 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const hasActiveFilters = searchInput || quickFilterInput || platforms.length > 0 || Object.keys(flags).length > 0;
 
   return (
-    <div className="bg-clawd-surface border-b border-clawd-border">
+    <div className="bg-mission-control-surface border-b border-mission-control-border">
       {/* Main Filter Bar */}
       <div className="p-3 space-y-3">
         {/* Search Row */}
         <div className="flex gap-2">
           {/* Semantic Search */}
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Semantic search across all messages..."
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
             />
           </div>
 
           {/* Quick Filter with Help */}
           <div className="flex-1 relative">
-            <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
               type="text"
               value={quickFilterInput}
@@ -242,18 +242,18 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               onFocus={() => setShowQuickHelp(true)}
               onBlur={() => setTimeout(() => setShowQuickHelp(false), 200)}
               placeholder="Quick filter (is:unread, from:sender, has:attachment)"
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
             />
             {showQuickHelp && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-clawd-bg border border-clawd-border rounded-lg p-2 text-xs z-10 shadow-lg">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-mission-control-bg border border-mission-control-border rounded-lg p-2 text-xs z-10 shadow-lg">
                 <div className="font-semibold mb-1">Quick Filter Syntax:</div>
-                <div className="space-y-0.5 text-clawd-text-dim">
+                <div className="space-y-0.5 text-mission-control-text-dim">
                   {QUICK_FILTER_EXAMPLES.map(ex => (
                     <div
                       key={ex}
                       role="button"
                       tabIndex={0}
-                      className="hover:text-clawd-text cursor-pointer py-0.5 px-1 rounded hover:bg-clawd-border"
+                      className="hover:text-mission-control-text cursor-pointer py-0.5 px-1 rounded hover:bg-mission-control-border"
                       onClick={() => setQuickFilterInput(ex)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQuickFilterInput(ex); }}}
                     >
@@ -269,7 +269,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
             className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
-              showAdvanced ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              showAdvanced ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Filter size={14} />
@@ -278,7 +278,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
           <button
             onClick={() => setShowSavedFilters(!showSavedFilters)}
-            className="px-3 py-2 bg-clawd-border rounded-lg text-sm flex items-center gap-2 text-clawd-text-dim hover:text-clawd-text relative"
+            className="px-3 py-2 bg-mission-control-border rounded-lg text-sm flex items-center gap-2 text-mission-control-text-dim hover:text-mission-control-text relative"
           >
             <Star size={14} />
             Saved ({savedFilters.length})
@@ -296,17 +296,17 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
         </div>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between text-xs text-clawd-text-dim">
+        <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
           <span>
             Showing {filteredCount} of {totalMessages} messages
-            {hasActiveFilters && <span className="text-clawd-accent ml-1">(filtered)</span>}
+            {hasActiveFilters && <span className="text-mission-control-accent ml-1">(filtered)</span>}
           </span>
           <div className="flex items-center gap-2">
             <span>Logic:</span>
             <button
               onClick={() => setLogicMode(logicMode === 'AND' ? 'OR' : 'AND')}
               className={`px-2 py-0.5 rounded text-xs font-mono ${
-                logicMode === 'AND' ? 'bg-clawd-accent text-white' : 'bg-clawd-border'
+                logicMode === 'AND' ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border'
               }`}
             >
               {logicMode}
@@ -317,10 +317,10 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="px-3 pb-3 space-y-3 border-t border-clawd-border pt-3">
+        <div className="px-3 pb-3 space-y-3 border-t border-mission-control-border pt-3">
           {/* Platform Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-clawd-text-dim">Platforms</div>
+            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Platforms</div>
             <div className="flex gap-2 flex-wrap">
               {PLATFORM_OPTIONS.map(platform => (
                 <button
@@ -328,8 +328,8 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   onClick={() => togglePlatform(platform.id)}
                   className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
                     platforms.includes(platform.id)
-                      ? 'bg-clawd-accent text-white'
-                      : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                      ? 'bg-mission-control-accent text-white'
+                      : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
                   <span>{platform.icon}</span>
@@ -341,12 +341,12 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
           {/* Flag Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-clawd-text-dim">Flags</div>
+            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Flags</div>
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => toggleFlag('unread')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unread ? 'bg-info-subtle text-info' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.unread ? 'bg-info-subtle text-info' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
                 <Mail size={14} /> Unread
@@ -354,7 +354,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('unreplied')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unreplied ? 'bg-warning-subtle text-warning' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.unreplied ? 'bg-warning-subtle text-warning' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
                 <Reply size={14} /> Awaiting Reply
@@ -362,7 +362,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('starred')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.starred ? 'bg-warning-subtle text-warning' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.starred ? 'bg-warning-subtle text-warning' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
                 <Star size={14} /> Starred
@@ -370,7 +370,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('hasAttachment')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.hasAttachment ? 'bg-success-subtle text-success' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.hasAttachment ? 'bg-success-subtle text-success' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
                 <Paperclip size={14} /> Has Attachment
@@ -378,7 +378,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('urgent')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.urgent ? 'bg-error-subtle text-error' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.urgent ? 'bg-error-subtle text-error' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
                 <span>🚨</span> Urgent
@@ -387,18 +387,18 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           </div>
 
           {/* Save Filter */}
-          <div className="flex gap-2 items-center pt-2 border-t border-clawd-border">
+          <div className="flex gap-2 items-center pt-2 border-t border-mission-control-border">
             <input
               type="text"
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
               placeholder="Filter name..."
-              className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
             />
             <button
               onClick={saveCurrentFilter}
               disabled={!filterName.trim() || !hasActiveFilters}
-              className="px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={14} /> Save Filter
             </button>
@@ -408,16 +408,16 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
       {/* Saved Filters Dropdown */}
       {showSavedFilters && (
-        <div className="px-3 pb-3 border-t border-clawd-border pt-3">
-          <div className="text-xs font-semibold mb-2 text-clawd-text-dim">Saved Filters</div>
+        <div className="px-3 pb-3 border-t border-mission-control-border pt-3">
+          <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Saved Filters</div>
           {savedFilters.length === 0 ? (
-            <p className="text-sm text-clawd-text-dim text-center py-2">No saved filters</p>
+            <p className="text-sm text-mission-control-text-dim text-center py-2">No saved filters</p>
           ) : (
             <div className="space-y-2">
               {savedFilters.map(filter => (
                 <div
                   key={filter.id}
-                  className="bg-clawd-bg border border-clawd-border rounded-lg p-2 flex items-center justify-between hover:border-clawd-accent/50 transition-colors"
+                  className="bg-mission-control-bg border border-mission-control-border rounded-lg p-2 flex items-center justify-between hover:border-mission-control-accent/50 transition-colors"
                 >
                   <button
                     onClick={() => applySavedFilter(filter)}

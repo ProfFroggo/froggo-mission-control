@@ -65,14 +65,14 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
       <div className="flex items-center gap-1">
         {keys.map((key, i) => (
           <span key={i}>
-            <kbd className="px-2 py-1 bg-clawd-border rounded text-xs font-mono">
+            <kbd className="px-2 py-1 bg-mission-control-border rounded text-xs font-mono">
               {key}
             </kbd>
-            {i < keys.length - 1 && <span className="mx-1 text-clawd-text-dim">then</span>}
+            {i < keys.length - 1 && <span className="mx-1 text-mission-control-text-dim">then</span>}
           </span>
         ))}
       </div>
-      <span className="text-clawd-text-dim text-xs ml-3">{description}</span>
+      <span className="text-mission-control-text-dim text-xs ml-3">{description}</span>
     </div>
   );
 }
@@ -1014,31 +1014,31 @@ export default function InboxPanel() {
       {/* Main Inbox Content */}
       <div className="flex-1 min-w-0 flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-clawd-accent/20 rounded-xl">
-              <Inbox size={24} className="text-clawd-accent" />
+            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <Inbox size={24} className="text-mission-control-accent" />
             </div>
             <div>
               <h1 className="text-heading-2">Approval Inbox</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {pendingItems.length} pending • {completedItems.length} completed
-                <span className="ml-2 text-clawd-text-dim/50">
-                  • Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded text-xs font-mono">?</kbd> for shortcuts
+                <span className="ml-2 text-mission-control-text-dim/50">
+                  • Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs font-mono">?</kbd> for shortcuts
                 </span>
               </p>
               {gKeyPressed && (
                 <div className="mt-2 icon-text text-xs">
-                  <span className="px-2 py-1 bg-clawd-accent text-white rounded font-mono animate-pulse">
+                  <span className="px-2 py-1 bg-mission-control-accent text-white rounded font-mono animate-pulse">
                     g
                   </span>
-                  <span className="text-clawd-text-dim">
-                    Press: <kbd className="px-1 bg-clawd-border rounded">i</kbd> inbox • 
-                    <kbd className="px-1 bg-clawd-border rounded ml-1">s</kbd> starred • 
-                    <kbd className="px-1 bg-clawd-border rounded ml-1">a</kbd> all • 
-                    <kbd className="px-1 bg-clawd-border rounded ml-1">t</kbd> tweets • 
-                    <kbd className="px-1 bg-clawd-border rounded ml-1">e</kbd> emails
+                  <span className="text-mission-control-text-dim">
+                    Press: <kbd className="px-1 bg-mission-control-border rounded">i</kbd> inbox • 
+                    <kbd className="px-1 bg-mission-control-border rounded ml-1">s</kbd> starred • 
+                    <kbd className="px-1 bg-mission-control-border rounded ml-1">a</kbd> all • 
+                    <kbd className="px-1 bg-mission-control-border rounded ml-1">t</kbd> tweets • 
+                    <kbd className="px-1 bg-mission-control-border rounded ml-1">e</kbd> emails
                   </span>
                 </div>
               )}
@@ -1048,7 +1048,7 @@ export default function InboxPanel() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowKeyboardHelp(true)}
-              className="icon-text px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
               title="Keyboard shortcuts (?)"
             >
               <span className="text-xs font-mono">⌨️</span>
@@ -1056,14 +1056,14 @@ export default function InboxPanel() {
             </button>
             <button
               onClick={loadInbox}
-              className="icon-text px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
             {selectedIds.size > 0 ? (
               <div className="icon-text">
-                <span className="text-sm text-clawd-text-dim">{selectedIds.size} selected</span>
+                <span className="text-sm text-mission-control-text-dim">{selectedIds.size} selected</span>
                 <button
                   onClick={handleBulkApprove}
                   className="icon-text px-3 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors text-sm"
@@ -1080,7 +1080,7 @@ export default function InboxPanel() {
                 </button>
                 <button
                   onClick={clearSelection}
-                  className="px-2 py-2 text-clawd-text-dim hover:text-clawd-text transition-colors text-sm"
+                  className="px-2 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors text-sm"
                 >
                   Clear
                 </button>
@@ -1089,7 +1089,7 @@ export default function InboxPanel() {
               <div className="icon-text">
                 <button
                   onClick={selectAll}
-                  className="text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+                  className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 >
                   Select all
                 </button>
@@ -1111,14 +1111,14 @@ export default function InboxPanel() {
             onClick={() => { setActiveTab('all'); setFocusedIndex(0); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'all'
-                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
-                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
             }`}
           >
             <Inbox size={16} className="flex-shrink-0" />
             All
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'all' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
+              activeTab === 'all' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
             }`}>
               {pendingItems.length}
             </span>
@@ -1127,14 +1127,14 @@ export default function InboxPanel() {
             onClick={() => { setActiveTab('approvals'); setFocusedIndex(0); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'approvals'
-                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
-                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
             }`}
           >
             <ShieldAlert size={16} className="flex-shrink-0" />
             Approvals
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'approvals' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
+              activeTab === 'approvals' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
             }`}>
               {pendingItems.filter(i => !isReviewItem(i)).length}
             </span>
@@ -1143,14 +1143,14 @@ export default function InboxPanel() {
             onClick={() => { setActiveTab('reviews'); setFocusedIndex(0); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === 'reviews'
-                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
-                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
             }`}
           >
             <CheckCircle size={16} className="flex-shrink-0" />
             Reviews
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'reviews' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
+              activeTab === 'reviews' ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
             }`}>
               {pendingItems.filter(i => isReviewItem(i)).length}
             </span>
@@ -1159,14 +1159,14 @@ export default function InboxPanel() {
 
         {/* Sort Controls */}
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-xs text-clawd-text-dim font-medium">Sort by:</span>
+          <span className="text-xs text-mission-control-text-dim font-medium">Sort by:</span>
           <div className="flex gap-2">
             <button
               onClick={() => setSortMode('priority')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 sortMode === 'priority'
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
               }`}
             >
                <TrendingUp size={14} className="flex-shrink-0" />
@@ -1176,8 +1176,8 @@ export default function InboxPanel() {
               onClick={() => setSortMode('time')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 sortMode === 'time'
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
               }`}
             >
                <Clock size={14} className="flex-shrink-0" />
@@ -1187,8 +1187,8 @@ export default function InboxPanel() {
               onClick={() => setSortMode('type')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 sortMode === 'type'
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
               }`}
             >
                <Filter size={14} className="flex-shrink-0" />
@@ -1196,7 +1196,7 @@ export default function InboxPanel() {
             </button>
             <button
               onClick={() => setSortAscending(!sortAscending)}
-              className="p-1.5 bg-clawd-border text-clawd-text-dim rounded-lg hover:bg-clawd-border/70 transition-colors"
+              className="p-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/70 transition-colors"
               title={sortAscending ? 'Ascending' : 'Descending'}
             >
               {sortAscending ? <ArrowUp size={16} className="flex-shrink-0" /> : <ArrowDown size={16} className="flex-shrink-0" />}
@@ -1205,13 +1205,13 @@ export default function InboxPanel() {
           
           {/* View Mode Toggle */}
           <div className="icon-text ml-auto">
-            <span className="text-xs text-clawd-text-dim font-medium">View:</span>
+            <span className="text-xs text-mission-control-text-dim font-medium">View:</span>
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'lanes' : 'list')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 viewMode === 'lanes'
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
               }`}
               title="Toggle priority lanes (v)"
             >
@@ -1227,8 +1227,8 @@ export default function InboxPanel() {
             onClick={() => setFilter('all')}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               filter === 'all' 
-                ? 'bg-clawd-accent text-white' 
-                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                ? 'bg-mission-control-accent text-white' 
+                : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
             }`}
           >
             All ({pendingItems.length})
@@ -1243,8 +1243,8 @@ export default function InboxPanel() {
                 onClick={() => setFilter(type as ApprovalType)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   filter === type
-                    ? 'bg-clawd-accent text-white'
-                    : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/70'
                 }`}
               >
                 <Icon size={16} className="flex-shrink-0" />
@@ -1281,8 +1281,8 @@ export default function InboxPanel() {
                   data-inbox-index={index}
                   className={`card overflow-hidden transition-all ${
                     isFocused 
-                      ? 'border-clawd-accent ring-2 ring-clawd-accent/30' 
-                      : 'hover:border-clawd-accent/30'
+                      ? 'border-mission-control-accent ring-2 ring-mission-control-accent/30' 
+                      : 'hover:border-mission-control-accent/30'
                   } ${(() => {
                     const warning = getInjectionWarning(item);
                     return warning ? riskStyles[warning.risk]?.border || '' : '';
@@ -1304,7 +1304,7 @@ export default function InboxPanel() {
                             </span>
                           </div>
                           <p className="text-xs opacity-80 mt-0.5">
-                            Pattern detected: <code className="bg-clawd-bg/20 px-1 rounded">{warning.pattern}</code>
+                            Pattern detected: <code className="bg-mission-control-bg/20 px-1 rounded">{warning.pattern}</code>
                           </p>
                         </div>
                         <AlertTriangle size={20} className="flex-shrink-0 animate-pulse" />
@@ -1321,21 +1321,21 @@ export default function InboxPanel() {
                         checked={selectedIds.has(item.id)}
                         onChange={() => toggleSelection(Number(item.id))}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
+                        className="w-4 h-4 mt-1 rounded border-mission-control-border text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 bg-mission-control-bg cursor-pointer"
                       />
                       <IconBadge icon={Icon} size={18} color={config.color} />
                       <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
-                          <span className="text-xs font-medium px-2 py-0.5 bg-clawd-border rounded">
+                          <span className="text-xs font-medium px-2 py-0.5 bg-mission-control-border rounded">
                             {config.label}
                           </span>
                           
                           {/* Keyboard hint for focused item */}
                           {isFocused && (
-                            <span className="text-xs text-clawd-accent font-mono flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
-                              <kbd className="px-1.5 py-0.5 bg-clawd-accent/20 rounded flex-shrink-0">o</kbd> open
-                              <kbd className="px-1.5 py-0.5 bg-clawd-accent/20 rounded ml-1 flex-shrink-0">a</kbd> approve
-                              <kbd className="px-1.5 py-0.5 bg-clawd-accent/20 rounded ml-1 flex-shrink-0">x</kbd> select
+                            <span className="text-xs text-mission-control-accent font-mono flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
+                              <kbd className="px-1.5 py-0.5 bg-mission-control-accent/20 rounded flex-shrink-0">o</kbd> open
+                              <kbd className="px-1.5 py-0.5 bg-mission-control-accent/20 rounded ml-1 flex-shrink-0">a</kbd> approve
+                              <kbd className="px-1.5 py-0.5 bg-mission-control-accent/20 rounded ml-1 flex-shrink-0">x</kbd> select
                             </span>
                           )}
                           
@@ -1364,19 +1364,19 @@ export default function InboxPanel() {
                               <span className="flex-shrink-0">{getInjectionWarning(item)!.risk.toUpperCase()}</span>
                             </span>
                           )}
-                          <span className="text-xs text-clawd-text-dim flex items-center gap-1">
+                          <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                              <Clock size={14} className="flex-shrink-0" />
                             {formatTime(item.created ?? '')}
                           </span>
                           {item.source_channel && (
-                            <span className="text-xs text-clawd-text-dim">
+                            <span className="text-xs text-mission-control-text-dim">
                               from {item.source_channel}
                             </span>
                           )}
                         </div>
                         <h3 className="text-sm font-medium truncate">{item.title}</h3>
                         {item.context && (
-                          <p className="text-xs text-clawd-text-dim mt-1">{item.context}</p>
+                          <p className="text-xs text-mission-control-text-dim mt-1">{item.context}</p>
                         )}
                       </div>
                     </div>
@@ -1384,9 +1384,9 @@ export default function InboxPanel() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleToggleAIPanel(item)}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${
+                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${
                           selectedItemForAI?.id === item.id && showAIPanel
-                            ? 'bg-clawd-accent text-white'
+                            ? 'bg-mission-control-accent text-white'
                             : ''
                         }`}
                         title="AI Assistance"
@@ -1396,7 +1396,7 @@ export default function InboxPanel() {
                       </button>
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors flex-shrink-0"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
                         title={isExpanded ? "Collapse" : "Expand"}
                         aria-label={isExpanded ? "Collapse item" : "Expand item"}
                       >
@@ -1407,12 +1407,12 @@ export default function InboxPanel() {
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-clawd-border bg-clawd-bg/30">
+                    <div className="px-4 pb-4 border-t border-mission-control-border bg-mission-control-bg/30">
                       {/* Priority Score Breakdown */}
                       {item.priority_score !== undefined && item.priority_metadata && (
-                        <div className="mt-4 mb-4 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
+                        <div className="mt-4 mb-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
                           <div className="icon-text mb-2">
-                            <TrendingUp size={16} className="text-clawd-accent" />
+                            <TrendingUp size={16} className="text-mission-control-accent" />
                             <span className="text-sm font-medium">Priority Analysis</span>
                           </div>
                           {(() => {
@@ -1423,32 +1423,32 @@ export default function InboxPanel() {
                                 <>
                                   <div className="grid grid-cols-2 gap-2 mb-2">
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Sender:</span>
-                                      <span className="ml-1 text-clawd-accent font-medium">{breakdown.sender}</span>
+                                      <span className="text-mission-control-text-dim">Sender:</span>
+                                      <span className="ml-1 text-mission-control-accent font-medium">{breakdown.sender}</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Urgency:</span>
-                                      <span className="ml-1 text-clawd-accent font-medium">{breakdown.urgency}</span>
+                                      <span className="text-mission-control-text-dim">Urgency:</span>
+                                      <span className="ml-1 text-mission-control-accent font-medium">{breakdown.urgency}</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Time:</span>
-                                      <span className="ml-1 text-clawd-accent font-medium">{breakdown.timeSensitivity}</span>
+                                      <span className="text-mission-control-text-dim">Time:</span>
+                                      <span className="ml-1 text-mission-control-accent font-medium">{breakdown.timeSensitivity}</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Type:</span>
-                                      <span className="ml-1 text-clawd-accent font-medium">{breakdown.type}</span>
+                                      <span className="text-mission-control-text-dim">Type:</span>
+                                      <span className="ml-1 text-mission-control-accent font-medium">{breakdown.type}</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Context:</span>
-                                      <span className="ml-1 text-clawd-accent font-medium">{breakdown.context}</span>
+                                      <span className="text-mission-control-text-dim">Context:</span>
+                                      <span className="ml-1 text-mission-control-accent font-medium">{breakdown.context}</span>
                                     </div>
                                     <div className="text-xs">
-                                      <span className="text-clawd-text-dim">Total:</span>
-                                      <span className="ml-1 text-clawd-accent font-bold">{item.priority_score}</span>
+                                      <span className="text-mission-control-text-dim">Total:</span>
+                                      <span className="ml-1 text-mission-control-accent font-bold">{item.priority_score}</span>
                                     </div>
                                   </div>
                                   {flags && flags.length > 0 && (
-                                    <div className="text-xs text-clawd-text-dim">
+                                    <div className="text-xs text-mission-control-text-dim">
                                       <span className="font-medium">Factors: </span>
                                       {flags.join(', ')}
                                     </div>
@@ -1463,26 +1463,26 @@ export default function InboxPanel() {
                       )}
                       
                       <div className="mt-4 mb-4">
-                        <div className="text-sm text-clawd-text-dim mb-2">Content:</div>
-                        <div className="bg-clawd-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-clawd-border text-left overflow-x-auto">
+                        <div className="text-sm text-mission-control-text-dim mb-2">Content:</div>
+                        <div className="bg-mission-control-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-mission-control-border text-left overflow-x-auto">
                           <MarkdownMessage content={item.content} />
                         </div>
                       </div>
 
                       {/* Feedback Form */}
                       {showFeedback && (
-                        <div className="mb-4 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
+                        <div className="mb-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
                           <textarea
                             value={feedbackText}
                             onChange={(e) => setFeedbackText(e.target.value)}
                             placeholder="Enter your feedback for revision..."
-                            className="w-full bg-clawd-surface border border-clawd-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
                             rows={3}
                           />
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={() => handleAdjust(item)}
-                              className="px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm hover:bg-clawd-accent/90 transition-colors"
+                              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/90 transition-colors"
                             >
                               Send Feedback
                             </button>
@@ -1491,7 +1491,7 @@ export default function InboxPanel() {
                                 setFeedbackId(null);
                                 setFeedbackText('');
                               }}
-                              className="px-3 py-1.5 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:bg-clawd-border/70 transition-colors"
+                              className="px-3 py-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/70 transition-colors"
                             >
                               Cancel
                             </button>
@@ -1513,7 +1513,7 @@ export default function InboxPanel() {
                         <LoadingButton
                           onClick={() => setFeedbackId(showFeedback ? null : item.id)}
                           variant="primary"
-                          className="bg-clawd-accent hover:bg-clawd-accent-dim"
+                          className="bg-mission-control-accent hover:bg-mission-control-accent-dim"
                           icon={ <Edit3 size={16} className="flex-shrink-0" />}
                         >
                           Adjust
@@ -1538,12 +1538,12 @@ export default function InboxPanel() {
 
       {/* Completed Items (collapsible) */}
       {completedItems.length > 0 && (
-        <div className="border-t border-clawd-border bg-clawd-surface/50">
+        <div className="border-t border-mission-control-border bg-mission-control-surface/50">
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="w-full p-4 flex items-center justify-between hover:bg-clawd-surface/70 transition-colors"
+            className="w-full p-4 flex items-center justify-between hover:bg-mission-control-surface/70 transition-colors"
           >
-            <div className="icon-text text-sm text-clawd-text-dim">
+            <div className="icon-text text-sm text-mission-control-text-dim">
                <CheckCircle size={16} className="flex-shrink-0" />
               Completed ({completedItems.length})
             </div>
@@ -1558,13 +1558,13 @@ export default function InboxPanel() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg border border-clawd-border opacity-60"
+                    className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg border border-mission-control-border opacity-60"
                   >
                     <div className="flex items-center gap-3">
                       <Icon size={16} className={config.color.split(' ')[0]} />
                       <div>
                         <div className="text-sm">{item.title}</div>
-                        <div className="text-xs text-clawd-text-dim">{formatTime(item.created ?? '')}</div>
+                        <div className="text-xs text-mission-control-text-dim">{formatTime(item.created ?? '')}</div>
                       </div>
                     </div>
                     <div className={`text-xs px-2 py-1 rounded ${
@@ -1593,13 +1593,13 @@ export default function InboxPanel() {
           aria-label="Close reject dialog"
         >
           <div 
-            className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4" 
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
           >
             <h3 className="text-heading-3 mb-4">Why are you rejecting this?</h3>
-            <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
+            <p className="text-sm text-mission-control-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
             <input
               ref={rejectInputRef}
               type="text"
@@ -1610,12 +1610,12 @@ export default function InboxPanel() {
                 if (e.key === 'Escape') setRejectDialogItem(null);
               }}
               placeholder="e.g., Too promotional, wrong tone, not relevant..."
-              className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded text-sm mb-4"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded text-sm mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setRejectDialogItem(null)}
-                className="px-4 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -1641,7 +1641,7 @@ export default function InboxPanel() {
           aria-label="Close schedule modal"
         >
           <div 
-            className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-lg w-full mx-4" 
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1653,50 +1653,50 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-heading-3">Send or Schedule?</h3>
-                <p className="text-sm text-clawd-text-dim">{scheduleModal.item.title}</p>
+                <p className="text-sm text-mission-control-text-dim">{scheduleModal.item.title}</p>
               </div>
             </div>
 
             {/* Content Preview */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap font-mono text-clawd-text-dim">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap font-mono text-mission-control-text-dim">
                 {scheduleModal.item.content}
               </pre>
             </div>
 
             {/* Date/Time Picker (shown when Schedule is clicked) */}
             {scheduleModal.showDatePicker && (
-              <div className="mb-6 p-4 bg-clawd-surface border border-clawd-border rounded-lg">
+              <div className="mb-6 p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
                 <div className="icon-text mb-3">
-                  <CalendarClock size={16} className="text-clawd-accent" />
+                  <CalendarClock size={16} className="text-mission-control-accent" />
                   <span className="text-sm font-medium">Schedule for:</span>
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 min-w-0">
-                    <label htmlFor="schedule-date" className="text-xs text-clawd-text-dim mb-1 block">Date</label>
+                    <label htmlFor="schedule-date" className="text-xs text-mission-control-text-dim mb-1 block">Date</label>
                     <input
                       id="schedule-date"
                       type="date"
                       value={scheduleModal.date}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <label htmlFor="schedule-time" className="text-xs text-clawd-text-dim mb-1 block">Time</label>
+                    <label htmlFor="schedule-time" className="text-xs text-mission-control-text-dim mb-1 block">Time</label>
                     <input
                       id="schedule-time"
                       type="time"
                       value={scheduleModal.time}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
-                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
                     />
                   </div>
                 </div>
                 {/* Friendly time display */}
                 {scheduleModal.date && scheduleModal.time && (
-                  <p className="text-xs text-clawd-text-dim mt-2">
+                  <p className="text-xs text-mission-control-text-dim mt-2">
                     Will be sent on {new Date(`${scheduleModal.date}T${scheduleModal.time}`).toLocaleString(undefined, {
                       weekday: 'long',
                       month: 'short',
@@ -1772,7 +1772,7 @@ export default function InboxPanel() {
                   </button>
                   <button
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: true })}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors font-medium"
+                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
                   >
                      <Calendar size={16} className="flex-shrink-0" />
                     Schedule
@@ -1783,7 +1783,7 @@ export default function InboxPanel() {
                   {/* Schedule picker state: Back / Confirm */}
                   <button
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: false })}
-                    className="px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
+                    className="px-4 py-3 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border transition-colors"
                   >
                     Back
                   </button>
@@ -1841,7 +1841,7 @@ export default function InboxPanel() {
                       setScheduleModal(null);
                     }}
                     disabled={!scheduleModal.date || !scheduleModal.time}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 min-w-0 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                      <CalendarClock size={16} className="flex-shrink-0" />
                     Confirm Schedule
@@ -1853,7 +1853,7 @@ export default function InboxPanel() {
             {/* Cancel link */}
             <button
               onClick={() => setScheduleModal(null)}
-              className="w-full mt-3 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
+              className="w-full mt-3 py-2 text-sm text-mission-control-text-dim hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -1872,7 +1872,7 @@ export default function InboxPanel() {
           aria-label="Close keyboard help"
         >
           <div 
-            className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1880,11 +1880,11 @@ export default function InboxPanel() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-heading-2 mb-1">Keyboard Shortcuts</h2>
-                <p className="text-sm text-clawd-text-dim">Gmail-style navigation and actions</p>
+                <p className="text-sm text-mission-control-text-dim">Gmail-style navigation and actions</p>
               </div>
               <button
                 onClick={() => setShowKeyboardHelp(false)}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 title="Close"
                 aria-label="Close keyboard shortcuts"
               >
@@ -1895,7 +1895,7 @@ export default function InboxPanel() {
             <div className="grid md:grid-cols-2 gap-6">
               {/* Navigation */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-accent mb-3 uppercase tracking-wider">Navigation</h3>
+                <h3 className="text-sm font-semibold text-mission-control-accent mb-3 uppercase tracking-wider">Navigation</h3>
                 <div className="space-y-2">
                   <ShortcutRow keys={['j']} description="Next item" />
                   <ShortcutRow keys={['k']} description="Previous item" />
@@ -1911,7 +1911,7 @@ export default function InboxPanel() {
 
               {/* Actions */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-accent mb-3 uppercase tracking-wider">Actions</h3>
+                <h3 className="text-sm font-semibold text-mission-control-accent mb-3 uppercase tracking-wider">Actions</h3>
                 <div className="space-y-2">
                   <ShortcutRow keys={['a']} description="Approve focused item" />
                   <ShortcutRow keys={['e']} description="Archive (approve)" />
@@ -1925,7 +1925,7 @@ export default function InboxPanel() {
 
               {/* Filtering */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-accent mb-3 uppercase tracking-wider">Filtering</h3>
+                <h3 className="text-sm font-semibold text-mission-control-accent mb-3 uppercase tracking-wider">Filtering</h3>
                 <div className="space-y-2">
                   <ShortcutRow keys={['/']} description="Cycle through filters" />
                   <ShortcutRow keys={['1']} description="Show all" />
@@ -1938,7 +1938,7 @@ export default function InboxPanel() {
 
               {/* Sorting */}
               <div>
-                <h3 className="text-sm font-semibold text-clawd-accent mb-3 uppercase tracking-wider">Sorting</h3>
+                <h3 className="text-sm font-semibold text-mission-control-accent mb-3 uppercase tracking-wider">Sorting</h3>
                 <div className="space-y-2">
                   <ShortcutRow keys={['p']} description="Sort by priority" />
                   <ShortcutRow keys={['t']} description="Sort by time" />
@@ -1947,10 +1947,10 @@ export default function InboxPanel() {
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-clawd-border">
-              <p className="text-xs text-clawd-text-dim text-center">
-                Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">?</kbd> to toggle this help • 
-                Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">Esc</kbd> to close
+            <div className="mt-6 pt-4 border-t border-mission-control-border">
+              <p className="text-xs text-mission-control-text-dim text-center">
+                Press <kbd className="px-2 py-1 bg-mission-control-border rounded text-xs">?</kbd> to toggle this help • 
+                Press <kbd className="px-2 py-1 bg-mission-control-border rounded text-xs">Esc</kbd> to close
               </p>
             </div>
           </div>
@@ -1966,7 +1966,7 @@ export default function InboxPanel() {
           aria-label="Close agent warning"
           type="button"
         >
-          <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4">
+          <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-lg w-full mx-4">
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-warning-subtle rounded-lg">
@@ -1974,7 +1974,7 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-heading-3">Agent Still Active</h3>
-                <p className="text-sm text-clawd-text-dim">Cannot approve yet</p>
+                <p className="text-sm text-mission-control-text-dim">Cannot approve yet</p>
               </div>
             </div>
 
@@ -1983,7 +1983,7 @@ export default function InboxPanel() {
               <p className="text-sm text-warning mb-2">
                 ⚠️ An agent is currently working on this task
               </p>
-              <div className="text-xs text-clawd-text-dim space-y-1">
+              <div className="text-xs text-mission-control-text-dim space-y-1">
                 <div>
                   <span className="font-medium">Session:</span> {activeAgentSession.displayName || activeAgentSession.label || 'Unknown'}
                 </div>
@@ -1996,7 +1996,7 @@ export default function InboxPanel() {
               </div>
             </div>
             
-            <p className="text-sm text-clawd-text-dim mb-3">
+            <p className="text-sm text-mission-control-text-dim mb-3">
               If you approve now, the agent might reset the task status when it finishes, creating an approval loop.
             </p>
             
@@ -2012,7 +2012,7 @@ export default function InboxPanel() {
                   setActiveAgentSession(null);
                   setPendingApprovalItem(null);
                 }}
-                className="flex-1 min-w-0 px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
+                className="flex-1 min-w-0 px-4 py-3 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border transition-colors"
               >
                 Cancel
               </button>
@@ -2021,10 +2021,10 @@ export default function InboxPanel() {
                   setAbortingAgent(true);
                   try {
                     // Kill the agent session
-                    const result = await fetch('/api/agents/exec', {
+                    const result = await fetch(`/api/agents/${activeAgentSession.sessionId}/kill`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ command: `openclaw sessions kill ${activeAgentSession.sessionId}` }),
+                      body: JSON.stringify({ agentId: activeAgentSession.sessionId }),
                     }).then(r => r.json());
                     
                     if (result?.success) {

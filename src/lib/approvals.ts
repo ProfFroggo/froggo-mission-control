@@ -1,4 +1,4 @@
-// Approval utilities for Froggo Dashboard
+// Approval utilities for Mission Control Dashboard
 
 import { useStore, ApprovalType } from '../store/store';
 

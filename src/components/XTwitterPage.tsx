@@ -24,9 +24,9 @@ export default function XTwitterPage() {
   const showApprovalPane = TABS_WITH_APPROVAL.includes(activeTab);
 
   return (
-    <div className="h-full flex flex-col bg-clawd-bg text-clawd-text">
+    <div className="h-full flex flex-col bg-mission-control-bg text-mission-control-text">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
           <Share2 size={24} className="text-info" />
           <h1 className="text-xl font-semibold">Social Media</h1>

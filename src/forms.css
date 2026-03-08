@@ -6,7 +6,7 @@
 /* ==================== BASE INPUT STYLES ==================== */
 
 /* Text inputs, textareas, and selects */
-.clawd-input,
+.mission-control-input,
 input[type="text"]:not(.unstyled),
 input[type="email"]:not(.unstyled),
 input[type="password"]:not(.unstyled),
@@ -22,13 +22,13 @@ select:not(.unstyled) {
   padding: 0.625rem 0.875rem; /* 10px 14px */
   font-size: 0.875rem; /* 14px */
   line-height: 1.5;
-  color: var(--clawd-text);
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  color: var(--mission-control-text);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: 0.5rem; /* 8px */
   outline: none;
   transition: all 0.15s ease;
-  font-family: var(--clawd-font);
+  font-family: var(--mission-control-font);
 }
 
 /* Textarea specific */
@@ -49,43 +49,43 @@ select:not(.unstyled) {
 /* ==================== INPUT STATES ==================== */
 
 /* Focus state */
-.clawd-input:focus,
+.mission-control-input:focus,
 input:not(.unstyled):focus,
 textarea:not(.unstyled):focus,
 select:not(.unstyled):focus {
-  border-color: var(--clawd-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clawd-accent) 15%, transparent);
-  background: color-mix(in srgb, var(--clawd-surface) 97%, var(--clawd-accent));
+  border-color: var(--mission-control-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mission-control-accent) 15%, transparent);
+  background: color-mix(in srgb, var(--mission-control-surface) 97%, var(--mission-control-accent));
 }
 
 /* Hover state */
-.clawd-input:hover:not(:disabled):not(:focus),
+.mission-control-input:hover:not(:disabled):not(:focus),
 input:not(.unstyled):hover:not(:disabled):not(:focus),
 textarea:not(.unstyled):hover:not(:disabled):not(:focus),
 select:not(.unstyled):hover:not(:disabled):not(:focus) {
-  border-color: color-mix(in srgb, var(--clawd-border) 60%, var(--clawd-text));
+  border-color: color-mix(in srgb, var(--mission-control-border) 60%, var(--mission-control-text));
 }
 
 /* Disabled state */
-.clawd-input:disabled,
+.mission-control-input:disabled,
 input:not(.unstyled):disabled,
 textarea:not(.unstyled):disabled,
 select:not(.unstyled):disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: color-mix(in srgb, var(--clawd-surface) 95%, var(--clawd-bg));
+  background: color-mix(in srgb, var(--mission-control-surface) 95%, var(--mission-control-bg));
 }
 
 /* Error state */
-.clawd-input.error,
+.mission-control-input.error,
 input.error:not(.unstyled),
 textarea.error:not(.unstyled),
 select.error:not(.unstyled) {
   border-color: #ef4444;
-  background: color-mix(in srgb, var(--clawd-surface) 97%, #ef4444);
+  background: color-mix(in srgb, var(--mission-control-surface) 97%, #ef4444);
 }
 
-.clawd-input.error:focus,
+.mission-control-input.error:focus,
 input.error:not(.unstyled):focus,
 textarea.error:not(.unstyled):focus,
 select.error:not(.unstyled):focus {
@@ -93,27 +93,33 @@ select.error:not(.unstyled):focus {
 }
 
 /* Success state */
-.clawd-input.success,
+.mission-control-input.success,
 input.success:not(.unstyled),
 textarea.success:not(.unstyled),
 select.success:not(.unstyled) {
-  border-color: var(--clawd-accent);
-  background: color-mix(in srgb, var(--clawd-surface) 97%, var(--clawd-accent));
+  border-color: var(--mission-control-accent);
+  background: color-mix(in srgb, var(--mission-control-surface) 97%, var(--mission-control-accent));
 }
 
 /* Placeholder text */
-.clawd-input::placeholder,
+.mission-control-input::placeholder,
 input:not(.unstyled)::placeholder,
 textarea:not(.unstyled)::placeholder {
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   opacity: 0.6;
 }
 
 /* ==================== BUTTON STYLES ==================== */
+/* Button radius standard:
+   Primary/action buttons (filled, with text): rounded-xl (0.75rem)
+   Icon-only / secondary / ghost buttons: rounded-lg (0.5rem)
+   All buttons require focus-visible ring: focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50
+*/
+/* Note: global button:not(.unstyled) is intentionally omitted — buttons use Tailwind utilities.
+   Use .mission-control-btn for explicit opt-in base button styling. */
 
-/* Base button */
-.clawd-btn,
-button:not(.unstyled) {
+/* Base button — opt-in only */
+.mission-control-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -122,159 +128,143 @@ button:not(.unstyled) {
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
   line-height: 1.5;
-  color: var(--clawd-text);
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  color: var(--mission-control-text);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: 0.5rem; /* 8px */
   cursor: pointer;
   outline: none;
   transition: all 0.15s ease;
-  font-family: var(--clawd-font);
+  font-family: var(--mission-control-font);
   white-space: nowrap;
 }
 
 /* Button hover */
-.clawd-btn:hover:not(:disabled),
-button:not(.unstyled):hover:not(:disabled) {
-  background: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
-  border-color: color-mix(in srgb, var(--clawd-border) 70%, var(--clawd-text));
+.mission-control-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mission-control-surface) 90%, var(--mission-control-text));
+  border-color: color-mix(in srgb, var(--mission-control-border) 70%, var(--mission-control-text));
 }
 
 /* Button active/pressed */
-.clawd-btn:active:not(:disabled),
-button:not(.unstyled):active:not(:disabled) {
+.mission-control-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 
 /* Button focus */
-.clawd-btn:focus-visible,
-button:not(.unstyled):focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clawd-accent) 20%, transparent);
+.mission-control-btn:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
 }
 
 /* Button disabled */
-.clawd-btn:disabled,
-button:not(.unstyled):disabled {
+.mission-control-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--clawd-surface);
+  background: var(--mission-control-surface);
 }
 
 /* ==================== BUTTON VARIANTS ==================== */
 
 /* Primary button */
-.clawd-btn-primary,
-button.primary:not(.unstyled) {
-  background: var(--clawd-accent);
-  border-color: var(--clawd-accent);
+.mission-control-btn-primary {
+  background: var(--mission-control-accent);
+  border-color: var(--mission-control-accent);
   color: #000;
 }
 
-.clawd-btn-primary:hover:not(:disabled),
-button.primary:not(.unstyled):hover:not(:disabled) {
-  background: var(--clawd-accent-dim);
-  border-color: var(--clawd-accent-dim);
+.mission-control-btn-primary:hover:not(:disabled) {
+  background: var(--mission-control-accent-dim);
+  border-color: var(--mission-control-accent-dim);
 }
 
-.clawd-btn-primary:disabled,
-button.primary:not(.unstyled):disabled {
-  background: color-mix(in srgb, var(--clawd-accent) 50%, var(--clawd-surface));
-  border-color: color-mix(in srgb, var(--clawd-accent) 50%, var(--clawd-surface));
+.mission-control-btn-primary:disabled {
+  background: color-mix(in srgb, var(--mission-control-accent) 50%, var(--mission-control-surface));
+  border-color: color-mix(in srgb, var(--mission-control-accent) 50%, var(--mission-control-surface));
 }
 
 /* Secondary button */
-.clawd-btn-secondary,
-button.secondary:not(.unstyled) {
+.mission-control-btn-secondary {
   background: transparent;
-  border-color: var(--clawd-border);
-  color: var(--clawd-text);
+  border-color: var(--mission-control-border);
+  color: var(--mission-control-text);
 }
 
-.clawd-btn-secondary:hover:not(:disabled),
-button.secondary:not(.unstyled):hover:not(:disabled) {
-  background: color-mix(in srgb, var(--clawd-surface) 50%, transparent);
-  border-color: color-mix(in srgb, var(--clawd-border) 70%, var(--clawd-text));
+.mission-control-btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mission-control-surface) 50%, transparent);
+  border-color: color-mix(in srgb, var(--mission-control-border) 70%, var(--mission-control-text));
 }
 
 /* Danger button */
-.clawd-btn-danger,
-button.danger:not(.unstyled) {
+.mission-control-btn-danger {
   background: transparent;
   border-color: #ef4444;
   color: #ef4444;
 }
 
-.clawd-btn-danger:hover:not(:disabled),
-button.danger:not(.unstyled):hover:not(:disabled) {
+.mission-control-btn-danger:hover:not(:disabled) {
   background: color-mix(in srgb, #ef4444 10%, transparent);
   border-color: #dc2626;
   color: #dc2626;
 }
 
 /* Ghost button (no border, minimal) */
-.clawd-btn-ghost,
-button.ghost:not(.unstyled) {
+.mission-control-btn-ghost {
   background: transparent;
   border-color: transparent;
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
 }
 
-.clawd-btn-ghost:hover:not(:disabled),
-button.ghost:not(.unstyled):hover:not(:disabled) {
-  background: color-mix(in srgb, var(--clawd-surface) 50%, transparent);
+.mission-control-btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mission-control-surface) 50%, transparent);
   border-color: transparent;
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
 }
 
 /* Icon button (square, minimal padding) */
-.clawd-btn-icon,
-button.icon:not(.unstyled) {
+.mission-control-btn-icon {
   padding: 0.5rem;
   aspect-ratio: 1;
   min-width: 2rem;
 }
 
 /* Small button */
-.clawd-btn-sm,
-button.sm:not(.unstyled) {
+.mission-control-btn-sm {
   padding: 0.375rem 0.75rem; /* 6px 12px */
   font-size: 0.8125rem; /* 13px */
 }
 
 /* Large button */
-.clawd-btn-lg,
-button.lg:not(.unstyled) {
+.mission-control-btn-lg {
   padding: 0.75rem 1.25rem; /* 12px 20px */
   font-size: 0.9375rem; /* 15px */
 }
 
 /* ==================== FORM GROUPS ==================== */
 
-.clawd-form-group {
+.mission-control-form-group {
   margin-bottom: 1rem;
 }
 
-.clawd-form-label {
+.mission-control-form-label {
   display: block;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
 }
 
-.clawd-form-label.required::after {
+.mission-control-form-label.required::after {
   content: " *";
   color: #ef4444;
 }
 
-.clawd-form-hint {
+.mission-control-form-hint {
   display: block;
   margin-top: 0.375rem;
   font-size: 0.8125rem;
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
 }
 
-.clawd-form-error {
+.mission-control-form-error {
   display: block;
   margin-top: 0.375rem;
   font-size: 0.8125rem;
@@ -289,23 +279,23 @@ input[type="radio"]:not(.unstyled) {
   height: 1rem;
   margin: 0;
   cursor: pointer;
-  accent-color: var(--clawd-accent);
-  border: 1px solid var(--clawd-border);
+  accent-color: var(--mission-control-accent);
+  border: 1px solid var(--mission-control-border);
   border-radius: 0.25rem;
-  background: var(--clawd-surface);
+  background: var(--mission-control-surface);
   appearance: auto;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="checkbox"]:not(.unstyled):hover,
 input[type="radio"]:not(.unstyled):hover {
-  border-color: var(--clawd-accent);
+  border-color: var(--mission-control-accent);
 }
 
 input[type="checkbox"]:not(.unstyled):focus-visible,
 input[type="radio"]:not(.unstyled):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--clawd-accent) 25%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mission-control-accent) 25%, transparent);
 }
 
 input[type="checkbox"]:disabled:not(.unstyled),
@@ -315,7 +305,7 @@ input[type="radio"]:disabled:not(.unstyled) {
 }
 
 /* Custom checkbox */
-.clawd-checkbox {
+.mission-control-checkbox {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -324,86 +314,86 @@ input[type="radio"]:disabled:not(.unstyled) {
   user-select: none;
 }
 
-.clawd-checkbox input {
+.mission-control-checkbox input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.clawd-checkbox-box {
+.mission-control-checkbox-box {
   width: 1rem;
   height: 1rem;
-  border: 1px solid var(--clawd-border);
+  border: 1px solid var(--mission-control-border);
   border-radius: 0.25rem;
-  background: var(--clawd-surface);
+  background: var(--mission-control-surface);
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.clawd-checkbox:hover .clawd-checkbox-box {
-  border-color: var(--clawd-accent);
+.mission-control-checkbox:hover .mission-control-checkbox-box {
+  border-color: var(--mission-control-accent);
 }
 
-.clawd-checkbox input:checked + .clawd-checkbox-box {
-  background: var(--clawd-accent);
-  border-color: var(--clawd-accent);
+.mission-control-checkbox input:checked + .mission-control-checkbox-box {
+  background: var(--mission-control-accent);
+  border-color: var(--mission-control-accent);
 }
 
-.clawd-checkbox input:focus-visible + .clawd-checkbox-box {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clawd-accent) 20%, transparent);
+.mission-control-checkbox input:focus-visible + .mission-control-checkbox-box {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
 }
 
-.clawd-checkbox input:disabled + .clawd-checkbox-box {
+.mission-control-checkbox input:disabled + .mission-control-checkbox-box {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* ==================== INPUT GROUPS ==================== */
 
-.clawd-input-group {
+.mission-control-input-group {
   display: flex;
   align-items: stretch;
 }
 
-.clawd-input-group .clawd-input,
-.clawd-input-group input:not(.unstyled) {
+.mission-control-input-group .mission-control-input,
+.mission-control-input-group input:not(.unstyled) {
   border-radius: 0;
 }
 
-.clawd-input-group .clawd-input:first-child,
-.clawd-input-group input:first-child:not(.unstyled) {
+.mission-control-input-group .mission-control-input:first-child,
+.mission-control-input-group input:first-child:not(.unstyled) {
   border-top-left-radius: 0.5rem;
   border-bottom-left-radius: 0.5rem;
 }
 
-.clawd-input-group .clawd-input:last-child,
-.clawd-input-group input:last-child:not(.unstyled) {
+.mission-control-input-group .mission-control-input:last-child,
+.mission-control-input-group input:last-child:not(.unstyled) {
   border-top-right-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
 }
 
-.clawd-input-group .clawd-btn:first-child,
-.clawd-input-group button:first-child:not(.unstyled) {
+.mission-control-input-group .mission-control-btn:first-child,
+.mission-control-input-group button:first-child:not(.unstyled) {
   border-top-left-radius: 0.5rem;
   border-bottom-left-radius: 0.5rem;
 }
 
-.clawd-input-group .clawd-btn:last-child,
-.clawd-input-group button:last-child:not(.unstyled) {
+.mission-control-input-group .mission-control-btn:last-child,
+.mission-control-input-group button:last-child:not(.unstyled) {
   border-top-right-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
 }
 
-.clawd-input-addon {
+.mission-control-input-addon {
   display: flex;
   align-items: center;
   padding: 0.625rem 0.875rem;
-  background: color-mix(in srgb, var(--clawd-surface) 95%, var(--clawd-bg));
-  border: 1px solid var(--clawd-border);
-  color: var(--clawd-text-dim);
+  background: color-mix(in srgb, var(--mission-control-surface) 95%, var(--mission-control-bg));
+  border: 1px solid var(--mission-control-border);
+  color: var(--mission-control-text-dim);
   font-size: 0.875rem;
   white-space: nowrap;
 }
@@ -413,14 +403,14 @@ input[type="radio"]:disabled:not(.unstyled) {
 /* Focus state for toggle switches */
 .toggle-switch:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clawd-accent) 25%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mission-control-accent) 25%, transparent);
 }
 
 /* ==================== ACCESSIBILITY ==================== */
 
 /* Focus visible for keyboard navigation */
 *:focus-visible {
-  outline: 2px solid var(--clawd-accent);
+  outline: 2px solid var(--mission-control-accent);
   outline-offset: 2px;
 }
 
@@ -440,14 +430,14 @@ input[type="radio"]:disabled:not(.unstyled) {
 /* ==================== RESPONSIVE ==================== */
 
 @media (max-width: 768px) {
-  .clawd-input,
+  .mission-control-input,
   input:not(.unstyled),
   textarea:not(.unstyled),
   select:not(.unstyled) {
     font-size: 1rem; /* Prevent iOS zoom */
   }
   
-  .clawd-btn,
+  .mission-control-btn,
   button:not(.unstyled) {
     padding: 0.75rem 1rem;
   }
@@ -455,14 +445,25 @@ input[type="radio"]:disabled:not(.unstyled) {
 
 /* ==================== LIGHT THEME ADJUSTMENTS ==================== */
 
-:root.light .clawd-input:focus,
+:root.light .mission-control-input:focus,
 :root.light input:not(.unstyled):focus,
 :root.light textarea:not(.unstyled):focus,
 :root.light select:not(.unstyled):focus {
   background: #ffffff;
 }
 
-:root.light .clawd-btn-primary,
-:root.light button.primary:not(.unstyled) {
+:root.light .mission-control-btn-primary {
   color: #ffffff;
 }
+
+/* ==================== ICON INPUT PADDING OVERRIDES ==================== */
+/* forms.css specificity (0,2,1) beats Tailwind pl-* (0,1,0).
+   These rules restore Tailwind padding utilities for inputs with icons. */
+input[type="text"].pl-7:not(.unstyled)  { padding-left: 1.75rem; }
+input[type="text"].pl-8:not(.unstyled)  { padding-left: 2rem; }
+input[type="text"].pl-9:not(.unstyled)  { padding-left: 2.25rem; }
+input[type="text"].pl-10:not(.unstyled) { padding-left: 2.5rem; }
+input[type="search"].pl-7:not(.unstyled)  { padding-left: 1.75rem; }
+input[type="search"].pl-8:not(.unstyled)  { padding-left: 2rem; }
+input[type="search"].pl-9:not(.unstyled)  { padding-left: 2.25rem; }
+input[type="search"].pl-10:not(.unstyled) { padding-left: 2.5rem; }

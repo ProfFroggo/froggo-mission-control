@@ -25,21 +25,328 @@ function resolveModel(short: string): string {
   return MODEL_MAP[short] ?? (short.startsWith('claude-') ? short : 'claude-sonnet-4-6');
 }
 
+// ── Per-tier allowed tool sets ─────────────────────────────────────────────────
+// No --dangerously-skip-permissions ever. Each tier explicitly states what it may use.
+
+const MCP_DB = [
+  'mcp__mission-control_db__task_list',
+  'mcp__mission-control_db__task_get',
+  'mcp__mission-control_db__task_create',
+  'mcp__mission-control_db__task_update',
+  'mcp__mission-control_db__task_add_activity',
+  'mcp__mission-control_db__task_add_attachment',
+  'mcp__mission-control_db__approval_create',
+  'mcp__mission-control_db__approval_check',
+  'mcp__mission-control_db__inbox_list',
+  'mcp__mission-control_db__agent_status',
+  'mcp__mission-control_db__chat_post',
+  'mcp__mission-control_db__chat_read',
+  'mcp__mission-control_db__chat_rooms_list',
+  'mcp__mission-control_db__subtask_create',
+  'mcp__mission-control_db__subtask_update',
+  'mcp__mission-control_db__schedule_create',
+  'mcp__mission-control_db__schedule_list',
+];
+
+const MCP_MEMORY = [
+  'mcp__memory__memory_search',
+  'mcp__memory__memory_recall',
+  'mcp__memory__memory_write',
+  'mcp__memory__memory_read',
+];
+
+const MCP_GOOGLE = [
+  // Auth
+  'mcp__google-workspace__auth_clear',
+  'mcp__google-workspace__auth_refreshToken',
+  // Calendar
+  'mcp__google-workspace__calendar_createEvent',
+  'mcp__google-workspace__calendar_deleteEvent',
+  'mcp__google-workspace__calendar_findFreeTime',
+  'mcp__google-workspace__calendar_getEvent',
+  'mcp__google-workspace__calendar_list',
+  'mcp__google-workspace__calendar_listEvents',
+  'mcp__google-workspace__calendar_respondToEvent',
+  'mcp__google-workspace__calendar_updateEvent',
+  // Chat
+  'mcp__google-workspace__chat_findDmByEmail',
+  'mcp__google-workspace__chat_findSpaceByName',
+  'mcp__google-workspace__chat_getMessages',
+  'mcp__google-workspace__chat_listSpaces',
+  'mcp__google-workspace__chat_listThreads',
+  'mcp__google-workspace__chat_sendDm',
+  'mcp__google-workspace__chat_sendMessage',
+  'mcp__google-workspace__chat_setUpSpace',
+  // Docs
+  'mcp__google-workspace__docs_appendText',
+  'mcp__google-workspace__docs_create',
+  'mcp__google-workspace__docs_extractIdFromUrl',
+  'mcp__google-workspace__docs_find',
+  'mcp__google-workspace__docs_getText',
+  'mcp__google-workspace__docs_insertText',
+  'mcp__google-workspace__docs_move',
+  'mcp__google-workspace__docs_replaceText',
+  // Drive
+  'mcp__google-workspace__drive_downloadFile',
+  'mcp__google-workspace__drive_findFolder',
+  'mcp__google-workspace__drive_search',
+  // Gmail
+  'mcp__google-workspace__gmail_createDraft',
+  'mcp__google-workspace__gmail_downloadAttachment',
+  'mcp__google-workspace__gmail_get',
+  'mcp__google-workspace__gmail_listLabels',
+  'mcp__google-workspace__gmail_modify',
+  'mcp__google-workspace__gmail_search',
+  'mcp__google-workspace__gmail_send',
+  'mcp__google-workspace__gmail_sendDraft',
+  // People
+  'mcp__google-workspace__people_getMe',
+  'mcp__google-workspace__people_getUserProfile',
+  // Sheets
+  'mcp__google-workspace__sheets_find',
+  'mcp__google-workspace__sheets_getMetadata',
+  'mcp__google-workspace__sheets_getRange',
+  'mcp__google-workspace__sheets_getText',
+  // Slides
+  'mcp__google-workspace__slides_find',
+  'mcp__google-workspace__slides_getMetadata',
+  'mcp__google-workspace__slides_getText',
+  // Time
+  'mcp__google-workspace__time_getCurrentDate',
+  'mcp__google-workspace__time_getCurrentTime',
+  'mcp__google-workspace__time_getTimeZone',
+];
+
+const BASH_SAFE = [
+  'Bash(npm run *)', 'Bash(npm test *)', 'Bash(npx vitest *)', 'Bash(npx playwright *)',
+  'Bash(tsc *)', 'Bash(node *)',
+  'Bash(git status)', 'Bash(git diff *)', 'Bash(git add *)', 'Bash(git commit *)',
+  'Bash(git log *)', 'Bash(git branch *)', 'Bash(git checkout *)', 'Bash(git stash *)',
+  'Bash(cat *)', 'Bash(ls *)', 'Bash(mkdir *)', 'Bash(cp *)', 'Bash(mv *)',
+  'Bash(head *)', 'Bash(tail *)', 'Bash(wc *)', 'Bash(grep *)', 'Bash(find *)',
+  'Bash(echo *)', 'Bash(qmd *)', 'Bash(sqlite3 *)', 'Bash(tmux *)',
+  'Bash(bash tools/*)', 'Bash(sh tools/*)',
+];
+
+export const TIER_TOOLS: Record<string, string[]> = {
+  // restricted: read-only files, task tracking only, no writes, no bash, no web
+  restricted: [
+    'Read', 'Glob', 'Grep',
+    ...MCP_DB.filter(t => t !== 'mcp__mission-control_db__task_create'),
+    'mcp__memory__memory_search',
+    'mcp__memory__memory_recall',
+    'mcp__memory__memory_read',
+  ],
+  // apprentice: can read/write files, full MCP access, web search, no bash
+  apprentice: [
+    'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch',
+    ...MCP_DB,
+    ...MCP_MEMORY,
+  ],
+  // worker: + safe bash commands + WebFetch + Agent subagents + Google Workspace
+  worker: [
+    'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent',
+    ...BASH_SAFE,
+    ...MCP_DB,
+    ...MCP_MEMORY,
+    ...MCP_GOOGLE,
+  ],
+  // trusted: + notebook editing; same bash as worker (deny list in settings.json still applies)
+  trusted: [
+    'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit',
+    ...BASH_SAFE,
+    ...MCP_DB,
+    ...MCP_MEMORY,
+    ...MCP_GOOGLE,
+  ],
+  // admin: identical to trusted — destructive ops still blocked by settings.json deny list
+  admin: [
+    'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit',
+    ...BASH_SAFE,
+    ...MCP_DB,
+    ...MCP_MEMORY,
+    ...MCP_GOOGLE,
+  ],
+};
+
+// ── Default disallowed tools (seeded into DB on first use) ───────────────────
+
+const DEFAULT_DISALLOWED = [
+  'Bash(rm -rf *)',
+  'Bash(sudo *)',
+  'Bash(curl *)',
+  'Bash(wget *)',
+  'Bash(git push --force *)',
+  'Bash(git reset --hard *)',
+  'Bash(chmod *)',
+  'Bash(chown *)',
+  'Bash(kill *)',
+  'Bash(pkill *)',
+];
+
+// ── API key injection ─────────────────────────────────────────────────────────
+// Reads the agent's assigned key IDs, looks them up in security.keys,
+// and returns them as { ENV_VAR_NAME: value } pairs for process injection.
+
+function loadAgentApiKeyEnv(agentId: string): Record<string, string> {
+  try {
+    const db = getDb();
+
+    // Which key IDs are assigned to this agent?
+    const assignedRow = db.prepare('SELECT value FROM settings WHERE key = ?')
+      .get(`agent.${agentId}.apiKeys`) as { value: string } | undefined;
+    if (!assignedRow?.value) return {};
+    const assignedIds: string[] = JSON.parse(assignedRow.value);
+    if (!Array.isArray(assignedIds) || assignedIds.length === 0) return {};
+
+    // Full key store
+    const keysRow = db.prepare('SELECT value FROM settings WHERE key = ?')
+      .get('security.keys') as { value: string } | undefined;
+    if (!keysRow?.value) return {};
+    const allKeys: { id: string; name: string; service: string; key: string }[] = JSON.parse(keysRow.value);
+    if (!Array.isArray(allKeys)) return {};
+
+    const env: Record<string, string> = {};
+    for (const keyEntry of allKeys) {
+      if (!assignedIds.includes(keyEntry.id)) continue;
+      // Derive env var name from service: "OpenAI" → "OPENAI_API_KEY", "Anthropic" → "ANTHROPIC_API_KEY"
+      const envName = keyEntry.service
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_|_$/g, '') + '_API_KEY';
+      env[envName] = keyEntry.key;
+    }
+    return env;
+  } catch { return {}; }
+}
+
+export function loadDisallowedTools(agentId: string): string[] {
+  try {
+    const db = getDb();
+    // Global deny list — seed defaults on first use
+    const globalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('security.disallowedTools') as { value: string } | undefined;
+    let global: string[];
+    if (!globalRow) {
+      global = DEFAULT_DISALLOWED;
+      db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`).run('security.disallowedTools', JSON.stringify(global));
+    } else {
+      try { global = JSON.parse(globalRow.value) ?? []; } catch { global = []; }
+    }
+
+    // Per-agent additions
+    const agentRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.disallowedTools`) as { value: string } | undefined;
+    let perAgent: string[] = [];
+    if (agentRow?.value) {
+      try { perAgent = JSON.parse(agentRow.value) ?? []; } catch { perAgent = []; }
+    }
+
+    // Merge, deduplicate
+    return [...new Set([...global, ...perAgent])];
+  } catch { return DEFAULT_DISALLOWED; }
+}
+
 // ── Task suffix ───────────────────────────────────────────────────────────────
 
 const TASK_SUFFIX = `\n\n---
 You are in autonomous task mode. Work through the assigned task using the MCP tools.
 Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
-Do not ask for clarification — interpret and execute. Log activity frequently.`;
+Do not ask for clarification — interpret and execute. Log activity frequently.
+
+## Library file routing — ALWAYS use the correct path when saving output files:
+| File type | Save to |
+|-----------|---------|
+| Research docs, analysis, skill maps, notes | ~/mission-control/library/docs/research/ |
+| Strategy, plans, roadmaps | ~/mission-control/library/docs/stratagies/ |
+| Presentations, reports | ~/mission-control/library/docs/presentations/ |
+| Platform/technical docs | ~/mission-control/library/docs/platform/ |
+| Code, scripts, snippets | ~/mission-control/library/code/ |
+| UI designs, mockups | ~/mission-control/library/design/ui/ |
+| Images, graphics | ~/mission-control/library/design/images/ |
+| Video, media | ~/mission-control/library/design/media/ |
+| Campaign assets | ~/mission-control/library/campaigns/campaign-{name}-{date}/ |
+| Project deliverables | ~/mission-control/library/projects/project-{name}-{date}/ |
+
+File naming: YYYY-MM-DD_description.ext (e.g. 2026-03-06_research-findings.md)
+After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment`;
+
+// ── Skills loader ─────────────────────────────────────────────────────────────
+
+function loadAgentSkills(agentId: string): string {
+  try {
+    const row = getDb()
+      .prepare('SELECT value FROM settings WHERE key = ?')
+      .get(`agent.${agentId}.skills`) as { value: string } | undefined;
+    if (!row?.value) return '';
+    const slugs: string[] = JSON.parse(row.value);
+    if (!Array.isArray(slugs) || slugs.length === 0) return '';
+
+    const skillsDir = join(process.cwd(), '.claude', 'skills');
+    const blocks: string[] = [];
+    for (const slug of slugs) {
+      const skillPath = join(skillsDir, slug, 'SKILL.md');
+      if (existsSync(skillPath)) {
+        const content = readFileSync(skillPath, 'utf-8').trim();
+        blocks.push(`### Skill: ${slug}\n${content}`);
+      }
+    }
+    if (blocks.length === 0) return '';
+    return `\n\n## Your Active Skills\nThe following skills are loaded into your context. Apply them automatically when relevant:\n\n${blocks.join('\n\n---\n\n')}`;
+  } catch { return ''; }
+}
+
+// ── Permissions loader ────────────────────────────────────────────────────────
+
+function loadPermissionPrompt(agentId: string, trustTier: string): string {
+  const lines: string[] = [];
+
+  if (trustTier === 'restricted') {
+    lines.push('\n\n## ⚠️ RESTRICTED MODE');
+    lines.push('You are operating in restricted mode. Follow these rules strictly:');
+    lines.push('- Do NOT execute shell commands');
+    lines.push('- Do NOT access files outside the project directory');
+    lines.push('- Do NOT make external API calls unless explicitly stated in the task');
+    lines.push('- Limit actions to reading files and updating task state via MCP tools');
+  } else if (trustTier === 'apprentice') {
+    lines.push('\n\n## Operating Mode: Apprentice');
+    lines.push('You have standard tool access. Prefer safe, reversible operations. Avoid destructive actions.');
+  }
+
+  // Per-action overrides stored as { [action]: 'allow'|'deny'|'reset' }
+  try {
+    const row = getDb()
+      .prepare('SELECT value FROM settings WHERE key = ?')
+      .get(`agent.${agentId}.permissions`) as { value: string } | undefined;
+    if (row?.value) {
+      const overrides = JSON.parse(row.value) as Record<string, string>;
+      const denied = Object.entries(overrides).filter(([, v]) => v === 'deny').map(([k]) => k);
+      const allowed = Object.entries(overrides).filter(([, v]) => v === 'allow').map(([k]) => k);
+      if (denied.length) lines.push(`\nDenied actions — do NOT perform: ${denied.join(', ')}`);
+      if (allowed.length) lines.push(`Explicitly permitted actions: ${allowed.join(', ')}`);
+    }
+  } catch { /* non-critical */ }
+
+  return lines.join('\n');
+}
 
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
-function buildTaskSystemPrompt(agentId: string): string | null {
+function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
+  const names = Object.keys(apiKeyEnv);
+  if (names.length === 0) return '';
+  return `\n\n## Available API Keys\nThe following API keys are available as environment variables:\n${names.map(n => `- \`process.env.${n}\``).join('\n')}`;
+}
+
+function buildTaskSystemPrompt(agentId: string, trustTier: string, apiKeyEnv: Record<string, string>): string | null {
+  const skills = loadAgentSkills(agentId);
+  const permPrompt = loadPermissionPrompt(agentId, trustTier);
+  const apiKeyPrompt = buildApiKeyPrompt(apiKeyEnv);
+
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + TASK_SUFFIX;
+    return soul + skills + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -50,6 +357,9 @@ function buildTaskSystemPrompt(agentId: string): string | null {
       const parts: string[] = [];
       if (agent.role) parts.push(`You are ${agent.name || agentId}, a ${agent.role}.`);
       if (agent.personality) parts.push(agent.personality);
+      if (skills) parts.push(skills);
+      if (apiKeyPrompt) parts.push(apiKeyPrompt);
+      if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
       return parts.join('\n');
     }
@@ -60,77 +370,151 @@ function buildTaskSystemPrompt(agentId: string): string | null {
 // ── Session management ────────────────────────────────────────────────────────
 // Uses agentId + ':task' as key to avoid colliding with chat sessions.
 
-function loadTaskSession(agentId: string): string | null {
+function loadTaskSession(taskId: string): string | null {
   try {
     const row = getDb().prepare(
       'SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?'
-    ).get(agentId + ':task', 'active') as { sessionId: string; lastActivity: number } | undefined;
+    ).get('task:' + taskId, 'active') as { sessionId: string; lastActivity: number } | undefined;
     if (!row?.sessionId) return null;
-    // Expire sessions older than 2 hours (task sessions are shorter-lived than chat)
+    // Expire sessions older than 2 hours
     if (Date.now() - row.lastActivity > 2 * 60 * 60 * 1000) return null;
     return row.sessionId;
   } catch { return null; }
 }
 
-function persistTaskSession(agentId: string, sessionId: string, model: string) {
+function persistTaskSession(taskId: string, sessionId: string, model: string) {
   try {
     const now = Date.now();
     getDb().prepare(`
       INSERT OR REPLACE INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
       VALUES (?, ?, ?, COALESCE((SELECT createdAt FROM agent_sessions WHERE agentId = ?), ?), ?, 'active')
-    `).run(agentId + ':task', sessionId, model, agentId + ':task', now, now);
+    `).run('task:' + taskId, sessionId, model, 'task:' + taskId, now, now);
   } catch { /* non-critical */ }
 }
 
 // ── Message builder ───────────────────────────────────────────────────────────
 
 function buildTaskMessage(task: Record<string, unknown>): string {
-  const lines: string[] = [
-    `You have been assigned a new task. Work on it autonomously now.`,
-    ``,
+  const status = task.status as string;
+  const lines: string[] = [];
+
+  // ── Context header ──────────────────────────────────────────────────────────
+  lines.push(
     `**Task ID**: ${task.id}`,
     `**Title**: ${task.title}`,
-  ];
-
+    `**Status**: ${status}`,
+  );
   if (task.description) lines.push(`**Description**: ${task.description}`);
   if (task.priority) lines.push(`**Priority**: ${task.priority}`);
   if (task.project) lines.push(`**Project**: ${task.project}`);
   if (task.dueDate) lines.push(`**Due**: ${new Date(task.dueDate as number).toLocaleDateString()}`);
+  lines.push(``);
 
+  // ── Status-aware instructions ───────────────────────────────────────────────
+
+  if (status === 'internal-review') {
+    // Agent set internal-review but session ended before handing off to Clara
+    lines.push(
+      `## ACTION REQUIRED — Internal review was interrupted, complete it now`,
+      ``,
+      `Your task is at internal-review. You verified the plan/subtasks but your session ended before handing off to Clara.`,
+      ``,
+      `Complete the handoff NOW:`,
+      ``,
+      `1. Re-verify all subtasks are marked complete:`,
+      `   mcp__mission-control_db__task_get { "id": "${task.id}" }`,
+      `   → Check the "subtasks" array. For any with completed=0 or completed=false:`,
+      `   mcp__mission-control_db__subtask_update { "id": "<sub-id>", "completed": true }`,
+      ``,
+      `2. Hand off to Clara immediately (do this now):`,
+      `   mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Done: <1-2 sentence summary of deliverables>" }`,
+      `   mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief label>" }`,
+    );
+    return lines.join('\n');
+  }
+
+  if (status === 'in-progress' && task.reviewNotes) {
+    // Task was rejected by Clara and returned for rework
+    lines.push(
+      `## ACTION REQUIRED — Task returned for rework`,
+      ``,
+      `Clara has reviewed this task and requested changes:`,
+      `**Review feedback**: ${task.reviewNotes}`,
+      ``,
+      `1. Look up current state:`,
+      `   mcp__mission-control_db__task_get { "id": "${task.id}" }`,
+      ``,
+      `2. Address the feedback. Update subtasks as needed and mark them complete.`,
+      ``,
+      `3. When all fixes are done, hand off again:`,
+      `   mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Fixed: <what you changed>" }`,
+      `   mcp__mission-control_db__task_update { "id": "${task.id}", "status": "internal-review", "progress": 95 }`,
+      `   — Then self-check and immediately move to review:`,
+      `   mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief label>" }`,
+    );
+    return lines.join('\n');
+  }
+
+  // ── Fresh task / normal flow ─────────────────────────────────────────────────
   lines.push(
+    `You have been assigned a new task. Work on it autonomously now.`,
     ``,
-    `## Work steps:`,
-    `1. IMMEDIATELY claim: mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress" }`,
-    `   Then log start: mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "started", "message": "Started: <one sentence plan>" }`,
-    `2. Check for a relevant skill: Read ~/git/mission-control-nextjs/.claude/skills/{skill-name}/SKILL.md if applicable (see CLAUDE.md skills table)`,
-    `3. Write your plan: mcp__mission-control_db__task_update { "id": "${task.id}", "planningNotes": "<your plan>" }`,
-    `4. Break into subtasks: mcp__mission-control_db__subtask_create for each step (taskId="${task.id}")`,
-    `5. Do the actual work. At EVERY major step/phase/action, log an activity:`,
-    `   mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "message": "<what you just did, e.g. Phase 1: researched X, Created draft Y, Completed analysis>" }`,
-    `   Update progress: mcp__mission-control_db__task_update { "id": "${task.id}", "progress": <0-100> }`,
-    `6. EVERY TIME you create or save a file, attach it to the task:`,
-    `   mcp__mission-control_db__task_add_attachment { "taskId": "${task.id}", "filePath": "<absolute path>", "fileName": "<name>", "category": "<output|report|code|design|data>", "uploadedBy": "<your-id>" }`,
-    `7. When blocked: mcp__mission-control_db__task_update { "id": "${task.id}", "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }`,
-    `8. When complete: mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Done: <summary of what was accomplished>" }`,
-    `   Then: mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief summary>" }`,
-    `   (Clara will review. If approved → done. If rejected → returns to you with feedback.)`,
+    `## REQUIRED workflow — follow every step in order:`,
     ``,
-    `## Status meanings:`,
-    `- "in-progress" → you are actively working`,
-    `- "human-review" → you need Kevin's input (blocker, approval, clarification)`,
-    `- "review" → you finished, waiting for Clara's review`,
+    `### STEP 1 — Claim immediately:`,
+    `mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "progress": 0 }`,
+    `mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "started", "message": "Started: <one sentence plan>" }`,
     ``,
-    `## Activity logging rules:`,
-    `- Log at start, end, and every meaningful action in between`,
-    `- Examples: "Researched competitor pricing", "Created draft report", "Found bug in module X", "Moved to Phase 2: implementation", "Ran tests — 3 failures", "Fixed all failures"`,
-    `- Attach every file you create (reports, code, designs, data exports)`,
-    `- DO NOT put long summaries in lastAgentUpdate — that's just a short status label`,
+    `### STEP 2 — Plan and create subtasks:`,
+    `- Check for relevant skill: Read ~/git/mission-control-nextjs/.claude/skills/{skill-name}/SKILL.md`,
+    `- Write your FULL plan in planningNotes (NOT in description — description is read-only summary):`,
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "planningNotes": "<your full plan, steps, file paths, approach>" }`,
+    `- Break into subtasks — one per concrete deliverable. NOTE THE RETURNED ID for each:`,
+    `  mcp__mission-control_db__subtask_create { "taskId": "${task.id}", "title": "<step name>", "assignedTo": "<your-id>" }`,
+    `  → Returns { "success": true, "id": "sub-xxxx" } — use this ID to mark complete in STEP 3`,
+    `  To look up subtask IDs at any time: mcp__mission-control_db__task_get { "id": "${task.id}" }`,
+    ``,
+    `### STEP 3 — Do the work, updating as you go:`,
+    `After EACH subtask is completed, immediately mark it:`,
+    `  mcp__mission-control_db__subtask_update { "id": "<subtask-id>", "completed": true }`,
+    `  mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "message": "Completed: <subtask name> — <what you did>" }`,
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "progress": <updated 0-100> }`,
+    ``,
+    `After each file created:`,
+    `  mcp__mission-control_db__task_add_attachment { "taskId": "${task.id}", "filePath": "<absolute path>", "fileName": "<name>", "category": "<output|report|code|design|data>", "uploadedBy": "<your-id>" }`,
+    ``,
+    `If blocked at any point:`,
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }`,
+    ``,
+    `### STEP 4 — Internal review (verify plan & subtasks are complete):`,
+    `Before handing off, verify: planningNotes exist, all subtasks are created, all subtasks are marked complete.`,
+    `Verify with: mcp__mission-control_db__task_get { "id": "${task.id}" }`,
+    `If any subtasks are incomplete — complete them first, then mark them done.`,
+    `Once verified:`,
+    `mcp__mission-control_db__task_update { "id": "${task.id}", "status": "internal-review", "progress": 95 }`,
+    `mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "message": "Internal review: plan verified, all <N> subtasks complete — <summary>" }`,
+    ``,
+    `### STEP 5 — Hand off to Clara (do this IMMEDIATELY after STEP 4 in the same session):`,
+    `Do NOT end your session after setting internal-review. Continue immediately:`,
+    `mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Done: <1-2 sentence summary of deliverables>" }`,
+    `mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief label>" }`,
+    `(Clara verifies the work was actually completed. Approved → done. Rejected → you get re-dispatched with feedback.)`,
+    ``,
+    `## Status flow: todo → in-progress → internal-review → review → done`,
+    `- "in-progress"     → actively working`,
+    `- "internal-review" → verifying plan + all subtasks exist and are marked complete`,
+    `- "review"          → Clara verifying work was done`,
+    `- "human-review"    → need Kevin's input (blocker/decision)`,
     ``,
     `Work autonomously. Do not ask for clarification — interpret and execute.`,
   );
 
   return lines.join('\n');
 }
+
+// ── Re-dispatch deduplication ─────────────────────────────────────────────────
+// Prevents scheduling multiple re-dispatch timeouts for the same task.
+const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 
 // ── Dispatch debounce ────────────────────────────────────────────────────────
 // Prevents rapid-fire dispatches to the same agent within 100ms.
@@ -176,25 +560,35 @@ export function dispatchTask(taskId: string): boolean {
     }
     lastDispatch.set(agentId, now);
 
-    // Get per-agent model from DB
-    const agentRow = db.prepare('SELECT model FROM agents WHERE id = ?').get(agentId) as { model?: string } | undefined;
+    // Get per-agent model and trust tier from DB
+    const agentRow = db.prepare('SELECT model, trust_tier FROM agents WHERE id = ?').get(agentId) as
+      { model?: string; trust_tier?: string } | undefined;
     const model = resolveModel(agentRow?.model ?? 'sonnet');
+    const trustTier = agentRow?.trust_tier ?? 'apprentice';
+
+    // Resolve allowed tools for this trust tier
+    const allowedTools = TIER_TOOLS[trustTier] ?? TIER_TOOLS['worker'];
+    // Resolve disallowed tools (global + per-agent from DB)
+    const disallowedTools = loadDisallowedTools(agentId);
+    // Resolve API key env vars for this agent
+    const apiKeyEnv = loadAgentApiKeyEnv(agentId);
 
     // Build args — use --resume if session exists, otherwise --system-prompt with soul file
-    const existingSession = loadTaskSession(agentId);
+    const existingSession = loadTaskSession(taskId);
     const args = [
       '--print',
       '--output-format', 'stream-json',
       '--verbose',
       '--model', model,
-      '--dangerously-skip-permissions',
+      '--allowedTools', allowedTools.join(','),
+      '--disallowedTools', disallowedTools.join(','),
     ];
 
     if (existingSession) {
       args.push('--resume', existingSession);
       // Session already has context — don't add --system-prompt
     } else {
-      const systemPrompt = buildTaskSystemPrompt(agentId);
+      const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv);
       if (systemPrompt) args.push('--system-prompt', systemPrompt);
     }
 
@@ -209,7 +603,7 @@ export function dispatchTask(taskId: string): boolean {
 
     const proc = spawn(CLAUDE_BIN, args, {
       cwd,
-      env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId } as unknown as NodeJS.ProcessEnv,
+      env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId, ...apiKeyEnv } as unknown as NodeJS.ProcessEnv,
       detached: true,
       stdio: ['pipe', 'pipe', 'ignore'],
     });
@@ -232,7 +626,7 @@ export function dispatchTask(taskId: string): boolean {
           };
           if (parsed.type === 'result') {
             if (parsed.session_id) {
-              persistTaskSession(agentId, parsed.session_id, model);
+              persistTaskSession(taskId, parsed.session_id, model);
             }
             // Log token usage
             const inputT  = parsed.input_tokens  ?? 0;
@@ -265,8 +659,28 @@ export function dispatchTask(taskId: string): boolean {
           const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
           if (current && (current.status === 'todo' || current.status === 'in-progress')) {
             db.prepare(
-              `UPDATE tasks SET status = 'blocked', lastAgentUpdate = ? WHERE id = ?`
-            ).run(`Dispatch process exited with code ${code}. Check logs.`, taskId);
+              `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
+            ).run(`Dispatch process exited with code ${code}. Needs human review to unblock.`, taskId);
+          }
+        }
+
+        // If agent exited cleanly but task is still at internal-review, re-dispatch
+        // to complete the handoff (agent's session ended mid-step)
+        if (code === 0) {
+          const current = db.prepare('SELECT status, assignedTo FROM tasks WHERE id = ?')
+            .get(taskId) as { status: string; assignedTo: string | null } | undefined;
+          if (current?.status === 'internal-review' && current?.assignedTo) {
+            db.prepare(
+              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+            ).run(taskId, 'system', 'auto_redispatch',
+              'Task left in internal-review after agent exit — re-dispatching to complete handoff', Date.now());
+            if (!_redispatchTimeouts.has(taskId)) {
+              const t = setTimeout(() => {
+                _redispatchTimeouts.delete(taskId);
+                dispatchTask(taskId);
+              }, 2000);
+              _redispatchTimeouts.set(taskId, t);
+            }
           }
         }
       } catch { /* non-critical */ }
@@ -280,15 +694,20 @@ export function dispatchTask(taskId: string): boolean {
           `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
         ).run(taskId, agentId, 'dispatch_error', `Spawn failed: ${err.message}`, Date.now());
         db.prepare(
-          `UPDATE tasks SET status = 'blocked', lastAgentUpdate = ? WHERE id = ?`
-        ).run(`Could not start agent: ${err.message}`, taskId);
+          `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
+        ).run(`Could not start agent: ${err.message}. Needs human review to unblock.`, taskId);
       } catch { /* non-critical */ }
     });
 
     proc.unref();
 
-    // Log successful dispatch
+    // Auto-advance task to in-progress on dispatch — don't wait for agent to do it
+    const now2 = Date.now();
     try {
+      const cur = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
+      if (cur?.status === 'todo' || cur?.status === 'internal-review') {
+        db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('in-progress', now2, taskId);
+      }
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(
@@ -296,11 +715,11 @@ export function dispatchTask(taskId: string): boolean {
         agentId,
         'dispatch',
         `Task dispatched to ${agentId} (model: ${model}, ${existingSession ? 'resumed session' : 'new session'})`,
-        Date.now()
+        now2
       );
     } catch { /* non-critical */ }
 
-    console.log(`[taskDispatcher] Dispatched task ${taskId} to agent ${agentId} (model: ${model}, cwd: ${cwd})`);
+    console.log(`[taskDispatcher] Dispatched task ${taskId} to agent ${agentId} (model: ${model}, tier: ${trustTier}, cwd: ${cwd})`);
     return true;
   } catch (err) {
     console.error('[taskDispatcher] Error:', err);

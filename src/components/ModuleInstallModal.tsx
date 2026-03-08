@@ -6,7 +6,7 @@ import type { CatalogModule } from '../types/catalog';
 interface ModuleInstallModalProps {
   module: CatalogModule;
   onClose: () => void;
-  onInstalled?: () => void;
+  onInstalled?: (moduleId: string) => void;
 }
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error' | 'skipped';
@@ -85,7 +85,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
       await catalogApi.setModuleInstalled(module.id, true);
 
       setDone(true);
-      onInstalled?.();
+      onInstalled?.(module.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       // Mark the first running step as error

@@ -88,10 +88,10 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
         <button 
           onClick={fetchEvents} 
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
           disabled={loading}
           type="button"
           aria-label="Refresh events"
@@ -102,21 +102,21 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
-          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+          <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
           <div className="p-8 text-center text-error">{error}</div>
         ) : events.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">No events</div>
+          <div className="p-8 text-center text-mission-control-text-dim">No events</div>
         ) : (
           Object.entries(grouped).map(([date, dateEvents]) => (
             <div key={date}>
-              <div className="px-4 py-2 text-xs font-medium text-clawd-text-dim bg-clawd-bg/50 sticky top-0">
+              <div className="px-4 py-2 text-xs font-medium text-mission-control-text-dim bg-mission-control-bg/50 sticky top-0">
                 {date}
               </div>
               {(dateEvents as any[]).map((event: any) => (
-                <div key={event.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+                <div key={event.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
                   <div className="font-medium">{event.title}</div>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-clawd-text-dim">
+                  <div className="flex items-center gap-3 mt-1 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
                       <Clock size={14} />
                       {formatTime(event.start, event.isAllDay)}
@@ -192,10 +192,10 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
         <button 
           onClick={fetchEmails} 
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
           disabled={loading}
           type="button"
           aria-label="Refresh emails"
@@ -206,20 +206,20 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
-          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+          <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
           <div className="p-8 text-center text-error">{error}</div>
         ) : emails.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">No unread emails</div>
+          <div className="p-8 text-center text-mission-control-text-dim">No unread emails</div>
         ) : (
           emails.map((email) => (
-            <div key={email.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+            <div key={email.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs px-1.5 py-0.5 bg-clawd-border rounded flex-shrink-0 whitespace-nowrap">{email.account}</span>
-                <span className="text-xs text-clawd-text-dim truncate">{email.from}</span>
+                <span className="text-xs px-1.5 py-0.5 bg-mission-control-border rounded flex-shrink-0 whitespace-nowrap">{email.account}</span>
+                <span className="text-xs text-mission-control-text-dim truncate">{email.from}</span>
               </div>
               <div className="font-medium truncate">{email.subject}</div>
-              <div className="text-xs text-clawd-text-dim truncate mt-1">{email.snippet}</div>
+              <div className="text-xs text-mission-control-text-dim truncate mt-1">{email.snippet}</div>
             </div>
           ))
         )}
@@ -271,10 +271,10 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
         <button 
           onClick={fetchMentions} 
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
           disabled={loading}
           type="button"
           aria-label="Refresh mentions"
@@ -285,24 +285,24 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
-          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+          <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <AlertCircle size={24} className="mx-auto mb-2 text-warning" />
             <p>{error}</p>
             <p className="text-xs mt-2">X API may need setup</p>
           </div>
         ) : mentions.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">No recent mentions</div>
+          <div className="p-8 text-center text-mission-control-text-dim">No recent mentions</div>
         ) : (
           mentions.map((tweet: any, i) => (
-            <div key={tweet.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+            <div key={tweet.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">@{tweet.author?.username || tweet.author || tweet.user?.screen_name || 'unknown'}</span>
-                {tweet.author?.name && <span className="text-xs text-clawd-text-dim">({tweet.author.name})</span>}
+                {tweet.author?.name && <span className="text-xs text-mission-control-text-dim">({tweet.author.name})</span>}
               </div>
               <div className="text-sm">{tweet.text || tweet.full_text}</div>
-              {tweet.createdAt && <div className="text-xs text-clawd-text-dim mt-1">{tweet.createdAt}</div>}
+              {tweet.createdAt && <div className="text-xs text-mission-control-text-dim mt-1">{tweet.createdAt}</div>}
             </div>
           ))
         )}
@@ -327,7 +327,7 @@ function PlatformIcon({ platform }: { platform: string }) {
         <span className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">D</span>
       );
     default:
-      return <MessageSquare size={16} className="text-clawd-text-dim" />;
+      return <MessageSquare size={16} className="text-mission-control-text-dim" />;
   }
 }
 
@@ -374,10 +374,10 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
         onClose={onClose}
       />
       
-      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+      <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
         <button 
           onClick={fetchMessages} 
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
           disabled={loading}
           type="button"
           aria-label="Refresh messages"
@@ -388,27 +388,27 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
 
       <BaseModalBody noPadding maxHeight="60vh">
         {loading ? (
-          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+          <div className="p-8 text-center text-mission-control-text-dim">Loading...</div>
         ) : error ? (
           <div className="p-8 text-center text-error">{error}</div>
         ) : messages.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
             <p>No recent messages</p>
             <p className="text-xs mt-2">WhatsApp/Telegram integration needed</p>
           </div>
         ) : (
           messages.map((msg: any, i) => (
-            <div key={msg.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+            <div key={msg.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
               <div className="flex items-start gap-3">
                 <PlatformIcon platform={msg.platform} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium truncate">{msg.name}</span>
-                    <span className="text-xs text-clawd-text-dim whitespace-nowrap">{msg.relativeTime}</span>
+                    <span className="text-xs text-mission-control-text-dim whitespace-nowrap">{msg.relativeTime}</span>
                   </div>
-                  <div className="text-sm text-clawd-text-dim truncate mt-0.5">
-                    {msg.fromMe && <span className="text-clawd-text-dim mr-1">You:</span>}
+                  <div className="text-sm text-mission-control-text-dim truncate mt-0.5">
+                    {msg.fromMe && <span className="text-mission-control-text-dim mr-1">You:</span>}
                     {msg.preview || <span className="italic opacity-50">(no preview)</span>}
                   </div>
                 </div>

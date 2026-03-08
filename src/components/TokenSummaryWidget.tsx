@@ -83,8 +83,8 @@ export default function TokenSummaryWidget() {
   if (loading) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-clawd-accent"></div>
-        <p className="text-xs text-clawd-text-dim mt-2">Loading...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent"></div>
+        <p className="text-xs text-mission-control-text-dim mt-2">Loading...</p>
       </div>
     );
   }
@@ -92,8 +92,8 @@ export default function TokenSummaryWidget() {
   if (error) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
-        <Zap size={32} className="text-clawd-text-dim/50 mb-2" />
-        <p className="text-xs text-clawd-text-dim text-center">{error}</p>
+        <Zap size={32} className="text-mission-control-text-dim/50 mb-2" />
+        <p className="text-xs text-mission-control-text-dim text-center">{error}</p>
       </div>
     );
   }
@@ -101,8 +101,8 @@ export default function TokenSummaryWidget() {
   if (!summary) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-full">
-        <Zap size={32} className="text-clawd-text-dim/50 mb-2" />
-        <p className="text-xs text-clawd-text-dim">No data</p>
+        <Zap size={32} className="text-mission-control-text-dim/50 mb-2" />
+        <p className="text-xs text-mission-control-text-dim">No data</p>
       </div>
     );
   }
@@ -111,45 +111,45 @@ export default function TokenSummaryWidget() {
     <div className="p-4 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Zap size={16} className="text-clawd-accent" />
-        <h3 className="text-sm font-semibold text-clawd-text">Token Usage</h3>
-        <span className="text-xs text-clawd-text-dim ml-auto">Today</span>
+        <Zap size={16} className="text-mission-control-accent" />
+        <h3 className="text-sm font-semibold text-mission-control-text">Token Usage</h3>
+        <span className="text-xs text-mission-control-text-dim ml-auto">Today</span>
       </div>
 
       {/* Main stats */}
       <div className="flex-1 flex flex-col justify-center gap-3">
         {/* Total tokens */}
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-clawd-text-dim">Total</span>
+          <span className="text-xs text-mission-control-text-dim">Total</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-clawd-text">{formatTokens(summary.totalTokens)}</span>
-            <span className="text-xs text-clawd-text-dim">tokens</span>
+            <span className="text-2xl font-bold text-mission-control-text">{formatTokens(summary.totalTokens)}</span>
+            <span className="text-xs text-mission-control-text-dim">tokens</span>
           </div>
         </div>
 
         {/* Cost */}
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-clawd-text-dim">Cost</span>
+          <span className="text-xs text-mission-control-text-dim">Cost</span>
           <div className="flex items-center gap-1.5">
-            <DollarSign size={14} className="text-clawd-text-dim" />
-            <span className="text-lg font-semibold text-clawd-text">{formatCost(summary.totalCost)}</span>
+            <DollarSign size={14} className="text-mission-control-text-dim" />
+            <span className="text-lg font-semibold text-mission-control-text">{formatCost(summary.totalCost)}</span>
           </div>
         </div>
 
         {/* Top agent */}
         {summary.topAgent && (
-          <div className="flex items-baseline justify-between pt-2 border-t border-clawd-border">
-            <span className="text-xs text-clawd-text-dim">Top</span>
+          <div className="flex items-baseline justify-between pt-2 border-t border-mission-control-border">
+            <span className="text-xs text-mission-control-text-dim">Top</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-clawd-text capitalize">{summary.topAgent}</span>
-              <span className="text-xs text-clawd-text-dim">({formatTokens(summary.topAgentTokens || 0)})</span>
+              <span className="text-xs font-medium text-mission-control-text capitalize">{summary.topAgent}</span>
+              <span className="text-xs text-mission-control-text-dim">({formatTokens(summary.topAgentTokens || 0)})</span>
             </div>
           </div>
         )}
       </div>
 
       {/* Status indicator */}
-      <div className={`mt-3 pt-3 border-t border-clawd-border flex items-center gap-2 text-xs ${
+      <div className={`mt-3 pt-3 border-t border-mission-control-border flex items-center gap-2 text-xs ${
         status === 'good' ? 'text-success' :
         status === 'warning' ? 'text-warning' :
         'text-error'

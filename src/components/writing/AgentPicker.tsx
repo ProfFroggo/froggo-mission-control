@@ -24,8 +24,8 @@ export default function AgentPicker({ selected, onSelect, disabled }: AgentPicke
             disabled={disabled}
             className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors ${
               isActive
-                ? 'bg-clawd-accent/20 text-clawd-accent'
-                : 'text-clawd-text-dim hover:text-clawd-text'
+                ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <Icon className="w-3 h-3" />

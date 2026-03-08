@@ -91,7 +91,7 @@ export default function ChapterListItem({
               if (e.key === 'Escape') handleRenameCancel();
             }}
             onBlur={handleRenameConfirm}
-            className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-accent text-clawd-text text-xs focus:outline-none"
+            className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-accent text-mission-control-text text-xs focus:outline-none"
           />
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function ChapterListItem({
         <button
           {...attributes}
           {...listeners}
-          className="p-1 ml-1 text-clawd-text-dim hover:text-clawd-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1 ml-1 text-mission-control-text-dim hover:text-mission-control-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label={`Drag to reorder ${chapter.title}`}
         >
           <GripVertical size={14} />
@@ -113,21 +113,21 @@ export default function ChapterListItem({
           onClick={onSelect}
           className={`flex-1 text-left px-2 py-2 transition-colors relative ${
             isActive
-              ? 'bg-clawd-border/50 border-l-2 border-l-clawd-accent'
-              : 'hover:bg-clawd-border/30 border-l-2 border-l-transparent'
+              ? 'bg-mission-control-border/50 border-l-2 border-l-mission-control-accent'
+              : 'hover:bg-mission-control-border/30 border-l-2 border-l-transparent'
           }`}
         >
           <div className="flex items-start justify-between min-w-0">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-clawd-text-dim font-mono">
+                <span className="text-[10px] text-mission-control-text-dim font-mono">
                   {chapter.position + 1}.
                 </span>
-                <span className="text-xs font-medium text-clawd-text truncate">
+                <span className="text-xs font-medium text-mission-control-text truncate">
                   {chapter.title}
                 </span>
               </div>
-              <span className="text-[10px] text-clawd-text-dim ml-4">
+              <span className="text-[10px] text-mission-control-text-dim ml-4">
                 {chapter.wordCount.toLocaleString()} words
               </span>
             </div>
@@ -136,14 +136,14 @@ export default function ChapterListItem({
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               <button
                 onClick={handleStartRename}
-                className="p-1 rounded text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+                className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                 title="Rename chapter"
               >
                 <Pencil size={12} />
               </button>
               <button
                 onClick={handleDelete}
-                className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                 title="Delete chapter"
               >
                 <Trash2 size={12} />

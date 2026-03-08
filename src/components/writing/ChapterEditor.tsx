@@ -154,7 +154,7 @@ export default function ChapterEditor() {
 
   if (chapterLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-clawd-text-dim">
+      <div className="flex items-center justify-center h-full text-mission-control-text-dim">
         <span className="text-sm">Loading chapter...</span>
       </div>
     );
@@ -184,7 +184,7 @@ export default function ChapterEditor() {
           </BubbleMenu>
         )}
       </div>
-      <div className="border-t border-clawd-border px-4 py-2 text-xs text-clawd-text-dim flex justify-between flex-shrink-0">
+      <div className="border-t border-mission-control-border px-4 py-2 text-xs text-mission-control-text-dim flex justify-between flex-shrink-0">
         <span>{wordCount.toLocaleString()} words</span>
         <span>{chapterDirty ? 'Saving...' : 'Saved'}</span>
       </div>

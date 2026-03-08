@@ -83,28 +83,28 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
-    <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
+    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-info" />
           <div>
             <h2 className="font-semibold">Today&apos;s Schedule</h2>
-            <p className="text-xs text-clawd-text-dim">{dateStr}</p>
+            <p className="text-xs text-mission-control-text-dim">{dateStr}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button 
             onClick={loadTodayEvents}
             disabled={loading}
-            className="p-1.5 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
           <button 
             onClick={() => onNavigate?.('schedule')}
-            className="flex items-center gap-1 text-sm text-clawd-accent hover:underline"
+            className="flex items-center gap-1 text-sm text-mission-control-accent hover:underline"
           >
             View All <ChevronRight size={14} />
           </button>
@@ -115,27 +115,27 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
       <div className="max-h-64 overflow-y-auto">
         {loading ? (
           <div className="p-6 text-center">
-            <Loader2 size={24} className="mx-auto mb-2 animate-spin text-clawd-text-dim" />
-            <p className="text-sm text-clawd-text-dim">Loading events...</p>
+            <Loader2 size={24} className="mx-auto mb-2 animate-spin text-mission-control-text-dim" />
+            <p className="text-sm text-mission-control-text-dim">Loading events...</p>
           </div>
         ) : error ? (
           <div className="p-6 text-center text-error">
             <p className="text-sm">{error}</p>
             <button 
               onClick={loadTodayEvents}
-              className="mt-2 text-xs text-clawd-accent hover:underline"
+              className="mt-2 text-xs text-mission-control-accent hover:underline"
             >
               Retry
             </button>
           </div>
         ) : events.length === 0 ? (
           <div className="p-6 text-center">
-            <Calendar size={28} className="mx-auto mb-2 opacity-50 text-clawd-text-dim" />
-            <p className="text-sm text-clawd-text-dim">No events today</p>
-            <p className="text-xs text-clawd-text-dim mt-1">Enjoy your free time!</p>
+            <Calendar size={28} className="mx-auto mb-2 opacity-50 text-mission-control-text-dim" />
+            <p className="text-sm text-mission-control-text-dim">No events today</p>
+            <p className="text-xs text-mission-control-text-dim mt-1">Enjoy your free time!</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border">
+          <div className="divide-y divide-mission-control-border">
             {events.slice(0, 5).map((event) => {
               const meetingLink = getMeetingLink(event);
               const timeStr = formatTime(event);
@@ -145,7 +145,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
               return (
                 <div 
                   key={event.id} 
-                  className={`p-3 hover:bg-clawd-bg/50 transition-colors ${
+                  className={`p-3 hover:bg-mission-control-bg/50 transition-colors ${
                     happening ? 'bg-info-subtle border-l-2 border-l-blue-400' : ''
                   }`}
                 >
@@ -153,7 +153,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                     <div className={`flex-shrink-0 w-14 text-right ${
                       happening ? 'text-info font-semibold' :
                       upcoming ? 'text-warning font-medium' :
-                      'text-clawd-text-dim'
+                      'text-mission-control-text-dim'
                     }`}>
                       <div className="text-xs">{timeStr}</div>
                     </div>
@@ -162,7 +162,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium truncate ${
-                            happening ? 'text-info' : 'text-clawd-text'
+                            happening ? 'text-info' : 'text-mission-control-text'
                           }`}>
                             {event.summary}
                             {happening && (
@@ -178,7 +178,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                           </p>
                           
                           {event.location && (
-                            <div className="flex items-center gap-1 mt-1 text-xs text-clawd-text-dim">
+                            <div className="flex items-center gap-1 mt-1 text-xs text-mission-control-text-dim">
                               <MapPin size={10} />
                               <span className="truncate">{event.location}</span>
                             </div>
@@ -190,7 +190,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                             href={meetingLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-shrink-0 p-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent hover:text-white transition-all"
+                            className="flex-shrink-0 p-1.5 bg-mission-control-accent/20 text-mission-control-accent rounded-lg hover:bg-mission-control-accent hover:text-white transition-all"
                             title="Join meeting"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -208,7 +208,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
               <div className="p-2 text-center">
                 <button 
                   onClick={() => onNavigate?.('schedule')}
-                  className="text-xs text-clawd-accent hover:underline"
+                  className="text-xs text-mission-control-accent hover:underline"
                 >
                   +{events.length - 5} more event{events.length - 5 > 1 ? 's' : ''}
                 </button>

@@ -142,7 +142,7 @@ export function useNotifications() {
     await sendNotification({
       type: 'info',
       title: 'Test Notification',
-      body: 'This is a test notification from Froggo.',
+      body: 'This is a test notification from Mission Control.',
     });
   }, [sendNotification]);
 

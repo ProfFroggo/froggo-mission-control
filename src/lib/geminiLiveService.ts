@@ -76,7 +76,7 @@ export type GeminiVoice =
  *   Voice / mascot (f)  → Aoede    — Breezy, light, interface-level
  * 
  * Others:
- *   Froggo              → Puck     — Conversational, friendly
+ *   Mission Control              → Puck     — Conversational, friendly
  *   Chief               → Charon   — Deep, authoritative
  *   Growth Director     → Fenrir   — Warm, energetic
  *   Ox                  → Zubenelgenubi — Deep, resonant
@@ -93,7 +93,7 @@ const AGENT_VOICE_MAP: Record<string, GeminiVoice> = {
   'social-manager': 'Fenrir',
   voice:            'Aoede',
   jess:             'Leda',  // Same as Designer - youthful, friendly
-  froggo:           'Puck',
+  'mission-control':           'Puck',
   main:             'Puck',
   chief:            'Charon',
   'growth-director':'Fenrir',
@@ -247,9 +247,13 @@ export class GeminiLiveService {
     const { apiKey, voice = 'Zephyr', videoMode = 'none', systemInstruction, model, tools } = config;
     this._videoMode = videoMode;
 
+    // Pre-warm the AudioWorklet in parallel with the WS handshake so mic is ready
+    // the moment setupComplete arrives (prevents Gemini's ~3s idle timeout on msgs=0).
+    this.preWarmAudioWorklet().catch(() => { /* non-fatal — startMic will retry */ });
+
     const url = `${WS_URL}?key=${apiKey}`;
     logger.debug('[GeminiLive] Connecting to:', url.replace(/key=.*/, 'key=***'));
-    
+
     return new Promise((resolve, reject) => {
       logger.debug('[GeminiLive] Creating WebSocket...');
       const ws = new WebSocket(url);
@@ -558,31 +562,11 @@ export class GeminiLiveService {
 
   // ── Audio Input (Microphone) ──
 
-  async startMic(): Promise<void> {
-    if (this._listening || !this._connected) return;
-
-    try {
-      logger.debug('[GeminiLive] startMic: requesting getUserMedia...');
-      // Use simple constraints like MeetingsPanel (which works in production)
-      this.micStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: SEND_SAMPLE_RATE,
-        },
-      });
-
-      this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
-      this.micSource = this.audioContext.createMediaStreamSource(this.micStream);
-
-      // Analyser for mic level visualization
-      this.micAnalyser = this.audioContext.createAnalyser();
-      this.micAnalyser.fftSize = 256;
-      this.micSource.connect(this.micAnalyser);
-
-      // AudioWorklet for raw PCM data capture (replaces deprecated ScriptProcessorNode)
-      // Use inline Blob URL — file:// protocol breaks addModule in packaged Electron builds
-      const workletCode = `
+  /** Pre-load AudioContext + AudioWorklet in parallel with the WS handshake. */
+  private async preWarmAudioWorklet(): Promise<void> {
+    if (this.audioContext) return; // already warmed
+    this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
+    const workletCode = `
 class AudioCaptureProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     const input = inputs[0];
@@ -595,14 +579,62 @@ class AudioCaptureProcessor extends AudioWorkletProcessor {
 }
 registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 `;
-      const blob = new Blob([workletCode], { type: 'application/javascript' });
-      const workletUrl = URL.createObjectURL(blob);
-      logger.debug('[GeminiLive] Loading audio processor from blob URL');
-      try {
-        await this.audioContext.audioWorklet.addModule(workletUrl);
-      } finally {
-        URL.revokeObjectURL(workletUrl);
+    const blob = new Blob([workletCode], { type: 'application/javascript' });
+    const workletUrl = URL.createObjectURL(blob);
+    try {
+      await this.audioContext.audioWorklet.addModule(workletUrl);
+      logger.debug('[GeminiLive] AudioWorklet pre-warmed');
+    } finally {
+      URL.revokeObjectURL(workletUrl);
+    }
+  }
+
+  async startMic(deviceId?: string): Promise<void> {
+    if (this._listening || !this._connected) return;
+
+    try {
+      logger.debug('[GeminiLive] startMic: requesting getUserMedia...');
+      this.micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: SEND_SAMPLE_RATE,
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+        },
+      });
+
+      // Reuse pre-warmed AudioContext if available (loaded in parallel with WS handshake)
+      if (!this.audioContext) {
+        this.audioContext = new AudioContext({ sampleRate: SEND_SAMPLE_RATE });
+        const workletCode = `
+class AudioCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+    if (input.length > 0 && input[0].length > 0) {
+      const channelData = new Float32Array(input[0]);
+      this.port.postMessage({ audio: channelData }, [channelData.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('audio-capture-processor', AudioCaptureProcessor);
+`;
+        const blob = new Blob([workletCode], { type: 'application/javascript' });
+        const workletUrl = URL.createObjectURL(blob);
+        logger.debug('[GeminiLive] Loading audio processor from blob URL');
+        try {
+          await this.audioContext.audioWorklet.addModule(workletUrl);
+        } finally {
+          URL.revokeObjectURL(workletUrl);
+        }
       }
+
+      this.micSource = this.audioContext.createMediaStreamSource(this.micStream);
+
+      // Analyser for mic level visualization
+      this.micAnalyser = this.audioContext.createAnalyser();
+      this.micAnalyser.fftSize = 256;
+      this.micSource.connect(this.micAnalyser);
       this.micProcessor = new AudioWorkletNode(this.audioContext, 'audio-capture-processor');
       this.micSource.connect(this.micProcessor);
       // Connect to a silent sink to keep the processor running.
@@ -655,7 +687,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.startMicLevelMonitor();
 
     } catch (err: any) {
-      // '[GeminiLive] Mic error:', err;
+      console.error('[GeminiLive] Mic error:', err);
       this.emit('error', { message: `Microphone failed: ${err.message}` });
     }
   }
@@ -810,11 +842,14 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 
       if (!this.videoStream) return;
 
-      // Create offscreen video element
+      // Create offscreen video element — wait for metadata before playing
       this.videoElement = document.createElement('video');
       this.videoElement.srcObject = this.videoStream;
       this.videoElement.muted = true;
-      await this.videoElement.play();
+      await new Promise<void>((resolve) => {
+        this.videoElement!.onloadedmetadata = () => resolve();
+      });
+      await this.videoElement.play().catch(() => {});
 
       // Canvas for frame capture
       this.videoCanvas = document.createElement('canvas');

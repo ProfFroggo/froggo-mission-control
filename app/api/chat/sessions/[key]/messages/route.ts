@@ -12,7 +12,7 @@ export async function GET(
       'SELECT * FROM messages WHERE sessionKey = ? ORDER BY timestamp ASC'
     ).all(key);
 
-    return NextResponse.json(messages);
+    return NextResponse.json({ success: true, messages });
   } catch (error) {
     console.error('GET /api/chat/sessions/[key]/messages error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -36,6 +36,13 @@ export async function POST(
 
     const id = crypto.randomUUID();
     const now = Date.now();
+
+    // Auto-create session if it doesn't exist (sessionKey format: chat:{agentId})
+    const agentId = sessionKey.startsWith('chat:') ? sessionKey.slice(5) : null;
+    db.prepare(`
+      INSERT OR IGNORE INTO sessions (key, agentId, createdAt, lastActivity, messageCount)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(sessionKey, agentId, now, now);
 
     db.prepare(`
       INSERT INTO messages (id, sessionKey, role, content, timestamp, channel, streaming)

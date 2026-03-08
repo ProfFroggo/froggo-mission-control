@@ -27,7 +27,8 @@ class ServiceRegistryClass {
    */
   register<T>(def: ServiceDefinition<T>): void {
     if (this.definitions.has(def.id)) {
-      console.warn(`[ServiceRegistry] Service "${def.id}" already registered — overwriting`);
+      // Already registered (e.g. React StrictMode double-invoke) — skip silently
+      return;
     }
     this.definitions.set(def.id, def as ServiceDefinition);
   }

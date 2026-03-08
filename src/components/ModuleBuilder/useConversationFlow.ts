@@ -140,7 +140,7 @@ function handleLocally(
 
 // ─── LLM prompt builders ─────────────────────────────────────────────
 
-const BOOTSTRAP = `You are the Module Builder assistant in the Froggo dashboard. You guide Kevin through designing a new dashboard module via a conversational interview.
+const BOOTSTRAP = `You are the Module Builder assistant in the Mission Control dashboard. You guide Kevin through designing a new dashboard module via a conversational interview.
 
 Rules:
 - Be concise (2-3 sentences max). Be direct and conversational, like a coworker.
@@ -319,7 +319,7 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
         } else {
           if (!wireframe) generateWireframe(specSnapshot);
           setIsFinished(true);
-          addMessage('assistant', "All done! Your module spec, wireframe, and task plan are ready. Hit **Push to froggo-db** to create the build tasks.");
+          addMessage('assistant', "All done! Your module spec, wireframe, and task plan are ready. Hit **Push to mission-control-db** to create the build tasks.");
         }
       }
     },

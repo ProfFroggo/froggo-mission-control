@@ -18,7 +18,9 @@ export async function PATCH(
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
         setClauses.push(`${field} = ?`);
-        values.push(body[field]);
+        // SQLite can't bind booleans — convert to integer
+        const val = body[field];
+        values.push(typeof val === 'boolean' ? (val ? 1 : 0) : val);
       }
     }
 

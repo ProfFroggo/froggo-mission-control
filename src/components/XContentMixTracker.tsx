@@ -113,11 +113,11 @@ export const XContentMixTracker: React.FC = () => {
               className="w-3 h-3 rounded-full" 
               style={{ backgroundColor: item.color }}
             />
-            <span className="text-sm font-medium text-clawd-text">{item.type}</span>
-            <span className="text-xs text-clawd-text-dim">({item.count} posts)</span>
+            <span className="text-sm font-medium text-mission-control-text">{item.type}</span>
+            <span className="text-xs text-mission-control-text-dim">({item.count} posts)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-clawd-text-dim">
+            <span className="text-xs text-mission-control-text-dim">
               {currentPercent.toFixed(1)}% / {item.target}%
             </span>
             {offTarget ? (
@@ -131,7 +131,7 @@ export const XContentMixTracker: React.FC = () => {
         {/* Progress bars */}
         <div className="space-y-1">
           {/* Current */}
-          <div className="relative h-6 bg-clawd-surface rounded overflow-hidden">
+          <div className="relative h-6 bg-mission-control-surface rounded overflow-hidden">
             <div
               className="absolute h-full transition-all duration-300"
               style={{
@@ -141,12 +141,12 @@ export const XContentMixTracker: React.FC = () => {
               }}
             />
             <div className="absolute inset-0 flex items-center px-2">
-              <span className="text-xs font-medium text-clawd-text">Current</span>
+              <span className="text-xs font-medium text-mission-control-text">Current</span>
             </div>
           </div>
 
           {/* Target */}
-          <div className="relative h-2 bg-clawd-surface rounded overflow-hidden">
+          <div className="relative h-2 bg-mission-control-surface rounded overflow-hidden">
             <div
               className="absolute h-full transition-all duration-300"
               style={{
@@ -171,17 +171,17 @@ export const XContentMixTracker: React.FC = () => {
 
         {/* Target adjuster */}
         <div className="mt-2 flex items-center gap-2">
-          <label htmlFor={`target-${item.type}`} className="text-xs text-clawd-text-dim">Target:</label>
+          <label htmlFor={`target-${item.type}`} className="text-xs text-mission-control-text-dim">Target:</label>
           <input
             id={`target-${item.type}`}
             type="number"
             value={item.target}
             onChange={(e) => updateTarget(item.type, parseInt(e.target.value) || 0)}
-            className="w-16 px-2 py-1 text-xs border border-clawd-border rounded"
+            className="w-16 px-2 py-1 text-xs border border-mission-control-border rounded"
             min="0"
             max="100"
           />
-          <span className="text-xs text-clawd-text-dim">%</span>
+          <span className="text-xs text-mission-control-text-dim">%</span>
         </div>
       </div>
     );
@@ -209,14 +209,14 @@ export const XContentMixTracker: React.FC = () => {
   const totalPosts = getTotalPosts();
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface p-6">
+    <div className="flex flex-col h-full bg-mission-control-surface p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <PieChart className="text-info" size={24} />
           <div>
-            <h2 className="text-lg font-semibold text-clawd-text">Content Mix Tracker</h2>
-            <p className="text-sm text-clawd-text-dim">
+            <h2 className="text-lg font-semibold text-mission-control-text">Content Mix Tracker</h2>
+            <p className="text-sm text-mission-control-text-dim">
               Monitor your content type distribution
             </p>
           </div>
@@ -226,13 +226,13 @@ export const XContentMixTracker: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'bg-info text-white' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
           >
             Last Week
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'bg-info text-white' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
           >
             Last Month
           </button>
@@ -245,7 +245,7 @@ export const XContentMixTracker: React.FC = () => {
           {status === 'on-target' ? (
             <>
               <Check className="text-success" size={20} />
-              <span className="font-medium text-clawd-text">Content Mix On Target</span>
+              <span className="font-medium text-mission-control-text">Content Mix On Target</span>
             </>
           ) : status === 'minor-deviation' ? (
             <>
@@ -259,20 +259,20 @@ export const XContentMixTracker: React.FC = () => {
             </>
           )}
         </div>
-        <p className="text-sm text-clawd-text-dim">
+        <p className="text-sm text-mission-control-text-dim">
           {totalPosts} posts in the last {period === 'week' ? '7 days' : '30 days'}
         </p>
       </div>
 
       {/* Mix breakdown */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center text-clawd-text-dim">
+        <div className="flex-1 flex items-center justify-center text-mission-control-text-dim">
           Loading content mix data...
         </div>
       ) : totalPosts === 0 ? (
-        <div className="flex-1 flex items-center justify-center text-clawd-text-dim">
+        <div className="flex-1 flex items-center justify-center text-mission-control-text-dim">
           <div className="text-center">
-            <PieChart size={48} className="mx-auto mb-2 text-clawd-text-dim" />
+            <PieChart size={48} className="mx-auto mb-2 text-mission-control-text-dim" />
             <div>No posts in this period</div>
             <div className="text-xs mt-2">Start posting to track your content mix</div>
           </div>
@@ -282,9 +282,9 @@ export const XContentMixTracker: React.FC = () => {
           {mixData.map(renderMixBar)}
           
           {/* Recommendations */}
-          <div className="mt-6 p-4 bg-clawd-surface rounded-lg border border-clawd-border">
-            <div className="text-sm font-medium text-clawd-text mb-2">💡 Recommendations</div>
-            <ul className="text-sm text-clawd-text space-y-1">
+          <div className="mt-6 p-4 bg-mission-control-surface rounded-lg border border-mission-control-border">
+            <div className="text-sm font-medium text-mission-control-text mb-2">💡 Recommendations</div>
+            <ul className="text-sm text-mission-control-text space-y-1">
               {mixData.filter(isOffTarget).map(item => {
                 const deviation = getDeviation(item);
                 return (

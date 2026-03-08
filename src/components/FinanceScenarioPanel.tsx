@@ -121,7 +121,7 @@ function QuickProjectionTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 gap-2 text-clawd-text-dim">
+      <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
         <Loader2 className="w-5 h-5 animate-spin" />
         <span className="text-sm">Loading recurring items...</span>
       </div>
@@ -130,7 +130,7 @@ function QuickProjectionTab() {
 
   if (recurring.length === 0) {
     return (
-      <div className="text-center py-12 text-clawd-text-dim">
+      <div className="text-center py-12 text-mission-control-text-dim">
         <Calculator className="w-10 h-10 mx-auto mb-2" />
         <p className="text-sm">No confirmed recurring items yet</p>
         <p className="text-xs mt-1">Confirm recurring transactions to run projections</p>
@@ -151,14 +151,14 @@ function QuickProjectionTab() {
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                 isCancelled
                   ? 'bg-error/5 border-error/30 opacity-60'
-                  : 'bg-clawd-bg-alt border-clawd-border'
+                  : 'bg-mission-control-bg-alt border-mission-control-border'
               }`}
             >
               {/* Toggle */}
               <button
                 onClick={() => setCancel(item.id, !isCancelled)}
                 className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
-                  isCancelled ? 'bg-error/60' : 'bg-clawd-accent'
+                  isCancelled ? 'bg-error/60' : 'bg-mission-control-accent'
                 }`}
                 aria-label={isCancelled ? 'Restore item' : 'Cancel item'}
                 title={isCancelled ? 'Click to restore' : 'Click to cancel'}
@@ -173,14 +173,14 @@ function QuickProjectionTab() {
               {/* Name */}
               <span
                 className={`flex-1 text-sm font-medium truncate ${
-                  isCancelled ? 'line-through text-clawd-text-dim' : 'text-clawd-text'
+                  isCancelled ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'
                 }`}
               >
                 {item.description}
               </span>
 
               {/* Frequency badge */}
-              <span className="text-xs px-2 py-0.5 bg-clawd-surface border border-clawd-border text-clawd-text-dim rounded-full flex-shrink-0 capitalize">
+              <span className="text-xs px-2 py-0.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim rounded-full flex-shrink-0 capitalize">
                 {item.frequency}
               </span>
 
@@ -192,10 +192,10 @@ function QuickProjectionTab() {
                 onChange={(e) => setAdjustAmount(item.id, e.target.value)}
                 min="0"
                 step="0.01"
-                className="w-24 text-right text-sm bg-clawd-surface border border-clawd-border rounded px-2 py-1 text-clawd-text focus:outline-none focus:border-clawd-accent disabled:opacity-40"
+                className="w-24 text-right text-sm bg-mission-control-surface border border-mission-control-border rounded px-2 py-1 text-mission-control-text focus:outline-none focus:border-mission-control-accent disabled:opacity-40"
                 aria-label={`Amount for ${item.description}`}
               />
-              <span className="text-xs text-clawd-text-dim flex-shrink-0">{item.currency}</span>
+              <span className="text-xs text-mission-control-text-dim flex-shrink-0">{item.currency}</span>
             </div>
           );
         })}
@@ -205,7 +205,7 @@ function QuickProjectionTab() {
       <button
         onClick={calculate}
         disabled={calculating}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-clawd-accent hover:bg-clawd-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
         aria-label="Calculate projection"
       >
         {calculating ? (
@@ -219,25 +219,25 @@ function QuickProjectionTab() {
       {result && (
         <div className="grid grid-cols-3 gap-3 mt-4">
           {/* Before */}
-          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-            <p className="text-xs text-clawd-text-dim uppercase tracking-wide mb-2">Before</p>
-            <p className="text-lg font-bold text-clawd-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Before</p>
+            <p className="text-lg font-bold text-mission-control-text">
               {formatCurrency(result.before.monthly)}
-              <span className="text-xs font-normal text-clawd-text-dim">/mo</span>
+              <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-clawd-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1">
               {formatCurrency(result.before.yearly)}/yr
             </p>
           </div>
 
           {/* After */}
-          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-            <p className="text-xs text-clawd-text-dim uppercase tracking-wide mb-2">After</p>
-            <p className="text-lg font-bold text-clawd-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">After</p>
+            <p className="text-lg font-bold text-mission-control-text">
               {formatCurrency(result.after.monthly)}
-              <span className="text-xs font-normal text-clawd-text-dim">/mo</span>
+              <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-clawd-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1">
               {formatCurrency(result.after.yearly)}/yr
             </p>
           </div>
@@ -250,7 +250,7 @@ function QuickProjectionTab() {
                 : 'bg-error/10 border-error/30'
             }`}
           >
-            <p className="text-xs text-clawd-text-dim uppercase tracking-wide mb-2 flex items-center gap-1">
+            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2 flex items-center gap-1">
               {result.savings.monthly >= 0 ? (
                 <TrendingDown className="w-3 h-3 text-success" />
               ) : (
@@ -265,9 +265,9 @@ function QuickProjectionTab() {
             >
               {result.savings.monthly >= 0 ? '+' : ''}
               {formatCurrency(result.savings.monthly)}
-              <span className="text-xs font-normal text-clawd-text-dim">/mo</span>
+              <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-clawd-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1">
               {result.savings.yearly >= 0 ? '+' : ''}
               {formatCurrency(result.savings.yearly)}/yr
             </p>
@@ -413,7 +413,7 @@ function ScenarioBuilderTab() {
     <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-clawd-text-dim">
+        <span className="text-sm text-mission-control-text-dim">
           {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''}
         </span>
         <div className="flex items-center gap-2">
@@ -422,8 +422,8 @@ function ScenarioBuilderTab() {
               onClick={() => setCompareMode((v) => !v)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 compareMode
-                  ? 'bg-clawd-accent text-white'
-                  : 'bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               Compare
@@ -431,7 +431,7 @@ function ScenarioBuilderTab() {
           )}
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg text-sm font-medium transition-colors"
             aria-label="New scenario"
           >
             <Plus className="w-4 h-4" /> New Scenario
@@ -441,22 +441,22 @@ function ScenarioBuilderTab() {
 
       {/* Comparison chart */}
       {compareMode && comparisonChartData.length > 0 && (
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <h4 className="text-sm font-semibold text-clawd-text mb-3">Scenario Comparison</h4>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <h4 className="text-sm font-semibold text-mission-control-text mb-3">Scenario Comparison</h4>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={comparisonChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--clawd-text-dim)' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--mission-control-text-dim)' }} />
                 <YAxis
                   tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: 'var(--clawd-text-dim)' }}
+                  tick={{ fontSize: 11, fill: 'var(--mission-control-text-dim)' }}
                 />
                 <Tooltip
                   formatter={(v, name) => [formatCurrency(Number(v)), String(name)]}
                   contentStyle={{
-                    background: 'var(--clawd-surface)',
-                    border: '1px solid var(--clawd-border)',
+                    background: 'var(--mission-control-surface)',
+                    border: '1px solid var(--mission-control-border)',
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -484,12 +484,12 @@ function ScenarioBuilderTab() {
 
       {/* Scenario list */}
       {loadingScenarios ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-clawd-text-dim">
+        <div className="flex items-center justify-center py-8 gap-2 text-mission-control-text-dim">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading scenarios...</span>
         </div>
       ) : scenarios.length === 0 && !showForm ? (
-        <div className="text-center py-10 text-clawd-text-dim">
+        <div className="text-center py-10 text-mission-control-text-dim">
           <TrendingUp className="w-10 h-10 mx-auto mb-2" />
           <p className="text-sm">No scenarios yet</p>
           <p className="text-xs mt-1">Create one to project your financial future</p>
@@ -500,26 +500,26 @@ function ScenarioBuilderTab() {
             const months = projectionData[scenario.id];
             const color = SCENARIO_COLORS[idx % SCENARIO_COLORS.length];
             return (
-              <div key={scenario.id} className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <h4 className="font-semibold text-clawd-text">{scenario.name}</h4>
+                    <h4 className="font-semibold text-mission-control-text">{scenario.name}</h4>
                     {scenario.description && (
-                      <p className="text-xs text-clawd-text-dim mt-0.5">{scenario.description}</p>
+                      <p className="text-xs text-mission-control-text-dim mt-0.5">{scenario.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => runProjection(scenario.id)}
                       disabled={projecting}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-clawd-accent/20 hover:bg-clawd-accent/30 text-clawd-accent rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-accent/20 hover:bg-mission-control-accent/30 text-mission-control-accent rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
                       aria-label="Run projection"
                     >
                       <Play className="w-3 h-3" /> Run
                     </button>
                     <button
                       onClick={() => deleteScenario(scenario.id, scenario.name)}
-                      className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
+                      className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                       aria-label={`Delete ${scenario.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -542,15 +542,15 @@ function ScenarioBuilderTab() {
                             <stop offset="95%" stopColor={color} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
                         <XAxis
                           dataKey="month"
                           tickFormatter={(v) => `M${v}`}
-                          tick={{ fontSize: 10, fill: 'var(--clawd-text-dim)' }}
+                          tick={{ fontSize: 10, fill: 'var(--mission-control-text-dim)' }}
                         />
                         <YAxis
                           tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`}
-                          tick={{ fontSize: 10, fill: 'var(--clawd-text-dim)' }}
+                          tick={{ fontSize: 10, fill: 'var(--mission-control-text-dim)' }}
                         />
                         <Tooltip
                           formatter={(v, name) => [formatCurrency(Number(v)), String(name)]}
@@ -561,11 +561,11 @@ function ScenarioBuilderTab() {
                             if (!d) return null;
                             return (
                               <div
-                                className="bg-clawd-surface border border-clawd-border rounded-lg p-3 text-xs shadow-lg"
+                                className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 text-xs shadow-lg"
                                 style={{ minWidth: 160 }}
                               >
-                                <p className="font-semibold text-clawd-text mb-2">Month {label}</p>
-                                <div className="space-y-1 text-clawd-text-dim">
+                                <p className="font-semibold text-mission-control-text mb-2">Month {label}</p>
+                                <div className="space-y-1 text-mission-control-text-dim">
                                   <div className="flex justify-between gap-4">
                                     <span>Income</span>
                                     <span className="text-success">{formatCurrency(d.income)}</span>
@@ -580,14 +580,14 @@ function ScenarioBuilderTab() {
                                       <span>{formatCurrency(d.oneTime)}</span>
                                     </div>
                                   )}
-                                  <div className="flex justify-between gap-4 border-t border-clawd-border pt-1 mt-1">
-                                    <span className="font-medium text-clawd-text">Net</span>
+                                  <div className="flex justify-between gap-4 border-t border-mission-control-border pt-1 mt-1">
+                                    <span className="font-medium text-mission-control-text">Net</span>
                                     <span className={d.net >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.net)}
                                     </span>
                                   </div>
                                   <div className="flex justify-between gap-4">
-                                    <span className="font-medium text-clawd-text">Balance</span>
+                                    <span className="font-medium text-mission-control-text">Balance</span>
                                     <span className={d.runningBalance >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.runningBalance)}
                                     </span>
@@ -617,44 +617,44 @@ function ScenarioBuilderTab() {
 
       {/* New scenario form */}
       {showForm && (
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 space-y-4">
-          <h4 className="font-semibold text-clawd-text">New Scenario</h4>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-4">
+          <h4 className="font-semibold text-mission-control-text">New Scenario</h4>
 
           {/* Name */}
           <div>
-            <label htmlFor="scenario-name" className="block text-xs text-clawd-text-dim mb-1">Name *</label>
+            <label htmlFor="scenario-name" className="block text-xs text-mission-control-text-dim mb-1">Name *</label>
             <input
               id="scenario-name"
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="e.g., Cancel Netflix + Gym"
-              className="w-full px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="scenario-description" className="block text-xs text-clawd-text-dim mb-1">Description</label>
+            <label htmlFor="scenario-description" className="block text-xs text-mission-control-text-dim mb-1">Description</label>
             <textarea
               id="scenario-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Optional notes..."
               rows={2}
-              className="w-full px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent resize-none"
+              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent resize-none"
             />
           </div>
 
           {/* Account + Projection months */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="scenario-account" className="block text-xs text-clawd-text-dim mb-1">Base Account</label>
+              <label htmlFor="scenario-account" className="block text-xs text-mission-control-text-dim mb-1">Base Account</label>
               <select
                 id="scenario-account"
                 value={form.baseAccountId}
                 onChange={(e) => setForm((f) => ({ ...f, baseAccountId: e.target.value }))}
-                className="w-full bg-clawd-bg-alt border border-clawd-border rounded-lg px-3 py-2 text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                className="w-full bg-mission-control-bg-alt border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
               >
                 <option value="">None (delta mode)</option>
                 {accounts.map((a) => (
@@ -663,7 +663,7 @@ function ScenarioBuilderTab() {
               </select>
             </div>
             <div>
-              <label htmlFor="scenario-months" className="block text-xs text-clawd-text-dim mb-1">Projection months</label>
+              <label htmlFor="scenario-months" className="block text-xs text-mission-control-text-dim mb-1">Projection months</label>
               <input
                 id="scenario-months"
                 type="number"
@@ -671,7 +671,7 @@ function ScenarioBuilderTab() {
                 max={60}
                 value={form.projectionMonths}
                 onChange={(e) => setForm((f) => ({ ...f, projectionMonths: parseInt(e.target.value) || 12 }))}
-                className="w-full px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
               />
             </div>
           </div>
@@ -679,7 +679,7 @@ function ScenarioBuilderTab() {
           {/* Income adjustments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Income adjustments
               </span>
               <button
@@ -689,7 +689,7 @@ function ScenarioBuilderTab() {
                     incomeRows: [...f.incomeRows, { label: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent/80"
+                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
@@ -707,7 +707,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Side project"
-                  className="flex-1 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <input
                   type="number"
@@ -720,7 +720,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="+500"
-                  className="w-24 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={() =>
@@ -729,7 +729,7 @@ function ScenarioBuilderTab() {
                       incomeRows: f.incomeRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
+                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove income row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -741,7 +741,7 @@ function ScenarioBuilderTab() {
           {/* Expense adjustments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 Expense adjustments
               </span>
               <button
@@ -751,7 +751,7 @@ function ScenarioBuilderTab() {
                     expenseRows: [...f.expenseRows, { category: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent/80"
+                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
@@ -769,7 +769,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., subscriptions"
-                  className="flex-1 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <input
                   type="number"
@@ -782,7 +782,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-50"
-                  className="w-24 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={() =>
@@ -791,7 +791,7 @@ function ScenarioBuilderTab() {
                       expenseRows: f.expenseRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
+                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove expense row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -803,7 +803,7 @@ function ScenarioBuilderTab() {
           {/* One-time events */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
                 One-time events
               </span>
               <button
@@ -813,7 +813,7 @@ function ScenarioBuilderTab() {
                     eventRows: [...f.eventRows, { label: '', amount: 0, date: '' }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent/80"
+                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
@@ -831,7 +831,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Vacation"
-                  className="flex-1 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <input
                   type="number"
@@ -844,7 +844,7 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-3000"
-                  className="w-24 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <input
                   type="date"
@@ -856,7 +856,7 @@ function ScenarioBuilderTab() {
                       return { ...f, eventRows: next };
                     })
                   }
-                  className="w-32 px-2 py-1.5 bg-clawd-bg-alt border border-clawd-border rounded text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  className="w-32 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={() =>
@@ -865,7 +865,7 @@ function ScenarioBuilderTab() {
                       eventRows: f.eventRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
+                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove event row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -879,7 +879,7 @@ function ScenarioBuilderTab() {
             <button
               onClick={saveAndProject}
               disabled={saving || projecting}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent hover:bg-clawd-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
             >
               {saving || projecting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> {saving ? 'Saving...' : 'Projecting...'}</>
@@ -889,7 +889,7 @@ function ScenarioBuilderTab() {
             </button>
             <button
               onClick={resetForm}
-              className="px-4 py-2 bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text rounded-lg text-sm transition-colors"
+              className="px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg text-sm transition-colors"
             >
               Cancel
             </button>
@@ -913,7 +913,7 @@ export default function FinanceScenarioPanel() {
   ];
 
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
       {/* Tab strip */}
       <div className="flex items-center gap-1 mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (
@@ -922,8 +922,8 @@ export default function FinanceScenarioPanel() {
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeTab === id
-                ? 'bg-clawd-accent text-white'
-                : 'bg-clawd-bg-alt text-clawd-text-dim hover:text-clawd-text'
+                ? 'bg-mission-control-accent text-white'
+                : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />

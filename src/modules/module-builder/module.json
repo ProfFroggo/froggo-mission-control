@@ -1,14 +1,12 @@
 {
-  "id": "froggo-module-builder",
+  "id": "module-builder",
   "name": "Module Builder",
   "version": "1.0.0",
   "description": "Visual tool for creating and configuring new dashboard modules.",
-  "author": "Froggo Team",
+  "author": "Mission Control Team",
   "icon": "Boxes",
   "category": "system",
-
   "credentials": [],
-
   "views": [
     {
       "id": "modulebuilder",
@@ -17,12 +15,10 @@
       "entrypoint": "./views/ModuleBuilderPage.tsx"
     }
   ],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],

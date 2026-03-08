@@ -115,8 +115,8 @@ export function IconButton({
   };
 
   const variantClasses = {
-    default: 'bg-clawd-surface border border-clawd-border hover:bg-clawd-border',
-    ghost: 'hover:bg-clawd-border',
+    default: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
+    ghost: 'hover:bg-mission-control-border',
     danger: 'text-error hover:bg-error-subtle hover:border-error-border',
   };
 

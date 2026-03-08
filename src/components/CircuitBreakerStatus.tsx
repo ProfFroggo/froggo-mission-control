@@ -40,7 +40,7 @@ export const CircuitBreakerStatus: React.FC = () => {
         const timeLeft = state.suspended_until ? Math.ceil((state.suspended_until - Date.now()) / 60000) : 0;
         return (
           <div key={agent} className="flex items-center justify-between text-xs py-1">
-            <span className="text-clawd-text-dim">{agent}</span>
+            <span className="text-mission-control-text-dim">{agent}</span>
             <span className={state.state === 'open' ? 'text-error' : 'text-warning'}>
               {state.state === 'open' ? 'SUSPENDED' : 'TRIAL'}
               {state.suspended_until && timeLeft > 0 && ` (${timeLeft}m left)`}

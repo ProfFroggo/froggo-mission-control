@@ -32,8 +32,8 @@ function ExtractionProgress() {
   }, []);
 
   return (
-    <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 w-80 shadow-2xl">
-      <h3 className="font-semibold text-clawd-text mb-4">Generating Book Plan</h3>
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 w-80 shadow-2xl">
+      <h3 className="font-semibold text-mission-control-text mb-4">Generating Book Plan</h3>
       <div className="space-y-3">
         {EXTRACTION_STEPS.map((label, i) => {
           const done = i < activeStep;
@@ -43,11 +43,11 @@ function ExtractionProgress() {
               {done ? (
                 <CheckCircle size={16} className="text-success flex-shrink-0" />
               ) : active ? (
-                <Loader2 size={16} className="text-clawd-accent animate-spin flex-shrink-0" />
+                <Loader2 size={16} className="text-mission-control-accent animate-spin flex-shrink-0" />
               ) : (
-                <div className="w-4 h-4 rounded-full border border-clawd-border flex-shrink-0" />
+                <div className="w-4 h-4 rounded-full border border-mission-control-border flex-shrink-0" />
               )}
-              <span className={`text-sm ${done ? 'text-success' : active ? 'text-clawd-text' : 'text-clawd-text-dim'}`}>
+              <span className={`text-sm ${done ? 'text-success' : active ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
                 {label}{active ? '...' : ''}
               </span>
             </div>
@@ -257,7 +257,7 @@ export default function WizardChat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface">
+    <div className="flex flex-col h-full bg-mission-control-surface">
       {/* Error banners */}
       {(extractionError || error) && (
         <div className="px-4 py-2 bg-error-subtle border-b border-error-border flex items-center gap-2">
@@ -274,7 +274,7 @@ export default function WizardChat() {
 
       {/* Extraction overlay with progress checklist */}
       {step === 'extracting' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-clawd-bg/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-mission-control-bg/80 backdrop-blur-sm">
           <ExtractionProgress />
         </div>
       )}
@@ -282,7 +282,7 @@ export default function WizardChat() {
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-3 py-3 relative">
         {messages.length === 0 && !streaming ? (
-          <div className="flex items-center justify-center h-full text-clawd-text-dim text-sm text-center px-4">
+          <div className="flex items-center justify-center h-full text-mission-control-text-dim text-sm text-center px-4">
             <p>Starting conversation about your book idea...</p>
           </div>
         ) : (
@@ -310,7 +310,7 @@ export default function WizardChat() {
       </div>
 
       {/* Simple input (no agent picker -- agent is already chosen) */}
-      <div className="bg-clawd-surface border-t border-clawd-border p-3">
+      <div className="bg-mission-control-surface border-t border-mission-control-border p-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -318,12 +318,12 @@ export default function WizardChat() {
             placeholder={step === 'extracting' ? 'Generating plan...' : 'Continue the conversation...'}
             rows={1}
             disabled={streaming || step === 'extracting'}
-            className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50"
           />
           <button
             onClick={handleSendClick}
             disabled={streaming || step === 'extracting'}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
             title="Send message"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
@@ -17,17 +17,17 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import TaskChatTab from './TaskChatTab';
+import { isProtectedAgent } from '../lib/agentConfig';
 
 interface TaskAttachment {
   id: number;
-  task_id: string;
-  file_path: string;
-  filename: string;
-  file_size: number;
-  mime_type: string | null;
-  category: string;
-  uploaded_by: string;
-  uploaded_at: number;
+  taskId: string;
+  filePath: string;
+  fileName: string | null;
+  category: string | null;
+  uploadedBy: string | null;
+  createdAt: number;
 }
 
 interface TaskDetailPanelProps {
@@ -47,7 +47,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const logTaskActivity = useStore(s => s.logTaskActivity);
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
-  const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
+  const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review' | 'chat'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
@@ -68,6 +68,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
+  const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isRemoteAgent = task?.assignedTo && !assignedAgent && !['', 'none', 'unassigned'].includes(task.assignedTo);
@@ -246,6 +247,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           '3': 'activity',
           '4': 'files',
           '5': 'review',
+          '6': 'chat',
         };
         if (e.key in tabMap) {
           setActiveTab(tabMap[e.key]);
@@ -479,18 +481,59 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!task) return;
-    // Attachment deletion not available in web mode
-    showToast('info', 'Attachment management not available in web mode');
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/attachments?attachmentId=${attachmentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+        showToast('success', 'Attachment removed');
+      } else {
+        showToast('error', 'Failed to remove attachment');
+      }
+    } catch {
+      showToast('error', 'Failed to remove attachment');
+    }
   };
 
   const handleOpenFile = async (filePath: string) => {
-    // File opening not available in web mode
-    showToast('info', 'File opening not available in web mode');
+    try {
+      const res = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        showToast('error', 'File not found', data.error || filePath);
+        return;
+      }
+      if (data.type === 'binary') {
+        await navigator.clipboard.writeText(filePath);
+        showToast('info', 'Path copied', `${data.name} — binary file, path copied to clipboard`);
+      } else {
+        setFileViewer({ name: data.name, content: data.content, ext: data.ext });
+      }
+    } catch {
+      showToast('error', 'Could not read file');
+    }
   };
 
   const handleAutoDetect = async () => {
-    // Auto-detect not available in web mode
-    showToast('info', 'Auto-detection not available in web mode');
+    if (!task) return;
+    setLoadingAttachments(true);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/attachments`, { method: 'PATCH' });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.attached > 0) {
+          showToast('success', `Found ${data.attached} file${data.attached !== 1 ? 's' : ''}`, data.files?.join(', '));
+          loadAttachments();
+        } else {
+          showToast('info', 'No new files found', data.message);
+        }
+      } else {
+        showToast('error', 'Auto-detect failed');
+      }
+    } catch {
+      showToast('error', 'Auto-detect failed');
+    } finally {
+      setLoadingAttachments(false);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -500,15 +543,15 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   const getFileIcon = (mimeType: string | null | undefined) => {
-    if (!mimeType) return '📎';
-    if (mimeType.startsWith('image/')) return '🖼️';
-    if (mimeType.startsWith('text/')) return '📄';
-    if (mimeType.includes('pdf')) return '📕';
-    if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('gz')) return '📦';
-    if (mimeType.includes('json')) return '{}';
-    if (mimeType.includes('javascript') || mimeType.includes('typescript')) return '📜';
-    if (mimeType.includes('shellscript')) return '⚙️';
-    return '📎';
+    if (!mimeType) return <Paperclip size={20} />;
+    if (mimeType.startsWith('image/')) return <ImageIcon size={20} />;
+    if (mimeType.startsWith('text/')) return <FileText size={20} />;
+    if (mimeType.includes('pdf')) return <File size={20} />;
+    if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('gz')) return <Archive size={20} />;
+    if (mimeType.includes('json')) return <Code size={20} />;
+    if (mimeType.includes('javascript') || mimeType.includes('typescript')) return <Code size={20} />;
+    if (mimeType.includes('shellscript')) return <Settings size={20} />;
+    return <Paperclip size={20} />;
   };
 
   const assignReviewer = (reviewerId: string) => {
@@ -544,229 +587,149 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       case 'subtask_deleted': return <X size={14} className="text-error" />;
       case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
       case 'review_status': return <Eye size={14} className="text-review" />;
-      case 'agent_message': return <Bot size={14} className="text-clawd-accent" />;
+      case 'agent_message': return <Bot size={14} className="text-mission-control-accent" />;
       case 'progress': return <Activity size={14} className="text-warning" />;
-      default: return <MessageSquare size={14} className="text-clawd-text-dim" />;
+      default: return <MessageSquare size={14} className="text-mission-control-text-dim" />;
     }
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[600px] bg-clawd-surface border-l border-clawd-border shadow-2xl z-50 flex flex-col animate-slide-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="w-[700px] max-w-[95vw] max-h-[90vh] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-bg">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <ActiveAgentIndicator taskId={task.id} showLabel size="md" />
-              <span className={`px-2 py-1 text-xs rounded-lg ${
-                task.status === 'done' ? 'bg-success-subtle text-success' :
-                task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
-                task.status === 'review' ? 'bg-review-subtle text-review' :
-                task.status === 'failed' ? 'bg-error-subtle text-error' :
-                'bg-info-subtle text-info'
-              }`}>
-                {task.status.replace('-', ' ')}
-              </span>
-              <span className="text-xs text-clawd-text-dim">{task.project}</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">{task.title}</h2>
-            {/* Multi-Stage Breadcrumb */}
-            {task.projectName && (
-              <div className="mb-2 p-2 bg-clawd-surface border border-clawd-border rounded-lg">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>📊</span>
-                  <span className="font-medium text-clawd-accent">{task.projectName}</span>
-                  {task.stageNumber && (
-                    <span className="text-clawd-text-dim">
-                      — Stage {task.stageNumber}{task.stageName ? `: ${task.stageName}` : ''}
-                    </span>
-                  )}
-                </div>
-                {task.nextStage && (
-                  <div className="text-xs text-clawd-text-dim mt-1">
-                    ➡️ Next: {task.nextStage}
-                  </div>
-                )}
-                {task.parentTaskId && (
-                  <div className="text-xs text-clawd-text-dim mt-1 flex items-center gap-1">
-                    ← Parent: {task.parentTaskId.slice(-8)}
-                  </div>
-                )}
-                {childTasks.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <span className="text-xs text-clawd-text-dim font-medium">Child Tasks:</span>
-                    {childTasks.map(child => (
-                      <div key={child.id} className="text-xs text-clawd-text-dim ml-2">
-                        {child.stageNumber ? `Stage ${child.stageNumber}: ` : ''}
-                        {child.title}
-                        <span className={`ml-1 ${child.status === 'done' ? 'text-success' : child.status === 'in-progress' ? 'text-warning' : ''}`}>
-                          ({child.status})
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {task.description && (
-              <div className="max-h-96 overflow-y-auto text-sm text-clawd-text-dim">{task.description}</div>
-            )}
-          </div>
+      <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
+        {/* Row 1: badges + close */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <ActiveAgentIndicator taskId={task.id} showLabel size="sm" />
+          <span className={`px-1.5 py-0.5 text-xs rounded ${
+            task.status === 'done' ? 'bg-success-subtle text-success' :
+            task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
+            task.status === 'review' ? 'bg-review-subtle text-review' :
+            task.status === 'failed' ? 'bg-error-subtle text-error' :
+            'bg-info-subtle text-info'
+          }`}>
+            {task.status.replace(/-/g, ' ')}
+          </span>
+          <span className="text-xs text-mission-control-text-dim">{task.project}</span>
+          {task.projectName && (
+            <span className="flex items-center gap-1 text-xs text-mission-control-accent">
+              <Activity size={11} />
+              {task.projectName}{!!task.stageNumber && ` · Stage ${task.stageNumber}`}
+            </span>
+          )}
+          {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
+            <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
+              {tag}
+              <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} className="hover:text-error">×</button>
+            </span>
+          ))}
+          <input
+            type="text"
+            placeholder="+ tag"
+            className="unstyled px-1.5 py-0.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-full focus:outline-none focus:border-mission-control-accent w-14 flex-shrink-0"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                const newTag = e.currentTarget.value.trim();
+                const currentTags = JSON.parse(task.tags || '[]');
+                if (!currentTags.includes(newTag)) updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
+                e.currentTarget.value = '';
+              }
+            }}
+          />
           <button
             onClick={onClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors flex-shrink-0"
+            className="ml-auto p-1.5 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Progress Overview */}
-        {subtasks.length > 0 && (
-          <div className="mb-4 p-3 bg-clawd-bg/50 rounded-xl border border-clawd-border">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Progress</span>
-              <span className="text-sm text-clawd-text-dim">
-                {completedSubtasks} / {subtasks.length} subtasks
-              </span>
-            </div>
-            <div className="h-3 bg-clawd-border rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-clawd-accent to-green-500 transition-all duration-500 ease-out"
-                style={{ width: `${subtaskProgress}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-1 text-xs text-clawd-text-dim">
-              <span>{Math.round(subtaskProgress)}% complete</span>
-              {isWorking && <span className="text-warning animate-pulse">Agent working...</span>}
-            </div>
-          </div>
+        {/* Row 2: title */}
+        <h2 className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
+
+        {/* Row 3: description (1 line) */}
+        {task.description && (
+          <p className="text-xs text-mission-control-text-dim line-clamp-1 mb-2" title={task.description}>{task.description}</p>
         )}
 
-        {/* Meta Info */}
-        <div className="flex items-center gap-4 text-xs text-clawd-text-dim">
-          <div className="flex items-center gap-1">
-            <Calendar size={14} />
-            Created {formatTime(task.createdAt)}
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock size={14} />
-            Updated {formatTime(task.updatedAt)}
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
-              <span
-                key={tag}
-                className="px-2 py-1 text-xs bg-clawd-accent/20 text-clawd-accent rounded-full flex items-center gap-1"
-              >
-                {tag}
-                <button
-                  onClick={() => {
-                    const currentTags = JSON.parse(task.tags || '[]');
-                    const newTags = currentTags.filter((t: string) => t !== tag);
-                    updateTask(task.id, { tags: JSON.stringify(newTags) });
-                  }}
-                  className="hover:text-error"
-                >
-                  ×
-                </button>
+        {/* Row 4: progress · tags · dates — all one line */}
+        <div className="flex items-center gap-2 my-[14px]">
+          {subtasks.length > 0 && (
+            <>
+              <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500 rounded-full"
+                  style={{ width: `${subtaskProgress}%` }}
+                />
+              </div>
+              <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
+                {completedSubtasks}/{subtasks.length}
+                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
-            ))}
-            <input
-              type="text"
-              placeholder="+ Add tag"
-              className="px-2 py-1 text-xs bg-clawd-bg border border-clawd-border rounded-full focus:outline-none focus:border-clawd-accent w-24"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  const newTag = e.currentTarget.value.trim();
-                  const currentTags = JSON.parse(task.tags || '[]');
-                  if (!currentTags.includes(newTag)) {
-                    updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
-                  }
-                  e.currentTarget.value = '';
-                }
-              }}
-            />
+            </>
+          )}
+          {/* dates pushed right */}
+          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
+            <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
+            <span className="flex items-center gap-1"><Clock size={11} />{formatTime(task.updatedAt)}</span>
           </div>
         </div>
-      </div>
 
-      {/* Agent Assignment */}
-      <div className="p-6 border-b border-clawd-border">
-        <div className="grid grid-cols-2 gap-4">
+        {/* Row 6: agents — compact single row */}
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-mission-control-border">
           {/* Worker */}
-          <div>
-            <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Worker Agent</h3>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Worker:</span>
             {assignedAgent ? (
-              <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{assignedAgent.name}</div>
-                </div>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
+                <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
                 {!isWorking && task.status !== 'done' && (
-                  <button
-                    onClick={handleStart}
-                    className="p-1.5 bg-success text-white rounded-lg hover:bg-success-hover"
-                    title="Start Work"
-                  >
-                    <Play size={14} />
+                  <button onClick={handleStart} className="p-1 bg-success text-white rounded hover:bg-success-hover flex-shrink-0" title="Start Work">
+                    <Play size={11} />
                   </button>
                 )}
-                {isWorking && (
-                  <div className="flex items-center gap-1 text-warning">
-                    <Loader2 size={14} className="animate-spin" />
-                  </div>
-                )}
+                {isWorking && <Loader2 size={12} className="animate-spin text-warning flex-shrink-0" />}
               </div>
             ) : isRemoteAgent ? (
-              <div className="flex items-center gap-2 p-2 bg-review-subtle rounded-lg border border-review-border">
-                <div className="text-lg">🌐</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate capitalize">{task.assignedTo}</div>
-                  <div className="text-xs text-review">Remote Agent</div>
-                </div>
+              <div className="flex items-center gap-1 min-w-0">
+                <Globe size={12} className="text-review flex-shrink-0" />
+                <span className="text-xs truncate capitalize">{task.assignedTo}</span>
               </div>
             ) : (
-              <div className="p-2 bg-clawd-bg rounded-lg border border-dashed border-clawd-border text-center text-clawd-text-dim text-xs">
-                Not assigned
-              </div>
+              <span className="text-xs text-mission-control-text-dim italic">unassigned</span>
             )}
           </div>
 
+          <div className="w-px h-4 bg-mission-control-border flex-shrink-0" />
+
           {/* Reviewer */}
-          <div>
-            <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Review Agent</h3>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Reviewer:</span>
             {reviewer ? (
-              <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{reviewer.name}</div>
-                </div>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
+                <span className="text-xs font-medium truncate">{reviewer.name}</span>
                 {task.reviewStatus && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  <span className={`text-xs px-1 py-0.5 rounded flex-shrink-0 ${
                     task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
                     task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
                     task.reviewStatus === 'in-review' ? 'bg-warning-subtle text-warning' :
                     'bg-muted-subtle text-muted'
-                  }`}>
-                    {task.reviewStatus}
-                  </span>
+                  }`}>{task.reviewStatus}</span>
                 )}
               </div>
             ) : (
               <select
                 onChange={(e) => e.target.value && assignReviewer(e.target.value)}
-                className="w-full p-2 bg-clawd-bg rounded-lg border border-dashed border-clawd-border text-xs"
+                className="flex-1 min-w-0 bg-mission-control-bg border border-dashed border-mission-control-border rounded text-xs py-0.5 px-1"
               >
-                <option value="">Assign reviewer...</option>
+                <option value="">Assign...</option>
                 {agents
                   .filter(a => a.id !== task.assignedTo)
                   .map(a => (
-                    <option key={a.id} value={a.id} selected={a.id === 'froggo'}>
-                      {a.name}{a.id === 'froggo' ? ' (default)' : ''}
+                    <option key={a.id} value={a.id} selected={a.id === 'clara'}>
+                      {a.name}{a.id === 'clara' ? ' (default)' : ''}
                     </option>
                   ))}
               </select>
@@ -778,22 +741,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Tabs */}
       {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
           It serves as a historical record and should never be hidden when task is complete. */}
-      <div className="flex border-b border-clawd-border">
-        {(['subtasks', 'planning', 'activity', 'files', 'review'] as const).map((tab) => (
+      <div className="flex border-b border-mission-control-border flex-shrink-0">
+        {(['subtasks', 'planning', 'activity', 'files', 'review', 'chat'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab
-                ? 'text-clawd-accent border-b-2 border-clawd-accent'
-                : 'text-clawd-text-dim hover:text-clawd-text'
+                ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             {tab === 'subtasks' && (
               <span className="flex items-center justify-center gap-2">
                 Subtasks
                 {subtasks.length > 0 && (
-                  <span className="bg-clawd-border px-1.5 py-0.5 rounded text-xs">
+                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
                     {completedSubtasks}/{subtasks.length}
                   </span>
                 )}
@@ -804,7 +767,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <span className="flex items-center justify-center gap-2">
                 Activity
                 {activities.length > 0 && (
-                  <span className="bg-clawd-border px-1.5 py-0.5 rounded text-xs">
+                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
                     {activities.length}
                   </span>
                 )}
@@ -814,19 +777,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <span className="flex items-center justify-center gap-2">
                 Files
                 {attachments.length > 0 && (
-                  <span className="bg-clawd-border px-1.5 py-0.5 rounded text-xs">
+                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
                     {attachments.length}
                   </span>
                 )}
               </span>
             )}
             {tab === 'review' && 'Review'}
+            {tab === 'chat' && (
+              <span className="flex items-center justify-center gap-2">
+                Chat
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
         {/* Subtasks Tab */}
         {activeTab === 'subtasks' && (
           <div className="p-4">
@@ -838,12 +806,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onChange={(e) => setNewSubtask(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
                 placeholder="Add a subtask..."
-                className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
               />
               <button
                 onClick={handleAddSubtask}
                 disabled={!newSubtask.trim()}
-                className="p-2 bg-clawd-accent text-white rounded-lg disabled:opacity-50 hover:bg-clawd-accent-dim transition-colors"
+                className="p-2 bg-mission-control-accent text-white rounded-lg disabled:opacity-50 hover:bg-mission-control-accent-dim transition-colors"
               >
                 <Plus size={16} />
               </button>
@@ -851,7 +819,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Loading State */}
             {loadingSubtasks && subtasks.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-clawd-text-dim">
+              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
                 <Loader2 size={24} className="animate-spin mr-2" />
                 Loading subtasks...
               </div>
@@ -865,7 +833,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
                     st.completed 
                       ? 'bg-success-subtle border-success-border' 
-                      : 'bg-clawd-bg border-clawd-border hover:border-clawd-accent/50'
+                      : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
                   }`}
                 >
                   <button
@@ -873,17 +841,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
                       st.completed 
                         ? 'bg-success text-white' 
-                        : 'border-2 border-clawd-border hover:border-clawd-accent'
+                        : 'border-2 border-mission-control-border hover:border-mission-control-accent'
                     }`}
                   >
                     {st.completed && <Check size={14} />}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <span className={`text-sm ${st.completed ? 'line-through text-clawd-text-dim' : ''}`}>
+                    <span className={`text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}>
                       {st.title}
                     </span>
                     {st.description && (
-                      <p className="text-xs text-clawd-text-dim mt-0.5">{st.description}</p>
+                      <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
                     )}
                     {st.completedAt && (
                       <p className="text-xs text-success/60 mt-0.5">
@@ -893,13 +861,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     )}
                   </div>
                   {st.assignedTo && (
-                    <span className="text-xs bg-clawd-border px-2 py-0.5 rounded flex-shrink-0">
+                    <span className="text-xs bg-mission-control-border px-2 py-0.5 rounded flex-shrink-0">
                       {agents.find(a => a.id === st.assignedTo)?.name || st.assignedTo}
                     </span>
                   )}
                   <button
                     onClick={() => handleDeleteSubtask(st.id)}
-                    className="p-1 text-clawd-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    className="p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   >
                     <X size={14} />
                   </button>
@@ -907,7 +875,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               ))}
               
               {!loadingSubtasks && subtasks.length === 0 && (
-                <div className="text-center text-clawd-text-dim py-8">
+                <div className="text-center text-mission-control-text-dim py-8">
                   <FileText size={32} className="mx-auto mb-2 opacity-30" />
                   <p className="text-sm">No subtasks yet</p>
                   <p className="text-xs">Break down this task into smaller steps</p>
@@ -922,7 +890,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <FileText size={16} className="text-clawd-accent" />
+                <FileText size={16} className="text-mission-control-accent" />
                 Planning & Brainstorming
               </h3>
             </div>
@@ -940,12 +908,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 }, 1000);
               }}
               placeholder="Planning notes, brainstorming, research..."
-              className="w-full h-64 bg-clawd-bg border border-clawd-border rounded-xl p-4 text-sm resize-none focus:outline-none focus:border-clawd-accent font-mono"
+              className="w-full h-64 bg-mission-control-bg border border-mission-control-border rounded-xl p-4 text-sm resize-none focus:outline-none focus:border-mission-control-accent font-mono"
               style={{ minHeight: '16rem' }}
             />
             
-            <p className="text-xs text-clawd-text-dim mt-2">
-              💡 Use this space for planning, brainstorming, research notes, or any thoughts about this task.
+            <p className="text-xs text-mission-control-text-dim mt-2">
+              <Lightbulb size={12} className="inline mr-1" />Use this space for planning, brainstorming, research notes, or any thoughts about this task.
               Changes are auto-saved after 1 second.
             </p>
           </div>
@@ -966,14 +934,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <button
                 onClick={loadActivity}
                 disabled={loadingActivity}
-                className="p-1.5 text-clawd-text-dim hover:text-clawd-text rounded-lg hover:bg-clawd-border transition-colors"
+                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors"
               >
                 <RefreshCw size={14} className={loadingActivity ? 'animate-spin' : ''} />
               </button>
             </div>
 
             {loadingActivity && activities.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-clawd-text-dim">
+              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
                 <Loader2 size={24} className="animate-spin mr-2" />
                 Loading activity...
               </div>
@@ -983,25 +951,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               {activities.map((act, _idx) => (
                 <div
                   key={act.id}
-                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-clawd-bg/50 transition-colors"
+                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
                 >
-                  <div className="mt-1 p-1 rounded bg-clawd-bg">
+                  <div className="mt-1 p-1 rounded bg-mission-control-bg">
                     {getActivityIcon(act.action)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">{act.message}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-clawd-text-dim">
+                      <span className="text-xs text-mission-control-text-dim">
                         {formatTime(act.timestamp)}
                       </span>
                       {act.agentId && (
-                        <span className="text-xs text-clawd-accent">
+                        <span className="text-xs text-mission-control-accent">
                           {agents.find(a => a.id === act.agentId)?.name || act.agentId}
                         </span>
                       )}
                     </div>
                     {act.details && (
-                      <pre className="mt-1 text-xs bg-clawd-bg p-2 rounded overflow-x-auto max-h-32">
+                      <pre className="mt-1 text-xs bg-mission-control-bg p-2 rounded overflow-x-auto max-h-32">
                         {act.details}
                       </pre>
                     )}
@@ -1010,7 +978,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               ))}
               
               {!loadingActivity && activities.length === 0 && (
-                <div className="text-center text-clawd-text-dim py-8">
+                <div className="text-center text-mission-control-text-dim py-8">
                   <Activity size={32} className="mx-auto mb-2 opacity-30" />
                   <p className="text-sm">No activity yet</p>
                   <p className="text-xs">Activity will appear here as work progresses</p>
@@ -1025,14 +993,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium flex items-center gap-2">
-                <Paperclip size={16} className="text-clawd-accent" />
+                <Paperclip size={16} className="text-mission-control-accent" />
                 Task Attachments
               </h3>
               <div className="flex gap-2">
                 <button
                   onClick={handleAutoDetect}
                   disabled={loadingAttachments}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs bg-clawd-border hover:bg-clawd-accent/20 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
                   title="Auto-detect agent output files"
                 >
                   {loadingAttachments ? (
@@ -1042,7 +1010,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   )}
                   Auto-detect
                 </button>
-                <label className="flex items-center gap-2 px-3 py-1.5 text-xs bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim cursor-pointer transition-colors">
+                <label className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim cursor-pointer transition-colors">
                   {uploadingFile ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
@@ -1061,12 +1029,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Upload Instructions */}
             {attachments.length === 0 && !loadingAttachments && (
-              <div className="mb-4 p-4 bg-clawd-bg/50 rounded-xl border border-dashed border-clawd-border text-center">
+              <div className="mb-4 p-4 bg-mission-control-bg/50 rounded-xl border border-dashed border-mission-control-border text-center">
                 <Paperclip size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-sm text-clawd-text-dim">
+                <p className="text-sm text-mission-control-text-dim">
                   No attachments yet. Upload deliverables, screenshots, or reference files.
                 </p>
-                <p className="text-xs text-clawd-text-dim mt-1">
+                <p className="text-xs text-mission-control-text-dim mt-1">
                   Click Upload or use Auto-detect to find agent output files
                 </p>
               </div>
@@ -1074,7 +1042,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Loading State */}
             {loadingAttachments && attachments.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-clawd-text-dim">
+              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
                 <Loader2 size={24} className="animate-spin mr-2" />
                 Loading attachments...
               </div>
@@ -1085,41 +1053,43 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               {attachments.map((attachment) => (
                 <div
                   key={attachment.id}
-                  className="group flex items-center gap-3 p-3 bg-clawd-bg rounded-xl border border-clawd-border hover:border-clawd-accent/50 transition-all"
+                  className="group flex items-center gap-3 p-3 bg-mission-control-bg rounded-xl border border-mission-control-border hover:border-mission-control-accent/50 transition-all"
                 >
-                  <div className="text-2xl flex-shrink-0">
-                    {getFileIcon(attachment.mime_type)}
+                  <div className="text-mission-control-text-dim flex-shrink-0">
+                    {getFileIcon(null)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{attachment.filename}</div>
-                    <div className="flex items-center gap-2 text-xs text-clawd-text-dim mt-0.5">
-                      <span>{formatFileSize(attachment.file_size)}</span>
-                      <span>•</span>
-                      <span className="px-1.5 py-0.5 bg-clawd-border rounded text-xs">
-                        {attachment.category}
-                      </span>
-                      <span>•</span>
-                      <span>{formatTime(attachment.uploaded_at)}</span>
-                      {attachment.uploaded_by && attachment.uploaded_by !== 'user' && (
+                    <div className="text-sm font-medium truncate">{attachment.fileName ?? attachment.filePath.split('/').pop()}</div>
+                    <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mt-0.5">
+                      {attachment.category && (
+                        <>
+                          <span className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">
+                            {attachment.category}
+                          </span>
+                          <span>•</span>
+                        </>
+                      )}
+                      <span>{formatTime(attachment.createdAt)}</span>
+                      {attachment.uploadedBy && attachment.uploadedBy !== 'user' && (
                         <>
                           <span>•</span>
-                          <span className="text-clawd-accent">
-                            {agents.find(a => a.id === attachment.uploaded_by)?.name || attachment.uploaded_by}
+                          <span className="text-mission-control-accent">
+                            {agents.find(a => a.id === attachment.uploadedBy)?.name || attachment.uploadedBy}
                           </span>
                         </>
                       )}
                     </div>
-                    <div className="text-xs text-clawd-text-dim/50 mt-0.5 truncate" title={attachment.file_path}>
-                      {attachment.file_path}
+                    <div className="text-xs text-mission-control-text-dim/50 mt-0.5 truncate" title={attachment.filePath}>
+                      {attachment.filePath}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => handleOpenFile(attachment.file_path)}
-                      className="p-2 hover:bg-clawd-accent/20 rounded-lg transition-colors"
+                      onClick={() => handleOpenFile(attachment.filePath)}
+                      className="p-2 hover:bg-mission-control-accent/20 rounded-lg transition-colors"
                       title="Open file"
                     >
-                      <Download size={16} className="text-clawd-accent" />
+                      <Download size={16} className="text-mission-control-accent" />
                     </button>
                     <button
                       onClick={() => handleDeleteAttachment(attachment.id)}
@@ -1135,13 +1105,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Stats Summary */}
             {attachments.length > 0 && (
-              <div className="mt-4 p-3 bg-clawd-bg/50 rounded-xl border border-clawd-border">
-                <div className="flex items-center justify-between text-xs text-clawd-text-dim">
+              <div className="mt-4 p-3 bg-mission-control-bg/50 rounded-xl border border-mission-control-border">
+                <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
                   <span>
                     {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
                   </span>
                   <span>
-                    Total: {formatFileSize(attachments.reduce((sum, a) => sum + (a.file_size || 0), 0))}
+                    Total: {attachments.length} file{attachments.length !== 1 ? 's' : ''}
                   </span>
                 </div>
               </div>
@@ -1150,30 +1120,38 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
 
         {/* Review Tab */}
+        {activeTab === 'chat' && (
+          <TaskChatTab
+            taskId={task.id}
+            agentId={task.assignedTo || null}
+            agentName={agents.find(a => a.id === task.assignedTo)?.name || task.assignedTo || 'Agent'}
+          />
+        )}
+
         {activeTab === 'review' && (
           <div className="p-4">
             {/* Definition of Ready Checklist - show for internal-review status */}
             {task.status === 'internal-review' && (
-              <div className="mb-4 p-4 bg-clawd-bg rounded-xl border border-clawd-border">
+              <div className="mb-4 p-4 bg-mission-control-bg rounded-xl border border-mission-control-border">
                 <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle size={16} className="text-clawd-accent" />
+                  <CheckCircle size={16} className="text-mission-control-accent" />
                   <span className="font-medium">Definition of Ready</span>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className={`flex items-center gap-2 ${(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}`}>
-                    {(task.subtasks?.length || 0) >= 2 ? '✅' : '❌'} 
+                    {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
                   </div>
                   <div className={`flex items-center gap-2 ${task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}`}>
-                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? '✅' : '❌'} 
+                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Priority: {task.priority || 'Not set'}
                   </div>
-                  <div className={`flex items-center gap-2 ${task.assignedTo && !['main','froggo','clara'].includes(task.assignedTo) ? 'text-success' : 'text-error'}`}>
-                    {task.assignedTo && !['main','froggo','clara'].includes(task.assignedTo) ? '✅' : '❌'} 
+                  <div className={`flex items-center gap-2 ${task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-success' : 'text-error'}`}>
+                    {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
                     Assigned: {task.assignedTo || 'Not assigned'}
                   </div>
                   <div className={`flex items-center gap-2 ${(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}`}>
-                    {(task.description?.length || 0) >= 20 ? '✅' : '⚠️'} 
+                    {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-success inline" /> : <AlertTriangle size={14} className="text-warning inline" />}
                     Description: {(task.description?.length || 0)} chars (min 20)
                   </div>
                 </div>
@@ -1226,7 +1204,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   <CheckCircle size={16} className="text-success" />
                   <span className="font-medium text-success">Review Approved</span>
                 </div>
-                <p className="mt-2 text-sm text-clawd-text-dim">
+                <p className="mt-2 text-sm text-mission-control-text-dim">
                   This task has been approved and can now be marked as done.
                 </p>
               </div>
@@ -1235,9 +1213,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {reviewer ? (
               <div className="space-y-4">
                 {/* Review Status */}
-                <div className="p-4 bg-clawd-bg rounded-xl border border-clawd-border">
+                <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border">
                   <div className="flex items-center gap-2 mb-3">
-                    <Eye size={16} className="text-clawd-accent" />
+                    <Eye size={16} className="text-mission-control-accent" />
                     <span className="font-medium">Review Status</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1250,8 +1228,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             ? status === 'approved' ? 'bg-success text-white' :
                               status === 'needs-changes' ? 'bg-error text-white' :
                               status === 'in-review' ? 'bg-warning text-white' :
-                              'bg-clawd-accent text-white'
-                            : 'bg-clawd-border hover:bg-clawd-border/80'
+                              'bg-mission-control-accent text-white'
+                            : 'bg-mission-control-border hover:bg-mission-control-border/80'
                         }`}
                       >
                         {status.replace('-', ' ')}
@@ -1261,16 +1239,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
 
                 {/* Review Notes */}
-                <div className="p-4 bg-clawd-bg rounded-xl border border-clawd-border">
+                <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border">
                   <div className="flex items-center gap-2 mb-3">
-                    <FileText size={16} className="text-clawd-accent" />
+                    <FileText size={16} className="text-mission-control-accent" />
                     <span className="font-medium">Review Notes</span>
                   </div>
                   <textarea
                     value={task.reviewNotes || ''}
                     onChange={(e) => updateTask(task.id, { reviewNotes: e.target.value })}
                     placeholder="Add notes from review..."
-                    className="w-full h-24 bg-clawd-surface border border-clawd-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+                    className="w-full h-24 bg-mission-control-surface border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
 
@@ -1280,7 +1258,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     <AlertCircle size={16} className="text-warning" />
                     <span className="font-medium text-warning">Pre-Approval Checklist</span>
                   </div>
-                  <div className="text-sm text-clawd-text-dim space-y-1">
+                  <div className="text-sm text-mission-control-text-dim space-y-1">
                     <div className="flex items-center gap-2">
                       <input type="checkbox" className="rounded" />
                       <span>Code reviewed for bugs</span>
@@ -1301,7 +1279,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
               </div>
             ) : (
-              <div className="text-center text-clawd-text-dim py-12">
+              <div className="text-center text-mission-control-text-dim py-12">
                 <Eye size={48} className="mx-auto mb-3 opacity-20" />
                 <p className="text-sm">No reviewer assigned</p>
                 <p className="text-xs">Assign a review agent to enable pre-approval checks</p>
@@ -1312,14 +1290,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       </div>
 
       {/* Quick Actions */}
-      <div className="p-6 border-t border-clawd-border bg-clawd-bg">
+      <div className="p-6 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl flex-shrink-0">
         <div className="flex gap-2">
           {/* Poke Button - Ask Brain for status update */}
           {task.status !== 'done' && (
             <button
               onClick={handlePoke}
               disabled={poking}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-accent/20 hover:text-clawd-accent transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-accent/20 hover:text-mission-control-accent transition-colors disabled:opacity-50"
               title="Poke Brain for status update"
             >
               {poking ? <Loader2 size={16} className="animate-spin" /> : <span className="text-lg">🫵</span>}
@@ -1385,14 +1363,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <>
               <button
                 onClick={() => setShowReopenModal(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border/70 transition-colors"
               >
                 <XCircle size={16} />
                 Reopen
               </button>
               <button
                 onClick={() => { setShowForkModal(true); setForkDescription(''); }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors"
               >
                 🔀 Fork From This
               </button>
@@ -1402,7 +1380,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {task.status !== 'done' && task.parentTaskId && (
             <button
               onClick={() => { setShowForkModal(true); setForkDescription(''); }}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border text-clawd-text rounded-xl hover:border-clawd-accent transition-colors text-sm"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-xl hover:border-mission-control-accent transition-colors text-sm"
             >
               🔀 Fork
             </button>
@@ -1413,16 +1391,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Reopen Task Modal */}
       {showReopenModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <h3 className="text-lg font-semibold">Reopen Task</h3>
               <button
                 onClick={() => {
                   setShowReopenModal(false);
                   setReopenReason('');
                 }}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
               </button>
@@ -1430,14 +1408,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Content */}
             <div className="p-6">
-              <p className="text-sm text-clawd-text-dim mb-4">
+              <p className="text-sm text-mission-control-text-dim mb-4">
                 Why are you reopening this task?
               </p>
               <textarea
                 value={reopenReason}
                 onChange={(e) => setReopenReason(e.target.value)}
                 placeholder="Enter reason for reopening (required)..."
-                className="w-full h-32 bg-clawd-bg border border-clawd-border rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+                className="w-full h-32 bg-mission-control-bg border border-mission-control-border rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
               />
               {reopenReason.trim().length === 0 && (
                 <p className="text-xs text-error mt-2">
@@ -1447,20 +1425,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-clawd-border">
+            <div className="flex gap-3 p-6 border-t border-mission-control-border">
               <button
                 onClick={() => {
                   setShowReopenModal(false);
                   setReopenReason('');
                 }}
-                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border/70 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReopen}
                 disabled={!reopenReason.trim()}
-                className="flex-1 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Reopen Task
               </button>
@@ -1472,9 +1450,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Agent Still Active Warning Modal */}
       {showAgentActiveModal && activeAgentInfo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-warning-subtle rounded-lg">
                   <AlertCircle size={24} className="text-warning" />
@@ -1486,7 +1464,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
               </button>
@@ -1496,9 +1474,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <div className="p-6">
               <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
                 <p className="text-sm text-warning mb-2">
-                  ⚠️ An agent is currently working on this task
+                  <AlertTriangle size={14} className="inline mr-1" />An agent is currently working on this task
                 </p>
-                <div className="text-xs text-clawd-text-dim space-y-1">
+                <div className="text-xs text-mission-control-text-dim space-y-1">
                   <div>
                     <span className="font-medium">Session:</span> {activeAgentInfo.displayName}
                   </div>
@@ -1508,23 +1486,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
               </div>
               
-              <p className="text-sm text-clawd-text-dim mb-3">
+              <p className="text-sm text-mission-control-text-dim mb-3">
                 If you approve now, the agent might reset the task status when it finishes, creating an approval loop.
               </p>
               
-              <p className="text-sm text-clawd-text font-medium">
+              <p className="text-sm text-mission-control-text font-medium">
                 You should abort the agent session before approving.
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-clawd-border">
+            <div className="flex gap-3 p-6 border-t border-mission-control-border">
               <button
                 onClick={() => {
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
-                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border/70 transition-colors"
               >
                 Cancel
               </button>
@@ -1588,25 +1566,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Fork Task Modal */}
       {showForkModal && task && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
-            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
+            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <h3 className="text-lg font-semibold">🔀 Build on this task</h3>
               <button
                 onClick={() => setShowForkModal(false)}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-sm text-clawd-text-dim">What do you want to build next?</p>
+              <p className="text-sm text-mission-control-text-dim">What do you want to build next?</p>
               <textarea
                 value={forkDescription}
                 onChange={e => setForkDescription(e.target.value)}
                 placeholder="Describe the next task..."
                 rows={4}
                 autoFocus
-                className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
               />
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1618,10 +1596,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 Assign to same agent{task.assignedTo ? ` (${task.assignedTo})` : ''}
               </label>
             </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-clawd-border">
+            <div className="flex justify-end gap-3 p-6 border-t border-mission-control-border">
               <button
                 onClick={() => setShowForkModal(false)}
-                className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+                className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
               >
                 Cancel
               </button>
@@ -1652,7 +1630,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   }
                 }}
                 disabled={!forkDescription.trim()}
-                className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
               >
                 Create Task
               </button>
@@ -1671,6 +1649,36 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
+
+      {/* File Viewer Modal */}
+      {fileViewer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-medium">{fileViewer.name}</span>
+                <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer.ext}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); }}
+                  className="px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
+                >
+                  Copy
+                </button>
+                <button onClick={() => setFileViewer(null)} className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
+              {fileViewer.content}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

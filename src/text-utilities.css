@@ -127,7 +127,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: break-word;
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   font-size: 0.875rem;
   line-height: 1.4;
 }
@@ -267,7 +267,7 @@
 
 .panel-header {
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--clawd-border);
+  border-bottom: 1px solid var(--mission-control-border);
   flex-shrink: 0;
 }
 
@@ -280,6 +280,6 @@
 
 .panel-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--clawd-border);
+  border-top: 1px solid var(--mission-control-border);
   flex-shrink: 0;
 }

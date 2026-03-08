@@ -1,22 +1,104 @@
-import { useState, useEffect } from 'react';
-import { X, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { createLogger } from '../utils/logger';
-import { agentApi } from '../lib/api';
+import { useState, useEffect, useRef } from 'react';
+import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight } from 'lucide-react';
+import { agentApi, settingsApi, libraryApi } from '../lib/api';
+import { showToast } from './Toast';
+import { useStore } from '../store/store';
 
-const logger = createLogger('AgentManagementModal');
-
-const AVAILABLE_MODELS = [
-  { id: 'anthropic/claude-opus-4-6', label: 'Claude Opus 4.6' },
-  { id: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
-  { id: 'anthropic/claude-opus-4-5', label: 'Claude Opus 4.5' },
-  { id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
-  { id: 'anthropic/claude-haiku-3-5', label: 'Claude Haiku 3.5' },
-  { id: 'anthropic-direct/claude-opus-4-5', label: 'Claude Opus 4.5 (Direct)' },
-  { id: 'anthropic-direct/claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (Direct)' },
-  { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-  { id: 'kimi-coding/k2p5', label: 'Kimi K2.5' },
-  { id: 'minimax/MiniMax-M2.5-highspeed', label: 'MiniMax M2.5 Highspeed' },
+const API_PRESETS = [
+  { label: 'Custom',                service: '',               placeholder: 'Your API key or secret' },
+  { label: 'Anthropic',             service: 'Anthropic',      placeholder: 'sk-ant-...' },
+  { label: 'OpenAI',                service: 'OpenAI',         placeholder: 'sk-...' },
+  { label: 'Google Gemini',         service: 'Google Gemini',  placeholder: 'AIza...' },
+  { label: 'X / Twitter API Key',   service: 'Twitter',        placeholder: 'API key (Consumer key)' },
+  { label: 'X / Twitter Bearer',    service: 'Twitter Bearer', placeholder: 'AAAA...' },
+  { label: 'Discord Bot Token',     service: 'Discord',        placeholder: 'Bot token' },
+  { label: 'Slack Bot Token',       service: 'Slack',          placeholder: 'xoxb-...' },
+  { label: 'GitHub Token',          service: 'GitHub',         placeholder: 'ghp_...' },
+  { label: 'Stripe',                service: 'Stripe',         placeholder: 'sk_live_... or sk_test_...' },
+  { label: 'Twilio Auth Token',     service: 'Twilio',         placeholder: 'Auth token from console' },
+  { label: 'SendGrid',              service: 'SendGrid',       placeholder: 'SG...' },
+  { label: 'AWS Access Key',        service: 'AWS',            placeholder: 'AKIA...' },
+  { label: 'Perplexity',            service: 'Perplexity',     placeholder: 'pplx-...' },
+  { label: 'Replicate',             service: 'Replicate',      placeholder: 'r8_...' },
+  { label: 'ElevenLabs',            service: 'ElevenLabs',     placeholder: 'API key from dashboard' },
+  { label: 'Birdeye',               service: 'Birdeye',        placeholder: 'API key from dashboard' },
+  { label: 'Helius',                service: 'Helius',         placeholder: 'API key from dashboard' },
 ];
+
+// Claude models only
+const CLAUDE_MODELS = [
+  { id: 'opus',   label: 'Claude Opus 4.6',  desc: 'Most capable — complex reasoning, long context' },
+  { id: 'sonnet', label: 'Claude Sonnet 4.6', desc: 'Balanced — fast and highly capable' },
+  { id: 'haiku',  label: 'Claude Haiku 4.5',  desc: 'Fastest — lightweight tasks, high throughput' },
+];
+
+const MCP_SERVERS = [
+  {
+    id: 'mission-control_db',
+    label: 'Mission Control DB',
+    tools: [
+      'task_create', 'task_update', 'task_get', 'task_list',
+      'task_activity_create', 'agent_sessions_create', 'agent_sessions_get',
+      'chat_post', 'chat_read', 'approval_create', 'schedule_create', 'schedule_list',
+    ],
+  },
+  {
+    id: 'memory',
+    label: 'Memory MCP',
+    tools: ['memory_search', 'memory_recall', 'memory_write', 'memory_read'],
+  },
+];
+
+// Approval tiers
+const TRUST_TIERS = [
+  { id: 'restricted', label: 'Restricted', desc: 'Read-only. No writes, no approvals granted.', color: 'text-error' },
+  { id: 'apprentice',  label: 'Apprentice',  desc: 'Tier 1 auto-approved. Tier 2+ queued for review.', color: 'text-warning' },
+  { id: 'worker',      label: 'Worker',      desc: 'Tier 1–2 auto-approved. Tier 3 queued.', color: 'text-info' },
+  { id: 'trusted',     label: 'Trusted',     desc: 'All tiers auto-approved except Tier 3 external actions.', color: 'text-success' },
+  { id: 'admin',       label: 'Admin',       desc: 'Full autonomy. All tiers auto-approved.', color: 'text-review' },
+];
+
+const PERMISSION_GROUPS = [
+  {
+    label: 'File System',
+    perms: [
+      { id: 'fs.read',   label: 'Read files', tier: 0 },
+      { id: 'fs.write',  label: 'Write files', tier: 1 },
+      { id: 'fs.delete', label: 'Delete files', tier: 2 },
+    ],
+  },
+  {
+    label: 'Git',
+    perms: [
+      { id: 'git.read',   label: 'Status / log / diff', tier: 0 },
+      { id: 'git.commit', label: 'Commit to branch', tier: 1 },
+      { id: 'git.push',   label: 'Push to remote', tier: 2 },
+      { id: 'git.force',  label: 'Force push', tier: 3 },
+    ],
+  },
+  {
+    label: 'Tasks',
+    perms: [
+      { id: 'tasks.read',   label: 'Read tasks', tier: 0 },
+      { id: 'tasks.update', label: 'Update status', tier: 1 },
+      { id: 'tasks.done',   label: 'Mark as done', tier: 2 },
+    ],
+  },
+  {
+    label: 'External',
+    perms: [
+      { id: 'external.draft',  label: 'Draft emails / posts', tier: 2 },
+      { id: 'external.send',   label: 'Send emails', tier: 3 },
+      { id: 'external.social', label: 'Post to social media', tier: 3 },
+      { id: 'external.deploy', label: 'Deploy to production', tier: 3 },
+    ],
+  },
+];
+
+const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
+const TIER_LABELS = ['Auto', 'Logged', 'Review', 'Explicit'];
+
+type Tab = 'soul' | 'model' | 'skills' | 'tools' | 'api' | 'permissions';
 
 interface AgentManagementModalProps {
   isOpen: boolean;
@@ -25,388 +107,779 @@ interface AgentManagementModalProps {
   agentName: string;
 }
 
+interface APIKey { id: string; name: string; service: string; key: string; createdAt: string }
+interface Skill { id: string; name: string; slug: string; description: string }
+
+type AddSkillMode = 'url' | 'text' | null;
+
 export default function AgentManagementModal({ isOpen, onClose, agentId, agentName }: AgentManagementModalProps) {
-  const [isClosing, setIsClosing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'soul' | 'models'>('soul');
-
-  // SOUL tab state
-  const [soulContent, setSoulContent] = useState('');
-  const [soulDirty, setSoulDirty] = useState(false);
-  const [soulSaving, setSoulSaving] = useState(false);
-  const [soulError, setSoulError] = useState<string | null>(null);
-  const [showRestartBanner, setShowRestartBanner] = useState(false);
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-
-  // Models tab state
-  const [primaryModel, setPrimaryModel] = useState('');
-  const [fallbacks, setFallbacks] = useState<string[]>([]);
-  const [modelDirty, setModelDirty] = useState(false);
-  const [modelSaving, setModelSaving] = useState(false);
-  const [modelError, setModelError] = useState<string | null>(null);
-
-  // Loading state
+  const fetchAgents = useStore(s => s.fetchAgents);
+  const [tab, setTab] = useState<Tab>('soul');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Load data when modal opens
+  // Soul
+  const [soul, setSoul] = useState('');
+  const [soulDirty, setSoulDirty] = useState(false);
+  const [showRestartBanner, setShowRestartBanner] = useState(false);
+
+  // Model
+  const [model, setModel] = useState('sonnet');
+  const [modelDirty, setModelDirty] = useState(false);
+
+  // Skills
+  const [allSkills, setAllSkills] = useState<Skill[]>([]);
+  const [activeSkills, setActiveSkills] = useState<string[]>([]);
+  const [skillsDirty, setSkillsDirty] = useState(false);
+  const [addSkillMode, setAddSkillMode] = useState<AddSkillMode>(null);
+  const [addSkillName, setAddSkillName] = useState('');
+  const [addSkillUrl, setAddSkillUrl] = useState('');
+  const [addSkillContent, setAddSkillContent] = useState('');
+  const [addSkillWorking, setAddSkillWorking] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Tools
+  const [activeTools, setActiveTools] = useState<string[]>([]);
+  const [toolsDirty, setToolsDirty] = useState(false);
+
+  // API Keys
+  const [allApiKeys, setAllApiKeys] = useState<APIKey[]>([]);
+  const [activeApiKeys, setActiveApiKeys] = useState<string[]>([]);
+  const [apiKeysDirty, setApiKeysDirty] = useState(false);
+  const [showAddKey, setShowAddKey] = useState(false);
+  const [newKey, setNewKey] = useState({ name: '', service: '', key: '' });
+  const [addingKey, setAddingKey] = useState(false);
+
+  // Permissions
+  const [trustTier, setTrustTier] = useState('apprentice');
+  const [permOverrides, setPermOverrides] = useState<Record<string, boolean>>({});
+  const [agentDisallowed, setAgentDisallowed] = useState<string[]>([]);
+  const [newDisallowed, setNewDisallowed] = useState('');
+  const [permDirty, setPermDirty] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     if (!isOpen) return;
-
     setLoading(true);
-    setSoulError(null);
-    setModelError(null);
-    setShowRestartBanner(false);
-    setSoulDirty(false);
-    setModelDirty(false);
+    setSoulDirty(false); setModelDirty(false); setSkillsDirty(false);
+    setToolsDirty(false); setApiKeysDirty(false); setPermDirty(false);
+    setShowRestartBanner(false); setAddSkillMode(null);
 
-    const loadData = async () => {
-      const results = await Promise.allSettled([
-        agentApi.readSoul(agentId),
-        agentApi.readModels(agentId),
-      ]);
-
-      // SOUL result
-      const soulResult = results[0];
-      if (soulResult.status === 'fulfilled') {
-        const val = soulResult.value;
-        setSoulContent(val?.content || '');
-      } else {
-        setSoulError('Failed to load SOUL.md');
-        logger.error('Failed to load SOUL.md:', soulResult.reason);
+    Promise.allSettled([
+      agentApi.readSoul(agentId),
+      agentApi.getConfig(agentId),
+      (libraryApi as any).getSkills(),
+      settingsApi.get('security.keys'),
+      settingsApi.get(`agent.${agentId}.permissions`),
+      settingsApi.get(`agent.${agentId}.disallowedTools`),
+    ]).then(([soulR, configR, skillsR, keysR, permR, disallowR]) => {
+      if (soulR.status === 'fulfilled') setSoul(soulR.value?.content || '');
+      if (configR.status === 'fulfilled') {
+        const c = configR.value as any;
+        setModel(c?.model || 'sonnet');
+        setActiveSkills(c?.skills || []);
+        setActiveTools(c?.tools || []);
+        setActiveApiKeys(c?.apiKeys || []);
+        setTrustTier(c?.trustTier || 'apprentice');
       }
-
-      // Models result
-      const modelsResult = results[1];
-      if (modelsResult.status === 'fulfilled') {
-        const val = modelsResult.value;
-        setPrimaryModel(val?.primary || '');
-        setFallbacks(val?.fallbacks || []);
-      } else {
-        setModelError('Failed to load model config');
-        logger.error('Failed to load model config:', modelsResult.reason);
+      if (skillsR.status === 'fulfilled') setAllSkills((skillsR.value as any)?.skills || []);
+      if (keysR.status === 'fulfilled') {
+        try {
+          const val = (keysR.value as any)?.value;
+          const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+          setAllApiKeys(Array.isArray(parsed) ? parsed : []);
+        } catch { setAllApiKeys([]); }
       }
-
+      if (permR.status === 'fulfilled') {
+        try {
+          const val = (permR.value as any)?.value;
+          const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+          setPermOverrides(parsed && typeof parsed === 'object' ? parsed : {});
+        } catch { setPermOverrides({}); }
+      }
+      if (disallowR.status === 'fulfilled') {
+        try {
+          const val = (disallowR.value as any)?.value;
+          const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+          setAgentDisallowed(Array.isArray(parsed) ? parsed : []);
+        } catch { setAgentDisallowed([]); }
+      }
       setLoading(false);
-    };
-
-    loadData();
+    });
   }, [isOpen, agentId]);
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 200);
+  // ── Saves ─────────────────────────────────────────
+  const saveSoul = async () => {
+    setSaving(true);
+    try {
+      await agentApi.writeSoul(agentId, soul);
+      setSoulDirty(false); setShowRestartBanner(true);
+      showToast('SOUL.md saved', 'success');
+    } catch { showToast('Failed to save SOUL.md', 'error'); }
+    finally { setSaving(false); }
   };
 
-  const handleSaveSoul = async () => {
-    setShowSaveConfirm(false);
-    setSoulSaving(true);
+  const saveModel = async () => {
+    setSaving(true);
     try {
-      await agentApi.writeSoul(agentId, soulContent);
-      setSoulDirty(false);
-      setShowRestartBanner(true);
-    } catch (e) {
-      setSoulError('Failed to save SOUL.md');
-      logger.error('Failed to save SOUL.md:', e);
-    } finally {
-      setSoulSaving(false);
-    }
-  };
-
-  const handleSaveModel = async () => {
-    setModelSaving(true);
-    try {
-      await agentApi.writeModels(agentId, { primary: primaryModel, fallbacks });
+      await agentApi.patchConfig(agentId, { model });
       setModelDirty(false);
-    } catch (e) {
-      setModelError('Failed to save model config');
-      logger.error('Failed to save model config:', e);
-    } finally {
-      setModelSaving(false);
+      showToast('Model updated', 'success');
+    } catch { showToast('Failed to update model', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const saveSkills = async () => {
+    setSaving(true);
+    try {
+      await agentApi.patchConfig(agentId, { skills: activeSkills });
+      setSkillsDirty(false);
+      showToast('Skills saved', 'success');
+    } catch { showToast('Failed to save skills', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const saveTools = async () => {
+    setSaving(true);
+    try {
+      await agentApi.patchConfig(agentId, { tools: activeTools });
+      setToolsDirty(false);
+      showToast('Tool access saved', 'success');
+    } catch { showToast('Failed to save tools', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const saveApiKeys = async () => {
+    setSaving(true);
+    try {
+      await agentApi.patchConfig(agentId, { apiKeys: activeApiKeys });
+      setApiKeysDirty(false);
+      showToast('API access saved', 'success');
+    } catch { showToast('Failed to save API access', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const handleCreateKey = async () => {
+    if (!newKey.name.trim() || !newKey.service.trim() || !newKey.key.trim()) {
+      showToast('All fields are required', 'error'); return;
     }
+    setAddingKey(true);
+    try {
+      // Load current global key store, append new entry
+      const result = await settingsApi.get('security.keys');
+      const existing: APIKey[] = (() => {
+        try { const v = (result as any)?.value; const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? p : []; } catch { return []; }
+      })();
+      const entry: APIKey = { id: `key-${Date.now()}`, name: newKey.name.trim(), service: newKey.service.trim(), key: newKey.key.trim(), createdAt: new Date().toISOString() };
+      await settingsApi.set('security.keys', [...existing, entry]);
+      // Update local list and auto-assign to this agent
+      setAllApiKeys(prev => [...prev, entry]);
+      setActiveApiKeys(prev => [...prev, entry.id]);
+      setApiKeysDirty(true);
+      setNewKey({ name: '', service: '', key: '' });
+      setShowAddKey(false);
+      showToast(`"${entry.name}" added and assigned`, 'success');
+    } catch { showToast('Failed to add key', 'error'); }
+    finally { setAddingKey(false); }
   };
 
-  const removeFallback = (index: number) => {
-    setFallbacks(prev => prev.filter((_, i) => i !== index));
-    setModelDirty(true);
+  const savePermissions = async () => {
+    setSaving(true);
+    try {
+      await agentApi.patchConfig(agentId, { trustTier });
+      await settingsApi.set(`agent.${agentId}.permissions`, permOverrides);
+      await settingsApi.set(`agent.${agentId}.disallowedTools`, agentDisallowed);
+      setPermDirty(false);
+      fetchAgents();
+      showToast('Permissions saved', 'success');
+    } catch { showToast('Failed to save permissions', 'error'); }
+    finally { setSaving(false); }
   };
 
-  const moveFallback = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= fallbacks.length) return;
-    const updated = [...fallbacks];
-    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
-    setFallbacks(updated);
-    setModelDirty(true);
+  const handleAddAgentDisallowed = () => {
+    const val = newDisallowed.trim();
+    if (!val || agentDisallowed.includes(val)) return;
+    setAgentDisallowed(prev => [...prev, val]);
+    setNewDisallowed('');
+    setPermDirty(true);
   };
 
-  const addFallback = (modelId: string) => {
-    if (!modelId || fallbacks.includes(modelId)) return;
-    setFallbacks(prev => [...prev, modelId]);
-    setModelDirty(true);
+  const handleRemoveAgentDisallowed = (tool: string) => {
+    setAgentDisallowed(prev => prev.filter(t => t !== tool));
+    setPermDirty(true);
   };
 
-  const getModelLabel = (modelId: string) => {
-    return AVAILABLE_MODELS.find(m => m.id === modelId)?.label || modelId;
+  // ── Add Skill ─────────────────────────────────────
+  const handleAddSkill = async () => {
+    if (!addSkillName.trim()) { showToast('Skill name is required', 'error'); return; }
+    if (addSkillMode === 'url' && !addSkillUrl.trim()) { showToast('URL is required', 'error'); return; }
+    if (addSkillMode === 'text' && !addSkillContent.trim()) { showToast('Content is required', 'error'); return; }
+
+    setAddSkillWorking(true);
+    try {
+      const payload: { name: string; url?: string; content?: string } = { name: addSkillName.trim() };
+      if (addSkillMode === 'url') payload.url = addSkillUrl.trim();
+      else payload.content = addSkillContent.trim();
+
+      const result = await (libraryApi as any).createSkill(payload);
+      if (result?.error) { showToast(result.error, 'error'); return; }
+
+      // Refresh skills list and auto-enable the new one
+      const fresh = await (libraryApi as any).getSkills();
+      setAllSkills(fresh?.skills || []);
+      setActiveSkills(prev => [...prev, result.slug]);
+      setSkillsDirty(true);
+      setAddSkillMode(null);
+      setAddSkillName(''); setAddSkillUrl(''); setAddSkillContent('');
+      showToast(`Skill "${result.name}" created`, 'success');
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Failed to create skill', 'error');
+    } finally { setAddSkillWorking(false); }
   };
 
-  const availableFallbackModels = AVAILABLE_MODELS.filter(m => !fallbacks.includes(m.id));
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!addSkillName.trim()) setAddSkillName(file.name.replace(/\.md$/i, ''));
+    const reader = new FileReader();
+    reader.onload = ev => { setAddSkillContent(ev.target?.result as string || ''); };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // ── Toggles ───────────────────────────────────────
+  function toggleSkill(slug: string) {
+    setActiveSkills(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
+    setSkillsDirty(true);
+  }
+  function toggleTool(tool: string) {
+    setActiveTools(prev => prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]);
+    setToolsDirty(true);
+  }
+  function toggleServer(serverTools: string[], enable: boolean) {
+    setActiveTools(prev => { const w = prev.filter(t => !serverTools.includes(t)); return enable ? [...w, ...serverTools] : w; });
+    setToolsDirty(true);
+  }
+  function toggleApiKey(keyId: string) {
+    setActiveApiKeys(prev => prev.includes(keyId) ? prev.filter(k => k !== keyId) : [...prev, keyId]);
+    setApiKeysDirty(true);
+  }
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) handleClose();
-  };
+  const TABS: { id: Tab; label: string; dirty: boolean }[] = [
+    { id: 'soul',        label: 'Soul',        dirty: soulDirty },
+    { id: 'model',       label: 'Model',       dirty: modelDirty },
+    { id: 'skills',      label: 'Skills',      dirty: skillsDirty },
+    { id: 'tools',       label: 'Tools',       dirty: toolsDirty },
+    { id: 'api',         label: 'API Keys',    dirty: apiKeysDirty },
+    { id: 'permissions', label: 'Permissions', dirty: permDirty },
+  ];
+
+  const inputBase = 'w-full bg-mission-control-bg0 border border-mission-control-border rounded px-3 py-2 text-mission-control-text-primary text-sm focus:outline-none focus:border-mission-control-accent';
 
   return (
     <div
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
-        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`}
-      onClick={handleBackdropClick}
+      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       aria-hidden="true"
     >
       <div
-        className={`glass-modal rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col ${
-          isClosing ? 'modal-content-exit' : 'modal-content-enter'
-        }`}
-        onClick={(e) => e.stopPropagation()}
+        className="glass-modal rounded-xl max-w-2xl w-full max-h-[88vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
         role="presentation"
       >
-        {/* Header with tabs */}
-        <div className="p-5 border-b border-clawd-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Manage: {agentName}</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
+          <h2 className="text-base font-bold">Manage: {agentName}</h2>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 px-5 pt-3 border-b border-mission-control-border overflow-x-auto">
+          {TABS.map(t => (
             <button
+              key={t.id}
               type="button"
-              onClick={handleClose}
-              className="p-1.5 rounded-lg text-clawd-muted hover:text-clawd-text hover:bg-clawd-surface transition-colors"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setActiveTab('soul')}
-              className={`pb-1 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'soul'
-                  ? 'border-clawd-accent text-clawd-text'
-                  : 'border-transparent text-clawd-muted hover:text-clawd-text'
+              onClick={() => setTab(t.id)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors relative whitespace-nowrap ${
+                tab === t.id
+                  ? 'bg-mission-control-bg0 text-mission-control-text-primary border border-b-0 border-mission-control-border -mb-px'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text-primary'
               }`}
             >
-              SOUL.md
+              {t.label}
+              {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('models')}
-              className={`pb-1 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'models'
-                  ? 'border-clawd-accent text-clawd-text'
-                  : 'border-transparent text-clawd-muted hover:text-clawd-text'
-              }`}
-            >
-              Models
-            </button>
-          </div>
+          ))}
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
-            <div className="text-clawd-muted py-8 text-center">Loading...</div>
-          ) : activeTab === 'soul' ? (
-            /* SOUL tab */
-            <div>
-              <div className="mb-3">
-                <h3 className="text-sm font-semibold">SOUL.md &mdash; {agentName}</h3>
-                <p className="text-xs text-clawd-muted mt-0.5">Defines personality, rules, and behavior.</p>
-              </div>
-
-              <textarea
-                className="w-full h-64 font-mono text-sm bg-clawd-bg0 border border-clawd-border rounded p-3 text-clawd-text resize-none focus:outline-none focus:border-clawd-accent"
-                value={soulContent}
-                onChange={(e) => {
-                  setSoulContent(e.target.value);
-                  setSoulDirty(true);
-                }}
-                placeholder="No SOUL.md content found for this agent."
-              />
-
-              {soulError && (
-                <div className="text-error text-sm mt-2">{soulError}</div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowSaveConfirm(true)}
-                disabled={!soulDirty || soulSaving}
-                className="btn-primary mt-3"
-              >
-                {soulSaving ? 'Saving...' : 'Save'}
-              </button>
-
-              {/* Restart banner */}
-              {showRestartBanner && (
-                <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded text-warning text-sm flex items-center gap-2">
-                  <span>
-                    Restart agent <strong>{agentName}</strong> for changes to take effect.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowRestartBanner(false)}
-                    className="ml-auto text-clawd-muted hover:text-clawd-text"
-                  >
-                    Dismiss
+            <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading…</div>
+          ) : (
+            <>
+              {/* ── SOUL ── */}
+              {tab === 'soul' && (
+                <div className="space-y-3">
+                  <p className="text-xs text-mission-control-text-dim">Defines {agentName}'s personality, responsibilities, and behavior rules.</p>
+                  {showRestartBanner && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded text-warning text-xs">
+                      <AlertCircle size={12} />
+                      Restart {agentName} for changes to take effect.
+                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto opacity-60 hover:opacity-100">✕</button>
+                    </div>
+                  )}
+                  <textarea
+                    className={`${inputBase} h-72 font-mono resize-none`}
+                    value={soul}
+                    onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
+                    placeholder="No SOUL.md found for this agent."
+                  />
+                  <button type="button" onClick={saveSoul} disabled={!soulDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save Soul'}
                   </button>
                 </div>
               )}
-            </div>
-          ) : (
-            /* Models tab */
-            <div>
-              <h3 className="text-sm font-semibold mb-4">Model Configuration &mdash; {agentName}</h3>
 
-              {/* Primary model */}
-              <div className="mb-6">
-                <label className="text-xs font-medium text-clawd-muted uppercase tracking-wider">
-                  Primary Model
-                </label>
-                <select
-                  className="mt-1 w-full bg-clawd-bg0 border border-clawd-border rounded px-3 py-2 text-clawd-text focus:outline-none focus:border-clawd-accent"
-                  value={primaryModel}
-                  onChange={(e) => {
-                    setPrimaryModel(e.target.value);
-                    setModelDirty(true);
-                  }}
-                >
-                  <option value="" disabled>Select a model</option>
-                  {AVAILABLE_MODELS.map(m => (
-                    <option key={m.id} value={m.id}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Fallback chain */}
-              <div className="mb-4">
-                <label className="text-xs font-medium text-clawd-muted uppercase tracking-wider">
-                  Fallback Chain
-                </label>
-                <p className="text-xs text-clawd-muted mt-0.5 mb-2">(tried in order when primary fails)</p>
-
-                {fallbacks.length === 0 ? (
-                  <p className="text-xs text-clawd-muted italic py-2">No fallbacks configured.</p>
-                ) : (
-                  <ol className="space-y-1.5">
-                    {fallbacks.map((fb, index) => (
-                      <li
-                        key={`${fb}-${index}`}
-                        className="flex items-center gap-2 px-3 py-2 bg-clawd-bg0 border border-clawd-border rounded text-sm"
+              {/* ── MODEL ── */}
+              {tab === 'model' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-mission-control-text-dim">All agents run Claude directly via Anthropic's API. Select the model tier for this agent.</p>
+                  <div className="space-y-2">
+                    {CLAUDE_MODELS.map(m => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => { setModel(m.id); setModelDirty(true); }}
+                        className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
+                          model === m.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/50'
+                        }`}
                       >
-                        <span className="text-xs text-clawd-muted font-mono w-4">{index + 1}.</span>
-                        <span className="flex-1">{getModelLabel(fb)}</span>
-                        <button
-                          type="button"
-                          onClick={() => moveFallback(index, 'up')}
-                          disabled={index === 0}
-                          className="p-0.5 text-clawd-muted hover:text-clawd-text disabled:opacity-30 transition-colors"
-                          title="Move up"
-                        >
-                          <ChevronUp size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveFallback(index, 'down')}
-                          disabled={index === fallbacks.length - 1}
-                          className="p-0.5 text-clawd-muted hover:text-clawd-text disabled:opacity-30 transition-colors"
-                          title="Move down"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeFallback(index)}
-                          className="p-0.5 text-clawd-muted hover:text-error transition-colors"
-                          title="Remove"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </li>
+                        <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
+                          {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm text-mission-control-text-primary">{m.label}</div>
+                          <div className="text-xs text-mission-control-text-dim mt-0.5">{m.desc}</div>
+                        </div>
+                      </button>
                     ))}
-                  </ol>
-                )}
-
-                {/* Add fallback select */}
-                {availableFallbackModels.length > 0 && (
-                  <select
-                    className="mt-2 w-full bg-clawd-bg0 border border-clawd-border rounded px-3 py-2 text-clawd-text text-sm focus:outline-none focus:border-clawd-accent"
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) addFallback(e.target.value);
-                    }}
-                  >
-                    <option value="">Add fallback...</option>
-                    {availableFallbackModels.map(m => (
-                      <option key={m.id} value={m.id}>{m.label}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {modelError && (
-                <div className="text-error text-sm mt-2">{modelError}</div>
+                  </div>
+                  <button type="button" onClick={saveModel} disabled={!modelDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save Model'}
+                  </button>
+                </div>
               )}
 
-              <button
-                type="button"
-                onClick={handleSaveModel}
-                disabled={!modelDirty || modelSaving}
-                className="btn-primary mt-4"
-              >
-                {modelSaving ? 'Saving...' : 'Save Model'}
-              </button>
-            </div>
+              {/* ── SKILLS ── */}
+              {tab === 'skills' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-mission-control-text-dim">
+                      Skills auto-load into context before relevant tasks.
+                      <span className="ml-1 text-mission-control-accent">{activeSkills.length}/{allSkills.length} active</span>
+                    </p>
+                    {addSkillMode === null && (
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
+                          onClick={() => setAddSkillMode('url')}
+                        >
+                          <Plus size={11} /> Add Skill <ChevronDown size={11} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add skill form */}
+                  {addSkillMode !== null && (
+                    <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-mission-control-text-primary">New Skill</span>
+                        <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                      </div>
+
+                      <input
+                        className={`${inputBase} text-xs`}
+                        placeholder="Skill name"
+                        value={addSkillName}
+                        onChange={e => setAddSkillName(e.target.value)}
+                      />
+
+                      {/* Source type toggle */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setAddSkillMode('url')}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary'}`}
+                        >
+                          <Link size={10} /> From URL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAddSkillMode('text')}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary'}`}
+                        >
+                          <FileText size={10} /> Write / Paste
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+                        >
+                          <Upload size={10} /> Upload .md
+                        </button>
+                        <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
+                      </div>
+
+                      {addSkillMode === 'url' && (
+                        <input
+                          className={`${inputBase} text-xs`}
+                          placeholder="https://example.com/skill.md"
+                          value={addSkillUrl}
+                          onChange={e => setAddSkillUrl(e.target.value)}
+                        />
+                      )}
+
+                      {addSkillMode === 'text' && (
+                        <textarea
+                          className={`${inputBase} h-36 font-mono text-xs resize-none`}
+                          placeholder={`# Skill Name\n\nDescribe what this skill does and when to use it...`}
+                          value={addSkillContent}
+                          onChange={e => setAddSkillContent(e.target.value)}
+                        />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleAddSkill}
+                        disabled={addSkillWorking}
+                        className="btn-primary text-xs py-1.5 disabled:opacity-40"
+                      >
+                        {addSkillWorking ? 'Creating…' : 'Create Skill'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Skill list */}
+                  {allSkills.length === 0 ? (
+                    <div className="text-center py-8 text-mission-control-text-dim text-sm">No skills in .claude/skills/</div>
+                  ) : (
+                    <div className="space-y-1">
+                      {allSkills.map(skill => {
+                        const on = activeSkills.includes(skill.slug);
+                        return (
+                          <button
+                            key={skill.id}
+                            type="button"
+                            onClick={() => toggleSkill(skill.slug)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-success/40 bg-success/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
+                          >
+                            <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
+                              {on && <Check size={10} className="text-white" />}
+                            </div>
+                            <span className="flex-1 text-sm text-mission-control-text-primary">{skill.name}</span>
+                            <span className="text-xs text-mission-control-text-dim font-mono">{skill.slug}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <button type="button" onClick={saveSkills} disabled={!skillsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save Skills'}
+                  </button>
+                </div>
+              )}
+
+              {/* ── TOOLS ── */}
+              {tab === 'tools' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-mission-control-text-dim">Control which MCP tools {agentName} can call during task execution.</p>
+                  {MCP_SERVERS.map(server => {
+                    const allOn = server.tools.every(t => activeTools.includes(t));
+                    const someOn = server.tools.some(t => activeTools.includes(t));
+                    return (
+                      <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
+                          <span className="text-sm font-medium text-mission-control-text-primary">{server.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleServer(server.tools, !allOn)}
+                            className={`text-xs px-2 py-0.5 rounded transition-colors ${allOn ? 'bg-success/20 text-success' : someOn ? 'bg-warning/20 text-warning' : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface'}`}
+                          >
+                            {allOn ? 'All on' : someOn ? 'Partial' : 'All off'} — toggle all
+                          </button>
+                        </div>
+                        <div className="divide-y divide-mission-control-border">
+                          {server.tools.map(tool => {
+                            const on = activeTools.includes(tool);
+                            return (
+                              <button
+                                key={tool}
+                                type="button"
+                                onClick={() => toggleTool(tool)}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-mission-control-surface/50 transition-colors"
+                              >
+                                <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
+                                  {on && <Check size={9} className="text-white" />}
+                                </div>
+                                <span className={`text-xs font-mono ${on ? 'text-mission-control-text-primary' : 'text-mission-control-text-dim'}`}>{tool}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button type="button" onClick={saveTools} disabled={!toolsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save Tool Access'}
+                  </button>
+                </div>
+              )}
+
+              {/* ── API KEYS ── */}
+              {tab === 'api' && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-mission-control-text-dim">Grant {agentName} access to API keys and credentials.</p>
+                    {!showAddKey && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddKey(true)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
+                      >
+                        <Plus size={11} /> Add Credential
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Inline add form */}
+                  {showAddKey && (
+                    <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-mission-control-text-primary">New Credential</span>
+                        <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                      </div>
+                      <select
+                        className={`${inputBase} text-xs`}
+                        onChange={e => {
+                          const preset = API_PRESETS.find(p => p.service === e.target.value);
+                          if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
+                        }}
+                      >
+                        {API_PRESETS.map(p => (
+                          <option key={p.label} value={p.service}>{p.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        className={`${inputBase} text-xs`}
+                        placeholder="Label (e.g. OpenAI Production)"
+                        value={newKey.name}
+                        onChange={e => setNewKey(k => ({ ...k, name: e.target.value }))}
+                      />
+                      <input
+                        className={`${inputBase} text-xs`}
+                        placeholder="Service"
+                        value={newKey.service}
+                        onChange={e => setNewKey(k => ({ ...k, service: e.target.value }))}
+                      />
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        className={`${inputBase} text-xs font-mono`}
+                        placeholder={API_PRESETS.find(p => p.service === newKey.service)?.placeholder ?? 'Paste your key here'}
+                        value={newKey.key}
+                        onChange={e => setNewKey(k => ({ ...k, key: e.target.value }))}
+                        onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateKey}
+                        disabled={addingKey}
+                        className="btn-primary text-xs py-1.5 disabled:opacity-40"
+                      >
+                        {addingKey ? 'Saving…' : 'Add & Assign to Agent'}
+                      </button>
+                    </div>
+                  )}
+
+                  {allApiKeys.length === 0 && !showAddKey ? (
+                    <div className="text-center py-8 text-mission-control-text-dim text-sm">
+                      No credentials yet.<br />
+                      <span className="text-xs opacity-60">Click "Add Credential" to create one.</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {allApiKeys.map(key => {
+                        const on = activeApiKeys.includes(key.id);
+                        return (
+                          <button
+                            key={key.id}
+                            type="button"
+                            onClick={() => toggleApiKey(key.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-mission-control-accent/40 bg-mission-control-accent/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
+                          >
+                            <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
+                              {on && <Check size={10} className="text-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-mission-control-text-primary">{key.name}</div>
+                              <div className="text-xs text-mission-control-text-dim">{key.service}</div>
+                            </div>
+                            <Key size={12} className={on ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <button type="button" onClick={saveApiKeys} disabled={!apiKeysDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save API Access'}
+                  </button>
+                </div>
+              )}
+
+              {/* ── PERMISSIONS ── */}
+              {tab === 'permissions' && (
+                <div className="space-y-4">
+
+                  {/* Trust tier — compact horizontal pills */}
+                  <div>
+                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {TRUST_TIERS.map(tier => (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() => { setTrustTier(tier.id); setPermDirty(true); }}
+                          className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}
+                        >
+                          <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {/* Description of selected tier */}
+                    <p className="text-xs text-mission-control-text-dim mt-2 px-1">
+                      {TRUST_TIERS.find(t => t.id === trustTier)?.desc}
+                    </p>
+                  </div>
+
+                  {/* Per-action overrides — collapsible groups */}
+                  <div>
+                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Action Overrides</div>
+                    <div className="space-y-1.5">
+                      {PERMISSION_GROUPS.map(group => {
+                        const isOpen = expandedGroups[group.label] ?? false;
+                        const overrideCount = group.perms.filter(p => permOverrides[p.id] !== undefined).length;
+                        return (
+                          <div key={group.label} className="border border-mission-control-border rounded-lg overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
+                              className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left"
+                            >
+                              <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+                                <Shield size={11} /> {group.label}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                {overrideCount > 0 && (
+                                  <span className="text-xs text-mission-control-accent">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>
+                                )}
+                                {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                              </span>
+                            </button>
+                            {isOpen && (
+                              <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
+                                {group.perms.map(perm => {
+                                  const overrideVal = permOverrides[perm.id];
+                                  const hasOverride = overrideVal !== undefined;
+                                  return (
+                                    <div key={perm.id} className="flex items-center justify-between px-3 py-2">
+                                      <div className="min-w-0 mr-2">
+                                        <span className="text-xs text-mission-control-text-primary">{perm.label}</span>
+                                        <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1 flex-shrink-0">
+                                        {hasOverride && (
+                                          <button
+                                            type="button"
+                                            onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
+                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text-primary px-1.5 py-0.5 rounded border border-mission-control-border transition-colors"
+                                          >Reset</button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
+                                          className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === true ? 'bg-success/20 text-success border-success/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/40'}`}
+                                        >Allow</button>
+                                        <button
+                                          type="button"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
+                                          className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === false ? 'bg-error/20 text-error border-error/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40'}`}
+                                        >Deny</button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Per-agent blocked commands */}
+                  <div>
+                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">Blocked Commands</div>
+                    <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns (global blocks in Settings → Security always apply).</p>
+                    <div className="border border-mission-control-border rounded-lg overflow-hidden">
+                      <div className="p-2 bg-mission-control-surface flex gap-2">
+                        <input
+                          type="text"
+                          value={newDisallowed}
+                          onChange={e => setNewDisallowed(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
+                          placeholder="e.g. Bash(git push *)"
+                          className="flex-1 text-xs bg-mission-control-bg0 border border-mission-control-border rounded px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddAgentDisallowed}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded hover:bg-mission-control-accent/20 transition-colors"
+                        >
+                          <Plus size={10} /> Block
+                        </button>
+                      </div>
+                      {agentDisallowed.length > 0 && (
+                        <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
+                          {agentDisallowed.map(tool => (
+                            <div key={tool} className="flex items-center justify-between px-3 py-1.5">
+                              <code className="text-xs font-mono text-mission-control-text-primary">{tool}</code>
+                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors">
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button type="button" onClick={savePermissions} disabled={!permDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                    {saving ? 'Saving…' : 'Save Permissions'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
-
-      {/* Confirm dialog for SOUL save */}
-      {showSaveConfirm && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-[60]"
-          onClick={() => setShowSaveConfirm(false)}
-          aria-hidden="true"
-        >
-          <div
-            className="glass-modal rounded-xl max-w-sm w-full p-5 mx-4"
-            onClick={(e) => e.stopPropagation()}
-            role="presentation"
-          >
-            <h3 className="text-base font-semibold mb-2">Save SOUL.md?</h3>
-            <p className="text-sm text-clawd-muted mb-4">
-              Changes take effect after restarting the agent.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setShowSaveConfirm(false)}
-                className="px-3 py-1.5 text-sm text-clawd-muted border border-clawd-border rounded hover:bg-clawd-surface transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSoul}
-                className="btn-primary text-sm"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

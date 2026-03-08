@@ -97,7 +97,7 @@ export default function ReportsPanel() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Generating reports...</div>
+        <div className="text-mission-control-text-dim">Generating reports...</div>
       </div>
     );
   }
@@ -108,25 +108,25 @@ export default function ReportsPanel() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="text-clawd-accent" size={20} />
+            <FileText className="text-mission-control-accent" size={20} />
             Productivity Reports
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Weekly and monthly performance summaries
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Report type selector */}
-          <div className="flex bg-clawd-border rounded-lg p-1">
+          <div className="flex bg-mission-control-border rounded-lg p-1">
             {(['weekly', 'monthly'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setReportType(type)}
                 className={`px-3 py-2 rounded text-sm font-medium transition-colors capitalize ${
                   reportType === type
-                    ? 'bg-clawd-accent text-white'
-                    : 'text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {type}
@@ -137,7 +137,7 @@ export default function ReportsPanel() {
           {/* Export button */}
           <button
             onClick={() => exportReport(reportType)}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
           >
             <Download size={16} />
             Export
@@ -150,38 +150,38 @@ export default function ReportsPanel() {
         {reportType === 'weekly' && weeklyReport && (
           <div className="space-y-6">
             {/* Week Header */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-clawd-accent mb-2">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
                 <Calendar size={20} />
                 <span className="font-medium">Week of {weeklyReport.weekStart}</span>
               </div>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {weeklyReport.weekStart} to {weeklyReport.weekEnd}
               </p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Tasks Created</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Tasks Created</div>
                 <div className="text-3xl font-bold text-info">
                   {weeklyReport.tasksCreated}
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Tasks Completed</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Tasks Completed</div>
                 <div className="text-3xl font-bold text-success">
                   {weeklyReport.tasksCompleted}
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Completion Rate</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Completion Rate</div>
                 <div className="text-3xl font-bold text-review">
                   {weeklyReport.completionRate}%
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Total Hours</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Total Hours</div>
                 <div className="text-3xl font-bold text-warning">
                   {weeklyReport.totalHours.toFixed(1)}h
                 </div>
@@ -189,20 +189,20 @@ export default function ReportsPanel() {
             </div>
 
             {/* Highlights */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Award size={16} className="text-warning" />
                 Highlights
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-2">Top Performer</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-2">Top Performer</div>
                   <div className="text-xl font-bold text-warning">
                     {weeklyReport.topAgent}
                   </div>
                 </div>
-                <div className="p-4 bg-clawd-bg rounded-xl">
-                  <div className="text-sm text-clawd-text-dim mb-2">Most Active Project</div>
+                <div className="p-4 bg-mission-control-bg rounded-xl">
+                  <div className="text-sm text-mission-control-text-dim mb-2">Most Active Project</div>
                   <div className="text-xl font-bold text-info">
                     {weeklyReport.topProject}
                   </div>
@@ -211,16 +211,16 @@ export default function ReportsPanel() {
             </div>
 
             {/* Insights */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-clawd-accent" />
+                <TrendingUp size={16} className="text-mission-control-accent" />
                 Insights
               </h3>
               <div className="space-y-3">
                 {weeklyReport.insights.map((insight, idx) => (
                   <div
                     key={idx}
-                    className="p-4 bg-clawd-bg rounded-xl text-sm"
+                    className="p-4 bg-mission-control-bg rounded-xl text-sm"
                   >
                     {insight}
                   </div>
@@ -233,38 +233,38 @@ export default function ReportsPanel() {
         {reportType === 'monthly' && monthlyReport && (
           <div className="space-y-6">
             {/* Month Header */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-clawd-accent mb-2">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
                 <Calendar size={20} />
                 <span className="font-medium">
                   {monthlyReport.month} {monthlyReport.year}
                 </span>
               </div>
-              <p className="text-sm text-clawd-text-dim">Monthly Performance Report</p>
+              <p className="text-sm text-mission-control-text-dim">Monthly Performance Report</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Tasks Created</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Tasks Created</div>
                 <div className="text-3xl font-bold text-info">
                   {monthlyReport.tasksCreated}
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Tasks Completed</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Tasks Completed</div>
                 <div className="text-3xl font-bold text-success">
                   {monthlyReport.tasksCompleted}
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Completion Rate</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Completion Rate</div>
                 <div className="text-3xl font-bold text-review">
                   {monthlyReport.completionRate}%
                 </div>
               </div>
-              <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                <div className="text-sm text-clawd-text-dim mb-2">Total Hours</div>
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <div className="text-sm text-mission-control-text-dim mb-2">Total Hours</div>
                 <div className="text-3xl font-bold text-warning">
                   {monthlyReport.totalHours.toFixed(1)}h
                 </div>
@@ -272,7 +272,7 @@ export default function ReportsPanel() {
             </div>
 
             {/* Agent Performance */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <Award size={16} className="text-warning" />
                 Agent Performance
@@ -281,29 +281,29 @@ export default function ReportsPanel() {
                 {monthlyReport.agentPerformance.map((agent) => (
                   <div
                     key={agent.agentId}
-                    className="p-4 bg-clawd-bg rounded-xl"
+                    className="p-4 bg-mission-control-bg rounded-xl"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-medium">{agent.agentName}</span>
-                      <span className="text-sm text-clawd-text-dim">
+                      <span className="text-sm text-mission-control-text-dim">
                         {agent.tasksCompleted} completed
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <div className="text-clawd-text-dim">Completion Rate</div>
+                        <div className="text-mission-control-text-dim">Completion Rate</div>
                         <div className="font-medium text-success">
                           {agent.completionRate}%
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Avg Time</div>
+                        <div className="text-mission-control-text-dim">Avg Time</div>
                         <div className="font-medium text-info">
                           {agent.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Total Time</div>
+                        <div className="text-mission-control-text-dim">Total Time</div>
                         <div className="font-medium text-warning">
                           {agent.totalTimeSpent.toFixed(1)}h
                         </div>
@@ -315,38 +315,38 @@ export default function ReportsPanel() {
             </div>
 
             {/* Project Breakdown */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-clawd-accent" />
+                <Clock size={16} className="text-mission-control-accent" />
                 Project Breakdown
               </h3>
               <div className="space-y-3">
                 {monthlyReport.projectBreakdown.map((project) => (
                   <div
                     key={project.project}
-                    className="p-4 bg-clawd-bg rounded-xl"
+                    className="p-4 bg-mission-control-bg rounded-xl"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="font-medium">{project.project}</span>
-                      <span className="text-sm text-clawd-text-dim">
+                      <span className="text-sm text-mission-control-text-dim">
                         {project.totalTasks} tasks
                       </span>
                     </div>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
-                        <div className="text-clawd-text-dim">Completed</div>
+                        <div className="text-mission-control-text-dim">Completed</div>
                         <div className="font-medium text-success">
                           {project.completedTasks}
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Avg Time</div>
+                        <div className="text-mission-control-text-dim">Avg Time</div>
                         <div className="font-medium text-info">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
-                        <div className="text-clawd-text-dim">Total Time</div>
+                        <div className="text-mission-control-text-dim">Total Time</div>
                         <div className="font-medium text-warning">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
@@ -358,16 +358,16 @@ export default function ReportsPanel() {
             </div>
 
             {/* Insights */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-clawd-accent" />
+                <TrendingUp size={16} className="text-mission-control-accent" />
                 Insights
               </h3>
               <div className="space-y-3">
                 {monthlyReport.insights.map((insight, idx) => (
                   <div
                     key={idx}
-                    className="p-4 bg-clawd-bg rounded-xl text-sm"
+                    className="p-4 bg-mission-control-bg rounded-xl text-sm"
                   >
                     {insight}
                   </div>

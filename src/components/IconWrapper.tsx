@@ -127,9 +127,9 @@ export function IconButton({
   
   const variantClass = {
     default: '',
-    primary: 'bg-clawd-accent text-white hover:bg-clawd-accent/90',
+    primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90',
     danger: 'text-error hover:bg-error-subtle',
-    ghost: 'hover:bg-transparent hover:text-clawd-accent',
+    ghost: 'hover:bg-transparent hover:text-mission-control-accent',
   }[variant];
   
   return (
@@ -140,43 +140,6 @@ export function IconButton({
       <IconWrapper icon={Icon} size={iconSize} className={iconClassName} />
       {children}
     </button>
-  );
-}
-
-interface IconBadgeProps {
-  icon: LucideIcon;
-  size?: 'sm' | 'md' | 'lg';
-  iconSize?: IconSize;
-  className?: string;
-  iconClassName?: string;
-}
-
-/**
- * IconBadge - Circular icon container for badges and avatars
- * 
- * Usage:
- * ```tsx
- * <IconBadge icon={User} className="bg-info-subtle text-info" />
- * <IconBadge icon={AlertTriangle} size="lg" iconSize="md" className="bg-error-subtle" />
- * ```
- */
-export function IconBadge({ 
-  icon: Icon, 
-  size = 'md',
-  iconSize = 'sm',
-  className = '',
-  iconClassName = ''
-}: IconBadgeProps) {
-  const sizeClass = {
-    sm: 'icon-badge-sm',
-    md: 'icon-badge',
-    lg: 'icon-badge-lg',
-  }[size];
-  
-  return (
-    <div className={`${sizeClass} ${className}`}>
-      <IconWrapper icon={Icon} size={iconSize} className={iconClassName} />
-    </div>
   );
 }
 

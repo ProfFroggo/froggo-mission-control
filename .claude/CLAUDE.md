@@ -14,8 +14,23 @@
 - P0/P1 tasks → Clara review before done
 - ENV values → import from `src/lib/env.ts`, never `process.env` directly
 
+## UI Rules
+- **No emojis in UI** — always use Lucide icons instead. Emojis are never used as UI elements, icons, or decorations.
+- **Dark/light theme** — all form elements (input, textarea, select, button) must use CSS variables via the global `forms.css` stylesheet. Never hardcode colors or use undefined Tailwind tokens like `bg-mission-control-bg1` (use `bg-mission-control-surface` instead).
+- **Global styles first** — add new styles to the relevant global CSS file, not as one-off Tailwind classes per component.
+
 ## Task Lifecycle
-`blocked → todo → in-progress → internal-review → review → human-review → done`
+`todo → internal-review → in-progress → review → human-review → done`
+
+- **todo**: set up planning, subtasks (2+), assign agent — then move to internal-review
+- **internal-review** ("Ready to Start"): Clara quality gate — verifies plan/subtasks/assignment before work begins
+- **in-progress**: agent working, spawning sub-agents per subtask
+- **review**: Clara verifies ALL planned work completed — sends back to in-progress with notes if incomplete
+- **human-review**: required for external/content/approval tasks, or if truly blocked (needs human to unblock)
+- **done**: agent review can go straight here if no human approval needed
+
+**`blocked` status is removed — if something is blocked, move to `human-review` so a human can unblock it.**
+**Skipping internal-review (todo → in-progress) is blocked by MCP.**
 
 ## Agent Communication
 - Async messaging: `chat_post` / `chat_read` MCP tools
@@ -40,6 +55,9 @@ Read ~/git/mission-control-nextjs/.claude/skills/{skill-name}/SKILL.md
 | Next.js routes or components | `nextjs-patterns` |
 | Git commits, branches, PRs | `git-workflow` |
 | Social/X content | `x-twitter-strategy` |
+| React components, hooks, performance | `react-best-practices` |
+| UI design, accessibility, forms, dark mode | `web-design-guidelines` |
+| React 19 composition, compound components | `composition-patterns` |
 
 Skills are self-contained guides. Reading the relevant skill before starting saves rework and ensures platform conventions are followed.
 

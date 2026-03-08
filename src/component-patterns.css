@@ -1,5 +1,5 @@
 /**
- * FROGGO DASHBOARD - REUSABLE COMPONENT PATTERNS
+ * MISSION CONTROL DASHBOARD - REUSABLE COMPONENT PATTERNS
  * 
  * Pre-built component classes following the design system
  * Task: task-1769809773003
@@ -12,8 +12,8 @@
    ============================================ */
 
 .card-base {
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: var(--radius);
   padding: var(--space-component);
   transition: all var(--duration-fast) var(--ease-out);
@@ -23,7 +23,7 @@
   background: rgba(20, 20, 20, 0.6);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--clawd-border-glass);
+  border: 1px solid var(--mission-control-border-glass);
   border-radius: var(--radius-lg);
   padding: var(--space-component-lg);
   box-shadow: var(--shadow-lg);
@@ -41,7 +41,7 @@
 .card-interactive:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-xl);
-  border-color: var(--clawd-border-glass-hover);
+  border-color: var(--mission-control-border-glass-hover);
 }
 
 .card-stats {
@@ -49,8 +49,8 @@
   align-items: center;
   gap: var(--space-stack);
   padding: var(--space-component);
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: var(--radius-lg);
   transition: transform var(--duration-fast) var(--ease-out);
 }
@@ -76,14 +76,14 @@
 
 .card-stats-label {
   font-size: var(--text-caption);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   margin-bottom: 0.25rem;
 }
 
 .card-stats-value {
   font-size: var(--text-heading);
   font-weight: var(--font-semibold);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
 }
 
 /* ============================================
@@ -111,13 +111,13 @@
 }
 
 .btn-primary {
-  background: var(--clawd-accent);
+  background: var(--mission-control-accent);
   color: white;
   box-shadow: var(--shadow);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--clawd-accent-dim);
+  background: var(--mission-control-accent-dim);
   box-shadow: var(--shadow-lg);
   transform: translateY(-1px);
 }
@@ -127,25 +127,25 @@
 }
 
 .btn-secondary {
-  background: var(--clawd-surface);
-  color: var(--clawd-text);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  color: var(--mission-control-text);
+  border: 1px solid var(--mission-control-border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--clawd-border);
+  background: var(--mission-control-border);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: var(--clawd-surface);
-  color: var(--clawd-text);
+  background: var(--mission-control-surface);
+  color: var(--mission-control-text);
 }
 
 .btn-danger {
@@ -184,21 +184,21 @@
   width: 100%;
   padding: 0.625rem 1rem;
   height: var(--control-height);
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: var(--radius-sm);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   font-size: var(--text-body);
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .input-base::placeholder {
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
 }
 
 .input-base:focus {
   outline: none;
-  border-color: var(--clawd-accent);
+  border-color: var(--mission-control-accent);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
@@ -210,10 +210,10 @@
 .textarea-base {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: var(--radius-sm);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   font-size: var(--text-body);
   resize: vertical;
   min-height: 100px;
@@ -221,12 +221,12 @@
 }
 
 .textarea-base::placeholder {
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
 }
 
 .textarea-base:focus {
   outline: none;
-  border-color: var(--clawd-accent);
+  border-color: var(--mission-control-accent);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
@@ -234,10 +234,10 @@
   width: 100%;
   padding: 0.625rem 2.5rem 0.625rem 1rem;
   height: var(--control-height);
-  background: var(--clawd-surface);
-  border: 1px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 1px solid var(--mission-control-border);
   border-radius: var(--radius-sm);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   font-size: var(--text-body);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
@@ -249,22 +249,22 @@
 
 .select-base:focus {
   outline: none;
-  border-color: var(--clawd-accent);
+  border-color: var(--mission-control-accent);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .checkbox-base {
   width: 1.25rem;
   height: 1.25rem;
-  border: 2px solid var(--clawd-border);
+  border: 2px solid var(--mission-control-border);
   border-radius: 0.25rem;
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-out);
 }
 
 .checkbox-base:checked {
-  background: var(--clawd-accent);
-  border-color: var(--clawd-accent);
+  background: var(--mission-control-accent);
+  border-color: var(--mission-control-accent);
 }
 
 .checkbox-base:focus {
@@ -276,14 +276,14 @@
   display: block;
   font-size: var(--text-small);
   font-weight: var(--font-medium);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   margin-bottom: 0.5rem;
 }
 
 .form-hint {
   display: block;
   font-size: var(--text-caption);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   margin-top: 0.375rem;
 }
 
@@ -353,7 +353,7 @@
   height: 1.25rem;
   padding: 0 0.375rem;
   border-radius: var(--radius-full);
-  background: var(--clawd-accent);
+  background: var(--mission-control-accent);
   color: white;
   font-size: 0.625rem;
   font-weight: var(--font-semibold);
@@ -392,20 +392,20 @@
   border: 1px solid rgba(38, 38, 38, 0.3);
   border-radius: var(--radius-lg);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 
-              0 0 0 1px var(--clawd-border-glass);
+              0 0 0 1px var(--mission-control-border-glass);
   overflow: hidden;
   animation: fade-in-up 0.3s ease-out;
 }
 
 .modal-header {
   padding: var(--space-component-lg);
-  border-bottom: 1px solid var(--clawd-border-subtle);
+  border-bottom: 1px solid var(--mission-control-border-subtle);
 }
 
 .modal-title {
   font-size: var(--text-heading-lg);
   font-weight: var(--font-semibold);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   margin: 0;
 }
 
@@ -417,7 +417,7 @@
 
 .modal-footer {
   padding: var(--space-component-lg);
-  border-top: 1px solid var(--clawd-border-subtle);
+  border-top: 1px solid var(--mission-control-border-subtle);
   display: flex;
   justify-content: flex-end;
   gap: var(--space-inline);
@@ -438,12 +438,12 @@
 }
 
 .list-item:hover {
-  background: var(--clawd-surface);
+  background: var(--mission-control-surface);
 }
 
 .list-item-interactive {
-  border: 1px solid var(--clawd-border);
-  background: var(--clawd-surface);
+  border: 1px solid var(--mission-control-border);
+  background: var(--mission-control-surface);
 }
 
 .list-item-interactive:hover {
@@ -454,7 +454,7 @@
 
 .list-divider {
   height: 1px;
-  background: var(--clawd-border);
+  background: var(--mission-control-border);
   margin: var(--space-stack) 0;
 }
 
@@ -470,8 +470,8 @@
   height: var(--avatar);
   border-radius: var(--radius-full);
   overflow: hidden;
-  background: var(--clawd-surface);
-  border: 2px solid var(--clawd-border);
+  background: var(--mission-control-surface);
+  border: 2px solid var(--mission-control-border);
   flex-shrink: 0;
 }
 
@@ -503,8 +503,8 @@
   align-items: center;
   justify-content: center;
   font-weight: var(--font-semibold);
-  color: var(--clawd-text);
-  background: var(--clawd-accent);
+  color: var(--mission-control-text);
+  background: var(--mission-control-accent);
 }
 
 /* ============================================
@@ -515,8 +515,8 @@
   display: inline-block;
   width: 1.5rem;
   height: 1.5rem;
-  border: 2px solid var(--clawd-border-glass-hover);
-  border-top-color: var(--clawd-accent);
+  border: 2px solid var(--mission-control-border-glass-hover);
+  border-top-color: var(--mission-control-accent);
   border-radius: var(--radius-full);
   animation: spin 0.6s linear infinite;
 }
@@ -570,10 +570,10 @@
   z-index: var(--z-tooltip);
   padding: 0.5rem 0.75rem;
   background: rgba(10, 10, 10, 0.95);
-  border: 1px solid var(--clawd-border-glass);
+  border: 1px solid var(--mission-control-border-glass);
   border-radius: var(--radius-sm);
   font-size: var(--text-caption);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
   white-space: nowrap;
   pointer-events: none;
   box-shadow: var(--shadow-lg);
@@ -581,7 +581,7 @@
 
 :root.light .tooltip {
   background: rgba(255, 255, 255, 0.95);
-  color: var(--clawd-text);
+  color: var(--mission-control-text);
 }
 
 /* ============================================
@@ -605,20 +605,20 @@
   height: 4rem;
   border-radius: var(--radius-lg);
   margin-bottom: 1.5rem;
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   opacity: 0.5;
 }
 
 .empty-state-title {
   font-size: var(--text-heading);
   font-weight: var(--font-semibold);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   margin-bottom: 0.5rem;
 }
 
 .empty-state-description {
   font-size: var(--text-secondary);
-  color: var(--clawd-text-dim);
+  color: var(--mission-control-text-dim);
   opacity: 0.7;
   max-width: 28rem;
   margin-bottom: 1.5rem;
@@ -631,8 +631,8 @@
 .hero-section {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--clawd-surface) 0%, var(--clawd-bg) 50%, var(--clawd-surface) 100%);
-  border-bottom: 1px solid var(--clawd-border-subtle);
+  background: linear-gradient(135deg, var(--mission-control-surface) 0%, var(--mission-control-bg) 50%, var(--mission-control-surface) 100%);
+  border-bottom: 1px solid var(--mission-control-border-subtle);
 }
 
 .hero-gradient-overlay {
@@ -674,20 +674,91 @@
 }
 
 /* ============================================
+   TYPOGRAPHY HIERARCHY
+   Usage: apply these classes to heading elements to enforce consistent scale.
+   ============================================ */
+
+/* Page/view hero title — full-screen views only (e.g. writing/ProjectSelector) */
+.type-display {
+  font-size: var(--text-heading-lg);   /* 1.5rem / 24px */
+  font-weight: var(--font-bold);
+  color: var(--mission-control-text);
+  line-height: 1.3;
+}
+
+/* Primary title — full-screen panel or main view title */
+.type-title {
+  font-size: var(--text-heading);      /* 1.25rem / 20px */
+  font-weight: var(--font-semibold);
+  color: var(--mission-control-text);
+  line-height: 1.4;
+}
+
+/* Panel title — side panels, modal titles, drawer headers */
+.type-panel-title {
+  font-size: var(--text-subheading);   /* 1.125rem / 18px */
+  font-weight: var(--font-semibold);
+  color: var(--mission-control-text);
+  line-height: 1.4;
+}
+
+/* Section heading — sub-sections within a panel or card group */
+.type-section {
+  font-size: var(--text-small);        /* 0.875rem / 14px */
+  font-weight: var(--font-semibold);
+  color: var(--mission-control-text);
+  line-height: 1.4;
+}
+
+/* Subsection / field label — column headers, category labels */
+.type-label {
+  font-size: var(--text-caption);      /* 0.75rem / 12px */
+  font-weight: var(--font-medium);
+  color: var(--mission-control-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+/* Standard body text */
+.type-body {
+  font-size: var(--text-small);        /* 0.875rem / 14px */
+  font-weight: var(--font-normal);
+  color: var(--mission-control-text);
+  line-height: 1.5;
+}
+
+/* Secondary / muted body */
+.type-secondary {
+  font-size: var(--text-small);        /* 0.875rem / 14px */
+  font-weight: var(--font-normal);
+  color: var(--mission-control-text-dim);
+  line-height: 1.5;
+}
+
+/* Caption / timestamp / metadata */
+.type-caption {
+  font-size: var(--text-caption);      /* 0.75rem / 12px */
+  font-weight: var(--font-normal);
+  color: var(--mission-control-text-dim);
+  line-height: 1.4;
+}
+
+/* ============================================
    UTILITY PATTERNS
    ============================================ */
 
 .divider-horizontal {
   width: 100%;
   height: 1px;
-  background: var(--clawd-border);
+  background: var(--mission-control-border);
   margin: var(--space-section) 0;
 }
 
 .divider-vertical {
   width: 1px;
   height: 100%;
-  background: var(--clawd-border);
+  background: var(--mission-control-border);
   margin: 0 var(--space-section);
 }
 

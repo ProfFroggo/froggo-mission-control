@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, Inbox, Brain, Database, Plus, FileText, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -60,7 +60,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     });
   }, [promptDialog]);
 
-  const commands: Command[] = [
+  const commands: Command[] = useMemo(() => [
     // Navigation
     { id: 'nav-inbox', icon: <Mail size={16} />, label: 'Go to Inbox', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
     { id: 'nav-dashboard', icon: <Home size={16} />, label: 'Go to Dashboard', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
@@ -109,15 +109,17 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     }},
     
     // Memory
-    { id: 'memory-search', icon: <Brain size={16} />, label: 'Search Memory (froggo-db)', category: 'Memory', action: async () => {
+    { id: 'memory-search', icon: <Brain size={16} />, label: 'Search Memory (mission-control-db)', category: 'Memory', action: async () => {
       withPrompt(
         { title: 'Search Memory', message: 'Enter search query:', placeholder: 'Search for...' },
         async (searchQuery) => {
-          if (connected) {
-            await gateway.sendChat(`Search froggo-db for: ${searchQuery}`);
-            addActivity({ type: 'chat', message: `Memory search: ${searchQuery}`, timestamp: Date.now() });
-            onNavigate('chat');
-          }
+          await fetch('/api/chat/sessions/web:dashboard/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'user', content: `Search memory for: ${searchQuery}` }),
+          }).catch(() => {});
+          addActivity({ type: 'chat', message: `Memory search: ${searchQuery}`, timestamp: Date.now() });
+          onNavigate('chat');
           onClose();
         }
       );
@@ -127,10 +129,12 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         { title: 'Add Fact', message: 'Enter fact:', placeholder: 'Fact to remember...' },
         { title: 'Category', message: 'Enter category:', placeholder: 'learning' },
         async (fact, category) => {
-          if (connected) {
-            await gateway.sendChat(`[SYSTEM] Add to froggo-db: froggo-db add-fact "${fact}" --category ${category}`);
-            addActivity({ type: 'system', message: `Added fact: ${fact.slice(0, 30)}...`, timestamp: Date.now() });
-          }
+          await fetch('/api/chat/sessions/web:dashboard/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'user', content: `Remember this fact (category: ${category}): ${fact}` }),
+          }).catch(() => {});
+          addActivity({ type: 'system', message: `Added fact: ${fact.slice(0, 30)}...`, timestamp: Date.now() });
           onClose();
         }
       );
@@ -228,7 +232,8 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         }
       );
     }},
-  ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [connected, addActivity, withPrompt, withPrompt2, onNavigate, onClose, setFocusMode]);
 
   const filteredCommands = commands.filter(cmd => 
     cmd.label.toLowerCase().includes(query.toLowerCase()) ||
@@ -295,8 +300,8 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       >
         <h2 id="command-palette-title" className="sr-only">Command Palette</h2>
         {/* Search Input */}
-        <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
-          <Search size={20} className="text-clawd-text-dim" aria-hidden="true" />
+        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+          <Search size={20} className="text-mission-control-text-dim" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -310,7 +315,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             aria-controls="command-list"
             aria-activedescendant={filteredCommands[selectedIndex]?.id}
           />
-          <kbd className="px-2 py-1 text-xs bg-clawd-border rounded" aria-label="Press Escape to close">ESC</kbd>
+          <kbd className="px-2 py-1 text-xs bg-mission-control-border rounded" aria-label="Press Escape to close">ESC</kbd>
         </div>
 
         {/* Commands List */}
@@ -324,7 +329,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             <div key={category} className="mb-2" role="group" aria-labelledby={`category-${category}`}>
               <div 
                 id={`category-${category}`}
-                className="px-3 py-1 text-xs font-medium text-clawd-text-dim uppercase tracking-wider"
+                className="px-3 py-1 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider"
               >
                 {category}
               </div>
@@ -339,17 +344,17 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                     onClick={cmd.action}
                     onMouseEnter={() => setSelectedIndex(currentIndex)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isSelected ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
+                      isSelected ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
                     }`}
                     role="option"
                     aria-selected={isSelected}
                     aria-label={`${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ''}`}
                   >
-                    <span className={isSelected ? 'text-white' : 'text-clawd-text-dim'} aria-hidden="true">{cmd.icon}</span>
+                    <span className={isSelected ? 'text-white' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
                     <span className="flex-1 text-left">{cmd.label}</span>
                     {cmd.shortcut && (
                       <kbd className={`px-2 py-0.5 text-xs rounded ${
-                        isSelected ? 'bg-clawd-text/20' : 'bg-clawd-border'
+                        isSelected ? 'bg-mission-control-text/20' : 'bg-mission-control-border'
                       }`} aria-hidden="true">
                         {cmd.shortcut}
                       </kbd>
@@ -361,14 +366,14 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
           ))}
           
           {filteredCommands.length === 0 && (
-            <div className="text-center py-8 text-clawd-text-dim">
+            <div className="text-center py-8 text-mission-control-text-dim">
               No commands found
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-2 border-t border-clawd-border flex items-center justify-between text-xs text-clawd-text-dim">
+        <div className="p-2 border-t border-mission-control-border flex items-center justify-between text-xs text-mission-control-text-dim">
           <div className="flex gap-2">
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>

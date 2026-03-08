@@ -33,13 +33,13 @@ export default function WizardReview() {
 
   if (!plan) {
     return (
-      <div className="h-full flex items-center justify-center bg-clawd-bg">
+      <div className="h-full flex items-center justify-center bg-mission-control-bg">
         <div className="text-center p-8">
           <AlertCircle size={32} className="mx-auto text-error mb-3" />
-          <p className="text-clawd-text text-sm font-medium">No plan to review</p>
+          <p className="text-mission-control-text text-sm font-medium">No plan to review</p>
           <button
             onClick={() => setStep('conversation')}
-            className="mt-4 flex items-center gap-1.5 mx-auto px-4 py-2 rounded-lg border border-clawd-border text-sm text-clawd-text-dim hover:border-clawd-accent transition-colors"
+            className="mt-4 flex items-center gap-1.5 mx-auto px-4 py-2 rounded-lg border border-mission-control-border text-sm text-mission-control-text-dim hover:border-mission-control-accent transition-colors"
           >
             <ArrowLeft size={14} />
             Back to Chat
@@ -139,18 +139,18 @@ export default function WizardReview() {
   // ── Shared styles ──
 
   const inputClass =
-    'w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent';
+    'w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent';
   const textareaClass = `${inputClass} resize-y min-h-[60px]`;
-  const labelClass = 'block text-xs font-medium text-clawd-text-dim mb-1.5';
-  const sectionClass = 'space-y-3 pb-5 border-b border-clawd-border';
+  const labelClass = 'block text-xs font-medium text-mission-control-text-dim mb-1.5';
+  const sectionClass = 'space-y-3 pb-5 border-b border-mission-control-border';
 
   return (
-    <div className="h-full flex flex-col bg-clawd-bg">
+    <div className="h-full flex flex-col bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-clawd-border bg-clawd-surface flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <div className="flex items-center gap-2">
-          <BookOpen size={14} className="text-clawd-accent" />
-          <span className="text-sm font-medium text-clawd-text">Review Your Plan</span>
+          <BookOpen size={14} className="text-mission-control-accent" />
+          <span className="text-sm font-medium text-mission-control-text">Review Your Plan</span>
         </div>
       </div>
 
@@ -226,7 +226,7 @@ export default function WizardReview() {
             {plan.themes.map((theme, i) => (
               <span
                 key={i}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/20"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20"
               >
                 {theme}
                 <button
@@ -250,7 +250,7 @@ export default function WizardReview() {
             <button
               onClick={addTheme}
               disabled={!newTheme.trim()}
-              className="px-3 py-2 rounded-lg bg-clawd-accent/10 text-clawd-accent text-xs font-medium hover:bg-clawd-accent/20 transition-colors disabled:opacity-40"
+              className="px-3 py-2 rounded-lg bg-mission-control-accent/10 text-mission-control-accent text-xs font-medium hover:bg-mission-control-accent/20 transition-colors disabled:opacity-40"
             >
               <Plus size={14} />
             </button>
@@ -277,9 +277,9 @@ export default function WizardReview() {
           </div>
           <div className="space-y-3">
             {plan.chapters.map((ch, i) => (
-              <div key={i} className="p-3 rounded-lg border border-clawd-border bg-clawd-surface space-y-2">
+              <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-clawd-text-dim font-mono w-6 text-right flex-shrink-0">
+                  <span className="text-xs text-mission-control-text-dim font-mono w-6 text-right flex-shrink-0">
                     {i + 1}.
                   </span>
                   <input
@@ -291,7 +291,7 @@ export default function WizardReview() {
                   />
                   <button
                     onClick={() => removeChapter(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -308,7 +308,7 @@ export default function WizardReview() {
           </div>
           <button
             onClick={addChapter}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-clawd-accent hover:bg-clawd-accent/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
           >
             <Plus size={14} />
             Add Chapter
@@ -322,7 +322,7 @@ export default function WizardReview() {
           </div>
           <div className="space-y-3">
             {plan.characters.map((c, i) => (
-              <div key={i} className="p-3 rounded-lg border border-clawd-border bg-clawd-surface space-y-2">
+              <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -341,7 +341,7 @@ export default function WizardReview() {
                       const val = e.target.value;
                       if (val !== '_custom') updateCharacter(i, 'role', val);
                     }}
-                    className="px-2 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-xs focus:outline-none focus:border-clawd-accent"
+                    className="px-2 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="protagonist">Protagonist</option>
                     <option value="antagonist">Antagonist</option>
@@ -351,7 +351,7 @@ export default function WizardReview() {
                   </select>
                   <button
                     onClick={() => removeCharacter(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -374,7 +374,7 @@ export default function WizardReview() {
                   placeholder="Character description"
                 />
                 <div>
-                  <label htmlFor={`character-traits-${i}`} className="text-[10px] text-clawd-text-dim">Traits (comma-separated)</label>
+                  <label htmlFor={`character-traits-${i}`} className="text-[10px] text-mission-control-text-dim">Traits (comma-separated)</label>
                   <input
                     id={`character-traits-${i}`}
                     type="text"
@@ -395,7 +395,7 @@ export default function WizardReview() {
           </div>
           <button
             onClick={addCharacter}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-clawd-accent hover:bg-clawd-accent/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
           >
             <Plus size={14} />
             Add Character
@@ -409,7 +409,7 @@ export default function WizardReview() {
           </div>
           <div className="space-y-3">
             {plan.timeline.map((evt, i) => (
-              <div key={i} className="p-3 rounded-lg border border-clawd-border bg-clawd-surface space-y-2">
+              <div key={i} className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -427,7 +427,7 @@ export default function WizardReview() {
                   />
                   <button
                     onClick={() => removeTimelineEvent(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                    className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -437,7 +437,7 @@ export default function WizardReview() {
           </div>
           <button
             onClick={addTimelineEvent}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-clawd-accent hover:bg-clawd-accent/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors"
           >
             <Plus size={14} />
             Add Event
@@ -446,18 +446,18 @@ export default function WizardReview() {
       </div>
 
       {/* Bottom action bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-clawd-border bg-clawd-surface flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-mission-control-border bg-mission-control-surface flex-shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setStep('conversation')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
           >
             <ArrowLeft size={14} />
             Back to Chat
           </button>
           <button
             onClick={() => cancelWizard()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
           >
             <X size={14} />
             Cancel
@@ -466,7 +466,7 @@ export default function WizardReview() {
         <button
           onClick={handleCreate}
           disabled={creating || !plan.title.trim() || plan.chapters.length === 0}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {creating ? (
             <>

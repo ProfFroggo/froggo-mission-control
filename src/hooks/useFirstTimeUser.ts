@@ -5,8 +5,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const ONBOARDING_KEY = 'froggo-onboarding-completed';
-const TOUR_SEEN_KEY = 'froggo-welcome-tour-seen';
+const ONBOARDING_KEY = 'mission-control-onboarding-completed';
+const TOUR_SEEN_KEY = 'mission-control-welcome-tour-seen';
 
 /**
  * Hook to detect first-time users and manage onboarding wizard + tour lifecycle.

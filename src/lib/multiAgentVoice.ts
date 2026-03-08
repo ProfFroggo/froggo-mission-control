@@ -1,13 +1,13 @@
 /**
- * Multi-Agent Voice System for Froggo Dashboard
- * Ported from Ox, adapted with Froggo as 6th agent + Gemini transcription
+ * Multi-Agent Voice System for Mission Control Dashboard
+ * Ported from Ox, adapted with Mission Control as 6th agent + Gemini transcription
  */
 
 // @ts-expect-error - @google/genai types not yet available
 import { GoogleGenAI, Modality } from '@google/genai';
 import { getGeminiVoiceForAgent } from './geminiLiveService';
 
-export type AgentType = 'coder' | 'writer' | 'researcher' | 'hr' | 'chief' | 'froggo';
+export type AgentType = 'coder' | 'writer' | 'researcher' | 'hr' | 'chief' | 'mission-control';
 
 export interface AgentConfig {
   id: AgentType;
@@ -154,14 +154,14 @@ Provide thoughtful strategic guidance.
 Keep responses brief but insightful - focus on the 'why' and 'what matters most'.`
   },
 
-  froggo: {
-    id: 'froggo',
-    name: 'Froggo',
-    voice: getGeminiVoiceForAgent('froggo'),
+  'mission-control': {
+    id: 'mission-control',
+    name: 'Mission Control',
+    voice: getGeminiVoiceForAgent('mission-control'),
     pitch: 1.0,
     rate: 1.0,
     description: 'Main orchestrator and dashboard conductor',
-    systemInstruction: `You are Froggo 🐸, the main orchestrator of the Froggo Dashboard multi-agent system.
+    systemInstruction: `You are Mission Control 🐸, the main orchestrator of the Mission Control Dashboard multi-agent system.
 
 Your capabilities:
 - Orchestrating and delegating work across all agents (Coder, Writer, Researcher, HR, Chief)

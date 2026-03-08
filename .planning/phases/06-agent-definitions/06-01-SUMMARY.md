@@ -9,7 +9,7 @@
 ## Changes
 
 - `.claude/CLAUDE.md`: Shared context — project structure, agent communication rules, task lifecycle, key rules
-- `.claude/settings.json`: MCP servers (froggo_db + memory), permissions (allow/deny lists), hooks (PreToolUse approval, PostToolUse review-gate, Stop session-sync), CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+- `.claude/settings.json`: MCP servers (mission-control_db + memory), permissions (allow/deny lists), hooks (PreToolUse approval, PostToolUse review-gate, Stop session-sync), CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 ## Outcome
 

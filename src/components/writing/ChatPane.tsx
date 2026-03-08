@@ -163,19 +163,19 @@ export default function ChatPane() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface border-r border-clawd-border dark">
+    <div className="flex flex-col h-full bg-mission-control-surface border-r border-mission-control-border dark">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-clawd-border flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <MessageSquare size={14} className="text-clawd-text-dim" />
-          <span className="text-xs font-medium text-clawd-text-dim">
+          <MessageSquare size={14} className="text-mission-control-text-dim" />
+          <span className="text-xs font-medium text-mission-control-text-dim">
             Chat{agentNames[selectedAgent] ? ` - ${agentNames[selectedAgent]}` : ''}
           </span>
         </div>
         {messages.length > 0 && (
           <button
             onClick={handleClearChat}
-            className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+            className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
             title="Clear conversation"
           >
             <Trash2 size={12} />
@@ -186,7 +186,7 @@ export default function ChatPane() {
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {messages.length === 0 && !streaming ? (
-          <div className="flex items-center justify-center h-full text-clawd-text-dim text-sm text-center px-4">
+          <div className="flex items-center justify-center h-full text-mission-control-text-dim text-sm text-center px-4">
             <p>Start a conversation with {agentNames[selectedAgent] || 'the agent'}</p>
           </div>
         ) : (

@@ -1,0 +1,14 @@
+{
+  "id": "researcher",
+  "name": "Researcher",
+  "emoji": "🔬",
+  "role": "Research & Analysis Specialist",
+  "description": "Deep research, competitive analysis, technical investigation, and synthesis. Best for: market research, technical feasibility studies, gathering information before building.",
+  "model": "sonnet",
+  "capabilities": ["research", "analysis", "web-search", "synthesis", "fact-checking"],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "utility"
+}

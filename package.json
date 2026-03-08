@@ -1,7 +1,7 @@
 {
-  "name": "froggo-dashboard",
+  "name": "mission-control-dashboard",
   "version": "10.0.0",
-  "description": "Froggo Dashboard - Agent Management & Task Tracking",
+  "description": "Mission Control Dashboard - Agent Management & Task Tracking",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,6 +14,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -36,6 +37,7 @@
     "dompurify": "^3.3.1",
     "exceljs": "^4.4.0",
     "fuse.js": "^7.1.0",
+    "googleapis": "^171.4.0",
     "imap": "^0.8.19",
     "lucide-react": "^0.303.0",
     "next": "^16.1.6",
@@ -66,6 +68,7 @@
     "@types/semver": "^7.7.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",

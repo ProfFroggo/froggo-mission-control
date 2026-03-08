@@ -1,26 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database';
+import { NextResponse } from 'next/server';
 
-function parseAgent(row: Record<string, unknown>) {
-  if (!row) return row;
-  const parsed = { ...row };
-  if (typeof parsed.capabilities === 'string') {
-    try {
-      parsed.capabilities = JSON.parse(parsed.capabilities as string);
-    } catch {
-      parsed.capabilities = [];
-    }
-  }
-  return parsed;
-}
+// Marketplace agent catalog — installable agents, not local running agents
+const MARKETPLACE_AGENTS = [
+  {
+    id: 'writer-agent',
+    name: 'Writer',
+    version: '1.0.0',
+    author: 'Mission Control',
+    description: 'Writes content, drafts, and copy across formats.',
+    category: 'productivity',
+    downloads: 0,
+    verified: true,
+    sha256: '',
+    icon: 'PenLine',
+    tags: ['writing', 'content'],
+    manifestUrl: '',
+    packageUrl: '',
+    installed: false,
+    builtin: true,
+    agent: { agentId: 'writer', soulPreview: 'A writing specialist agent.' },
+  },
+  {
+    id: 'researcher-agent',
+    name: 'Researcher',
+    version: '1.0.0',
+    author: 'Mission Control',
+    description: 'Researches topics, finds sources, and synthesizes information.',
+    category: 'productivity',
+    downloads: 0,
+    verified: true,
+    sha256: '',
+    icon: 'BookOpen',
+    tags: ['research', 'analysis'],
+    manifestUrl: '',
+    packageUrl: '',
+    installed: false,
+    builtin: true,
+    agent: { agentId: 'researcher', soulPreview: 'A research specialist agent.' },
+  },
+];
 
-export async function GET(_request: NextRequest) {
-  try {
-    const db = getDb();
-    const rows = db.prepare('SELECT * FROM agents ORDER BY name ASC').all() as Record<string, unknown>[];
-    return NextResponse.json(rows.map(parseAgent));
-  } catch (error) {
-    console.error('GET /api/marketplace/agents error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+export async function GET() {
+  return NextResponse.json({ agents: MARKETPLACE_AGENTS });
 }

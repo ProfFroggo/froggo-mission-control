@@ -111,12 +111,12 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-md">
         {/* Header */}
-        <div className="p-6 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-6 border-b border-mission-control-border flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">Focus Mode</h2>
-            <p className="text-sm text-clawd-text-dim">Control notifications and approvals</p>
+            <p className="text-sm text-mission-control-text-dim">Control notifications and approvals</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-clawd-border rounded-xl">
+          <button onClick={onClose} className="p-2 hover:bg-mission-control-border rounded-xl">
             <X size={20} />
           </button>
         </div>
@@ -133,8 +133,8 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                 onClick={() => handleSelect(mode.type)}
                 className={`w-full p-4 rounded-xl border text-left transition-all ${
                   isSelected 
-                    ? 'border-clawd-accent bg-clawd-accent/10' 
-                    : 'border-clawd-border hover:border-clawd-accent/50'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10' 
+                    : 'border-mission-control-border hover:border-mission-control-accent/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -143,9 +143,9 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">{mode.label}</div>
-                    <div className="text-sm text-clawd-text-dim">{mode.description}</div>
+                    <div className="text-sm text-mission-control-text-dim">{mode.description}</div>
                   </div>
-                  <div className="flex flex-col gap-1 text-xs text-clawd-text-dim">
+                  <div className="flex flex-col gap-1 text-xs text-mission-control-text-dim">
                     {mode.holdApprovals && (
                       <span className="flex items-center gap-1">
                         <Clock size={10} /> Hold approvals
@@ -165,10 +165,10 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
 
         {/* Turn Off */}
         {currentMode && (
-          <div className="p-4 border-t border-clawd-border">
+          <div className="p-4 border-t border-mission-control-border">
             <button
               onClick={() => handleSelect(null)}
-              className="w-full py-3 bg-clawd-border rounded-xl text-clawd-text-dim hover:bg-clawd-border/80 transition-colors"
+              className="w-full py-3 bg-mission-control-border rounded-xl text-mission-control-text-dim hover:bg-mission-control-border/80 transition-colors"
             >
               Turn off Focus Mode
             </button>
@@ -176,8 +176,8 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
         )}
 
         {/* Duration (optional) */}
-        <div className="p-4 border-t border-clawd-border bg-clawd-bg rounded-b-2xl">
-          <div className="text-xs text-clawd-text-dim mb-2">Auto-disable after:</div>
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl">
+          <div className="text-xs text-mission-control-text-dim mb-2">Auto-disable after:</div>
           <div className="flex gap-2">
             {[30, 60, 120, null].map((mins) => (
               <button
@@ -185,8 +185,8 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
                 onClick={() => setDuration(mins)}
                 className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${
                   duration === mins 
-                    ? 'bg-clawd-accent text-white' 
-                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                    ? 'bg-mission-control-accent text-white' 
+                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {mins ? `${mins}m` : 'Never'}

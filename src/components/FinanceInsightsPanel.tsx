@@ -141,8 +141,8 @@ export default function FinanceInsightsPanel() {
   if (loading && insights.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-clawd-text-dim" />
-        <span className="ml-2 text-clawd-text-dim">Loading AI insights...</span>
+        <Loader2 className="w-6 h-6 animate-spin text-mission-control-text-dim" />
+        <span className="ml-2 text-mission-control-text-dim">Loading AI insights...</span>
       </div>
     );
   }
@@ -166,8 +166,8 @@ export default function FinanceInsightsPanel() {
 
   if (insights.length === 0) {
     return (
-      <div className="text-center py-8 text-clawd-text-dim">
-        <Lightbulb className="w-12 h-12 mx-auto mb-3 text-clawd-text-dim" />
+      <div className="text-center py-8 text-mission-control-text-dim">
+        <Lightbulb className="w-12 h-12 mx-auto mb-3 text-mission-control-text-dim" />
         <p className="text-sm">No AI insights yet</p>
         <p className="text-xs mt-1">Upload transactions to get analysis</p>
       </div>
@@ -203,7 +203,7 @@ export default function FinanceInsightsPanel() {
           <button
             onClick={triggerAnalysis}
             disabled={analyzing || detectingAnomalies}
-            className="px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent/90 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+            className="px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:bg-mission-control-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
             title="Run AI analysis on recent transactions"
           >
             <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
@@ -224,20 +224,20 @@ export default function FinanceInsightsPanel() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold mb-1">{insight.title}</h4>
-                <div className="text-sm text-clawd-text whitespace-pre-wrap break-words">
+                <div className="text-sm text-mission-control-text whitespace-pre-wrap break-words">
                   {insight.content}
                 </div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="mt-2 text-xs text-mission-control-text-dim">
                   {formatTimestamp(insight.generated_at)}
                 </div>
               </div>
             </div>
             <button
               onClick={() => dismissInsight(insight.id)}
-              className="p-1 hover:bg-clawd-bg-alt rounded transition-colors flex-shrink-0"
+              className="p-1 hover:bg-mission-control-bg-alt rounded transition-colors flex-shrink-0"
               title="Dismiss insight"
             >
-              <X className="w-4 h-4 text-clawd-text-dim" />
+              <X className="w-4 h-4 text-mission-control-text-dim" />
             </button>
           </div>
         </div>

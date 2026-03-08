@@ -89,16 +89,16 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           role="dialog"
           aria-modal="true"
           aria-labelledby="file-preview-title"
-          className={`relative max-w-6xl max-h-[90vh] w-full glass-modal rounded-2xl border border-clawd-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto ${
+          className={`relative max-w-6xl max-h-[90vh] w-full glass-modal rounded-2xl border border-mission-control-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto ${
             isClosing ? 'modal-content-exit' : 'modal-content-enter'
           }`}
         >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-clawd-border bg-clawd-bg/50">
+        <div className="flex items-center justify-between p-4 border-b border-mission-control-border bg-mission-control-bg/50">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div>
               <h3 id="file-preview-title" className="font-semibold truncate">{file.name}</h3>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {(file.size / 1024).toFixed(1)} KB • {file.type || 'Unknown type'}
               </p>
             </div>
@@ -107,7 +107,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownload}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Download"
               aria-label="Download file"
               type="button"
@@ -116,7 +116,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
             </button>
             <button
               onClick={handleClose}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Close (ESC)"
               aria-label="Close modal"
               type="button"
@@ -140,25 +140,25 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
             <div className="h-full">
               <iframe
                 src={file.dataUrl}
-                className="w-full h-full rounded-lg border border-clawd-border"
+                className="w-full h-full rounded-lg border border-mission-control-border"
                 title={file.name}
               />
             </div>
           ) : isText && file.dataUrl ? (
-            <div className="bg-clawd-bg rounded-lg border border-clawd-border p-4 font-mono text-sm overflow-auto max-h-[70vh]">
+            <div className="bg-mission-control-bg rounded-lg border border-mission-control-border p-4 font-mono text-sm overflow-auto max-h-[70vh]">
               <pre className="whitespace-pre-wrap">{atob(file.dataUrl.split(',')[1])}</pre>
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-center">
               <div>
-                <ExternalLink size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-50" />
+                <ExternalLink size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">Preview not available</h3>
-                <p className="text-sm text-clawd-text-dim mb-4">
+                <p className="text-sm text-mission-control-text-dim mb-4">
                   This file type can&apos;t be previewed in the browser.
                 </p>
                 <button
                   onClick={handleDownload}
-                  className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+                  className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
                 >
                   <Download size={16} />
                   Download File
@@ -169,9 +169,9 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
         </div>
 
         {/* Footer hint */}
-        <div className="p-3 border-t border-clawd-border bg-clawd-bg/30 text-center">
-          <p className="text-xs text-clawd-text-dim">
-            Press <kbd className="px-1.5 py-0.5 bg-clawd-border rounded text-xs">Esc</kbd> to close
+        <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/30 text-center">
+          <p className="text-xs text-mission-control-text-dim">
+            Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">Esc</kbd> to close
           </p>
         </div>
         </div>

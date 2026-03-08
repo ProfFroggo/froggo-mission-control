@@ -18,14 +18,14 @@ const lifecycle: ModuleLifecycle = {
       label: 'Analytics',
       icon: BarChart2,
       component: AnalyticsDashboard,
-      moduleId: 'froggo-analytics',
+      moduleId: 'analytics',
       category: 'productivity',
       description: manifest.description,
     });
   },
 
   dispose() {
-    ViewRegistry.unregisterModule('froggo-analytics');
+    ViewRegistry.unregisterModule('analytics');
   },
 };
 

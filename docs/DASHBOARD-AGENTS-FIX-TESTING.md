@@ -9,7 +9,7 @@
 ## Problem Summary
 
 Writer agent was respawned 665+ times over 11 hours due to infinite spawn loop:
-1. `dashboard-agents.ts` spawned agents using `openclaw agent --agent <id>` (ephemeral sessions)
+1. `dashboard-agents.ts` spawned agents via the `/api/agents` REST API (ephemeral sessions)
 2. Agent replied "ready" → session ended (ephemeral behavior)
 3. Health check looked for session by key → not found
 4. Health check respawned → loop repeated
@@ -20,15 +20,19 @@ Writer agent was respawned 665+ times over 11 hours due to infinite spawn loop:
 
 **Before:**
 ```typescript
-const cmd = `openclaw agent --agent ${agent.agentId} --message "..." --json`;
+// Called /api/agents without a session ID — created ephemeral sessions
+const res = await fetch(`/api/agents/${agent.agentId}/message`, { ... });
 ```
 
 **After:**
 ```typescript
-const cmd = `openclaw agent --agent ${agent.agentId} --session-id "${agent.sessionKey}" --message "..." --json`;
+// Now includes sessionKey to create persistent labeled sessions
+const res = await fetch(`/api/agents/${agent.agentId}/message`, {
+  body: JSON.stringify({ sessionId: agent.sessionKey, message: "..." })
+});
 ```
 
-**Impact:** Adding `--session-id` parameter creates persistent labeled sessions that survive beyond a single turn.
+**Impact:** Including `sessionId` creates persistent labeled sessions that survive beyond a single turn.
 
 ### Change 2: Re-enabled Health Check (Lines 133-140)
 
@@ -60,15 +64,17 @@ healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
 
 1. **Start Dashboard App**
    ```bash
-   cd ~/froggo-dashboard
-   open release/dev/mac-arm64/Froggo.app
+   cd ~/git/mission-control-nextjs
+   npm run dev
+   # Open http://localhost:3000
    ```
 
 2. **Check Session Creation**
    - Wait 30 seconds for agents to spawn
-   - Run: `openclaw sessions list --json | jq '.sessions[] | select(.key | startswith("agent:")) | .key'`
+   - Query via API: `curl -s http://localhost:3000/api/agents | jq '.[].sessionKey'`
+   - Or check the SQLite DB: `sqlite3 ~/mission-control/data/mission-control.db "SELECT session_key FROM agents WHERE session_key LIKE 'agent:%'"`
    - **Expected:** Should see persistent sessions for all dashboard agents:
-     - `agent:froggo:dashboard`
+     - `agent:mission-control:dashboard`
      - `agent:writer:dashboard`
      - `agent:coder:dashboard`
      - `agent:clara:dashboard`
@@ -87,15 +93,15 @@ healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
 
 5. **Test Session Persistence**
    - Send a message to Writer in dashboard chat
-   - Run: `openclaw sessions list --json | jq '.sessions[] | select(.key == "agent:writer:dashboard")'`
+   - Check via DB: `sqlite3 ~/mission-control/data/mission-control.db "SELECT session_key, updated_at FROM agents WHERE session_key = 'agent:writer:dashboard'"`
    - **Expected:** Session still exists after message exchange
-   - **Expected:** `updatedAt` timestamp is recent
+   - **Expected:** `updated_at` timestamp is recent
 
 ### Automated Verification
 
 ```bash
 # Monitor spawn count over 10 minutes
-tail -f ~/Library/Logs/Froggo/main.log | grep "Spawning" | while read line; do
+tail -f ~/Library/Logs/Mission Control/main.log | grep "Spawning" | while read line; do
   echo "$(date): $line"
 done
 
@@ -106,7 +112,7 @@ done
 
 ✅ **Pass:** Each agent spawned exactly ONCE at startup  
 ✅ **Pass:** Zero respawn events for 10+ minutes  
-✅ **Pass:** All 13 persistent sessions visible in `openclaw sessions list`  
+✅ **Pass:** All 13 persistent sessions visible in `/api/agents` or SQLite DB
 ✅ **Pass:** Health check logs show no "session not found" warnings  
 ✅ **Pass:** Sessions persist after message exchanges  
 
@@ -128,11 +134,11 @@ If the fix doesn't work:
 
 2. **Rebuild:**
    ```bash
-   cd ~/froggo-dashboard
-   npm run build:dev
+   cd ~/git/mission-control-nextjs
+   npm run build
    ```
 
-3. **Investigate:** Check `openclaw sessions list` output format to ensure `key` field matches expectations
+3. **Investigate:** Check `sqlite3 ~/mission-control/data/mission-control.db "SELECT * FROM agents"` to verify session key format matches expectations
 
 ---
 

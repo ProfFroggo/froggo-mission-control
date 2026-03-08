@@ -168,7 +168,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
     try {
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Froggo 🐸, helping add a contact to the knowledge base. Have a natural conversation to gather:\n- Name (full name)\n- Relationship (family, friend, colleague, contact, client, etc)\n- Role/Title (if professional)\n- Context (how we know them, what they do, why they're important)\n- Contact info (email, phone, location if mentioned)\n- Company (if professional contact)\n- Any other relevant details\n\nAsk clarifying questions naturally. When you have enough info, output in this JSON format:\n\`\`\`json\n{"contact": {"name": "...", "relationship": "...", "role": "...", "context": "...", "email": "...", "phone": "...", "location": "...", "company": "...", "type": "personal|professional"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and thorough.`;
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping add a contact to the knowledge base. Have a natural conversation to gather:\n- Name (full name)\n- Relationship (family, friend, colleague, contact, client, etc)\n- Role/Title (if professional)\n- Context (how we know them, what they do, why they're important)\n- Contact info (email, phone, location if mentioned)\n- Company (if professional contact)\n- Any other relevant details\n\nAsk clarifying questions naturally. When you have enough info, output in this JSON format:\n\`\`\`json\n{"contact": {"name": "...", "relationship": "...", "role": "...", "context": "...", "email": "...", "phone": "...", "location": "...", "company": "...", "type": "personal|professional"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and thorough.`;
 
       const unsubscribe = gateway.on('chat', (data: any) => {
         const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
@@ -352,7 +352,7 @@ Be thorough but only include real people, not generic references.`;
       // Add to knowledge graph
       await addToKnowledgeGraph(contactData);
 
-      // Log fact to froggo-db
+      // Log fact to mission-control-db
       await logContactFact(contactData);
 
       // Check if complex processing needed
@@ -487,7 +487,7 @@ Be thorough but only include real people, not generic references.`;
     >
       <BaseModalHeader
         title="Add Contact / Person"
-        icon={<User size={24} className="text-clawd-accent" />}
+        icon={<User size={24} className="text-mission-control-accent" />}
         onClose={onClose}
       />
 
@@ -498,8 +498,8 @@ Be thorough but only include real people, not generic references.`;
               onClick={() => setMode('dialogue')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'dialogue'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <MessageSquare size={16} />
@@ -510,8 +510,8 @@ Be thorough but only include real people, not generic references.`;
               onClick={() => setMode('upload')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'upload'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Upload size={16} />
@@ -521,8 +521,8 @@ Be thorough but only include real people, not generic references.`;
               onClick={() => setMode('manual')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
-                  ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
-                  : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
+                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
+                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
               <Edit3 size={16} />
@@ -545,12 +545,12 @@ Be thorough but only include real people, not generic references.`;
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
-                          ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface border border-clawd-border'
+                          ? 'bg-mission-control-accent text-white'
+                          : 'bg-mission-control-surface border border-mission-control-border'
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-clawd-text-dim'}`}>
+                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-mission-control-text-dim'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
@@ -559,11 +559,11 @@ Be thorough but only include real people, not generic references.`;
 
                 {isStreaming && streamingContent && (
                   <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
-                        <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
+                        <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+                        <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
                       </div>
                     </div>
                   </div>
@@ -571,10 +571,10 @@ Be thorough but only include real people, not generic references.`;
 
                 {isStreaming && !streamingContent && (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
+                    <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin text-clawd-accent" />
-                        <span className="text-sm text-clawd-text-dim">Froggo is thinking...</span>
+                        <Loader2 size={16} className="animate-spin text-mission-control-accent" />
+                        <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
                       </div>
                     </div>
                   </div>
@@ -586,9 +586,9 @@ Be thorough but only include real people, not generic references.`;
               {/* Extracted Contact Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-clawd-accent/10 border border-clawd-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <Sparkles size={16} className="text-clawd-accent" />
+                      <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Contact Ready!</span>
                     </div>
                     <div className="space-y-1 text-sm">
@@ -603,7 +603,7 @@ Be thorough but only include real people, not generic references.`;
                     <button
                       onClick={handleCreateFromDialogue}
                       disabled={saveStatus === 'saving'}
-                      className="mt-3 w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="mt-3 w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {saveStatus === 'saving' ? (
                         <>
@@ -622,7 +622,7 @@ Be thorough but only include real people, not generic references.`;
               )}
 
               {/* Chat Input */}
-              <div className="p-6 border-t border-clawd-border">
+              <div className="p-6 border-t border-mission-control-border">
                 <div className="flex gap-3">
                   <textarea
                     ref={inputRef}
@@ -638,12 +638,12 @@ Be thorough but only include real people, not generic references.`;
                     aria-label="Chat message input"
                     rows={2}
                     disabled={isStreaming || conversationComplete || saveStatus === 'saving'}
-                    className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
+                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={handleDialogueSubmit}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete || saveStatus === 'saving'}
-                    className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
@@ -663,23 +663,23 @@ Be thorough but only include real people, not generic references.`;
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="mx-auto flex items-center gap-2 px-6 py-3 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/50 transition-colors"
+                  className="mx-auto flex items-center gap-2 px-6 py-3 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-mission-control-accent/50 transition-colors"
                 >
                   <Upload size={20} />
                   <span>Upload Text/Markdown File</span>
                 </button>
-                <p className="text-xs text-clawd-text-dim mt-2">
+                <p className="text-xs text-mission-control-text-dim mt-2">
                   Upload a .txt or .md file containing contact information
                 </p>
               </div>
 
               {uploadedContent && (
-                <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
+                <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <FileText size={16} className="text-clawd-accent" />
+                    <FileText size={16} className="text-mission-control-accent" />
                     <span className="font-semibold text-sm">Uploaded Content</span>
                   </div>
-                  <div className="text-xs text-clawd-text-dim max-h-32 overflow-y-auto">
+                  <div className="text-xs text-mission-control-text-dim max-h-32 overflow-y-auto">
                     {uploadedContent.slice(0, 500)}...
                   </div>
                 </div>
@@ -687,15 +687,15 @@ Be thorough but only include real people, not generic references.`;
 
               {isParsing && (
                 <div className="flex items-center justify-center gap-2 py-8">
-                  <Loader2 size={24} className="animate-spin text-clawd-accent" />
-                  <span className="text-clawd-text-dim">Parsing entities...</span>
+                  <Loader2 size={24} className="animate-spin text-mission-control-accent" />
+                  <span className="text-mission-control-text-dim">Parsing entities...</span>
                 </div>
               )}
 
               {parsedEntities.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <User size={16} className="text-clawd-accent" />
+                    <User size={16} className="text-mission-control-accent" />
                     Found {parsedEntities.length} {parsedEntities.length === 1 ? 'Contact' : 'Contacts'}
                   </h3>
                   <div className="space-y-2">
@@ -705,26 +705,26 @@ Be thorough but only include real people, not generic references.`;
                         onClick={() => setSelectedEntity(idx)}
                         className={`w-full text-left p-4 rounded-xl border transition-all ${
                           selectedEntity === idx
-                            ? 'border-clawd-accent bg-clawd-accent/10'
-                            : 'border-clawd-border hover:border-clawd-accent/50'
+                            ? 'border-mission-control-accent bg-mission-control-accent/10'
+                            : 'border-mission-control-border hover:border-mission-control-accent/50'
                         }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="font-semibold">{entity.name}</div>
                             {entity.relationship && (
-                              <div className="text-sm text-clawd-text-dim">{entity.relationship}</div>
+                              <div className="text-sm text-mission-control-text-dim">{entity.relationship}</div>
                             )}
                             {entity.role && (
-                              <div className="text-xs text-clawd-accent mt-1">{entity.role}</div>
+                              <div className="text-xs text-mission-control-accent mt-1">{entity.role}</div>
                             )}
                             {entity.context && (
-                              <div className="text-xs text-clawd-text-dim mt-1 line-clamp-2">
+                              <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">
                                 {entity.context}
                               </div>
                             )}
                           </div>
-                          <div className="text-xs text-clawd-text-dim ml-4">
+                          <div className="text-xs text-mission-control-text-dim ml-4">
                             {Math.round(entity.confidence * 100)}% confidence
                           </div>
                         </div>
@@ -736,7 +736,7 @@ Be thorough but only include real people, not generic references.`;
                     <button
                       onClick={handleSaveFromUpload}
                       disabled={saveStatus === 'saving'}
-                      className="w-full mt-4 px-4 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full mt-4 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {saveStatus === 'saving' ? (
                         <>
@@ -759,7 +759,7 @@ Be thorough but only include real people, not generic references.`;
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Contact Type */}
               <div role="group" aria-labelledby="contact-type-label">
-                <span id="contact-type-label" className="block text-sm text-clawd-text-dim mb-2">Contact Type</span>
+                <span id="contact-type-label" className="block text-sm text-mission-control-text-dim mb-2">Contact Type</span>
                 <div className="flex gap-3" role="radiogroup" aria-label="Contact type selection">
                   <button
                     type="button"
@@ -768,8 +768,8 @@ Be thorough but only include real people, not generic references.`;
                     onClick={() => setContactType('personal')}
                     className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
                       contactType === 'personal'
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
                     <User size={16} />
@@ -782,8 +782,8 @@ Be thorough but only include real people, not generic references.`;
                     onClick={() => setContactType('professional')}
                     className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
                       contactType === 'professional'
-                        ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
                     <Briefcase size={16} />
@@ -794,7 +794,7 @@ Be thorough but only include real people, not generic references.`;
 
               {/* Name */}
               <div>
-                <label htmlFor="contact-name" className="block text-sm text-clawd-text-dim mb-1">Name *</label>
+                <label htmlFor="contact-name" className="block text-sm text-mission-control-text-dim mb-1">Name *</label>
                 <input
                   id="contact-name"
                   type="text"
@@ -802,14 +802,14 @@ Be thorough but only include real people, not generic references.`;
                   onChange={e => setName(e.target.value)}
                   placeholder="Full name"
                   aria-label="Contact name"
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
               {/* Relationship & Role */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="contact-relationship" className="block text-sm text-clawd-text-dim mb-1">Relationship</label>
+                  <label htmlFor="contact-relationship" className="block text-sm text-mission-control-text-dim mb-1">Relationship</label>
                   <input
                     id="contact-relationship"
                     type="text"
@@ -817,11 +817,11 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setRelationship(e.target.value)}
                     placeholder="friend, colleague, client..."
                     aria-label="Contact relationship"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-role" className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
+                  <label htmlFor="contact-role" className="block text-sm text-mission-control-text-dim mb-1">Role/Title</label>
                   <input
                     id="contact-role"
                     type="text"
@@ -829,7 +829,7 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setRole(e.target.value)}
                     placeholder="CEO, Engineer, Designer..."
                     aria-label="Contact role or title"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
@@ -837,7 +837,7 @@ Be thorough but only include real people, not generic references.`;
               {/* Company & Location */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="contact-company" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-company" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <Briefcase size={14} /> Company
                   </label>
                   <input
@@ -847,11 +847,11 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setCompany(e.target.value)}
                     placeholder="Company name"
                     aria-label="Contact company"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-location" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-location" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <MapPin size={14} /> Location
                   </label>
                   <input
@@ -861,7 +861,7 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setLocation(e.target.value)}
                     placeholder="City, Country"
                     aria-label="Contact location"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
@@ -869,7 +869,7 @@ Be thorough but only include real people, not generic references.`;
               {/* Email & Phone */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="contact-email" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-email" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <Mail size={14} /> Email
                   </label>
                   <input
@@ -879,11 +879,11 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setEmail(e.target.value)}
                     placeholder="email@example.com"
                     aria-label="Contact email"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
-                  <label htmlFor="contact-phone" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-phone" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <Phone size={14} /> Phone
                   </label>
                   <input
@@ -893,14 +893,14 @@ Be thorough but only include real people, not generic references.`;
                     onChange={e => setPhone(e.target.value)}
                     placeholder="+1234567890"
                     aria-label="Contact phone"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
 
               {/* Context */}
               <div>
-                <label htmlFor="contact-context" className="block text-sm text-clawd-text-dim mb-1">Context</label>
+                <label htmlFor="contact-context" className="block text-sm text-mission-control-text-dim mb-1">Context</label>
                 <textarea
                   id="contact-context"
                   value={context}
@@ -908,13 +908,13 @@ Be thorough but only include real people, not generic references.`;
                   placeholder="How you know them, what they do, why they're important..."
                   aria-label="Contact context"
                   rows={3}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label htmlFor="contact-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                <label htmlFor="contact-notes" className="block text-sm text-mission-control-text-dim mb-1">Notes</label>
                 <textarea
                   id="contact-notes"
                   value={notes}
@@ -922,7 +922,7 @@ Be thorough but only include real people, not generic references.`;
                   placeholder="Any additional notes or details..."
                   aria-label="Contact notes"
                   rows={2}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
               </div>
 
@@ -950,7 +950,7 @@ Be thorough but only include real people, not generic references.`;
           <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 z-10 ${
             saveStatus === 'success' ? 'bg-success-subtle border border-success-border text-success' :
             saveStatus === 'error' ? 'bg-error-subtle border border-error-border text-error' :
-            'bg-clawd-surface border border-clawd-border'
+            'bg-mission-control-surface border border-mission-control-border'
           }`}>
             {saveStatus === 'success' ? <CheckCircle size={16} /> :
              saveStatus === 'error' ? <AlertCircle size={16} /> :

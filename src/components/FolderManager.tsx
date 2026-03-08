@@ -157,17 +157,17 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   ];
 
   return (
-    <div className="h-full flex flex-col bg-clawd-surface">
+    <div className="h-full flex flex-col bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-3">
-          <Folder size={20} className="text-clawd-accent" />
+          <Folder size={20} className="text-mission-control-accent" />
           <h2 className="text-lg font-semibold">Folder Management</h2>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent-hover text-white rounded-lg transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors text-sm"
           >
             <Plus size={14} />
             New Folder
@@ -175,7 +175,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             >
               <X size={16} />
             </button>
@@ -185,19 +185,19 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
       {/* Create Form */}
       {showCreate && (
-        <div className="p-4 border-b border-clawd-border bg-clawd-bg">
+        <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
           <div className="space-y-3">
             <div className="flex gap-3">
               {/* Icon Picker */}
               <div className="w-24">
-                <span className="block text-xs font-medium mb-1 text-clawd-text-dim">Icon</span>
-                <div className="grid grid-cols-4 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
+                <span className="block text-xs font-medium mb-1 text-mission-control-text-dim">Icon</span>
+                <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {iconOptions.map((icon) => (
                     <button
                       key={icon}
                       onClick={() => setFormData({ ...formData, icon })}
                       className={`text-2xl p-1 rounded transition-colors ${
-                        formData.icon === icon ? 'bg-clawd-accent/20' : 'hover:bg-clawd-border'
+                        formData.icon === icon ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
                       }`}
                     >
                       {icon}
@@ -209,34 +209,34 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
               {/* Name & Description */}
               <div className="flex-1 space-y-2">
                 <div>
-                  <label htmlFor="folder-name" className="block text-xs font-medium mb-1 text-clawd-text-dim">Name</label>
+                  <label htmlFor="folder-name" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Name</label>
                   <input
                     id="folder-name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Client Work"
-                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                     /* autoFocus removed for accessibility */
                   />
                 </div>
                 <div>
-                  <label htmlFor="folder-description" className="block text-xs font-medium mb-1 text-clawd-text-dim">Description (optional)</label>
+                  <label htmlFor="folder-description" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Description (optional)</label>
                   <input
                     id="folder-description"
                     type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="e.g., Work-related discussions"
-                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
 
               {/* Color Picker */}
               <div className="w-28">
-                <span className="block text-xs font-medium mb-1 text-clawd-text-dim">Color</span>
-                <div className="grid grid-cols-5 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
+                <span className="block text-xs font-medium mb-1 text-mission-control-text-dim">Color</span>
+                <div className="grid grid-cols-5 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {colorOptions.map((color) => (
                     <button
                       key={color}
@@ -256,13 +256,13 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
             <div className="flex justify-end gap-2">
               <button
                 onClick={cancelCreate}
-                className="px-3 py-1.5 text-sm bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:bg-clawd-accent-hover text-white rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
               >
                 <Check size={14} />
                 Create
@@ -276,20 +276,20 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-clawd-accent border-t-transparent" />
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-mission-control-accent border-t-transparent" />
           </div>
         ) : folders.length === 0 ? (
-          <div className="p-8 text-center text-clawd-text-dim">
+          <div className="p-8 text-center text-mission-control-text-dim">
             <FolderOpen size={32} className="mx-auto mb-3 opacity-50" />
             <p>No folders yet</p>
             <p className="text-sm mt-1">Create your first folder to organize conversations</p>
           </div>
         ) : (
-          <div className="divide-y divide-clawd-border">
+          <div className="divide-y divide-mission-control-border">
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                className="p-4 hover:bg-clawd-bg/50 transition-colors group"
+                className="p-4 hover:bg-mission-control-bg/50 transition-colors group"
               >
                 {editingId === folder.id ? (
                   /* Edit Mode */
@@ -297,13 +297,13 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     <div className="flex gap-3">
                       {/* Icon Picker */}
                       <div className="w-24">
-                        <div className="grid grid-cols-4 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {iconOptions.map((icon) => (
                             <button
                               key={icon}
                               onClick={() => setFormData({ ...formData, icon })}
                               className={`text-2xl p-1 rounded transition-colors ${
-                                formData.icon === icon ? 'bg-clawd-accent/20' : 'hover:bg-clawd-border'
+                                formData.icon === icon ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
                               }`}
                             >
                               {icon}
@@ -317,19 +317,19 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                           type="text"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                         <input
                           type="text"
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           placeholder="Description (optional)"
-                          className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                       </div>
 
                       <div className="w-28">
-                        <div className="grid grid-cols-5 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
+                        <div className="grid grid-cols-5 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {colorOptions.map((color) => (
                             <button
                               key={color}
@@ -347,13 +347,13 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={cancelEdit}
-                        className="px-3 py-1.5 text-sm bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={() => handleUpdate(folder.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:bg-clawd-accent-hover text-white rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
                       >
                         <Check size={14} />
                         Save
@@ -373,15 +373,15 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                           title={folder.color}
                         />
                         {folder.is_smart === 1 && (
-                          <span className="px-2 py-0.5 text-xs bg-clawd-accent/20 text-clawd-accent rounded-full">
+                          <span className="px-2 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                             Smart
                           </span>
                         )}
                       </div>
                       {folder.description && (
-                        <p className="text-sm text-clawd-text-dim mb-2">{folder.description}</p>
+                        <p className="text-sm text-mission-control-text-dim mb-2">{folder.description}</p>
                       )}
-                      <div className="text-xs text-clawd-text-dim">
+                      <div className="text-xs text-mission-control-text-dim">
                         {folder.conversation_count} conversation{folder.conversation_count !== 1 ? 's' : ''}
                       </div>
                     </div>
@@ -389,7 +389,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       {onSelect && (
                         <button
                           onClick={() => onSelect(folder.id)}
-                          className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                           title="View conversations"
                         >
                           <Tag size={14} />
@@ -397,14 +397,14 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       )}
                       <button
                         onClick={() => setEditingRuleId(folder.id)}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Smart folder rules"
                       >
-                        <Zap size={14} className={folder.is_smart === 1 ? 'text-clawd-accent' : ''} />
+                        <Zap size={14} className={folder.is_smart === 1 ? 'text-mission-control-accent' : ''} />
                       </button>
                       <button
                         onClick={() => startEdit(folder)}
-                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Edit folder"
                       >
                         <Edit2 size={14} />
@@ -428,7 +428,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       {/* Smart Folder Rule Editor Modal */}
       {editingRuleId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-4xl h-[90vh] bg-clawd-surface rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-xl shadow-2xl overflow-hidden">
             <SmartFolderRuleEditor
               folderId={editingRuleId}
               folderName={folders.find(f => f.id === editingRuleId)?.name || 'Folder'}

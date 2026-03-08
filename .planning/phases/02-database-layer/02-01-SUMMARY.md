@@ -24,9 +24,9 @@ Create `src/lib/database.ts` with `getDb()` singleton, WAL mode, and the full sc
   - System: module_state, analytics_events, library_files, settings
 - 11 performance indexes
 - Seed: 4 chat rooms (general, code-review, planning, incidents)
-- Seed: 13 agents from registry (froggo through voice)
-- DB_PATH: `FROGGO_DB_PATH` env || `~/froggo/data/froggo.db`
-- Auto-creates `~/froggo/data/` directory if missing
+- Seed: 13 agents from registry (mission-control through voice)
+- DB_PATH: `MC_DB_PATH` env || `~/mission-control/data/mission-control.db`
+- Auto-creates `~/mission-control/data/` directory if missing
 
 ### Task 2: TypeScript compilation
 `npx tsc --noEmit` — clean (0 errors).

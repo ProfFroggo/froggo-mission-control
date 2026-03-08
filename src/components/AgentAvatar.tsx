@@ -25,7 +25,7 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
   const [imgError, setImgError] = useState(false);
   const theme = getAgentTheme(agentId);
   const s = sizeMap[size];
-  const hasPic = theme.pic && !imgError;
+  const hasPic = !imgError;
 
   // Status-based ring styles
   const statusRing = status ? (() => {
@@ -47,7 +47,7 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
     <div className={`${s.container} relative rounded-full overflow-hidden flex-shrink-0 ${ring ? `ring ${s.ring} ${theme.ring}` : statusRing} ${className}`}>
       {hasPic ? (
         <img
-          src={`./agent-profiles/${theme.pic}`}
+          src={`/api/agents/${agentId}/avatar`}
           alt={`${agentId} avatar`}
           className="w-full h-full object-cover"
           onError={() => setImgError(true)}

@@ -3,6 +3,10 @@ import { Bot, CheckCircle, Search, RefreshCw, Cpu, Sparkles, Trash2 } from 'luci
 import { catalogApi } from '../lib/api';
 import type { CatalogAgent } from '../types/catalog';
 import { Spinner } from './LoadingStates';
+import { useStore } from '../store/store';
+import AgentHireWizard from './AgentHireWizard';
+
+const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 
 const CATEGORY_LABELS: Record<string, string> = {
   core:       'Core',
@@ -25,6 +29,7 @@ interface AgentLibraryPanelProps {
 }
 
 export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
+  const fetchAgents = useStore(s => s.fetchAgents);
   const [agents, setAgents]       = useState<CatalogAgent[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -32,6 +37,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   const [filter, setFilter]         = useState<'all' | 'hired' | 'available'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [firing, setFiring]         = useState<string | null>(null);
+  const [hiringAgent, setHiringAgent] = useState<CatalogAgent | null>(null);
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -50,20 +56,30 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
   useEffect(() => { load(); }, []);
 
-  const filtered = agents.filter(a => {
-    const matchesSearch = !search ||
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      (a.role ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      a.capabilities.some(c => c.toLowerCase().includes(search.toLowerCase()));
-    const matchesFilter =
-      filter === 'all' ? true :
-      filter === 'hired' ? a.installed :
-      !a.installed;
-    return matchesSearch && matchesFilter;
-  });
+  const filtered = agents
+    .filter(a => {
+      const matchesSearch = !search ||
+        a.name.toLowerCase().includes(search.toLowerCase()) ||
+        (a.role ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        a.capabilities.some(c => c.toLowerCase().includes(search.toLowerCase()));
+      const effectiveInstalled = a.installed || CORE_AGENT_IDS.includes(a.id);
+      const matchesFilter =
+        filter === 'all' ? true :
+        filter === 'hired' ? effectiveInstalled :
+        !effectiveInstalled;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      const aCore = CORE_AGENT_IDS.indexOf(a.id);
+      const bCore = CORE_AGENT_IDS.indexOf(b.id);
+      if (aCore !== -1 && bCore !== -1) return aCore - bCore;
+      if (aCore !== -1) return -1;
+      if (bCore !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
-  const hiredCount = agents.filter(a => a.installed).length;
-  const availableCount = agents.filter(a => !a.installed).length;
+  const hiredCount = agents.filter(a => a.installed || CORE_AGENT_IDS.includes(a.id)).length;
+  const availableCount = agents.filter(a => !a.installed && !CORE_AGENT_IDS.includes(a.id)).length;
 
   if (loading) {
     return (
@@ -85,6 +101,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   }
 
   return (
+    <>
     <div>
       {/* Stats bar */}
       <div className="flex items-center gap-4 mb-4 text-sm">
@@ -149,25 +166,40 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
           {filtered.map(agent => {
             const modelBadge = MODEL_BADGE[agent.model] ?? MODEL_BADGE.sonnet;
             const categoryLabel = CATEGORY_LABELS[agent.category] ?? agent.category;
+            // Core agents are always treated as installed regardless of DB value
+            const isInstalled = agent.installed || CORE_AGENT_IDS.includes(agent.id);
 
             return (
               <div
                 key={agent.id}
                 className={`rounded-xl border-2 p-4 transition-all duration-200 ${
-                  agent.installed
+                  isInstalled
                     ? 'border-success-border bg-success-subtle/30'
                     : 'border-mission-control-border hover:border-mission-control-accent/40'
                 }`}
               >
                 {/* Header */}
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-mission-control-bg flex items-center justify-center text-2xl border border-mission-control-border">
-                    {agent.emoji || '🤖'}
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-mission-control-bg border border-mission-control-border overflow-hidden flex items-center justify-center text-2xl">
+                    {agent.avatar ? (
+                      <img
+                        src={`/api/agents/${agent.id}/avatar`}
+                        alt={agent.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const el = e.currentTarget;
+                          el.style.display = 'none';
+                          el.parentElement!.textContent = agent.emoji || '🤖';
+                        }}
+                      />
+                    ) : (
+                      agent.emoji || '🤖'
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                       <span className="font-semibold text-sm leading-tight">{agent.name}</span>
-                      {agent.installed && (
+                      {isInstalled && (
                         <CheckCircle size={13} className="text-success flex-shrink-0" />
                       )}
                     </div>
@@ -204,7 +236,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 )}
 
                 {/* Required APIs warning */}
-                {agent.requiredApis.length > 0 && !agent.installed && (
+                {agent.requiredApis.length > 0 && !isInstalled && (
                   <div className="flex items-center gap-1 text-[11px] text-warning mb-3">
                     <Cpu size={11} className="flex-shrink-0" />
                     <span>Requires: {agent.requiredApis.join(', ')}</span>
@@ -213,32 +245,35 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                 {/* Action */}
                 <div className="pt-2 border-t border-mission-control-border">
-                  {agent.installed ? (
+                  {isInstalled ? (
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1.5 text-xs text-success flex-1">
                         <CheckCircle size={13} className="flex-shrink-0" />
-                        <span>Hired &amp; active</span>
+                        <span>Hired &amp; active{CORE_AGENT_IDS.includes(agent.id) ? ' · Core' : ''}</span>
                       </div>
-                      <button
-                        type="button"
-                        disabled={firing === agent.id}
-                        onClick={async () => {
-                          if (!confirm(`Fire ${agent.name}? Their workspace will be archived.`)) return;
-                          setFiring(agent.id);
-                          try {
-                            await catalogApi.fireAgent(agent.id);
-                            await load(false);
-                          } finally { setFiring(null); }
-                        }}
-                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 size={10} /> Fire
-                      </button>
+                      {!CORE_AGENT_IDS.includes(agent.id) && (
+                        <button
+                          type="button"
+                          disabled={firing === agent.id}
+                          onClick={async () => {
+                            if (!confirm(`Fire ${agent.name}? Their workspace will be archived.`)) return;
+                            setFiring(agent.id);
+                            try {
+                              await catalogApi.fireAgent(agent.id);
+                              await fetchAgents();
+                              await load(false);
+                            } finally { setFiring(null); }
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 size={10} /> Fire
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onHire?.(agent)}
+                      onClick={() => setHiringAgent(agent)}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
                     >
                       <Sparkles size={12} />
@@ -252,5 +287,14 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         </div>
       )}
     </div>
+
+    {hiringAgent && (
+      <AgentHireWizard
+        agent={hiringAgent}
+        onClose={() => setHiringAgent(null)}
+        onHired={() => { load(false); onHire?.(hiringAgent); }}
+      />
+    )}
+    </>
   );
 }

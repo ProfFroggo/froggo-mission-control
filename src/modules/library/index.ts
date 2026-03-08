@@ -18,14 +18,14 @@ const lifecycle: ModuleLifecycle = {
       label: 'Library',
       icon: FolderOpen,
       component: LibraryPanel,
-      moduleId: 'froggo-library',
+      moduleId: 'library',
       category: 'productivity',
       description: manifest.description,
     });
   },
 
   dispose() {
-    ViewRegistry.unregisterModule('froggo-library');
+    ViewRegistry.unregisterModule('library');
   },
 };
 

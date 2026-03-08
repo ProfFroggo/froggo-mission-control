@@ -69,7 +69,7 @@ export default function TimeTrackingPanel() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Loading time tracking data...</div>
+        <div className="text-mission-control-text-dim">Loading time tracking data...</div>
       </div>
     );
   }
@@ -80,10 +80,10 @@ export default function TimeTrackingPanel() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Clock className="text-clawd-accent" size={20} />
+            <Clock className="text-mission-control-accent" size={20} />
             Time Tracking
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Detailed time spent per task and project
           </p>
         </div>
@@ -91,11 +91,11 @@ export default function TimeTrackingPanel() {
         <div className="flex items-center gap-3">
           {/* Project filter */}
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-clawd-text-dim" />
+            <Filter size={16} className="text-mission-control-text-dim" />
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
             >
               <option value="all">All Projects</option>
               {projects.map((p) => (
@@ -110,7 +110,7 @@ export default function TimeTrackingPanel() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
           >
             <option value="recent">Most Recent</option>
             <option value="duration">Longest Duration</option>
@@ -120,30 +120,30 @@ export default function TimeTrackingPanel() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Total Time</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Total Time</div>
           <div className="text-2xl font-bold text-info">
             {formatDuration(totalTime)}
           </div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Avg Time/Task</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Avg Time/Task</div>
           <div className="text-2xl font-bold text-success">
             {formatDuration(avgTime)}
           </div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Active Tasks</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Active Tasks</div>
           <div className="text-2xl font-bold text-warning">{activeTasksCount}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Tracked Tasks</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Tracked Tasks</div>
           <div className="text-2xl font-bold text-review">{tasks.length}</div>
         </div>
       </div>
 
       {/* Project Breakdown */}
-      <div className="mb-6 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="mb-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <h3 className="font-medium mb-4">Project Time Breakdown</h3>
         <div className="space-y-3">
           {projects.slice(0, 5).map((project) => {
@@ -154,13 +154,13 @@ export default function TimeTrackingPanel() {
               <div key={project.project}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">{project.project}</span>
-                  <span className="text-sm text-clawd-text-dim">
+                  <span className="text-sm text-mission-control-text-dim">
                     {project.totalTimeSpent.toFixed(1)}h
                   </span>
                 </div>
-                <div className="h-2 bg-clawd-border rounded-full overflow-hidden">
+                <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-clawd-accent transition-all"
+                    className="h-full bg-mission-control-accent transition-all"
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                   />
                 </div>
@@ -171,10 +171,10 @@ export default function TimeTrackingPanel() {
       </div>
 
       {/* Task List */}
-      <div className="flex-1 bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
         <div className="overflow-auto h-full">
           <table className="w-full">
-            <thead className="sticky top-0 bg-clawd-bg border-b border-clawd-border">
+            <thead className="sticky top-0 bg-mission-control-bg border-b border-mission-control-border">
               <tr>
                 <th className="text-left p-3 text-sm font-medium">Task</th>
                 <th className="text-left p-3 text-sm font-medium">Project</th>
@@ -188,21 +188,21 @@ export default function TimeTrackingPanel() {
               {sortedTasks.map((task) => (
                 <tr
                   key={task.taskId}
-                  className="border-b border-clawd-border last:border-b-0 hover:bg-clawd-bg transition-colors"
+                  className="border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-bg transition-colors"
                 >
                   <td className="p-3">
                     <div className="font-medium text-sm max-w-xs truncate" title={task.taskTitle}>
                       {task.taskTitle}
                     </div>
-                    <div className="text-xs text-clawd-text-dim">{task.taskId}</div>
+                    <div className="text-xs text-mission-control-text-dim">{task.taskId}</div>
                   </td>
                   <td className="p-3 text-sm">{task.project}</td>
                   <td className="p-3 text-sm">
-                    <span className="px-2 py-1 bg-clawd-border rounded text-xs">
+                    <span className="px-2 py-1 bg-mission-control-border rounded text-xs">
                       {task.agent}
                     </span>
                   </td>
-                  <td className="p-3 text-sm text-clawd-text-dim">
+                  <td className="p-3 text-sm text-mission-control-text-dim">
                     {formatDate(task.startTime)}
                   </td>
                   <td className="p-3 text-sm font-medium">

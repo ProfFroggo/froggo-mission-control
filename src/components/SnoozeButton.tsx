@@ -120,7 +120,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-surface text-clawd-text rounded hover:bg-clawd-border transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-surface text-mission-control-text rounded hover:bg-mission-control-border transition-colors"
         title="Snooze conversation"
       >
         <Clock className="w-3 h-3" />
@@ -129,14 +129,14 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-clawd-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-mission-control-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-clawd-text">
+              <h3 className="text-lg font-semibold text-mission-control-text">
                 Snooze Conversation
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-clawd-text-dim hover:text-clawd-text-dim"
+                className="text-mission-control-text-dim hover:text-mission-control-text-dim"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -144,7 +144,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Reason input */}
             <div className="mb-4">
-              <label htmlFor="snooze-reason" className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="snooze-reason" className="block text-sm font-medium text-mission-control-text mb-2">
                 Reason (optional)
               </label>
               <input
@@ -153,13 +153,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Why are you snoozing this?"
-                className="w-full px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-info"
               />
             </div>
 
             {/* Quick options */}
             <div className="mb-4">
-              <div className="block text-sm font-medium text-clawd-text mb-2">
+              <div className="block text-sm font-medium text-mission-control-text mb-2">
                 Quick Snooze
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -167,7 +167,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   <button
                     key={option.label}
                     onClick={() => handleQuickSnooze(option)}
-                    className="px-3 py-2 bg-clawd-accent hover:bg-clawd-accent-dim text-white rounded-lg text-sm font-medium transition-colors"
+                    className="px-3 py-2 bg-mission-control-accent hover:bg-mission-control-accent-dim text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     {option.label}
                   </button>
@@ -177,7 +177,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Custom date/time */}
             <div className="mb-4">
-              <label htmlFor="snooze-date" className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="snooze-date" className="block text-sm font-medium text-mission-control-text mb-2">
                 Custom Time
               </label>
               <div className="flex gap-2">
@@ -187,19 +187,19 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-info"
+                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
                 />
                 <input
                   type="time"
                   value={customTime}
                   onChange={(e) => setCustomTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-info"
+                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
                 />
               </div>
               <button
                 onClick={handleCustomSnooze}
                 disabled={!customDate || !customTime}
-                className="mt-2 w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-clawd-border disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                className="mt-2 w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-mission-control-border disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
               >
                 Snooze Until Custom Time
               </button>
@@ -207,7 +207,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             <button
               onClick={() => setShowModal(false)}
-              className="w-full px-4 py-2 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border font-medium transition-colors"
+              className="w-full px-4 py-2 bg-mission-control-surface text-mission-control-text-dim rounded-lg hover:bg-mission-control-border font-medium transition-colors"
             >
               Cancel
             </button>

@@ -242,7 +242,7 @@ export default function XCampaignView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-clawd-bg">
+      <div className="flex items-center justify-center h-full bg-mission-control-bg">
         <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -253,24 +253,24 @@ export default function XCampaignView() {
     const sortedStages = [...editingCampaign.stages].sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time));
 
     return (
-      <div className="flex flex-col h-full bg-clawd-bg">
-        <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+      <div className="flex flex-col h-full bg-mission-control-bg">
+        <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
           <div className="flex items-center gap-2">
             <Rocket className="w-5 h-5 text-info" />
-            <h3 className="text-lg font-semibold text-clawd-text">
+            <h3 className="text-lg font-semibold text-mission-control-text">
               {editingCampaign.status === 'draft' && !campaigns.find(c => c.id === editingCampaign.id) ? 'New Campaign' : 'Edit Campaign'}
             </h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setEditingCampaign(null)}
-              className="px-3 py-2 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+              className="px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={saveCampaign}
-              className="px-4 py-2 text-sm bg-info hover:bg-info/80 text-clawd-text rounded-lg transition-colors"
+              className="px-4 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
             >
               Save Draft
             </button>
@@ -280,30 +280,30 @@ export default function XCampaignView() {
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="campaign-title" className="block text-sm font-medium text-clawd-text mb-2">Campaign Title</label>
+              <label htmlFor="campaign-title" className="block text-sm font-medium text-mission-control-text mb-2">Campaign Title</label>
               <input
                 id="campaign-title"
                 type="text"
                 value={editingCampaign.title}
                 onChange={e => setEditingCampaign({ ...editingCampaign, title: e.target.value })}
                 placeholder="e.g., AI Agents Launch Week"
-                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
               />
             </div>
             <div>
-              <label htmlFor="campaign-subject" className="block text-sm font-medium text-clawd-text mb-2">Subject / Theme</label>
+              <label htmlFor="campaign-subject" className="block text-sm font-medium text-mission-control-text mb-2">Subject / Theme</label>
               <textarea
                 id="campaign-subject"
                 value={editingCampaign.subject}
                 onChange={e => setEditingCampaign({ ...editingCampaign, subject: e.target.value })}
                 placeholder="What is this campaign about? Describe the narrative arc, key messages, and goals..."
                 rows={3}
-                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none"
+                className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none"
               />
             </div>
             <div className="flex gap-4">
               <div className="flex-1">
-                <label htmlFor="campaign-start-date" className="block text-sm font-medium text-clawd-text mb-2">
+                <label htmlFor="campaign-start-date" className="block text-sm font-medium text-mission-control-text mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
                   Start Date
                 </label>
@@ -312,12 +312,12 @@ export default function XCampaignView() {
                   type="date"
                   value={editingCampaign.start_date || ''}
                   onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
-                  className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                  className="w-full bg-mission-control-bg-alt text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                 />
               </div>
               <div className="flex-1">
-                <span className="block text-sm font-medium text-clawd-text mb-2">Total Stages</span>
-                <div className="px-4 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-clawd-text">
+                <span className="block text-sm font-medium text-mission-control-text mb-2">Total Stages</span>
+                <div className="px-4 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-mission-control-text">
                   {editingCampaign.stages.length} tweets over {Math.max(...editingCampaign.stages.map(s => s.dayOffset), 0) + 1} days
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default function XCampaignView() {
 
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-clawd-text">Campaign Timeline</h4>
+              <h4 className="text-sm font-semibold text-mission-control-text">Campaign Timeline</h4>
               <button
                 onClick={addStage}
                 className="flex items-center gap-1 text-sm text-info hover:text-info/80 transition-colors"
@@ -340,61 +340,61 @@ export default function XCampaignView() {
               {sortedStages.map((stage, idx) => {
                 const isExpanded = expandedStages.has(stage.id);
                 return (
-                  <div key={stage.id} className="bg-clawd-bg-alt border border-clawd-border rounded-lg overflow-hidden">
+                  <div key={stage.id} className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleStage(stage.id)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-clawd-surface transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-mission-control-surface transition-colors text-left"
                     >
-                      <GripVertical className="w-4 h-4 text-clawd-text-dim flex-shrink-0" />
+                      <GripVertical className="w-4 h-4 text-mission-control-text-dim flex-shrink-0" />
                       <span className="w-8 h-8 flex items-center justify-center bg-info/20 text-info text-sm font-bold rounded-full flex-shrink-0">
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-clawd-text">Day {stage.dayOffset + 1}</span>
-                          <span className="text-xs text-clawd-text-dim flex items-center gap-1">
+                          <span className="text-sm font-medium text-mission-control-text">Day {stage.dayOffset + 1}</span>
+                          <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                             <Clock className="w-3 h-3" />{stage.time}
                           </span>
                           <span className="px-2 py-0.5 text-xs bg-info-subtle text-info rounded-full">{stage.type}</span>
                         </div>
                         {!isExpanded && stage.content && (
-                          <p className="text-xs text-clawd-text-dim truncate mt-1">{stage.content.slice(0, 80)}...</p>
+                          <p className="text-xs text-mission-control-text-dim truncate mt-1">{stage.content.slice(0, 80)}...</p>
                         )}
                       </div>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-clawd-text-dim" /> : <ChevronDown className="w-4 h-4 text-clawd-text-dim" />}
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-mission-control-text-dim" /> : <ChevronDown className="w-4 h-4 text-mission-control-text-dim" />}
                     </button>
 
                     {isExpanded && (
-                      <div className="p-4 pt-0 space-y-3 border-t border-clawd-border">
+                      <div className="p-4 pt-0 space-y-3 border-t border-mission-control-border">
                         <div className="flex gap-3 pt-3">
                           <div className="w-24">
-                            <label htmlFor={`stage-day-${stage.id}`} className="block text-xs text-clawd-text-dim mb-1">Day</label>
+                            <label htmlFor={`stage-day-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Day</label>
                             <input
                               id={`stage-day-${stage.id}`}
                               type="number"
                               min={0}
                               value={stage.dayOffset}
                               onChange={e => updateStage(stage.id, { dayOffset: Math.max(0, parseInt(e.target.value) || 0) })}
-                              className="w-full bg-clawd-surface text-clawd-text border border-clawd-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
                             />
                           </div>
                           <div className="w-28">
-                            <label htmlFor={`stage-time-${stage.id}`} className="block text-xs text-clawd-text-dim mb-1">Time</label>
+                            <label htmlFor={`stage-time-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Time</label>
                             <input
                               id={`stage-time-${stage.id}`}
                               type="time"
                               value={stage.time}
                               onChange={e => updateStage(stage.id, { time: e.target.value })}
-                              className="w-full bg-clawd-surface text-clawd-text border border-clawd-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
                             />
                           </div>
                           <div className="flex-1">
-                            <label htmlFor={`stage-type-${stage.id}`} className="block text-xs text-clawd-text-dim mb-1">Type</label>
+                            <label htmlFor={`stage-type-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Type</label>
                             <select
                               id={`stage-type-${stage.id}`}
                               value={stage.type}
                               onChange={e => updateStage(stage.id, { type: e.target.value as CampaignStage['type'] })}
-                              className="w-full bg-clawd-surface text-clawd-text border border-clawd-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
                             >
                               {STAGE_TYPES.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -404,29 +404,29 @@ export default function XCampaignView() {
                         </div>
 
                         <div>
-                          <label htmlFor={`stage-content-${stage.id}`} className="block text-xs text-clawd-text-dim mb-1">Tweet Content</label>
+                          <label htmlFor={`stage-content-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Tweet Content</label>
                           <textarea
                             id={`stage-content-${stage.id}`}
                             value={stage.content}
                             onChange={e => updateStage(stage.id, { content: e.target.value })}
                             placeholder="Write the tweet content for this stage..."
                             rows={3}
-                            className="w-full bg-clawd-surface text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
+                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
                           />
-                          <div className={`text-xs mt-1 ${stage.content.length > 280 ? 'text-error' : 'text-clawd-text-dim'}`}>
+                          <div className={`text-xs mt-1 ${stage.content.length > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             {stage.content.length}/280
                           </div>
                         </div>
 
                         <div>
-                          <label htmlFor={`stage-notes-${stage.id}`} className="block text-xs text-clawd-text-dim mb-1">Notes (internal)</label>
+                          <label htmlFor={`stage-notes-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Notes (internal)</label>
                           <input
                             id={`stage-notes-${stage.id}`}
                             type="text"
                             value={stage.notes}
                             onChange={e => updateStage(stage.id, { notes: e.target.value })}
                             placeholder="e.g., Hook tweet, builds curiosity..."
-                            className="w-full bg-clawd-surface text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded px-3 py-1.5 text-sm"
+                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-1.5 text-sm"
                           />
                         </div>
 
@@ -448,17 +448,17 @@ export default function XCampaignView() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-clawd-border flex gap-3">
+        <div className="p-4 border-t border-mission-control-border flex gap-3">
           <button
             onClick={saveCampaign}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-clawd-bg-alt hover:bg-clawd-surface text-clawd-text font-medium rounded-lg border border-clawd-border transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text font-medium rounded-lg border border-mission-control-border transition-colors"
           >
             Save Draft
           </button>
           <button
             onClick={scheduleCampaign}
             disabled={!editingCampaign.start_date}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-info hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-info hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed text-mission-control-text font-medium rounded-lg transition-colors"
           >
             <Send className="w-4 h-4" />
             Schedule Campaign
@@ -470,15 +470,15 @@ export default function XCampaignView() {
 
   // Campaign list + AI proposal banner
   return (
-    <div className="flex flex-col h-full bg-clawd-bg">
-      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+    <div className="flex flex-col h-full bg-mission-control-bg">
+      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center gap-2">
           <Rocket className="w-5 h-5 text-info" />
-          <h3 className="text-lg font-semibold text-clawd-text">Campaigns</h3>
+          <h3 className="text-lg font-semibold text-mission-control-text">Campaigns</h3>
         </div>
         <button
           onClick={createNewCampaign}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-clawd-text rounded-lg transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           Manual
@@ -487,29 +487,29 @@ export default function XCampaignView() {
 
       {/* AI Proposal Banner */}
       {aiProposal && (
-        <div className="mx-4 mt-4 p-4 bg-clawd-accent/10 border-2 border-clawd-accent/40 rounded-xl animate-in fade-in">
+        <div className="mx-4 mt-4 p-4 bg-mission-control-accent/10 border-2 border-mission-control-accent/40 rounded-xl animate-in fade-in">
           <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-clawd-accent flex-shrink-0 mt-0.5" />
+            <Sparkles className="w-5 h-5 text-mission-control-accent flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-clawd-text mb-1">Agent Proposed a Campaign</h4>
-              <p className="text-sm font-medium text-clawd-text">{aiProposal.title}</p>
+              <h4 className="text-sm font-semibold text-mission-control-text mb-1">Agent Proposed a Campaign</h4>
+              <p className="text-sm font-medium text-mission-control-text">{aiProposal.title}</p>
               {aiProposal.subject && (
-                <p className="text-xs text-clawd-text-dim mt-1 line-clamp-2">{aiProposal.subject}</p>
+                <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{aiProposal.subject}</p>
               )}
-              <p className="text-xs text-clawd-text-dim mt-1">
+              <p className="text-xs text-mission-control-text-dim mt-1">
                 {aiProposal.stages.length} stages over {Math.max(...aiProposal.stages.map(s => s.dayOffset), 0) + 1} days
               </p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={acceptProposal}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-clawd-accent hover:bg-clawd-accent/80 text-white font-medium rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-mission-control-accent hover:bg-mission-control-accent/80 text-white font-medium rounded-lg transition-colors"
                 >
                   <Sparkles className="w-4 h-4" />
                   Review & Edit
                 </button>
                 <button
                   onClick={dismissProposal}
-                  className="px-4 py-2 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+                  className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 >
                   Dismiss
                 </button>
@@ -522,26 +522,26 @@ export default function XCampaignView() {
       {/* Conversational hint when empty */}
       {campaigns.length === 0 && !aiProposal ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-clawd-text-dim max-w-sm">
-            <Rocket className="w-12 h-12 mx-auto mb-3 text-clawd-text-dim" />
-            <p className="font-medium text-clawd-text">No campaigns yet</p>
+          <div className="text-center text-mission-control-text-dim max-w-sm">
+            <Rocket className="w-12 h-12 mx-auto mb-3 text-mission-control-text-dim" />
+            <p className="font-medium text-mission-control-text">No campaigns yet</p>
             <p className="text-sm mt-2">Build campaigns two ways:</p>
             <div className="mt-4 space-y-3">
               <button
                 onClick={createNewCampaign}
-                className="w-full px-4 py-3 text-sm bg-clawd-bg-alt hover:bg-clawd-surface text-clawd-text rounded-lg border border-clawd-border transition-colors flex items-center gap-3"
+                className="w-full px-4 py-3 text-sm bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text rounded-lg border border-mission-control-border transition-colors flex items-center gap-3"
               >
                 <Plus className="w-5 h-5 text-info" />
                 <div className="text-left">
                   <span className="font-medium block">Manual</span>
-                  <span className="text-xs text-clawd-text-dim">Build stages yourself</span>
+                  <span className="text-xs text-mission-control-text-dim">Build stages yourself</span>
                 </div>
               </button>
-              <div className="w-full px-4 py-3 text-sm bg-clawd-accent/10 text-clawd-text rounded-lg border border-clawd-accent/30 flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 text-clawd-accent" />
+              <div className="w-full px-4 py-3 text-sm bg-mission-control-accent/10 text-mission-control-text rounded-lg border border-mission-control-accent/30 flex items-center gap-3">
+                <MessageSquare className="w-5 h-5 text-mission-control-accent" />
                 <div className="text-left">
                   <span className="font-medium block">AI-Assisted</span>
-                  <span className="text-xs text-clawd-text-dim">Chat with the agent on the left to generate a campaign</span>
+                  <span className="text-xs text-mission-control-text-dim">Chat with the agent on the left to generate a campaign</span>
                 </div>
               </div>
             </div>
@@ -553,31 +553,31 @@ export default function XCampaignView() {
             const stageCount = campaign.stages?.length || 0;
             const daySpan = campaign.stages ? Math.max(...campaign.stages.map((s: any) => s.dayOffset || 0), 0) + 1 : 0;
             const statusColors: Record<string, string> = {
-              draft: 'bg-clawd-bg-alt text-clawd-text-dim',
+              draft: 'bg-mission-control-bg-alt text-mission-control-text-dim',
               ready: 'bg-warning-subtle text-warning',
               scheduled: 'bg-info-subtle text-info',
               active: 'bg-success-subtle text-success',
-              completed: 'bg-clawd-bg-alt text-clawd-text-dim',
+              completed: 'bg-mission-control-bg-alt text-mission-control-text-dim',
             };
             return (
               <div
                 key={campaign.id}
                 role="button"
                 tabIndex={0}
-                className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4 hover:border-info/50 transition-colors cursor-pointer"
+                className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4 hover:border-info/50 transition-colors cursor-pointer"
                 onClick={() => { setEditingCampaign(campaign); setExpandedStages(new Set()); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setEditingCampaign(campaign); setExpandedStages(new Set()); } }}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h4 className="text-sm font-bold text-clawd-text">{campaign.title || 'Untitled Campaign'}</h4>
+                  <h4 className="text-sm font-bold text-mission-control-text">{campaign.title || 'Untitled Campaign'}</h4>
                   <span className={`px-2 py-1 text-xs rounded-full ${statusColors[campaign.status] || statusColors.draft}`}>
                     {campaign.status}
                   </span>
                 </div>
                 {campaign.subject && (
-                  <p className="text-xs text-clawd-text-dim mb-2 line-clamp-2">{campaign.subject}</p>
+                  <p className="text-xs text-mission-control-text-dim mb-2 line-clamp-2">{campaign.subject}</p>
                 )}
-                <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
+                <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
                   <span>{stageCount} stage{stageCount !== 1 ? 's' : ''}</span>
                   <span>{daySpan} day{daySpan !== 1 ? 's' : ''}</span>
                   <span>{new Date(campaign.created_at).toLocaleDateString()}</span>

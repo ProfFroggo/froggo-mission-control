@@ -1,5 +1,5 @@
 /**
- * ViewRegistry — dynamic view registration for Froggo dashboard.
+ * ViewRegistry — dynamic view registration for Mission Control dashboard.
  *
  * Replaces the hardcoded `type View = 'dashboard' | 'kanban' | ...` union
  * and the `panelIconMap` in Sidebar.tsx. Any module can register a view;
@@ -33,6 +33,8 @@ class ViewRegistryClass {
   register(view: ViewRegistration) {
     if (this.views.has(view.id)) {
       const existing = this.views.get(view.id)!;
+      // Same module re-registering (e.g. HMR / React strict mode) — skip silently
+      if (existing.moduleId === view.moduleId) return;
       console.warn(
         `[ViewRegistry] Duplicate view ID "${view.id}" — ` +
         `overwriting (was: moduleId="${existing.moduleId ?? 'core'}", now: moduleId="${view.moduleId ?? 'core'}")`

@@ -25,22 +25,22 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
   if (block.type === 'thinking') {
     if (!block.text?.trim()) return null;
     return (
-      <div className="my-3 border border-clawd-border/50 rounded-lg bg-clawd-bg/30 overflow-hidden">
+      <div className="my-3 border border-mission-control-border/50 rounded-lg bg-mission-control-bg/30 overflow-hidden">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-clawd-border/30 transition-colors text-left"
+          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-mission-control-border/30 transition-colors text-left"
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <Zap size={14} className="text-violet-500" />
-          <span className="text-xs font-medium text-clawd-text-dim">
+          <span className="text-xs font-medium text-mission-control-text-dim">
             Thinking...
           </span>
-          <span className="ml-auto text-[10px] text-clawd-text-dim/60">
+          <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
             {block.text?.length || 0} chars
           </span>
         </button>
         {isExpanded && (
-          <div className="px-4 py-3 border-t border-clawd-border/50 text-xs text-clawd-text-dim leading-relaxed whitespace-pre-wrap font-mono">
+          <div className="px-4 py-3 border-t border-mission-control-border/50 text-xs text-mission-control-text-dim leading-relaxed whitespace-pre-wrap font-mono">
             {block.text}
           </div>
         )}
@@ -62,17 +62,17 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
             {block.name || 'tool'}
           </span>
           {block.id && (
-            <span className="ml-auto text-[10px] text-clawd-text-dim/60 font-mono">
+            <span className="ml-auto text-[10px] text-mission-control-text-dim/60 font-mono">
               {block.id.slice(0, 8)}
             </span>
           )}
         </button>
         {isExpanded && (
           <div className="px-4 py-3 border-t border-blue-500/30">
-            <div className="text-[10px] text-clawd-text-dim/60 uppercase tracking-wide mb-1">
+            <div className="text-[10px] text-mission-control-text-dim/60 uppercase tracking-wide mb-1">
               Input
             </div>
-            <pre className="text-xs bg-clawd-bg rounded p-2 overflow-x-auto font-mono">
+            <pre className="text-xs bg-mission-control-bg rounded p-2 overflow-x-auto font-mono">
               {JSON.stringify(block.input, null, 2)}
             </pre>
           </div>
@@ -102,7 +102,7 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
           }`}>
             {isError ? '⚠️ Error' : '✓ Result'}
           </span>
-          <span className="ml-auto text-[10px] text-clawd-text-dim/60">
+          <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
             {block.text?.length || 0} chars
           </span>
         </button>
@@ -110,7 +110,7 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
           <div className={`px-4 py-3 border-t ${
             isError ? 'border-red-500/30' : 'border-green-500/30'
           }`}>
-            <pre className="text-xs bg-clawd-bg rounded p-2 overflow-x-auto font-mono whitespace-pre-wrap">
+            <pre className="text-xs bg-mission-control-bg rounded p-2 overflow-x-auto font-mono whitespace-pre-wrap">
               {block.text}
             </pre>
           </div>
@@ -121,8 +121,8 @@ export default function ContentBlock({ block, index: _index }: ContentBlockProps
 
   // Unknown block type - render raw
   return (
-    <div className="my-3 border border-clawd-border rounded-lg bg-clawd-bg/50 px-3 py-2">
-      <div className="text-xs text-clawd-text-dim">
+    <div className="my-3 border border-mission-control-border rounded-lg bg-mission-control-bg/50 px-3 py-2">
+      <div className="text-xs text-mission-control-text-dim">
         Unknown block type: <code className="font-mono">{block.type}</code>
       </div>
     </div>

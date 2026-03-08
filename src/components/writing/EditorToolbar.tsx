@@ -40,8 +40,8 @@ function ToolbarButton({
       title={title}
       className={`p-1.5 rounded transition-colors ${
         active
-          ? 'bg-clawd-border text-clawd-text'
-          : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
+          ? 'bg-mission-control-border text-mission-control-text'
+          : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
       } disabled:opacity-30 disabled:cursor-not-allowed`}
     >
       {children}
@@ -50,7 +50,7 @@ function ToolbarButton({
 }
 
 function Separator() {
-  return <div className="w-px h-5 bg-clawd-border mx-1" />;
+  return <div className="w-px h-5 bg-mission-control-border mx-1" />;
 }
 
 export default function EditorToolbar({ editor }: EditorToolbarProps) {
@@ -77,7 +77,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-0.5 px-3 py-2 bg-clawd-surface border-b border-clawd-border flex-shrink-0">
+      <div className="flex items-center gap-0.5 px-3 py-2 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
         {/* Headings */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -185,8 +185,8 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
         size="sm"
         ariaLabel="Add Link"
       >
-        <div className="p-4 border-b border-clawd-border">
-          <h3 className="text-lg font-semibold text-clawd-text">Add Link</h3>
+        <div className="p-4 border-b border-mission-control-border">
+          <h3 className="text-lg font-semibold text-mission-control-text">Add Link</h3>
         </div>
         <BaseModalBody>
           <input
@@ -194,7 +194,7 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com"
-            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
           />
         </BaseModalBody>

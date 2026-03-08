@@ -108,7 +108,7 @@ export default function GlobalNotificationSettings() {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-clawd-text-dim">Loading global notification settings...</div>
+        <div className="text-mission-control-text-dim">Loading global notification settings...</div>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export default function GlobalNotificationSettings() {
             <Bell size={20} />
             Global Notification Defaults
           </h3>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             These settings apply to all conversations unless overridden individually
           </p>
         </div>
@@ -134,14 +134,14 @@ export default function GlobalNotificationSettings() {
           <div className="flex-1">
             <p className="font-medium text-error">Do Not Disturb Active</p>
             {dndUntil && (
-              <p className="text-sm text-clawd-text-dim mt-1">
+              <p className="text-sm text-mission-control-text-dim mt-1">
                 Until {new Date(dndUntil).toLocaleString()}
               </p>
             )}
           </div>
           <button
             onClick={handleDisableDND}
-            className="px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm hover:bg-clawd-accent/80 transition-colors"
+            className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/80 transition-colors"
           >
             Disable
           </button>
@@ -149,7 +149,7 @@ export default function GlobalNotificationSettings() {
       )}
 
       {/* Quick DND */}
-      <div className="bg-clawd-bg rounded-lg p-4">
+      <div className="bg-mission-control-bg rounded-lg p-4">
         <h4 className="font-medium mb-3 flex items-center gap-2">
           <ZapOff size={16} />
           Quick Do Not Disturb
@@ -157,19 +157,19 @@ export default function GlobalNotificationSettings() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => handleQuickDND(1)}
-            className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors"
+            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
           >
             1 hour
           </button>
           <button
             onClick={() => handleQuickDND(4)}
-            className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors"
+            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
           >
             4 hours
           </button>
           <button
             onClick={() => handleQuickDND(24)}
-            className="px-3 py-2 bg-clawd-border hover:bg-clawd-accent hover:text-white rounded-lg text-sm transition-colors"
+            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
           >
             24 hours
           </button>
@@ -184,7 +184,7 @@ export default function GlobalNotificationSettings() {
             id="default-notification-level"
             value={defaultNotificationLevel}
             onChange={(e) => setDefaultNotificationLevel(e.target.value)}
-            className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
           >
             <option value="all">All messages</option>
             <option value="mentions">Mentions only</option>
@@ -202,7 +202,7 @@ export default function GlobalNotificationSettings() {
             id="default-priority-level"
             value={defaultPriorityLevel}
             onChange={(e) => setDefaultPriorityLevel(e.target.value)}
-            className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
           >
             <option value="low">Low</option>
             <option value="normal">Normal</option>
@@ -224,7 +224,7 @@ export default function GlobalNotificationSettings() {
               type="checkbox"
               checked={defaultSoundEnabled}
               onChange={(e) => setDefaultSoundEnabled(e.target.checked)}
-              className="w-4 h-4 accent-clawd-accent"
+              className="w-4 h-4 accent-mission-control-accent"
             />
             <span>Enable notification sounds by default</span>
           </label>
@@ -232,7 +232,7 @@ export default function GlobalNotificationSettings() {
             <select
               value={defaultSoundType}
               onChange={(e) => setDefaultSoundType(e.target.value)}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="default">Default</option>
               <option value="subtle">Subtle</option>
@@ -249,7 +249,7 @@ export default function GlobalNotificationSettings() {
             type="checkbox"
             checked={defaultDesktopNotifications}
             onChange={(e) => setDefaultDesktopNotifications(e.target.checked)}
-            className="w-4 h-4 accent-clawd-accent"
+            className="w-4 h-4 accent-mission-control-accent"
           />
           <span className="flex items-center gap-2">
             <Bell size={16} />
@@ -270,7 +270,7 @@ export default function GlobalNotificationSettings() {
               type="checkbox"
               checked={quietHoursEnabled}
               onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-              className="w-4 h-4 accent-clawd-accent"
+              className="w-4 h-4 accent-mission-control-accent"
             />
             <span>Enable quiet hours (applies to all conversations)</span>
           </label>
@@ -280,14 +280,14 @@ export default function GlobalNotificationSettings() {
                 type="time"
                 value={quietStart}
                 onChange={(e) => setQuietStart(e.target.value)}
-                className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
               />
-              <span className="text-clawd-text-dim">to</span>
+              <span className="text-mission-control-text-dim">to</span>
               <input
                 type="time"
                 value={quietEnd}
                 onChange={(e) => setQuietEnd(e.target.value)}
-                className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
               />
             </div>
           )}
@@ -306,13 +306,13 @@ export default function GlobalNotificationSettings() {
               type="checkbox"
               checked={enableBatching}
               onChange={(e) => setEnableBatching(e.target.checked)}
-              className="w-4 h-4 accent-clawd-accent"
+              className="w-4 h-4 accent-mission-control-accent"
             />
             <span>Batch notifications (reduce interruptions)</span>
           </label>
           {enableBatching && (
             <div className="ml-7">
-              <label htmlFor="batch-interval" className="block text-sm text-clawd-text-dim mb-2">
+              <label htmlFor="batch-interval" className="block text-sm text-mission-control-text-dim mb-2">
                 Batch interval (minutes)
               </label>
               <input
@@ -323,7 +323,7 @@ export default function GlobalNotificationSettings() {
                 min="5"
                 max="60"
                 step="5"
-                className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent w-32"
+                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent w-32"
               />
             </div>
           )}
@@ -331,11 +331,11 @@ export default function GlobalNotificationSettings() {
       </div>
 
       {/* Save Button */}
-      <div className="pt-4 border-t border-clawd-border">
+      <div className="pt-4 border-t border-mission-control-border">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="px-6 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           {saving ? (
             <>Saving...</>
@@ -346,7 +346,7 @@ export default function GlobalNotificationSettings() {
             </>
           )}
         </button>
-        <p className="text-xs text-clawd-text-dim mt-2">
+        <p className="text-xs text-mission-control-text-dim mt-2">
           These settings apply to all conversations that don&apos;t have custom notification preferences.
         </p>
       </div>

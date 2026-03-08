@@ -67,7 +67,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       case 'passed': return <CheckCircle size={14} className="text-success" />;
       case 'needs-work': return <AlertCircle size={14} className="text-amber-400" />;
       case 'failed': return <AlertCircle size={14} className="text-error" />;
-      default: return <Clock size={14} className="text-clawd-text-dim" />;
+      default: return <Clock size={14} className="text-mission-control-text-dim" />;
     }
   };
 
@@ -82,22 +82,22 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         onKeyDown={(e) => e.key === 'Escape' && handleClose()}
         aria-label="Close training log"
       />
-      <div className={`relative w-full max-w-2xl bg-clawd-bg border border-clawd-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
+        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <BookOpen size={20} className="text-teal-400" />
-          <h2 className="font-bold text-clawd-text flex-1">Training Log</h2>
+          <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
           {agents.length > 0 && (
             <select
               value={filter}
               onChange={e => setFilter(e.target.value)}
-              className="text-xs bg-clawd-surface border border-clawd-border rounded-lg px-2 py-1 text-clawd-text"
+              className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text"
             >
               <option value="all">All Agents</option>
               {agents.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
           )}
-          <button onClick={handleClose} className="p-1 text-clawd-text-dim hover:text-clawd-text rounded-lg hover:bg-clawd-surface">
+          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface">
             <X size={18} />
           </button>
         </div>
@@ -105,38 +105,38 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center text-clawd-text-dim py-8">Loading...</div>
+            <div className="text-center text-mission-control-text-dim py-8">Loading...</div>
           ) : filteredEntries.length === 0 ? (
             <div className="text-center py-12">
-              <BookOpen size={32} className="mx-auto text-clawd-text-dim mb-3 opacity-40" />
-              <p className="text-clawd-text-dim text-sm">No training sessions yet.</p>
-              <p className="text-clawd-text-dim text-xs mt-1">Training runs automatically during quiet periods.</p>
+              <BookOpen size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
+              <p className="text-mission-control-text-dim text-sm">No training sessions yet.</p>
+              <p className="text-mission-control-text-dim text-xs mt-1">Training runs automatically during quiet periods.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {filteredEntries.map(entry => (
-                <div key={entry.id} className="rounded-lg border border-clawd-border p-3 hover:border-clawd-border/80 transition-colors">
+                <div key={entry.id} className="rounded-lg border border-mission-control-border p-3 hover:border-mission-control-border/80 transition-colors">
                   <div className="flex items-center gap-2 mb-1">
                     {outcomeIcon(entry.outcome)}
-                    <span className="font-medium text-sm text-clawd-text capitalize">{entry.agent_id}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-clawd-surface text-clawd-text-dim">{entry.training_type}</span>
+                    <span className="font-medium text-sm text-mission-control-text capitalize">{entry.agent_id}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-mission-control-surface text-mission-control-text-dim">{entry.training_type}</span>
                     <span className="flex-1" />
-                    <span className="text-[10px] text-clawd-text-dim">
+                    <span className="text-[10px] text-mission-control-text-dim">
                       {new Date(entry.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-sm text-clawd-text-dim">{entry.focus_area}</p>
+                  <p className="text-sm text-mission-control-text-dim">{entry.focus_area}</p>
                   {entry.skill_before != null && entry.skill_after != null && (
                     <div className="flex items-center gap-2 mt-1.5">
-                      <Target size={12} className="text-clawd-text-dim" />
+                      <Target size={12} className="text-mission-control-text-dim" />
                       <div className="flex items-center gap-1 text-xs">
-                        <span className="text-clawd-text-dim">{entry.skill_before}</span>
-                        <TrendingUp size={10} className={entry.skill_after > entry.skill_before ? 'text-success' : 'text-clawd-text-dim'} />
-                        <span className={entry.skill_after > entry.skill_before ? 'text-success font-medium' : 'text-clawd-text-dim'}>{entry.skill_after}</span>
+                        <span className="text-mission-control-text-dim">{entry.skill_before}</span>
+                        <TrendingUp size={10} className={entry.skill_after > entry.skill_before ? 'text-success' : 'text-mission-control-text-dim'} />
+                        <span className={entry.skill_after > entry.skill_before ? 'text-success font-medium' : 'text-mission-control-text-dim'}>{entry.skill_after}</span>
                       </div>
                     </div>
                   )}
-                  {entry.notes && <p className="text-xs text-clawd-text-dim mt-1 italic">{entry.notes}</p>}
+                  {entry.notes && <p className="text-xs text-mission-control-text-dim mt-1 italic">{entry.notes}</p>}
                 </div>
               ))}
             </div>

@@ -116,13 +116,13 @@ export default function AgentTokenDetailModal({
       aria-label="Close token detail modal"
     >
       <div
-        className="bg-clawd-bg border border-clawd-border rounded-2xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl"
+        className="bg-mission-control-bg border border-mission-control-border rounded-2xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
       >
         {/* Header */}
-        <div className="p-5 border-b border-clawd-border flex items-center justify-between">
+        <div className="p-5 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
               className="w-3 h-3 rounded-full"
@@ -132,12 +132,12 @@ export default function AgentTokenDetailModal({
               <h3 className="text-lg font-semibold">
                 {agent.charAt(0).toUpperCase() + agent.slice(1)}
               </h3>
-              <p className="text-sm text-clawd-text-dim">Token Usage</p>
+              <p className="text-sm text-mission-control-text-dim">Token Usage</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             <X size={20} />
           </button>
@@ -147,17 +147,17 @@ export default function AgentTokenDetailModal({
         <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="text-clawd-text-dim">Loading session log...</div>
+              <div className="text-mission-control-text-dim">Loading session log...</div>
             </div>
           ) : sessionLog.length === 0 ? (
             <div className="flex items-center justify-center h-40">
-              <div className="text-clawd-text-dim">
+              <div className="text-mission-control-text-dim">
                 No token usage recorded for this agent
               </div>
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-clawd-surface text-clawd-text-dim sticky top-0">
+              <thead className="bg-mission-control-surface text-mission-control-text-dim sticky top-0">
                 <tr>
                   <th className="text-left py-2 px-3">Time</th>
                   <th className="text-left py-2 px-3">Model</th>
@@ -171,12 +171,12 @@ export default function AgentTokenDetailModal({
                 {sessionLog.map((entry) => (
                   <tr
                     key={entry.id}
-                    className="border-b border-clawd-border/50 hover:bg-clawd-surface/50"
+                    className="border-b border-mission-control-border/50 hover:bg-mission-control-surface/50"
                   >
-                    <td className="py-2 px-3 text-clawd-text-dim">
+                    <td className="py-2 px-3 text-mission-control-text-dim">
                       {formatTime(entry.created_at)}
                     </td>
-                    <td className="py-2 px-3 text-clawd-text-dim">
+                    <td className="py-2 px-3 text-mission-control-text-dim">
                       {truncateModel(entry.model)}
                     </td>
                     <td className="py-2 px-3 text-right text-info">
@@ -200,26 +200,26 @@ export default function AgentTokenDetailModal({
 
         {/* Footer Summary */}
         {!loading && sessionLog.length > 0 && (
-          <div className="p-4 border-t border-clawd-border bg-clawd-surface/50">
+          <div className="p-4 border-t border-mission-control-border bg-mission-control-surface/50">
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-xs text-clawd-text-dim mb-1">Total Calls</div>
+                <div className="text-xs text-mission-control-text-dim mb-1">Total Calls</div>
                 <div className="text-lg font-semibold">{totalCalls}</div>
               </div>
               {uniqueSessions > 0 && (
                 <div>
-                  <div className="text-xs text-clawd-text-dim mb-1">Sessions</div>
+                  <div className="text-xs text-mission-control-text-dim mb-1">Sessions</div>
                   <div className="text-lg font-semibold">{uniqueSessions}</div>
                 </div>
               )}
               <div>
-                <div className="text-xs text-clawd-text-dim mb-1">Total Tokens</div>
+                <div className="text-xs text-mission-control-text-dim mb-1">Total Tokens</div>
                 <div className="text-lg font-semibold text-success">
                   {totalTokens.toLocaleString()}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-clawd-text-dim mb-1">Total Cost</div>
+                <div className="text-xs text-mission-control-text-dim mb-1">Total Cost</div>
                 <div className="text-lg font-semibold text-warning">
                   ${totalCost.toFixed(4)}
                 </div>

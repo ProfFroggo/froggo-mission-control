@@ -109,16 +109,16 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
           <button
             onClick={() => { doSave(); onBack(); }}
-            className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg rounded-lg transition-colors"
           >
             <ArrowLeft size={14} /> My Modules
           </button>
-          <span className="text-clawd-border">|</span>
-          <h1 className="text-lg font-semibold text-clawd-text truncate">
+          <span className="text-mission-control-border">|</span>
+          <h1 className="text-lg font-semibold text-mission-control-text truncate">
             {spec.name || 'Untitled Module'}
           </h1>
         </div>
@@ -188,7 +188,7 @@ export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderVie
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-clawd-text-dim">
+      <div className="flex items-center justify-center h-full text-mission-control-text-dim">
         Loading module...
       </div>
     );
@@ -196,9 +196,9 @@ export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderVie
 
   if (error || !saved) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim gap-3">
+      <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim gap-3">
         <p>Failed to load module: {error}</p>
-        <button onClick={onBack} className="text-clawd-accent hover:underline text-sm">
+        <button onClick={onBack} className="text-mission-control-accent hover:underline text-sm">
           Back to list
         </button>
       </div>

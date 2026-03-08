@@ -11,5 +11,5 @@
   "requiredApis": [],
   "requiredSkills": [],
   "requiredCli": [],
-  "core": false
+  "core": true
 }

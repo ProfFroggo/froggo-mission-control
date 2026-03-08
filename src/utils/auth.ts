@@ -13,7 +13,7 @@ export function getCurrentUserName(): string {
   }
   
   // Fallback to env var or default
-  return import.meta.env.VITE_DEFAULT_USER_NAME || 'kevin';
+  return import.meta?.env?.VITE_DEFAULT_USER_NAME || 'kevin';
 }
 
 /**
@@ -22,5 +22,5 @@ export function getCurrentUserName(): string {
  */
 export function useCurrentUserName(): string {
   const name = useUserSettings((state) => state.name);
-  return name && name.trim() ? name : import.meta.env.VITE_DEFAULT_USER_NAME || 'kevin';
+  return name && name.trim() ? name : import.meta?.env?.VITE_DEFAULT_USER_NAME || 'kevin';
 }

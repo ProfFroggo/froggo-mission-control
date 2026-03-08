@@ -35,12 +35,12 @@ export async function PATCH(
     }
 
     values.push(id);
-    db.prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+    const result = db.prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+    if (result.changes === 0) {
+      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+    }
 
     const updated = db.prepare('SELECT * FROM inbox WHERE id = ?').get(id);
-    if (!updated) {
-      return NextResponse.json({ error: 'Inbox item not found' }, { status: 404 });
-    }
 
     return NextResponse.json(updated);
   } catch (error) {

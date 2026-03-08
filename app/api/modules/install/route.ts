@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Mark installed in catalog_modules
     db.prepare(
-      'UPDATE catalog_modules SET installed = 1, enabled = 1, updated_at = ? WHERE id = ?'
+      'UPDATE catalog_modules SET installed = 1, enabled = 1, updatedAt = ? WHERE id = ?'
     ).run(Date.now(), moduleId);
     steps.push({ step: 'catalog', success: true, detail: 'catalog_modules.installed = 1' });
 

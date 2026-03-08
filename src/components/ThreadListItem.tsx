@@ -85,18 +85,18 @@ export default function ThreadListItem({
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); }}}
         role="button"
         tabIndex={0}
-        className={`bg-clawd-bg border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-clawd-accent/50 ${
-          hasUnread ? 'border-clawd-accent/30 bg-clawd-accent/5' : 'border-clawd-border'
+        className={`bg-mission-control-bg border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
+          hasUnread ? 'border-mission-control-accent/30 bg-mission-control-accent/5' : 'border-mission-control-border'
         }`}
       >
         {/* Header row */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {/* Unread indicator */}
-            {hasUnread && <div className="w-2 h-2 bg-clawd-accent rounded-full flex-shrink-0 mt-1" />}
+            {hasUnread && <div className="w-2 h-2 bg-mission-control-accent rounded-full flex-shrink-0 mt-1" />}
 
             {/* Thread icon + participant count */}
-            <div className="flex items-center gap-1 text-clawd-text-dim flex-shrink-0">
+            <div className="flex items-center gap-1 text-mission-control-text-dim flex-shrink-0">
               <MessageCircle size={14} />
               <span className="text-xs">{thread.message_count}</span>
               {thread.unreplied_count > 0 && (
@@ -108,8 +108,8 @@ export default function ThreadListItem({
 
             {/* Sender/participants */}
             <div className="flex items-center gap-1 flex-1 min-w-0">
-              <User size={14} className="text-clawd-text-dim flex-shrink-0" />
-              <span className="text-sm font-semibold text-clawd-accent truncate">
+              <User size={14} className="text-mission-control-text-dim flex-shrink-0" />
+              <span className="text-sm font-semibold text-mission-control-accent truncate">
                 {thread.sender_name || participantsDisplay || 'Unknown'}
               </span>
             </div>
@@ -120,8 +120,8 @@ export default function ThreadListItem({
             {/* Star button */}
             <button
               onClick={handleStarClick}
-              className={`p-1 rounded hover:bg-clawd-border transition-colors ${
-                thread.has_starred ? 'text-warning' : 'text-clawd-text-dim'
+              className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
+                thread.has_starred ? 'text-warning' : 'text-mission-control-text-dim'
               }`}
               title={thread.has_starred ? 'Unstar' : 'Star'}
             >
@@ -131,19 +131,19 @@ export default function ThreadListItem({
             {/* Mark read/unread */}
             <button
               onClick={handleMarkReadClick}
-              className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim transition-colors"
+              className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim transition-colors"
               title={hasUnread ? 'Mark as read' : 'Mark as unread'}
             >
               <Mail size={14} />
             </button>
 
             {/* Timestamp */}
-            <span className="text-xs text-clawd-text-dim whitespace-nowrap">
+            <span className="text-xs text-mission-control-text-dim whitespace-nowrap">
               {formatRelativeTime(thread.last_activity)}
             </span>
 
             {/* Expand arrow */}
-            <ChevronRight size={14} className="text-clawd-text-dim" />
+            <ChevronRight size={14} className="text-mission-control-text-dim" />
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export default function ThreadListItem({
             <div className="text-sm font-medium truncate">{thread.subject}</div>
           )}
           {thread.root_preview && (
-            <p className="text-sm text-clawd-text-dim line-clamp-2">{thread.root_preview}</p>
+            <p className="text-sm text-mission-control-text-dim line-clamp-2">{thread.root_preview}</p>
           )}
         </div>
 
@@ -161,7 +161,7 @@ export default function ThreadListItem({
         {(hasUnread || thread.unreplied_count > 0) && (
           <div className="mt-2 flex gap-2">
             {hasUnread && (
-              <span className="inline-flex items-center gap-1 text-xs bg-clawd-accent/20 text-clawd-accent px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs bg-mission-control-accent/20 text-mission-control-accent px-2 py-0.5 rounded-full">
                 {thread.unread_count} unread
               </span>
             )}
@@ -185,7 +185,7 @@ export default function ThreadListItem({
           aria-label="Close modal"
         >
           <div
-            className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-4xl h-[80vh] overflow-hidden"
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-4xl h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"

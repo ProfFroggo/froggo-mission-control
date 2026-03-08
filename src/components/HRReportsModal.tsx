@@ -93,16 +93,16 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center ring-2 ring-teal-500/30">
               <FileText size={20} className="text-teal-400" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">HR Reports</h2>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {reports.length} report{reports.length !== 1 ? 's' : ''} available
               </p>
             </div>
@@ -111,7 +111,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             <button
               onClick={loadReports}
               disabled={loading}
-              className="p-2 hover:bg-clawd-bg rounded-lg transition-colors disabled:opacity-50"
+              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
               title="Refresh"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -127,7 +127,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-clawd-bg rounded-lg transition-colors"
+              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors"
             >
               <X size={20} />
             </button>
@@ -137,13 +137,13 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Sidebar - Report List */}
-          <div className="w-80 flex-shrink-0 border-r border-clawd-border overflow-y-auto">
+          <div className="w-80 flex-shrink-0 border-r border-mission-control-border overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-clawd-text-dim">Loading...</div>
+              <div className="p-4 text-center text-mission-control-text-dim">Loading...</div>
             ) : reports.length === 0 ? (
               <div className="p-8 text-center">
-                <FileText size={48} className="text-clawd-text-dim mx-auto mb-4" />
-                <p className="text-clawd-text-dim">No reports yet</p>
+                <FileText size={48} className="text-mission-control-text-dim mx-auto mb-4" />
+                <p className="text-mission-control-text-dim">No reports yet</p>
               </div>
             ) : (
               <div className="p-4 space-y-2">
@@ -154,15 +154,15 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
                     className={`w-full text-left p-3 rounded-lg border transition-all ${
                       selectedReport?.name === report.name
                         ? 'border-teal-500/50 bg-teal-500/10'
-                        : 'border-clawd-border hover:border-clawd-border/50 hover:bg-clawd-bg'
+                        : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
                     }`}
                   >
                     <div className="font-medium text-sm mb-1 line-clamp-1">{report.name}</div>
-                    <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
+                    <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
                       <Calendar size={12} />
                       {formatDate(report.createdAt)}
                     </div>
-                    <div className="text-xs text-clawd-text-dim mt-1">
+                    <div className="text-xs text-mission-control-text-dim mt-1">
                       {formatSize(report.size)}
                     </div>
                   </button>
@@ -175,10 +175,10 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
           <div className="flex-1 min-w-0 overflow-y-auto p-6">
             {loadingContent ? (
               <div className="flex items-center justify-center h-full">
-                <RefreshCw size={32} className="animate-spin text-clawd-text-dim" />
+                <RefreshCw size={32} className="animate-spin text-mission-control-text-dim" />
               </div>
             ) : !selectedReport ? (
-              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+              <div className="flex items-center justify-center h-full text-mission-control-text-dim">
                 Select a report to view
               </div>
             ) : (

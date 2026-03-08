@@ -1,5 +1,5 @@
 #!/bin/bash
-# Froggo Dashboard - Test Runner Script
+# Mission Control Dashboard - Test Runner Script
 
 set -e
 

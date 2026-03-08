@@ -49,7 +49,7 @@ export default function AgentUtilizationChart() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{data.agentName}</p>
           <p className="text-sm text-info">Assigned: {data.tasksAssigned}</p>
           <p className="text-sm text-success">Completed: {data.tasksCompleted}</p>
@@ -66,7 +66,7 @@ export default function AgentUtilizationChart() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-clawd-text-dim">Loading agent data...</div>
+        <div className="text-mission-control-text-dim">Loading agent data...</div>
       </div>
     );
   }
@@ -81,23 +81,23 @@ export default function AgentUtilizationChart() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Users className="text-clawd-accent" size={20} />
+            <Users className="text-mission-control-accent" size={20} />
             Agent Utilization
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-sm text-mission-control-text-dim mt-1">
             Performance metrics for each agent
           </p>
         </div>
 
-        <div className="flex bg-clawd-border rounded-lg p-1">
+        <div className="flex bg-mission-control-border rounded-lg p-1">
           {(['bar', 'pie'] as const).map((mode) => (
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
               className={`px-3 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
                 viewMode === mode
-                  ? 'bg-clawd-accent text-white'
-                  : 'text-clawd-text-dim hover:text-clawd-text'
+                  ? 'bg-mission-control-accent text-white'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {mode}
@@ -108,8 +108,8 @@ export default function AgentUtilizationChart() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <Award size={16} className="text-warning" />
             Top Performer
           </div>
@@ -117,17 +117,17 @@ export default function AgentUtilizationChart() {
             {topAgent ? topAgent.agentName : 'None'}
           </div>
           {topAgent && (
-            <div className="text-sm text-clawd-text-dim mt-1">
+            <div className="text-sm text-mission-control-text-dim mt-1">
               {topAgent.tasksCompleted} tasks completed
             </div>
           )}
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1">Total Tasks</div>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1">Total Tasks</div>
           <div className="text-2xl font-bold text-info">{totalTasks}</div>
         </div>
-        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
-          <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <Clock size={16} className="text-warning" />
             Total Hours
           </div>
@@ -138,7 +138,7 @@ export default function AgentUtilizationChart() {
       </div>
 
       {/* Chart */}
-      <div className="flex-1 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         {viewMode === 'bar' ? (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -184,9 +184,9 @@ export default function AgentUtilizationChart() {
       </div>
 
       {/* Agent Details Table */}
-      <div className="mt-6 bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+      <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
         <table className="w-full">
-          <thead className="bg-clawd-bg border-b border-clawd-border">
+          <thead className="bg-mission-control-bg border-b border-mission-control-border">
             <tr>
               <th className="text-left p-3 text-sm font-medium">Agent</th>
               <th className="text-right p-3 text-sm font-medium">Assigned</th>
@@ -198,7 +198,7 @@ export default function AgentUtilizationChart() {
           </thead>
           <tbody>
             {data.map((agent) => (
-              <tr key={agent.agentId} className="border-b border-clawd-border last:border-b-0">
+              <tr key={agent.agentId} className="border-b border-mission-control-border last:border-b-0">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
                     <div
@@ -223,7 +223,7 @@ export default function AgentUtilizationChart() {
                     {agent.completionRate}%
                   </span>
                 </td>
-                <td className="p-3 text-right text-clawd-text-dim">
+                <td className="p-3 text-right text-mission-control-text-dim">
                   {agent.avgCompletionTime.toFixed(1)}h
                 </td>
                 <td className="p-3 text-right text-warning">

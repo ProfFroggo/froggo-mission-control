@@ -93,14 +93,14 @@ export default function ErrorDisplay({
         <Icon size={16} className={`flex-shrink-0 mt-0.5 ${colorScheme.text}`} />
         <div className="flex-1 min-w-0">
           <div className={`text-sm font-medium ${colorScheme.text}`}>{errorInfo.title}</div>
-          <div className="text-sm text-clawd-text-dim mt-1">{errorInfo.message}</div>
+          <div className="text-sm text-mission-control-text-dim mt-1">{errorInfo.message}</div>
           {errorInfo.recovery && errorInfo.recovery.length > 0 && (
             <div className="flex items-center gap-2 mt-2">
               {errorInfo.recovery.map((action, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleRecoveryAction(action)}
-                  className={`text-xs px-2 py-1 rounded ${colorScheme.text} hover:bg-clawd-text/5 transition-colors`}
+                  className={`text-xs px-2 py-1 rounded ${colorScheme.text} hover:bg-mission-control-text/5 transition-colors`}
                 >
                   {action.label}
                 </button>
@@ -111,7 +111,7 @@ export default function ErrorDisplay({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="flex-shrink-0 p-1 hover:bg-clawd-text/10 rounded transition-colors text-clawd-text-dim"
+            className="flex-shrink-0 p-1 hover:bg-mission-control-text/10 rounded transition-colors text-mission-control-text-dim"
           >
             ×
           </button>
@@ -131,18 +131,18 @@ export default function ErrorDisplay({
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-semibold text-center text-clawd-text mb-2">
+        <h3 className="text-xl font-semibold text-center text-mission-control-text mb-2">
           {errorInfo.title}
         </h3>
 
         {/* Message */}
-        <p className="text-sm text-center text-clawd-text-dim mb-6">
+        <p className="text-sm text-center text-mission-control-text-dim mb-6">
           {errorInfo.message}
         </p>
 
         {/* Error code */}
         {errorInfo.code && (
-          <p className="text-xs text-center text-clawd-text-dim/50 mb-4">
+          <p className="text-xs text-center text-mission-control-text-dim/50 mb-4">
             Error Code: {errorInfo.code}
           </p>
         )}
@@ -179,10 +179,10 @@ export default function ErrorDisplay({
         {/* Technical details (for debugging) */}
         {showStack && error?.stack && (
           <details className="mt-6">
-            <summary className="text-xs text-clawd-text-dim cursor-pointer hover:text-clawd-text">
+            <summary className="text-xs text-mission-control-text-dim cursor-pointer hover:text-mission-control-text">
               Technical Details
             </summary>
-            <pre className="mt-2 p-3 bg-clawd-bg rounded text-xs text-clawd-text-dim overflow-auto max-h-40">
+            <pre className="mt-2 p-3 bg-mission-control-bg rounded text-xs text-mission-control-text-dim overflow-auto max-h-40">
               {error.stack}
             </pre>
           </details>
@@ -192,7 +192,7 @@ export default function ErrorDisplay({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="w-full mt-4 text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="w-full mt-4 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Dismiss
           </button>

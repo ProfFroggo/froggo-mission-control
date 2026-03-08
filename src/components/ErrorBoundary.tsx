@@ -94,19 +94,19 @@ Time: ${new Date().toISOString()}
 
       // Default fallback UI
       return (
-        <div className="h-full flex items-center justify-center p-6 bg-clawd-bg">
-          <div className="max-w-md w-full bg-clawd-surface rounded-2xl border border-error-border p-6 shadow-xl">
+        <div className="h-full flex items-center justify-center p-6 bg-mission-control-bg">
+          <div className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-error-border p-6 shadow-xl">
             {/* Icon and Title */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-error-subtle rounded-xl">
                 <AlertTriangle size={28} className="text-error" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-clawd-text">
+                <h2 className="text-lg font-semibold text-mission-control-text">
                   Something went wrong
                 </h2>
                 {this.getComponentName() !== 'Unknown' && (
-                  <p className="text-sm text-clawd-text-dim">
+                  <p className="text-sm text-mission-control-text-dim">
                     in {this.getComponentName()}
                   </p>
                 )}
@@ -115,11 +115,11 @@ Time: ${new Date().toISOString()}
 
             {/* Error Message */}
             <div className="mb-6">
-              <p className="text-sm text-clawd-text-dim mb-2">
+              <p className="text-sm text-mission-control-text-dim mb-2">
                 An error occurred while rendering this component. Don&apos;t worry - your data is safe.
               </p>
               {this.state.error && (
-                <div className="bg-clawd-bg rounded-lg p-3 border border-clawd-border">
+                <div className="bg-mission-control-bg rounded-lg p-3 border border-mission-control-border">
                   <code className="text-xs text-error font-mono break-all">
                     {this.state.error.message}
                   </code>
@@ -131,7 +131,7 @@ Time: ${new Date().toISOString()}
             <div className="space-y-2">
               <button
                 onClick={this.handleRetry}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors font-medium"
               >
                 <RefreshCw size={18} />
                 Try Again
@@ -140,7 +140,7 @@ Time: ${new Date().toISOString()}
               <div className="flex gap-2">
                 <button
                   onClick={this.handleReportError}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-clawd-bg border border-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border transition-colors text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm"
                 >
                   <Bug size={16} />
                   Report Error
@@ -148,7 +148,7 @@ Time: ${new Date().toISOString()}
 
                 <button
                   onClick={() => window.location.reload()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-clawd-bg border border-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border transition-colors text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm"
                 >
                   <XCircle size={16} />
                   Reload App
@@ -159,10 +159,10 @@ Time: ${new Date().toISOString()}
             {/* Technical Details (collapsible) */}
             {this.state.errorInfo && (
               <details className="mt-4">
-                <summary className="text-xs text-clawd-text-dim cursor-pointer hover:text-clawd-text transition-colors">
+                <summary className="text-xs text-mission-control-text-dim cursor-pointer hover:text-mission-control-text transition-colors">
                   Technical Details
                 </summary>
-                <pre className="mt-2 text-xs text-clawd-text-dim bg-clawd-bg p-3 rounded-lg overflow-auto max-h-40 font-mono">
+                <pre className="mt-2 text-xs text-mission-control-text-dim bg-mission-control-bg p-3 rounded-lg overflow-auto max-h-40 font-mono">
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>

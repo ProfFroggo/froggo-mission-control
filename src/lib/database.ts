@@ -124,15 +124,20 @@ function initSchema(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS agents (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      role TEXT,
+      emoji TEXT DEFAULT '🤖',
+      color TEXT DEFAULT '#00BCD4',
       avatar TEXT,
       description TEXT,
+      personality TEXT DEFAULT '',
       status TEXT NOT NULL DEFAULT 'offline',
       capabilities TEXT DEFAULT '[]',
       sessionKey TEXT,
       currentTaskId TEXT,
       lastActivity INTEGER,
       trust_tier TEXT DEFAULT 'apprentice',
-      model TEXT DEFAULT 'sonnet'
+      model TEXT DEFAULT 'sonnet',
+      created_at INTEGER DEFAULT (unixepoch())
     );
 
     -- ══════════════════════════════════════════
@@ -266,8 +271,17 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
-    -- LIBRARY FILES
+    -- LIBRARY
     -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS library_folders (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color TEXT DEFAULT '#6366f1',
+      icon TEXT DEFAULT 'folder',
+      sort_order INTEGER DEFAULT 0,
+      createdAt INTEGER DEFAULT (unixepoch() * 1000)
+    );
+
     CREATE TABLE IF NOT EXISTS library_files (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -275,6 +289,7 @@ function initSchema(db: Database.Database) {
       size INTEGER,
       type TEXT,
       category TEXT,
+      folder_id TEXT REFERENCES library_folders(id) ON DELETE SET NULL,
       createdAt INTEGER DEFAULT (unixepoch() * 1000)
     );
 
@@ -318,6 +333,9 @@ function initSchema(db: Database.Database) {
       requiredTools TEXT DEFAULT '[]',
       version TEXT DEFAULT '1.0.0',
       category TEXT DEFAULT 'general',
+      avatar TEXT,
+      core INTEGER DEFAULT 0,
+      defaultPersonality TEXT,
       installed INTEGER DEFAULT 0,
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
       updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
@@ -396,14 +414,7 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_projects_createdAt ON projects(createdAt);
     CREATE INDEX IF NOT EXISTS idx_project_members_agentId ON project_members(agentId);
 
-    -- ══════════════════════════════════════════
-    -- SEED DATA
-    -- ══════════════════════════════════════════
-    INSERT OR IGNORE INTO chat_rooms (id, name, topic) VALUES
-      ('general', 'General', 'Cross-team coordination'),
-      ('code-review', 'Code Review', 'Review requests and discussions'),
-      ('planning', 'Planning', 'Task decomposition and architecture'),
-      ('incidents', 'Incidents', 'Bug reports and production issues');
+    -- No default rooms seeded — rooms are created on demand
   `);
 
   // Add new columns to existing tables — safe to run on every startup
@@ -420,6 +431,13 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE tasks ADD COLUMN recurrence TEXT`,
     `ALTER TABLE tasks ADD COLUMN recurrenceParentId TEXT`,
     `ALTER TABLE catalog_agents ADD COLUMN defaultPersonality TEXT`,
+    `ALTER TABLE catalog_agents ADD COLUMN core INTEGER DEFAULT 0`,
+    `ALTER TABLE catalog_agents ADD COLUMN avatar TEXT`,
+    `ALTER TABLE agents ADD COLUMN role TEXT`,
+    `ALTER TABLE agents ADD COLUMN emoji TEXT DEFAULT '🤖'`,
+    `ALTER TABLE agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,
+    `ALTER TABLE agents ADD COLUMN personality TEXT DEFAULT ''`,
+    `ALTER TABLE agents ADD COLUMN created_at INTEGER DEFAULT (unixepoch())`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

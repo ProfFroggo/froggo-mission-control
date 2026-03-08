@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle, ExternalLink, Check, Mail, Copy, Repeat } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -44,6 +44,10 @@ export default function EpicCalendar({
   const [error, setError] = useState<string | null>(null);
   const [partialError, setPartialError] = useState<string | null>(null);
   
+  // Detail popover state (shown on click; edit modal opened from within)
+  const [showDetailPopover, setShowDetailPopover] = useState(false);
+  const [detailEvent, setDetailEvent] = useState<CalendarEvent | null>(null);
+
   // Modal state
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -66,10 +70,17 @@ export default function EpicCalendar({
     setShowEventModal(true);
   };
 
-  // Open edit event modal
+  // Open detail popover (primary click action)
+  const handleViewEvent = (event: CalendarEvent) => {
+    setDetailEvent(event);
+    setShowDetailPopover(true);
+  };
+
+  // Open edit event modal (from within detail popover or directly)
   const handleEditEvent = (event: CalendarEvent) => {
     setSelectedEvent(event);
     setModalMode('edit');
+    setShowDetailPopover(false);
     setShowEventModal(true);
   };
 
@@ -417,14 +428,14 @@ export default function EpicCalendar({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
-              <Calendar size={24} className="text-clawd-accent" />
+            <h1 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
+              <Calendar size={24} className="text-mission-control-accent" />
               Epic Calendar
             </h1>
-            <div className="text-sm text-clawd-text-dim">
+            <div className="text-sm text-mission-control-text-dim">
               {getDateRangeText()}
             </div>
           </div>
@@ -434,7 +445,7 @@ export default function EpicCalendar({
             <button
               onClick={fetchEvents}
               disabled={loading}
-              className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
               title="Refresh events"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -444,34 +455,34 @@ export default function EpicCalendar({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => navigateDate('prev')}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => navigateDate('today')}
-                className="px-3 py-1.5 text-sm bg-clawd-bg hover:bg-clawd-border rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 Today
               </button>
               <button
                 onClick={() => navigateDate('next')}
-                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
             </div>
 
             {/* View Switcher */}
-            <div className="flex items-center gap-1 bg-clawd-bg rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-mission-control-bg rounded-lg p-1">
               {(['month', 'week', 'day', 'agenda'] as CalendarView[]).map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     view === v
-                      ? 'bg-clawd-accent text-white'
-                      : 'hover:bg-clawd-border'
+                      ? 'bg-mission-control-accent text-white'
+                      : 'hover:bg-mission-control-border'
                   }`}
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -482,7 +493,7 @@ export default function EpicCalendar({
             {/* Create Event Button */}
             <button
               onClick={onCreateClick || handleCreateEvent}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors"
             >
               <Plus size={16} />
               {createButtonLabel || 'New Event'}
@@ -490,6 +501,16 @@ export default function EpicCalendar({
           </div>
         </div>
       </div>
+
+      {/* Event Detail Popover */}
+      {showDetailPopover && detailEvent && (
+        <EventDetailPopover
+          event={detailEvent}
+          onClose={() => { setShowDetailPopover(false); setDetailEvent(null); }}
+          onEdit={() => handleEditEvent(detailEvent)}
+          onDelete={() => { setSelectedEvent(detailEvent); setShowDetailPopover(false); setShowDeleteConfirm(true); }}
+        />
+      )}
 
       {/* Event Modal */}
       {showEventModal && (
@@ -554,8 +575,8 @@ export default function EpicCalendar({
         {loading && events.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-clawd-accent" />
-              <p className="text-clawd-text-dim">Loading calendar events...</p>
+              <RefreshCw size={32} className="animate-spin mx-auto mb-4 text-mission-control-accent" />
+              <p className="text-mission-control-text-dim">Loading calendar events...</p>
             </div>
           </div>
         ) : error && events.length === 0 ? (
@@ -565,7 +586,7 @@ export default function EpicCalendar({
               <p className="text-error">{error}</p>
               <button
                 onClick={fetchEvents}
-                className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+                className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
               >
                 Retry
               </button>
@@ -577,7 +598,7 @@ export default function EpicCalendar({
               <MonthView
                 currentDate={currentDate}
                 events={events}
-                onEventClick={handleEditEvent}
+                onEventClick={handleViewEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
                 onDragStart={handleDragStart}
@@ -593,7 +614,7 @@ export default function EpicCalendar({
               <WeekView
                 currentDate={currentDate}
                 events={events}
-                onEventClick={handleEditEvent}
+                onEventClick={handleViewEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
                 onDragStart={handleDragStart}
@@ -609,7 +630,7 @@ export default function EpicCalendar({
               <DayView
                 currentDate={currentDate}
                 events={events}
-                onEventClick={handleEditEvent}
+                onEventClick={handleViewEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
                 onDragStart={handleDragStart}
@@ -621,7 +642,7 @@ export default function EpicCalendar({
                 isEventDraggable={isEventDraggable}
               />
             )}
-            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} eventColorResolver={eventColorResolver} isEventDraggable={isEventDraggable} />}
+            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleViewEvent} eventColorResolver={eventColorResolver} isEventDraggable={isEventDraggable} />}
           </>
         )}
       </div>
@@ -713,7 +734,7 @@ function EventCard({
       draggable={canDrag}
       onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
       onDragEnd={onDragEnd}
-      className={`bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-all ${canDrag ? 'cursor-move' : 'cursor-default'} ${
+      className={`bg-mission-control-surface rounded-lg border border-mission-control-border p-4 hover:border-mission-control-accent transition-all ${canDrag ? 'cursor-move' : 'cursor-default'} ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
       onClick={(e) => {
@@ -730,7 +751,7 @@ function EventCard({
         <div className={`w-2 h-2 rounded-full ${displayColor} ml-2 mt-1`} title={event.account} />
       </div>
 
-      <div className="space-y-1.5 text-sm text-clawd-text-dim">
+      <div className="space-y-1.5 text-sm text-mission-control-text-dim">
         <div className="flex items-center gap-2">
           <Clock size={14} />
           <span>
@@ -748,7 +769,7 @@ function EventCard({
         {meetLink && (
           <div className="flex items-center gap-2">
             <Video size={14} />
-            <a href={meetLink} target="_blank" rel="noopener noreferrer" className="text-clawd-accent hover:underline truncate">
+            <a href={meetLink} target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline truncate">
               Google Meet
             </a>
           </div>
@@ -763,7 +784,7 @@ function EventCard({
       </div>
 
       {event.description && (
-        <p className="mt-3 text-sm text-clawd-text-dim line-clamp-2">
+        <p className="mt-3 text-sm text-mission-control-text-dim line-clamp-2">
           {/* SECURITY: All HTML stripped from event descriptions */}
           {event.description.replace(/<[^>]*>/g, '')}
         </p>
@@ -830,11 +851,11 @@ function MonthView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border h-full flex flex-col">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col">
         {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-clawd-border">
+        <div className="grid grid-cols-7 border-b border-mission-control-border">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center py-3 text-sm font-semibold text-clawd-text-dim">
+            <div key={day} className="text-center py-3 text-sm font-semibold text-mission-control-text-dim">
               {day}
             </div>
           ))}
@@ -843,7 +864,7 @@ function MonthView({
         {/* Calendar grid */}
         <div className="flex-1 grid grid-rows-6">
           {weeks.map((week, weekIdx) => (
-            <div key={weekIdx} className="grid grid-cols-7 border-b border-clawd-border last:border-b-0">
+            <div key={weekIdx} className="grid grid-cols-7 border-b border-mission-control-border last:border-b-0">
               {week.map((date, dayIdx) => {
                 const dayEvents = getEventsForDay(date);
                 const isToday = isSameDay(date, today);
@@ -853,12 +874,12 @@ function MonthView({
                 return (
                   <div
                     key={dayIdx}
-                    className={`border-r border-clawd-border last:border-r-0 p-2 transition-all overflow-hidden ${
-                      !inCurrentMonth ? 'bg-clawd-bg opacity-50' : ''
+                    className={`border-r border-mission-control-border last:border-r-0 p-2 transition-all overflow-hidden ${
+                      !inCurrentMonth ? 'bg-mission-control-bg opacity-50' : ''
                     } ${
                       isDragOver 
-                        ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
-                        : 'hover:bg-clawd-border/30 cursor-pointer'
+                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
+                        : 'hover:bg-mission-control-border/30 cursor-pointer'
                     }`}
                     onDragOver={(e) => onDragOver(e, date)}
                     onDragLeave={onDragLeave}
@@ -874,7 +895,7 @@ function MonthView({
                     aria-label={`Calendar cell for ${date.toLocaleDateString()}`}
                   >
                     <div className={`text-sm font-medium mb-1 ${
-                      isToday ? 'bg-clawd-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
+                      isToday ? 'bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
                     }`}>
                       {date.getDate()}
                     </div>
@@ -893,7 +914,7 @@ function MonthView({
                         />
                       ))}
                       {dayEvents.length > 3 && (
-                        <div className="text-xs text-clawd-text-dim pl-2">
+                        <div className="text-xs text-mission-control-text-dim pl-2">
                           +{dayEvents.length - 3} more
                         </div>
                       )}
@@ -966,10 +987,10 @@ function WeekView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* Day headers */}
-        <div className="grid grid-cols-8 border-b border-clawd-border flex-shrink-0">
-          <div className="p-3 text-sm font-semibold text-clawd-text-dim border-r border-clawd-border">
+        <div className="grid grid-cols-8 border-b border-mission-control-border flex-shrink-0">
+          <div className="p-3 text-sm font-semibold text-mission-control-text-dim border-r border-mission-control-border">
             Time
           </div>
           {weekDays.map(date => {
@@ -977,15 +998,15 @@ function WeekView({
             return (
               <div
                 key={date.toISOString()}
-                className={`text-center p-3 border-r border-clawd-border last:border-r-0 ${
-                  isToday ? 'bg-clawd-accent/10' : ''
+                className={`text-center p-3 border-r border-mission-control-border last:border-r-0 ${
+                  isToday ? 'bg-mission-control-accent/10' : ''
                 }`}
               >
-                <div className="text-xs text-clawd-text-dim">
+                <div className="text-xs text-mission-control-text-dim">
                   {date.toLocaleDateString('en-US', { weekday: 'short' })}
                 </div>
                 <div className={`text-lg font-semibold ${
-                  isToday ? 'text-clawd-accent' : ''
+                  isToday ? 'text-mission-control-accent' : ''
                 }`}>
                   {date.getDate()}
                 </div>
@@ -997,8 +1018,8 @@ function WeekView({
         {/* Time grid */}
         <div className="flex-1 overflow-auto">
           {hours.map(hour => (
-            <div key={hour} className="grid grid-cols-8 border-b border-clawd-border min-h-[60px]">
-              <div className="p-2 text-xs text-clawd-text-dim border-r border-clawd-border">
+            <div key={hour} className="grid grid-cols-8 border-b border-mission-control-border min-h-[60px]">
+              <div className="p-2 text-xs text-mission-control-text-dim border-r border-mission-control-border">
                 {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
               </div>
               {weekDays.map(date => {
@@ -1011,12 +1032,12 @@ function WeekView({
                 return (
                   <div
                     key={`${date.toISOString()}-${hour}`}
-                    className={`border-r border-clawd-border last:border-r-0 p-1 transition-all ${
-                      isToday ? 'bg-clawd-accent/5' : ''
+                    className={`border-r border-mission-control-border last:border-r-0 p-1 transition-all ${
+                      isToday ? 'bg-mission-control-accent/5' : ''
                     } ${
                       isDragOver 
-                        ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
-                        : 'hover:bg-clawd-border/30 cursor-pointer'
+                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
+                        : 'hover:bg-mission-control-border/30 cursor-pointer'
                     }`}
                     onDragOver={(e) => onDragOver(e, date, hour)}
                     onDragLeave={onDragLeave}
@@ -1111,11 +1132,11 @@ function DayView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* All-day events */}
         {allDayEvents.length > 0 && (
-          <div className="border-b border-clawd-border p-4 space-y-2 flex-shrink-0">
-            <div className="text-xs font-semibold text-clawd-text-dim mb-2">ALL DAY</div>
+          <div className="border-b border-mission-control-border p-4 space-y-2 flex-shrink-0">
+            <div className="text-xs font-semibold text-mission-control-text-dim mb-2">ALL DAY</div>
             {allDayEvents.map(event => (
               <EventCard
                 key={event.id}
@@ -1144,18 +1165,18 @@ function DayView({
             return (
               <div
                 key={hour}
-                className={`border-b border-clawd-border min-h-[80px] flex ${
-                  currentHour ? 'bg-clawd-accent/5' : ''
+                className={`border-b border-mission-control-border min-h-[80px] flex ${
+                  currentHour ? 'bg-mission-control-accent/5' : ''
                 }`}
               >
-                <div className="w-24 p-3 text-sm text-clawd-text-dim border-r border-clawd-border flex-shrink-0">
+                <div className="w-24 p-3 text-sm text-mission-control-text-dim border-r border-mission-control-border flex-shrink-0">
                   {hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`}
                 </div>
                 <div 
                   className={`flex-1 p-3 space-y-2 transition-all ${
                     isDragOver 
-                      ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
-                      : 'hover:bg-clawd-border/30 cursor-pointer'
+                      ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
+                      : 'hover:bg-mission-control-border/30 cursor-pointer'
                   }`}
                   onDragOver={(e) => onDragOver(e, currentDate, hour)}
                   onDragLeave={onDragLeave}
@@ -1220,9 +1241,9 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isE
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Calendar size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
+          <Calendar size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
           <h3 className="text-lg font-semibold mb-2">No upcoming events</h3>
-          <p className="text-sm text-clawd-text-dim">Your calendar is clear!</p>
+          <p className="text-sm text-mission-control-text-dim">Your calendar is clear!</p>
         </div>
       </div>
     );
@@ -1242,8 +1263,8 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isE
                 <h2 className="text-lg font-semibold">
                   {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : dateStr}
                 </h2>
-                <div className="h-px flex-1 bg-clawd-border" />
-                <span className="text-sm text-clawd-text-dim">
+                <div className="h-px flex-1 bg-mission-control-border" />
+                <span className="text-sm text-mission-control-text-dim">
                   {dateEvents.length} {dateEvents.length === 1 ? 'event' : 'events'}
                 </span>
               </div>
@@ -1256,6 +1277,222 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isE
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// Event Detail Popover — Google Calendar-style overview panel
+function EventDetailPopover({
+  event,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  event: CalendarEvent;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const { start, end, isAllDay } = getEventTime(event);
+
+  const meetLink = event.conferenceData?.entryPoints?.find(e =>
+    e.entryPointType === 'video' || e.uri?.includes('meet.google') || e.uri?.includes('zoom.us')
+  )?.uri;
+
+  const isRecurring = (event as any).recurrence || (event as any).recurringEventId;
+
+  // Date/time display
+  const dateStr = (() => {
+    const opts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+    if (isAllDay) return start.toLocaleDateString('en-US', opts);
+    const timeOpts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return `${start.toLocaleDateString('en-US', opts)} · ${start.toLocaleTimeString('en-US', timeOpts)} – ${end.toLocaleTimeString('en-US', timeOpts)}`;
+  })();
+
+  const yesAttendees = (event.attendees ?? []).filter(a => a.responseStatus === 'accepted');
+  const awaitingAttendees = (event.attendees ?? []).filter(a => a.responseStatus !== 'accepted' && a.responseStatus !== 'declined');
+  const totalAttendees = (event.attendees ?? []).length;
+
+  const copyMeetLink = () => {
+    if (meetLink) navigator.clipboard.writeText(meetLink);
+  };
+
+  // Close on backdrop click
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === overlayRef.current) onClose();
+  };
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
+      <div className="relative bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[360px] max-h-[90vh] overflow-y-auto">
+        {/* Toolbar */}
+        <div className="flex items-center justify-end gap-1 px-3 pt-3 pb-0">
+          <button
+            onClick={onEdit}
+            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            title="Edit event"
+          >
+            <Edit2 size={15} />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            title="Delete event"
+          >
+            <Trash2 size={15} />
+          </button>
+          {event.htmlLink && (
+            <a
+              href={event.htmlLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+              title="Open in Google Calendar"
+            >
+              <ExternalLink size={15} />
+            </a>
+          )}
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            title="Close"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Title + Date */}
+        <div className="px-5 pb-3 pt-1">
+          <div className="flex items-start gap-3">
+            <div className="w-3 h-3 rounded-sm bg-info mt-1.5 flex-shrink-0" />
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">{event.summary}</h2>
+              <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
+              {isRecurring && (
+                <p className="text-xs text-mission-control-text-dim flex items-center gap-1 mt-0.5">
+                  <Repeat size={11} />
+                  Recurring event
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 space-y-4">
+          {/* Google Meet join button */}
+          {meetLink && (
+            <div className="space-y-1.5">
+              <a
+                href={meetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-info/10 border border-info/20 text-info rounded-xl hover:bg-info/20 transition-colors font-medium text-sm"
+              >
+                <Video size={16} />
+                Join with Google Meet
+              </a>
+              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+                <span className="truncate flex-1">{meetLink.replace('https://', '')}</span>
+                <button onClick={copyMeetLink} className="flex-shrink-0 hover:text-mission-control-text p-1 rounded" title="Copy link">
+                  <Copy size={11} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Location */}
+          {event.location && !meetLink && (
+            <div className="flex items-start gap-3 text-sm">
+              <MapPin size={16} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
+              <span className="text-mission-control-text-dim">{event.location}</span>
+            </div>
+          )}
+
+          {/* Description */}
+          {event.description && (
+            <div className="flex items-start gap-3 text-sm">
+              <div className="w-4 h-4 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-3.5 h-3.5 border border-mission-control-border rounded-sm" />
+              </div>
+              <p className="text-mission-control-text-dim leading-relaxed line-clamp-4">
+                {event.description.replace(/<[^>]*>/g, '')}
+              </p>
+            </div>
+          )}
+
+          {/* Attendees */}
+          {totalAttendees > 0 && (
+            <div className="flex items-start gap-3">
+              <Users size={16} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">{totalAttendees} guest{totalAttendees !== 1 ? 's' : ''}</span>
+                  <div className="text-xs text-mission-control-text-dim flex gap-3">
+                    <span>{yesAttendees.length} yes</span>
+                    <span>{awaitingAttendees.length} awaiting</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(event.attendees ?? []).slice(0, 6).map((a, i) => {
+                    const isOrganizer = (a as any).organizer || event.organizer === a.email;
+                    const initials = a.email?.slice(0, 2).toUpperCase() ?? '??';
+                    return (
+                      <div key={a.email ?? i} className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 text-mission-control-accent flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                          {initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{a.email}</p>
+                          {isOrganizer && (
+                            <p className="text-[10px] text-mission-control-text-dim">Organizer</p>
+                          )}
+                        </div>
+                        {a.responseStatus === 'accepted' && <Check size={13} className="text-success flex-shrink-0" />}
+                        {a.responseStatus === 'declined' && <X size={13} className="text-error flex-shrink-0" />}
+                      </div>
+                    );
+                  })}
+                  {(event.attendees ?? []).length > 6 && (
+                    <p className="text-xs text-mission-control-text-dim pl-9">
+                      +{(event.attendees ?? []).length - 6} more
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Calendar/organizer */}
+          {event.organizer && (
+            <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
+              <Calendar size={16} className="flex-shrink-0" />
+              <span className="truncate">{event.organizer}</span>
+            </div>
+          )}
+        </div>
+
+        {/* RSVP Footer */}
+        {totalAttendees > 0 && (
+          <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50 rounded-b-2xl flex items-center gap-3">
+            <span className="text-xs text-mission-control-text-dim mr-auto">Going?</span>
+            <button className="px-3 py-1.5 bg-info text-white text-xs font-medium rounded-lg hover:bg-info/90 transition-colors flex items-center gap-1.5">
+              <Check size={12} />
+              Yes
+            </button>
+            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+              No
+            </button>
+            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+              Maybe
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1367,25 +1604,25 @@ function EventModal({
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
+      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-clawd-border sticky top-0 bg-clawd-surface z-10">
+        <div className="flex items-center justify-between p-6 border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             {mode === 'create' ? (
               <>
-                <Plus size={20} className="text-clawd-accent" />
+                <Plus size={20} className="text-mission-control-accent" />
                 Create Event
               </>
             ) : (
               <>
-                <Edit2 size={20} className="text-clawd-accent" />
+                <Edit2 size={20} className="text-mission-control-accent" />
                 Edit Event
               </>
             )}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <X size={20} />
           </button>
@@ -1403,8 +1640,8 @@ function EventModal({
               type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
-                errors.summary ? 'border-error' : 'border-clawd-border'
+              className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
+                errors.summary ? 'border-error' : 'border-mission-control-border'
               }`}
               placeholder="Event title"
             />
@@ -1425,7 +1662,7 @@ function EventModal({
               id="calendar-account"
               value={formData.account}
               onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
             >
               {accounts.map(acc => (
                 <option key={acc} value={acc}>
@@ -1442,7 +1679,7 @@ function EventModal({
               id="allDay"
               checked={formData.isAllDay}
               onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-              className="w-4 h-4 text-clawd-accent"
+              className="w-4 h-4 text-mission-control-accent"
             />
             <label htmlFor="allDay" className="text-sm font-medium cursor-pointer">
               All-day event
@@ -1459,7 +1696,7 @@ function EventModal({
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.start}
                 onChange={(e) => setFormData({ ...formData, start: e.target.value })}
-                className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               />
             </div>
             <div>
@@ -1470,8 +1707,8 @@ function EventModal({
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.end}
                 onChange={(e) => setFormData({ ...formData, end: e.target.value })}
-                className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
-                  errors.end ? 'border-error' : 'border-clawd-border'
+                className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
+                  errors.end ? 'border-error' : 'border-mission-control-border'
                 }`}
               />
               {errors.end && (
@@ -1494,7 +1731,7 @@ function EventModal({
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               placeholder="Add location"
             />
           </div>
@@ -1508,14 +1745,14 @@ function EventModal({
               id="event-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"
+              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent resize-none"
               rows={4}
               placeholder="Add description"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-clawd-border">
+          <div className="flex items-center justify-between pt-4 border-t border-mission-control-border">
             <div>
               {mode === 'edit' && (
                 <button
@@ -1532,7 +1769,7 @@ function EventModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+                className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={saving}
               >
                 Cancel
@@ -1540,7 +1777,7 @@ function EventModal({
               <button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -1571,14 +1808,14 @@ function DeleteConfirmDialog({
 }) {
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
+      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
           <div className="p-3 bg-error-subtle rounded-full">
             <Trash2 size={24} className="text-error" />
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-2">Delete Event</h3>
-            <p className="text-sm text-clawd-text-dim">
+            <p className="text-sm text-mission-control-text-dim">
               Are you sure you want to delete &quot;<strong>{eventTitle}</strong>&quot;? This action cannot be undone.
             </p>
           </div>
@@ -1587,7 +1824,7 @@ function DeleteConfirmDialog({
         <div className="flex items-center justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -1640,27 +1877,27 @@ function RescheduleConfirmDialog({
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
+      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
-          <div className="p-3 bg-clawd-accent/10 rounded-full">
-            <Calendar size={24} className="text-clawd-accent" />
+          <div className="p-3 bg-mission-control-accent/10 rounded-full">
+            <Calendar size={24} className="text-mission-control-accent" />
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-2">Reschedule Event?</h3>
-            <p className="text-sm text-clawd-text-dim mb-3">
-              <strong className="text-clawd-text">{event.summary}</strong>
+            <p className="text-sm text-mission-control-text-dim mb-3">
+              <strong className="text-mission-control-text">{event.summary}</strong>
             </p>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="text-clawd-text-dim">From:</span>
-                <div className="text-clawd-text font-medium">{formatDateTime(oldStart)}</div>
+                <span className="text-mission-control-text-dim">From:</span>
+                <div className="text-mission-control-text font-medium">{formatDateTime(oldStart)}</div>
               </div>
-              <div className="flex items-center gap-2 text-clawd-accent">
+              <div className="flex items-center gap-2 text-mission-control-accent">
                 <ChevronRight size={16} />
               </div>
               <div>
-                <span className="text-clawd-text-dim">To:</span>
-                <div className="text-clawd-text font-medium">{formatDateTime(newStart)}</div>
+                <span className="text-mission-control-text-dim">To:</span>
+                <div className="text-mission-control-text font-medium">{formatDateTime(newStart)}</div>
               </div>
             </div>
           </div>
@@ -1669,13 +1906,13 @@ function RescheduleConfirmDialog({
         <div className="flex items-center justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             Reschedule
           </button>

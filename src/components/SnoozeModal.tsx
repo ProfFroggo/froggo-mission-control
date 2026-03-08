@@ -199,19 +199,19 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
     >
       <BaseModalHeader
         title="Snooze Conversation"
-        icon={<Clock size={20} className="text-clawd-accent" />}
+        icon={<Clock size={20} className="text-mission-control-accent" />}
         onClose={onClose}
       />
 
       <BaseModalBody>
         {/* Session Name */}
-        <div className="mb-4 p-3 bg-clawd-bg rounded-lg">
-          <p className="text-sm text-clawd-text-dim">Session</p>
+        <div className="mb-4 p-3 bg-mission-control-bg rounded-lg">
+          <p className="text-sm text-mission-control-text-dim">Session</p>
           <p className="font-medium truncate">{sessionName}</p>
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-clawd-text-dim">
+          <div className="text-center py-8 text-mission-control-text-dim">
             <Clock size={32} className="mx-auto mb-2 animate-spin" />
             <p>Loading...</p>
           </div>
@@ -230,11 +230,11 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                     <p className={`font-medium ${isExpired ? 'text-error' : 'text-warning'}`}>
                       {isExpired ? '⏰ Reminder!' : 'Currently Snoozed'}
                     </p>
-                    <p className="text-sm text-clawd-text-dim mt-1">
+                    <p className="text-sm text-mission-control-text-dim mt-1">
                       {isExpired ? 'Expired ' : 'Until '}{formatSnoozeTime(currentSnooze.snooze_until)}
                     </p>
                     {currentSnooze.snooze_reason && (
-                      <p className="text-sm text-clawd-text-dim mt-1 italic">
+                      <p className="text-sm text-mission-control-text-dim mt-1 italic">
                         &quot;{currentSnooze.snooze_reason}&quot;
                       </p>
                     )}
@@ -254,7 +254,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
 
             {/* Quick Options */}
             <div className="mb-4">
-              <p className="text-sm font-medium text-clawd-text-dim mb-2">Quick Snooze</p>
+              <p className="text-sm font-medium text-mission-control-text-dim mb-2">Quick Snooze</p>
               <div className="grid grid-cols-2 gap-2">
                 {QUICK_OPTIONS.map((option) => {
                   const Icon = option.icon;
@@ -264,9 +264,9 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                       onClick={() => handleQuickSnooze(option)}
                       disabled={submitting}
                       type="button"
-                      className="flex items-center gap-2 p-3 bg-clawd-bg hover:bg-clawd-border border border-clawd-border rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-2 p-3 bg-mission-control-bg hover:bg-mission-control-border border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
                     >
-                      <Icon size={16} className="text-clawd-accent" />
+                      <Icon size={16} className="text-mission-control-accent" />
                       <span className="text-sm">{option.label}</span>
                     </button>
                   );
@@ -275,28 +275,28 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
             </div>
 
             {/* Custom DateTime */}
-            <div className="mb-4 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
-              <p className="text-sm font-medium text-clawd-text-dim mb-3">Custom Time</p>
+            <div className="mb-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
+              <p className="text-sm font-medium text-mission-control-text-dim mb-3">Custom Time</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label htmlFor="snooze-date" className="text-xs text-clawd-text-dim block mb-1">Date</label>
+                  <label htmlFor="snooze-date" className="text-xs text-mission-control-text-dim block mb-1">Date</label>
                   <input
                     id="snooze-date"
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
-                  <label htmlFor="snooze-time" className="text-xs text-clawd-text-dim block mb-1">Time</label>
+                  <label htmlFor="snooze-time" className="text-xs text-mission-control-text-dim block mb-1">Time</label>
                   <input
                     id="snooze-time"
                     type="time"
                     value={customTime}
                     onChange={(e) => setCustomTime(e.target.value)}
-                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                 onClick={handleCustomSnooze}
                 disabled={submitting || !customDate || !customTime}
                 type="button"
-                className="w-full px-4 py-2 bg-clawd-accent hover:bg-clawd-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                className="w-full px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               >
                 Set Custom Snooze
               </button>
@@ -312,7 +312,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
 
             {/* Optional Reason */}
             <div className="mb-4">
-              <label htmlFor="snooze-reason" className="text-sm font-medium text-clawd-text-dim block mb-2">
+              <label htmlFor="snooze-reason" className="text-sm font-medium text-mission-control-text-dim block mb-2">
                 Reason (Optional)
               </label>
               <input
@@ -321,7 +321,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g., Waiting for response, Follow up later..."
-                className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
               />
             </div>
 
@@ -339,7 +339,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
         <button
           onClick={onClose}
           type="button"
-          className="px-4 py-2 bg-clawd-border hover:bg-clawd-bg text-clawd-text rounded-lg transition-colors"
+          className="px-4 py-2 bg-mission-control-border hover:bg-mission-control-bg text-mission-control-text rounded-lg transition-colors"
         >
           Cancel
         </button>

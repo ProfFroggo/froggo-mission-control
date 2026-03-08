@@ -40,7 +40,7 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   apple: {
     name: 'Apple',
     logo: '',
-    color: 'var(--clawd-text)',
+    color: 'var(--mission-control-text)',
     description: 'iCloud Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,
@@ -169,12 +169,12 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
           <div>
             <h2 className="text-xl font-semibold">Add Connected Account</h2>
-            <p className="text-sm text-clawd-text-dim mt-1">
+            <p className="text-sm text-mission-control-text-dim mt-1">
               {step === 'provider' && 'Choose your provider'}
               {step === 'email' && 'Enter your email address'}
               {step === 'dataTypes' && 'Select services to connect'}
@@ -186,7 +186,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           <button
             onClick={onClose}
             disabled={step === 'connecting'}
-            className="p-2 hover:bg-clawd-bg rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
             aria-label="Close wizard"
           >
             <X size={20} />
@@ -201,8 +201,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 <div
                   className={`h-1 flex-1 rounded-full transition-colors ${
                     step === s || ['connecting', 'success'].includes(step) || idx < ['provider', 'email', 'dataTypes', 'auth'].indexOf(step)
-                      ? 'bg-clawd-accent'
-                      : 'bg-clawd-border'
+                      ? 'bg-mission-control-accent'
+                      : 'bg-mission-control-border'
                   }`}
                 />
               </div>
@@ -228,10 +228,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     disabled={info.comingSoon}
                     className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                       info.comingSoon
-                        ? 'border-clawd-border opacity-50 cursor-not-allowed'
+                        ? 'border-mission-control-border opacity-50 cursor-not-allowed'
                         : provider === p
-                          ? 'border-clawd-accent bg-clawd-accent/10'
-                          : 'border-clawd-border hover:border-clawd-accent/50'
+                          ? 'border-mission-control-accent bg-mission-control-accent/10'
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
                     <div className="flex items-center gap-4">
@@ -245,15 +245,15 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         <div className="font-semibold text-lg mb-1 flex items-center gap-2">
                           {info.name}
                           {info.comingSoon && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-warning/20 text-clawd-warning">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-warning/20 text-mission-control-warning">
                               Coming Soon
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-clawd-text-dim">{info.description}</div>
+                        <div className="text-sm text-mission-control-text-dim">{info.description}</div>
                       </div>
                       {provider === p && (
-                        <Check size={24} className="text-clawd-accent" />
+                        <Check size={24} className="text-mission-control-accent" />
                       )}
                     </div>
                   </button>
@@ -268,7 +268,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               <div className="text-center">
                 <div className="text-5xl mb-4">{currentProviderInfo.logo}</div>
                 <h3 className="text-lg font-semibold mb-2">{currentProviderInfo.name} Account</h3>
-                <p className="text-sm text-clawd-text-dim">
+                <p className="text-sm text-mission-control-text-dim">
                   Enter the email address for your {currentProviderInfo.name} account
                 </p>
               </div>
@@ -282,13 +282,13 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-3 focus:outline-none focus:border-clawd-accent"
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
               {/* Known Accounts Quick Select */}
               <div>
-                <span className="block text-sm font-medium mb-2 text-clawd-text-dim">
+                <span className="block text-sm font-medium mb-2 text-mission-control-text-dim">
                   Or select a known account:
                 </span>
                 <div className="space-y-2">
@@ -296,7 +296,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     <button
                       key={acc}
                       onClick={() => setEmail(acc)}
-                      className="w-full p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors text-left"
+                      className="w-full p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors text-left"
                     >
                       {acc}
                     </button>
@@ -311,8 +311,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">Select Services</h3>
-                <p className="text-sm text-clawd-text-dim">
-                  Choose which services Froggo should have access to
+                <p className="text-sm text-mission-control-text-dim">
+                  Choose which services Mission Control should have access to
                 </p>
               </div>
 
@@ -328,18 +328,18 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       onClick={() => toggleDataType(type)}
                       className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                         isSelected
-                          ? 'border-clawd-accent bg-clawd-accent/10'
-                          : 'border-clawd-border hover:border-clawd-accent/50'
+                          ? 'border-mission-control-accent bg-mission-control-accent/10'
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon size={24} className={isSelected ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
+                        <Icon size={24} className={isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
                         <div className="flex-1">
                           <div className="font-medium mb-1">{info.label}</div>
-                          <div className="text-sm text-clawd-text-dim">{info.description}</div>
+                          <div className="text-sm text-mission-control-text-dim">{info.description}</div>
                         </div>
                         {isSelected && (
-                          <Check size={20} className="text-clawd-accent" />
+                          <Check size={20} className="text-mission-control-accent" />
                         )}
                       </div>
                     </button>
@@ -363,7 +363,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">Authenticate</h3>
-                <p className="text-sm text-clawd-text-dim">
+                <p className="text-sm text-mission-control-text-dim">
                   {authMethod === 'oauth' 
                     ? `We'll open your browser to securely authenticate with ${currentProviderInfo.name}`
                     : `Enter an app-specific password for ${email}`}
@@ -372,14 +372,14 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               {authMethod === 'oauth' ? (
                 <div className="space-y-4">
-                  <div className="p-6 bg-clawd-bg rounded-xl border border-clawd-border text-center">
+                  <div className="p-6 bg-mission-control-bg rounded-xl border border-mission-control-border text-center">
                     <div className="text-4xl mb-4">🔐</div>
                     <h4 className="font-medium mb-2">OAuth Authentication</h4>
-                    <p className="text-sm text-clawd-text-dim mb-4">
+                    <p className="text-sm text-mission-control-text-dim mb-4">
                       Click &quot;Connect&quot; below to open your browser and sign in to {currentProviderInfo.name}.
-                      Your credentials never pass through Froggo.
+                      Your credentials never pass through Mission Control.
                     </p>
-                    <ul className="text-sm text-clawd-text-dim text-left space-y-2">
+                    <ul className="text-sm text-mission-control-text-dim text-left space-y-2">
                       <li className="flex items-start gap-2">
                         <span>1.</span>
                         <span>Browser window will open</span>
@@ -390,7 +390,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       </li>
                       <li className="flex items-start gap-2">
                         <span>3.</span>
-                        <span>Grant permissions to Froggo</span>
+                        <span>Grant permissions to Mission Control</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span>4.</span>
@@ -439,7 +439,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       value={appPassword}
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"
-                      className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-3 focus:outline-none focus:border-clawd-accent font-mono"
+                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent font-mono"
                     />
                   </div>
 
@@ -448,7 +448,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       provider === 'icloud' ? 'https://appleid.apple.com/account/manage' : '#',
                       '_blank'
                     )}
-                    className="text-sm text-clawd-accent hover:underline"
+                    className="text-sm text-mission-control-accent hover:underline"
                   >
                     How to generate an app-specific password →
                   </button>
@@ -460,9 +460,9 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Step 5: Connecting */}
           {step === 'connecting' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 size={48} className="text-clawd-accent animate-spin mb-4" />
+              <Loader2 size={48} className="text-mission-control-accent animate-spin mb-4" />
               <h3 className="text-lg font-semibold mb-2">Connecting to {currentProviderInfo?.name}...</h3>
-              <p className="text-sm text-clawd-text-dim">
+              <p className="text-sm text-mission-control-text-dim">
                 {authMethod === 'oauth' 
                   ? 'Complete authentication in the browser window'
                   : 'Verifying credentials...'}
@@ -477,8 +477,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 <Check size={32} className="text-success" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
-              <p className="text-sm text-clawd-text-dim text-center">
-                {email} has been successfully connected to Froggo
+              <p className="text-sm text-mission-control-text-dim text-center">
+                {email} has been successfully connected to Mission Control
               </p>
             </div>
           )}
@@ -496,18 +496,18 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
         {/* Footer Actions */}
         {step !== 'connecting' && step !== 'success' && (
-          <div className="flex items-center justify-between p-6 border-t border-clawd-border">
+          <div className="flex items-center justify-between p-6 border-t border-mission-control-border">
             <button
               onClick={handleBack}
               disabled={step === 'provider'}
-              className="px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:bg-clawd-surface transition-colors flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Back
             </button>
             <button
               onClick={handleNext}
-              className="px-6 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors flex items-center gap-2"
+              className="px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2"
             >
               {step === 'auth' ? 'Connect' : 'Next'}
               {step !== 'auth' && <ArrowRight size={16} />}

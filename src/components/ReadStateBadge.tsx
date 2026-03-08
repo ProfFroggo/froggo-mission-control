@@ -39,7 +39,7 @@ export function ReadStateBadge({
       {(hasUnread || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnread ? 'bg-info-subtle text-info font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
+          ${hasUnread ? 'bg-info-subtle text-info font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
           ${sizeClasses[size]}
         `}>
           <Mail size={iconSizes[size]} className="flex-shrink-0" />
@@ -51,7 +51,7 @@ export function ReadStateBadge({
       {(hasUnreplied || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnreplied ? 'bg-warning-subtle text-warning font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
+          ${hasUnreplied ? 'bg-warning-subtle text-warning font-semibold' : 'bg-mission-control-border text-mission-control-text-dim'}
           ${sizeClasses[size]}
         `}>
           <MessageCircle size={iconSizes[size]} className="flex-shrink-0" />

@@ -3,7 +3,7 @@
 ## What was done
 - Created tools/cron-mcp/ with package.json, tsconfig.json, src/index.ts
 - MCP server provides 3 tools: schedule_task, list_jobs, cancel_job
-- Reads/writes ~/froggo/data/schedule.json
+- Reads/writes ~/mission-control/data/schedule.json
 - Built successfully with tsc
 - Registered as "cron" MCP server in .claude/settings.json
 
