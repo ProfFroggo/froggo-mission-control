@@ -2,25 +2,35 @@
   "name": "froggo-mission-control",
   "version": "1.0.0",
   "description": "Self-hosted AI agent platform for Claude Code CLI. Multi-agent orchestration, task management, Gmail, Calendar, Kanban and more.",
-  "keywords": ["claude", "ai-agents", "claude-code", "mission-control", "mcp", "multi-agent"],
+  "keywords": [
+    "claude",
+    "ai-agents",
+    "claude-code",
+    "mission-control",
+    "mcp",
+    "multi-agent"
+  ],
   "homepage": "https://github.com/ProfFroggo/froggo-mission-control",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ProfFroggo/froggo-mission-control.git"
+    "url": "git+https://github.com/ProfFroggo/froggo-mission-control.git"
   },
   "license": "AGPL-3.0-only",
   "engines": {
     "node": ">=20.0.0"
   },
   "bin": {
-    "mission-control": "./bin/cli.js"
+    "mission-control": "bin/cli.js"
   },
   "files": [
     "app/",
     "src/",
     "public/audio-processor.js",
     "catalog/",
-    ".claude/",
+    ".claude/CLAUDE.md",
+    ".claude/settings.json.template",
+    ".claude/agents/",
+    ".claude/skills/",
     "bin/",
     "scripts/",
     "tools/mission-control-db-mcp/src/",

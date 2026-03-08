@@ -12,10 +12,10 @@
 Mission Control is your personal AI operations center. It ships with:
 
 - **15 agents** — Hire from the catalog: Inbox, Coder, Designer, Researcher, Clara (QA), Chief, HR, Writer, Social Manager, Finance, Growth Director, Discord Manager, Voice, Senior Coder, and the Mission Control orchestrator
-- **17 modules** — Install what you need: Kanban, Analytics, Approvals, Chat Rooms, Calendar, Gmail Inbox, Finance, Library, and more
+- **18 modules** — Install what you need: Kanban, Analytics, Approvals, Chat Rooms, Calendar, Gmail Inbox, Finance, Library, Projects, Voice, Writing, Meetings, and more
 - **Comms Inbox** — Gmail integration with AI-powered triage (Smart Inbox)
 - **Google Calendar** — Today's schedule widget and full Epic Calendar view
-- **Task system** — Full lifecycle: todo → in-progress → review → done, with agent auto-dispatch
+- **Task system** — Full lifecycle: todo → internal-review → in-progress → review → human-review → done, with agent auto-dispatch and Clara QA gate
 - **Projects** — Kanban boards, agent dispatch, shared chat rooms, file library
 - **Memory vault** — Obsidian-compatible knowledge base that agents read/write across sessions
 - **Voice** — Real-time voice interface via Gemini Live

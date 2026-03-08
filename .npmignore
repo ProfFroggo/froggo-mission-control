@@ -19,9 +19,10 @@ public/agent-profiles/
 # Dev/test only
 coverage/
 src/tests/
-*.test.ts
-*.test.tsx
-*.spec.ts
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/__tests__/
 
 # Personal / machine-specific
 *.db
