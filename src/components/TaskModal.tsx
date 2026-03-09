@@ -52,7 +52,7 @@ interface ExtractedTaskData {
 }
 
 export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', initialData }: TaskModalProps) {
-  const { addTask, agents } = useStore();
+  const { addTask, agents, tasks } = useStore();
   
   // Mode selection
   const [mode, setMode] = useState<ModalMode>('chat');
@@ -749,23 +749,43 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   {agents
                     .filter(agent => !['main', 'mission-control'].includes(agent.id))
                     .map(agent => {
+                      const activeTaskCount = tasks.filter(t => t.assignedTo === agent.id && ['todo', 'in-progress', 'internal-review'].includes(t.status)).length;
+                      return { agent, activeTaskCount };
+                    })
+                    .sort((a, b) => a.activeTaskCount - b.activeTaskCount)
+                    .map(({ agent, activeTaskCount }) => {
                       const isDisabled = agent.status === 'disabled';
+                      const isBusy = activeTaskCount > 5;
                       return (
                         <button
                           key={agent.id}
                           type="button"
                           onClick={() => setAssignedTo(agent.id)}
-                          aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}`}
+                          aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}${isBusy ? ' (busy)' : ''}`}
                           aria-pressed={assignedTo === agent.id}
-                          className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
+                          className={`p-2 rounded-lg border text-left text-sm flex flex-col gap-1 transition-colors ${
                             assignedTo === agent.id
                               ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
                               : 'border-mission-control-border hover:border-mission-control-accent/50'
                           } ${isDisabled ? 'opacity-50' : ''}`}
                         >
-                          <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                          <span className="truncate">{agent.name}</span>
-                          {isDisabled && <span className="text-xs text-error">(offline)</span>}
+                          <div className="flex items-center gap-2">
+                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                            <span className="truncate text-xs font-medium">{agent.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+                            <span>{activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''}</span>
+                            {isBusy && <span className="text-warning">(busy)</span>}
+                            {isDisabled && <span className="text-error">(offline)</span>}
+                          </div>
+                          {activeTaskCount > 0 && (
+                            <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isBusy ? 'bg-warning' : 'bg-success'}`}
+                                style={{ width: `${Math.min(100, (activeTaskCount / 8) * 100)}%` }}
+                              />
+                            </div>
+                          )}
                         </button>
                       );
                     })}

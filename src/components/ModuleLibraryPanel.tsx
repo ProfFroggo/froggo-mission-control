@@ -30,6 +30,8 @@ import { Spinner } from './LoadingStates';
 import ModuleInstallModal from './ModuleInstallModal';
 import { ModuleLoader } from '../core/ModuleLoader';
 import { usePanelConfigStore } from '../store/panelConfig';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { showToast } from './Toast';
 
 const CATEGORY_COLORS: Record<string, string> = {
   core:           'text-review border-review-border bg-review-subtle',
@@ -61,6 +63,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
   const [refreshing, setRefreshing]     = useState(false);
   const [installTarget, setInstallTarget] = useState<CatalogModule | null>(null);
   const [uninstalling, setUninstalling] = useState<string | null>(null);
+  const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -290,15 +293,25 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       <button
                         type="button"
                         disabled={uninstalling === module.id}
-                        onClick={async () => {
-                          if (!confirm(`Uninstall ${module.name}? It will be removed from the nav.`)) return;
-                          setUninstalling(module.id);
-                          try {
-                            await catalogApi.uninstallModule(module.id);
-                            ModuleLoader.disableModule(module.id);
-                            usePanelConfigStore.getState().syncWithViewRegistry();
-                            await load(false);
-                          } finally { setUninstalling(null); }
+                        onClick={() => {
+                          showConfirm({
+                            title: `Uninstall ${module.name}?`,
+                            message: `This will remove ${module.name} from the nav and disable its features.`,
+                            confirmLabel: 'Uninstall',
+                            type: 'danger',
+                          }, async () => {
+                            setUninstalling(module.id);
+                            try {
+                              await catalogApi.uninstallModule(module.id);
+                              ModuleLoader.disableModule(module.id);
+                              usePanelConfigStore.getState().syncWithViewRegistry();
+                              await load(false);
+                            } catch (err) {
+                              showToast('error', 'Uninstall failed', (err as Error).message);
+                            } finally {
+                              setUninstalling(null);
+                            }
+                          });
                         }}
                         className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
                       >
@@ -334,6 +347,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
           }}
         />
       )}
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={closeConfirm}
+        onConfirm={onConfirmCallback}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmLabel={confirmConfig.confirmLabel}
+        cancelLabel={confirmConfig.cancelLabel}
+        type={confirmConfig.type}
+      />
     </div>
   );
 }

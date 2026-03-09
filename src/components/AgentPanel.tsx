@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useStore, Agent } from '../store/store';
 import { PROTECTED_AGENTS } from '../lib/agentConfig';
 import { useShallow } from 'zustand/react/shallow';
@@ -79,6 +80,7 @@ export default function AgentPanel() {
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
+  const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Subscribe to circuit.open SSE events
   useEventBus('circuit.open', (data) => {
@@ -169,13 +171,22 @@ export default function AgentPanel() {
     finally { setIsRefreshing(false); }
   };
 
-  const handleAgentStop = async (agentId: string) => {
-    try {
-      await agentApi.updateStatus(agentId, 'disabled');
-      await fetchAgents();
-    } catch (err) {
-      logger.error('[AgentPanel] Stop error:', err);
-    }
+  const handleAgentStop = (agentId: string, agentName: string) => {
+    const activeTasks = tasks.filter(t => t.assignedTo === agentId && ['in-progress', 'todo', 'internal-review'].includes(t.status)).length;
+    showConfirm({
+      title: `Disable ${agentName}?`,
+      message: `Disabling ${agentName} will pause dispatcher for this agent${activeTasks > 0 ? ` — ${activeTasks} active task${activeTasks > 1 ? 's' : ''} will queue but not execute` : ''}.`,
+      confirmLabel: 'Disable',
+      type: 'warning',
+    }, async () => {
+      try {
+        await agentApi.updateStatus(agentId, 'disabled');
+        await fetchAgents();
+      } catch (err) {
+        logger.error('[AgentPanel] Stop error:', err);
+        showToast('error', 'Failed to disable agent', (err as Error).message);
+      }
+    });
   };
 
   const handleTrustTierSave = async (agentId: string, tier: number) => {
@@ -581,7 +592,7 @@ export default function AgentPanel() {
                       ) : !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id); }}
+                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id, agent.name); }}
                           className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                           title="Disable agent — dispatcher will stop spawning it"
                         >
@@ -782,7 +793,7 @@ export default function AgentPanel() {
                       <Play size={12} className="inline mr-1" /> Enable
                     </button>
                   ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                    <button type="button" onClick={() => handleAgentStop(agent.id)}
+                    <button type="button" onClick={() => handleAgentStop(agent.id, agent.name)}
                       className="px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                       title="Disable agent — dispatcher will stop spawning it">
                       <StopCircle size={12} className="inline mr-1" /> Disable
@@ -815,6 +826,16 @@ export default function AgentPanel() {
             agentName={managingAgent.name}
           />
         )}
+        <ConfirmDialog
+          open={confirmOpen}
+          onClose={closeConfirm}
+          onConfirm={onConfirmCallback}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          type={confirmConfig.type}
+        />
       </div>
     </div>
   );

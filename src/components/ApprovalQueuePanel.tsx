@@ -398,6 +398,64 @@ export default function ApprovalQueuePanel() {
         </div>
       )}
 
+      {/* Human-review tasks section (pending tab only) */}
+      {statusTab === 'pending' && (() => {
+        const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
+        if (humanReviewTasks.length === 0) return null;
+        return (
+          <div className="px-6 py-4 border-b border-mission-control-border bg-warning-subtle/30">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={14} className="text-warning flex-shrink-0" />
+              <span className="text-sm font-medium text-warning">Tasks Awaiting Human Action ({humanReviewTasks.length})</span>
+            </div>
+            <div className="space-y-2">
+              {humanReviewTasks.map(task => (
+                <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl bg-mission-control-surface border border-warning-border">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{task.title}</div>
+                    <div className="text-xs text-mission-control-text-dim mt-0.5">
+                      {task.assignedTo && `Agent: ${task.assignedTo}`}{task.project ? ` · ${task.project}` : ''}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await fetch(`/api/tasks/${task.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'in-progress' }),
+                        });
+                        showToast('success', 'Task resumed');
+                      } catch { showToast('error', 'Failed to resume task'); }
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors flex-shrink-0"
+                  >
+                    Resume Work
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await fetch(`/api/tasks/${task.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'done' }),
+                        });
+                        showToast('success', 'Task closed');
+                      } catch { showToast('error', 'Failed to close task'); }
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex-shrink-0"
+                  >
+                    Close
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
