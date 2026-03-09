@@ -13,8 +13,8 @@ export function getCurrentUserName(): string {
     return state.name;
   }
   
-  // Fallback to env var or default
-  return import.meta?.env?.VITE_DEFAULT_USER_NAME || 'user';
+  // Fallback to default
+  return 'user';
 }
 
 /**
@@ -23,5 +23,5 @@ export function getCurrentUserName(): string {
  */
 export function useCurrentUserName(): string {
   const name = useUserSettings((state) => state.name);
-  return name && name.trim() ? name : import.meta?.env?.VITE_DEFAULT_USER_NAME || 'user';
+  return name && name.trim() ? name : 'user';
 }
