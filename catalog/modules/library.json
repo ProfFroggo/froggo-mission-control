@@ -4,7 +4,7 @@
   "description": "Browse, search, and manage agent output files. Organizes documents, designs, code, and research from ~/mission-control/library/.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "📚",
+  "icon": "BookOpen",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

@@ -49,38 +49,26 @@ Load these skills when relevant to your current task:
 
 ## Google Workspace Integration
 
-The platform integrates Gmail and Google Calendar via the `googleapis` npm package and OAuth2.
+> **Status: COMING SOON (v9.0)**
+> Gmail and Calendar integration is planned but not yet implemented.
+> Do not attempt to call Google Workspace API routes — they do not exist yet.
+>
+> For now, when users request email/calendar operations:
+> 1. Acknowledge the request
+> 2. Log it as a task: "User requested Gmail integration — pending v9.0"
+> 3. Inform user this feature is coming in a future update
 
-### Auth flow
-- Primary credentials: `~/mission-control/data/google-tokens.json` (tokens file — includes client_id, client_secret, refresh_token)
-- Fallback credentials: `~/.config/google-workspace-mcp/client_secret.json`
-- Tokens stored: `~/mission-control/data/google-tokens.json`
-- OAuth redirect: `http://localhost:3000` → app detects `?code=` param, exchanges via `POST /api/google/auth/callback`
-- Check auth: `GET /api/google/auth/status` → `{ authenticated, hasCredentials, email }`
-- Auth URL: `GET /api/google/auth/url` → `{ url }` (opens in browser)
-- Revoke: `POST /api/google/auth/revoke`
+## Triage Workflow
 
-### Gmail API routes
-- `GET /api/gmail/messages?q=in:inbox&maxResults=50` — list inbox messages
-- `GET /api/gmail/messages/{id}` — get full message (body_text, body_html, from, to, subject, etc.)
-- `PATCH /api/gmail/messages/{id}` — `{ read: bool, starred: bool, archived: bool }`
-- `GET /api/gmail/threads/{id}` — get full thread (array of messages)
-- `POST /api/gmail/messages/send` — `{ to, subject, body, html?, inReplyTo?, threadId? }`
-
-### Calendar API routes
-- `GET /api/calendar/events?calendarId=primary&timeMin=ISO&timeMax=ISO` — list events
-- `POST /api/calendar/events` — create event `{ title, start, end, allDay, description, location, attendees, calendarId }`
-- `PATCH /api/calendar/events/{eventId}` — update event
-- `DELETE /api/calendar/events/{eventId}` — delete event
-- `GET /api/calendar/today` — today's events
-- `GET /api/calendar/calendars` — list all calendars
-
-### CommsInbox behavior
-- WhatsApp, Telegram, Discord **removed** — not supported
-- Gmail is the primary inbox when Google auth is active
-- System channel still shows platform activity feed
-- X/Twitter DMs shown if gateway has Twitter configured
-- "Triage" button on messages sends them to Inbox Agent via `POST /api/inbox`
+Before processing any incoming message:
+1. Read skill: `triage-protocol` (path: `.claude/skills/triage-protocol/SKILL.md`)
+2. Apply classification: question / request / update / urgent / system
+3. Apply priority: critical (respond now) / high (within 30 min) / normal (batch) / low (daily)
+4. Route based on classification:
+   - urgent → post to mission-control chat immediately
+   - request → create task, assign to appropriate agent
+   - question → research and respond, or route to Researcher
+   - update → acknowledge and log to task activity
 
 ## Role
 Every incoming message passes through you:

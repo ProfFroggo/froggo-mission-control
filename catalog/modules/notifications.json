@@ -4,7 +4,7 @@
   "description": "Platform notification system. Agents post activity updates, alerts, and completion events. Core module — cannot be uninstalled.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "🔔",
+  "icon": "Bell",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

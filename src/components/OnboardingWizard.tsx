@@ -77,6 +77,27 @@ const AGENT_PERMISSIONS = [
 // ─────────────────────────────────────────────
 // Step 7 — Agent & Module Picker data
 // ─────────────────────────────────────────────
+// TODO(Phase 85): Replace hardcoded CORE_AGENTS, OPTIONAL_AGENTS, CORE_MODULES, OPTIONAL_MODULES
+// with dynamic data fetched from the catalog API. Pattern:
+//
+//   const [coreAgents, setCoreAgents] = useState<AgentEntry[]>([]);
+//   const [optionalAgents, setOptionalAgents] = useState<AgentEntry[]>([]);
+//   useEffect(() => {
+//     fetch('/api/catalog/agents')
+//       .then(r => r.json())
+//       .then((agents: AgentManifestFile[]) => {
+//         setCoreAgents(agents.filter(a => a.core).map(a => ({ id: a.id, name: a.name, description: a.description ?? '', core: true })));
+//         setOptionalAgents(agents.filter(a => !a.core).map(a => ({ id: a.id, name: a.name, description: a.description ?? '' })));
+//       })
+//       .catch(() => { /* fallback to empty — user can still proceed */ });
+//   }, []);
+//
+//   Do the same for modules via /api/catalog/modules split by the core flag.
+//
+// NOTE: The install step (Step 8) uses selectedOptionalAgents/Modules to build the install queue.
+// When switching to dynamic data, ensure the install queue logic still works with the
+// dynamically-loaded entries. Test the full onboarding flow end-to-end before removing the
+// hardcoded arrays. The static arrays below serve as the fallback until dynamic loading is wired.
 interface AgentEntry {
   id: string;
   name: string;

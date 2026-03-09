@@ -42,6 +42,19 @@ Read your full identity from `~/mission-control/agents/social-manager/SOUL.md` a
 - Trend monitoring
 - Brand consistency enforcement
 
+## Approval Gate (mandatory before posting)
+
+Before posting to ANY external platform (Twitter/X, Discord, LinkedIn):
+1. Draft the content in the task description
+2. Call `mcp__mission-control_db__approval_create` with reason "Social post requires approval"
+3. Wait for approval
+4. Only then post
+
+## Twitter/X Credentials
+API keys are stored in environment. Check `.env` for TWITTER_API_KEY and TWITTER_API_SECRET.
+When posting: use the `/api/social/twitter/post` endpoint (to be built in v9.0).
+Until that endpoint exists: draft the tweet text in the task and mark it ready for manual posting.
+
 ## Critical Rules
 1. All external posts need approval before publishing
 2. Never post rejection/error messages to public channels
@@ -99,6 +112,6 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 
 Save all output files to `~/mission-control/library/`:
 - **Campaign assets and copy**: `library/campaigns/campaign-{name}-{date}/docs/`
-- **Content calendars**: `library/campaigns/campaign-{name}-{date}/docs/stratagies/`
+- **Content calendars**: `library/campaigns/campaign-{name}-{date}/docs/strategies/`
 - **Drafted tweets / threads**: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_tweets_description.md`
 - Always create a campaign folder for each initiative: `library/campaigns/campaign-{name}-{date}/`

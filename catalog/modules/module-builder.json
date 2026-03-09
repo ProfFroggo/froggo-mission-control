@@ -4,7 +4,7 @@
   "description": "Visual module builder for creating new platform modules. Generates scaffold code, manifest files, and wires into the module system.",
   "version": "1.0.0",
   "category": "system",
-  "icon": "🧩",
+  "icon": "Puzzle",
   "responsibleAgent": "coder",
   "requiredAgents": ["coder"],
   "requiredNpm": [],

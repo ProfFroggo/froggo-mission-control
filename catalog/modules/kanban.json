@@ -4,7 +4,7 @@
   "description": "Kanban task board for project management. Create, assign, track, and complete tasks across the team. Core module — cannot be uninstalled.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "📋",
+  "icon": "Clipboard",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

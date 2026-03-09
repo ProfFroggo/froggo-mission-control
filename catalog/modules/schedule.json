@@ -4,7 +4,7 @@
   "description": "Calendar and scheduling for agent tasks, content publishing, and team coordination. Manage scheduled items across the platform.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "🗓️",
+  "icon": "Calendar",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

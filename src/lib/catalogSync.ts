@@ -4,7 +4,7 @@
 // Called once at DB startup. Safe to re-run — preserves installed status.
 
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import type Database from 'better-sqlite3';
 
@@ -59,6 +59,12 @@ export function syncCatalogAgents(db: Database.Database): void {
         const manifest: AgentManifestFile = JSON.parse(
           readFileSync(file, 'utf-8')
         );
+        // Validate that soul.md exists alongside manifest.json
+        const soulPath = join(dirname(file), 'soul.md');
+        if (!existsSync(soulPath)) {
+          console.error(`[catalogSync] Agent ${manifest.id} is missing soul.md at ${soulPath} — skipping`);
+          continue;
+        }
         // Resolve avatar: workspace first (hired), then catalog package (pre-hire)
         const workspaceAvatar = join(HOME, 'mission-control', 'agents', manifest.id, 'assets', 'avatar.webp');
         const catalogAvatar   = join(CATALOG_DIR, 'agents', manifest.id, 'avatar.webp');

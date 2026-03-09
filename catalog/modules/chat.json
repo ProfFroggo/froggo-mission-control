@@ -4,7 +4,7 @@
   "description": "Real-time AI chat with agents and contacts. Primary interaction surface. Core module — cannot be uninstalled.",
   "version": "1.0.0",
   "category": "communications",
-  "icon": "💬",
+  "icon": "MessageCircle",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

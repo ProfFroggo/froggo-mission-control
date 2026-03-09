@@ -4,7 +4,7 @@
   "description": "Developer tools, debugging utilities, and platform internals. Inspect DB state, view logs, manage agent sessions.",
   "version": "1.0.0",
   "category": "agent",
-  "icon": "🛠️",
+  "icon": "Wrench",
   "responsibleAgent": "coder",
   "requiredAgents": ["coder"],
   "requiredNpm": [],

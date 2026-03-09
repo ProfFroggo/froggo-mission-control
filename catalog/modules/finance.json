@@ -4,7 +4,7 @@
   "description": "Multi-account financial management with AI-powered categorization, recurring transaction detection, scenario projections, and XLSX export.",
   "version": "1.0.0",
   "category": "finance",
-  "icon": "💰",
+  "icon": "DollarSign",
   "responsibleAgent": "finance-manager",
   "requiredAgents": ["finance-manager"],
   "requiredNpm": [],
