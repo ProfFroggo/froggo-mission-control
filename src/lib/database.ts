@@ -393,6 +393,24 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- PENDING ACTIONS (deferred executor queue)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS pending_actions (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      agentId TEXT,
+      description TEXT,
+      payload TEXT DEFAULT '{}',
+      executor TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      result TEXT,
+      scheduledFor INTEGER,
+      approvalId TEXT,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
     -- MODULE BUILDER DRAFTS
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS modules_builder (
@@ -486,6 +504,9 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,
     `ALTER TABLE agents ADD COLUMN personality TEXT DEFAULT ''`,
     `ALTER TABLE agents ADD COLUMN created_at INTEGER DEFAULT (unixepoch())`,
+    // Pending actions: category + executor back-ref on approvals
+    `ALTER TABLE approvals ADD COLUMN category TEXT DEFAULT 'agent_approval'`,
+    `ALTER TABLE approvals ADD COLUMN actionRef TEXT`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

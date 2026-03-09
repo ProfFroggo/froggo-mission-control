@@ -152,8 +152,12 @@ export function streamMessage(
 // Approvals
 // ──────────────────────────────────────────────────
 export const approvalApi = {
-  getAll: (status?: string) =>
-    apiCall('/approvals', { params: status ? { status } : undefined }),
+  getAll: (status?: string, category?: string) => {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    if (category) params.category = category;
+    return apiCall('/approvals', { params: Object.keys(params).length ? params : undefined });
+  },
   create: (approval: any) =>
     apiCall('/approvals', { method: 'POST', body: approval }),
   respond: (id: string, action: string, notes?: string, adjustedContent?: string) =>
