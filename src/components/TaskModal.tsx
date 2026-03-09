@@ -216,6 +216,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
     setSubmitting(true);
     try {
+      await taskApi.create(newTask);
       addTask(newTask);
 
       // File attachments not available in web mode (requires Electron fs/exec)
@@ -229,6 +230,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       // Reset form
       resetForm();
       onClose();
+    } catch (err) {
+      showToast('error', 'Failed to create task', (err as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -325,7 +328,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     return null;
   };
 
-  const handleCreateFromChat = () => {
+  const handleCreateFromChat = async () => {
     if (!extractedData.title) return;
 
     const newTask = {
@@ -340,14 +343,17 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       reviewStatus: 'pending' as any, // Initialize review status
     };
 
-    addTask(newTask);
-
-    // Trigger post-creation review
-    triggerOrchestratorReview(newTask);
-
-    // Reset
-    resetForm();
-    onClose();
+    try {
+      await taskApi.create(newTask);
+      addTask(newTask);
+      // Trigger post-creation review
+      triggerOrchestratorReview(newTask);
+      // Reset
+      resetForm();
+      onClose();
+    } catch (err) {
+      showToast('error', 'Failed to create task', (err as Error).message);
+    }
   };
 
   const triggerOrchestratorReview = async (task: any) => {
@@ -574,7 +580,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   </button>
                 </div>
                 <div className="text-xs text-mission-control-text-dim mt-2">
-                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
+                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> or <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">⌘↩</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
               </div>
             </div>

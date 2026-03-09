@@ -80,6 +80,8 @@ export default function AgentPanel() {
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
+  const [addingSkillAgent, setAddingSkillAgent] = useState<string | null>(null);
+  const [newSkillText, setNewSkillText] = useState('');
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Subscribe to circuit.open SSE events
@@ -95,15 +97,27 @@ export default function AgentPanel() {
     fetchAgents();
   });
 
-  const handleMemoryRotate = async (agentId: string) => {
-    if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via mission-control-db memory-search.`)) return;
-    setRotatingAgent(agentId);
-    try {
-      // Memory rotation — no REST equivalent
-      console.warn('Not implemented: memoryLifecycle.rotate', agentId);
-    } finally {
-      setRotatingAgent(null);
-    }
+  const handleMemoryRotate = (agentId: string) => {
+    showConfirm({
+      title: 'Rotate Memory?',
+      message: `Current MEMORY.md will be archived and a fresh one created. Archived content remains searchable via memory-search.`,
+      confirmLabel: 'Rotate Memory',
+      type: 'warning',
+    }, async () => {
+      setRotatingAgent(agentId);
+      try {
+        const res = await fetch(`/api/agents/${agentId}/memory`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Rotation failed');
+        }
+        showToast('success', 'Memory rotated');
+      } catch (err) {
+        showToast('error', 'Failed to rotate memory', (err as Error).message);
+      } finally {
+        setRotatingAgent(null);
+      }
+    });
   };
 
   useEffect(() => {
@@ -189,6 +203,25 @@ export default function AgentPanel() {
     });
   };
 
+  const handleAddSkill = async (agentId: string, existingCapabilities: string[]) => {
+    const skill = newSkillText.trim();
+    if (!skill) return;
+    const updated = [...existingCapabilities, skill];
+    try {
+      await fetch(`/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capabilities: updated }),
+      });
+      await fetchAgents();
+      setAddingSkillAgent(null);
+      setNewSkillText('');
+      showToast('success', `Skill "${skill}" added`);
+    } catch (err) {
+      showToast('error', 'Failed to add skill', (err as Error).message);
+    }
+  };
+
   const handleTrustTierSave = async (agentId: string, tier: number) => {
     try {
       await fetch(`/api/agents/${agentId}`, {
@@ -210,6 +243,7 @@ export default function AgentPanel() {
       await fetchAgents();
     } catch (err) {
       logger.error('[AgentPanel] Start error:', err);
+      showToast('error', 'Failed to enable agent', (err as Error).message);
     }
   };
 
@@ -667,9 +701,9 @@ export default function AgentPanel() {
                             <button
                               type="button"
                               onClick={() => handleMemoryRotate(agent.id)}
-                              disabled={true}
-                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} transition-all disabled:opacity-50 cursor-not-allowed`}
-                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nMemory rotation coming soon`}
+                              disabled={isRotating}
+                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} transition-all disabled:opacity-50 hover:brightness-110 cursor-pointer`}
+                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate memory`}
                             >
                               {isRotating ? <RefreshCw size={11} className="animate-spin" /> : <FileText size={11} />}
                               <span>{mem.sizeKB}KB</span>
@@ -689,10 +723,36 @@ export default function AgentPanel() {
                                 {skill}
                               </button>
                             ))}
-                            <button type="button" onClick={() => setSelectedAgent(agent.id)}
-                              className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
-                              + Add
-                            </button>
+                            {addingSkillAgent === agent.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={newSkillText}
+                                  onChange={e => setNewSkillText(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleAddSkill(agent.id, agent.capabilities || []);
+                                    if (e.key === 'Escape') { setAddingSkillAgent(null); setNewSkillText(''); }
+                                  }}
+                                  placeholder="skill name"
+                                  className="px-2 py-1 text-xs rounded border border-mission-control-accent bg-mission-control-surface w-28"
+                                  /* eslint-disable-next-line jsx-a11y/no-autofocus */
+                                  autoFocus
+                                />
+                                <button type="button" onClick={() => handleAddSkill(agent.id, agent.capabilities || [])}
+                                  className="p-1 text-success hover:bg-success-subtle rounded">
+                                  <Check size={12} />
+                                </button>
+                                <button type="button" onClick={() => { setAddingSkillAgent(null); setNewSkillText(''); }}
+                                  className="p-1 text-mission-control-text-dim hover:bg-mission-control-border rounded">
+                                  <AlertTriangle size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => { setAddingSkillAgent(agent.id); setNewSkillText(''); }}
+                                className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
+                                + Add
+                              </button>
+                            )}
                           </div>
                         </div>
 

@@ -973,6 +973,73 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <Lightbulb size={12} className="inline mr-1" />Use this space for planning, brainstorming, research notes, or any thoughts about this task.
               Changes are auto-saved after 1 second.
             </p>
+
+            {/* Dependencies */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+                <AlertCircle size={16} className="text-mission-control-accent" />
+                Blocked By
+              </h3>
+              {(task.blockedBy || []).length > 0 ? (
+                <div className="space-y-2 mb-3">
+                  {(task.blockedBy as string[]).map(depId => {
+                    const depTask = useStore.getState().tasks.find(t => t.id === depId);
+                    return (
+                      <div key={depId} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
+                        <span className="flex-1 truncate">{depTask?.title || depId}</span>
+                        {depTask && (
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+                            {depTask.status}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = (task.blockedBy as string[]) || [];
+                            taskApi.update(task.id, { blockedBy: current.filter((id: string) => id !== depId) })
+                              .then(() => showToast('success', 'Dependency removed'))
+                              .catch(() => showToast('error', 'Failed to remove dependency'));
+                          }}
+                          className="p-1 text-error hover:bg-error-subtle rounded transition-colors flex-shrink-0"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-mission-control-text-dim mb-3">No dependencies</p>
+              )}
+              <select
+                defaultValue=""
+                onChange={async (e) => {
+                  const depId = e.target.value;
+                  if (!depId) return;
+                  e.target.value = '';
+                  const current = (task.blockedBy as string[]) || [];
+                  if (current.includes(depId)) return;
+                  // Simple cycle check: ensure depId doesn't already block this task
+                  const depTask = useStore.getState().tasks.find(t => t.id === depId);
+                  if (depTask?.blockedBy && (depTask.blockedBy as string[]).includes(task.id)) {
+                    showToast('error', 'Circular dependency', 'That task already depends on this one');
+                    return;
+                  }
+                  try {
+                    await taskApi.update(task.id, { blockedBy: [...current, depId] });
+                    showToast('success', 'Dependency added');
+                  } catch { showToast('error', 'Failed to add dependency'); }
+                }}
+                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+              >
+                <option value="">+ Add dependency (blocked by)...</option>
+                {useStore.getState().tasks
+                  .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
+                  .map(t => (
+                    <option key={t.id} value={t.id}>{t.title} [{t.status}]</option>
+                  ))}
+              </select>
+            </div>
           </div>
         )}
 

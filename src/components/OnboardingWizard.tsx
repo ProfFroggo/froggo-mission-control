@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Map,
   SkipForward,
+  X,
 } from 'lucide-react';
 
 interface OnboardingWizardProps {
@@ -34,6 +35,7 @@ interface OnboardingWizardProps {
 
 const STEP_COUNT = 10;
 const STORAGE_KEY = 'mission-control-onboarding-completed';
+const STEP_STORAGE_KEY = 'mission-control-onboarding-step';
 
 // ─────────────────────────────────────────────
 // Step 2 — System Check types
@@ -197,7 +199,30 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     ? catalogModules.filter(m => !m.core)
     : FALLBACK_OPTIONAL_MODULES;
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const resumedStep = (() => {
+    try {
+      const saved = localStorage.getItem(STEP_STORAGE_KEY);
+      if (saved !== null) {
+        const step = parseInt(saved, 10);
+        if (!isNaN(step) && step > 0 && step < STEP_COUNT) return step;
+      }
+    } catch { /* SSR / private browsing */ }
+    return null;
+  })();
+
+  const [currentStep, setCurrentStep] = useState(resumedStep ?? 0);
+  const [showResumeBanner, setShowResumeBanner] = useState(resumedStep !== null);
+
+  // Persist step progress to localStorage
+  useEffect(() => {
+    try {
+      if (currentStep > 0) {
+        localStorage.setItem(STEP_STORAGE_KEY, String(currentStep));
+      } else {
+        localStorage.removeItem(STEP_STORAGE_KEY);
+      }
+    } catch { /* SSR / private browsing */ }
+  }, [currentStep]);
 
   // Step 2 — system check
   const [sysCheck, setSysCheck] = useState<SystemCheckState>({
@@ -525,11 +550,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const handleFinish = (startTour = false) => {
     localStorage.setItem(STORAGE_KEY, 'true');
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
     onComplete(startTour);
   };
 
   const handleSkip = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
     onSkip();
   };
 
@@ -1317,6 +1344,30 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             />
           ))}
         </div>
+
+        {/* Resume banner */}
+        {showResumeBanner && (
+          <div className="mx-8 mb-2 flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-info-subtle border border-info-border text-sm">
+            <span className="text-mission-control-text">Continuing from step {currentStep + 1} of {STEP_COUNT}</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => { setCurrentStep(0); setShowResumeBanner(false); }}
+                className="text-xs text-mission-control-text-dim hover:text-mission-control-text underline transition-colors"
+              >
+                Start over
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResumeBanner(false)}
+                className="text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Step content — scrollable */}
         <div className="px-8 pb-2 overflow-y-auto flex-1">

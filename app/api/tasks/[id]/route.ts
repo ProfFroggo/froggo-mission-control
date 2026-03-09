@@ -260,6 +260,26 @@ export async function PATCH(
     const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
     if (taskId) emitSSEEvent('task.updated', { id: taskId, status: taskStatus ?? null });
 
+    // When a task moves to 'done', emit task.unblocked for tasks that were blocked by it
+    if (body.status === 'done' && taskId) {
+      try {
+        const allTasks = db.prepare('SELECT id, blockedBy FROM tasks WHERE blockedBy IS NOT NULL AND blockedBy != \'[]\' AND status != ?').all('done') as { id: string; blockedBy: string }[];
+        for (const t of allTasks) {
+          try {
+            const deps = JSON.parse(t.blockedBy) as string[];
+            if (deps.includes(taskId)) {
+              // Remove this task from the blockedBy array
+              const newDeps = deps.filter((d: string) => d !== taskId);
+              db.prepare('UPDATE tasks SET blockedBy = ?, updatedAt = ? WHERE id = ?').run(JSON.stringify(newDeps), Date.now(), t.id);
+              if (newDeps.length === 0) {
+                emitSSEEvent('task.unblocked', { id: t.id, unblockedBy: taskId });
+              }
+            }
+          } catch { /* skip malformed */ }
+        }
+      } catch { /* non-critical */ }
+    }
+
     return NextResponse.json(parseTask(updated));
   } catch (error) {
     console.error('PATCH /api/tasks/[id] error:', error);
