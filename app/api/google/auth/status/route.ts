@@ -6,7 +6,7 @@ export async function GET() {
   const hasTokens = isAuthenticated();
   const tokens = loadTokens();
 
-  // Check if we have OAuth client credentials (gogcli or client_secret.json)
+  // Check if we have OAuth client credentials (client_secret.json or tokens file)
   const hasClientCredentials = createOAuth2Client() !== null;
 
   if (!hasTokens) {
@@ -16,7 +16,7 @@ export async function GET() {
         authenticated: false,
         hasCredentials: false,
         needsSetup: true,
-        setupInstructions: 'Install gogcli (brew install gogcli) or create a Google OAuth app at console.cloud.google.com',
+        setupInstructions: 'Create a Google OAuth 2.0 Client ID at console.cloud.google.com and save client_secret.json to ~/.config/google-workspace-mcp/',
       });
     }
     // Have credentials but no tokens — show Connect button

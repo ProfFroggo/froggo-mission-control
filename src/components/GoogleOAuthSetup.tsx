@@ -112,45 +112,36 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
             </div>
             <div>
               <h3 className="font-semibold text-sm">Google OAuth Credentials Missing</h3>
-              <p className="text-xs text-mission-control-text-dim">Install gogcli to enable Gmail and Calendar access.</p>
+              <p className="text-xs text-mission-control-text-dim">Connect Google to enable Gmail and Calendar access.</p>
             </div>
           </div>
 
           <div className="space-y-4 text-sm">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
               <p className="font-medium text-xs uppercase tracking-wider text-mission-control-text-dim">Setup Steps</p>
-
-              <div className="space-y-2">
-                <Step n={1} text="Install gogcli via Homebrew:" />
-              </div>
-
+              <Step n={1} text="Go to Google Cloud Console → Credentials and create an OAuth 2.0 Client ID (Desktop app)" />
               <div className="flex items-center gap-2 bg-mission-control-bg rounded px-3 py-2 text-xs font-mono">
-                <span className="flex-1 text-mission-control-accent truncate">brew install gogcli</span>
+                <span className="flex-1 text-mission-control-accent truncate">console.cloud.google.com/apis/credentials</span>
                 <button
-                  onClick={() => copyPath('brew install gogcli')}
+                  onClick={() => copyPath('https://console.cloud.google.com/apis/credentials')}
                   className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text"
-                  title="Copy command"
+                  title="Copy URL"
                 >
                   <Copy size={12} />
                 </button>
               </div>
-
-              <div className="space-y-2">
-                <Step n={2} text="Authenticate gogcli with your Google account:" />
-              </div>
-
+              <Step n={2} text="Download the JSON and save it to:" />
               <div className="flex items-center gap-2 bg-mission-control-bg rounded px-3 py-2 text-xs font-mono">
-                <span className="flex-1 text-mission-control-accent truncate">gog login</span>
+                <span className="flex-1 text-mission-control-accent truncate">~/.config/google-workspace-mcp/client_secret.json</span>
                 <button
-                  onClick={() => copyPath('gog login')}
+                  onClick={() => copyPath('~/.config/google-workspace-mcp/client_secret.json')}
                   className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text"
-                  title="Copy command"
+                  title="Copy path"
                 >
                   <Copy size={12} />
                 </button>
               </div>
-
-              <Step n={3} text='Reload the inbox — a "Connect Google Account" button will appear' />
+              <Step n={3} text='Reload — a "Connect Google Account" button will appear' />
             </div>
 
             <div className="flex gap-2">

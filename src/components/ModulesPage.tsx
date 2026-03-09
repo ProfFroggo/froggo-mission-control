@@ -410,32 +410,17 @@ export default function ModulesPage() {
 
           // Credential status
           let credStatus: CredStatusResult | null = null;
-          if (hasCredentials && manifest.credentials) {
-            try {
-              const credIds = manifest.credentials.map((c) => c.id);
-              const result = await (window as any).clawdbot?.modules?.invoke?.(
-                'module:cred:status',
-                manifest.id,
-                credIds,
-              );
-              if (result?.success) {
-                credStatus = { status: result.status, details: result.details };
-              }
-            } catch {
-              // fallback: no status dot
-            }
-          }
 
           // Integration state
           let integration: IntegrationState | null = null;
           if (hasCredentials) {
             try {
-              const result = await (window as any).clawdbot?.modules?.invoke?.(
-                'module:integration:get',
-                manifest.id,
-              );
-              if (result?.success && result.integration) {
-                integration = result.integration as IntegrationState;
+              const res = await fetch(`/api/modules/${manifest.id}`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data?.integration) {
+                  integration = data.integration as IntegrationState;
+                }
               }
             } catch {
               // fallback: no integration state

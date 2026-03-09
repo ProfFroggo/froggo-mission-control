@@ -35,18 +35,24 @@ export function XAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Try real summary first, fall back to db summary
-      const realSummary = await (window as any).clawdbot?.xAnalytics?.summaryReal?.();
-      if (realSummary?.success) {
-        setSummary({ ...realSummary, estimated: false });
-      } else {
-        const dbSummary = await (window as any).clawdbot?.xAnalytics?.summary?.();
-        setSummary(dbSummary || null);
-      }
-      const topContentResult = await (window as any).clawdbot?.xAnalytics?.topContent?.();
-      if (topContentResult?.success !== false) {
-        setTopContent(topContentResult?.posts || []);
-      }
+      const res = await fetch('/api/x/analytics');
+      if (!res.ok) { setSummary(null); setTopContent([]); return; }
+      const data = await res.json();
+      const tweets: any[] = data.tweets ?? [];
+      const metrics = data.profile?.public_metrics ?? {};
+      setSummary({
+        followers: metrics.followers_count ?? 0,
+        following: metrics.following_count ?? 0,
+        tweet_count: metrics.tweet_count ?? 0,
+        estimated: false,
+      });
+      setTopContent(tweets.slice(0, 10).map((t: any) => ({
+        id: t.id,
+        content: t.text,
+        likes: t.public_metrics?.like_count ?? 0,
+        retweets: t.public_metrics?.retweet_count ?? 0,
+        impressions: t.public_metrics?.impression_count ?? 0,
+      })));
     } catch {
       setSummary(null);
     } finally {

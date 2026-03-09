@@ -185,10 +185,9 @@ export default function ConnectedAccountsPanel() {
         <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5 text-sm space-y-2">
           <h3 className="font-medium">Setup</h3>
           <ol className="list-decimal list-inside space-y-1.5 text-mission-control-text-dim">
-            <li>Install <code className="text-xs bg-mission-control-bg px-1 rounded">gogcli</code> — <span className="font-mono text-xs">brew install gogcli</span></li>
-            <li>Or create an OAuth app at <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline inline-flex items-center gap-1">console.cloud.google.com <ExternalLink size={11} /></a></li>
-            <li>Place <code className="text-xs bg-mission-control-bg px-1 rounded">client_secret.json</code> in <code className="text-xs bg-mission-control-bg px-1 rounded">~/mission-control/data/</code></li>
-            <li>Click <strong>Connect Google Workspace</strong> above and complete sign-in</li>
+            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline inline-flex items-center gap-1">Google Cloud Console <ExternalLink size={11} /></a> → Credentials → Create OAuth 2.0 Client ID (Desktop app)</li>
+            <li>Download the JSON and save it to <code className="text-xs bg-mission-control-bg px-1 rounded">~/.config/google-workspace-mcp/client_secret.json</code></li>
+            <li>Click <strong>Connect Google Workspace</strong> above and complete sign-in in the browser</li>
           </ol>
         </div>
       )}

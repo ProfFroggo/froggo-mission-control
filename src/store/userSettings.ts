@@ -4,8 +4,16 @@ import { persist } from 'zustand/middleware';
 import { zustandSafeStorage } from '../utils/safeStorage';
 
 // Migrate old localStorage key on first load
-if (typeof window !== 'undefined' && localStorage.getItem('clawd-user-settings') && !localStorage.getItem('mission-control-user-settings')) {
-  localStorage.setItem('mission-control-user-settings', localStorage.getItem('clawd-user-settings')!);
+if (typeof window !== 'undefined') {
+  try {
+    const old = localStorage.getItem('clawd-user-settings');
+    if (old && !localStorage.getItem('mission-control-user-settings')) {
+      localStorage.setItem('mission-control-user-settings', old);
+    }
+    localStorage.removeItem('clawd-user-settings');
+  } catch {
+    localStorage.removeItem('clawd-user-settings');
+  }
 }
 
 export interface UserIdentity {

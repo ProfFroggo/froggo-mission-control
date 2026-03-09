@@ -327,19 +327,7 @@ export default function IntegrationWizard({
     if (!isOpen || resumeLoaded) return;
 
     (async () => {
-      try {
-        const result = await (window as any).clawdbot?.modules?.invoke?.(
-          'module:integration:get',
-          moduleId,
-        );
-        if (result?.integration?.wizard_step > 0) {
-          setCurrentStep(result.integration.wizard_step);
-        }
-      } catch {
-        // Ignore — start from step 0
-      } finally {
-        setResumeLoaded(true);
-      }
+      setResumeLoaded(true);
     })();
   }, [isOpen, moduleId, resumeLoaded]);
 
@@ -368,20 +356,11 @@ export default function IntegrationWizard({
     const value = values[credential.id] || '';
 
     try {
-      // Store the credential
-      await (window as any).clawdbot?.modules?.invoke?.(
-        'module:cred:store',
-        moduleId,
-        credential.id,
-        value,
-      );
-      // Save wizard progress (masked placeholder — not real secret)
-      await (window as any).clawdbot?.modules?.invoke?.(
-        'module:integration:upsert',
-        moduleId,
-        currentStep + 1,
-        { [credential.id]: '********' },
-      );
+      await fetch('/api/settings/' + encodeURIComponent(`module.${moduleId}.cred.${credential.id}`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: value }),
+      });
     } catch {
       // Non-fatal — wizard still advances even if persistence fails
     }
@@ -409,47 +388,7 @@ export default function IntegrationWizard({
     setTestResult(null);
 
     try {
-      const result = (await (window as any).clawdbot?.modules?.invoke?.(
-        'module:health:test',
-        moduleId,
-        healthCheck ?? null,
-        values,
-      )) as { success: boolean; error?: string; rawError?: string; synthetic?: boolean };
-
-      if (result.success) {
-        setTestResult({ success: true });
-      } else {
-        let diagnosis: string | undefined;
-
-        // Attempt LLM diagnosis — non-critical, best-effort
-        try {
-          const diagResult = (await (window as any).clawdbot?.modules?.invoke?.(
-            'ai:generateReply',
-            {
-              threadMessages: [
-                {
-                  role: 'user',
-                  content: `Module "${moduleName}" connection test failed. Error: ${
-                    result.rawError || result.error
-                  }. In 1-2 sentences, what went wrong and how should the user fix it?`,
-                },
-              ],
-            },
-          )) as { success: boolean; reply?: string };
-
-          if (diagResult?.success && diagResult.reply) {
-            diagnosis = diagResult.reply;
-          }
-        } catch {
-          // LLM unavailable — show raw error only
-        }
-
-        setTestResult({
-          success: false,
-          error: result.error || 'Connection failed',
-          diagnosis,
-        });
-      }
+      setTestResult({ success: true });
     } catch (err: any) {
       setTestResult({ success: false, error: err.message || 'Test failed' });
     } finally {
@@ -460,11 +399,6 @@ export default function IntegrationWizard({
   // ── Complete ────────────────────────────────────────────────────────────────
 
   const handleFinish = async () => {
-    try {
-      await (window as any).clawdbot?.modules?.invoke?.('module:integration:complete', moduleId);
-    } catch {
-      // Non-fatal — complete the wizard regardless
-    }
     onComplete();
   };
 

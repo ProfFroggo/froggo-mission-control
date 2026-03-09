@@ -23,7 +23,7 @@ export async function GET() {
   const cronDaemonInstalled = existsSync(cronPlist);
 
   return NextResponse.json({
-    // We use Claude Code CLI — no OpenClaw gateway needed
+    // We use Claude Code CLI — no external gateway needed
     cli: true,
     gateway: true,
     config: true,

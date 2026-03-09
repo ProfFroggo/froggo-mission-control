@@ -39,13 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-    "electron",
-    "server",
-    "dist",
-    "dist-electron",
-    "release",
     "tools",
-    "vite.config.ts",
     "vitest.config.ts",
     "**/*.test.ts",
     "**/*.test.tsx",

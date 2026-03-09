@@ -210,10 +210,88 @@ If your change affects the database schema:
 3. Test migration on a copy of production data
 4. Add rollback instructions
 
+## Contributing Agents
+
+Custom agents can be submitted for inclusion in the core library so all users get them on install.
+
+### Agent file structure
+
+```
+.claude/agents/{agent-id}/
+├── agent.json       # Manifest (required)
+└── soul.md          # Personality + system prompt (required)
+```
+
+**`agent.json` required fields:**
+
+```json
+{
+  "id": "your-agent-id",
+  "name": "Agent Display Name",
+  "description": "One-sentence description of what the agent does.",
+  "color": "#hex",
+  "trust_tier": "worker",
+  "maxTurns": 20,
+  "core": false
+}
+```
+
+- `trust_tier`: `restricted` | `apprentice` | `worker` | `trusted` | `admin`
+- `core: true` is reserved for the 5 built-in agents (mission-control, clara, coder, hr, inbox). Set to `false` for all community submissions — core status is granted by maintainers after review.
+
+### Submission checklist
+
+- [ ] `agent.json` and `soul.md` present
+- [ ] `soul.md` clearly defines scope, output format, and escalation rules
+- [ ] Agent does not duplicate an existing core agent's purpose
+- [ ] No hardcoded paths or credentials in soul.md
+- [ ] External actions (email, post, deploy) route through `approval_create` — never fire directly
+- [ ] PR title: `feat(agents): add {agent-name} agent`
+- [ ] PR targets `dev` branch
+
+## Contributing Modules
+
+Modules add optional UI panels and/or API routes. They appear in the Modules Library and are installed per-user.
+
+### Module file structure
+
+```
+src/modules/{module-id}/
+├── catalog.json       # Manifest (required)
+├── index.ts           # Module entry — registers panel + API routes
+└── components/        # React components
+```
+
+**`catalog.json` required fields:**
+
+```json
+{
+  "id": "your-module-id",
+  "name": "Module Display Name",
+  "description": "One-sentence description.",
+  "version": "1.0.0",
+  "category": "productivity",
+  "core": false,
+  "credentials": [],
+  "healthCheck": null
+}
+```
+
+- `core: true` is reserved for the 10 built-in modules. All community modules use `false`.
+- `credentials`: array of `CredentialSpec` objects if the module needs API keys; empty array otherwise.
+
+### Submission checklist
+
+- [ ] `catalog.json`, `index.ts`, and at least one component present
+- [ ] Module registers cleanly via `ViewRegistry` without side effects on install/uninstall
+- [ ] Credentials stored via `/api/settings/{module}.cred.{id}` — never in code or plain files
+- [ ] UI follows the design token system (no hardcoded colors or spacing)
+- [ ] Passes `npm run lint` and `npm run test:run`
+- [ ] PR title: `feat(modules): add {module-name} module`
+- [ ] PR targets `dev` branch
+
 ## Questions?
 
 - Check the [docs](docs/) folder for detailed guides
-- Ask in the development Discord channel
-- Open a discussion issue for design questions
-
-Happy coding! 🐸
+- Open a GitHub Discussion for design questions or new agent/module ideas
+- Open an issue for bugs

@@ -61,44 +61,29 @@ export function XResearchView() {
     }));
 
     try {
-      // Also try direct API search for structured results
-      const clawdbot = (window as any).clawdbot;
-      if (clawdbot?.x?.search) {
-        const searchResult = await clawdbot.x.search(query.trim(), 20);
-        if (searchResult?.success && searchResult.tweets) {
-          // Build author map from includes
-          const authorMap: Record<string, any> = {};
-          if (searchResult.tweets.includes?.users) {
-            for (const u of searchResult.tweets.includes.users) {
-              authorMap[u.id] = u;
-            }
-          }
-          // tweets might be in searchResult.tweets.data or searchResult.tweets directly
-          const rawTweets = Array.isArray(searchResult.tweets) ? searchResult.tweets : (searchResult.tweets.data || []);
-          const formatted: ResearchResult[] = rawTweets.map((item: any) => {
-            const author = authorMap[item.author_id] || {};
-            return {
-              id: item.id || '',
-              type: 'tweet' as const,
-              content: item.text,
-              author: author.name,
-              username: author.username,
-              followers: author.public_metrics?.followers_count,
-              likes: item.public_metrics?.like_count || 0,
-              retweets: item.public_metrics?.retweet_count || 0,
-              replies: item.public_metrics?.reply_count || 0,
-              impressions: item.public_metrics?.impression_count || 0,
-              date: item.created_at,
-              url: author.username ? `https://x.com/${author.username}/status/${item.id}` : undefined,
-            };
-          });
-          setResults(formatted);
-        } else {
-          setResults([]);
-        }
-      } else {
-        setResults([]);
-      }
+      const res = await fetch(`/api/x/search?q=${encodeURIComponent(query.trim())}&max=20`);
+      if (!res.ok) { setResults([]); return; }
+      const data = await res.json();
+      const authorMap: Record<string, any> = {};
+      for (const u of data.includes?.users ?? []) authorMap[u.id] = u;
+      const formatted: ResearchResult[] = (data.tweets ?? []).map((item: any) => {
+        const author = authorMap[item.author_id] || {};
+        return {
+          id: item.id || '',
+          type: 'tweet' as const,
+          content: item.text,
+          author: author.name,
+          username: author.username,
+          followers: author.public_metrics?.followers_count,
+          likes: item.public_metrics?.like_count || 0,
+          retweets: item.public_metrics?.retweet_count || 0,
+          replies: item.public_metrics?.reply_count || 0,
+          impressions: item.public_metrics?.impression_count || 0,
+          date: item.created_at,
+          url: author.username ? `https://x.com/${author.username}/status/${item.id}` : undefined,
+        };
+      });
+      setResults(formatted);
     } catch (error) {
       console.error('Research search error:', error);
     } finally {

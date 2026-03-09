@@ -620,7 +620,7 @@ declare global {
   }
 
   // ============================================
-  // Finance Account type (legacy — was used by Window.clawdbot.finance.account.*)
+  // Finance Account type (legacy — used by the old Electron IPC layer, retained for type safety)
   interface FinanceAccount {
     id: string;
     name: string;
@@ -632,7 +632,7 @@ declare global {
     updated_at: number;
   }
 
-  // Finance Recurring type (legacy — was used by Window.clawdbot.finance.recurring.*)
+  // Finance Recurring type (legacy — used by the old Electron IPC layer, retained for type safety)
   interface FinanceRecurring {
     id: string;
     account_id: string | null;

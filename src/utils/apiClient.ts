@@ -138,7 +138,7 @@ export async function apiCall<T = unknown>(
     // Wait before retry (exponential backoff)
     if (attempt < retries - 1) {
       const delay = retryDelay * Math.pow(2, attempt);
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         // Retry attempt
       }
       await sleep(delay);

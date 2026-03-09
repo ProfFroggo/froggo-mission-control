@@ -66,15 +66,10 @@ export function XEnhancedAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const clawdbot = (window as any).clawdbot;
-
-      const [profileResult, tweetsResult] = await Promise.all([
-        clawdbot?.xAnalytics?.profile?.(),
-        clawdbot?.xAnalytics?.tweets?.(100),
-      ]);
-
-      const profile = profileResult?.data?.public_metrics || {};
-      const rawTweets: any[] = tweetsResult?.data || [];
+      const res = await fetch('/api/x/analytics');
+      const data = res.ok ? await res.json() : {};
+      const profile = data.profile?.public_metrics ?? {};
+      const rawTweets: any[] = data.tweets ?? [];
 
       // Map real tweets to PostMetrics
       const postMetrics: PostMetrics[] = rawTweets.map((t: any) => ({

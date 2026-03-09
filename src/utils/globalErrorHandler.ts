@@ -30,7 +30,7 @@ function logError(log: ErrorLog) {
   }
 
   // In production, send to error tracking service
-  if (import.meta.env.PROD) {
+  if (process.env.NODE_ENV === 'production') {
     // FUTURE: Integrate with Sentry, LogRocket, or other error tracking service
     // This requires external service setup and API keys configuration
     console.error('[Production Error]', log);
@@ -130,7 +130,7 @@ export function initializeGlobalErrorHandlers() {
   window.addEventListener('error', handleWindowError as any);
   window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === 'development') {
     // Global error handler initialized
   }
 }
