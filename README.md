@@ -11,7 +11,7 @@
 
 Mission Control is your personal AI operations center. It ships with:
 
-- **15 agents** — Hire from the catalog: Inbox, Coder, Senior Coder, Designer, Researcher, Clara (QA), Chief, HR, Writer, Social Manager, Finance, Growth Director, Discord Manager, Voice, and the Mission Control orchestrator
+- **15 agents** — 5 core agents installed automatically (Mission Control, Clara, Coder, HR, Inbox), plus 10 optional agents available in the catalog: Senior Coder, Chief, Designer, Researcher, Writer, Social Manager, Finance Manager, Growth Director, Discord Manager, and Voice
 - **Modular dashboard** — Install what you need: Kanban, Analytics, Approvals, Chat Rooms, Schedule, Gmail Inbox, Finance, Library, Projects, Voice, Writing, Meetings, and more
 - **Task pipeline** — Full lifecycle: `todo → internal-review → in-progress → agent-review → done`, with Clara QA gates before work starts and after it completes
 - **Projects** — Kanban boards, agent dispatch, shared chat rooms, file library — all linked
@@ -64,7 +64,7 @@ mission-control
 1. Checks prerequisites — Node.js 20+, Claude Code CLI
 2. Creates the full `~/mission-control/` directory tree (agents, data, library, memory, logs)
 3. Scaffolds the complete library structure with all output folders
-4. Bootstraps 4 core agent workspaces from catalog templates (mission-control, clara, coder, writer)
+4. Bootstraps 5 core agent workspaces from catalog templates (mission-control, clara, coder, hr, inbox)
 5. Pre-seeds `~/mission-control/memory/knowledge/` with 6 platform documentation articles
 6. Generates `CLAUDE.md`, `.claude/settings.json`, and `.mcp.json` in `~/mission-control/`
 7. Creates data files (`schedule.json`, `google-tokens.json`)
@@ -79,8 +79,8 @@ No interactive prompts. No API keys in the terminal. Everything continues in the
 ### Option B — install.sh (clone + run)
 
 ```bash
-git clone https://github.com/ProfFroggo/froggo-Mission-Control.git
-cd froggo-Mission-Control
+git clone https://github.com/ProfFroggo/froggo-mission-control.git
+cd froggo-mission-control
 ./install.sh
 ```
 
@@ -110,7 +110,7 @@ After the CLI opens your browser, the wizard walks you through 10 steps:
 4. **Gemini API Key** — paste and validate (skippable — voice features won't work without it)
 5. **Google Workspace** — connect Gmail and Calendar via OAuth (skippable)
 6. **Obsidian & Permissions** — open the memory vault in Obsidian; grant mic/camera for voice
-7. **Agent & Module Picker** — 4 core agents pre-selected; choose optional agents and modules from the catalog
+7. **Agent & Module Picker** — 5 core agents pre-selected; choose optional agents and modules from the catalog
 8. **Animated Setup Checklist** — live progress as your selected agents and modules are installed
 9. **Interactive Tour** — guided walkthrough of every panel (re-launchable from Settings anytime)
 10. **Done** — land on your dashboard, ready to go
@@ -144,10 +144,12 @@ After the CLI opens your browser, the wizard walks you through 10 steps:
 │   ├── campaigns/             # Per-campaign folders (auto-created)
 │   └── projects/              # Per-project folders (auto-created)
 ├── agents/                    # Per-agent workspaces (CLAUDE.md, SOUL.md, MEMORY.md, DIRECTORIES.md)
-│   ├── mission-control/       # Orchestrator
-│   ├── clara/                 # QA review gate
-│   ├── coder/                 # Code execution
-│   └── writer/                # Content & docs
+│   ├── mission-control/       # Orchestrator — coordinates agents, manages task delegation
+│   ├── clara/                 # QA review gate — mandatory quality checks before/after tasks
+│   ├── coder/                 # Software engineer — features, bugs, tests, refactors
+│   ├── hr/                    # Agent & team manager — hiring, onboarding, team ops
+│   └── inbox/                 # Message triage — monitors comms, routes to agents
+│   (+ any optional agents installed during setup wizard)
 ├── .claude/
 │   └── settings.json          # Tool permissions + MCP server registrations + hooks
 ├── .mcp.json                  # MCP server config for Claude Code sessions
@@ -156,12 +158,40 @@ After the CLI opens your browser, the wizard walks you through 10 steps:
 $(npm root -g)/froggo-mission-control/  # Platform code (npm global install)
 ```
 
+### Core modules (always installed)
+
+| Module | What it does |
+|--------|-------------|
+| **Chat** | Real-time AI chat with agents — primary interaction surface |
+| **Tasks (Kanban)** | Full task pipeline: `todo → internal-review → in-progress → agent-review → done` |
+| **Inbox** | Unified communications inbox with Gmail integration and AI triage |
+| **Approvals** | Human-in-the-loop approval queue for agent actions and external writes |
+| **Agent Management** | View, configure, and manage agents — trust tiers, models, personalities |
+| **Library** | Browse and manage all agent output files (code, docs, designs, campaigns) |
+| **Projects** | Project workspaces — tasks, chat rooms, files, and agent dispatch |
+| **Schedule** | Calendar and cron-based scheduling for agent tasks and automation |
+| **Notifications** | Platform-wide notification system for agent activity and events |
+| **Settings** | Dashboard preferences, connected accounts, security, and configuration |
+
+### Optional modules (install from the catalog)
+
+| Module | What it does |
+|--------|-------------|
+| **Analytics** | Usage metrics, agent performance dashboards, token tracking |
+| **Finance** | Multi-account finance tracking, AI categorization, budget management |
+| **Meetings** | Meeting scheduling, agendas, notes, and action items |
+| **Social Media** | X/Twitter command center — publish, drafts, research, calendar, mentions |
+| **Voice Chat** | Real-time voice interaction with agents via browser microphone (Gemini Live) |
+| **Writing** | AI-assisted long-form writing workspace with draft management |
+| **Module Builder** | Visual builder for creating custom platform modules |
+| **Dev Tools** | Platform internals, DB inspector, log viewer, debugging utilities |
+
 ---
 
 ## Directory layout (repo)
 
 ```
-froggo-Mission-Control/
+froggo-mission-control/
 ├── app/                       # Next.js App Router routes + API
 │   └── api/                   # 100+ API endpoints
 ├── src/
