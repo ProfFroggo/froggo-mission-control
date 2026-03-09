@@ -1306,11 +1306,20 @@ gateway.on('approval.request', (payload: { type: ApprovalType; title: string; co
 
 // Shared debounced task refresh -- used by both gateway.on and IPC broadcast
 const TASK_REFRESH_DEBOUNCE = 400;
+// Phase 81: use module-scoped ref instead of window property (testable, no window dependency)
+let _taskRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 function debouncedTaskRefresh() {
-  clearTimeout((window as any).__taskRefreshTimer);
-  (window as any).__taskRefreshTimer = setTimeout(() => {
+  if (_taskRefreshTimer) clearTimeout(_taskRefreshTimer);
+  _taskRefreshTimer = setTimeout(() => {
+    _taskRefreshTimer = null;
     useStore.getState().loadTasksFromDB().catch((e: Error) => console.error('[Store] loadTasks error:', e));
   }, TASK_REFRESH_DEBOUNCE);
+}
+
+// Phase 81: exported setup function for testing/reset — prevents double-registration
+export function setupGatewayListeners() {
+  if ((globalThis as any).__gatewayListenersSetup) return;
+  (globalThis as any).__gatewayListenersSetup = true;
 }
 
 // Listen for task-related events for real-time updates

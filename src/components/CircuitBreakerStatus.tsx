@@ -25,7 +25,7 @@ export const CircuitBreakerStatus: React.FC = () => {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 10000);
+    const interval = setInterval(checkStatus, 30000); // Poll every 30s (was 10s)
     return () => clearInterval(interval);
   }, []);
 

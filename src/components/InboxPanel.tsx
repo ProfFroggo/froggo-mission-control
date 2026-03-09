@@ -132,6 +132,7 @@ export default function InboxPanel() {
   const [selectedItemForAI, setSelectedItemForAI] = useState<InboxItem | null>(null);
 
   const loadInbox = useCallback(async () => {
+    if ((window as any).__appVisible === false) return; // Skip when tab hidden
     setLoading(true);
     try {
       // Load inbox items via REST API
@@ -214,7 +215,7 @@ export default function InboxPanel() {
 
   useEffect(() => {
     loadInbox();
-    const interval = setInterval(loadInbox, 5000); // Poll every 5s
+    const interval = setInterval(loadInbox, 60000); // Poll every 60s (SSE drives real-time updates)
     return () => clearInterval(interval);
   }, [loadInbox]);
 

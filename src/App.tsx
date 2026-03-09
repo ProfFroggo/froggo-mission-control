@@ -73,6 +73,16 @@ function App() {
     loadTasksFromDB();
   }, [loadApprovals, fetchAgents, loadTasksFromDB]);
 
+  // Phase 79: Root-level visibility handler — pauses polling when tab is hidden
+  useEffect(() => {
+    const handleVisibility = () => {
+      (window as any).__appVisible = !document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    (window as any).__appVisible = true;
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   // Handle Google OAuth callback — ?code= lands on the root page after redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

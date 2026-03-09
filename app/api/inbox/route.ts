@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC`).all(...values) as Record<string, unknown>[];
+    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC LIMIT 200`).all(...values) as Record<string, unknown>[];
 
     return NextResponse.json(rows.map(parseInboxItem));
   } catch (error) {

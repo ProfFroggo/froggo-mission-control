@@ -474,10 +474,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           db.prepare('UPDATE tasks SET reviewerId = ? WHERE id = ?').run('clara', taskId);
         }
 
-        // Trigger Clara review via HTTP when task enters review
-        if (newStatus === 'review') {
-          firePost('/api/agents/clara/review', { taskId });
-        }
+        // Clara review is triggered by the 3-minute cron sweep in claraReviewCron.ts.
+        // No immediate HTTP dispatch here — the cron is the single trigger.
 
         // Auto-log activity — only for meaningful changes, not noise
         const statusChanged = newStatus !== undefined && newStatus !== current.status;

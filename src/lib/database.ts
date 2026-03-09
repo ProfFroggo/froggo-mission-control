@@ -479,6 +479,11 @@ function initSchema(db: Database.Database) {
     -- Approvals: requester queries
     CREATE INDEX IF NOT EXISTS idx_approvals_requester ON approvals(requester, createdAt DESC);
 
+    -- Phase 79: additional composite indexes for Clara review and activity lookup
+    CREATE INDEX IF NOT EXISTS idx_tasks_status_review ON tasks(status, reviewStatus);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_task_created ON task_activity(taskId, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
+
     -- No default rooms seeded — rooms are created on demand
   `);
 
@@ -512,6 +517,12 @@ function initSchema(db: Database.Database) {
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Phase 79: WAL performance tuning
+  try {
+    db.pragma('wal_autocheckpoint = 400');
+    db.pragma('synchronous = NORMAL');
+  } catch { /* non-critical */ }
 
   syncCatalogAgents(db);
   syncCatalogModules(db);

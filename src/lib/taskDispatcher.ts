@@ -519,6 +519,11 @@ function buildTaskMessage(task: Record<string, unknown>): string {
 // Prevents scheduling multiple re-dispatch timeouts for the same task.
 const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 
+// ── Concurrency semaphore ─────────────────────────────────────────────────────
+// Limits the number of simultaneous Claude CLI process dispatches.
+let activeDispatches = 0;
+const MAX_CONCURRENT_DISPATCHES = 5;
+
 // ── Dispatch debounce ────────────────────────────────────────────────────────
 // Prevents rapid-fire dispatches to the same agent within 100ms.
 // Uses a simple in-memory last-dispatch timestamp per agent.
@@ -604,11 +609,24 @@ export function dispatchTask(taskId: string): boolean {
     // cwd = project root (not agent workspace) so .claude/settings.json MCP config is loaded
     const cwd = process.cwd();
 
+    // Concurrency check — skip if at limit
+    if (activeDispatches >= MAX_CONCURRENT_DISPATCHES) {
+      console.warn(`[taskDispatcher] Concurrency limit reached (${MAX_CONCURRENT_DISPATCHES}). Task ${taskId} skipped.`);
+      return false;
+    }
+    activeDispatches++;
+
     const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
       cwd,
       env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId, ...apiKeyEnv } as unknown as NodeJS.ProcessEnv,
       detached: true,
-      stdio: ['pipe', 'pipe', 'ignore'],
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    // Capture stderr for error reporting
+    let stderrBuf = '';
+    proc.stderr.on('data', (chunk: Buffer) => {
+      stderrBuf += chunk.toString();
     });
 
     // Write message to stdin
@@ -650,6 +668,19 @@ export function dispatchTask(taskId: string): boolean {
 
     // Log exit code and update task status on failure
     proc.on('close', (code) => {
+      activeDispatches = Math.max(0, activeDispatches - 1);
+
+      // Log stderr on non-zero exit
+      if (code !== 0 && stderrBuf) {
+        const errorSnippet = stderrBuf.slice(0, 500);
+        console.error(`[taskDispatcher] Agent ${agentId} task ${taskId} failed (exit ${code}): ${errorSnippet}`);
+        try {
+          getDb().prepare(
+            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+          ).run(taskId, 'system', 'dispatch_stderr', `Dispatch failed (exit ${code}): ${errorSnippet}`, Date.now());
+        } catch { /* non-critical */ }
+      }
+
       try {
         const exitMsg = code === 0
           ? `Agent ${agentId} completed task dispatch (exit 0)`

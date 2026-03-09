@@ -101,7 +101,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
 
   useEffect(() => {
     loadInboxCount();
-    const interval = setInterval(loadInboxCount, 15000);
+    const interval = setInterval(loadInboxCount, 60000); // Poll every 60s (was 15s)
     return () => clearInterval(interval);
   }, [loadInboxCount]);
 
