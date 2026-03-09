@@ -707,41 +707,52 @@ export default function ChatPanel() {
     // Build message content with actual file contents
     let content = text;
     const fileContents: string[] = [];
+    const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.bash', '.sql', '.r', '.rb', '.go', '.rs', '.swift', '.kt'];
+
     for (const att of attachments) {
-      if (att.dataUrl) {
-        // Text-based files: decode and include content inline
-        const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.bash', '.sql', '.r', '.rb', '.go', '.rs', '.swift', '.kt'];
-        const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
-        
-        if (isTextFile) {
-          // Text file: decode and include content
-          try {
-            const base64 = att.dataUrl.split(',')[1];
-            const decoded = atob(base64);
-            fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
-          } catch (_e) {
-            fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
-          }
-        } else if (att.type.startsWith('image/')) {
-          // Image: Include base64 data URL (fs.writeBase64 not available in web)
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
-        } else if (att.type === 'application/pdf') {
-          // PDF: fs.writeBase64 not available in web — inform user
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
-        } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
-          // Audio file: whisper transcription not available in web version
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Audio transcription not available in web version]`);
-        } else {
-          // Other files: fs.writeBase64 not available in web — include metadata only
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+      if (!att.dataUrl) continue;
+
+      const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
+      const isImage = att.type.startsWith('image/');
+      const isPdf = att.type === 'application/pdf';
+      const isAudio = att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext));
+
+      if (isTextFile) {
+        // Text files: decode and include content inline
+        try {
+          const base64 = att.dataUrl.split(',')[1];
+          const decoded = atob(base64);
+          fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
+        } catch {
+          fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
+      } else if (isImage || isPdf) {
+        // Images and PDFs: upload to server, give agent the file path to read
+        try {
+          const blob = await fetch(att.dataUrl).then(r => r.blob());
+          const form = new FormData();
+          form.append('file', blob, att.name);
+          const res = await fetch('/api/agents/upload', { method: 'POST', body: form });
+          if (res.ok) {
+            const { path } = await res.json();
+            if (isImage) {
+              fileContents.push(`\n\n[Image attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — file path: ${path}\nUse the Read tool to view this image.]`);
+            } else {
+              fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — file path: ${path}\nUse the Read tool to read this PDF.]`);
+            }
+          } else {
+            fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — upload failed, cannot be read]`);
+          }
+        } catch {
+          fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} — could not upload]`);
+        }
+      } else if (isAudio) {
+        fileContents.push(`\n\n[Audio file attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — audio transcription not supported]`);
+      } else {
+        fileContents.push(`\n\n[File attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})]`);
       }
     }
-    
+
     if (fileContents.length > 0) {
       content = text + fileContents.join('');
     }
