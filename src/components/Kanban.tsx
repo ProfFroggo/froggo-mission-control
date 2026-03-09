@@ -20,12 +20,13 @@ import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
+import ConfirmDialog from './ConfirmDialog';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
   { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
-  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-info', bg: 'bg-info-subtle', icon: <Circle size={14} className="flex-shrink-0" /> },
   { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
@@ -788,7 +789,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   <div className="icon-text">
                     <span className={column.iconColor}>{column.icon}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${column.bg} ${column.iconColor}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
                       {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
                         ? `${columnTasks.length}/${taskCounts.totalDone}`
                         : columnTasks.length}
@@ -897,6 +898,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
               {/* Tasks */}
               <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
+                {isDragOver && (
+                  <div className="w-full h-0.5 bg-mission-control-accent rounded-full mb-2 animate-pulse" />
+                )}
                 {loading.tasks && columnTasks.length === 0 ? (
                   // Show skeleton while loading
                   <>
@@ -928,9 +932,20 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 )}
                 
                 {columnTasks.length === 0 && !loading.tasks && (
-                  <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-muted opacity-60">
-                    <p className="text-xs">No tasks</p>
-                  </div>
+                  column.id !== 'done' ? (
+                    <button
+                      onClick={() => handleAddTask(column.id)}
+                      className="flex flex-col items-center justify-center py-8 w-full text-mission-control-text-dim hover:text-mission-control-text opacity-50 hover:opacity-80 transition-all group"
+                      title={`Add task to ${column.title}`}
+                    >
+                      <Plus size={20} className="mb-1 group-hover:scale-110 transition-transform" />
+                      <p className="text-xs">Add task</p>
+                    </button>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-dim opacity-40">
+                      <p className="text-xs">No done tasks</p>
+                    </div>
+                  )
                 )}
               </div>
             </div>
@@ -1005,31 +1020,35 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       )}
 
       {/* Archive Confirmation Dialog */}
-      {showArchiveConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-mission-control-bg rounded-lg p-6 max-w-md w-full mx-4 border border-mission-control-border">
-            <h3 className="text-heading-3 mb-2">Archive Done Tasks</h3>
-            <p className="text-mission-control-text-dim mb-4">
-              Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
-              They will be removed from the board but can still be accessed in the archive.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setShowArchiveConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-mission-control-surface hover:bg-mission-control-border transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleArchiveDone}
-                className="px-4 py-2 rounded-lg bg-success-subtle hover:bg-success-subtle text-success transition-colors"
-              >
-                Archive
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showArchiveConfirm}
+        onClose={() => setShowArchiveConfirm(false)}
+        onConfirm={async () => {
+          setIsArchiving(true);
+          try {
+            const doneTasks = tasks.filter(t => t.status === 'done');
+            let archivedCount = 0;
+            for (const t of doneTasks) {
+              try {
+                await taskApi.update(t.id, { status: 'archived' });
+                archivedCount++;
+              } catch { /* skip failed */ }
+            }
+            showToast('success', `Archived ${archivedCount} done tasks`);
+            await loadTasksFromDB();
+          } catch (_error) {
+            showToast('error', 'Failed to archive tasks');
+          } finally {
+            setIsArchiving(false);
+          }
+        }}
+        title="Archive Done Tasks"
+        message={`Are you sure you want to archive all ${tasks.filter(t => t.status === 'done').length} done tasks? They will be removed from the board but can still be accessed in the archive.`}
+        confirmLabel="Archive"
+        cancelLabel="Cancel"
+        type="warning"
+        loading={isArchiving}
+      />
     </div>
   );
 }
@@ -1242,8 +1261,19 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         )}
         
         {/* Title */}
-        <div className="flex items-start gap-1 flex-1 min-w-0">
+        <div className="flex flex-col flex-1 min-w-0">
           <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 truncate">{task.title}</h4>
+          {task.updatedAt && (
+            <span className="text-[10px] text-mission-control-text-dim mt-0.5">
+              {(() => {
+                const diff = Date.now() - task.updatedAt;
+                if (diff < 60000) return 'just now';
+                if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+                return `${Math.floor(diff / 86400000)}d ago`;
+              })()}
+            </span>
+          )}
         </div>
         
         {/* Definition of Ready Indicators - show for todo/backlog tasks */}
@@ -1357,6 +1387,13 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         <p className="text-xs text-mission-control-text-muted line-clamp-2 mt-1 mb-1">{task.description}</p>
       )}
 
+      {/* Task progress bar */}
+      {typeof task.progress === 'number' && task.progress > 0 && (
+        <div className="mt-2 w-full bg-mission-control-bg rounded-full h-1 overflow-hidden">
+          <div className="h-full bg-mission-control-accent transition-all duration-500" style={{ width: `${task.progress}%` }} />
+        </div>
+      )}
+
       {/* Clara review status badge */}
       {task.reviewStatus && (
         <div className={`icon-text-tight text-xs px-2 py-1 rounded mb-2 ${
@@ -1429,21 +1466,22 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
                 </button>
               ) : null}
-              <button 
+              <button
                 ref={assignBtnRef}
                 className="icon-text-tight px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent rounded hover:bg-mission-control-accent/20 no-shrink"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
+                title={assignedAgent?.name || task.assignedTo}
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (!showAssign && assignBtnRef.current) {
                     const rect = assignBtnRef.current.getBoundingClientRect();
                     setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
                   }
-                  setShowAssign(true); 
+                  setShowAssign(true);
                 }}
               >
-                <AgentAvatar 
-                  agentId={assignedAgent.id} 
-                  fallbackEmoji={assignedAgent.avatar} 
+                <AgentAvatar
+                  agentId={assignedAgent.id}
+                  fallbackEmoji={assignedAgent.avatar}
                   size="xs"
                   status={getAgentStatus()}
                 />

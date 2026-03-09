@@ -9,6 +9,7 @@ import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import { useStore } from '../store/store';
+import { getApprovalTypeConfig } from '../lib/approvalTypes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -515,8 +516,8 @@ function ApprovalCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-medium text-sm truncate">{approval.title}</span>
-            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${cfg.bg} ${cfg.color}`}>
-              {cfg.label}
+            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${getApprovalTypeConfig(approval.type).className}`}>
+              {getApprovalTypeConfig(approval.type).label}
             </span>
             {isExecutable && (
               <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-mission-control-border/40 text-mission-control-text-dim">

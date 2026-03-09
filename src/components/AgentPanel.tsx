@@ -174,7 +174,7 @@ export default function AgentPanel() {
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
     active:     { color: 'bg-success',  label: 'Active', pulse: true },
-    busy:       { color: 'bg-success',  label: 'Working…', pulse: true },
+    busy:       { color: 'bg-mission-control-accent', label: 'Working…', pulse: true },
     idle:       { color: 'bg-warning', label: 'Idle' },
     offline:    { color: 'bg-mission-control-bg0',   label: 'Offline', hideDot: true },
     suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
@@ -260,7 +260,7 @@ export default function AgentPanel() {
             )}
             {view === 'active' && (
               <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">
-                <Plus size={15} className="flex-shrink-0" /> New Worker
+                <Plus size={15} className="flex-shrink-0" /> New Agent
               </button>
             )}
           </div>
@@ -313,7 +313,7 @@ export default function AgentPanel() {
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(() => {
                 const totalTokens = gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
@@ -377,7 +377,7 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 ${
+                  className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 ${
                     isCompareSelected ? 'border-review-border' : theme.border
                   } ${isExpanded ? '' : 'cursor-pointer'}`}
                   onClick={() => !isExpanded && toggleExpanded(agent.id)}
@@ -412,7 +412,7 @@ export default function AgentPanel() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-lg leading-tight truncate">{agent.name}</h3>
                           {!sc.hideDot && (
-                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
+                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-lg ${theme.bg} ${theme.text}`}>
                               {sc.label}
                             </span>
                           )}
@@ -505,7 +505,7 @@ export default function AgentPanel() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleAgentStart(agent.id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
                           title="Re-enable agent for dispatcher"
                         >
                           <Play size={12} className="inline" /> Enable
@@ -514,7 +514,7 @@ export default function AgentPanel() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                           title="Disable agent — dispatcher will stop spawning it"
                         >
                           <StopCircle size={12} className="inline" /> Disable
@@ -527,7 +527,7 @@ export default function AgentPanel() {
                       </button>
                       <div className="flex-1" />
                       <button type="button" onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
                         title="Edit agent personality & model"
                         aria-label={`Manage ${agent.name}`}>
                         <Settings size={12} />
@@ -588,9 +588,9 @@ export default function AgentPanel() {
                             <button
                               type="button"
                               onClick={() => handleMemoryRotate(agent.id)}
-                              disabled={isRotating}
-                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} hover:brightness-125 transition-all disabled:opacity-50`}
-                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate`}
+                              disabled={true}
+                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} transition-all disabled:opacity-50 cursor-not-allowed`}
+                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nMemory rotation coming soon`}
                             >
                               {isRotating ? <RefreshCw size={11} className="animate-spin" /> : <FileText size={11} />}
                               <span>{mem.sizeKB}KB</span>
@@ -652,12 +652,14 @@ export default function AgentPanel() {
                   className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
                     session.isActive ? 'border-success-border bg-success-subtle' : 'border-mission-control-border'
                   }`}>
-                  <span className="text-xl no-shrink">🤖</span>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-surface border border-mission-control-border flex items-center justify-center">
+                    <Bot size={16} className="text-info" />
+                  </div>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
                       <span className="font-medium session-name flex-shrink truncate">{session.displayName}</span>
                       {session.label && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded no-shrink no-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded-lg no-shrink no-wrap">
                           {session.label}
                         </span>
                       )}
@@ -670,7 +672,7 @@ export default function AgentPanel() {
                       <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
+                  <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded-lg ${
                     session.isActive ? 'text-success border border-success-border' : 'text-mission-control-text-dim border border-mission-control-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
@@ -694,7 +696,9 @@ export default function AgentPanel() {
                     {getTheme(agent.id).pic ? (
                       <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
                     ) : null}
-                    <span className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-xl`}>{agent.avatar}</span>
+                    <div className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center`}>
+                      <Bot size={16} className="text-mission-control-text-dim" />
+                    </div>
                   </div>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
@@ -705,13 +709,13 @@ export default function AgentPanel() {
                   </div>
                   {agent.status === 'disabled' ? (
                     <button type="button" onClick={() => handleAgentStart(agent.id)}
-                      className="px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                      className="px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
                       title="Re-enable agent for dispatcher">
                       <Play size={12} className="inline mr-1" /> Enable
                     </button>
                   ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
                     <button type="button" onClick={() => handleAgentStop(agent.id)}
-                      className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                      className="px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                       title="Disable agent — dispatcher will stop spawning it">
                       <StopCircle size={12} className="inline mr-1" /> Disable
                     </button>

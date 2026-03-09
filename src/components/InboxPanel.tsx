@@ -15,6 +15,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/api';
 import { useEventBus } from '../lib/useEventBus';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
+import { getApprovalTypeConfig } from '../lib/approvalTypes';
 
 const logger = createLogger('InboxPanel');
 
@@ -1334,7 +1335,7 @@ export default function InboxPanel() {
                       <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
                           <span className="text-xs font-medium px-2 py-0.5 bg-mission-control-border rounded">
-                            {config.label}
+                            {getApprovalTypeConfig(item.type).label}
                           </span>
                           
                           {/* Keyboard hint for focused item */}
