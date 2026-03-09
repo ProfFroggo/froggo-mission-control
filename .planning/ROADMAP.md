@@ -17,7 +17,8 @@ Spec sources:
 - ✅ **v5.0 Projects Module** — Phases 40–49 — SHIPPED 2026-03-07
 - ✅ [**v6.0 Security Hardening**](milestones/v6.0-security-hardening.md) — Phases 50–57 — SHIPPED 2026-03-07
 - ✅ **v6.1 Codebase Review & Hardening** — Phases 58–70 — SHIPPED 2026-03-07
-- 🚧 **v7.0 Install & First-Run Overhaul** — Phases 71–78 (in progress)
+- ✅ **v7.0 Install & First-Run Overhaul** — Phases 71–78 — SHIPPED 2026-03-08
+- 🚧 **v8.0 Platform Quality** — Phases 79–86 (in progress)
 
 ---
 
@@ -756,3 +757,134 @@ Plans:
 | 76. Interactive Tour | v7.0 | 0/1 | Not started | - |
 | 77. WebP Image Migration | v7.0 | 0/1 | Not started | - |
 | 78. E2E Verification v7.0 | v7.0 | 0/1 | Not started | - |
+
+---
+
+### 🚧 v8.0 Platform Quality (In Progress)
+
+**Milestone Goal:** Transform the platform from "baseline works" to "pro" quality. 110+ gaps identified across a full three-pass audit (frontend, API/backend, catalog/agents). This milestone closes the most impactful ones: silent failures become visible, interactive chat feels instant (Anthropic SDK streaming), the polling storm ends, security holes are plugged, and all 16 agent souls are corrected.
+
+**Source:** Full platform audit `~/Downloads/froggo-platform-audit-final.md` (2026-03-09)
+
+---
+
+#### Phase 79: stability-fixes
+
+**Goal**: Close the six most dangerous silent failure modes surfaced in the audit — (1) Clara double-dispatch via MCP hook + cron both firing; (2) taskDispatcher discards stderr making agent failures invisible; (3) missing DB indexes on `tasks.status`, `tasks(status,reviewStatus)`, `task_activity(taskId,timestamp)`; (4) raise all polling minimums (InboxPanel 5s→60s, LogsTab 3s→30s, Sidebar 15s→60s); (5) add `LIMIT 200` to all 6 unbounded SQL queries; (6) fix Kanban `useMemo`/`useCallback` empty dependency arrays causing stale task display
+**Depends on**: Phase 78
+**Research**: Unlikely (all root causes identified; fixes are targeted changes to existing files)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 79-01: Clara double-dispatch fix + stderr capture in taskDispatcher + concurrency semaphore (max 5 concurrent)
+- [ ] 79-02: DB index migration + LIMIT on all unbounded queries + recurring task idempotency constraint
+- [ ] 79-03: Kanban useMemo/useCallback dep arrays + polling interval raises + visibility-based polling pause
+
+---
+
+#### Phase 80: real-time-chat-streaming
+
+**Goal**: Replace Claude CLI for interactive chat with Anthropic SDK streaming — users see word-by-word output (~300ms to first token, not 3–15s silence); new `POST /api/agents/[id]/chat` route streams `text_delta` events via SSE; `ChatPanel.tsx` switched to `ReadableStream` reader that appends tokens as they arrive; CLI retained for autonomous task dispatch; conversation history saved to DB per session
+**Depends on**: Phase 79
+**Research**: Likely (Anthropic SDK streaming API)
+**Research topics**: `client.messages.stream()` SSE pattern, tool_use events in stream, conversation history format, token tracking from stream finalMessage
+**Plans**: 3 plans
+
+Plans:
+- [ ] 80-01: New `app/api/agents/[id]/chat/route.ts` — Anthropic SDK stream, soul.md system prompt, conversation history from DB, tool definitions from MCP
+- [ ] 80-02: `ChatPanel.tsx` — switch to streaming fetch, append text_delta chunks, typing indicator, abort on unmount
+- [ ] 80-03: Conversation history persistence — save complete turn to DB on stream end; load last N turns on panel open
+
+---
+
+#### Phase 81: frontend-performance
+
+**Goal**: Fix the four highest-impact frontend bugs from the audit — (1) `TaskDetailPanel.tsx` file-level `eslint-disable react-hooks/exhaustive-deps` removed; fix stale closure useEffects causing updates to apply to wrong task; (2) optimistic update rollback — store pre-update state and rollback with toast on API failure; (3) interval ref cleanup pattern enforced across all 20+ polling components; (4) store module-level gateway listeners moved to root useEffect so they can be cleaned up and tested
+**Depends on**: Phase 79
+**Research**: Unlikely (React patterns; all changes are internal)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 81-01: `TaskDetailPanel.tsx` — remove file-level eslint-disable; fix individual useEffect dep arrays; verify task-switching applies updates to correct task
+- [ ] 81-02: Optimistic update rollback in `store.ts` updateTask/updateSubtask; toast on failure; rollback to pre-update state
+- [ ] 81-03: Gateway listeners → root `layout.tsx` useEffect with cleanup; `debouncedTaskRefresh` module-scoped ref (not `window.__taskRefreshTimer`)
+
+---
+
+#### Phase 82: sse-real-time-layer
+
+**Goal**: Replace all polling with a single Server-Sent Events endpoint; `GET /api/events` emits `task.updated`, `task.created`, `agent.status`, `inbox.count` events whenever DB state changes; all 20+ polling `setInterval` calls removed from components; `useEventBus` hook subscribes to event stream; fallback: 60s polling if SSE fails; visibility-based pause at app root level (not per-component)
+**Depends on**: Phase 81
+**Research**: Likely (SSE in Next.js App Router)
+**Research topics**: Next.js App Router SSE pattern with ReadableStream, DB change notifications (SQLite doesn't have native pub/sub — need lightweight event emitter), connection cleanup on client disconnect
+**Plans**: 3 plans
+
+Plans:
+- [ ] 82-01: `app/api/events/route.ts` — SSE endpoint; in-process event emitter; DB write helpers emit events; keepalive ping every 30s
+- [ ] 82-02: `src/lib/useEventBus.ts` hook — EventSource subscribe/unsubscribe; reconnect with backoff; visibility pause
+- [ ] 82-03: Remove all `setInterval` polling from: InboxPanel, LogsTab, TopBar, Kanban, ApprovalQueuePanel, AgentPanel, CircuitBreakerStatus, Sidebar, Dashboard, HealthStatusWidget; replace with useEventBus
+
+---
+
+#### Phase 83: auth-and-security
+
+**Goal**: Close the three critical security gaps — (1) auth middleware: `middleware.ts` validates `INTERNAL_API_TOKEN` bearer token on all `/api/*` routes; token stored in `.env`; (2) executor path traversal fix: `scriptPath` validated against `~/mission-control/scripts/` allowlist before execution; (3) prompt injection guard: user-supplied content wrapped in XML tags with "treat as data" instruction before injection into agent prompts; add `Content-Security-Policy` header if missing
+**Depends on**: Phase 79
+**Research**: Unlikely (Next.js middleware pattern established in v6.0 security work; path.resolve validation is standard)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 83-01: `middleware.ts` bearer token auth + `INTERNAL_API_TOKEN` in `.env`; update all client-side fetch calls to include auth header
+- [ ] 83-02: Executor path traversal fix + prompt injection XML wrapping in stream route + CSP header audit
+
+---
+
+#### Phase 84: agent-soul-quality
+
+**Goal**: Fix all 22 catalog gaps from the audit — (1) remove 14 phantom Google Workspace routes from inbox soul; (2) add `approval_create` MCP call workflow to writer + social-manager souls; (3) add escalation criteria to mission-control, coder, growth-director souls; (4) fix all 16 module icon fields from emoji to Lucide names; (5) add soul.md existence validation to `catalogSync.ts`; (6) fix `"core"` flag on projects, finance, schedule modules; (7) fix "stratagies" typo to "strategies" across all library output paths; (8) add accessibility-checklist skill reference to designer soul
+**Depends on**: Phase 79
+**Research**: Unlikely (all changes are to soul.md, manifest.json, and catalog JSON files — no code logic)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 84-01: Inbox soul overhaul — remove phantom routes section, add triage-protocol workflow, mark Google Workspace as "coming in v9.0"
+- [ ] 84-02: Approval gate documentation — writer, social-manager, coder souls; escalation criteria — mission-control, coder souls; module icon Lucide migration (all 16 modules)
+- [ ] 84-03: catalogSync soul.md validation; core flag fixes (projects, finance, schedule); library path typo fixes; OnboardingWizard fetch from catalog instead of hardcoded list
+
+---
+
+#### Phase 85: observability-and-circuit-breakers
+
+**Goal**: Make failures visible and self-healing — (1) `telemetry` DB table + `trackEvent()` util called from dispatch start/end, Clara review result, cron job result, API errors; (2) `GET /api/metrics` returns event counts by type for last 24h; (3) circuit breaker: track consecutive failures per agent, set `offline` status after 3 failures in a window, stop dispatch until manually re-enabled; (4) cron job failures write task activity entries (not console-only); (5) error boundary components wrapping Kanban, TaskDetailPanel, InboxPanel, ChatPanel, FinancePanel
+**Depends on**: Phase 79
+**Research**: Unlikely (SQLite table + React error boundaries; all patterns established)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 85-01: `telemetry` table migration + `trackEvent()` + `GET /api/metrics` endpoint + circuit breaker in taskDispatcher (3-strike per-agent lockout)
+- [ ] 85-02: React Error Boundary component wrapping all major panels; cron daemon job failure → task activity write; Clara review result telemetry
+
+---
+
+#### Phase 86: e2e-verification-v8
+
+**Goal**: Verify all v8.0 changes — streaming chat returns tokens within 500ms; Kanban shows correct tasks after rapid polling with correct memo deps; TaskDetailPanel updates apply to correct task when switching; SSE events flow from DB write to UI update; auth middleware blocks unauthenticated requests; executor rejects path traversal attempts; agent soul quality checked (no phantom routes, approval gate present); circuit breaker locks out failing agent after 3 failures; telemetry records events; smoke test extended to cover all v8.0 additions
+**Depends on**: All v8.0 phases
+**Research**: Unlikely
+**Plans**: 1 plan
+
+Plans:
+- [ ] 86-01: Extend e2e smoke test; manual checklist verification of streaming, SSE, auth, circuit breaker, and soul quality
+
+## Progress (v8.0)
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 79. Stability Fixes | v8.0 | 0/3 | Not started | - |
+| 80. Real-Time Chat Streaming | v8.0 | 0/3 | Not started | - |
+| 81. Frontend Performance | v8.0 | 0/3 | Not started | - |
+| 82. SSE Real-Time Layer | v8.0 | 0/3 | Not started | - |
+| 83. Auth & Security | v8.0 | 0/2 | Not started | - |
+| 84. Agent Soul Quality | v8.0 | 0/3 | Not started | - |
+| 85. Observability & Circuit Breakers | v8.0 | 0/2 | Not started | - |
+| 86. E2E Verification v8.0 | v8.0 | 0/1 | Not started | - |

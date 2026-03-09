@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-05)
+See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v7.0 Install & First-Run Overhaul — COMPLETE
+**Current focus:** v8.0 Platform Quality — Phase 79 (Stability Fixes)
 
 ## Current Position
 
-Phase: 78 of 78 (e2e-verification-v7)
-Plan: Complete
-Status: Complete
-Last activity: 2026-03-08 — v7.0 all 8 phases done, build verified clean
+Phase: 79 of 86 (stability-fixes)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-09 — v8.0 roadmap created (8 phases, 79–86); full platform audit complete
 
-Progress: ██████████ 100% (v7.0 — 8/8 phases done)
+Progress: ░░░░░░░░░░ 0% (v8.0 — 0/8 phases done)
 
 ## Performance Metrics
 
@@ -81,6 +81,15 @@ None.
 - Agent workspace CLAUDE.md files: replaced defunct derek-db CLI with mcp__mission-control_db__* MCP tools
 - Task session expiry: 2 hours (shorter than chat 30-min in-memory; task sessions are discrete)
 
+### Key Decisions (v8.0)
+
+- Interactive chat → Anthropic SDK streaming (not CLI); CLI retained for task dispatch
+- SSE via in-process event emitter (SQLite has no native pub/sub)
+- Auth: INTERNAL_API_TOKEN bearer check in middleware.ts (single shared secret for local use)
+- Clara double-dispatch fix: remove fetch() from MCP task_update handler; cron is the only trigger
+- Circuit breaker: 3-strike per-agent lockout stored in agent_status column (not in-memory only)
+- Audit source: `~/Downloads/froggo-platform-audit-final.md` — 110+ gaps, all mapped to phases
+
 ## Roadmap Evolution
 
 - Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
@@ -88,6 +97,7 @@ None.
 - Milestone v4.0 created: Agent & Module Library — catalog schema, hire/install wizards (HR + Coder agent-backed), library UIs, lifecycle management, onboarding role presets (Phases 31-39)
 - Milestone v5.0 created: Projects Module — project data model + REST API, creation wizard, card view, workspace shell with 4 tabs (chat/tasks/automations/files+memory), agent dispatch from project context (Phases 40-49)
 - Milestone v6.0 created: Security Hardening — command injection fix, path traversal fixes (library + soul), Gemini key server-side, CSP headers, input validation sweep (Phases 50-57)
+- Milestone v8.0 created: Platform Quality — full 3-pass audit (frontend 47 issues, API 40 issues, catalog 22 issues), streaming, SSE, auth, soul quality (Phases 79-86)
 
 ### Key Decisions (v4.0)
 
@@ -99,6 +109,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-08
-Stopped at: v7.0 complete. Phase 78 (e2e-verification-v7) passed — TypeScript clean, Next.js build clean (✓ Compiled in 7.5s, 63/63 static pages), all artifacts verified.
+Last session: 2026-03-09
+Stopped at: v8.0 roadmap created. Full platform audit synthesized (3 agents, 110+ gaps). STATE.md + ROADMAP.md updated. Phase directories 79–86 created. Ready to plan Phase 79.
 Resume file: None
