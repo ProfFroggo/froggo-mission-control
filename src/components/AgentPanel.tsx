@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
+import { useEventBus } from '../lib/useEventBus';
+import { showToast } from './Toast';
 import { useStore, Agent } from '../store/store';
 import { PROTECTED_AGENTS } from '../lib/agentConfig';
 import { useShallow } from 'zustand/react/shallow';
@@ -74,6 +76,22 @@ export default function AgentPanel() {
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
   const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
   const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
+  const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
+  const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
+  const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
+
+  // Subscribe to circuit.open SSE events
+  useEventBus('circuit.open', (data) => {
+    const d = data as { agentId: string };
+    if (d?.agentId) {
+      setCircuitOpenAgents(prev => new Set(prev).add(d.agentId));
+    }
+  });
+
+  // Subscribe to agent.updated SSE events
+  useEventBus('agent.updated', () => {
+    fetchAgents();
+  });
 
   const handleMemoryRotate = async (agentId: string) => {
     if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via mission-control-db memory-search.`)) return;
@@ -157,6 +175,21 @@ export default function AgentPanel() {
       await fetchAgents();
     } catch (err) {
       logger.error('[AgentPanel] Stop error:', err);
+    }
+  };
+
+  const handleTrustTierSave = async (agentId: string, tier: number) => {
+    try {
+      await fetch(`/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trust_tier: tier }),
+      });
+      await fetchAgents();
+      setEditingTrustTierAgent(null);
+      showToast('success', 'Trust tier updated — permissions recalculated');
+    } catch (err) {
+      showToast('error', 'Failed to update trust tier', (err as Error).message);
     }
   };
 
@@ -416,20 +449,55 @@ export default function AgentPanel() {
                               {sc.label}
                             </span>
                           )}
-                          {/* Trust tier badge — only show for non-default tiers */}
-                          {agent.trust_tier && agent.trust_tier !== 'apprentice' && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
-                              agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
-                              agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
-                              agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
-                              'bg-mission-control-border text-mission-control-text-dim'
-                            }`}>
-                              {agent.trust_tier === 'admin'      ? 'Admin' :
-                               agent.trust_tier === 'trusted'    ? 'Trusted' :
-                               agent.trust_tier === 'worker'     ? 'Worker' :
-                               agent.trust_tier === 'restricted' ? 'Restricted' :
-                               agent.trust_tier}
+                          {/* Trust tier badge with inline edit */}
+                          {agent.trust_tier && (
+                            editingTrustTierAgent === agent.id ? (
+                              <div className="flex items-center gap-1">
+                                <select
+                                  value={pendingTrustTier}
+                                  onChange={e => setPendingTrustTier(Number(e.target.value))}
+                                  className="text-xs px-1 py-0.5 rounded border border-mission-control-border bg-mission-control-surface"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <option value={1}>Tier 1 (Restricted)</option>
+                                  <option value={2}>Tier 2 (Worker)</option>
+                                  <option value={3}>Tier 3 (Full)</option>
+                                </select>
+                                <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}
+                                  className="p-0.5 text-success hover:bg-success-subtle rounded">
+                                  <Check size={12} />
+                                </button>
+                                <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}
+                                  className="p-0.5 text-error hover:bg-error-subtle rounded">
+                                  <AlertTriangle size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
+                                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
+                                  agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
+                                  agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
+                                  agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
+                                  'bg-mission-control-border text-mission-control-text-dim'
+                                } hover:brightness-110 cursor-pointer`}
+                                title="Click to edit trust tier"
+                              >
+                                {agent.trust_tier === 'admin'      ? 'Admin' :
+                                 agent.trust_tier === 'trusted'    ? 'Trusted' :
+                                 agent.trust_tier === 'worker'     ? 'Worker' :
+                                 agent.trust_tier === 'restricted' ? 'Restricted' :
+                                 `Tier ${agent.trust_tier}`}
+                                <Pencil size={9} />
+                              </button>
+                            )
+                          )}
+                          {/* Circuit breaker open indicator */}
+                          {circuitOpenAgents.has(agent.id) && (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-error-subtle text-error border border-error-border" title="Circuit breaker open — agent locked out due to repeated failures">
+                              <AlertTriangle size={10} /> Circuit Open
                             </span>
                           )}
                           {/* Lifecycle status badges for non-active agents */}

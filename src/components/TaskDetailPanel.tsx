@@ -2,7 +2,8 @@
 // useEffect deps are explicit. Interval raised to 30s.
 // Complex panel with many useEffects for task management - patterns are carefully designed.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEventBus } from '../lib/useEventBus';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
@@ -68,6 +69,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
   const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
+  // Track current task id for SSE handler
+  const taskIdRef = useRef<string | null>(task?.id ?? null);
+  taskIdRef.current = task?.id ?? null;
+
+  // Refs to stable callbacks for SSE handler (avoids stale closures before callbacks are defined)
+  const loadSubtasksRef = useRef<(() => void) | null>(null);
+  const loadActivityRef = useRef<(() => void) | null>(null);
+
+  // Subscribe to task.updated SSE events — refetch when this task changes
+  useEventBus('task.updated', (data) => {
+    const d = data as { id: string };
+    if (d?.id && d.id === taskIdRef.current) {
+      loadSubtasksRef.current?.();
+      loadActivityRef.current?.();
+    }
+  });
+
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isRemoteAgent = task?.assignedTo && !assignedAgent && !['', 'none', 'unassigned'].includes(task.assignedTo);
@@ -96,6 +114,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       setLoadingActivity(false);
     }
   }, [task, loadTaskActivity]);
+
+  // Wire refs for SSE handler (must be after callbacks are defined)
+  loadSubtasksRef.current = loadSubtasks;
+  loadActivityRef.current = loadActivity;
 
   // Load attachments from REST API
   const loadAttachments = useCallback(async () => {
@@ -454,11 +476,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     });
     
     if (success) {
-      setSubtasks(subtasks.map(s => 
-        s.id === subtaskId 
+      const updatedSubtasks = subtasks.map(s =>
+        s.id === subtaskId
           ? { ...s, completed: !s.completed, completedAt: !s.completed ? Date.now() : undefined }
           : s
-      ));
+      );
+      setSubtasks(updatedSubtasks);
+      // Update task progress field
+      if (task) {
+        const completedCount = updatedSubtasks.filter(s => s.completed).length;
+        const progressPct = updatedSubtasks.length > 0 ? Math.round((completedCount / updatedSubtasks.length) * 100) : 0;
+        taskApi.update(task.id, { progress: progressPct }).catch(() => { /* non-critical */ });
+      }
       loadActivity(); // Refresh activity to show the update
     }
   };
@@ -797,6 +826,34 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Subtasks Tab */}
         {activeTab === 'subtasks' && (
           <div className="p-4">
+            {/* Progress bar */}
+            {subtasks.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+                  <span>Progress</span>
+                  <span>{completedSubtasks}/{subtasks.length} complete</span>
+                </div>
+                <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success rounded-full transition-all duration-300"
+                    style={{ width: `${subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0}%` }}
+                  />
+                </div>
+                {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
+                  <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-success-subtle border border-success-border">
+                    <CheckCircle size={16} className="text-success flex-shrink-0" />
+                    <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
+                    <button
+                      type="button"
+                      onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
+                      className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors flex-shrink-0"
+                    >
+                      Move to Review
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {/* Add Subtask */}
             <div className="flex gap-2 mb-4">
               <input

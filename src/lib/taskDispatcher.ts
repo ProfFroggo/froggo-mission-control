@@ -7,6 +7,7 @@
 import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
 import { trackEvent } from './telemetry';
+import { emitSSEEvent } from './sseEmitter';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -556,10 +557,25 @@ function recordAgentFailure(agentId: string) {
   if (newCount >= CIRCUIT_BREAKER_THRESHOLD) {
     console.warn(`[taskDispatcher] Circuit OPEN for agent ${agentId} — locked for 10 minutes`);
     trackEvent('circuit.open', { agentId, failures: newCount }, agentId);
+    emitSSEEvent('circuit.open', { agentId, failures: newCount, lockedUntil: agentFailureCounts.get(agentId)?.lockedUntil ?? null });
     try {
       getDb().prepare(`UPDATE agents SET status = 'offline' WHERE id = ?`).run(agentId);
     } catch { /* non-critical */ }
   }
+}
+
+/** Export circuit breaker state for API routes / health checks */
+export function getCircuitBreakerState(): Record<string, { open: boolean; failures: number; lockedUntil: number | null }> {
+  const result: Record<string, { open: boolean; failures: number; lockedUntil: number | null }> = {};
+  for (const [agentId, record] of agentFailureCounts.entries()) {
+    const open = isAgentCircuitOpen(agentId);
+    result[agentId] = {
+      open,
+      failures: record.count,
+      lockedUntil: record.lockedUntil ?? null,
+    };
+  }
+  return result;
 }
 
 function recordAgentSuccess(agentId: string) {
