@@ -133,6 +133,12 @@ const BASH_SAFE = [
   'Bash(bash tools/*)', 'Bash(sh tools/*)',
 ];
 
+export const TIER_PERMISSIONS_MAP: Record<number, { allowedTools: string[]; maxPriority: string; requiresApproval: boolean }> = {
+  1: { allowedTools: ['mcp__mission-control_db__*'], maxPriority: 'p3', requiresApproval: true },
+  2: { allowedTools: ['mcp__mission-control_db__*', 'mcp__memory__*', 'WebSearch', 'WebFetch'], maxPriority: 'p2', requiresApproval: false },
+  3: { allowedTools: ['*'], maxPriority: 'p0', requiresApproval: false },
+};
+
 export const TIER_TOOLS: Record<string, string[]> = {
   // restricted: read-only files, task tracking only, no writes, no bash, no web
   restricted: [

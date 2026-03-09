@@ -97,6 +97,11 @@ export default function AgentPanel() {
     fetchAgents();
   });
 
+  // Subscribe to agent.hired SSE events — refresh agent list immediately
+  useEventBus('agent.hired', () => {
+    fetchAgents();
+  });
+
   const handleMemoryRotate = (agentId: string) => {
     showConfirm({
       title: 'Rotate Memory?',
@@ -596,6 +601,14 @@ export default function AgentPanel() {
                       <div className="text-xs text-mission-control-text-dim mb-3">
                         <Clock size={12} className="inline mr-1" />
                         {agentTasks.length} task{agentTasks.length > 1 ? 's' : ''} queued
+                      </div>
+                    )}
+
+                    {/* Available badge — idle agent with no tasks */}
+                    {agent.status === 'idle' && agentTasks.length === 0 && (
+                      <div className="text-xs text-success mb-3">
+                        <CheckCircle size={12} className="inline mr-1" />
+                        Available
                       </div>
                     )}
 

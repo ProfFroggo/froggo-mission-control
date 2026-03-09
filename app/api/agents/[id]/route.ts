@@ -3,12 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { validateAgentId } from '@/lib/validateId';
 import { emitSSEEvent } from '@/lib/sseEmitter';
-
-const TIER_PERMISSIONS_MAP: Record<number, { allowedTools: string[]; maxPriority: string }> = {
-  1: { allowedTools: ['mcp__mission-control_db__*'], maxPriority: 'p3' },
-  2: { allowedTools: ['mcp__mission-control_db__*', 'mcp__memory__*', 'WebSearch', 'WebFetch'], maxPriority: 'p2' },
-  3: { allowedTools: ['*'], maxPriority: 'p0' },
-};
+import { TIER_PERMISSIONS_MAP } from '@/lib/taskDispatcher';
 
 function parseAgent(row: Record<string, unknown>) {
   if (!row) return row;
