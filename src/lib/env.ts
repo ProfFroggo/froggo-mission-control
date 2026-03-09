@@ -4,8 +4,7 @@
 // Import from here instead of using process.env directly.
 //
 // Copyright (C) 2026 Froggo.Pro (KEVINJMACARTHUR) — https://froggo.pro
-// Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0)
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 
 import path from 'path';
 import os from 'os';
