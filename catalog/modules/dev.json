@@ -1,7 +1,7 @@
 {
   "id": "dev",
   "name": "Dev",
-  "description": "Developer tools, debugging utilities, and platform internals. Inspect DB state, view logs, manage agent sessions.",
+  "description": "Read-only debugging and introspection tool. Provides access to system logs, active sessions, health checks, and platform diagnostics. No data persistence — all operations are read-only.",
   "version": "1.0.0",
   "category": "agent",
   "icon": "Wrench",

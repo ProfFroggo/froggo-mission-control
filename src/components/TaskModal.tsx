@@ -558,6 +558,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       }
                     }}
                     placeholder="Describe what you need done..."
+                    aria-label="Describe what you need done"
                     rows={2}
                     disabled={isStreaming || conversationComplete}
                     className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
@@ -886,6 +887,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         value={projectName}
                         onChange={e => setProjectName(e.target.value)}
                         placeholder="e.g., Authentication System"
+                        aria-label="Project name"
                         className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
                     </div>
@@ -909,6 +911,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           value={stageName}
                           onChange={e => setStageName(e.target.value)}
                           placeholder="e.g., Design Phase"
+                          aria-label="Stage name"
                           className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                       </div>
@@ -920,6 +923,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         value={nextStage}
                         onChange={e => setNextStage(e.target.value)}
                         placeholder="e.g., Stage 2: Implementation"
+                        aria-label="Next stage name"
                         className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
                       <p className="text-xs text-mission-control-text-dim mt-1">
@@ -943,6 +947,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   type="submit"
                   disabled={!title.trim() || submitting}
                   aria-disabled={!title.trim() || submitting}
+                  title="Submit (Enter)"
                   className={`px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2 ${(!title.trim() || submitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {submitting ? <Loader2 size={14} className="animate-spin" /> : null}

@@ -9,6 +9,7 @@ import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
 import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
+import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
 // Must include ALL DEFAULT_PANELS ids so panels appear immediately (before async initAll() runs).
@@ -99,15 +100,17 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     }
   }, []);
 
-  useEffect(() => {
-    loadInboxCount();
-    const interval = setInterval(loadInboxCount, 60000); // Poll every 60s (was 15s)
-    return () => clearInterval(interval);
-  }, [loadInboxCount]);
+  useVisibilityPolling(loadInboxCount, 60_000);
 
   return (
     <>
-    <aside 
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:text-xs focus:bg-mission-control-accent focus:text-white focus:rounded-md"
+    >
+      Skip to content
+    </a>
+    <aside
       className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out z-0 ${
         expanded ? 'w-52' : 'w-16'
       }`}

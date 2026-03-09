@@ -854,7 +854,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       {st.completed && <Check size={14} />}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <span className={`flex-1 min-w-0 truncate text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}>
+                      <span className={`flex-1 min-w-0 truncate text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-sm'}`}>
                         {st.title}
                       </span>
                       {st.description && (
@@ -1305,7 +1305,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               onClick={handlePoke}
               disabled={poking}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-accent/20 hover:text-mission-control-accent transition-colors disabled:opacity-50"
-              title="Poke Brain for status update"
+              title="Poke agent (⌘⇧P)"
             >
               {poking ? <Loader2 size={16} className="animate-spin" /> : <span className="text-lg">🫵</span>}
               Poke

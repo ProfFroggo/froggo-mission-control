@@ -17,7 +17,7 @@ export default function HealthStatusWidget() {
 
   useEffect(() => {
     loadSystemStatus();
-    const interval = setInterval(loadSystemStatus, 30000); // Refresh every 30 seconds
+    const interval = setInterval(loadSystemStatus, 60000); // Refresh every 60 seconds
     return () => clearInterval(interval);
   }, []);
 

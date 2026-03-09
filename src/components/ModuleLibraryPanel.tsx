@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package, Trash2, MessageSquare, Settings, Calendar, BarChart3, Inbox, LayoutGrid, Wrench, Library, PenLine, Bell, Users, Clock, CheckSquare, Megaphone, User, DollarSign, Mic, FolderKanban, type LucideIcon } from 'lucide-react';
+import { Puzzle, CheckCircle, Download, Search, RefreshCw, Shield, Bot, Key, Package, Trash2, MessageSquare, Settings, Calendar, BarChart3, Inbox, LayoutGrid, Wrench, Library, PenLine, Bell, Users, Clock, CheckSquare, Megaphone, User, DollarSign, Mic, FolderKanban, AlertTriangle, type LucideIcon } from 'lucide-react';
+import { useStore } from '../store/store';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
   chat:           MessageSquare,
@@ -49,6 +50,9 @@ interface ModuleLibraryPanelProps {
 }
 
 export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProps) {
+  const agents = useStore(s => s.agents);
+  const installedAgentIds = agents.map(a => a.id);
+
   const [modules, setModules]       = useState<CatalogModule[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -241,9 +245,24 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       </div>
                     )}
                     {module.requiredAgents.length > 0 && (
-                      <div className="flex items-center gap-1 text-[11px] text-info">
-                        <Bot size={10} className="flex-shrink-0" />
-                        <span>Needs agents: {module.requiredAgents.join(', ')}</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <Bot size={10} className="flex-shrink-0 text-info" />
+                        {module.requiredAgents.map((agentId: string) => {
+                          const installed = installedAgentIds.includes(agentId);
+                          return (
+                            <span
+                              key={agentId}
+                              className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${
+                                installed
+                                  ? 'bg-success-subtle text-success'
+                                  : 'bg-error-subtle text-error'
+                              }`}
+                            >
+                              {installed ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                              {agentId}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
                     {module.requiredNpm.length > 0 && (

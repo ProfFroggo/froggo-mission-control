@@ -410,7 +410,7 @@ export default function AgentPanel() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-lg leading-tight">{agent.name}</h3>
+                          <h3 className="font-bold text-lg leading-tight truncate">{agent.name}</h3>
                           {!sc.hideDot && (
                             <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
                               {sc.label}
@@ -655,7 +655,7 @@ export default function AgentPanel() {
                   <span className="text-xl no-shrink">🤖</span>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
-                      <span className="font-medium session-name flex-shrink">{session.displayName}</span>
+                      <span className="font-medium session-name flex-shrink truncate">{session.displayName}</span>
                       {session.label && (
                         <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded no-shrink no-wrap">
                           {session.label}
@@ -698,7 +698,7 @@ export default function AgentPanel() {
                   </div>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
-                      <span className="font-medium agent-name flex-1 min-w-0">{agent.name}</span>
+                      <span className="font-medium agent-name flex-1 min-w-0 truncate">{agent.name}</span>
                       {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
                     </div>
                     <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>

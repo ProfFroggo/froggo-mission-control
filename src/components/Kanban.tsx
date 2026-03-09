@@ -420,11 +420,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     return { inProgress, overdue, urgent, unassigned };
   }, [tasks]);
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
     setDraggedTask(taskId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId);
-  };
+  }, []);
 
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
@@ -455,10 +455,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setDragOverColumn(null);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     setDraggedTask(null);
     setDragOverColumn(null);
-  };
+  }, []);
 
   const handleAddTask = (status: TaskStatus) => {
     if (onNewTask) { onNewTask(); return; }
@@ -485,7 +485,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setShowHealthCheck(true);
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = useCallback(async (taskId: string) => {
     setDeletingTasks(prev => new Set(prev).add(taskId));
     try {
       await deleteTask(taskId);
@@ -499,7 +499,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         return next;
       });
     }
-  };
+  }, [deleteTask]);
 
   const handleArchiveDone = async () => {
     setShowArchiveConfirm(false);
@@ -523,7 +523,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   };
 
-  const handleSpawnAgent = async (taskId: string) => {
+  const handleSpawnAgent = useCallback(async (taskId: string) => {
     setSpawningTasks(prev => new Set(prev).add(taskId));
     try {
       await spawnAgentForTask(taskId);
@@ -537,7 +537,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         return next;
       });
     }
-  };
+  }, [spawnAgentForTask]);
 
   const handleMoveTask = async (taskId: string, status: TaskStatus) => {
     setMovingTasks(prev => new Set(prev).add(taskId));
@@ -651,8 +651,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             </button>
             
             {/* New Task */}
-            <button 
+            <button
               onClick={() => handleAddTask('todo')}
+              title="New task (N)"
               className="icon-text px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-all hover:scale-105"
             >
               <Plus size={16} className="flex-shrink-0" />

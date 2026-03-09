@@ -569,7 +569,7 @@ function ApprovalCard({
 
       {/* Collapsed preview */}
       {!isExpanded && approval.content && (
-        <p className="mt-2 ml-9 text-xs text-mission-control-text-dim line-clamp-2">
+        <p className="mt-2 ml-9 text-xs text-mission-control-text-dim line-clamp-3">
           {approval.content}
         </p>
       )}

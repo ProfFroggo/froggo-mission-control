@@ -14,6 +14,7 @@ import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
 import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/api';
 import { useEventBus } from '../lib/useEventBus';
+import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 
 const logger = createLogger('InboxPanel');
 
@@ -214,11 +215,7 @@ export default function InboxPanel() {
     // loadInbox wrapped in useCallback, safe to call without adding to deps
   }, []);
 
-  useEffect(() => {
-    loadInbox();
-    const interval = setInterval(loadInbox, 60000); // Poll every 60s (SSE drives real-time updates)
-    return () => clearInterval(interval);
-  }, [loadInbox]);
+  useVisibilityPolling(loadInbox, 60_000);
 
   // Phase 82: SSE-driven real-time inbox updates
   useEventBus('inbox.count', () => { loadInbox(); });

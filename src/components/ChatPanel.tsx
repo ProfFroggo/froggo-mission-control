@@ -1445,6 +1445,7 @@ export default function ChatPanel() {
           <button
             onClick={sendMessage}
             disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
+            title="Send message (Enter)"
             className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
