@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 function computeNextDue(currentDue: number, rec: { frequency: string; interval: number }): number {
   const d = new Date(currentDue);
@@ -247,6 +248,11 @@ export async function PATCH(
         }
       } catch { /* non-critical */ }
     }
+
+    // Notify SSE clients of task update
+    const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
+    const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
+    if (taskId) emitSSEEvent('task.updated', { id: taskId, status: taskStatus ?? null });
 
     return NextResponse.json(parseTask(updated));
   } catch (error) {

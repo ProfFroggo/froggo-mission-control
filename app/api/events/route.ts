@@ -1,30 +1,66 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+// Phase 82: SSE Real-Time Layer — replaces polling-based events endpoint
+// GET /api/events — Server-Sent Events stream for real-time platform updates
+
 import { NextRequest } from 'next/server';
-import { getDb } from '@/lib/database';
+import { sseEmitter } from '@/lib/sseEmitter';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+// Re-export for convenience (phase 82 compatibility)
+export { emitSSEEvent } from '@/lib/sseEmitter';
+
+// ── SSE GET handler ────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  try {
-    const since = parseInt(request.nextUrl.searchParams.get('since') || '0');
-    const db = getDb();
+  const encoder = new TextEncoder();
 
-    const events = {
-      tasks: db.prepare(
-        'SELECT id, status, assignedTo, updatedAt FROM tasks WHERE updatedAt > ? ORDER BY updatedAt DESC LIMIT 20'
-      ).all(since),
-      approvals: db.prepare(
-        'SELECT id, status, type, createdAt FROM approvals WHERE createdAt > ? ORDER BY createdAt DESC LIMIT 10'
-      ).all(since),
-      chatMessages: db.prepare(
-        'SELECT id, roomId, agentId, timestamp FROM chat_room_messages WHERE timestamp > ? ORDER BY timestamp DESC LIMIT 20'
-      ).all(since),
-      agentStatus: db.prepare(
-        'SELECT id, status, lastActivity FROM agents WHERE lastActivity > ? ORDER BY lastActivity DESC'
-      ).all(since),
-    };
+  const stream = new ReadableStream({
+    start(controller) {
+      const send = (event: string, data: Record<string, unknown>) => {
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+          );
+        } catch {
+          // Client disconnected — swallow error
+        }
+      };
 
-    return Response.json(events);
-  } catch (error) {
-    console.error('GET /api/events error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
-  }
+      // Send connected confirmation immediately
+      send('connected', { ts: Date.now() });
+
+      const handler = ({ event, data }: { event: string; data: Record<string, unknown> }) => {
+        send(event, data);
+      };
+
+      sseEmitter.on('event', handler);
+
+      // Keepalive comment every 25 seconds to prevent proxy timeouts
+      const ping = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': ping\n\n'));
+        } catch {
+          clearInterval(ping);
+        }
+      }, 25_000);
+
+      // Cleanup when client disconnects
+      request.signal.addEventListener('abort', () => {
+        sseEmitter.off('event', handler);
+        clearInterval(ping);
+        try { controller.close(); } catch { /* already closed */ }
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable nginx buffering
+    },
+  });
 }

@@ -13,6 +13,7 @@ import { matchTaskToAgent } from '../lib/agents';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
 import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/api';
+import { useEventBus } from '../lib/useEventBus';
 
 const logger = createLogger('InboxPanel');
 
@@ -218,6 +219,9 @@ export default function InboxPanel() {
     const interval = setInterval(loadInbox, 60000); // Poll every 60s (SSE drives real-time updates)
     return () => clearInterval(interval);
   }, [loadInbox]);
+
+  // Phase 82: SSE-driven real-time inbox updates
+  useEventBus('inbox.count', () => { loadInbox(); });
 
   // Helper to determine if an item is a review vs approval
   const isReviewItem = (item: InboxItem): boolean => {

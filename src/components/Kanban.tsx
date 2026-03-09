@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
@@ -134,6 +135,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     };
   }, [loadTasksFromDB]);
   
+  // Phase 82: SSE-driven real-time task updates (fallback: 30s polling above)
+  useEventBus('task.created', () => {
+    loadTasksFromDB().catch(() => {});
+  });
+  useEventBus('task.updated', () => {
+    loadTasksFromDB().catch(() => {});
+  });
+
   // Poll active agent sessions for activity indicators
   useEffect(() => {
     const pollActiveSessions = async () => {

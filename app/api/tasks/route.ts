@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
 
@@ -153,6 +154,9 @@ export async function POST(request: NextRequest) {
     if (assignedTo && (status === 'todo' || status === 'in-progress')) {
       dispatchTask(id);
     }
+
+    // Notify SSE clients of new task
+    emitSSEEvent('task.created', { id, status, assignedTo: assignedTo ?? null });
 
     return NextResponse.json(parseTask(task), { status: 201 });
   } catch (error) {
