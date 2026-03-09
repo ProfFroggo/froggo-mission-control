@@ -927,7 +927,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 )}
                 
                 {columnTasks.length === 0 && !loading.tasks && (
-                  <EmptyState type="kanban" compact />
+                  <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-muted opacity-60">
+                    <p className="text-xs">No tasks</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1168,7 +1170,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
         task.status === 'in-progress'
-          ? 'border-green-500/60 bg-green-500/5 shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
+          ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
+          /* TODO: move to CSS token when design system tokens include status colors */
           : activityIndicator ? activityIndicator.color
           : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
           : task.priority === 'p0' ? 'border-error-border'
@@ -1239,7 +1242,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         
         {/* Title */}
         <div className="flex items-start gap-1 flex-1 min-w-0">
-          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-1">{task.title}</h4>
+          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 truncate">{task.title}</h4>
         </div>
         
         {/* Definition of Ready Indicators - show for todo/backlog tasks */}
@@ -1348,10 +1351,15 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       
       {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
 
+      {/* Task description */}
+      {task.description && (
+        <p className="text-xs text-mission-control-text-muted line-clamp-2 mt-1 mb-1">{task.description}</p>
+      )}
+
       {/* Clara review status badge */}
       {task.reviewStatus && (
         <div className={`icon-text-tight text-xs px-2 py-1 rounded mb-2 ${
-          task.reviewStatus === 'approved' ? 'bg-green-500/10 text-green-400' :
+          task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
@@ -1375,7 +1383,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-300 ${
-                subtaskProgress === 100 ? 'bg-green-500' : 'bg-mission-control-accent'
+                subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'
               }`}
               style={{ width: `${subtaskProgress}%` }}
             />
@@ -1407,7 +1415,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           {assignedAgent ? (
             <div className="flex items-center gap-1.5 no-shrink">
               {task.status === 'in-progress' ? (
-                <span className="icon-badge-sm bg-green-500/20 text-green-400 animate-pulse" title="Agent working">
+                <span className="icon-badge-sm bg-success-subtle text-success animate-pulse" title="Agent working">
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (

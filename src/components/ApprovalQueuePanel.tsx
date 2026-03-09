@@ -3,7 +3,7 @@ import {
   ShieldAlert, ShieldCheck, ShieldX, Clock, RefreshCw,
   Check, X, ChevronDown, ChevronUp, User, MessageSquare,
   Mail, Zap, ListTodo, Send, Bot, ExternalLink, Trash2,
-  GitBranch, CalendarClock, AlertTriangle, Edit2,
+  GitBranch, CalendarClock, AlertTriangle, Edit2, CheckCircle,
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -102,12 +102,12 @@ function TweetPreview({ text, account }: { text: string; account?: string }) {
             <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" strokeWidth="2"
               className="text-mission-control-border" />
             <circle cx="10" cy="10" r="9" fill="none"
-              stroke={over ? '#f87171' : pct > 0.8 ? '#fb923c' : '#38bdf8'}
+              stroke={over ? 'var(--color-error)' : pct > 0.8 ? 'var(--color-warning)' : 'var(--color-info)'}
               strokeWidth="2" strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - pct)}
               strokeLinecap="round" transform="rotate(-90 10 10)" />
           </svg>
-          <span className={`text-xs font-mono ${over ? 'text-red-400' : 'text-mission-control-text-dim'}`}>
+          <span className={`text-xs font-mono ${over ? 'text-error' : 'text-mission-control-text-dim'}`}>
             {over ? `-${charCount - 280}` : charCount}
           </span>
         </div>
@@ -404,7 +404,7 @@ export default function ApprovalQueuePanel() {
             <RefreshCw className="w-4 h-4 animate-spin" />
             <span className="text-sm">Loading…</span>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : approvals.length === 0 ? (
           <EmptyState
             icon={statusTab === 'pending' ? ShieldCheck : statusTab === 'scheduled' ? CalendarClock : ShieldX}
             title={
@@ -420,6 +420,14 @@ export default function ApprovalQueuePanel() {
                 : undefined
             }
           />
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-mission-control-text-muted">
+            <CheckCircle size={36} className="mb-3 opacity-30" />
+            <p className="text-sm font-medium">No approvals</p>
+            <p className="text-xs mt-1 opacity-70">
+              {filterTab !== 'all' ? 'Try a different filter' : 'Nothing pending review'}
+            </p>
+          </div>
         ) : (
           <div className="divide-y divide-mission-control-border/40">
             {filtered.map(approval => (
@@ -517,7 +525,7 @@ function ApprovalCard({
             )}
             {approval.status !== 'pending' && (
               <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                approval.status === 'approved' ? 'bg-green-400/10 text-green-400' : 'bg-red-400/10 text-red-400'
+                approval.status === 'approved' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
               }`}>
                 {approval.status}
               </span>
@@ -544,9 +552,9 @@ function ApprovalCard({
 
         <div className="flex items-center gap-1 shrink-0">
           {approval.status === 'approved' ? (
-            <ShieldCheck className="w-4 h-4 text-green-400" />
+            <ShieldCheck className="w-4 h-4 text-success" />
           ) : approval.status === 'rejected' ? (
-            <ShieldX className="w-4 h-4 text-red-400" />
+            <ShieldX className="w-4 h-4 text-error" />
           ) : (
             <Clock className="w-4 h-4 text-amber-400" />
           )}
@@ -657,17 +665,17 @@ function ApprovalCard({
             <button
               onClick={onApprove}
               disabled={isResponding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 text-xs font-medium border border-green-500/30 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success-subtle hover:bg-success/20 text-success text-xs font-medium border border-success-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Check className="w-3.5 h-3.5" />
+              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               {isExecutable ? 'Approve & Run' : 'Approve'}
             </button>
             <button
               onClick={onReject}
               disabled={isResponding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs font-medium border border-red-500/30 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-subtle hover:bg-error/20 text-error text-xs font-medium border border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <X className="w-3.5 h-3.5" />
+              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
               Reject
             </button>
           </div>
@@ -680,9 +688,9 @@ function ApprovalCard({
           <button
             onClick={onCancel}
             disabled={isResponding}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-border/20 hover:bg-red-500/20 text-mission-control-text-dim hover:text-red-400 text-xs font-medium border border-mission-control-border hover:border-red-500/30 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-border/20 hover:bg-error-subtle text-mission-control-text-dim hover:text-error text-xs font-medium border border-mission-control-border hover:border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <X className="w-3.5 h-3.5" />
+            {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
             Cancel scheduled action
           </button>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare } from 'lucide-react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
@@ -139,14 +139,14 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: Date.now() }]);
         chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: Date.now() }).catch(() => {});
       } else {
-        setMessages(prev => [...prev, { role: 'system', content: '⚠️ No response from agent', timestamp: Date.now() }]);
+        setMessages(prev => [...prev, { role: 'system', content: 'No response from agent', timestamp: Date.now() }]);
       }
     } catch (e: unknown) {
       setStreamingContent('');
       if (e instanceof Error && e.name === 'AbortError') return; // closed by user
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `❌ Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
+        content: `Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
         timestamp: Date.now(),
       }]);
     } finally {
@@ -301,6 +301,11 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 }`}>
                   {msg.role === 'assistant' ? (
                     <MarkdownMessage content={msg.content} />
+                  ) : msg.role === 'system' ? (
+                    <span className="flex items-center gap-1.5">
+                      {msg.content.startsWith('Failed') ? <XCircle size={14} /> : <AlertTriangle size={14} />}
+                      {msg.content}
+                    </span>
                   ) : (
                     msg.content
                   )}

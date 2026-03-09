@@ -1335,6 +1335,28 @@ export default function ChatPanel() {
           </div>
         )}
 
+        {/* Stream error banner */}
+        {streamError && (
+          <div className="flex items-center gap-2 p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span className="flex-1">{streamError}</span>
+            <button
+              onClick={handleRetry}
+              className="text-xs underline hover:no-underline shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading suggestions indicator */}
+        {loadingSuggestions && (
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-1 py-1 mb-2">
+            <Loader2 size={12} className="animate-spin" />
+            <span>Loading suggestions...</span>
+          </div>
+        )}
+
         {/* Suggested Replies */}
         {suggestedReplies.length > 0 && (
           <div className="mb-3">

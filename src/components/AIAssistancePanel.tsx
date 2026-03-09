@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
+import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2, Briefcase, Smile, AlignLeft, FileText, type LucideIcon } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { copyToClipboard } from '../utils/clipboard';
@@ -262,7 +262,7 @@ Provide a brief, actionable summary.`;
             <Sparkles size={48} className="text-mission-control-accent opacity-50" />
           </div>
           <h3 className="text-lg font-medium mb-2">AI Assistance</h3>
-          <p className="text-sm">Click the ✨ button on any inbox item to get:</p>
+          <p className="text-sm">Click the <Sparkles size={14} className="inline text-mission-control-accent" /> button on any inbox item to get:</p>
           <ul className="text-xs mt-3 space-y-1 text-left max-w-xs mx-auto">
             <li className="flex items-start gap-2">
               <Zap size={14} className="text-mission-control-accent mt-0.5 flex-shrink-0" />
@@ -296,11 +296,11 @@ Provide a brief, actionable summary.`;
     high: 'text-error',
   };
 
-  const toneIcons = {
-    professional: '👔',
-    friendly: '😊',
-    concise: '⚡',
-    detailed: '📝',
+  const toneIcons: Record<string, LucideIcon> = {
+    professional: Briefcase,
+    friendly: Smile,
+    concise: AlignLeft,
+    detailed: FileText,
   };
 
   return (
@@ -380,7 +380,7 @@ Provide a brief, actionable summary.`;
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs px-2 py-1 bg-mission-control-border rounded flex items-center gap-1">
-                          <span>{toneIcons[suggestion.tone]}</span>
+                          {(() => { const ToneIcon = toneIcons[suggestion.tone]; return ToneIcon ? <ToneIcon size={12} className="text-mission-control-text-muted" /> : null; })()}
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
                         <div className="flex gap-1">

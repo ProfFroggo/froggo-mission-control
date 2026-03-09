@@ -141,7 +141,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               <button
                 key={id}
                 onClick={() => onNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
                   isActive
                     ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
                     : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'

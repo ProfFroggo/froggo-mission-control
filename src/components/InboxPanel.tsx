@@ -47,8 +47,8 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'bg-error-subtle', text: 'text-error', border: 'border-error-border' },
   high: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
-  medium: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
-  low: { bg: 'bg-info-subtle', text: 'text-info', border: 'border-info-border' },
+  medium: { bg: 'bg-mission-control-surface', text: 'text-mission-control-text-muted', border: 'border-mission-control-border' },
+  low: { bg: 'bg-success-subtle', text: 'text-success', border: 'border-success-border' },
 };
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
@@ -1308,7 +1308,7 @@ export default function InboxPanel() {
                         <ShieldAlert size={20} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
-                            <span className="font-semibold text-sm">⚠️ Potential {warning.type.replace('_', ' ')}</span>
+                            <span className="font-semibold text-sm flex items-center gap-1"><AlertTriangle size={14} className="text-warning shrink-0" /> Potential {warning.type.replace('_', ' ')}</span>
                             <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
                               {warning.risk} risk
                             </span>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap } from 'lucide-react';
+import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap, Star, Briefcase, User, Package, Flame, Lightbulb, Target, Pin, Bookmark, BookOpen, type LucideIcon } from 'lucide-react';
 import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -17,7 +17,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   const [editingRuleId, setEditingRuleId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    icon: '📁',
+    icon: 'Folder',
     color: '#6366f1',
     description: '',
   });
@@ -58,7 +58,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       }).then(r => r.ok ? r.json() : { success: false });
       if (result?.success) {
         showToast('success', `Folder "${formData.name}" created`);
-        setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
+        setFormData({ name: '', icon: 'Folder', color: '#6366f1', description: '' });
         setShowCreate(false);
         loadFolders();
       } else {
@@ -85,7 +85,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       if (result?.success) {
         showToast('success', 'Folder updated');
         setEditingId(null);
-        setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
+        setFormData({ name: '', icon: 'Folder', color: '#6366f1', description: '' });
         loadFolders();
       } else {
         showToast('error', result?.error || 'Failed to update folder');
@@ -134,15 +134,32 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
   const cancelEdit = () => {
     setEditingId(null);
-    setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
+    setFormData({ name: '', icon: 'Folder', color: '#6366f1', description: '' });
   };
 
   const cancelCreate = () => {
     setShowCreate(false);
-    setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
+    setFormData({ name: '', icon: 'Folder', color: '#6366f1', description: '' });
   };
 
-  const iconOptions = ['📁', '⭐', '💼', '👤', '📦', '🔥', '💡', '🎯', '📌', '🏷️', '🔖', '📚'];
+  const iconOptions: { value: string; label: string; icon: LucideIcon }[] = [
+    { value: 'Folder', label: 'Folder', icon: Folder },
+    { value: 'Star', label: 'Star', icon: Star },
+    { value: 'Briefcase', label: 'Work', icon: Briefcase },
+    { value: 'User', label: 'Person', icon: User },
+    { value: 'Package', label: 'Package', icon: Package },
+    { value: 'Flame', label: 'Hot', icon: Flame },
+    { value: 'Lightbulb', label: 'Idea', icon: Lightbulb },
+    { value: 'Target', label: 'Target', icon: Target },
+    { value: 'Pin', label: 'Pin', icon: Pin },
+    { value: 'Tag', label: 'Tag', icon: Tag },
+    { value: 'Bookmark', label: 'Bookmark', icon: Bookmark },
+    { value: 'BookOpen', label: 'Library', icon: BookOpen },
+  ];
+
+  const getIconComponent = (iconValue: string): LucideIcon => {
+    return iconOptions.find(o => o.value === iconValue)?.icon ?? Folder;
+  };
   const colorOptions = [
     '#6366f1', // indigo
     '#f59e0b', // amber
@@ -192,17 +209,21 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
               <div className="w-24">
                 <span className="block text-xs font-medium mb-1 text-mission-control-text-dim">Icon</span>
                 <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
-                  {iconOptions.map((icon) => (
-                    <button
-                      key={icon}
-                      onClick={() => setFormData({ ...formData, icon })}
-                      className={`text-2xl p-1 rounded transition-colors ${
-                        formData.icon === icon ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
-                      }`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
+                  {iconOptions.map((opt) => {
+                    const OptIcon = opt.icon;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => setFormData({ ...formData, icon: opt.value })}
+                        title={opt.label}
+                        className={`flex items-center justify-center p-1.5 rounded transition-colors ${
+                          formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
+                        }`}
+                      >
+                        <OptIcon size={16} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -298,17 +319,21 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       {/* Icon Picker */}
                       <div className="w-24">
                         <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
-                          {iconOptions.map((icon) => (
-                            <button
-                              key={icon}
-                              onClick={() => setFormData({ ...formData, icon })}
-                              className={`text-2xl p-1 rounded transition-colors ${
-                                formData.icon === icon ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
-                              }`}
-                            >
-                              {icon}
-                            </button>
-                          ))}
+                          {iconOptions.map((opt) => {
+                            const OptIcon = opt.icon;
+                            return (
+                              <button
+                                key={opt.value}
+                                onClick={() => setFormData({ ...formData, icon: opt.value })}
+                                title={opt.label}
+                                className={`flex items-center justify-center p-1.5 rounded transition-colors ${
+                                  formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
+                                }`}
+                              >
+                                <OptIcon size={16} />
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -363,7 +388,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                 ) : (
                   /* View Mode */
                   <div className="flex items-start gap-3">
-                    <div className="text-3xl">{folder.icon}</div>
+                    {(() => { const FolderIcon = getIconComponent(folder.icon ?? 'Folder'); return <div className="text-mission-control-text-dim"><FolderIcon size={28} /></div>; })()}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold">{folder.name}</h3>
