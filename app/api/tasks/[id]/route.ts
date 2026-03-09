@@ -189,10 +189,16 @@ export async function PATCH(
     // Gate auto-sets Clara as reviewer and may push back to 'todo' if incomplete
     const movingToReview = 'status' in body && body.status === 'review';
     if (movingToReview) {
-      runReviewGate(id);
+      const gateResult = runReviewGate(id);
       // Re-fetch after gate may have modified the task
       const afterGate = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown> | undefined;
-      if (afterGate) return NextResponse.json(parseTask(afterGate));
+      if (afterGate) {
+        const response = parseTask(afterGate) as Record<string, unknown>;
+        if (!gateResult.passed && gateResult.failures.length > 0) {
+          response.gateRejection = { reason: gateResult.failures.join(' | ') };
+        }
+        return NextResponse.json(response);
+      }
     }
 
     // Auto-spawn next occurrence when a recurring task is marked done

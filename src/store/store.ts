@@ -696,7 +696,17 @@ export const useStore = create<Store>()(
         // Broadcast status change to main session
         gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         // Sync to mission-control-db
-        taskApi.update(task.id, { status }).catch((err: Error) => {
+        taskApi.update(task.id, { status }).then((result: Record<string, unknown>) => {
+          // Check if review gate rejected the move
+          if (result?.gateRejection && typeof result.gateRejection === 'object') {
+            const rejection = result.gateRejection as { reason: string };
+            showToast('warning', 'Review gate rejected', rejection.reason);
+            // Rollback: the server already moved it back to todo, sync local state
+            set((s: Store) => ({
+              tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, status: (result.status as TaskStatus) || previousStatus, updatedAt: Date.now() } : t)
+            }));
+          }
+        }).catch((err: Error) => {
           console.error("[Store] Task move failed:", err);
           showToast('error', 'Task move failed', err.message);
           // Rollback optimistic update

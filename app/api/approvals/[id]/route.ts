@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 import { spawnSync } from 'child_process';
 import path from 'path';
 
@@ -145,6 +146,15 @@ export async function PATCH(
     if (typeof updated.metadata === 'string') {
       try { updated.metadata = JSON.parse(updated.metadata as string); } catch { updated.metadata = {}; }
     }
+
+    // Emit inbox.count SSE event so sidebar badge updates immediately
+    try {
+      const pendingCount = (db.prepare(
+        "SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'"
+      ).get() as { c: number }).c;
+      emitSSEEvent('inbox.count', { count: pendingCount });
+    } catch { /* non-critical */ }
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('PATCH /api/approvals/[id] error:', error);

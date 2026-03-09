@@ -62,10 +62,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [description, setDescription] = useState('');
   const [project, setProject] = useState('Default');
   const [status, setStatus] = useState<TaskStatus>(initialStatus);
-  const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [priority, setPriority] = useState<TaskPriority | ''>('p2');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [reviewerId, setReviewerId] = useState<string>('mission-control'); // Default to Mission Control as reviewer
+  const [reviewerId, setReviewerId] = useState<string>('clara'); // Default to Clara as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
 
   // Validation state
@@ -112,11 +112,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
-        // Always default reviewer to mission-control unless explicitly set
-        setReviewerId('mission-control');
+        // Default reviewer to clara
+        setReviewerId('clara');
       } else {
-        // Fresh task - default reviewer to mission-control
-        setReviewerId('mission-control');
+        // Fresh task - default reviewer to clara
+        setReviewerId('clara');
+        setPriority('p2');
       }
       
       // Start chat with greeting if in chat mode
@@ -204,7 +205,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
-      reviewerId: reviewerId || 'mission-control', // Always set reviewer (default: mission-control)
+      reviewerId: reviewerId || 'clara', // Always set reviewer (default: clara)
       reviewStatus: 'pending' as any, // Initialize review status
       // Multi-stage fields
       ...(showMultiStage && projectName ? { projectName } : {}),
@@ -335,7 +336,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: extractedData.priority,
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
-      reviewerId: 'mission-control', // Always default to Mission Control as reviewer
+      reviewerId: 'clara', // Always default to Clara as reviewer
       reviewStatus: 'pending' as any, // Initialize review status
     };
 
@@ -747,24 +748,34 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   </button>
                   {agents
                     .filter(agent => !['main', 'mission-control'].includes(agent.id))
-                    .map(agent => (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        onClick={() => setAssignedTo(agent.id)}
-                        aria-label={`Assign to ${agent.name}`}
-                        aria-pressed={assignedTo === agent.id}
-                        className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                          assignedTo === agent.id
-                            ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                            : 'border-mission-control-border hover:border-mission-control-accent/50'
-                        }`}
-                      >
-                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                        <span className="truncate">{agent.name}</span>
-                      </button>
-                    ))}
+                    .map(agent => {
+                      const isDisabled = agent.status === 'disabled';
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => setAssignedTo(agent.id)}
+                          aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}`}
+                          aria-pressed={assignedTo === agent.id}
+                          className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
+                            assignedTo === agent.id
+                              ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'border-mission-control-border hover:border-mission-control-accent/50'
+                          } ${isDisabled ? 'opacity-50' : ''}`}
+                        >
+                          <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                          <span className="truncate">{agent.name}</span>
+                          {isDisabled && <span className="text-xs text-error">(offline)</span>}
+                        </button>
+                      );
+                    })}
                 </div>
+                {assignedTo && agents.find(a => a.id === assignedTo)?.status === 'disabled' && (
+                  <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs">
+                    <AlertTriangle size={12} className="flex-shrink-0" />
+                    This agent is disabled. Task will queue but won&apos;t execute until re-enabled.
+                  </div>
+                )}
               </div>
 
               {/* Assign Reviewer */}
@@ -795,7 +806,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     ))}
                 </div>
                 <p className="text-xs text-mission-control-text-dim mt-2">
-                  📌 Default: Mission Control (agent reviewer for all tasks)
+                  Default: Clara (quality gate reviewer for all tasks)
                 </p>
               </div>
 

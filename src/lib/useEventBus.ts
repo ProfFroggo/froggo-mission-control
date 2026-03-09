@@ -16,6 +16,10 @@ const EVENT_TYPES = [
   'task.updated',
   'agent.status',
   'inbox.count',
+  'module.installed',
+  'agent.updated',
+  'circuit.open',
+  'task.unblocked',
 ];
 
 function dispatchEvent(type: string, data: unknown) {

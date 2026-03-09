@@ -10,6 +10,7 @@ import { usePanelConfigStore } from '../store/panelConfig';
 import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
+import { useEventBus } from '../lib/useEventBus';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
 // Must include ALL DEFAULT_PANELS ids so panels appear immediately (before async initAll() runs).
@@ -101,6 +102,19 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   }, []);
 
   useVisibilityPolling(loadInboxCount, 60_000);
+
+  // Subscribe to SSE inbox.count events — updates badge immediately when approvals are resolved
+  useEventBus('inbox.count', (data) => {
+    const d = data as { count: number };
+    if (typeof d?.count === 'number') {
+      setInboxCount(d.count);
+    }
+  });
+
+  // Subscribe to module.installed events — refresh nav when a new module is installed
+  useEventBus('module.installed', () => {
+    usePanelConfigStore.getState().syncWithViewRegistry();
+  });
 
   return (
     <>
