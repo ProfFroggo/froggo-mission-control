@@ -620,6 +620,41 @@ async function cmdSetup(force = false) {
     success('.claude/settings.json generated');
   }
 
+  // ── Google Workspace MCP — pre-warm cache + create config dir ──────────
+  step('Installing Google Workspace MCP');
+  const gwConfigDir = path.join(HOME, '.config', 'google-workspace-mcp');
+  mkdirSync(gwConfigDir, { recursive: true });
+
+  // Find npx — try common locations so the absolute path works in LaunchAgent env
+  let npxBin = 'npx';
+  const npxCandidates = [
+    path.join(path.dirname(nodeBin), 'npx'),   // same dir as node
+    '/usr/local/bin/npx',
+    '/opt/homebrew/bin/npx',
+    '/usr/bin/npx',
+  ];
+  for (const p of npxCandidates) {
+    if (existsSync(p)) { npxBin = p; break; }
+  }
+  try {
+    execSync(`"${npxBin}" --version`, { encoding: 'utf-8', stdio: 'pipe' });
+  } catch {
+    npxBin = 'npx'; // fall back to PATH lookup if none found
+  }
+
+  // Pre-warm the npx cache so first agent use doesn't stall downloading the package
+  info('Downloading @presto-ai/google-workspace-mcp...');
+  try {
+    spawnSync(npxBin, ['-y', '@presto-ai/google-workspace-mcp', '--version'], {
+      timeout: 60000,
+      stdio: 'pipe',
+      env: { ...process.env, HOME },
+    });
+    success('Google Workspace MCP ready');
+  } catch {
+    warn('Could not pre-warm google-workspace-mcp — will download on first use');
+  }
+
   // ── Generate .mcp.json ──────────────────────────────────────────────────
   // Use absolute node binary path — critical for LaunchAgent / systemd environments
   // where 'node' is not on PATH when the MCP server child process is spawned.
@@ -640,13 +675,23 @@ async function cmdSetup(force = false) {
         args: [path.join(INSTALL_DIR, 'tools', 'cron-mcp', 'dist', 'index.js')],
         env: { SCHEDULE_PATH: `${MC_DATA}/schedule.json` },
       },
+      'google-workspace': {
+        command: npxBin,
+        args: ['-y', '@presto-ai/google-workspace-mcp'],
+        env: {
+          // Force file-based token storage — more reliable than system keychain
+          GEMINI_CLI_WORKSPACE_FORCE_FILE_STORAGE: 'true',
+          // Ensure google-workspace-mcp can find HOME in LaunchAgent/systemd contexts
+          HOME,
+        },
+      },
     },
   };
   const mcpJson = JSON.stringify(mcpConfig, null, 2);
   writeFileSync(path.join(INSTALL_DIR, '.mcp.json'), mcpJson);
   // Also write to ~/mission-control/.mcp.json so agents in MC_HOME get MCP access
   writeFileSync(path.join(MC_HOME, '.mcp.json'), mcpJson);
-  success('.mcp.json generated');
+  success('.mcp.json generated (includes google-workspace-mcp)');
 
   // ── Scaffold core agent workspaces ──────────────────────────────────────
   step('Bootstrapping core agent workspaces');

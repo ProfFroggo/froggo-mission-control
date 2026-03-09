@@ -20,6 +20,14 @@
       "env": {
         "SCHEDULE_PATH": "<HOME>/mission-control/data/schedule.json"
       }
+    },
+    "google-workspace": {
+      "command": "npx",
+      "args": ["-y", "@presto-ai/google-workspace-mcp"],
+      "env": {
+        "GEMINI_CLI_WORKSPACE_FORCE_FILE_STORAGE": "true",
+        "HOME": "<HOME>"
+      }
     }
   }
 }
