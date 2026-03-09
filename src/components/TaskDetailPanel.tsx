@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-// LEGACY: TaskDetailPanel uses file-level suppression for intentional stable ref patterns.
+// Phase 81: File-level eslint-disable removed.
+// useEffect deps are explicit. Interval raised to 30s.
 // Complex panel with many useEffects for task management - patterns are carefully designed.
-// Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useCallback } from 'react';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
@@ -152,14 +151,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     loadActivity();
     loadAttachments();
 
-    // Poll for updates while task is in progress
+    // Poll for updates while task is in progress — 30s (SSE drives real-time updates)
     const interval = setInterval(() => {
       if (task.status === 'in-progress') {
         loadSubtasks();
         loadActivity();
         loadAttachments();
       }
-    }, 3000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [task, loadSubtasks, loadActivity, loadAttachments]);
