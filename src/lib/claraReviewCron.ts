@@ -35,6 +35,14 @@ function buildClaraSystemPrompt(): string {
   return prompt;
 }
 
+function resetReviewStatus(taskId: unknown): void {
+  try {
+    getDb()
+      .prepare("UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE id = ? AND reviewStatus = 'in-review'")
+      .run(Date.now(), taskId);
+  } catch { /* non-critical */ }
+}
+
 export function spawnClaraReview(task: Record<string, unknown>): void {
   if (inReview.has(task.id as string)) return;
   inReview.add(task.id as string);
@@ -54,11 +62,12 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     'Make your decision now. Do not ask clarifying questions.',
   ].filter(Boolean).join('\n');
 
-  // Mark as in-review immediately
+  // Stamp reviewedAt so we can detect stale in-review rows
+  const startedAt = Date.now();
   try {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = 'in-review', updatedAt = ? WHERE id = ?")
-      .run(Date.now(), task.id);
+      .run(startedAt, task.id);
   } catch { /* non-critical */ }
 
   const claraDir = join(HOME, 'mission-control', 'agents', 'clara');
@@ -83,17 +92,24 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
   proc.stdout.resume();
   proc.stderr.resume();
 
+  // Kill Clara's process after 3 minutes — prevents zombie reviews
+  const reviewTimeout = setTimeout(() => {
+    try { proc.kill(); } catch { /* already exited */ }
+  }, 3 * 60_000);
+
   proc.on('close', () => {
+    clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
+    // If Clara exited without calling task_update (MCP failure, model responded without
+    // using tools, process killed), reviewStatus is still 'in-review' in the DB.
+    // Reset it so the next cron sweep retries.
+    resetReviewStatus(task.id);
   });
 
   proc.on('error', () => {
+    clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
-    try {
-      getDb()
-        .prepare("UPDATE tasks SET reviewStatus = NULL WHERE id = ? AND reviewStatus = 'in-review'")
-        .run(task.id);
-    } catch { /* non-critical */ }
+    resetReviewStatus(task.id);
   });
 }
 
@@ -141,6 +157,18 @@ export function startClaraReviewCron(): void {
   if (g._claraReviewCron) return;
   // Set sentinel immediately (before setInterval) to prevent concurrent callers from racing in
   g._claraReviewCron = true as unknown as ReturnType<typeof setInterval>;
+
+  // On startup: reset any tasks stuck at 'in-review' from a previous server session.
+  // The in-memory inReview Set is empty after restart, so these would never be retried
+  // without this cleanup.
+  try {
+    const stale = getDb()
+      .prepare(`UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE status = 'review' AND reviewStatus = 'in-review'`)
+      .run(Date.now());
+    if (stale.changes > 0) {
+      console.log(`[clara-review-cron] Reset ${stale.changes} stale in-review task(s) from previous session`);
+    }
+  } catch { /* DB may not be ready yet — runReviewCycle will handle them */ }
 
   const interval = setInterval(runReviewCycle, REVIEW_INTERVAL_MS);
   interval.unref?.();

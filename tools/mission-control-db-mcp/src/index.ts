@@ -411,6 +411,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }) }] };
         }
 
+        // HARD RULE: only Clara can mark a task done — agents must move to review first
+        if (args?.status === 'done' && !['review'].includes(current.status)) {
+          // Allow system/clara to advance (reviewStatus=approved auto-advance is handled below)
+          const callerIsClara = args?.reviewStatus === 'approved'; // Clara sets both together
+          if (!callerIsClara) {
+            return { content: [{ type: 'text', text: JSON.stringify({
+              error: 'WORKFLOW_VIOLATION: agents cannot mark tasks done directly. Move to status="review" first — Clara will approve and advance to done.',
+              hint: 'Set status="review" with lastAgentUpdate describing what was completed. Clara reviews and moves to done.',
+            }) }] };
+          }
+        }
+
+        // SOFT GUARD: warn if moving to review with incomplete subtasks
+        if (args?.status === 'review') {
+          const incomplete = (db.prepare(
+            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ? AND completed = 0'
+          ).get(taskId) as { c: number }).c;
+          const total = (db.prepare(
+            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?'
+          ).get(taskId) as { c: number }).c;
+          if (total > 0 && incomplete > 0) {
+            return { content: [{ type: 'text', text: JSON.stringify({
+              error: `INCOMPLETE_WORK: ${incomplete} of ${total} subtasks are not yet completed. Complete all subtasks before submitting for review, or mark irrelevant ones complete with a note.`,
+              incomplete,
+              total,
+            }) }] };
+          }
+        }
+
         const sets = ['updatedAt = ?'];
         const vals: any[] = [now];
 
