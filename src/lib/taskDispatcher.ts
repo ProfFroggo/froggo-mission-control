@@ -784,6 +784,7 @@ export function dispatchTask(taskId: string): boolean {
 
     // Handle spawn errors (e.g. ENOENT if claude binary not found)
     proc.on('error', (err) => {
+      activeDispatches = Math.max(0, activeDispatches - 1);
       console.error(`[taskDispatcher] Spawn error for task ${taskId}:`, err);
       try {
         db.prepare(

@@ -57,8 +57,8 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     task.lastAgentUpdate ? `**Agent's update:** ${task.lastAgentUpdate}` : null,
     '',
     'Review this task and update it immediately:',
-    `- Approved → mcp__mission-control-db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "..." }`,
-    `- Rejected → mcp__mission-control-db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues>" }`,
+    `- Approved → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "..." }`,
+    `- Rejected → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues>" }`,
     '',
     'Make your decision now. Do not ask clarifying questions.',
   ].filter(Boolean).join('\n');
@@ -84,7 +84,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     '--disallowedTools', loadDisallowedTools('clara').join(','),
     '--system-prompt', buildClaraSystemPrompt(),
   ], {
-    cwd: existsSync(claraDir) ? claraDir : HOME,
+    cwd: process.cwd(),
     env: cleanEnv as NodeJS.ProcessEnv,
     stdio: 'pipe',
   });
