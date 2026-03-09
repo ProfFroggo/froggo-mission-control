@@ -205,6 +205,41 @@ const PERMISSION_GROUPS = [
   },
 ];
 
+// Preset permission overrides per trust tier.
+// true = Allow, false = Deny, undefined = inherit tier default (reset).
+const TIER_PRESETS: Record<string, Record<string, boolean>> = {
+  restricted: {
+    'fs.read': true,    'fs.write': false,   'fs.delete': false,
+    'git.read': true,   'git.commit': false,  'git.push': false,   'git.force': false,
+    'tasks.read': true, 'tasks.update': false,'tasks.done': false,
+    'external.draft': false, 'external.send': false, 'external.social': false, 'external.deploy': false,
+  },
+  apprentice: {
+    'fs.read': true,    'fs.write': true,    'fs.delete': false,
+    'git.read': true,   'git.commit': true,   'git.push': false,   'git.force': false,
+    'tasks.read': true, 'tasks.update': true, 'tasks.done': false,
+    'external.draft': false, 'external.send': false, 'external.social': false, 'external.deploy': false,
+  },
+  worker: {
+    'fs.read': true,    'fs.write': true,    'fs.delete': true,
+    'git.read': true,   'git.commit': true,   'git.push': true,    'git.force': false,
+    'tasks.read': true, 'tasks.update': true, 'tasks.done': true,
+    'external.draft': true,  'external.send': false, 'external.social': false, 'external.deploy': false,
+  },
+  trusted: {
+    'fs.read': true,    'fs.write': true,    'fs.delete': true,
+    'git.read': true,   'git.commit': true,   'git.push': true,    'git.force': false,
+    'tasks.read': true, 'tasks.update': true, 'tasks.done': true,
+    'external.draft': true,  'external.send': true,  'external.social': false, 'external.deploy': false,
+  },
+  admin: {
+    'fs.read': true,    'fs.write': true,    'fs.delete': true,
+    'git.read': true,   'git.commit': true,   'git.push': true,    'git.force': true,
+    'tasks.read': true, 'tasks.update': true, 'tasks.done': true,
+    'external.draft': true,  'external.send': true,  'external.social': true,  'external.deploy': true,
+  },
+};
+
 const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
 const TIER_LABELS = ['Auto', 'Logged', 'Review', 'Explicit'];
 
@@ -282,6 +317,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const [agentDisallowed, setAgentDisallowed] = useState<string[]>([]);
   const [newDisallowed, setNewDisallowed] = useState('');
   const [permDirty, setPermDirty] = useState(false);
+  const [presetApplied, setPresetApplied] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -1038,17 +1074,38 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         <button
                           key={tier.id}
                           type="button"
-                          onClick={() => { setTrustTier(tier.id); setPermDirty(true); }}
+                          onClick={() => {
+                            setTrustTier(tier.id);
+                            // Apply preset overrides for this tier
+                            const preset = TIER_PRESETS[tier.id];
+                            if (preset) {
+                              setPermOverrides(preset);
+                              // Expand all groups so the user can see what changed
+                              const allOpen: Record<string, boolean> = {};
+                              PERMISSION_GROUPS.forEach(g => { allOpen[g.label] = true; });
+                              setExpandedGroups(allOpen);
+                              setPresetApplied(tier.id);
+                              setTimeout(() => setPresetApplied(null), 2000);
+                            }
+                            setPermDirty(true);
+                          }}
                           className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}
                         >
                           <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
                         </button>
                       ))}
                     </div>
-                    {/* Description of selected tier */}
-                    <p className="text-xs text-mission-control-text-dim mt-2 px-1">
-                      {TRUST_TIERS.find(t => t.id === trustTier)?.desc}
-                    </p>
+                    {/* Description + preset flash */}
+                    <div className="flex items-center justify-between mt-2 px-1">
+                      <p className="text-xs text-mission-control-text-dim">
+                        {TRUST_TIERS.find(t => t.id === trustTier)?.desc}
+                      </p>
+                      {presetApplied && (
+                        <span className="text-xs text-mission-control-accent font-medium animate-pulse">
+                          Presets applied
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Per-action overrides — collapsible groups */}

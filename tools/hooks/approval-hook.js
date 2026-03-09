@@ -2,14 +2,17 @@
 /**
  * Mission Control Tiered Approval Hook (PreToolUse)
  *
- * Reads: { tool_name, tool_input } from stdin
+ * Reads: { tool_name, tool_input, session_id? } from stdin
  * Outputs: { decision: "approve" | "block", reason?: string }
  *
- * Tiers:
- * - Tier 0 (auto-approve): Read, Grep, Glob, test runs, MCP reads, memory reads
- * - Tier 1 (approve + log): File edits in src/, git commits, task status changes
- * - Tier 2 (approve + create approval record): Task → done, git push, file deletions
- * - Tier 3 (block — needs human): External actions, deploys, P0 completion
+ * Trust tiers (agent setting) override default tier behavior:
+ *   restricted  — Tier 0 only; all writes blocked
+ *   apprentice  — Tier 0-1 auto; Tier 2 queued; Tier 3 blocked
+ *   worker      — Tier 0-2 auto; Tier 3 blocked
+ *   trusted     — Tier 0-3 auto (Tier 3 external = queued, not blocked)
+ *   admin       — Full autonomy; all tiers auto-approved
+ *
+ * Default (no agent / unknown): apprentice behavior
  */
 
 const path = require('path');
@@ -17,32 +20,43 @@ const os = require('os');
 
 const DB_PATH = process.env.DB_PATH || path.join(os.homedir(), 'mission-control/data/mission-control.db');
 
-// Lazy-load better-sqlite3 — it may not be in PATH from hook context
 let db = null;
 function getDb() {
   if (!db) {
     try {
       const Database = require('better-sqlite3');
       db = new Database(DB_PATH);
-    } catch (e) {
-      // DB not available — default to approve for all tiers < 3
-    }
+    } catch (e) { /* DB not available — default to approve */ }
   }
   return db;
 }
 
-function logAnalytics(toolName, tier, decision) {
+// Look up the trust tier for an agent by session ID
+function getTrustTierForSession(sessionId) {
+  if (!sessionId) return 'apprentice';
+  try {
+    const database = getDb();
+    if (!database) return 'apprentice';
+    const row = database.prepare(`
+      SELECT a.trust_tier FROM agent_sessions s
+      JOIN agents a ON a.id = s.agentId
+      WHERE s.sessionId = ?
+      LIMIT 1
+    `).get(sessionId);
+    return row?.trust_tier || 'apprentice';
+  } catch { return 'apprentice'; }
+}
+
+function logAnalytics(toolName, tier, decision, agentTrustTier) {
   try {
     const database = getDb();
     if (database) {
       database.prepare(`
         INSERT INTO analytics_events (type, agentId, data, timestamp)
         VALUES ('hook_decision', 'system', ?, ?)
-      `).run(JSON.stringify({ toolName, tier, decision }), Date.now());
+      `).run(JSON.stringify({ toolName, tier, decision, agentTrustTier }), Date.now());
     }
-  } catch (e) {
-    // Silently ignore — hooks must not crash
-  }
+  } catch (e) { /* non-critical */ }
 }
 
 function createApprovalRecord(toolName, toolInput) {
@@ -51,23 +65,21 @@ function createApprovalRecord(toolName, toolInput) {
     if (database) {
       const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       database.prepare(`
-        INSERT INTO approvals (id, type, title, description, requestedBy, tier, status, createdAt)
-        VALUES (?, ?, ?, ?, ?, 2, 'pending', ?)
+        INSERT INTO approvals (id, type, title, content, metadata, status, requester, tier, category, createdAt)
+        VALUES (?, 'tool_use', ?, ?, ?, 'pending', 'agent', 2, 'agent_approval', ?)
       `).run(
         id,
-        'tool_use',
-        `Tool approval: ${toolName}`,
+        `Tool: ${toolName}`,
         JSON.stringify(toolInput),
-        'agent',
+        JSON.stringify({ toolName, toolInput }),
         Date.now()
       );
     }
-  } catch (e) {
-    // Silently ignore
-  }
+  } catch (e) { /* non-critical */ }
 }
 
-// Tier 0: Always auto-approve (reads, tests, MCP reads)
+// ── Tool tier classification ──────────────────────────────────────────────────
+
 const TIER_0_TOOLS = new Set([
   'Read', 'Glob', 'Grep', 'LS',
   'mcp__mission-control_db__task_list',
@@ -80,49 +92,32 @@ const TIER_0_TOOLS = new Set([
   'mcp__memory__memory_recall',
 ]);
 
-// Tier 3: Always block for human review
-const TIER_3_PATTERNS = [
-  /git push/i,
+const TIER_3_BASH_PATTERNS = [
   /rm -rf/i,
-  /sudo/i,
+  /sudo /i,
   /curl.*twitter|wget.*twitter/i,
   /deploy.*production/i,
 ];
 
-function getTier(toolName, toolInput) {
-  // Tier 0: explicit read/test tools
+function getToolTier(toolName, toolInput) {
   if (TIER_0_TOOLS.has(toolName)) return 0;
 
-  // Check bash commands
   if (toolName === 'Bash') {
     const cmd = (toolInput?.command || '').toLowerCase();
-
-    // Tier 0: read-only bash
     if (/^(ls|cat|head|tail|grep|find|echo|wc|diff|git (status|log|diff|branch))/.test(cmd)) return 0;
     if (/npm (test|run (test|build|dev|lint))/.test(cmd)) return 0;
     if (/npx (vitest|tsc|playwright)/.test(cmd)) return 0;
-
-    // Tier 3: dangerous
-    if (TIER_3_PATTERNS.some(p => p.test(cmd))) return 3;
+    if (TIER_3_BASH_PATTERNS.some(p => p.test(cmd))) return 3;
     if (/git push/.test(cmd)) return 3;
-
-    // Tier 2: git commits, file deletions
     if (/git commit/.test(cmd)) return 2;
     if (/rm\s/.test(cmd)) return 2;
-
-    // Tier 1: everything else in bash
     return 1;
   }
 
-  // Tier 1: file edits
   if (['Edit', 'Write', 'MultiEdit'].includes(toolName)) return 1;
 
-  // MCP writes
   if (toolName === 'mcp__mission-control_db__task_update') {
-    // Tier 2 if moving to 'done'
-    const status = toolInput?.status;
-    if (status === 'done') return 2;
-    return 1;
+    return toolInput?.status === 'done' ? 2 : 1;
   }
   if (toolName === 'mcp__mission-control_db__task_create') return 1;
   if (toolName === 'mcp__mission-control_db__task_add_activity') return 0;
@@ -130,45 +125,86 @@ function getTier(toolName, toolInput) {
   if (toolName === 'mcp__mission-control_db__chat_post') return 1;
   if (toolName === 'mcp__memory__memory_write') return 1;
 
-  // Default: Tier 1
   return 1;
+}
+
+// ── Trust tier → decision logic ───────────────────────────────────────────────
+//
+// Returns: 'approve' | 'block' | 'queue'  (queue = approve + create record)
+
+function makeDecision(toolTier, trustTier) {
+  switch (trustTier) {
+    case 'admin':
+      // Full autonomy — approve everything
+      return 'approve';
+
+    case 'trusted':
+      // Tier 0-2: approve. Tier 3: queue (create record) but still approve (not block)
+      if (toolTier <= 2) return 'approve';
+      return 'queue';
+
+    case 'worker':
+      // Tier 0-1: approve. Tier 2: queue. Tier 3: block.
+      if (toolTier <= 1) return 'approve';
+      if (toolTier === 2) return 'queue';
+      return 'block';
+
+    case 'apprentice':
+      // Tier 0: approve. Tier 1-2: queue. Tier 3: block.
+      if (toolTier === 0) return 'approve';
+      if (toolTier <= 2) return 'queue';
+      return 'block';
+
+    case 'restricted':
+      // Tier 0 only. Everything else: block.
+      return toolTier === 0 ? 'approve' : 'block';
+
+    default:
+      // Unknown tier — treat as apprentice
+      if (toolTier === 0) return 'approve';
+      if (toolTier <= 2) return 'queue';
+      return 'block';
+  }
 }
 
 async function main() {
   let input = '';
   process.stdin.setEncoding('utf8');
-
-  for await (const chunk of process.stdin) {
-    input += chunk;
-  }
+  for await (const chunk of process.stdin) input += chunk;
 
   let toolName = 'unknown';
   let toolInput = {};
+  let sessionId = process.env.CLAUDE_CODE_SESSION_ID || null;
 
   try {
     const parsed = JSON.parse(input);
     toolName = parsed.tool_name || parsed.toolName || 'unknown';
     toolInput = parsed.tool_input || parsed.toolInput || {};
+    if (parsed.session_id) sessionId = parsed.session_id;
   } catch (e) {
-    // Malformed input — approve by default
     process.stdout.write(JSON.stringify({ decision: 'approve' }));
     return;
   }
 
-  const tier = getTier(toolName, toolInput);
+  const trustTier = getTrustTierForSession(sessionId);
+  const toolTier = getToolTier(toolName, toolInput);
+  const decision = makeDecision(toolTier, trustTier);
 
-  if (tier === 3) {
+  if (decision === 'block') {
     createApprovalRecord(toolName, toolInput);
-    logAnalytics(toolName, tier, 'block');
+    logAnalytics(toolName, toolTier, 'block', trustTier);
     process.stdout.write(JSON.stringify({
       decision: 'block',
-      reason: `Tier 3 action blocked: ${toolName} requires human approval. Check dashboard approvals queue.`
+      reason: `Blocked: ${toolName} (Tier ${toolTier}) exceeds trust tier "${trustTier}". Check the Approval Queue in Mission Control.`,
     }));
+
+  } else if (decision === 'queue') {
+    createApprovalRecord(toolName, toolInput);
+    logAnalytics(toolName, toolTier, 'queue', trustTier);
+    process.stdout.write(JSON.stringify({ decision: 'approve' }));
+
   } else {
-    if (tier === 2) {
-      createApprovalRecord(toolName, toolInput);
-    }
-    logAnalytics(toolName, tier, 'approve');
+    logAnalytics(toolName, toolTier, 'approve', trustTier);
     process.stdout.write(JSON.stringify({ decision: 'approve' }));
   }
 }
