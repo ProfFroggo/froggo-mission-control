@@ -16,7 +16,8 @@ import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/
 
 const logger = createLogger('InboxPanel');
 
-type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
+type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action'
+  | 'post_x' | 'send_email' | 'delete_file' | 'git_push';
 
 interface InjectionWarning {
   detected: boolean;
@@ -50,12 +51,16 @@ const riskStyles: Record<string, { bg: string; text: string; border: string }> =
 };
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
-  tweet: { icon: Send, color: 'text-info bg-info-subtle', label: 'Tweet' },
-  reply: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Reply' },
-  email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Message' },
-  task: { icon: Bot, color: 'text-warning bg-warning-subtle', label: 'Task' },
-  action: { icon: Play, color: 'text-success bg-success-subtle', label: 'Action' },
+  tweet:       { icon: Send,         color: 'text-info bg-info-subtle',       label: 'X Post' },
+  post_x:      { icon: Send,         color: 'text-info bg-info-subtle',       label: 'X Post' },
+  reply:       { icon: MessageSquare,color: 'text-info bg-info-subtle',       label: 'Reply' },
+  email:       { icon: Mail,         color: 'text-success bg-success-subtle', label: 'Email' },
+  send_email:  { icon: Mail,         color: 'text-success bg-success-subtle', label: 'Email' },
+  message:     { icon: MessageSquare,color: 'text-review bg-review-subtle',   label: 'Message' },
+  task:        { icon: Bot,          color: 'text-warning bg-warning-subtle', label: 'Task' },
+  action:      { icon: Play,         color: 'text-success bg-success-subtle', label: 'Action' },
+  delete_file: { icon: Play,         color: 'text-error bg-error-subtle',     label: 'Delete File' },
+  git_push:    { icon: Play,         color: 'text-warning bg-warning-subtle', label: 'Git Push' },
 };
 
 // Helper component for shortcut rows
@@ -1561,7 +1566,7 @@ export default function InboxPanel() {
                     className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg border border-mission-control-border opacity-60"
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={16} className={config.color.split(' ')[0]} />
+                      <Icon size={16} className={(config?.color ?? '').split(' ')[0]} />
                       <div>
                         <div className="text-sm">{item.title}</div>
                         <div className="text-xs text-mission-control-text-dim">{formatTime(item.created ?? '')}</div>

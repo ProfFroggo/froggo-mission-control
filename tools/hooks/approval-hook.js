@@ -130,40 +130,35 @@ function getToolTier(toolName, toolInput) {
 
 // ── Trust tier → decision logic ───────────────────────────────────────────────
 //
-// Returns: 'approve' | 'block' | 'queue'  (queue = approve + create record)
+// Returns: 'approve' | 'block' | 'queue'
+//
+// Only 'restricted' ever returns 'block' — all other tiers use 'queue' at their
+// ceiling (tool still runs, but an approval record is created for human review).
 
 function makeDecision(toolTier, trustTier) {
   switch (trustTier) {
     case 'admin':
-      // Full autonomy — approve everything
       return 'approve';
 
     case 'trusted':
-      // Tier 0-2: approve. Tier 3: queue (create record) but still approve (not block)
       if (toolTier <= 2) return 'approve';
       return 'queue';
 
     case 'worker':
-      // Tier 0-1: approve. Tier 2: queue. Tier 3: block.
       if (toolTier <= 1) return 'approve';
-      if (toolTier === 2) return 'queue';
-      return 'block';
+      return 'queue';
 
     case 'apprentice':
-      // Tier 0: approve. Tier 1-2: queue. Tier 3: block.
       if (toolTier === 0) return 'approve';
-      if (toolTier <= 2) return 'queue';
-      return 'block';
+      return 'queue';
 
     case 'restricted':
-      // Tier 0 only. Everything else: block.
+      // Only tier that hard-blocks — prevents execution entirely
       return toolTier === 0 ? 'approve' : 'block';
 
     default:
-      // Unknown tier — treat as apprentice
       if (toolTier === 0) return 'approve';
-      if (toolTier <= 2) return 'queue';
-      return 'block';
+      return 'queue';
   }
 }
 
@@ -195,7 +190,7 @@ async function main() {
     logAnalytics(toolName, toolTier, 'block', trustTier);
     process.stdout.write(JSON.stringify({
       decision: 'block',
-      reason: `Blocked: ${toolName} (Tier ${toolTier}) exceeds trust tier "${trustTier}". Check the Approval Queue in Mission Control.`,
+      reason: `Action requires human review: ${toolName} (Tier ${toolTier}) is not permitted for restricted agents. Check the Approval Queue in Mission Control.`,
     }));
 
   } else if (decision === 'queue') {
