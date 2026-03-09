@@ -19,7 +19,9 @@ const EVENT_TYPES = [
   'module.installed',
   'agent.updated',
   'circuit.open',
+  'circuit.closed',
   'task.unblocked',
+  'agent.hired',
 ];
 
 function dispatchEvent(type: string, data: unknown) {

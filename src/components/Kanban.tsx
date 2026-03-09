@@ -98,6 +98,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [movingTasks, setMovingTasks] = useState<Set<string>>(new Set());
   const [isArchiving, setIsArchiving] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<string | null>(null);
   
   // Active agent sessions (for real-time activity indicators)
   const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
@@ -486,7 +487,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setShowHealthCheck(true);
   };
 
-  const handleDeleteTask = useCallback(async (taskId: string) => {
+  const handleDeleteTask = useCallback((taskId: string) => {
+    setPendingDeleteTaskId(taskId);
+  }, []);
+
+  const confirmDeleteTask = useCallback(async () => {
+    if (!pendingDeleteTaskId) return;
+    const taskId = pendingDeleteTaskId;
+    setPendingDeleteTaskId(null);
     setDeletingTasks(prev => new Set(prev).add(taskId));
     try {
       await deleteTask(taskId);
@@ -500,7 +508,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         return next;
       });
     }
-  }, [deleteTask]);
+  }, [deleteTask, pendingDeleteTaskId]);
 
   const handleArchiveDone = async () => {
     setShowArchiveConfirm(false);
@@ -1048,6 +1056,18 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         cancelLabel="Cancel"
         type="warning"
         loading={isArchiving}
+      />
+
+      {/* Delete Task Confirmation Dialog */}
+      <ConfirmDialog
+        open={pendingDeleteTaskId !== null}
+        onClose={() => setPendingDeleteTaskId(null)}
+        onConfirm={confirmDeleteTask}
+        title="Delete Task"
+        message="Delete this task? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        type="danger"
       />
     </div>
   );

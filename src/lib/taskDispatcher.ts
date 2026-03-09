@@ -537,8 +537,9 @@ function isAgentCircuitOpen(agentId: string): boolean {
   if (!record) return false;
   if (record.lockedUntil) {
     if (Date.now() < record.lockedUntil) return true;
-    // Lock expired — reset
+    // Lock expired — reset and notify
     agentFailureCounts.delete(agentId);
+    emitSSEEvent('circuit.closed', { agentId });
     return false;
   }
   return record.count >= CIRCUIT_BREAKER_THRESHOLD;
@@ -579,7 +580,11 @@ export function getCircuitBreakerState(): Record<string, { open: boolean; failur
 }
 
 function recordAgentSuccess(agentId: string) {
+  const hadRecord = agentFailureCounts.has(agentId);
   agentFailureCounts.delete(agentId);
+  if (hadRecord) {
+    emitSSEEvent('circuit.closed', { agentId });
+  }
 }
 
 // ── Dispatch debounce ────────────────────────────────────────────────────────
