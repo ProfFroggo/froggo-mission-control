@@ -105,6 +105,8 @@ export default function ChatPanel() {
   const currentContentRef = useRef<string | ContentBlock[]>(''); // Full structured content
   const currentMsgIdRef = useRef<string>('');
   const currentRunIdRef = useRef<string>('');
+  // Phase 80: AbortController for SDK streaming cancellation
+  const sdkAbortControllerRef = useRef<AbortController | null>(null);
 
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
