@@ -331,7 +331,7 @@ Memory search uses a cascading backend:
 
 - **API keys** are stored in the OS keychain (macOS Keychain / Linux Secret Service) via `keytar`, never in plaintext SQLite
 - **Agent permissions** are scoped by trust tier — new agents start as apprentices
-- **External actions** (emails, deploys, tweets) require human approval before execution
+- **Agents cannot publish or send directly** — emails, social posts, git pushes, and file deletions are queued as proposals; a Python executor script only fires when a human manually approves in the dashboard
 - **Approval tiers** (0–3) gate actions from read-only to external writes
 
 ---
@@ -394,14 +394,45 @@ Tier enforcement is implemented at two layers: the `PreToolUse` hook (`tools/hoo
 
 ### Human-in-the-Loop (HITL) Architecture
 
-High-risk actions — email sends, social media posts, git pushes, file deletions — cannot be executed autonomously by any agent below `admin` tier. The flow is:
+High-risk actions — email sends, social media posts, git pushes, file deletions — **cannot be executed autonomously by any agent**. There is no code path where an agent can directly send an email or publish a post. The capability simply does not exist in the tools available to them.
 
-1. Agent calls `POST /api/actions` with the action payload.
-2. The platform creates a pending approval record visible in the **Approval Queue** dashboard tab.
-3. A human operator reviews a rich preview (email layout, tweet card, danger box for destructive ops) and clicks **Approve & Run** or **Reject**.
-4. On approval, the platform fires the executor script (`tools/executors/`) which routes through the local API (Google OAuth for email, twitter-api-v2 for X posts).
+Instead, agents can only *propose* an action. A human must manually approve it in the dashboard before anything is sent or published.
 
-Scheduled actions follow the same flow but execute at the designated time only after prior human approval.
+### Deferred Executor — High-Impact Writes
+
+Actions with real-world side effects use a **deferred execution pattern** enforced at the platform level:
+
+```
+Agent proposes action
+        ↓
+POST /api/actions  →  pending_actions table  +  approvals table
+        ↓
+Approval Queue dashboard — human reviews rich preview
+  • Email: full To / Subject / body layout
+  • Social post: tweet card with 280-char count ring
+  • File delete: red danger box showing the path
+  • Git push: branch, remote, force-push warning if applicable
+        ↓
+Human clicks "Approve & Run"  (or Reject / Cancel)
+        ↓
+Platform fires tools/executors/{action}.py
+  • send_email.py   →  POST /api/gmail/messages/send  (Google OAuth)
+  • post_x.py       →  POST /api/x/tweet              (twitter-api-v2)
+  • delete_file.py  →  safe delete with home-dir guard
+  • git_push.py     →  git push with force-push guard on main/master
+        ↓
+Result written back to pending_actions.result
+Approval record updated to approved / failed
+```
+
+**Key properties of this design:**
+
+- **Agents have no direct write path.** The executor scripts live outside the agent's tool scope. An agent calling `POST /api/actions` only creates a database record — it cannot trigger execution.
+- **The human click is the only trigger.** `POST /api/approvals/:id` with `action: approve` is the sole code path that calls `spawnSync` on an executor script. It is only reachable via the authenticated dashboard.
+- **Admin bypass is explicit and audited.** Agents with `admin` trust tier can bypass the queue and execute immediately — but this is a deliberate configuration choice, logged to `analytics_events`, and not the default for any agent.
+- **Scheduled actions are pre-approved, not auto-approved.** A scheduled post still requires human approval before it is queued. The schedule only controls *when* the already-approved action fires, not whether it fires.
+- **Previews are shown before approval.** The dashboard renders a full preview of exactly what will be sent — the email body, the tweet text, the file path — so there are no surprises after clicking approve.
+- **Rejection and cancellation are permanent.** Rejected or cancelled actions cannot be re-queued by an agent. A new proposal must be created.
 
 ### Clara QA Gate
 

@@ -52,19 +52,35 @@ The centralized accessor is `src/lib/keychain.ts`. Direct use of `process.env` f
 
 ### Deferred Action Executor
 
-Actions with real-world side effects (email, social media, git push, file deletion) follow a deferred execution pattern:
+Actions with real-world side effects (email, social media, git push, file deletion) follow a **deferred execution pattern**. Agents have no direct write path to external services — they can only propose an action. A Python executor script is the only mechanism that can trigger a real-world write, and it only runs when a human manually approves the action in the dashboard.
 
 ```
-Agent → POST /api/actions → pending_actions + approvals tables
-                                     ↓
-              Human reviews in Approval Queue dashboard
-                                     ↓
-              POST /api/approvals/:id (approve) → executor fires
-                                     ↓
-              tools/executors/*.py → local API route → external service
+Agent proposes action
+        ↓
+POST /api/actions  →  pending_actions table  +  approvals table
+        ↓
+Approval Queue dashboard — human reviews rich preview
+  (email layout / tweet card / danger box / git push details)
+        ↓
+Human clicks "Approve & Run"
+        ↓
+POST /api/approvals/:id fires tools/executors/{action}.py
+  send_email.py   →  POST /api/gmail/messages/send  (Google OAuth)
+  post_x.py       →  POST /api/x/tweet              (twitter-api-v2)
+  delete_file.py  →  safe delete with home-dir path guard
+  git_push.py     →  git push with force-push guard on main/master
+        ↓
+Result stored in pending_actions.result
+Approval record permanently updated (approved / failed / rejected)
 ```
 
-The executor scripts call internal Next.js routes rather than external APIs directly, ensuring all traffic passes through the authenticated session layer.
+**Why agents cannot accidentally trigger these actions:**
+
+- `POST /api/actions` only writes to the database. No executor is called.
+- The executor `spawnSync` call lives exclusively in `POST /api/approvals/:id` — reachable only through the authenticated dashboard UI.
+- Executor scripts call internal Next.js API routes rather than external services directly, keeping all traffic inside the authenticated session layer.
+- Admin-tier bypass (immediate execution without approval) is an explicit per-agent configuration, off by default for all agents, and every bypass is logged to `analytics_events`.
+- Scheduled actions require human pre-approval before they are queued; the schedule controls timing, not authorization.
 
 ### Data Privacy
 
