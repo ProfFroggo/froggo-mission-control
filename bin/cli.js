@@ -160,6 +160,122 @@ async function waitForServer(port, maxSecs = 60) {
   return null;
 }
 
+function buildMacPlist(nodeBin, nextScript, port, logPath, envVars, workingDir) {
+  const envDict = Object.entries(envVars)
+    .map(([k, v]) => `    <key>${k}</key>\n    <string>${v}</string>`)
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mission-control.app</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${nodeBin}</string>
+    <string>${nextScript}</string>
+    <string>start</string>
+    <string>--port</string>
+    <string>${port}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>${workingDir}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+${envDict}
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>${logPath}</string>
+  <key>StandardErrorPath</key>
+  <string>${logPath}</string>
+</dict>
+</plist>`;
+}
+
+/**
+ * After waitForServer times out, inspect what went wrong and try to auto-fix.
+ * Returns { health, port } — health is null if recovery also failed.
+ */
+async function diagnoseAndRecover(port, logPath, envFile, envVars, nodeBin, nextScript, launchAgent) {
+  console.log('');
+  warn('Server did not respond. Diagnosing...');
+
+  // ── Read recent log output ───────────────────────────────────────────────
+  let logTail = '';
+  if (existsSync(logPath)) {
+    try { logTail = execSync(`tail -40 "${logPath}"`, { encoding: 'utf-8' }); } catch {}
+  }
+
+  // ── Detect port holder ───────────────────────────────────────────────────
+  let portPid = '';
+  try { portPid = execSync(`lsof -ti:${port}`, { encoding: 'utf-8' }).trim(); } catch {}
+
+  let portProcess = '';
+  if (portPid) {
+    try { portProcess = execSync(`ps -p ${portPid} -o comm=`, { encoding: 'utf-8' }).trim(); } catch {}
+  }
+
+  const portConflict = logTail.includes('EADDRINUSE') || (portPid && !portProcess.includes('node'));
+
+  // ── Scenario 1: port conflict — reassign and reload ──────────────────────
+  if (portConflict) {
+    const holder = portProcess || `PID ${portPid}`;
+    warn(`Port ${port} is in use by '${holder}'. Auto-assigning a new port...`);
+
+    const newPort = await findFreePort(parseInt(port, 10) + 1);
+    info(`Switching to port ${newPort}`);
+
+    // Update .env
+    let envContent = existsSync(envFile) ? readFileSync(envFile, 'utf-8') : '';
+    if (envContent.match(/^PORT=/m)) {
+      envContent = envContent.replace(/^PORT=.*/m, `PORT=${newPort}`);
+    } else {
+      envContent += `\nPORT=${newPort}`;
+    }
+    writeFileSync(envFile, envContent.trim() + '\n');
+
+    // Regenerate and reload plist
+    const newEnvVars = { ...envVars, PORT: String(newPort) };
+    if (existsSync(launchAgent)) {
+      const plist = buildMacPlist(nodeBin, nextScript, newPort, logPath, newEnvVars, newEnvVars.PROJECT_DIR || path.dirname(path.dirname(nextScript)));
+      writeFileSync(launchAgent, plist);
+      try { execSync(`launchctl unload "${launchAgent}" 2>/dev/null || true`, { stdio: 'pipe' }); } catch {}
+      execSync(`launchctl load -w "${launchAgent}"`, { stdio: 'pipe' });
+      info(`LaunchAgent reloaded on port ${newPort}. Waiting for server...`);
+      const health = await waitForServer(newPort, 35);
+      console.log('');
+      return { health, port: newPort };
+    }
+  }
+
+  // ── Scenario 2: LaunchAgent loaded but process never spawned ─────────────
+  // Try kicking the service manually
+  if (existsSync(launchAgent)) {
+    warn('Attempting to kick the LaunchAgent...');
+    try { execSync('launchctl start com.mission-control.app', { stdio: 'pipe' }); } catch {}
+    const health = await waitForServer(port, 25);
+    console.log('');
+    if (health) return { health, port };
+  }
+
+  // ── Scenario 3: Spawn directly as a one-shot fallback ────────────────────
+  warn('Trying direct start as fallback...');
+  const proc = spawn(nodeBin, [nextScript, 'start', '--port', String(port)], {
+    cwd: envVars.PROJECT_DIR || path.dirname(path.dirname(nextScript)),
+    detached: true,
+    stdio: 'ignore',
+    env: { ...process.env, ...envVars },
+  });
+  proc.unref();
+  const health = await waitForServer(port, 25);
+  console.log('');
+  return { health, port };
+}
+
 function openBrowser(url) {
   if (IS_MAC) execSync(`open "${url}"`, { stdio: 'ignore' });
   else if (IS_LINUX) execSync(`xdg-open "${url}" 2>/dev/null || true`, { stdio: 'ignore' });
@@ -664,41 +780,7 @@ async function cmdSetup(force = false) {
     mkdirSync(path.join(HOME, 'Library', 'LaunchAgents'), { recursive: true });
     mkdirSync(path.join(HOME, 'Library', 'Logs'), { recursive: true });
 
-    const envDict = Object.entries(envVars)
-      .map(([k, v]) => `    <key>${k}</key>\n    <string>${v}</string>`)
-      .join('\n');
-
-    const plist = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>com.mission-control.app</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>${nodeBin}</string>
-    <string>${nextScript}</string>
-    <string>start</string>
-    <string>--port</string>
-    <string>${port}</string>
-  </array>
-  <key>WorkingDirectory</key>
-  <string>${INSTALL_DIR}</string>
-  <key>EnvironmentVariables</key>
-  <dict>
-${envDict}
-  </dict>
-  <key>RunAtLoad</key>
-  <true/>
-  <key>KeepAlive</key>
-  <true/>
-  <key>StandardOutPath</key>
-  <string>${logPath}</string>
-  <key>StandardErrorPath</key>
-  <string>${logPath}</string>
-</dict>
-</plist>`;
-
+    const plist = buildMacPlist(nodeBin, nextScript, port, logPath, envVars, INSTALL_DIR);
     writeFileSync(LAUNCHAGENT, plist);
     try { execSync(`launchctl unload "${LAUNCHAGENT}" 2>/dev/null || true`, { stdio: 'pipe' }); } catch {}
     execSync(`launchctl load -w "${LAUNCHAGENT}"`, { stdio: 'pipe' });
@@ -798,13 +880,24 @@ WantedBy=default.target
   // ── Start and open ──────────────────────────────────────────────────────
   step('Launching Mission Control');
   info(`Waiting for server on port ${port}...`);
-  const health = await waitForServer(parseInt(port, 10), 60);
-  console.log('');
+  let finalHealth = await waitForServer(parseInt(port, 10), 60);
+  let finalPort = port;
 
-  const appUrl = `http://localhost:${port}`;
+  // If the server didn't respond, try to auto-diagnose and recover
+  if (!finalHealth && IS_MAC) {
+    const recovered = await diagnoseAndRecover(
+      parseInt(port, 10), logPath, ENV_FILE, envVars, nodeBin, nextScript, LAUNCHAGENT
+    );
+    finalHealth = recovered.health;
+    finalPort = String(recovered.port);
+  }
+
+  console.log('');
+  const appUrl = `http://localhost:${finalPort}`;
   // Pass ?setup=1 on first launch so the wizard shows even if localStorage is stale
   const launchUrl = `${appUrl}?setup=1`;
-  if (health) {
+
+  if (finalHealth) {
     success(`Running at ${appUrl}`);
     openBrowser(launchUrl);
 
@@ -824,23 +917,23 @@ WantedBy=default.target
     console.log(`  ${c.dim('mission-control logs     — view logs')}`);
     console.log('');
   } else {
+    // Auto-recovery failed — show the log tail so the user can see what went wrong
     console.log('');
-    console.error(c.bold(c.red('╔════════════════════════════════════════════╗')));
-    console.error(c.bold(c.red('║   Server did not start — setup incomplete  ║')));
-    console.error(c.bold(c.red('╚════════════════════════════════════════════╝')));
+    console.error(c.bold(c.red('╔═══════════════════════════════════════════════╗')));
+    console.error(c.bold(c.red('║   Server failed to start — check logs below   ║')));
+    console.error(c.bold(c.red('╚═══════════════════════════════════════════════╝')));
     console.log('');
-    console.log(`  ${c.yellow('Port:')}      ${port}`);
-    console.log(`  ${c.yellow('Platform:')} ${INSTALL_DIR}`);
-    console.log('');
-    console.log(`  ${c.bold('Troubleshooting:')}`);
-    console.log(`  1. Check if port ${port} is already in use: ${c.dim(`lsof -ti:${port}`)}`);
-    if (IS_MAC) {
-      console.log(`  2. Check the logs: ${c.dim(`tail -50 ${logPath}`)}`);
-      console.log(`  3. Try restarting: ${c.dim('mission-control restart')}`);
-    } else {
-      console.log(`  2. Check the logs: ${c.dim('mission-control logs')}`);
-      console.log(`  3. Try restarting: ${c.dim('mission-control restart')}`);
+    if (existsSync(logPath)) {
+      const logTail = (() => { try { return execSync(`tail -20 "${logPath}"`, { encoding: 'utf-8' }).trim(); } catch { return ''; } })();
+      if (logTail) {
+        console.log(c.dim('── Last 20 log lines ─────────────────────────────────'));
+        console.log(c.dim(logTail));
+        console.log(c.dim('──────────────────────────────────────────────────────'));
+        console.log('');
+      }
     }
+    console.log(`  ${c.bold('Full logs:')} tail -f ${logPath}`);
+    console.log(`  ${c.bold('Retry:')}     mission-control restart`);
     console.log('');
     process.exit(1);
   }
