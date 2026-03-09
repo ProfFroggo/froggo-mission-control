@@ -93,7 +93,7 @@ export default function ConnectedAccountsPanel() {
               {status?.authenticated && status.email ? (
                 <div className="text-sm text-mission-control-text-dim">{status.email}</div>
               ) : (
-                <div className="text-sm text-mission-control-text-dim">OAuth via Google Cloud Console</div>
+                <div className="text-sm text-mission-control-text-dim">Sign in to connect Gmail, Calendar & more</div>
               )}
             </div>
           </div>
