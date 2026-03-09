@@ -497,6 +497,54 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_telemetry_event_ts ON telemetry(event, ts DESC);
 
     -- No default rooms seeded — rooms are created on demand
+
+    -- ══════════════════════════════════════════
+    -- FINANCE
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS finance_accounts (
+      id          TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      name        TEXT NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('checking','savings','credit','investment','crypto','other')),
+      balance     REAL DEFAULT 0,
+      currency    TEXT DEFAULT 'USD',
+      institution TEXT,
+      notes       TEXT,
+      createdAt   INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt   INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_transactions (
+      id          TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      accountId   TEXT NOT NULL REFERENCES finance_accounts(id) ON DELETE CASCADE,
+      amount      REAL NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('income','expense','transfer')),
+      category    TEXT,
+      description TEXT,
+      date        INTEGER NOT NULL,
+      recurring   INTEGER DEFAULT 0,
+      tags        TEXT DEFAULT '[]',
+      createdAt   INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_budgets (
+      id        TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      category  TEXT NOT NULL,
+      limit_amt REAL NOT NULL,
+      spent     REAL DEFAULT 0,
+      period    TEXT DEFAULT 'monthly' CHECK(period IN ('weekly','monthly','quarterly','yearly')),
+      active    INTEGER DEFAULT 1,
+      createdAt INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_scenarios (
+      id         TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      name       TEXT NOT NULL,
+      projection TEXT DEFAULT '{}',
+      notes      TEXT,
+      createdAt  INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt  INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_finance_txns_account ON finance_transactions(accountId, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_finance_txns_category ON finance_transactions(category, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_finance_budgets_active ON finance_budgets(active, period);
   `);
 
   // Add new columns to existing tables — safe to run on every startup

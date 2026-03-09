@@ -98,7 +98,7 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:
-- **Strategy docs / plans**: `library/docs/stratagies/YYYY-MM-DD_strategy_description.md`
+- **Strategy docs / plans**: `library/docs/strategies/YYYY-MM-DD_strategy_description.md`
 - **Presentations / pitch decks**: `library/docs/presentations/YYYY-MM-DD_presentation_description.md`
 - **Campaign copy**: `library/campaigns/campaign-{name}-{date}/docs/`
 - **Project docs**: `library/projects/project-{name}-{date}/docs/`

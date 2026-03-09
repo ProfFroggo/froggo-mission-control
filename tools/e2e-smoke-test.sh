@@ -536,6 +536,96 @@ grep -q "MAX_SOUL_BYTES" "$REPO/app/api/agents/[id]/soul/route.ts" 2>/dev/null \
 
 echo ""
 
+# ── v8.0: Platform Quality Checks ────────────────────────────────────────────
+echo "=== v8.0 Platform Quality ==="
+
+# Phase 79: Stability
+grep -q "idx_tasks_status_review" "$REPO/src/lib/database.ts" 2>/dev/null \
+  && check "DB indexes: idx_tasks_status_review exists" "ok" \
+  || check "DB indexes: idx_tasks_status_review exists" "not found"
+
+grep -q "stderrBuf" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher has stderr capture" "ok" \
+  || check "taskDispatcher has stderr capture" "not found"
+
+grep -q "MAX_CONCURRENT_DISPATCHES" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "taskDispatcher has concurrency semaphore" "ok" \
+  || check "taskDispatcher has concurrency semaphore" "not found"
+
+! grep -q "firePost('/api/agents/clara/review'" "$REPO/tools/mission-control-db-mcp/src/index.ts" 2>/dev/null \
+  && check "MCP: clara double-dispatch removed" "ok" \
+  || check "MCP: clara double-dispatch removed" "firePost still present"
+
+# Phase 80: Streaming
+[[ -f "$REPO/app/api/agents/[id]/chat/route.ts" ]] \
+  && check "Anthropic SDK chat route exists" "ok" \
+  || check "Anthropic SDK chat route exists" "not found"
+
+[[ -f "$REPO/app/api/agents/[id]/chat/history/route.ts" ]] \
+  && check "Chat history route exists" "ok" \
+  || check "Chat history route exists" "not found"
+
+node -e 'require("@anthropic-ai/sdk")' 2>/dev/null \
+  && check "Anthropic SDK installed" "ok" \
+  || check "Anthropic SDK installed" "not installed"
+
+# Phase 81: Frontend Performance
+! head -3 "$REPO/src/components/TaskDetailPanel.tsx" 2>/dev/null | grep -q 'eslint-disable react-hooks' \
+  && check "No file-level eslint-disable in TaskDetailPanel" "ok" \
+  || check "No file-level eslint-disable in TaskDetailPanel" "still present"
+
+grep -q "previousTask\|rollbackValues" "$REPO/src/store/store.ts" 2>/dev/null \
+  && check "Optimistic rollback in store" "ok" \
+  || check "Optimistic rollback in store" "not found"
+
+grep -q "__gatewayListenersSetup" "$REPO/src/store/store.ts" 2>/dev/null \
+  && check "Gateway listener dedup guard exists" "ok" \
+  || check "Gateway listener dedup guard exists" "not found"
+
+# Phase 82: SSE
+[[ -f "$REPO/app/api/events/route.ts" ]] \
+  && check "SSE events route exists" "ok" \
+  || check "SSE events route exists" "not found"
+
+[[ -f "$REPO/src/lib/useEventBus.ts" ]] \
+  && check "useEventBus hook exists" "ok" \
+  || check "useEventBus hook exists" "not found"
+
+grep -q "useEventBus" "$REPO/src/components/Kanban.tsx" 2>/dev/null \
+  && check "Kanban uses useEventBus" "ok" \
+  || check "Kanban uses useEventBus" "not found"
+
+grep -q "useEventBus" "$REPO/src/components/InboxPanel.tsx" 2>/dev/null \
+  && check "InboxPanel uses useEventBus" "ok" \
+  || check "InboxPanel uses useEventBus" "not found"
+
+[[ -f "$REPO/src/lib/sseEmitter.ts" ]] \
+  && check "sseEmitter singleton exists" "ok" \
+  || check "sseEmitter singleton exists" "not found"
+
+# Phase 85: Observability
+grep -q "telemetry" "$REPO/src/lib/database.ts" 2>/dev/null \
+  && check "Telemetry table in schema" "ok" \
+  || check "Telemetry table in schema" "not found"
+
+[[ -f "$REPO/src/lib/telemetry.ts" ]] \
+  && check "trackEvent utility exists" "ok" \
+  || check "trackEvent utility exists" "not found"
+
+[[ -f "$REPO/app/api/metrics/route.ts" ]] \
+  && check "/api/metrics route exists" "ok" \
+  || check "/api/metrics route exists" "not found"
+
+grep -q "CIRCUIT_BREAKER_THRESHOLD" "$REPO/src/lib/taskDispatcher.ts" 2>/dev/null \
+  && check "Circuit breaker in taskDispatcher" "ok" \
+  || check "Circuit breaker in taskDispatcher" "not found"
+
+[[ -f "$REPO/src/components/ErrorBoundary.tsx" ]] \
+  && check "ErrorBoundary component exists" "ok" \
+  || check "ErrorBoundary component exists" "not found"
+
+echo ""
+
 # ── Summary ────────────────────────────────────────────────────────────────
 echo "═══════════════════════════════════════════"
 echo "  Results: ${PASS} passed, ${FAIL} failed"

@@ -61,7 +61,7 @@ export function LoadingButton({
   const variantStyles = {
     primary: 'bg-mission-control-accent text-white hover:opacity-90',
     secondary: 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:border-mission-control-accent',
-    danger: 'bg-red-500 text-white hover:bg-red-600',
+    danger: 'bg-error text-white hover:bg-error-hover',
     ghost: 'text-mission-control-text hover:bg-mission-control-surface',
   };
   

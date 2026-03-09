@@ -68,6 +68,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [reviewerId, setReviewerId] = useState<string>('mission-control'); // Default to Mission Control as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
 
+  // Validation state
+  const [titleError, setTitleError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   // Multi-stage project state
   const [showMultiStage, setShowMultiStage] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -97,6 +101,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       setConversationComplete(false);
       setStreamingContent('');
       setIsStreaming(false);
+      setTitleError('');
       
       // Apply initial data if provided (switch to manual mode)
       if (initialData) {
@@ -182,7 +187,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setTitleError('Task title is required');
+      return;
+    }
 
     // Generate task ID first so we can use it for file attachments
     const taskId = `task-${Date.now()}`;
@@ -205,19 +213,24 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       ...(showMultiStage && nextStage ? { nextStage } : {}),
     };
 
-    addTask(newTask);
+    setSubmitting(true);
+    try {
+      addTask(newTask);
 
-    // File attachments not available in web mode (requires Electron fs/exec)
-    if (selectedFiles.length > 0) {
-      showToast('info', 'File attachments not available in web mode');
+      // File attachments not available in web mode (requires Electron fs/exec)
+      if (selectedFiles.length > 0) {
+        showToast('info', 'File attachments not available in web mode');
+      }
+
+      // Trigger post-creation review
+      triggerOrchestratorReview(newTask);
+
+      // Reset form
+      resetForm();
+      onClose();
+    } finally {
+      setSubmitting(false);
     }
-
-    // Trigger post-creation review
-    triggerOrchestratorReview(newTask);
-
-    // Reset form
-    resetForm();
-    onClose();
   };
 
   const handleChatSubmit = async () => {
@@ -380,6 +393,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   };
 
   const resetForm = () => {
+    setTitleError('');
     setTitle('');
     setDescription('');
     setProject('Default');
@@ -567,16 +581,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Title */}
               <div>
-                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">Title *</label>
+                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">
+                  Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                </label>
                 <input
                   id="task-title"
                   type="text"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={e => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
                   placeholder="What needs to be done?"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                  className={`w-full bg-mission-control-bg border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent ${titleError ? 'border-error' : 'border-mission-control-border'}`}
                   /* autoFocus removed for accessibility - users can focus naturally */
                 />
+                {titleError && (
+                  <p className="text-error text-xs mt-1" role="alert">{titleError}</p>
+                )}
               </div>
 
               {/* Description */}
@@ -922,10 +941,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 </button>
                 <button
                   type="submit"
-                  disabled={!title.trim()}
-                  aria-disabled={!title.trim()}
-                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={!title.trim() || submitting}
+                  aria-disabled={!title.trim() || submitting}
+                  className={`px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2 ${(!title.trim() || submitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
+                  {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
                   Create Task
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
                   <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">⌘S</kbd>

@@ -5,7 +5,7 @@ import {
   Zap, Shield, AlertTriangle, Inbox,
   ListTodo, Activity, MapPin, Video, ChevronRight,
   Loader2, XCircle, DollarSign,
-  MessageSquare, Mail, Twitter, FileText, type LucideIcon
+  MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';

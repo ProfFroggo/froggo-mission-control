@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -70,6 +70,9 @@ export default function ChatPanel() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const lastUserMessageRef = useRef<string>('');
   const { agents: chatAgents } = useAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -137,6 +140,7 @@ export default function ChatPanel() {
     // Load from DB for this agent
     setMessages([]);
     setHistoryLoaded(true); // prevent gateway fallback race
+    setLoadingMessages(true);
     try {
       const result = await chatApi.getMessages(agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
@@ -161,6 +165,8 @@ export default function ChatPanel() {
       }
     } catch (_err) {
       // DB load failed — start with empty messages
+    } finally {
+      setLoadingMessages(false);
     }
   }, [selectedAgent, messages]);
 
@@ -190,6 +196,7 @@ export default function ChatPanel() {
       }
       // Mark as loaded IMMEDIATELY to prevent race conditions
       setHistoryLoaded(true);
+      setLoadingMessages(true);
 
       try {
         const result = await chatApi.getMessages(selectedAgent.dbSessionKey);
@@ -213,6 +220,8 @@ export default function ChatPanel() {
         }
       } catch (_err) {
         // DB load failed — start with empty messages
+      } finally {
+        setLoadingMessages(false);
       }
     };
     loadFromDb();
@@ -703,8 +712,10 @@ export default function ChatPanel() {
     if (!text && attachments.length === 0) return;
     if (!selectedAgent) return;
     
-    // Clear suggestions when sending
+    // Clear suggestions and prior stream error when sending
     setSuggestedReplies([]);
+    setStreamError(null);
+    lastUserMessageRef.current = text;
 
     // Build message content with actual file contents
     let content = text;
@@ -919,12 +930,19 @@ export default function ChatPanel() {
           ? { ...m, content: friendlyError, streaming: false }
           : m
       ));
+      setStreamError(e instanceof Error ? e.message : 'Could not send message');
       setLoading(false);
       currentResponseRef.current = '';
       currentContentRef.current = '';
       currentMsgIdRef.current = '';
       showToast('error', 'Message failed', e instanceof Error ? e.message : 'Could not send message');
     }
+  };
+
+  const handleRetry = () => {
+    if (!lastUserMessageRef.current) return;
+    setInput(lastUserMessageRef.current);
+    setStreamError(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1005,9 +1023,15 @@ export default function ChatPanel() {
 
   // Guard against null selectedAgent (agents still loading)
   if (!selectedAgent) {
-    return (
+    return chatAgents.length === 0 ? (
       <div className="h-full flex items-center justify-center">
         <Spinner size={32} />
+      </div>
+    ) : (
+      <div className="flex flex-col items-center justify-center h-full text-mission-control-text-muted">
+        <MessageCircle size={40} className="mb-4 opacity-30" />
+        <p className="text-sm font-medium">Select an agent to start chatting</p>
+        <p className="text-xs mt-1 opacity-70">Choose from the agent panel on the left</p>
       </div>
     );
   }
@@ -1220,23 +1244,28 @@ export default function ChatPanel() {
       )}
 
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
-        {messages.length === 0 ? (
-          <div className="text-center py-16 text-mission-control-text-dim">
-            <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">Hey! I&apos;m {selectedAgent.name}</p>
-            <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
-            <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
-              {['Check my calendar', 'Draft a tweet', 'What tasks are pending?', 'Check my emails'].map((q) => (
-                <button
-                  key={q}
-                  onClick={() => setInput(q)}
-                  className="px-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+      <div
+        className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}
+        aria-live="polite"
+        aria-label="Conversation messages"
+      >
+        {loadingMessages ? (
+          <div className="space-y-3 p-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
+                <div className="w-7 h-7 rounded-full bg-mission-control-surface animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-3/4 ml-auto' : 'w-2/3'}`} />
+                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-1/2 ml-auto' : 'w-1/2'}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
+            <Sparkles size={32} className="mb-3 opacity-30" />
+            <p className="text-sm font-medium">New conversation</p>
+            <p className="text-xs mt-1 opacity-70">Send a message to get started</p>
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
           <EmptyState
