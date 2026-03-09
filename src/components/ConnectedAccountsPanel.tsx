@@ -43,8 +43,7 @@ export default function ConnectedAccountsPanel() {
       const res = await fetch('/api/google/auth/url');
       const data = await res.json();
       if (data.url) {
-        window.open(data.url, '_blank');
-        showToast('info', 'Authorization opened', 'Complete sign-in in the browser window, then refresh.');
+        window.location.href = data.url;
       } else {
         showToast('error', 'Failed to get auth URL', data.error || 'Unknown error');
       }
@@ -185,7 +184,8 @@ export default function ConnectedAccountsPanel() {
         <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5 text-sm space-y-2">
           <h3 className="font-medium">Setup</h3>
           <ol className="list-decimal list-inside space-y-1.5 text-mission-control-text-dim">
-            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline inline-flex items-center gap-1">Google Cloud Console <ExternalLink size={11} /></a> → Credentials → Create OAuth 2.0 Client ID (Desktop app)</li>
+            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline inline-flex items-center gap-1">Google Cloud Console <ExternalLink size={11} /></a> → Credentials → Create OAuth 2.0 Client ID → <strong>Web application</strong></li>
+            <li>Add <code className="text-xs bg-mission-control-bg px-1 rounded">http://localhost:3000</code> as an authorized redirect URI</li>
             <li>Download the JSON and save it to <code className="text-xs bg-mission-control-bg px-1 rounded">~/.config/google-workspace-mcp/client_secret.json</code></li>
             <li>Click <strong>Connect Google Workspace</strong> above and complete sign-in in the browser</li>
           </ol>

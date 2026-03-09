@@ -119,7 +119,7 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
           <div className="space-y-4 text-sm">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
               <p className="font-medium text-xs uppercase tracking-wider text-mission-control-text-dim">Setup Steps</p>
-              <Step n={1} text="Go to Google Cloud Console → Credentials and create an OAuth 2.0 Client ID (Desktop app)" />
+              <Step n={1} text="Go to Google Cloud Console → Credentials → Create OAuth 2.0 Client ID → Web application. Add http://localhost:3000 as an authorized redirect URI" />
               <div className="flex items-center gap-2 bg-mission-control-bg rounded px-3 py-2 text-xs font-mono">
                 <span className="flex-1 text-mission-control-accent truncate">console.cloud.google.com/apis/credentials</span>
                 <button

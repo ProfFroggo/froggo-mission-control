@@ -16,7 +16,7 @@ export async function GET() {
         authenticated: false,
         hasCredentials: false,
         needsSetup: true,
-        setupInstructions: 'Create a Google OAuth 2.0 Client ID at console.cloud.google.com and save client_secret.json to ~/.config/google-workspace-mcp/',
+        setupInstructions: 'Create a Web application OAuth 2.0 Client ID at console.cloud.google.com, add http://localhost:3000 as an authorized redirect URI, and save the downloaded JSON to ~/.config/google-workspace-mcp/client_secret.json',
       });
     }
     // Have credentials but no tokens — show Connect button

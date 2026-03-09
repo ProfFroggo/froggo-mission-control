@@ -26,7 +26,7 @@ const CLIENT_SECRET_PATH = join(homedir(), '.config', 'google-workspace-mcp', 'c
 const GOOGLE_OAUTH_TOKEN_PATH = join(homedir(), '.google_oauth_token.json');
 const TOKENS_PATH = join(homedir(), 'mission-control', 'data', 'google-tokens.json');
 const PORT = process.env.PORT ?? '3000';
-const REDIRECT_URI = `http://localhost:${PORT}/api/google/auth/callback`;
+const REDIRECT_URI = `http://localhost:${PORT}`;
 
 export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
