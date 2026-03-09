@@ -118,6 +118,9 @@ export const ENV = {
   MODEL_LEAD:    process.env.MODEL_LEAD    || 'claude-opus-4-6',
   MODEL_WORKER:  process.env.MODEL_WORKER  || 'claude-sonnet-4-6',
   MODEL_TRIVIAL: process.env.MODEL_TRIVIAL || 'claude-haiku-4-5-20251001',
+
+  // API auth — bearer token required on all /api/* routes (empty = disabled, local dev only)
+  INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN || '',
 } as const;
 
 // ── Search backend ───────────────────────────────────────────────────────────

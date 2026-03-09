@@ -16,7 +16,10 @@ async function apiCall<T = any>(path: string, options: ApiOptions = {}): Promise
   }
   const res = await fetch(url.toString(), {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -110,7 +113,10 @@ export function streamMessage(
 
   fetch(`/api/agents/${agentId}/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
+    },
     body: JSON.stringify({ message, ...(sessionKey ? { sessionKey } : {}) }),
     signal: controller.signal,
   }).then(async (response) => {
