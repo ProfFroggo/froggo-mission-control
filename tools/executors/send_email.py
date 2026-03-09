@@ -1,90 +1,72 @@
 #!/usr/bin/env python3
-# Purpose: Send an email via SMTP using stdlib only (smtplib + email.mime).
-# Reads credentials from SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD env vars,
-# or falls back to GMAIL_USER/GMAIL_APP_PASSWORD for Gmail.
+# send_email.py — Send email via the local Mission Control Gmail route.
+# Delegates to /api/gmail/messages/send which uses Google OAuth (MCP-connected account).
+# No SMTP credentials needed — uses the Google account already connected in the platform.
+# Payload: {"to": str, "subject": str, "body": str, "html": str (optional), "inReplyTo": str (optional)}
 
-import json
-import os
-import smtplib
 import sys
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import json
+import urllib.request
+import urllib.error
+import os
 
 
 def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({"ok": False, "error": "No JSON argument provided"}))
-        sys.exit(1)
-
     try:
-        payload = json.loads(sys.argv[1])
-    except json.JSONDecodeError as e:
-        print(json.dumps({"ok": False, "error": f"Invalid JSON: {e}"}))
+        payload = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
+    except (IndexError, json.JSONDecodeError) as e:
+        print(json.dumps({"ok": False, "error": f"Invalid payload: {e}"}))
         sys.exit(1)
 
-    to = payload.get("to")
-    subject = payload.get("subject")
-    body = payload.get("body")
+    to = payload.get("to", "").strip()
+    subject = payload.get("subject", "").strip()
+    body = payload.get("body", "").strip()
+    html = payload.get("html")
+    in_reply_to = payload.get("inReplyTo") or payload.get("in_reply_to")
 
     if not to:
-        print(json.dumps({"ok": False, "error": "Missing required field: to"}))
+        print(json.dumps({"ok": False, "error": "to is required"}))
         sys.exit(1)
     if not subject:
-        print(json.dumps({"ok": False, "error": "Missing required field: subject"}))
+        print(json.dumps({"ok": False, "error": "subject is required"}))
         sys.exit(1)
-    if body is None:
-        print(json.dumps({"ok": False, "error": "Missing required field: body"}))
+    if not body and not html:
+        print(json.dumps({"ok": False, "error": "body or html is required"}))
         sys.exit(1)
 
-    smtp_host = os.environ.get("SMTP_HOST")
-    smtp_port = os.environ.get("SMTP_PORT")
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_password = os.environ.get("SMTP_PASSWORD")
+    port = os.environ.get("PORT", "3000")
+    url = f"http://localhost:{port}/api/gmail/messages/send"
 
-    gmail_user = os.environ.get("GMAIL_USER")
-    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
-
-    if smtp_host and smtp_user and smtp_password:
-        host = smtp_host
-        port = int(smtp_port) if smtp_port else 587
-        user = smtp_user
-        password = smtp_password
-        from_addr = payload.get("from") or smtp_user
-    elif gmail_user and gmail_password:
-        host = "smtp.gmail.com"
-        port = 587
-        user = gmail_user
-        password = gmail_password
-        from_addr = payload.get("from") or gmail_user
+    request_body = {"to": to, "subject": subject}
+    if html:
+        request_body["html"] = html
     else:
-        print(json.dumps({
-            "ok": False,
-            "error": (
-                "Email credentials not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, "
-                "SMTP_PASSWORD env vars, or GMAIL_USER + GMAIL_APP_PASSWORD for Gmail."
-            )
-        }))
-        sys.exit(1)
+        request_body["body"] = body
+    if in_reply_to:
+        request_body["inReplyTo"] = in_reply_to
 
-    reply_to = payload.get("reply_to")
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(request_body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
 
     try:
-        msg = MIMEMultipart()
-        msg["From"] = from_addr
-        msg["To"] = to
-        msg["Subject"] = subject
-        if reply_to:
-            msg["Reply-To"] = reply_to
-        msg.attach(MIMEText(body, "plain"))
-
-        with smtplib.SMTP(host, port) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(user, password)
-            server.sendmail(from_addr, [to], msg.as_string())
-
-        print(json.dumps({"ok": True, "result": f"Email sent successfully to {to}"}))
-        sys.exit(0)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            print(json.dumps({"ok": True, "result": f"Email sent to {to}", "data": data}))
+    except urllib.error.HTTPError as e:
+        body_text = e.read().decode("utf-8", errors="replace")
+        try:
+            parsed = json.loads(body_text)
+            err = parsed.get("error", body_text)
+            if parsed.get("needsAuth"):
+                err = "Google account not connected. Authenticate via Mission Control Settings → Integrations."
+        except Exception:
+            err = body_text
+        print(json.dumps({"ok": False, "error": f"HTTP {e.code}: {err}"}))
+        sys.exit(1)
     except Exception as e:
         print(json.dumps({"ok": False, "error": str(e)}))
         sys.exit(1)
