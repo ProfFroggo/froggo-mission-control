@@ -6,6 +6,7 @@
 
 import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
+import { trackEvent } from './telemetry';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -524,6 +525,47 @@ const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 let activeDispatches = 0;
 const MAX_CONCURRENT_DISPATCHES = 5;
 
+// ── Circuit breaker (Phase 85) ─────────────────────────────────────────────────
+// Tracks consecutive failures per agent and locks out repeated failures.
+const agentFailureCounts = new Map<string, { count: number; lockedUntil?: number }>();
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_RESET_MS = 10 * 60 * 1000; // 10 minutes
+
+function isAgentCircuitOpen(agentId: string): boolean {
+  const record = agentFailureCounts.get(agentId);
+  if (!record) return false;
+  if (record.lockedUntil) {
+    if (Date.now() < record.lockedUntil) return true;
+    // Lock expired — reset
+    agentFailureCounts.delete(agentId);
+    return false;
+  }
+  return record.count >= CIRCUIT_BREAKER_THRESHOLD;
+}
+
+function recordAgentFailure(agentId: string) {
+  const existing = agentFailureCounts.get(agentId) || { count: 0 };
+  const newCount = existing.count + 1;
+  agentFailureCounts.set(agentId, {
+    count: newCount,
+    lockedUntil: newCount >= CIRCUIT_BREAKER_THRESHOLD
+      ? Date.now() + CIRCUIT_BREAKER_RESET_MS
+      : undefined,
+  });
+
+  if (newCount >= CIRCUIT_BREAKER_THRESHOLD) {
+    console.warn(`[taskDispatcher] Circuit OPEN for agent ${agentId} — locked for 10 minutes`);
+    trackEvent('circuit.open', { agentId, failures: newCount }, agentId);
+    try {
+      getDb().prepare(`UPDATE agents SET status = 'offline' WHERE id = ?`).run(agentId);
+    } catch { /* non-critical */ }
+  }
+}
+
+function recordAgentSuccess(agentId: string) {
+  agentFailureCounts.delete(agentId);
+}
+
 // ── Dispatch debounce ────────────────────────────────────────────────────────
 // Prevents rapid-fire dispatches to the same agent within 100ms.
 // Uses a simple in-memory last-dispatch timestamp per agent.
@@ -609,12 +651,22 @@ export function dispatchTask(taskId: string): boolean {
     // cwd = project root (not agent workspace) so .claude/settings.json MCP config is loaded
     const cwd = process.cwd();
 
+    // Circuit breaker check
+    if (isAgentCircuitOpen(agentId)) {
+      console.warn(`[taskDispatcher] Circuit open for ${agentId} — skipping dispatch of task ${taskId}`);
+      trackEvent('dispatch.blocked.circuit', { taskId, agentId }, agentId);
+      return false;
+    }
+
     // Concurrency check — skip if at limit
     if (activeDispatches >= MAX_CONCURRENT_DISPATCHES) {
       console.warn(`[taskDispatcher] Concurrency limit reached (${MAX_CONCURRENT_DISPATCHES}). Task ${taskId} skipped.`);
       return false;
     }
     activeDispatches++;
+
+    // Telemetry: dispatch started
+    trackEvent('dispatch.start', { taskId, agentId });
 
     const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
       cwd,
@@ -669,6 +721,16 @@ export function dispatchTask(taskId: string): boolean {
     // Log exit code and update task status on failure
     proc.on('close', (code) => {
       activeDispatches = Math.max(0, activeDispatches - 1);
+
+      // Circuit breaker tracking
+      if (code === 0) {
+        recordAgentSuccess(agentId);
+        trackEvent('dispatch.complete', { taskId, agentId, exitCode: code });
+      } else {
+        recordAgentFailure(agentId);
+        const stderrSnippet = stderrBuf.slice(0, 200);
+        trackEvent('dispatch.error', { taskId, agentId, exitCode: code, stderr: stderrSnippet }, agentId);
+      }
 
       // Log stderr on non-zero exit
       if (code !== 0 && stderrBuf) {

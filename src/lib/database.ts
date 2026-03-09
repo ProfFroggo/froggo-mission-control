@@ -484,6 +484,18 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_task_activity_task_created ON task_activity(taskId, timestamp DESC);
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
+    -- ══════════════════════════════════════════
+    -- TELEMETRY (Phase 85)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts INTEGER NOT NULL,
+      event TEXT NOT NULL,
+      data TEXT,
+      agentId TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_telemetry_event_ts ON telemetry(event, ts DESC);
+
     -- No default rooms seeded — rooms are created on demand
   `);
 

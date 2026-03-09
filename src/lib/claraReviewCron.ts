@@ -8,6 +8,7 @@ import { ENV } from './env';
 
 import { getDb } from './database';
 import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
+import { trackEvent } from './telemetry';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -64,6 +65,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
   // Stamp reviewedAt so we can detect stale in-review rows
   const startedAt = Date.now();
+  trackEvent('clara.review.start', { taskId: task.id });
   try {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = 'in-review', updatedAt = ? WHERE id = ?")
@@ -100,6 +102,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
   proc.on('close', () => {
     clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
+    trackEvent('clara.review.complete', { taskId: task.id });
     // If Clara exited without calling task_update (MCP failure, model responded without
     // using tools, process killed), reviewStatus is still 'in-review' in the DB.
     // Reset it so the next cron sweep retries.
