@@ -152,8 +152,16 @@ export async function GET(request: NextRequest) {
     const cronEvents = cronJobsAsEvents(timeMin, timeMax);
     return NextResponse.json({ events: [...events, ...cronEvents], errors: [] });
   } catch (err: any) {
-    console.error('[calendar/events] Error:', err?.message);
-    return NextResponse.json({ events: [], errors: [err?.message ?? 'Calendar API error'] });
+    const msg: string = err?.message ?? 'Calendar API error';
+    console.error('[calendar/events] Error:', msg);
+    // Token expired / revoked — tell the UI to prompt re-auth
+    const needsAuth = /no refresh token|invalid_grant|token.*expired|unauthorized/i.test(msg);
+    const cronEvents = cronJobsAsEvents(timeMin, timeMax);
+    return NextResponse.json({
+      events: cronEvents,
+      errors: [needsAuth ? 'Google account needs to be reconnected. Go to Settings → Integrations.' : msg],
+      needsAuth,
+    });
   }
 }
 

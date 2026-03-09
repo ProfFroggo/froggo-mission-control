@@ -174,6 +174,13 @@ export async function getAuthenticatedClient(): Promise<OAuth2Client | null> {
   const tokens = loadTokens();
   if (!tokens?.refresh_token && !tokens?.access_token) return null;
 
+  // If we only have an access token (no refresh token) and it has expired or is
+  // within 60 s of expiry, return null rather than letting googleapis throw
+  // "No refresh token is set" mid-request.
+  if (!tokens.refresh_token && tokens.expiry_date) {
+    if (tokens.expiry_date <= Date.now() + 60_000) return null;
+  }
+
   client.setCredentials(tokens);
 
   // Auto-refresh if needed
