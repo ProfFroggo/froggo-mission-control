@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw, ExternalLink, Mail, Calendar, HardDrive, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw, Mail, Calendar, HardDrive, MessageSquare } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface GoogleAuthStatus {
   authenticated: boolean;
   hasCredentials: boolean;
-  needsSetup?: boolean;
-  setupInstructions?: string;
   email?: string | null;
   error?: string;
 }
@@ -105,10 +103,6 @@ export default function ConnectedAccountsPanel() {
             <span className="flex items-center gap-1.5 text-sm text-success px-3 py-1 bg-success-subtle border border-success-border rounded-full">
               <CheckCircle size={14} /> Connected
             </span>
-          ) : status?.needsSetup ? (
-            <span className="flex items-center gap-1.5 text-sm text-warning px-3 py-1 bg-warning-subtle border border-warning-border rounded-full">
-              <AlertTriangle size={14} /> Setup needed
-            </span>
           ) : (
             <span className="flex items-center gap-1.5 text-sm text-error px-3 py-1 bg-error-subtle border border-error-border rounded-full">
               <XCircle size={14} /> Not connected
@@ -117,19 +111,9 @@ export default function ConnectedAccountsPanel() {
         </div>
 
         {/* Error / setup message */}
-        {(status?.error || status?.needsSetup) && (
+        {status?.error && (
           <div className="mt-4 p-3 bg-warning-subtle border border-warning-border rounded-lg text-sm text-warning">
-            {status.setupInstructions || status.error}
-            {status.needsSetup && (
-              <a
-                href="https://console.cloud.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 inline-flex items-center gap-1 underline hover:no-underline"
-              >
-                Open Console <ExternalLink size={12} />
-              </a>
-            )}
+            {status.error}
           </div>
         )}
 
@@ -179,18 +163,7 @@ export default function ConnectedAccountsPanel() {
         </div>
       </div>
 
-      {/* Setup guide if not connected */}
-      {!status?.authenticated && (
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5 text-sm space-y-2">
-          <h3 className="font-medium">Setup</h3>
-          <ol className="list-decimal list-inside space-y-1.5 text-mission-control-text-dim">
-            <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline inline-flex items-center gap-1">Google Cloud Console <ExternalLink size={11} /></a> → Credentials → Create OAuth 2.0 Client ID → <strong>Web application</strong></li>
-            <li>Add <code className="text-xs bg-mission-control-bg px-1 rounded">http://localhost:3000</code> as an authorized redirect URI</li>
-            <li>Download the JSON and save it to <code className="text-xs bg-mission-control-bg px-1 rounded">~/.config/google-workspace-mcp/client_secret.json</code></li>
-            <li>Click <strong>Connect Google Workspace</strong> above and complete sign-in in the browser</li>
-          </ol>
-        </div>
-      )}
+      {/* No setup needed — click Connect above to authenticate */}
     </div>
   );
 }
