@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Task Dispatcher — spawns a Claude agent process to work a task autonomously.
  * Called automatically when a task is created/assigned with an assignedTo agent.

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * agent-wake.js — PostToolUse hook for mcp__mission-control_db__chat_post
  *

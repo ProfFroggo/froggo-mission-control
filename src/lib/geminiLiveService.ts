@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * GeminiLiveService - Real-time bidirectional audio/video streaming via Gemini Live API
  * 

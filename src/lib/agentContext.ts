@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Agent Context Loader - Loads full agent context (personality, tasks, sessions, memory)
  * for voice chat brain integration.

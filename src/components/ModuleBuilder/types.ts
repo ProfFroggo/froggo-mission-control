@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * ModuleBuilder types — defines the full ModuleSpec and all sub-types
  * generated through the conversational interview flow.

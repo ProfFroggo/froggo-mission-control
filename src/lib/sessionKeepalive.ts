@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { ENV } from './env';
 /**
  * Session Keepalive — pings active Claude CLI sessions every 25 minutes.

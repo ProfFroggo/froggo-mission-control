@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Shared voice call utilities — used by both VoiceChatPanel and QuickActions toolbar.
  * Extracted to avoid duplication.

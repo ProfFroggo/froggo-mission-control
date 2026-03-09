@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Safely copy text to clipboard with fallback for permission errors
  * @param text Text to copy

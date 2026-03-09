@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import {
   FolderKanban, Rocket, Zap, Target, Lightbulb, Flame, Wrench,
   BarChart2, Star, Palette, FlaskConical, Building2, Globe, Code2,

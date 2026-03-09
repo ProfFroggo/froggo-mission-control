@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { create } from 'zustand';
 
 const MAX_MESSAGES_PER_ROOM = 200;

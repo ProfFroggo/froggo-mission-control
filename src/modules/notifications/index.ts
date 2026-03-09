@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Notifications Module — core notification center.
  * Re-exports existing NotificationsPanel via lazy loading.

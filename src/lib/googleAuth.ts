@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/lib/googleAuth.ts
 // Google OAuth2 auth service — reads credentials from ~/.config/google-workspace-mcp/
 // Stores tokens in ~/mission-control/data/google-tokens.json
@@ -19,11 +20,9 @@ if (!process.env.NODE_EXTRA_CA_CERTS) {
   }
 }
 
-// Primary credentials — gogcli (https://github.com/googleworkspace/cli) — valid OAuth client
-const GOGCLI_CREDENTIALS_PATH = join(homedir(), 'Library', 'Application Support', 'gogcli', 'credentials.json');
-// Fallback: google-workspace-mcp client_secret.json (may reference deleted project)
+// google-workspace-mcp client_secret.json
 const CLIENT_SECRET_PATH = join(homedir(), '.config', 'google-workspace-mcp', 'client_secret.json');
-// Alternative: ~/.google_oauth_token.json — contains refresh_token + client creds in double-quoted JSON
+// ~/.google_oauth_token.json — contains refresh_token + client creds in double-quoted JSON
 const GOOGLE_OAUTH_TOKEN_PATH = join(homedir(), '.google_oauth_token.json');
 const TOKENS_PATH = join(homedir(), 'mission-control', 'data', 'google-tokens.json');
 const PORT = process.env.PORT ?? '3000';
@@ -68,24 +67,28 @@ interface StoredTokens {
 function readDoubleQuotedJson(path: string): Record<string, any> | null {
   if (!existsSync(path)) return null;
   try {
-    const normalized = readFileSync(path, 'utf-8').replace(/""/g, '"');
-    return JSON.parse(normalized);
+    const raw = readFileSync(path, 'utf-8');
+    // Strategy 1: simple replace "" → "
+    try { return JSON.parse(raw.replace(/""/g, '"')); } catch { /* next */ }
+    // Strategy 2: regex replace ""word"" → "word" (handles partial double-quoting)
+    try { return JSON.parse(raw.replace(/""([^"]+)""/g, '"$1"')); } catch { /* next */ }
+    // Strategy 3: plain JSON (already well-formed)
+    return JSON.parse(raw);
   } catch {
     return null;
   }
 }
 
 function getClientCredentials(): { clientId: string; clientSecret: string } | null {
-  // 1. gogcli credentials (https://github.com/googleworkspace/cli) — most reliable
-  if (existsSync(GOGCLI_CREDENTIALS_PATH)) {
+  // 1. tokens file — client_id/client_secret stored alongside the refresh_token (highest priority:
+  //    ensures the OAuth2Client always uses the exact credentials that issued the stored refresh_token)
+  if (existsSync(TOKENS_PATH)) {
     try {
-      const raw = JSON.parse(readFileSync(GOGCLI_CREDENTIALS_PATH, 'utf-8'));
-      if (raw?.client_id && raw?.client_secret) {
-        return { clientId: raw.client_id, clientSecret: raw.client_secret };
+      const stored = JSON.parse(readFileSync(TOKENS_PATH, 'utf-8'));
+      if (stored?.client_id && stored?.client_secret) {
+        return { clientId: stored.client_id, clientSecret: stored.client_secret };
       }
-    } catch {
-      // fall through
-    }
+    } catch { /* fall through */ }
   }
 
   // 2. ~/.google_oauth_token.json — contains client_id + client_secret inline (double-quoted JSON)
@@ -94,7 +97,7 @@ function getClientCredentials(): { clientId: string; clientSecret: string } | nu
     return { clientId: altToken.client_id, clientSecret: altToken.client_secret };
   }
 
-  // 3. client_secret.json (google-workspace-mcp — may reference deleted project)
+  // 3. client_secret.json (google-workspace-mcp)
   if (!existsSync(CLIENT_SECRET_PATH)) return null;
   try {
     const raw = JSON.parse(readFileSync(CLIENT_SECRET_PATH, 'utf-8')) as ClientSecret;
@@ -133,18 +136,14 @@ export function loadTokens(): StoredTokens | null {
     }
   }
 
-  // Fallback: ~/.google_oauth_token.json — ONLY use if gogcli credentials are not available,
-  // because that file's refresh_token was issued for the old deleted OAuth client.
-  // If gogcli credentials are present, those tokens are incompatible and would cause 401s.
-  if (!existsSync(GOGCLI_CREDENTIALS_PATH)) {
-    const alt = readDoubleQuotedJson(GOOGLE_OAUTH_TOKEN_PATH);
-    if (alt?.refresh_token) {
-      return {
-        access_token: alt.token ?? undefined,
-        refresh_token: alt.refresh_token,
-        token_type: 'Bearer',
-      };
-    }
+  // Fallback: ~/.google_oauth_token.json — double-quoted JSON with refresh_token + client creds
+  const alt = readDoubleQuotedJson(GOOGLE_OAUTH_TOKEN_PATH);
+  if (alt?.refresh_token) {
+    return {
+      access_token: alt.token ?? undefined,
+      refresh_token: alt.refresh_token,
+      token_type: 'Bearer',
+    };
   }
 
   return null;

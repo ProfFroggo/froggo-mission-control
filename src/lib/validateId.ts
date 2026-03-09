@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
 
 export const AGENT_ID_PATTERN = /^[a-z0-9][a-z0-9-_]*$/;

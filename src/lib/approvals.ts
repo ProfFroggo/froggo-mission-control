@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // Approval utilities for Mission Control Dashboard
 
 import { useStore, ApprovalType } from '../store/store';

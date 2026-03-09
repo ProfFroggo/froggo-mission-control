@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Dev Module — optional agent module (disabled by default).
  * Registers the 'codeagent' view pointing to CodeAgentDashboard.

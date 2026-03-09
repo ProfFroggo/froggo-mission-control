@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // tools/session-monitor.js
 // Checks all active agent sessions every 5 minutes.
 // Forks any session older than 80 minutes to avoid context limit crashes.

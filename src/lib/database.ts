@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/lib/database.ts
 // Shared database module — used by ALL API routes.
 // Creates ~/mission-control/data/mission-control.db on first use, WAL mode, full schema.

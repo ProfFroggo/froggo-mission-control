@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Writing Module — optional productivity module.
  * Registers the 'writing' view pointing to WritingWorkspace.

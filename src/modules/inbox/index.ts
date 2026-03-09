@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Inbox Module — core communications hub.
  * Registers both 'inbox' and 'comms' (alias) view IDs pointing to CommsInbox3Pane.

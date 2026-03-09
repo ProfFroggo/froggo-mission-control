@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Manifest validation tests — ensures all extracted module manifests are valid.
  */

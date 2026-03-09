@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/lib/catalogSync.ts
 // Reads catalog/ manifest files and upserts them into the DB catalog tables.
 // Called once at DB startup. Safe to re-run — preserves installed status.

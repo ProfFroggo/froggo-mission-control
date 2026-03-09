@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/lib/api.ts
 // REST API client for all mission-control platform endpoints — fetch calls to Next.js API routes
 

@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * TaskGenerator — Takes a completed ModuleSpec and generates mission-control-db
  * task-add + subtask-add calls via Electron IPC.

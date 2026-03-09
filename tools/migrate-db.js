@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // tools/migrate-db.js
 // Run ONCE if you have an existing mission-control.db.
 // Adds new tables without dropping existing data.

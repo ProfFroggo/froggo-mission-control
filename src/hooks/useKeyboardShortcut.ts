@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /* eslint-disable react-hooks/exhaustive-deps */
 // LEGACY: useKeyboardShortcuts hook uses file-level suppression for intentional patterns.
 // Hook for keyboard shortcut registration - patterns are safe.

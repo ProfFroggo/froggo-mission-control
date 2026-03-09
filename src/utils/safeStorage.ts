@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Safe localStorage wrapper with error handling.
  * Prevents crashes in private mode or when storage is full.

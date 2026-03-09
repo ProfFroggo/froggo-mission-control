@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Meeting Transcription Service
  * Uses Gemini AI Transcribe API for real-time meeting transcription with speaker labels

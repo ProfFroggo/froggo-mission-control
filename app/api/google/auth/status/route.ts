@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
 import { isAuthenticated, loadTokens, getAuthenticatedClient, createOAuth2Client } from '@/lib/googleAuth';
 

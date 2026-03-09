@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/lib/keychain.ts
 // Secure OS keychain storage for sensitive API keys via keytar.
 // Falls back gracefully when keytar native module is unavailable.

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 # tools/worktree-setup.sh
 # Creates git worktrees for code-writing agents (coder, designer, chief).
 # Each agent gets an isolated working copy on its own branch.

@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // Gateway — routes platform features to local API endpoints.
 // Chat uses the /api/agents/[id]/run streaming endpoint.
 // Cron, config, and logs use their respective API routes.

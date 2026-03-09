@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // src/types/catalog.ts
 // TypeScript interfaces for the v4.0 Agent & Module Library catalog system.
 

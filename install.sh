@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 # ─────────────────────────────────────────────────────────────────────────────
 # Mission Control — Installer
 # https://github.com/ProfFroggo/froggo-Mission-Control

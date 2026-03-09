@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Shared formatting utilities — single source of truth.
  * Import from here instead of defining locally in components.

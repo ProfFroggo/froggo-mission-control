@@ -1,4 +1,5 @@
 #!/bin/bash
+# (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 # Install Mission Control cron jobs
 # Run once to register all automated schedules
 

@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Settings Module — extracted from core dashboard.
  * Re-exports existing SettingsPanel and ModulesPage via lazy loading.

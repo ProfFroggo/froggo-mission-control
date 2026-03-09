@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Projects Module — unified project workspaces.
  * Registers the Projects panel in the ViewRegistry.

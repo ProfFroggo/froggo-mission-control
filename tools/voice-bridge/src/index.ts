@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // index.ts
 // Mission Control Voice Bridge — Gemini Live API session manager.
 // Runs as a standalone Node.js process alongside the Next.js app.

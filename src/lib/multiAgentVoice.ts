@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Multi-Agent Voice System for Mission Control Dashboard
  * Ported from Ox, adapted with Mission Control as 6th agent + Gemini transcription

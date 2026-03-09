@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 # tools/agent-start.sh
 # Starts or resumes a Claude Code agent in the appropriate tmux pane.
 # Usage: bash tools/agent-start.sh <agent-id>

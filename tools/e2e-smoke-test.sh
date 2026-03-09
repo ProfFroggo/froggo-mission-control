@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 # tools/e2e-smoke-test.sh
 # Mission Control v2.0 E2E smoke test — verifies all Froggo Platform deliverables.
 # Exit 0 = all checks pass. Exit 1 = one or more checks failed.

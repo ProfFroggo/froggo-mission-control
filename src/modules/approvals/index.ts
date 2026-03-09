@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Approvals Module — core content approval queue.
  * Re-exports existing InboxPanel via lazy loading.

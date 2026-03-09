@@ -332,9 +332,80 @@ Memory search uses a cascading backend:
 
 ---
 
+## Security & Compliance FAQ
+
+This section answers common questions from security and legal reviewers.
+
+### Credential Storage
+
+All API keys and secrets are stored in the **OS Keychain** via [keytar](https://github.com/atom/node-keytar). Nothing sensitive is written to SQLite or `.env`. The `.env` file contains only non-secret configuration (ports, feature flags). Secret retrieval is centralized in `src/lib/keychain.ts`.
+
+### Data Residency
+
+All data — the SQLite database, the Obsidian Memory Vault, session logs, and agent output files — is stored **locally on the host machine**. Nothing is synced to a centralized cloud server.
+
+- Database: `~/mission-control/data/mission-control.db`
+- Memory vault (immutable audit trail): `~/mission-control/memory/sessions/`
+- Agent output library: `~/mission-control/library/`
+
+### Agent Trust Tier System
+
+Agents are assigned one of five trust tiers that gate what actions they can take:
+
+| Tier | Description |
+|------|-------------|
+| **Restricted** | Read-only. All writes are blocked and queued for human review. |
+| **Apprentice** | Can read and write files/tasks. Cannot push to git or send external communications. |
+| **Worker** | Full local access. Can draft external actions; cannot send without approval. |
+| **Trusted** | Can send external communications. Cannot perform force-pushes or destructive operations without approval. |
+| **Admin** | Full autonomy. Can bypass the approval queue for immediate execution. |
+
+Tier enforcement is implemented at two layers: the `PreToolUse` hook (`tools/hooks/approval-hook.js`) intercepts every tool call, and the `/api/actions` route enforces tier checks before queuing or executing actions.
+
+### Human-in-the-Loop (HITL) Architecture
+
+High-risk actions — email sends, social media posts, git pushes, file deletions — cannot be executed autonomously by any agent below `admin` tier. The flow is:
+
+1. Agent calls `POST /api/actions` with the action payload.
+2. The platform creates a pending approval record visible in the **Approval Queue** dashboard tab.
+3. A human operator reviews a rich preview (email layout, tweet card, danger box for destructive ops) and clicks **Approve & Run** or **Reject**.
+4. On approval, the platform fires the executor script (`tools/executors/`) which routes through the local API (Google OAuth for email, twitter-api-v2 for X posts).
+
+Scheduled actions follow the same flow but execute at the designated time only after prior human approval.
+
+### Clara QA Gate
+
+**Clara** (QA agent) acts as a mandatory quality and security gate in the task pipeline:
+
+- **Before work starts**: Every task must pass `internal-review` — Clara verifies the plan, subtasks, and agent assignment before any agent picks up the work.
+- **After work completes**: Agents cannot move tasks to `done` themselves. Only Clara can finalize after passing `agent-review`.
+- Clara runs an automated sweep every 3 minutes via `src/lib/claraReviewCron.ts`.
+
+### Observability & Audit Trail
+
+Every agent session, tool call decision, and action execution is logged:
+
+- Hook decisions logged to `analytics_events` table with tool name, tier, and decision.
+- All approval records (including rejected/cancelled ones) are permanently stored.
+- Session transcripts: `~/mission-control/memory/sessions/` — one file per session, append-only.
+
+### Kill Switch
+
+To immediately terminate all agent processes:
+
+```bash
+mission-control stop      # CLI kill switch
+# Or via process manager:
+pm2 stop all              # If running under PM2
+launchctl stop com.froggo.mission-control   # macOS LaunchAgent
+systemctl stop mission-control              # Linux systemd
+```
+
+---
+
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE)
+Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE)
 
 ---
 

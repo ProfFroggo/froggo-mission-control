@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Finance IPC service — now backed by REST API routes instead of Electron IPC.
  */

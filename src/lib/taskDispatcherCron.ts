@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * Task Dispatcher Cron — runs every 30 seconds on the server.
  * Finds all "todo" tasks with an assignedTo agent and dispatches them.

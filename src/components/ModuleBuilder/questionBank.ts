@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * questionBank.ts — All interview questions organized by 5 sections.
  * Each question knows how to parse user answers into ModuleSpec updates.

@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
  * User-friendly error messages and recovery suggestions
  * Converts technical errors into actionable messages for users
