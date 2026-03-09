@@ -416,8 +416,8 @@ export default function AgentPanel() {
                               {sc.label}
                             </span>
                           )}
-                          {/* Trust tier badge */}
-                          {agent.trust_tier && (
+                          {/* Trust tier badge — only show for non-default tiers */}
+                          {agent.trust_tier && agent.trust_tier !== 'apprentice' && (
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
                               agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
@@ -429,7 +429,7 @@ export default function AgentPanel() {
                                agent.trust_tier === 'trusted'    ? 'Trusted' :
                                agent.trust_tier === 'worker'     ? 'Worker' :
                                agent.trust_tier === 'restricted' ? 'Restricted' :
-                               'Apprentice'}
+                               agent.trust_tier}
                             </span>
                           )}
                           {/* Lifecycle status badges for non-active agents */}

@@ -2,7 +2,7 @@
   "id": "writer",
   "name": "Writer",
   "emoji": "\u270d\ufe0f",
-  "role": "Content Creator",
+  "role": "Writer",
   "description": "Creates, edits, and polishes written content. Best for: documentation, blog posts, newsletters, copy, technical writing, proofreading.",
   "model": "sonnet",
   "capabilities": [
