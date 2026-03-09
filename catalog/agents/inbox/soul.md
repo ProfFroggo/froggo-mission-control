@@ -52,7 +52,7 @@ Load these skills when relevant to your current task:
 The platform integrates Gmail and Google Calendar via the `googleapis` npm package and OAuth2.
 
 ### Auth flow
-- Primary credentials: `~/Library/Application Support/gogcli/credentials.json` (gogcli — https://github.com/googleworkspace/cli)
+- Primary credentials: `~/mission-control/data/google-tokens.json` (tokens file — includes client_id, client_secret, refresh_token)
 - Fallback credentials: `~/.config/google-workspace-mcp/client_secret.json`
 - Tokens stored: `~/mission-control/data/google-tokens.json`
 - OAuth redirect: `http://localhost:3000` → app detects `?code=` param, exchanges via `POST /api/google/auth/callback`
