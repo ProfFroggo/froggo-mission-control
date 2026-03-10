@@ -387,8 +387,8 @@ function loadTaskSession(taskId: string): string | null {
       'SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?'
     ).get('task:' + taskId, 'active') as { sessionId: string; lastActivity: number } | undefined;
     if (!row?.sessionId) return null;
-    // Expire sessions older than 2 hours
-    if (Date.now() - row.lastActivity > 2 * 60 * 60 * 1000) return null;
+    // Expire sessions older than 24 hours
+    if (Date.now() - row.lastActivity > 24 * 60 * 60 * 1000) return null;
     return row.sessionId;
   } catch { return null; }
 }
@@ -468,6 +468,10 @@ function buildTaskMessage(task: Record<string, unknown>): string {
 
   // ── Fresh task / normal flow ─────────────────────────────────────────────────
   lines.push(
+    `**First step:** Search your memory for relevant context before starting:`,
+    `\`mcp__memory__memory_search\` with query: "${task.title}"`,
+    `If you find relevant notes, incorporate them. If not, proceed with fresh context.`,
+    ``,
     `You have been assigned a new task. Work on it autonomously now.`,
     ``,
     `## REQUIRED workflow — follow every step in order:`,

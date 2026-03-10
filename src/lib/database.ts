@@ -596,6 +596,11 @@ function initSchema(db: Database.Database) {
     db.pragma('synchronous = NORMAL');
   } catch { /* non-critical */ }
 
+  // Clean up sessions older than 7 days
+  try {
+    db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  } catch { /* non-critical */ }
+
   syncCatalogAgents(db);
   syncCatalogModules(db);
 
