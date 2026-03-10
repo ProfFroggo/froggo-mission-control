@@ -471,10 +471,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         </div>
 
         {/* Content */}
-        <BaseModalBody noPadding className="flex-1 min-h-0">
+        <BaseModalBody noPadding className="flex-1 min-h-0" maxHeight="calc(90vh - 140px)">
           {mode === 'chat' ? (
             // Chat Mode
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col" style={{ minHeight: 0, height: 'calc(90vh - 140px)' }}>
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {chatMessages.map((msg) => (
@@ -586,7 +586,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             </div>
           ) : (
             // Manual Mode
-            <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
+            <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
               {/* Title */}
               <div>
                 <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">

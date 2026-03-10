@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2 } from 'lucide-react';
+import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, MessageSquare, Send, BarChart } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import ConfirmDialog from './ConfirmDialog';
 import { isProtectedAgent } from '../lib/agentConfig';
+import AgentMetricsCard from './AgentMetricsCard';
+import { StreamingText } from './StreamingText';
 
 const API_PRESETS = [
   { label: 'Custom',                service: '',               placeholder: 'Your API key or secret' },
@@ -246,12 +248,14 @@ const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
 const TIER_LABELS = ['Auto', 'Logged', 'Review', 'Explicit'];
 
 type Tab = 'soul' | 'model' | 'skills' | 'tools' | 'api' | 'permissions' | 'performance';
+type Section = 'metrics' | 'configure' | 'chat';
 
 interface AgentManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   agentId: string;
   agentName: string;
+  initialSection?: Section;
 }
 
 interface APIKey { id: string; name: string; service: string; key: string; createdAt: string }
@@ -269,8 +273,9 @@ interface McpServerEntry {
 
 type AddSkillMode = 'url' | 'text' | null;
 
-export default function AgentManagementModal({ isOpen, onClose, agentId, agentName }: AgentManagementModalProps) {
+export default function AgentManagementModal({ isOpen, onClose, agentId, agentName, initialSection }: AgentManagementModalProps) {
   const fetchAgents = useStore(s => s.fetchAgents);
+  const [section, setSection] = useState<Section>(initialSection ?? 'configure');
   const [tab, setTab] = useState<Tab>('soul');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -402,16 +407,80 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     });
   }, [isOpen, agentId]);
 
-  // Lazy-load performance metrics when tab is activated
+  // Lazy-load performance metrics when metrics section or performance tab is activated
   useEffect(() => {
-    if (tab !== 'performance' || !isOpen || metrics) return;
+    if ((section !== 'metrics' && tab !== 'performance') || !isOpen || metrics) return;
     setMetricsLoading(true);
     fetch(`/api/agents/${agentId}/metrics`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setMetrics(data); })
       .catch(() => {})
       .finally(() => setMetricsLoading(false));
-  }, [tab, isOpen, agentId, metrics]);
+  }, [tab, section, isOpen, agentId, metrics]);
+
+  // Chat section state
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; streaming?: boolean }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (section === 'chat') chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, section]);
+
+  async function sendChatMessage() {
+    const text = chatInput.trim();
+    if (!text || chatSending) return;
+    setChatInput('');
+    setChatSending(true);
+    const userMsg = { role: 'user' as const, content: text };
+    setChatMessages(prev => [...prev, userMsg, { role: 'assistant', content: '', streaming: true }]);
+    chatAbortRef.current = new AbortController();
+    try {
+      const res = await fetch(`/api/agents/${agentId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+        signal: chatAbortRef.current.signal,
+      });
+      if (!res.ok || !res.body) throw new Error('Stream failed');
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let accumulated = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const raw = line.slice(6).trim();
+          if (raw === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(raw);
+            if (evt.type === 'text_delta' && evt.text) {
+              accumulated += evt.text;
+              setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: accumulated } : m));
+            } else if (evt.type === 'done') {
+              setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, streaming: false } : m));
+            } else if (evt.type === 'error') {
+              setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: evt.error || 'Error', streaming: false } : m));
+            }
+          } catch {}
+        }
+      }
+      setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, streaming: false } : m));
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: 'Failed to connect.', streaming: false } : m));
+      }
+    } finally {
+      setChatSending(false);
+    }
+  }
 
   // ── Saves ─────────────────────────────────────────
   const saveSoul = async () => {
@@ -636,35 +705,109 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
         role="presentation"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
-          <h2 className="text-base font-bold">Manage: {agentName}</h2>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border">
+          <h2 className="text-sm font-bold">{agentName}</h2>
           <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors">
             <X size={16} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 px-5 pt-3 border-b border-mission-control-border overflow-x-auto min-h-[44px]">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors relative whitespace-nowrap ${
-                tab === t.id
-                  ? 'bg-mission-control-bg0 text-mission-control-text-primary border border-b-0 border-mission-control-border -mb-px'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text-primary'
+        {/* Section tabs — Metrics | Configure | Chat */}
+        <div className="flex border-b border-mission-control-border px-5 pt-1">
+          {([
+            { id: 'metrics'   as Section, label: 'Metrics',   icon: BarChart },
+            { id: 'configure' as Section, label: 'Configure', icon: Wrench },
+            { id: 'chat'      as Section, label: 'Chat',      icon: MessageSquare },
+          ]).map(s => (
+            <button key={s.id} type="button" onClick={() => setSection(s.id)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+                section === s.id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text-primary'
               }`}
             >
-              {t.label}
-              {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
+              <s.icon size={13} />{s.label}
             </button>
           ))}
         </div>
 
+        {/* Configure sub-tabs */}
+        {section === 'configure' && (
+          <div className="flex gap-1 px-5 pt-2 border-b border-mission-control-border overflow-x-auto min-h-[38px]">
+            {TABS.map(t => (
+              <button key={t.id} type="button" onClick={() => setTab(t.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors relative whitespace-nowrap ${
+                  tab === t.id
+                    ? 'bg-mission-control-bg0 text-mission-control-text-primary border border-b-0 border-mission-control-border -mb-px'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text-primary'
+                }`}
+              >
+                {t.label}
+                {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5">
-          {loading ? (
+          {/* ── METRICS SECTION ── */}
+          {section === 'metrics' && (
+            <div className="space-y-4">
+              {metricsLoading ? (
+                <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading metrics…</div>
+              ) : metrics ? (
+                <AgentMetricsCard agentId={agentId} agentName={agentName} metrics={metrics as any} />
+              ) : (
+                <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">No metrics yet</div>
+              )}
+            </div>
+          )}
+
+          {/* ── CHAT SECTION ── */}
+          {section === 'chat' && (
+            <div className="flex flex-col h-full min-h-[300px]">
+              <div className="flex-1 overflow-y-auto space-y-3 mb-3">
+                {chatMessages.length === 0 && (
+                  <p className="text-xs text-mission-control-text-dim text-center py-8">Start a conversation with {agentName}</p>
+                )}
+                {chatMessages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
+                      m.role === 'user'
+                        ? 'bg-mission-control-accent text-white rounded-br-sm'
+                        : 'bg-mission-control-surface border border-mission-control-border rounded-bl-sm'
+                    }`}>
+                      {m.role === 'assistant'
+                        ? <StreamingText content={m.content} streaming={!!m.streaming} />
+                        : <span>{m.content}</span>
+                      }
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="flex gap-2 pt-2 border-t border-mission-control-border">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                  placeholder={`Message ${agentName}…`}
+                  className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                  disabled={chatSending}
+                />
+                <button type="button" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}
+                  className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-40 transition-colors">
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── CONFIGURE SECTION ── */}
+          {section === 'configure' && (
+          loading ? (
             <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading…</div>
           ) : (
             <>
@@ -1384,11 +1527,11 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                 </div>
               )}
             </>
-          )}
+          ))}
         </div>
 
-        {/* HR Actions footer — only for non-protected agents */}
-        {!loading && !isProtectedAgent(agentId) && (
+        {/* HR Actions footer — only for configure section, non-protected agents */}
+        {section === 'configure' && !loading && !isProtectedAgent(agentId) && (
           <div className="flex items-center gap-2 px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
             {agentStatus === 'disabled' ? (
               <button

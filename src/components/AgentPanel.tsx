@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, BookOpen } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, AlertCircle, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -10,7 +10,6 @@ import { gateway } from '../lib/gateway';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
-import AgentChatModal from './AgentChatModal';
 import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
@@ -22,30 +21,12 @@ import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 import type { CatalogAgent } from '../types/catalog';
 
 import { getAgentTheme } from '../utils/agentThemes';
-import WidgetLoader from './WidgetLoader';
 import { createLogger } from '../utils/logger';
 import { agentApi, analyticsApi } from '../lib/api';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
 
-// Static lookup for Tailwind JIT — dynamic `hover:${theme.bg}` won't generate CSS
-const HOVER_BG_MAP: Record<string, string> = {
-  'bg-success-subtle': 'hover:bg-success-subtle',
-  'bg-info-subtle': 'hover:bg-info-subtle',
-  'bg-warning-subtle': 'hover:bg-warning-subtle',
-  'bg-review-subtle': 'hover:bg-review-subtle',
-  'bg-error-subtle': 'hover:bg-error-subtle',
-  'bg-teal-500/8': 'hover:bg-teal-500/8',
-  'bg-pink-500/8': 'hover:bg-pink-500/8',
-  'bg-sky-500/8': 'hover:bg-sky-500/8',
-  'bg-violet-500/8': 'hover:bg-violet-500/8',
-  'bg-amber-600/8': 'hover:bg-amber-600/8',
-  'bg-rose-500/8': 'hover:bg-rose-500/8',
-  'bg-cyan-500/8': 'hover:bg-cyan-500/8',
-  'bg-indigo-500/8': 'hover:bg-indigo-500/8',
-  'bg-mission-control-surface': 'hover:bg-mission-control-surface',
-};
 
 export default function AgentPanel() {
   const { agents, tasks, gatewaySessions } = useStore(
@@ -64,8 +45,6 @@ export default function AgentPanel() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
   const [showCompare, setShowCompare] = useState(false);
-  const [chatAgent, setChatAgent] = useState<string | null>(null);
-  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
   const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
@@ -74,15 +53,9 @@ export default function AgentPanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
   const [view, setView] = useState<'active' | 'library'>('active');
-  const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
-  const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
-  const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
-  const [memoryNoteCounts, setMemoryNoteCounts] = useState<Record<string, number>>({});
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
-  const [addingSkillAgent, setAddingSkillAgent] = useState<string | null>(null);
-  const [newSkillText, setNewSkillText] = useState('');
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Subscribe to circuit.open SSE events
@@ -102,29 +75,6 @@ export default function AgentPanel() {
   useEventBus('agent.hired', () => {
     fetchAgents();
   });
-
-  const handleMemoryRotate = (agentId: string) => {
-    showConfirm({
-      title: 'Rotate Memory?',
-      message: `Current MEMORY.md will be archived and a fresh one created. Archived content remains searchable via memory-search.`,
-      confirmLabel: 'Rotate Memory',
-      type: 'warning',
-    }, async () => {
-      setRotatingAgent(agentId);
-      try {
-        const res = await fetch(`/api/agents/${agentId}/memory`, { method: 'POST' });
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Rotation failed');
-        }
-        showToast('success', 'Memory rotated');
-      } catch (err) {
-        showToast('error', 'Failed to rotate memory', (err as Error).message);
-      } finally {
-        setRotatingAgent(null);
-      }
-    });
-  };
 
   useEffect(() => {
     Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
@@ -209,25 +159,6 @@ export default function AgentPanel() {
     });
   };
 
-  const handleAddSkill = async (agentId: string, existingCapabilities: string[]) => {
-    const skill = newSkillText.trim();
-    if (!skill) return;
-    const updated = [...existingCapabilities, skill];
-    try {
-      await fetch(`/api/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ capabilities: updated }),
-      });
-      await fetchAgents();
-      setAddingSkillAgent(null);
-      setNewSkillText('');
-      showToast('success', `Skill "${skill}" added`);
-    } catch (err) {
-      showToast('error', 'Failed to add skill', (err as Error).message);
-    }
-  };
-
   const handleTrustTierSave = async (agentId: string, tier: number) => {
     try {
       await fetch(`/api/agents/${agentId}`, {
@@ -253,20 +184,6 @@ export default function AgentPanel() {
     }
   };
 
-  const fetchMemoryNoteCounts = async (agentIds: string[]) => {
-    const results: Record<string, number> = {};
-    await Promise.allSettled(agentIds.map(async (id) => {
-      try {
-        const res = await fetch(`/api/agents/${id}/memory`);
-        if (res.ok) {
-          const data = await res.json();
-          results[id] = data.count || 0;
-        }
-      } catch { /* non-critical */ }
-    }));
-    setMemoryNoteCounts(prev => ({ ...prev, ...results }));
-  };
-
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
@@ -282,20 +199,6 @@ export default function AgentPanel() {
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
-
-  const toggleExpanded = (agentId: string) => {
-    const s = new Set(expandedAgents);
-    if (s.has(agentId)) {
-      s.delete(agentId);
-    } else {
-      s.add(agentId);
-      // Lazy-load memory note count when first expanded
-      if (!(agentId in memoryNoteCounts)) {
-        fetchMemoryNoteCounts([agentId]);
-      }
-    }
-    setExpandedAgents(s);
-  };
 
   const toggleCompare = (agentId: string) => {
     if (compareAgents.includes(agentId)) setCompareAgents(compareAgents.filter(id => id !== agentId));
@@ -472,7 +375,6 @@ export default function AgentPanel() {
               const theme = getTheme(agent.id);
               const agentTasks = getAgentTasks(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
-              const isExpanded = expandedAgents.has(agent.id);
               const metrics = agentMetrics[agent.id] || {};
               const isCompareSelected = compareAgents.includes(agent.id);
               const sc = statusConfig[agent.status];
@@ -485,22 +387,16 @@ export default function AgentPanel() {
                   key={agent.id}
                   className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 ${
                     isCompareSelected ? 'border-review-border' : theme.border
-                  } ${isExpanded ? '' : 'cursor-pointer'}`}
-                  onClick={() => !isExpanded && toggleExpanded(agent.id)}
-                  onKeyDown={(e) => { if (!isExpanded && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleExpanded(agent.id); } }}
-                  role="button"
-                  tabIndex={isExpanded ? -1 : 0}
-                  aria-expanded={isExpanded}
-                  aria-label={isExpanded ? `${agent.name} details expanded` : `${agent.name} - press Enter to expand`}
+                  }`}
                 >
                   {/* Color accent bar */}
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
 
-                  <div className="p-5">
-                    {/* Profile header */}
-                    <div className="flex items-start gap-4 mb-4">
-                      {/* Profile picture */}
-                      <div className={`relative flex-shrink-0 w-16 h-16 rounded-2xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
+                  <div className="p-3">
+                    {/* Profile header — avatar + name/badges + compact metrics */}
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Avatar */}
+                      <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
                         {theme.pic ? (
                           <img
                             src={`/api/agents/${agent.id}/avatar`}
@@ -509,20 +405,19 @@ export default function AgentPanel() {
                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }}
                           />
                         ) : null}
-                        <span className={`${theme.pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-3xl`}>{agent.avatar}</span>
-                        {/* Status dot - only show for active/busy agents or idle with active task */}
-                        {showDot && <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
+                        <span className={`${theme.pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-lg`}>{agent.avatar}</span>
+                        {showDot && <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
                       </div>
 
+                      {/* Name + badges */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-lg leading-tight truncate">{agent.name}</h3>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="font-semibold text-sm leading-tight truncate">{agent.name}</h3>
                           {!sc.hideDot && (
-                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-lg ${theme.bg} ${theme.text}`}>
+                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
                               {sc.label}
                             </span>
                           )}
-                          {/* Trust tier badge with inline edit */}
                           {agent.trust_tier && (
                             editingTrustTierAgent === agent.id ? (
                               <div className="flex items-center gap-1">
@@ -536,20 +431,14 @@ export default function AgentPanel() {
                                   <option value={2}>Tier 2 (Worker)</option>
                                   <option value={3}>Tier 3 (Full)</option>
                                 </select>
-                                <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}
-                                  className="p-0.5 text-success hover:bg-success-subtle rounded">
-                                  <Check size={12} />
-                                </button>
-                                <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}
-                                  className="p-0.5 text-error hover:bg-error-subtle rounded">
-                                  <AlertTriangle size={12} />
-                                </button>
+                                <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }} className="p-0.5 text-success hover:bg-success-subtle rounded"><Check size={12} /></button>
+                                <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }} className="p-0.5 text-error hover:bg-error-subtle rounded"><AlertTriangle size={12} /></button>
                               </div>
                             ) : (
                               <button
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
-                                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                className={`inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded font-medium ${
                                   agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
                                   agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
                                   agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
@@ -558,263 +447,95 @@ export default function AgentPanel() {
                                 } hover:brightness-110 cursor-pointer`}
                                 title="Click to edit trust tier"
                               >
-                                {agent.trust_tier === 'admin'      ? 'Admin' :
-                                 agent.trust_tier === 'trusted'    ? 'Trusted' :
-                                 agent.trust_tier === 'worker'     ? 'Worker' :
-                                 agent.trust_tier === 'restricted' ? 'Restricted' :
-                                 `Tier ${agent.trust_tier}`}
-                                <Pencil size={9} />
+                                {agent.trust_tier === 'admin' ? 'Admin' : agent.trust_tier === 'trusted' ? 'Trusted' : agent.trust_tier === 'worker' ? 'Worker' : agent.trust_tier === 'restricted' ? 'Restricted' : `Tier ${agent.trust_tier}`}
+                                <Pencil size={8} />
                               </button>
                             )
                           )}
-                          {/* Circuit breaker open indicator */}
                           {circuitOpenAgents.has(agent.id) && (
-                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-error-subtle text-error border border-error-border" title="Circuit breaker open — agent locked out due to repeated failures">
-                              <AlertTriangle size={10} /> Circuit Open
+                            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded font-medium bg-error-subtle text-error border border-error-border" title="Circuit breaker open">
+                              <AlertTriangle size={9} /> Open
                             </span>
                           )}
-                          {/* Lifecycle status badges for non-active agents */}
-                          {agent.status === 'suspended' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-error-subtle text-error">
-                              Suspended
-                            </span>
-                          )}
-                          {agent.status === 'archived' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted-subtle text-mission-control-text-dim">
-                              Archived
-                            </span>
-                          )}
-                          {agent.status === 'draft' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-warning-subtle text-warning">
-                              Draft
-                            </span>
-                          )}
+                          {agent.status === 'suspended' && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-error-subtle text-error">Suspended</span>}
+                          {agent.status === 'archived' && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-mission-control-border text-mission-control-text-dim">Archived</span>}
+                          {agent.status === 'draft' && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-warning-subtle text-warning">Draft</span>}
                         </div>
-                        <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{agent.description}</p>
-                      </div>
-
-                      {/* Compact metrics */}
-                      <div className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={metrics} compact={true} />
+                        <p className="text-[11px] text-mission-control-text-dim mt-0.5 truncate">{agent.description}</p>
                       </div>
                     </div>
 
-                    {/* Capabilities as colored pills */}
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {agent.capabilities?.slice(0, isExpanded ? undefined : 4).map((cap, i) => (
-                        <span key={i} className={`px-2 py-0.5 text-[11px] font-medium rounded-md ${theme.bg} ${theme.text}`}>
+                    {/* Compact metrics row */}
+                    <div className="mb-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={metrics} compact={true} />
+                    </div>
+
+                    {/* Capabilities + status inline */}
+                    <div className="flex items-center gap-1 flex-wrap mb-2">
+                      {agent.capabilities?.slice(0, 3).map((cap, i) => (
+                        <span key={i} className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${theme.bg} ${theme.text}`}>
                           {cap}
                         </span>
                       ))}
-                      {!isExpanded && (agent.capabilities?.length || 0) > 4 && (
-                        <span className="px-2 py-0.5 text-[11px] text-mission-control-text-dim">+{(agent.capabilities?.length || 0) - 4}</span>
+                      {(agent.capabilities?.length || 0) > 3 && (
+                        <span className="text-[10px] text-mission-control-text-dim">+{(agent.capabilities?.length || 0) - 3}</span>
                       )}
+                      {/* Status inline — current task / queued / available */}
+                      {currentTask ? (
+                        <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-400 flex-shrink-0">
+                          <Zap size={10} /><span className="truncate max-w-24">{currentTask.title}</span>
+                        </span>
+                      ) : agentTasks.length > 0 ? (
+                        <span className="ml-auto flex items-center gap-1 text-[10px] text-mission-control-text-dim flex-shrink-0">
+                          <Clock size={10} />{agentTasks.length} queued
+                        </span>
+                      ) : agent.status === 'idle' ? (
+                        <span className="ml-auto flex items-center gap-1 text-[10px] text-success flex-shrink-0">
+                          <CheckCircle size={10} />Available
+                        </span>
+                      ) : null}
                     </div>
 
-                    {/* Current task */}
-                    {currentTask && (
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/20 bg-warning/5 text-sm mb-3">
-                        <Zap size={14} className="text-amber-400 flex-shrink-0" />
-                        <span className="truncate">{currentTask.title}</span>
-                      </div>
-                    )}
-
-                    {/* Queued tasks */}
-                    {agentTasks.length > 0 && !currentTask && (
-                      <div className="text-xs text-mission-control-text-dim mb-3">
-                        <Clock size={12} className="inline mr-1" />
-                        {agentTasks.length} task{agentTasks.length > 1 ? 's' : ''} queued
-                      </div>
-                    )}
-
-                    {/* Available badge — idle agent with no tasks */}
-                    {agent.status === 'idle' && agentTasks.length === 0 && (
-                      <div className="text-xs text-success mb-3">
-                        <CheckCircle size={12} className="inline mr-1" />
-                        Available
-                      </div>
-                    )}
-
-                    {/* Action buttons row — always visible */}
-                    <div className={`flex items-center gap-2 pt-2 border-t ${theme.border}`}>
+                    {/* Action buttons row */}
+                    <div className={`flex items-center gap-1.5 pt-2 border-t ${theme.border}`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
                         <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                          <Play size={12} /> Start
+                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                          <Play size={11} /> Start
                         </button>
                       )}
                       {agent.status === 'busy' && agent.sessionKey && (
                         <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
-                          <Square size={12} /> Stop
+                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
+                          <Square size={11} /> Stop
                         </button>
                       )}
-                      {/* Lifecycle start/stop toggle — real DB-persisted enable/disable */}
                       {agent.status === 'disabled' ? (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); handleAgentStart(agent.id); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleAgentStart(agent.id); }}
                           className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
-                          title="Re-enable agent for dispatcher"
-                        >
-                          <Play size={12} className="inline" /> Enable
+                          title="Re-enable agent">
+                          <Play size={11} /> Enable
                         </button>
                       ) : !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id, agent.name); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id, agent.name); }}
                           className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
-                          title="Disable agent — dispatcher will stop spawning it"
-                        >
-                          <StopCircle size={12} className="inline" /> Disable
+                          title="Disable agent">
+                          <StopCircle size={11} /> Disable
                         </button>
                       ) : null}
-                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text border ${theme.border} rounded-lg hover:bg-mission-control-border/30 transition-colors`}>
-                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                        {isExpanded ? 'Less' : 'More'}
-                      </button>
                       <div className="flex-1" />
                       <button type="button" onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
-                        title="Edit agent personality & model"
-                        aria-label={`Manage ${agent.name}`}>
-                        <Settings size={12} />
-                        Manage
-                      </button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors ${HOVER_BG_MAP[theme.bg] || ''} ${theme.text} opacity-50 hover:opacity-100`}
-                        title="Chat"
-                        aria-label={`Chat with ${agent.name}`}>
-                        <MessageSquare size={14} />
+                        className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium border ${theme.border} ${theme.text} rounded-lg hover:brightness-125 transition-colors`}
+                        title="Manage agent" aria-label={`Manage ${agent.name}`}>
+                        <Settings size={11} /> Manage
                       </button>
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-review-subtle' : 'text-mission-control-text-dim opacity-50 hover:opacity-100 hover:bg-mission-control-border/30'}`}
-                        title="Compare"
-                        aria-label={`Compare ${agent.name}`}>
-                        <GitCompare size={14} />
+                        className={`p-1 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-review-subtle' : 'text-mission-control-text-dim opacity-50 hover:opacity-100 hover:bg-mission-control-border/30'}`}
+                        title="Compare" aria-label={`Compare ${agent.name}`}>
+                        <GitCompare size={13} />
                       </button>
                     </div>
 
-                    {/* Expanded details */}
-                    {isExpanded && (
-                      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-                      <div
-                        className={`mt-4 pt-4 border-t ${theme.border} space-y-4`}
-                        onClick={e => e.stopPropagation()}
-                        onKeyDown={e => e.stopPropagation()}
-                        role="region"
-                        aria-label={`${agent.name} expanded details`}
-                      >
-                        <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={metrics} />
-
-                        {/* Shared Context Health */}
-                        {(() => {
-                          const ctx = ctxHealth[agent.id];
-                          const ctxOk = ctx && ctx.AGENTS && ctx.USER && ctx.TOOLS;
-                          return (
-                            <div className="flex items-center gap-1.5 text-xs mt-2">
-                              {ctxOk
-                                ? <><CheckCircle size={11} className="text-success" /><span className="text-mission-control-text-dim">Shared context OK</span></>
-                                : <><AlertCircle size={11} className="text-error" /><span className="text-error">Missing context links</span></>
-                              }
-                            </div>
-                          );
-                        })()}
-
-                        {/* Memory Health */}
-                        {(() => {
-                          const mem = memoryHealth[agent.id];
-                          if (!mem) return null;
-                          const colorMap = {
-                            green: { text: 'text-success', bg: 'bg-success-subtle', border: 'border-success-border' },
-                            yellow: { text: 'text-warning', bg: 'bg-warning-subtle', border: 'border-warning-border' },
-                            red: { text: 'text-error', bg: 'bg-error-subtle', border: 'border-error-border' },
-                          };
-                          const c = colorMap[mem.health];
-                          const isRotating = rotatingAgent === agent.id;
-                          return (
-                            <button
-                              type="button"
-                              onClick={() => handleMemoryRotate(agent.id)}
-                              disabled={isRotating}
-                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} transition-all disabled:opacity-50 hover:brightness-110 cursor-pointer`}
-                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate memory`}
-                            >
-                              {isRotating ? <RefreshCw size={11} className="animate-spin" /> : <FileText size={11} />}
-                              <span>{mem.sizeKB}KB</span>
-                              {mem.archiveChunks > 0 && <span className="opacity-60">({mem.archiveChunks} archived)</span>}
-                            </button>
-                          );
-                        })()}
-
-                        {/* Memory vault note count */}
-                        {memoryNoteCounts[agent.id] !== undefined && (
-                          <div className="flex items-center gap-1.5 text-xs mt-2 text-mission-control-text-dim">
-                            <BookOpen size={11} />
-                            <span>Memory: {memoryNoteCounts[agent.id]} note{memoryNoteCounts[agent.id] !== 1 ? 's' : ''} in vault</span>
-                          </div>
-                        )}
-
-                        <div>
-                          <h4 className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
-                            <Award size={12} /> Skills ({agent.capabilities?.length || 0})
-                          </h4>
-                          <div className="flex flex-wrap gap-1.5">
-                            {agent.capabilities?.map((skill, i) => (
-                              <button type="button" key={i} onClick={() => setSelectedAgent(agent.id)}
-                                className={`px-2 py-1 text-xs rounded-md border ${theme.border} ${theme.bg} ${theme.text} hover:brightness-125 transition-all`}>
-                                {skill}
-                              </button>
-                            ))}
-                            {addingSkillAgent === agent.id ? (
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="text"
-                                  value={newSkillText}
-                                  onChange={e => setNewSkillText(e.target.value)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') handleAddSkill(agent.id, agent.capabilities || []);
-                                    if (e.key === 'Escape') { setAddingSkillAgent(null); setNewSkillText(''); }
-                                  }}
-                                  placeholder="skill name"
-                                  className="px-2 py-1 text-xs rounded border border-mission-control-accent bg-mission-control-surface w-28"
-                                  /* eslint-disable-next-line jsx-a11y/no-autofocus */
-                                  autoFocus
-                                />
-                                <button type="button" onClick={() => handleAddSkill(agent.id, agent.capabilities || [])}
-                                  className="p-1 text-success hover:bg-success-subtle rounded">
-                                  <Check size={12} />
-                                </button>
-                                <button type="button" onClick={() => { setAddingSkillAgent(null); setNewSkillText(''); }}
-                                  className="p-1 text-mission-control-text-dim hover:bg-mission-control-border rounded">
-                                  <AlertTriangle size={12} />
-                                </button>
-                              </div>
-                            ) : (
-                              <button type="button" onClick={() => { setAddingSkillAgent(agent.id); setNewSkillText(''); }}
-                                className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
-                                + Add
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => setSelectedAgent(agent.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-border/30 transition-colors">
-                            <FileText size={14} /> Details
-                          </button>
-                          <button type="button" onClick={() => setChatAgent(agent.id)}
-                            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.bg} ${theme.text} hover:brightness-125 transition-all`}>
-                            <MessageSquare size={14} /> Chat
-                          </button>
-                        </div>
-
-                        {/* Agent-specific widgets */}
-                        <WidgetLoader agentId={agent.id} trustTier={agent.trust_tier} />
-                      </div>
-                    )}
                   </div>
                 </div>
               );
@@ -921,7 +642,6 @@ export default function AgentPanel() {
         {showCompare && compareAgents.length >= 2 && (
           <AgentCompareModal agentIds={compareAgents} onClose={() => { setShowCompare(false); setCompareAgents([]); }} />
         )}
-        {chatAgent && <AgentChatModal agentId={chatAgent} onClose={() => setChatAgent(null)} />}
         {managingAgent && (
           <AgentManagementModal
             isOpen={true}
