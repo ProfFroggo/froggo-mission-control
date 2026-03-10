@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v10.0 Real-Time Streaming — Phase 98 ready to plan
+**Current focus:** v10.0 Real-Time Streaming — All phases complete
 
 ## Current Position
 
-Phase: 98 of 101 (sdk-chat-route)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-03-10 — v10.0 roadmap initialized (4 phases, 98–101)
+Phase: 101 of 101 (performance-hardening)
+Plan: Complete
+Status: Complete
+Last activity: 2026-03-10 — v10.0 streaming upgrade complete (4 phases, 98–101)
 
-Progress: ░░░░░░░░░░ 0% (v10.0 — 0/4 phases done)
+Progress: ██████████ 100% (v10.0 — 4/4 phases done)
 
 ## Performance Metrics
 
@@ -122,5 +122,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: v10.0 roadmap created — 4 phases (98–101) from streaming-upgrade-plan.md. Phase 98 ready to plan.
+Stopped at: v10.0 streaming upgrade complete — all 4 phases (98–101) shipped 2026-03-10.
 Resume file: None
