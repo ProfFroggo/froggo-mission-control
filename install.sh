@@ -109,27 +109,17 @@ fi
 step "Configuration"
 
 GEMINI_API_KEY=""
-ANTHROPIC_API_KEY=""
 
 echo ""
-echo "  Mission Control needs a few API keys to unlock all features."
-echo "  Press Enter to skip any optional key — you can add them later in Settings."
+echo "  Mission Control uses Claude Code CLI for all agent work — no Anthropic API key needed."
+echo "  Only one optional key is needed to unlock Voice features."
 echo ""
 
-# Gemini API key (required for voice)
-echo -e "  ${BOLD}Gemini API Key${RESET} (required for Voice — get free at https://aistudio.google.com/app/apikey)"
-read -rp "  Gemini API Key: " GEMINI_API_KEY
+# Gemini API key (optional — for voice only)
+echo -e "  ${BOLD}Gemini API Key${RESET} (optional — Voice only, get free at https://aistudio.google.com/app/apikey)"
+read -rp "  Gemini API Key (press Enter to skip): " GEMINI_API_KEY
 if [ -z "$GEMINI_API_KEY" ]; then
-  warn "Gemini API key skipped — Voice features will be unavailable"
-fi
-
-# Anthropic API key (optional — Claude CLI handles auth, but direct SDK useful)
-echo ""
-echo -e "  ${BOLD}Anthropic API Key${RESET} (optional — for direct SDK usage, not required if using Claude CLI)"
-read -rsp "  Anthropic API Key: " ANTHROPIC_API_KEY
-echo ""
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-  info "Anthropic API key skipped — Claude Code CLI subscription handles agent auth"
+  info "Gemini API key skipped — Voice features will be unavailable (add later in Settings)"
 fi
 
 # ── Step 3: Create directory structure ────────────────────────────────────────
@@ -341,8 +331,8 @@ PROJECT_DIR=${REPO_DIR}
 LOG_DIR=${MC_LOGS}
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
+# Agents use Claude Code CLI for auth — no Anthropic API key required
 GEMINI_API_KEY=${GEMINI_API_KEY}
-ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
 # ── Internal security token (auto-generated, unique per install) ──────────────
 # Used to authenticate MCP server → app API calls. Never share or commit this.
@@ -691,8 +681,6 @@ if [ "${OS}" = "Darwin" ]; then
     <string>${INTERNAL_API_TOKEN}</string>
     <key>GEMINI_API_KEY</key>
     <string>${GEMINI_API_KEY}</string>
-    <key>ANTHROPIC_API_KEY</key>
-    <string>${ANTHROPIC_API_KEY}</string>
     <key>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS</key>
     <string>1</string>
     <key>CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING</key>
@@ -791,7 +779,6 @@ Environment=PROJECT_DIR=${REPO_DIR}
 Environment=LOG_DIR=${MC_LOGS}
 Environment=CLAUDE_BIN=${CLAUDE_BIN}
 Environment=GEMINI_API_KEY=${GEMINI_API_KEY}
-Environment=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 Environment=CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 Environment=MODEL_LEAD=claude-opus-4-6
 Environment=MODEL_WORKER=claude-sonnet-4-6
