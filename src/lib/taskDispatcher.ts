@@ -279,7 +279,17 @@ Do not ask for clarification — interpret and execute. Log activity frequently.
 | Project deliverables | ~/mission-control/library/projects/project-{name}-{date}/ |
 
 File naming: YYYY-MM-DD_description.ext (e.g. 2026-03-06_research-findings.md)
-After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment`;
+After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment
+
+## Memory Protocol
+
+When your task is complete (before marking agent-review):
+Write a memory note using mcp__memory__memory_write:
+- category: 'task'
+- title: 'YYYY-MM-DD-{brief-slug-of-what-you-built}'
+- content: What you built, what worked, what was hard, key patterns discovered, tags
+
+This note helps you and other agents learn from your work.`;
 
 // ── Skills loader ─────────────────────────────────────────────────────────────
 
