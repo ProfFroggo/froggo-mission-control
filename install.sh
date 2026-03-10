@@ -369,6 +369,11 @@ success ".env written to ${REPO_DIR}/.env"
 # ── Step 8: Generate .claude/settings.json ────────────────────────────────────
 step "Configuring Claude Code CLI"
 
+# Resolve absolute node path here (used in settings.json template substitution)
+NODE_BIN="$(realpath "$(which node 2>/dev/null)" 2>/dev/null || \
+  find /opt/homebrew/bin /usr/local/bin -name node -type f 2>/dev/null | head -1 || \
+  echo /opt/homebrew/bin/node)"
+
 CLAUDE_SETTINGS_DIR="${REPO_DIR}/.claude"
 mkdir -p "${CLAUDE_SETTINGS_DIR}"
 
@@ -385,16 +390,18 @@ TEMPLATE="${CLAUDE_SETTINGS_DIR}/settings.json.template"
 OUTPUT="${CLAUDE_SETTINGS_DIR}/settings.json"
 
 if [ -f "${TEMPLATE}" ]; then
-  # Substitute placeholders
+  # Substitute all placeholders including NODE_BIN and QMD_BIN
   sed \
     -e "s|{{PROJECT_ROOT}}|${REPO_DIR}|g" \
     -e "s|{{HOME}}|${HOME}|g" \
+    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+    -e "s|{{QMD_BIN}}|${QMD_BIN}|g" \
     "${TEMPLATE}" > "${OUTPUT}"
-  
-  # If QMD not found, clear the QMD_BIN env so it's empty rather than wrong
+
+  # If QMD not found, remove the QMD_BIN key entirely (empty value causes errors)
   if [ -z "${QMD_BIN}" ]; then
     python3 -c "
-import json, sys
+import json
 with open('${OUTPUT}') as f: d = json.load(f)
 if 'mcpServers' in d and 'memory' in d['mcpServers']:
     d['mcpServers']['memory']['env'].pop('QMD_BIN', None)
@@ -459,11 +466,13 @@ if [ -f "${TEMPLATE}" ]; then
   sed \
     -e "s|{{PROJECT_ROOT}}|${REPO_DIR}|g" \
     -e "s|{{HOME}}|${HOME}|g" \
+    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+    -e "s|{{QMD_BIN}}|${QMD_BIN}|g" \
     "${TEMPLATE}" > "${MC_SETTINGS_OUTPUT}"
 
   if [ -z "${QMD_BIN}" ]; then
     python3 -c "
-import json, sys
+import json
 with open('${MC_SETTINGS_OUTPUT}') as f: d = json.load(f)
 if 'mcpServers' in d and 'memory' in d['mcpServers']:
     d['mcpServers']['memory']['env'].pop('QMD_BIN', None)
