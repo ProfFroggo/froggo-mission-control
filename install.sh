@@ -509,7 +509,7 @@ step "Bootstrapping core agent workspaces"
 
 bootstrap_agents() {
   local catalog_agents_dir="${REPO_DIR}/catalog/agents"
-  local core_agents=("mission-control" "clara" "coder" "writer")
+  local core_agents=("mission-control" "clara" "coder" "hr" "inbox")
 
   for agent_id in "${core_agents[@]}"; do
     local workspace="${MC_AGENTS}/${agent_id}"
