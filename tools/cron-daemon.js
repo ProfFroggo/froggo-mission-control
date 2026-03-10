@@ -85,7 +85,10 @@ function readSchedule() {
     if (!fs.existsSync(SCHEDULE_PATH)) return [];
     const raw = fs.readFileSync(SCHEDULE_PATH, 'utf8').trim();
     if (!raw) return [];
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.jobs)) return parsed.jobs;
+    return [];
   } catch (e) {
     log(`Error reading schedule: ${e.message}`);
     return [];
