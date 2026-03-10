@@ -1,0 +1,102 @@
+{
+  "autoAcceptEdits": true,
+  "cleanupPeriodDays": 30,
+  "permissions": {
+    "allow": [
+      "Read", "Edit", "Write", "Glob", "Grep", "MultiEdit",
+      "Bash(*)",
+      "mcp__*",
+      "WebFetch(*)", "WebSearch(*)",
+      "TodoRead", "TodoWrite"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo rm *)",
+      "Bash(mkfs *)",
+      "Bash(dd if=/dev/zero *)",
+      "Bash(:(){ :|:& };:)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
+  },
+  "teammateMode": "in-process",
+  "mcpServers": {
+    "mission-control_db": {
+      "type": "stdio",
+      "command": "/usr/local/bin/node",
+      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/mission-control-db-mcp/dist/index.js"],
+      "env": {
+        "DB_PATH": "/Users/kevin.macarthur/mission-control/data/mission-control.db"
+      }
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "/usr/local/bin/node",
+      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/memory-mcp/dist/index.js"],
+      "env": {
+        "VAULT_PATH": "/Users/kevin.macarthur/mission-control/memory",
+        "QMD_BIN": "/Users/kevin.macarthur/.npm-global/bin/qmd",
+        "LOG_DIR": "/Users/kevin.macarthur/mission-control/logs"
+      }
+    },
+    "cron": {
+      "type": "stdio",
+      "command": "/usr/local/bin/node",
+      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/cron-mcp/dist/index.js"],
+      "env": {
+        "SCHEDULE_PATH": "/Users/kevin.macarthur/mission-control/data/schedule.json"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/approval-hook.js"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__mission-control-db__task_update",
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/review-gate.js"
+      },
+      {
+        "matcher": "mcp__mission-control-db__chat_post",
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/agent-wake.js"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/session-sync.js"
+      },
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/memory-capture.js"
+      }
+    ],
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/precompact-hook.js"
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/teammate-idle.js"
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/task-completed.js"
+      }
+    ]
+  }
+}
