@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2 } from 'lucide-react';
-import { agentApi, settingsApi, libraryApi } from '../lib/api';
+import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power } from 'lucide-react';
+import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import ConfirmDialog from './ConfirmDialog';
+import { isProtectedAgent } from '../lib/agentConfig';
 
 const API_PRESETS = [
   { label: 'Custom',                service: '',               placeholder: 'Your API key or secret' },
@@ -320,6 +322,15 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const [presetApplied, setPresetApplied] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  // HR actions
+  const [agentStatus, setAgentStatus] = useState<string>('idle');
+  const [showFireConfirm, setShowFireConfirm] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [hrActionLoading, setHrActionLoading] = useState(false);
+
+  // Tier diff preview
+  const [prevTrustTier, setPrevTrustTier] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
@@ -335,7 +346,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
       settingsApi.get('security.keys'),
       settingsApi.get(`agent.${agentId}.permissions`),
       settingsApi.get(`agent.${agentId}.disallowedTools`),
-    ]).then(([soulR, configR, skillsR, keysR, permR, disallowR]) => {
+      agentApi.getById(agentId),
+    ]).then(([soulR, configR, skillsR, keysR, permR, disallowR, agentR]) => {
       if (soulR.status === 'fulfilled') setSoul(soulR.value?.content || '');
       if (configR.status === 'fulfilled') {
         const c = configR.value as any;
@@ -367,6 +379,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
           const parsed = typeof val === 'string' ? JSON.parse(val) : val;
           setAgentDisallowed(Array.isArray(parsed) ? parsed : []);
         } catch { setAgentDisallowed([]); }
+      }
+      if (agentR.status === 'fulfilled') {
+        setAgentStatus((agentR.value as any)?.status || 'idle');
       }
       setLoading(false);
     });
@@ -1075,6 +1090,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                           key={tier.id}
                           type="button"
                           onClick={() => {
+                            if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
                             // Apply preset overrides for this tier
                             const preset = TIER_PRESETS[tier.id];
@@ -1106,6 +1122,27 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         </span>
                       )}
                     </div>
+                    {/* Tier diff preview */}
+                    {prevTrustTier && prevTrustTier !== trustTier && (() => {
+                      const prevPreset = TIER_PRESETS[prevTrustTier] || {};
+                      const newPreset = TIER_PRESETS[trustTier] || {};
+                      const gained = Object.keys(newPreset).filter(k => newPreset[k] && !prevPreset[k]);
+                      const lost = Object.keys(prevPreset).filter(k => prevPreset[k] && !newPreset[k]);
+                      if (gained.length === 0 && lost.length === 0) return null;
+                      return (
+                        <div className="mt-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-xs space-y-1">
+                          <div className="font-medium text-mission-control-text-dim">
+                            Tier change: {TRUST_TIERS.find(t => t.id === prevTrustTier)?.label} → {TRUST_TIERS.find(t => t.id === trustTier)?.label}
+                          </div>
+                          {gained.length > 0 && (
+                            <div className="text-success">+ Granting: {gained.join(', ')}</div>
+                          )}
+                          {lost.length > 0 && (
+                            <div className="text-error">- Removing: {lost.join(', ')}</div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Per-action overrides — collapsible groups */}
@@ -1218,7 +1255,92 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
             </>
           )}
         </div>
+
+        {/* HR Actions footer — only for non-protected agents */}
+        {!loading && !isProtectedAgent(agentId) && (
+          <div className="flex items-center gap-2 px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
+            {agentStatus === 'disabled' ? (
+              <button
+                type="button"
+                disabled={hrActionLoading}
+                onClick={async () => {
+                  setHrActionLoading(true);
+                  try {
+                    await agentApi.updateStatus(agentId, 'idle');
+                    setAgentStatus('idle');
+                    showToast('Agent enabled', 'success');
+                  } catch { showToast('Failed to enable agent', 'error'); }
+                  finally { setHrActionLoading(false); }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40"
+              >
+                <Power size={14} /> Enable Agent
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={hrActionLoading}
+                onClick={() => setShowDisableConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40"
+              >
+                <PowerOff size={14} /> Disable Agent
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              disabled={hrActionLoading}
+              onClick={() => setShowFireConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40"
+            >
+              <UserMinus size={14} /> Fire Agent
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Fire confirm */}
+      <ConfirmDialog
+        open={showFireConfirm}
+        onClose={() => setShowFireConfirm(false)}
+        onConfirm={async () => {
+          setShowFireConfirm(false);
+          setHrActionLoading(true);
+          try {
+            await catalogApi.fireAgent(agentId);
+            showToast('Agent fired', 'success');
+            fetchAgents();
+            onClose();
+          } catch { showToast('Failed to fire agent', 'error'); }
+          finally { setHrActionLoading(false); }
+        }}
+        title={`Fire ${agentName}?`}
+        message={`Fire ${agentName}? Their workspace will be archived. Active tasks will be paused.`}
+        confirmLabel="Fire Agent"
+        cancelLabel="Cancel"
+        type="danger"
+      />
+
+      {/* Disable confirm */}
+      <ConfirmDialog
+        open={showDisableConfirm}
+        onClose={() => setShowDisableConfirm(false)}
+        onConfirm={async () => {
+          setShowDisableConfirm(false);
+          setHrActionLoading(true);
+          try {
+            await agentApi.updateStatus(agentId, 'disabled');
+            setAgentStatus('disabled');
+            showToast('Agent disabled', 'success');
+          } catch { showToast('Failed to disable agent', 'error'); }
+          finally { setHrActionLoading(false); }
+        }}
+        title={`Disable ${agentName}?`}
+        message={`Disable ${agentName}? Active tasks will pause until re-enabled.`}
+        confirmLabel="Disable"
+        cancelLabel="Cancel"
+        type="warning"
+      />
     </div>
   );
 }

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
+import { useEventBus } from '../lib/useEventBus';
+import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useStore, Agent } from '../store/store';
 import { PROTECTED_AGENTS } from '../lib/agentConfig';
 import { useShallow } from 'zustand/react/shallow';
@@ -74,16 +77,52 @@ export default function AgentPanel() {
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
   const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
   const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
+  const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
+  const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
+  const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
+  const [addingSkillAgent, setAddingSkillAgent] = useState<string | null>(null);
+  const [newSkillText, setNewSkillText] = useState('');
+  const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
-  const handleMemoryRotate = async (agentId: string) => {
-    if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via mission-control-db memory-search.`)) return;
-    setRotatingAgent(agentId);
-    try {
-      // Memory rotation — no REST equivalent
-      console.warn('Not implemented: memoryLifecycle.rotate', agentId);
-    } finally {
-      setRotatingAgent(null);
+  // Subscribe to circuit.open SSE events
+  useEventBus('circuit.open', (data) => {
+    const d = data as { agentId: string };
+    if (d?.agentId) {
+      setCircuitOpenAgents(prev => new Set(prev).add(d.agentId));
     }
+  });
+
+  // Subscribe to agent.updated SSE events
+  useEventBus('agent.updated', () => {
+    fetchAgents();
+  });
+
+  // Subscribe to agent.hired SSE events — refresh agent list immediately
+  useEventBus('agent.hired', () => {
+    fetchAgents();
+  });
+
+  const handleMemoryRotate = (agentId: string) => {
+    showConfirm({
+      title: 'Rotate Memory?',
+      message: `Current MEMORY.md will be archived and a fresh one created. Archived content remains searchable via memory-search.`,
+      confirmLabel: 'Rotate Memory',
+      type: 'warning',
+    }, async () => {
+      setRotatingAgent(agentId);
+      try {
+        const res = await fetch(`/api/agents/${agentId}/memory`, { method: 'POST' });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Rotation failed');
+        }
+        showToast('success', 'Memory rotated');
+      } catch (err) {
+        showToast('error', 'Failed to rotate memory', (err as Error).message);
+      } finally {
+        setRotatingAgent(null);
+      }
+    });
   };
 
   useEffect(() => {
@@ -151,12 +190,55 @@ export default function AgentPanel() {
     finally { setIsRefreshing(false); }
   };
 
-  const handleAgentStop = async (agentId: string) => {
+  const handleAgentStop = (agentId: string, agentName: string) => {
+    const activeTasks = tasks.filter(t => t.assignedTo === agentId && ['in-progress', 'todo', 'internal-review'].includes(t.status)).length;
+    showConfirm({
+      title: `Disable ${agentName}?`,
+      message: `Disabling ${agentName} will pause dispatcher for this agent${activeTasks > 0 ? ` — ${activeTasks} active task${activeTasks > 1 ? 's' : ''} will queue but not execute` : ''}.`,
+      confirmLabel: 'Disable',
+      type: 'warning',
+    }, async () => {
+      try {
+        await agentApi.updateStatus(agentId, 'disabled');
+        await fetchAgents();
+      } catch (err) {
+        logger.error('[AgentPanel] Stop error:', err);
+        showToast('error', 'Failed to disable agent', (err as Error).message);
+      }
+    });
+  };
+
+  const handleAddSkill = async (agentId: string, existingCapabilities: string[]) => {
+    const skill = newSkillText.trim();
+    if (!skill) return;
+    const updated = [...existingCapabilities, skill];
     try {
-      await agentApi.updateStatus(agentId, 'disabled');
+      await fetch(`/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capabilities: updated }),
+      });
       await fetchAgents();
+      setAddingSkillAgent(null);
+      setNewSkillText('');
+      showToast('success', `Skill "${skill}" added`);
     } catch (err) {
-      logger.error('[AgentPanel] Stop error:', err);
+      showToast('error', 'Failed to add skill', (err as Error).message);
+    }
+  };
+
+  const handleTrustTierSave = async (agentId: string, tier: number) => {
+    try {
+      await fetch(`/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trust_tier: tier }),
+      });
+      await fetchAgents();
+      setEditingTrustTierAgent(null);
+      showToast('success', 'Trust tier updated — permissions recalculated');
+    } catch (err) {
+      showToast('error', 'Failed to update trust tier', (err as Error).message);
     }
   };
 
@@ -166,6 +248,7 @@ export default function AgentPanel() {
       await fetchAgents();
     } catch (err) {
       logger.error('[AgentPanel] Start error:', err);
+      showToast('error', 'Failed to enable agent', (err as Error).message);
     }
   };
 
@@ -174,7 +257,7 @@ export default function AgentPanel() {
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
     active:     { color: 'bg-success',  label: 'Active', pulse: true },
-    busy:       { color: 'bg-success',  label: 'Working…', pulse: true },
+    busy:       { color: 'bg-mission-control-accent', label: 'Working…', pulse: true },
     idle:       { color: 'bg-warning', label: 'Idle' },
     offline:    { color: 'bg-mission-control-bg0',   label: 'Offline', hideDot: true },
     suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
@@ -260,7 +343,7 @@ export default function AgentPanel() {
             )}
             {view === 'active' && (
               <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">
-                <Plus size={15} className="flex-shrink-0" /> New Worker
+                <Plus size={15} className="flex-shrink-0" /> New Agent
               </button>
             )}
           </div>
@@ -313,7 +396,7 @@ export default function AgentPanel() {
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {(() => {
                 const totalTokens = gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
@@ -377,7 +460,7 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 ${
+                  className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 ${
                     isCompareSelected ? 'border-review-border' : theme.border
                   } ${isExpanded ? '' : 'cursor-pointer'}`}
                   onClick={() => !isExpanded && toggleExpanded(agent.id)}
@@ -410,26 +493,61 @@ export default function AgentPanel() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-lg leading-tight">{agent.name}</h3>
+                          <h3 className="font-bold text-lg leading-tight truncate">{agent.name}</h3>
                           {!sc.hideDot && (
-                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
+                            <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-lg ${theme.bg} ${theme.text}`}>
                               {sc.label}
                             </span>
                           )}
-                          {/* Trust tier badge — only show for non-default tiers */}
-                          {agent.trust_tier && agent.trust_tier !== 'apprentice' && (
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
-                              agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
-                              agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
-                              agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
-                              'bg-mission-control-border text-mission-control-text-dim'
-                            }`}>
-                              {agent.trust_tier === 'admin'      ? 'Admin' :
-                               agent.trust_tier === 'trusted'    ? 'Trusted' :
-                               agent.trust_tier === 'worker'     ? 'Worker' :
-                               agent.trust_tier === 'restricted' ? 'Restricted' :
-                               agent.trust_tier}
+                          {/* Trust tier badge with inline edit */}
+                          {agent.trust_tier && (
+                            editingTrustTierAgent === agent.id ? (
+                              <div className="flex items-center gap-1">
+                                <select
+                                  value={pendingTrustTier}
+                                  onChange={e => setPendingTrustTier(Number(e.target.value))}
+                                  className="text-xs px-1 py-0.5 rounded border border-mission-control-border bg-mission-control-surface"
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <option value={1}>Tier 1 (Restricted)</option>
+                                  <option value={2}>Tier 2 (Worker)</option>
+                                  <option value={3}>Tier 3 (Full)</option>
+                                </select>
+                                <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}
+                                  className="p-0.5 text-success hover:bg-success-subtle rounded">
+                                  <Check size={12} />
+                                </button>
+                                <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}
+                                  className="p-0.5 text-error hover:bg-error-subtle rounded">
+                                  <AlertTriangle size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
+                                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
+                                  agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
+                                  agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
+                                  agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
+                                  'bg-mission-control-border text-mission-control-text-dim'
+                                } hover:brightness-110 cursor-pointer`}
+                                title="Click to edit trust tier"
+                              >
+                                {agent.trust_tier === 'admin'      ? 'Admin' :
+                                 agent.trust_tier === 'trusted'    ? 'Trusted' :
+                                 agent.trust_tier === 'worker'     ? 'Worker' :
+                                 agent.trust_tier === 'restricted' ? 'Restricted' :
+                                 `Tier ${agent.trust_tier}`}
+                                <Pencil size={9} />
+                              </button>
+                            )
+                          )}
+                          {/* Circuit breaker open indicator */}
+                          {circuitOpenAgents.has(agent.id) && (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-error-subtle text-error border border-error-border" title="Circuit breaker open — agent locked out due to repeated failures">
+                              <AlertTriangle size={10} /> Circuit Open
                             </span>
                           )}
                           {/* Lifecycle status badges for non-active agents */}
@@ -486,6 +604,14 @@ export default function AgentPanel() {
                       </div>
                     )}
 
+                    {/* Available badge — idle agent with no tasks */}
+                    {agent.status === 'idle' && agentTasks.length === 0 && (
+                      <div className="text-xs text-success mb-3">
+                        <CheckCircle size={12} className="inline mr-1" />
+                        Available
+                      </div>
+                    )}
+
                     {/* Action buttons row — always visible */}
                     <div className={`flex items-center gap-2 pt-2 border-t ${theme.border}`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
@@ -505,7 +631,7 @@ export default function AgentPanel() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); handleAgentStart(agent.id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
                           title="Re-enable agent for dispatcher"
                         >
                           <Play size={12} className="inline" /> Enable
@@ -513,8 +639,8 @@ export default function AgentPanel() {
                       ) : !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id, agent.name); }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                           title="Disable agent — dispatcher will stop spawning it"
                         >
                           <StopCircle size={12} className="inline" /> Disable
@@ -527,7 +653,7 @@ export default function AgentPanel() {
                       </button>
                       <div className="flex-1" />
                       <button type="button" onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-muted hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
                         title="Edit agent personality & model"
                         aria-label={`Manage ${agent.name}`}>
                         <Settings size={12} />
@@ -589,8 +715,8 @@ export default function AgentPanel() {
                               type="button"
                               onClick={() => handleMemoryRotate(agent.id)}
                               disabled={isRotating}
-                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} hover:brightness-125 transition-all disabled:opacity-50`}
-                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate`}
+                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} transition-all disabled:opacity-50 hover:brightness-110 cursor-pointer`}
+                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate memory`}
                             >
                               {isRotating ? <RefreshCw size={11} className="animate-spin" /> : <FileText size={11} />}
                               <span>{mem.sizeKB}KB</span>
@@ -610,10 +736,36 @@ export default function AgentPanel() {
                                 {skill}
                               </button>
                             ))}
-                            <button type="button" onClick={() => setSelectedAgent(agent.id)}
-                              className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
-                              + Add
-                            </button>
+                            {addingSkillAgent === agent.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="text"
+                                  value={newSkillText}
+                                  onChange={e => setNewSkillText(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleAddSkill(agent.id, agent.capabilities || []);
+                                    if (e.key === 'Escape') { setAddingSkillAgent(null); setNewSkillText(''); }
+                                  }}
+                                  placeholder="skill name"
+                                  className="px-2 py-1 text-xs rounded border border-mission-control-accent bg-mission-control-surface w-28"
+                                  /* eslint-disable-next-line jsx-a11y/no-autofocus */
+                                  autoFocus
+                                />
+                                <button type="button" onClick={() => handleAddSkill(agent.id, agent.capabilities || [])}
+                                  className="p-1 text-success hover:bg-success-subtle rounded">
+                                  <Check size={12} />
+                                </button>
+                                <button type="button" onClick={() => { setAddingSkillAgent(null); setNewSkillText(''); }}
+                                  className="p-1 text-mission-control-text-dim hover:bg-mission-control-border rounded">
+                                  <AlertTriangle size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => { setAddingSkillAgent(agent.id); setNewSkillText(''); }}
+                                className="px-2 py-1 text-xs text-mission-control-text-dim border border-dashed border-mission-control-border rounded-md hover:border-mission-control-text-dim transition-colors">
+                                + Add
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -652,12 +804,14 @@ export default function AgentPanel() {
                   className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
                     session.isActive ? 'border-success-border bg-success-subtle' : 'border-mission-control-border'
                   }`}>
-                  <span className="text-xl no-shrink">🤖</span>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-surface border border-mission-control-border flex items-center justify-center">
+                    <Bot size={16} className="text-info" />
+                  </div>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
-                      <span className="font-medium session-name flex-shrink">{session.displayName}</span>
+                      <span className="font-medium session-name flex-shrink truncate">{session.displayName}</span>
                       {session.label && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded no-shrink no-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded-lg no-shrink no-wrap">
                           {session.label}
                         </span>
                       )}
@@ -670,7 +824,7 @@ export default function AgentPanel() {
                       <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
+                  <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded-lg ${
                     session.isActive ? 'text-success border border-success-border' : 'text-mission-control-text-dim border border-mission-control-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
@@ -694,24 +848,26 @@ export default function AgentPanel() {
                     {getTheme(agent.id).pic ? (
                       <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
                     ) : null}
-                    <span className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-xl`}>{agent.avatar}</span>
+                    <div className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center`}>
+                      <Bot size={16} className="text-mission-control-text-dim" />
+                    </div>
                   </div>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
-                      <span className="font-medium agent-name flex-1 min-w-0">{agent.name}</span>
+                      <span className="font-medium agent-name flex-1 min-w-0 truncate">{agent.name}</span>
                       {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
                     </div>
                     <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                   </div>
                   {agent.status === 'disabled' ? (
                     <button type="button" onClick={() => handleAgentStart(agent.id)}
-                      className="px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                      className="px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
                       title="Re-enable agent for dispatcher">
                       <Play size={12} className="inline mr-1" /> Enable
                     </button>
                   ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                    <button type="button" onClick={() => handleAgentStop(agent.id)}
-                      className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                    <button type="button" onClick={() => handleAgentStop(agent.id, agent.name)}
+                      className="px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
                       title="Disable agent — dispatcher will stop spawning it">
                       <StopCircle size={12} className="inline mr-1" /> Disable
                     </button>
@@ -743,6 +899,16 @@ export default function AgentPanel() {
             agentName={managingAgent.name}
           />
         )}
+        <ConfirmDialog
+          open={confirmOpen}
+          onClose={closeConfirm}
+          onConfirm={onConfirmCallback}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          confirmLabel={confirmConfig.confirmLabel}
+          cancelLabel={confirmConfig.cancelLabel}
+          type={confirmConfig.type}
+        />
       </div>
     </div>
   );

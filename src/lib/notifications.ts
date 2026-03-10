@@ -23,6 +23,7 @@ export function playNotificationSound(type: 'approval' | 'message' | 'alert' = '
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.disconnect();
       break;
     case 'alert': {
       // Urgent double beep
@@ -31,6 +32,7 @@ export function playNotificationSound(type: 'approval' | 'message' | 'alert' = '
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.15);
+      oscillator.disconnect();
 
       // Second beep
       const osc2 = audioContext.createOscillator();
@@ -51,6 +53,7 @@ export function playNotificationSound(type: 'approval' | 'message' | 'alert' = '
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.15);
+      oscillator.disconnect();
   }
 }
 

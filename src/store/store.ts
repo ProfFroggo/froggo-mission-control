@@ -27,8 +27,10 @@ if (typeof window !== 'undefined') {
 const storeLogger = createLogger('Store');
 
 // Guard against concurrent updateTask calls for the same task ID
-// Prevents rollback state corruption when two calls race for the same task
+// Last-write-wins: if a second update arrives while one is in-flight, queue it
+// and fire it immediately after the first settles (rather than silently dropping).
 const pendingTaskUpdates = new Set<string>();
+const pendingTaskOverrides = new Map<string, Partial<Task>>();
 
 export type TaskStatus = 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
@@ -586,9 +588,13 @@ export const useStore = create<Store>()(
         taskApi.create(newTask).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
       },
       updateTask: (id: string, updates: Partial<Task>) => {
-        // Drop concurrent update for the same task — prevents rollback state corruption
+        // Last-write-wins: if an update is in-flight for this task, apply the optimistic
+        // state immediately and queue this intent — the in-flight handler will re-fire it.
         if (pendingTaskUpdates.has(id)) {
-          console.warn('[Store] Dropping concurrent update for task:', id);
+          pendingTaskOverrides.set(id, { ...(pendingTaskOverrides.get(id) ?? {}), ...updates });
+          set((s: Store) => ({
+            tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
+          }));
           return;
         }
         pendingTaskUpdates.add(id);
@@ -628,6 +634,12 @@ export const useStore = create<Store>()(
           })
           .finally(() => {
             pendingTaskUpdates.delete(id);
+            // Fire any queued override that arrived while this request was in-flight
+            const override = pendingTaskOverrides.get(id);
+            if (override) {
+              pendingTaskOverrides.delete(id);
+              get().updateTask(id, override);
+            }
           });
       },
       moveTask: (id: string, status: TaskStatus) => {
@@ -696,7 +708,17 @@ export const useStore = create<Store>()(
         // Broadcast status change to main session
         gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         // Sync to mission-control-db
-        taskApi.update(task.id, { status }).catch((err: Error) => {
+        taskApi.update(task.id, { status }).then((result: Record<string, unknown>) => {
+          // Check if review gate rejected the move
+          if (result?.gateRejection && typeof result.gateRejection === 'object') {
+            const rejection = result.gateRejection as { reason: string };
+            showToast('warning', 'Review gate rejected', rejection.reason);
+            // Rollback: the server already moved it back to todo, sync local state
+            set((s: Store) => ({
+              tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, status: (result.status as TaskStatus) || previousStatus, updatedAt: Date.now() } : t)
+            }));
+          }
+        }).catch((err: Error) => {
           console.error("[Store] Task move failed:", err);
           showToast('error', 'Task move failed', err.message);
           // Rollback optimistic update

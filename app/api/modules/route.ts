@@ -15,6 +15,8 @@ type ModuleRow = {
   spec: string;
   conversationState: string;
   overallProgress: number;
+  wireframeHtml: string | null;
+  taskIds: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -29,6 +31,8 @@ function parseRow(row: ModuleRow) {
     spec: (() => { try { return JSON.parse(row.spec || '{}'); } catch { return {}; } })(),
     conversationState: (() => { try { return JSON.parse(row.conversationState || '{}'); } catch { return {}; } })(),
     overallProgress: row.overallProgress,
+    wireframeHtml: row.wireframeHtml ?? null,
+    taskIds: (() => { try { return JSON.parse(row.taskIds || '[]'); } catch { return []; } })(),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -75,11 +79,13 @@ export async function POST(req: NextRequest) {
     const spec = JSON.stringify(body.spec ?? {});
     const conversationState = JSON.stringify(body.conversationState ?? {});
     const overallProgress = body.overallProgress ?? 0;
+    const wireframeHtml = body.wireframeHtml ?? null;
+    const taskIds = JSON.stringify(body.taskIds ?? []);
 
     db.prepare(`
-      INSERT INTO modules_builder (id, name, description, category, status, spec, conversationState, overallProgress, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(id, name, description, category, status, spec, conversationState, overallProgress, now, now);
+      INSERT INTO modules_builder (id, name, description, category, status, spec, conversationState, overallProgress, wireframeHtml, taskIds, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, name, description, category, status, spec, conversationState, overallProgress, wireframeHtml, taskIds, now, now);
 
     const row = db.prepare('SELECT * FROM modules_builder WHERE id = ?').get(id) as ModuleRow;
     return NextResponse.json(parseRow(row), { status: 201 });

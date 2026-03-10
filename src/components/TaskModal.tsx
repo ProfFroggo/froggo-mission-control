@@ -52,7 +52,7 @@ interface ExtractedTaskData {
 }
 
 export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', initialData }: TaskModalProps) {
-  const { addTask, agents } = useStore();
+  const { addTask, agents, tasks } = useStore();
   
   // Mode selection
   const [mode, setMode] = useState<ModalMode>('chat');
@@ -62,11 +62,15 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [description, setDescription] = useState('');
   const [project, setProject] = useState('Default');
   const [status, setStatus] = useState<TaskStatus>(initialStatus);
-  const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const [priority, setPriority] = useState<TaskPriority | ''>('p2');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
-  const [reviewerId, setReviewerId] = useState<string>('mission-control'); // Default to Mission Control as reviewer
+  const [reviewerId, setReviewerId] = useState<string>('clara'); // Default to Clara as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
+
+  // Validation state
+  const [titleError, setTitleError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Multi-stage project state
   const [showMultiStage, setShowMultiStage] = useState(false);
@@ -97,6 +101,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       setConversationComplete(false);
       setStreamingContent('');
       setIsStreaming(false);
+      setTitleError('');
       
       // Apply initial data if provided (switch to manual mode)
       if (initialData) {
@@ -107,11 +112,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
-        // Always default reviewer to mission-control unless explicitly set
-        setReviewerId('mission-control');
+        // Default reviewer to clara
+        setReviewerId('clara');
       } else {
-        // Fresh task - default reviewer to mission-control
-        setReviewerId('mission-control');
+        // Fresh task - default reviewer to clara
+        setReviewerId('clara');
+        setPriority('p2');
       }
       
       // Start chat with greeting if in chat mode
@@ -182,7 +188,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setTitleError('Task title is required');
+      return;
+    }
 
     // Generate task ID first so we can use it for file attachments
     const taskId = `task-${Date.now()}`;
@@ -196,7 +205,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
-      reviewerId: reviewerId || 'mission-control', // Always set reviewer (default: mission-control)
+      reviewerId: reviewerId || 'clara', // Always set reviewer (default: clara)
       reviewStatus: 'pending' as any, // Initialize review status
       // Multi-stage fields
       ...(showMultiStage && projectName ? { projectName } : {}),
@@ -205,19 +214,27 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       ...(showMultiStage && nextStage ? { nextStage } : {}),
     };
 
-    addTask(newTask);
+    setSubmitting(true);
+    try {
+      await taskApi.create(newTask);
+      addTask(newTask);
 
-    // File attachments not available in web mode (requires Electron fs/exec)
-    if (selectedFiles.length > 0) {
-      showToast('info', 'File attachments not available in web mode');
+      // File attachments not available in web mode (requires Electron fs/exec)
+      if (selectedFiles.length > 0) {
+        showToast('info', 'File attachments not available in web mode');
+      }
+
+      // Trigger post-creation review
+      triggerOrchestratorReview(newTask);
+
+      // Reset form
+      resetForm();
+      onClose();
+    } catch (err) {
+      showToast('error', 'Failed to create task', (err as Error).message);
+    } finally {
+      setSubmitting(false);
     }
-
-    // Trigger post-creation review
-    triggerOrchestratorReview(newTask);
-
-    // Reset form
-    resetForm();
-    onClose();
   };
 
   const handleChatSubmit = async () => {
@@ -311,7 +328,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     return null;
   };
 
-  const handleCreateFromChat = () => {
+  const handleCreateFromChat = async () => {
     if (!extractedData.title) return;
 
     const newTask = {
@@ -322,18 +339,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: extractedData.priority,
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
-      reviewerId: 'mission-control', // Always default to Mission Control as reviewer
+      reviewerId: 'clara', // Always default to Clara as reviewer
       reviewStatus: 'pending' as any, // Initialize review status
     };
 
-    addTask(newTask);
-
-    // Trigger post-creation review
-    triggerOrchestratorReview(newTask);
-
-    // Reset
-    resetForm();
-    onClose();
+    try {
+      await taskApi.create(newTask);
+      addTask(newTask);
+      // Trigger post-creation review
+      triggerOrchestratorReview(newTask);
+      // Reset
+      resetForm();
+      onClose();
+    } catch (err) {
+      showToast('error', 'Failed to create task', (err as Error).message);
+    }
   };
 
   const triggerOrchestratorReview = async (task: any) => {
@@ -380,6 +400,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   };
 
   const resetForm = () => {
+    setTitleError('');
     setTitle('');
     setDescription('');
     setProject('Default');
@@ -544,6 +565,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       }
                     }}
                     placeholder="Describe what you need done..."
+                    aria-label="Describe what you need done"
                     rows={2}
                     disabled={isStreaming || conversationComplete}
                     className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
@@ -558,7 +580,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   </button>
                 </div>
                 <div className="text-xs text-mission-control-text-dim mt-2">
-                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
+                  Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> or <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">⌘↩</kbd> to send, <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
                 </div>
               </div>
             </div>
@@ -567,16 +589,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Title */}
               <div>
-                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">Title *</label>
+                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">
+                  Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                </label>
                 <input
                   id="task-title"
                   type="text"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={e => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
                   placeholder="What needs to be done?"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                  className={`w-full bg-mission-control-bg border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent ${titleError ? 'border-error' : 'border-mission-control-border'}`}
                   /* autoFocus removed for accessibility - users can focus naturally */
                 />
+                {titleError && (
+                  <p className="text-error text-xs mt-1" role="alert">{titleError}</p>
+                )}
               </div>
 
               {/* Description */}
@@ -727,24 +754,54 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   </button>
                   {agents
                     .filter(agent => !['main', 'mission-control'].includes(agent.id))
-                    .map(agent => (
-                      <button
-                        key={agent.id}
-                        type="button"
-                        onClick={() => setAssignedTo(agent.id)}
-                        aria-label={`Assign to ${agent.name}`}
-                        aria-pressed={assignedTo === agent.id}
-                        className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                          assignedTo === agent.id
-                            ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                            : 'border-mission-control-border hover:border-mission-control-accent/50'
-                        }`}
-                      >
-                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                        <span className="truncate">{agent.name}</span>
-                      </button>
-                    ))}
+                    .map(agent => {
+                      const activeTaskCount = tasks.filter(t => t.assignedTo === agent.id && ['todo', 'in-progress', 'internal-review'].includes(t.status)).length;
+                      return { agent, activeTaskCount };
+                    })
+                    .sort((a, b) => a.activeTaskCount - b.activeTaskCount)
+                    .map(({ agent, activeTaskCount }) => {
+                      const isDisabled = agent.status === 'disabled';
+                      const isBusy = activeTaskCount > 5;
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => setAssignedTo(agent.id)}
+                          aria-label={`Assign to ${agent.name}${isDisabled ? ' (offline)' : ''}${isBusy ? ' (busy)' : ''}`}
+                          aria-pressed={assignedTo === agent.id}
+                          className={`p-2 rounded-lg border text-left text-sm flex flex-col gap-1 transition-colors ${
+                            assignedTo === agent.id
+                              ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'border-mission-control-border hover:border-mission-control-accent/50'
+                          } ${isDisabled ? 'opacity-50' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                            <span className="truncate text-xs font-medium">{agent.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+                            <span>{activeTaskCount} task{activeTaskCount !== 1 ? 's' : ''}</span>
+                            {isBusy && <span className="text-warning">(busy)</span>}
+                            {isDisabled && <span className="text-error">(offline)</span>}
+                          </div>
+                          {activeTaskCount > 0 && (
+                            <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isBusy ? 'bg-warning' : 'bg-success'}`}
+                                style={{ width: `${Math.min(100, (activeTaskCount / 8) * 100)}%` }}
+                              />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                 </div>
+                {assignedTo && agents.find(a => a.id === assignedTo)?.status === 'disabled' && (
+                  <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-warning-subtle border border-warning-border text-warning text-xs">
+                    <AlertTriangle size={12} className="flex-shrink-0" />
+                    This agent is disabled. Task will queue but won&apos;t execute until re-enabled.
+                  </div>
+                )}
               </div>
 
               {/* Assign Reviewer */}
@@ -775,7 +832,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     ))}
                 </div>
                 <p className="text-xs text-mission-control-text-dim mt-2">
-                  📌 Default: Mission Control (agent reviewer for all tasks)
+                  Default: Clara (quality gate reviewer for all tasks)
                 </p>
               </div>
 
@@ -867,6 +924,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         value={projectName}
                         onChange={e => setProjectName(e.target.value)}
                         placeholder="e.g., Authentication System"
+                        aria-label="Project name"
                         className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
                     </div>
@@ -890,6 +948,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           value={stageName}
                           onChange={e => setStageName(e.target.value)}
                           placeholder="e.g., Design Phase"
+                          aria-label="Stage name"
                           className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                         />
                       </div>
@@ -901,6 +960,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         value={nextStage}
                         onChange={e => setNextStage(e.target.value)}
                         placeholder="e.g., Stage 2: Implementation"
+                        aria-label="Next stage name"
                         className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
                       />
                       <p className="text-xs text-mission-control-text-dim mt-1">
@@ -922,10 +982,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 </button>
                 <button
                   type="submit"
-                  disabled={!title.trim()}
-                  aria-disabled={!title.trim()}
-                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  disabled={!title.trim() || submitting}
+                  aria-disabled={!title.trim() || submitting}
+                  title="Submit (Enter)"
+                  className={`px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2 ${(!title.trim() || submitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
+                  {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
                   Create Task
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
                   <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">⌘S</kbd>

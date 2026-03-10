@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Map,
   SkipForward,
+  X,
 } from 'lucide-react';
 
 interface OnboardingWizardProps {
@@ -34,6 +35,7 @@ interface OnboardingWizardProps {
 
 const STEP_COUNT = 10;
 const STORAGE_KEY = 'mission-control-onboarding-completed';
+const STEP_STORAGE_KEY = 'mission-control-onboarding-step';
 
 // ─────────────────────────────────────────────
 // Step 2 — System Check types
@@ -77,27 +79,6 @@ const AGENT_PERMISSIONS = [
 // ─────────────────────────────────────────────
 // Step 7 — Agent & Module Picker data
 // ─────────────────────────────────────────────
-// TODO(Phase 85): Replace hardcoded CORE_AGENTS, OPTIONAL_AGENTS, CORE_MODULES, OPTIONAL_MODULES
-// with dynamic data fetched from the catalog API. Pattern:
-//
-//   const [coreAgents, setCoreAgents] = useState<AgentEntry[]>([]);
-//   const [optionalAgents, setOptionalAgents] = useState<AgentEntry[]>([]);
-//   useEffect(() => {
-//     fetch('/api/catalog/agents')
-//       .then(r => r.json())
-//       .then((agents: AgentManifestFile[]) => {
-//         setCoreAgents(agents.filter(a => a.core).map(a => ({ id: a.id, name: a.name, description: a.description ?? '', core: true })));
-//         setOptionalAgents(agents.filter(a => !a.core).map(a => ({ id: a.id, name: a.name, description: a.description ?? '' })));
-//       })
-//       .catch(() => { /* fallback to empty — user can still proceed */ });
-//   }, []);
-//
-//   Do the same for modules via /api/catalog/modules split by the core flag.
-//
-// NOTE: The install step (Step 8) uses selectedOptionalAgents/Modules to build the install queue.
-// When switching to dynamic data, ensure the install queue logic still works with the
-// dynamically-loaded entries. Test the full onboarding flow end-to-end before removing the
-// hardcoded arrays. The static arrays below serve as the fallback until dynamic loading is wired.
 interface AgentEntry {
   id: string;
   name: string;
@@ -112,7 +93,10 @@ interface ModuleEntry {
   core?: boolean;
 }
 
-const CORE_AGENTS: AgentEntry[] = [
+// ─────────────────────────────────────────────
+// Fallback static data (used when catalog API is unreachable)
+// ─────────────────────────────────────────────
+const FALLBACK_CORE_AGENTS: AgentEntry[] = [
   { id: 'mission-control', name: 'Mission Control', description: 'Primary orchestrator — routes tasks, coordinates agents, plans work', core: true },
   { id: 'clara', name: 'Clara', description: 'Review & QA gate — validates work before it ships', core: true },
   { id: 'coder', name: 'Coder', description: 'Implements features, fixes bugs, writes tests', core: true },
@@ -120,7 +104,7 @@ const CORE_AGENTS: AgentEntry[] = [
   { id: 'inbox', name: 'Inbox', description: 'Message triage specialist — monitors and routes incoming messages by urgency', core: true },
 ];
 
-const OPTIONAL_AGENTS: AgentEntry[] = [
+const FALLBACK_OPTIONAL_AGENTS: AgentEntry[] = [
   { id: 'chief', name: 'Chief', description: 'Architecture decisions and senior technical guidance' },
   { id: 'designer', name: 'Designer', description: 'UI/UX design, component design, accessibility reviews' },
   { id: 'discord-manager', name: 'Discord Manager', description: 'Community management, moderation, and engagement' },
@@ -133,7 +117,7 @@ const OPTIONAL_AGENTS: AgentEntry[] = [
   { id: 'writer', name: 'Writer', description: 'Creates and edits documentation, blog posts, and content' },
 ];
 
-const CORE_MODULES: ModuleEntry[] = [
+const FALLBACK_CORE_MODULES: ModuleEntry[] = [
   { id: 'agent-mgmt', name: 'Agent Management', description: 'View, configure, and control agent lifecycle', core: true },
   { id: 'approvals', name: 'Approvals', description: 'Human-in-the-loop approval gates for agent actions', core: true },
   { id: 'chat', name: 'Chat', description: 'Real-time AI chat with agents — primary interaction surface', core: true },
@@ -146,7 +130,7 @@ const CORE_MODULES: ModuleEntry[] = [
   { id: 'settings', name: 'Settings', description: 'Dashboard preferences, security, and configuration', core: true },
 ];
 
-const OPTIONAL_MODULES: ModuleEntry[] = [
+const FALLBACK_OPTIONAL_MODULES: ModuleEntry[] = [
   { id: 'analytics', name: 'Analytics', description: 'Platform metrics, agent performance, and reporting' },
   { id: 'dev', name: 'Dev Tools', description: 'Developer utilities, DB inspection, and platform internals' },
   { id: 'finance', name: 'Finance', description: 'Multi-account financial management with AI categorization' },
@@ -181,7 +165,64 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     localStorage.setItem(STORAGE_KEY, 'true');
   }, []);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  // ─────────────────────────────────────────────
+  // Catalog data — fetched from API, falls back to static arrays
+  // ─────────────────────────────────────────────
+  const [catalogAgents, setCatalogAgents] = useState<AgentEntry[]>([]);
+  const [catalogModules, setCatalogModules] = useState<ModuleEntry[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/catalog/agents').then(r => r.json()),
+      fetch('/api/catalog/modules').then(r => r.json()),
+    ])
+      .then(([agents, modules]) => {
+        setCatalogAgents(Array.isArray(agents) ? agents : agents.agents ?? []);
+        setCatalogModules(Array.isArray(modules) ? modules : modules.modules ?? []);
+      })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoadingCatalog(false));
+  }, []);
+
+  // Derive core/optional from fetched catalog, or fall back to static arrays when catalog is empty
+  const coreAgents = !loadingCatalog && catalogAgents.length > 0
+    ? catalogAgents.filter(a => a.core)
+    : FALLBACK_CORE_AGENTS;
+  const optionalAgents = !loadingCatalog && catalogAgents.length > 0
+    ? catalogAgents.filter(a => !a.core)
+    : FALLBACK_OPTIONAL_AGENTS;
+  const coreModules = !loadingCatalog && catalogModules.length > 0
+    ? catalogModules.filter(m => m.core)
+    : FALLBACK_CORE_MODULES;
+  const optionalModules = !loadingCatalog && catalogModules.length > 0
+    ? catalogModules.filter(m => !m.core)
+    : FALLBACK_OPTIONAL_MODULES;
+
+  const resumedStep = (() => {
+    try {
+      const saved = localStorage.getItem(STEP_STORAGE_KEY);
+      if (saved !== null) {
+        const step = parseInt(saved, 10);
+        if (!isNaN(step) && step > 0 && step < STEP_COUNT) return step;
+      }
+    } catch { /* SSR / private browsing */ }
+    return null;
+  })();
+
+  const [currentStep, setCurrentStep] = useState(resumedStep ?? 0);
+  const [showResumeBanner, setShowResumeBanner] = useState(resumedStep !== null);
+
+  // Persist step progress to localStorage
+  useEffect(() => {
+    try {
+      if (currentStep > 0) {
+        localStorage.setItem(STEP_STORAGE_KEY, String(currentStep));
+      } else {
+        localStorage.removeItem(STEP_STORAGE_KEY);
+      }
+    } catch { /* SSR / private browsing */ }
+  }, [currentStep]);
 
   // Step 2 — system check
   const [sysCheck, setSysCheck] = useState<SystemCheckState>({
@@ -417,15 +458,15 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     const items: InstallItem[] = [
       // Core agents always installed
-      ...CORE_AGENTS.map(a => ({ kind: 'agent' as const, id: a.id, name: a.name, status: 'pending' as InstallStatus })),
+      ...coreAgents.map(a => ({ kind: 'agent' as const, id: a.id, name: a.name, status: 'pending' as InstallStatus })),
       // Optional agents that were selected
-      ...OPTIONAL_AGENTS.filter(a => selectedOptionalAgents.has(a.id)).map(a => ({
+      ...optionalAgents.filter(a => selectedOptionalAgents.has(a.id)).map(a => ({
         kind: 'agent' as const, id: a.id, name: a.name, status: 'pending' as InstallStatus,
       })),
       // Core modules always installed
-      ...CORE_MODULES.map(m => ({ kind: 'module' as const, id: m.id, name: m.name, status: 'pending' as InstallStatus })),
+      ...coreModules.map(m => ({ kind: 'module' as const, id: m.id, name: m.name, status: 'pending' as InstallStatus })),
       // Optional modules that were selected
-      ...OPTIONAL_MODULES.filter(m => selectedOptionalModules.has(m.id)).map(m => ({
+      ...optionalModules.filter(m => selectedOptionalModules.has(m.id)).map(m => ({
         kind: 'module' as const, id: m.id, name: m.name, status: 'pending' as InstallStatus,
       })),
     ];
@@ -509,11 +550,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const handleFinish = (startTour = false) => {
     localStorage.setItem(STORAGE_KEY, 'true');
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
     onComplete(startTour);
   };
 
   const handleSkip = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
     onSkip();
   };
 
@@ -960,6 +1003,26 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       });
     };
 
+    // Skeleton shown while catalog is loading
+    if (loadingCatalog) {
+      return (
+        <div className="py-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Package size={18} className="text-mission-control-accent" />
+            <h2 className="text-xl font-bold text-mission-control-text">Agents & Modules</h2>
+          </div>
+          <p className="text-mission-control-text-dim text-sm mb-4">
+            Loading catalog…
+          </p>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-10 rounded-lg bg-mission-control-bg border border-mission-control-border animate-pulse" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="py-2">
         <div className="flex items-center gap-2 mb-1">
@@ -973,7 +1036,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {/* Core Agents */}
         <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Core Agents</p>
         <div className="space-y-1.5 mb-4">
-          {CORE_AGENTS.map(agent => (
+          {coreAgents.map(agent => (
             <div key={agent.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border opacity-80">
               <Lock size={12} className="text-mission-control-accent flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -988,7 +1051,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {/* Optional Agents */}
         <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Optional Agents</p>
         <div className="space-y-1.5 mb-4">
-          {OPTIONAL_AGENTS.map(agent => {
+          {optionalAgents.map(agent => {
             const selected = selectedOptionalAgents.has(agent.id);
             return (
               <button
@@ -1018,7 +1081,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {/* Core Modules */}
         <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Core Modules</p>
         <div className="space-y-1.5 mb-4">
-          {CORE_MODULES.map(mod => (
+          {coreModules.map(mod => (
             <div key={mod.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border opacity-80">
               <Lock size={12} className="text-mission-control-accent flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -1033,7 +1096,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {/* Optional Modules */}
         <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Optional Modules</p>
         <div className="space-y-1.5">
-          {OPTIONAL_MODULES.map(mod => {
+          {optionalModules.map(mod => {
             const selected = selectedOptionalModules.has(mod.id);
             return (
               <button
@@ -1281,6 +1344,30 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             />
           ))}
         </div>
+
+        {/* Resume banner */}
+        {showResumeBanner && (
+          <div className="mx-8 mb-2 flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-info-subtle border border-info-border text-sm">
+            <span className="text-mission-control-text">Continuing from step {currentStep + 1} of {STEP_COUNT}</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => { setCurrentStep(0); setShowResumeBanner(false); }}
+                className="text-xs text-mission-control-text-dim hover:text-mission-control-text underline transition-colors"
+              >
+                Start over
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowResumeBanner(false)}
+                className="text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Step content — scrollable */}
         <div className="px-8 pb-2 overflow-y-auto flex-1">

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 // POST /api/modules/install
 // Registers a catalog module as installed in both catalog_modules and module_state tables.
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
       steps.push({ step: 'module_state', success: true, detail: 'module_state.enabled = 1' });
     }
 
+    emitSSEEvent('module.installed', { moduleId });
     return NextResponse.json({ moduleId, steps }, { status: 201 });
   } catch (error) {
     console.error('POST /api/modules/install error:', error);

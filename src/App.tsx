@@ -415,8 +415,9 @@ function App() {
         </ErrorBoundary>
         
         {/* Main content - each panel already wrapped via ProtectedPanels */}
-        <main 
+        <main
           id="main-content"
+          tabIndex={-1}
           className="flex-1 overflow-hidden relative z-0"
           role="main"
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}

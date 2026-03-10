@@ -20,7 +20,7 @@ export default function XTwitterPage() {
     return () => window.removeEventListener('x-tab-change', handler);
   }, []);
 
-  const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts', 'research', 'reddit', 'campaigns'];
+  const TABS_WITH_APPROVAL: XTab[] = ['publish', 'plan', 'drafts', 'research', 'reddit', 'campaigns', 'mentions', 'reply-guy'];
   const showApprovalPane = TABS_WITH_APPROVAL.includes(activeTab);
 
   return (

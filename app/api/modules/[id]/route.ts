@@ -16,6 +16,8 @@ type ModuleRow = {
   spec: string;
   conversationState: string;
   overallProgress: number;
+  wireframeHtml: string | null;
+  taskIds: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -30,6 +32,8 @@ function parseRow(row: ModuleRow) {
     spec: (() => { try { return JSON.parse(row.spec || '{}'); } catch { return {}; } })(),
     conversationState: (() => { try { return JSON.parse(row.conversationState || '{}'); } catch { return {}; } })(),
     overallProgress: row.overallProgress,
+    wireframeHtml: row.wireframeHtml ?? null,
+    taskIds: (() => { try { return JSON.parse(row.taskIds || '[]'); } catch { return []; } })(),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -71,6 +75,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (body.spec !== undefined) { updates.push('spec = ?'); values.push(JSON.stringify(body.spec)); }
     if (body.conversationState !== undefined) { updates.push('conversationState = ?'); values.push(JSON.stringify(body.conversationState)); }
     if (body.overallProgress !== undefined) { updates.push('overallProgress = ?'); values.push(body.overallProgress); }
+    if (body.wireframeHtml !== undefined) { updates.push('wireframeHtml = ?'); values.push(body.wireframeHtml); }
+    if (body.taskIds !== undefined) { updates.push('taskIds = ?'); values.push(JSON.stringify(body.taskIds)); }
 
     values.push(id);
     db.prepare(`UPDATE modules_builder SET ${updates.join(', ')} WHERE id = ?`).run(...values);

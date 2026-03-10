@@ -113,5 +113,5 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 
 Save all output files to `~/mission-control/library/`:
 - **Community reports**: `library/docs/research/YYYY-MM-DD_community_description.md`
-- **Content plans**: `library/docs/stratagies/YYYY-MM-DD_discord_description.md`
+- **Content plans**: `library/docs/strategies/YYYY-MM-DD_discord_description.md`
 - **Campaign assets for Discord**: `library/campaigns/campaign-{name}-{date}/docs/`

@@ -377,10 +377,10 @@ export default function NotificationsPanelV2() {
                         )}
                       </div>
                       
-                      <p className="text-sm text-mission-control-text-dim">{notif.message}</p>
-                      
+                      <p className="text-sm text-mission-control-text-dim line-clamp-2">{notif.message}</p>
+
                       {notif.description && (
-                        <p className="text-xs text-mission-control-text-dim mt-1 opacity-75">{notif.description}</p>
+                        <p className="text-xs text-mission-control-text-dim mt-1 opacity-75 line-clamp-2">{notif.description}</p>
                       )}
                       
                       <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">

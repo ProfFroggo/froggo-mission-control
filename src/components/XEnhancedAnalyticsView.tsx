@@ -71,8 +71,13 @@ export function XEnhancedAnalyticsView() {
       const profile = data.profile?.public_metrics ?? {};
       const rawTweets: any[] = data.tweets ?? [];
 
+      // Filter tweets by selected time range
+      const rangeDays = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+      const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
+      const filteredRawTweets = rawTweets.filter((t: any) => new Date(t.created_at).getTime() >= cutoff);
+
       // Map real tweets to PostMetrics
-      const postMetrics: PostMetrics[] = rawTweets.map((t: any) => ({
+      const postMetrics: PostMetrics[] = filteredRawTweets.map((t: any) => ({
         id: t.id,
         content: t.text,
         created_at: new Date(t.created_at).getTime(),
@@ -205,6 +210,25 @@ export function XEnhancedAnalyticsView() {
       replies: Math.floor(posts.reduce((s, p) => s + p.replies, 0) / posts.length),
       clicks: Math.floor(posts.reduce((s, p) => s + p.clicks, 0) / posts.length),
     };
+  }, [data]);
+
+  // Calculate best posting times from real heatmap data
+  const bestTimes = useMemo(() => {
+    if (!data?.heatmapData?.length) return { day: 'N/A', hour: 'N/A', combined: 'N/A' };
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayTotals: Record<string, number> = {};
+    const hourTotals: Record<number, number> = {};
+    for (const h of data.heatmapData) {
+      dayTotals[h.day] = (dayTotals[h.day] || 0) + h.value;
+      hourTotals[h.hour] = (hourTotals[h.hour] || 0) + h.value;
+    }
+    const bestDay = DAYS.reduce((a, b) => (dayTotals[a] || 0) >= (dayTotals[b] || 0) ? a : b);
+    const bestHourNum = Object.entries(hourTotals).sort(([, a], [, b]) => b - a)[0]?.[0] ?? '14';
+    const h = Number(bestHourNum);
+    const bestHourLabel = `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
+    const bestCell = [...data.heatmapData].sort((a, b) => b.value - a.value)[0];
+    const bestCombined = bestCell ? `${bestCell.day} ${bestCell.hour % 12 || 12}${bestCell.hour < 12 ? 'AM' : 'PM'}` : 'N/A';
+    return { day: bestDay, hour: bestHourLabel, combined: bestCombined };
   }, [data]);
 
   const getPerformanceClass = (value: number, avg: number) => {
@@ -342,10 +366,10 @@ export function XEnhancedAnalyticsView() {
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <Users size={16} className="text-purple-500" />
+                  <Users size={16} className="text-mission-control-accent" />
                   <span className="text-sm text-mission-control-text-dim">Followers</span>
                 </div>
-                <div className="text-2xl font-bold text-purple-500">{formatNumber(data.summary.followerCount)}</div>
+                <div className="text-2xl font-bold text-mission-control-accent">{formatNumber(data.summary.followerCount)}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
@@ -389,7 +413,7 @@ export function XEnhancedAnalyticsView() {
               {/* Follower Growth */}
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
-                  <Users size={16} className="text-purple-500" />
+                  <Users size={16} className="text-mission-control-accent" />
                   Follower Growth
                 </h3>
                 <div className="h-64">
@@ -527,7 +551,7 @@ export function XEnhancedAnalyticsView() {
                   <span className="text-xs text-mission-control-text-dim">replies</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MousePointer size={14} className="text-purple-500" />
+                  <MousePointer size={14} className="text-mission-control-accent" />
                   <span className="text-mission-control-text">{avgMetrics.clicks}</span>
                   <span className="text-xs text-mission-control-text-dim">clicks</span>
                 </div>
@@ -548,7 +572,7 @@ export function XEnhancedAnalyticsView() {
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                             post.type === 'thread' ? 'bg-success-subtle text-success' :
                             post.type === 'reply' ? 'bg-info-subtle text-info' :
-                            post.type === 'quote' ? 'bg-purple-subtle text-purple-500' :
+                            post.type === 'quote' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
                             'bg-mission-control-accent/20 text-mission-control-accent'
                           }`}>
                             {post.type}
@@ -591,7 +615,7 @@ export function XEnhancedAnalyticsView() {
                             <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-purple-500">
+                            <div className="flex items-center justify-center gap-1 text-mission-control-accent">
                               <MousePointer size={12} />
                             </div>
                             <div className="text-xs font-medium text-mission-control-text">{post.clicks}</div>
@@ -643,7 +667,7 @@ export function XEnhancedAnalyticsView() {
                               key={hour}
                               className="flex-1 h-8 rounded-sm transition-colors"
                               style={{
-                                backgroundColor: value === 0 ? CHART_TOOLTIP.backgroundColor : `rgba(59, 130, 246, ${intensity})`,
+                                backgroundColor: value === 0 ? CHART_TOOLTIP.backgroundColor : `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}`,
                               }}
                               title={`${day} ${hour}:00 - Engagement: ${value}`}
                             />
@@ -661,7 +685,7 @@ export function XEnhancedAnalyticsView() {
                         <div
                           key={intensity}
                           className="w-6 h-4 rounded-sm"
-                          style={{ backgroundColor: `rgba(59, 130, 246, ${intensity})` }}
+                          style={{ backgroundColor: `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}` }}
                         />
                       ))}
                     </div>
@@ -678,7 +702,7 @@ export function XEnhancedAnalyticsView() {
                   <Zap size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Best Day</span>
                 </div>
-                <div className="text-2xl font-bold text-mission-control-text">Tuesday</div>
+                <div className="text-2xl font-bold text-mission-control-text">{bestTimes.day}</div>
                 <div className="text-sm text-mission-control-text-dim">Highest average engagement</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
@@ -686,7 +710,7 @@ export function XEnhancedAnalyticsView() {
                   <Clock size={16} className="text-info" />
                   <span className="text-sm text-mission-control-text-dim">Best Time</span>
                 </div>
-                <div className="text-2xl font-bold text-mission-control-text">2:00 PM</div>
+                <div className="text-2xl font-bold text-mission-control-text">{bestTimes.hour}</div>
                 <div className="text-sm text-mission-control-text-dim">Peak engagement window</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
@@ -694,7 +718,7 @@ export function XEnhancedAnalyticsView() {
                   <Calendar size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Best Day + Time</span>
                 </div>
-                <div className="text-2xl font-bold text-mission-control-text">Tue 8-10 PM</div>
+                <div className="text-2xl font-bold text-mission-control-text">{bestTimes.combined}</div>
                 <div className="text-sm text-mission-control-text-dim">Optimal posting slot</div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare } from 'lucide-react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
@@ -139,14 +139,14 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: Date.now() }]);
         chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: Date.now() }).catch(() => {});
       } else {
-        setMessages(prev => [...prev, { role: 'system', content: '⚠️ No response from agent', timestamp: Date.now() }]);
+        setMessages(prev => [...prev, { role: 'system', content: 'No response from agent', timestamp: Date.now() }]);
       }
     } catch (e: unknown) {
       setStreamingContent('');
       if (e instanceof Error && e.name === 'AbortError') return; // closed by user
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `❌ Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
+        content: `Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
         timestamp: Date.now(),
       }]);
     } finally {
@@ -292,18 +292,28 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                     {msg.role === 'system' ? <Sparkles size={14} /> : <Bot size={14} />}
                   </div>
                 )}
-                <div className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
-                  msg.role === 'user'
-                    ? 'bg-mission-control-accent text-white'
-                    : msg.role === 'system'
-                    ? 'bg-warning-subtle text-warning border border-warning-border'
-                    : 'bg-mission-control-surface border border-mission-control-border'
-                }`}>
-                  {msg.role === 'assistant' ? (
-                    <MarkdownMessage content={msg.content} />
-                  ) : (
-                    msg.content
-                  )}
+                <div className="flex flex-col">
+                  <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-mission-control-accent text-white rounded-tr-sm'
+                      : msg.role === 'system'
+                      ? 'bg-warning-subtle text-warning border border-warning-border rounded-tl-sm'
+                      : 'bg-mission-control-surface border border-mission-control-border rounded-tl-sm'
+                  }`}>
+                    {msg.role === 'assistant' ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : msg.role === 'system' ? (
+                      <span className="flex items-center gap-1.5">
+                        {msg.content.startsWith('Failed') ? <XCircle size={14} /> : <AlertTriangle size={14} />}
+                        {msg.content}
+                      </span>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
+                  <span className={`text-xs text-mission-control-text-dim mt-1 px-1 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                    {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
                 {msg.role === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-mission-control-accent flex items-center justify-center flex-shrink-0">
@@ -317,7 +327,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 <div className="w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center flex-shrink-0">
                   <Bot size={14} />
                 </div>
-                <div className="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border">
+                <div className="max-w-[75%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm bg-mission-control-surface border border-mission-control-border">
                   <MarkdownMessage content={streamingContent} />
                   <span className="inline-block w-1 h-3 bg-mission-control-text-dim animate-pulse ml-0.5" />
                 </div>
@@ -328,7 +338,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 <div className="w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center flex-shrink-0">
                   <Bot size={14} />
                 </div>
-                <div className="rounded-xl px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border">
+                <div className="rounded-2xl rounded-tl-sm px-4 py-3 text-sm bg-mission-control-surface border border-mission-control-border">
                   <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />
                 </div>
               </div>
@@ -348,12 +358,12 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 placeholder={`Message ${agent.name}...`}
                 rows={2}
                 disabled={sending}
-                className="flex-1 resize-none rounded-lg border border-mission-control-border bg-mission-control-bg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+                className="flex-1 resize-none rounded-xl border border-mission-control-border bg-mission-control-bg2 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
               />
               <button
                 onClick={sendMessage}
                 disabled={!input.trim() || sending}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>

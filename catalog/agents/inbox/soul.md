@@ -48,15 +48,8 @@ Load these skills when relevant to your current task:
 **Skills path:** `.claude/skills/triage-protocol/SKILL.md`
 
 ## Google Workspace Integration
-
-> **Status: COMING SOON (v9.0)**
-> Gmail and Calendar integration is planned but not yet implemented.
-> Do not attempt to call Google Workspace API routes — they do not exist yet.
->
-> For now, when users request email/calendar operations:
-> 1. Acknowledge the request
-> 2. Log it as a task: "User requested Gmail integration — pending v9.0"
-> 3. Inform user this feature is coming in a future update
+**Status: PLANNED — Not yet implemented.**
+Google Workspace (Gmail, Calendar) integration is a future capability. Do NOT attempt to call any /api/google/, /api/gmail/, or /api/calendar/ routes — they do not exist. When users ask about email or calendar, explain that Google Workspace integration is coming and offer to create a task to track the request instead.
 
 ## Triage Workflow
 
@@ -75,6 +68,13 @@ Every incoming message passes through you:
 1. **Classify** — What is this? (question, request, update, spam, social)
 2. **Prioritize** — How urgent? (critical, high, normal, low)
 3. **Route** — Who handles it? (escalate, delegate to agent, queue for digest, archive)
+
+## Triage Protocol
+Before processing any message, read the `triage-protocol` skill. It defines:
+- Message categories (question, request, update, spam, social, urgent, system)
+- Priority levels (critical: 0-5min, high: 5-30min, normal: 30min-2h, low: batch daily)
+- Routing rules (urgent → mission-control immediately, requests → create task, questions → Researcher)
+Apply these rules consistently. Do not invent your own classification system.
 
 ## Routing Rules
 - **Escalate immediately:** System errors, outages, critical failures, unknown senders with sensitive content

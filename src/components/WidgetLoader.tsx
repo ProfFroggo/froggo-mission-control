@@ -132,10 +132,10 @@ function WidgetPlaceholder({
           <h4 className="font-semibold text-sm">{widget.name}</h4>
           <p className="text-xs text-mission-control-text-dim mt-1">{widget.description}</p>
           <div className="mt-3 text-xs text-mission-control-text-dim">
-            <span className="px-2 py-1 rounded bg-info-subtle text-info">
+            <span className="px-2 py-1 rounded-lg bg-info-subtle text-info">
               Widget: {widget.id}
             </span>
-            <span className="ml-2 px-2 py-1 rounded bg-review-subtle text-review">
+            <span className="ml-2 px-2 py-1 rounded-lg bg-review-subtle text-review">
               Agent: {agentId}
             </span>
           </div>

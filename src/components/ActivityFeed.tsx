@@ -1,19 +1,20 @@
 import { useState, useEffect, memo } from 'react';
-import { MessageSquare, RefreshCw } from 'lucide-react';
+import { MessageSquare, RefreshCw, MessageCircle, Send, Gamepad2, Globe, Lock, Briefcase, Mic, Clock, Settings, WifiOff, Inbox, Bot } from 'lucide-react';
 import { gateway } from '../lib/gateway';
+import type { LucideIcon } from 'lucide-react';
 
 // Channel icons and colors
-const channelConfig: Record<string, { icon: string; color: string; label: string }> = {
-  whatsapp: { icon: '💬', color: 'bg-success-subtle text-success border-success-border', label: 'WhatsApp' },
-  telegram: { icon: '✈️', color: 'bg-info-subtle text-info border-info-border', label: 'Telegram' },
-  discord: { icon: '🎮', color: 'bg-info-subtle text-info border-info-border', label: 'Discord' },
-  webchat: { icon: '🌐', color: 'bg-review-subtle text-review border-review-border', label: 'Webchat' },
-  signal: { icon: '🔒', color: 'bg-info-subtle text-info border-info-border', label: 'Signal' },
-  imessage: { icon: '💬', color: 'bg-info-subtle text-info border-info-border', label: 'iMessage' },
-  slack: { icon: '💼', color: 'bg-review-subtle text-review border-review-border', label: 'Slack' },
-  voice: { icon: '🎤', color: 'bg-warning-subtle text-warning border-warning-border', label: 'Voice' },
-  cron: { icon: '⏰', color: 'bg-warning-subtle text-warning border-warning-border', label: 'Scheduled' },
-  system: { icon: '⚙️', color: 'bg-muted-subtle text-muted border-muted-border', label: 'System' },
+const channelConfig: Record<string, { icon: LucideIcon; color: string; label: string }> = {
+  whatsapp: { icon: MessageCircle, color: 'bg-success-subtle text-success border-success-border', label: 'WhatsApp' },
+  telegram: { icon: Send, color: 'bg-info-subtle text-info border-info-border', label: 'Telegram' },
+  discord: { icon: Gamepad2, color: 'bg-info-subtle text-info border-info-border', label: 'Discord' },
+  webchat: { icon: Globe, color: 'bg-review-subtle text-review border-review-border', label: 'Webchat' },
+  signal: { icon: Lock, color: 'bg-info-subtle text-info border-info-border', label: 'Signal' },
+  imessage: { icon: MessageCircle, color: 'bg-info-subtle text-info border-info-border', label: 'iMessage' },
+  slack: { icon: Briefcase, color: 'bg-review-subtle text-review border-review-border', label: 'Slack' },
+  voice: { icon: Mic, color: 'bg-warning-subtle text-warning border-warning-border', label: 'Voice' },
+  cron: { icon: Clock, color: 'bg-warning-subtle text-warning border-warning-border', label: 'Scheduled' },
+  system: { icon: Settings, color: 'bg-muted-subtle text-muted border-muted-border', label: 'System' },
 };
 
 interface Activity {
@@ -147,15 +148,16 @@ const ActivityFeed = memo(function ActivityFeed() {
           </button>
           {channels.map(ch => {
             const info = getChannelInfo(ch);
+            const ChannelIcon = info.icon;
             return (
               <button
                 key={ch}
                 onClick={() => setFilter(ch)}
-                className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
                   filter === ch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
-                {info.icon} {info.label}
+                <ChannelIcon size={12} /> {info.label}
               </button>
             );
           })}
@@ -166,12 +168,16 @@ const ActivityFeed = memo(function ActivityFeed() {
       <div className="flex-1 overflow-y-auto">
         {!connected ? (
           <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="text-2xl mb-2">🔌</div>
+            <div className="flex justify-center mb-2">
+              <WifiOff size={28} className="text-mission-control-text-dim" />
+            </div>
             <p>Connecting to gateway...</p>
           </div>
         ) : filteredActivities.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="text-2xl mb-2">📭</div>
+            <div className="flex justify-center mb-2">
+              <Inbox size={28} className="text-mission-control-text-dim" />
+            </div>
             <p>No activity yet</p>
           </div>
         ) : (
@@ -187,9 +193,11 @@ const ActivityFeed = memo(function ActivityFeed() {
                 >
                   <div className="flex items-start gap-3">
                     {/* Channel Badge */}
-                    <div className={`px-2 py-1 text-xs rounded-lg border ${info.color}`}>
-                      {info.icon}
+                    {(() => { const ChannelIcon = info.icon; return (
+                    <div className={`px-2 py-1 text-xs rounded-lg border flex items-center ${info.color}`}>
+                      <ChannelIcon size={12} />
                     </div>
+                    ); })()}
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
@@ -205,8 +213,8 @@ const ActivityFeed = memo(function ActivityFeed() {
                         )}
                       </div>
                       {activity.lastMessage && (
-                        <p className="text-xs text-mission-control-text-dim truncate">
-                          {activity.lastMessageRole === 'assistant' && '🐸 '}
+                        <p className="text-xs text-mission-control-text-dim truncate flex items-center gap-1">
+                          {activity.lastMessageRole === 'assistant' && <Bot size={10} className="text-mission-control-text-dim flex-shrink-0" />}
                           {activity.lastMessage}
                         </p>
                       )}

@@ -89,9 +89,9 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
   const isWarning = charCount >= 260 && charCount <= TWEET_CHAR_LIMIT;
 
   const charCountClass = isOverLimit
-    ? 'text-red-500'
+    ? 'text-error'
     : isWarning
-    ? 'text-yellow-500'
+    ? 'text-warning'
     : 'text-mission-control-text-dim';
 
   // Auto-resize textarea
@@ -429,9 +429,13 @@ export default function XPublishComposer() {
     }
   };
 
-  const handleCancelScheduled = async (_id: string) => {
-    // Cancellation requires server-side support — refresh list
-    await loadScheduledList();
+  const handleCancelScheduled = async (id: string) => {
+    try {
+      await scheduleApi.delete(id);
+      await loadScheduledList();
+    } catch {
+      await loadScheduledList();
+    }
   };
 
   const editScheduledPost = (post: ScheduledPost) => {
@@ -459,9 +463,9 @@ export default function XPublishComposer() {
   // Rate limit banner color
   const rateLimitBannerClass = () => {
     if (!rateLimit) return '';
-    if (rateLimit.remaining === 0) return 'bg-red-500/10 border border-red-500/30 text-red-400';
-    if (rateLimit.remaining <= 5) return 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400';
-    return 'bg-green-500/10 border border-green-500/30 text-green-400';
+    if (rateLimit.remaining === 0) return 'bg-error-subtle border border-error-border text-error';
+    if (rateLimit.remaining <= 5) return 'bg-warning-subtle border border-warning-border text-warning';
+    return 'bg-success-subtle border border-success-border text-success';
   };
 
   const postButtonLabel = () => {

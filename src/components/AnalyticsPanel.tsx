@@ -343,6 +343,13 @@ export default function AnalyticsPanel() {
                 <Calendar size={16} className="text-mission-control-accent" />
                 Project Statistics
               </h3>
+              {projectStats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-mission-control-text-muted">
+                  <BarChart3 size={32} className="mb-3 opacity-30" />
+                  <p className="text-sm">No data for this period</p>
+                  <p className="text-xs mt-1 opacity-70">Activity will appear here once agents start working</p>
+                </div>
+              ) : (
               <div className="space-y-4">
                 {projectStats.map((project) => (
                   <div
@@ -401,6 +408,7 @@ export default function AnalyticsPanel() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}

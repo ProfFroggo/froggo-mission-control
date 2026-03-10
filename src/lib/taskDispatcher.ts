@@ -7,6 +7,7 @@
 import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
 import { trackEvent } from './telemetry';
+import { emitSSEEvent } from './sseEmitter';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -131,6 +132,12 @@ const BASH_SAFE = [
   'Bash(echo *)', 'Bash(qmd *)', 'Bash(sqlite3 *)', 'Bash(tmux *)',
   'Bash(bash tools/*)', 'Bash(sh tools/*)',
 ];
+
+export const TIER_PERMISSIONS_MAP: Record<number, { allowedTools: string[]; maxPriority: string; requiresApproval: boolean }> = {
+  1: { allowedTools: ['mcp__mission-control_db__*'], maxPriority: 'p3', requiresApproval: true },
+  2: { allowedTools: ['mcp__mission-control_db__*', 'mcp__memory__*', 'WebSearch', 'WebFetch'], maxPriority: 'p2', requiresApproval: false },
+  3: { allowedTools: ['*'], maxPriority: 'p0', requiresApproval: false },
+};
 
 export const TIER_TOOLS: Record<string, string[]> = {
   // restricted: read-only files, task tracking only, no writes, no bash, no web
@@ -380,8 +387,8 @@ function loadTaskSession(taskId: string): string | null {
       'SELECT sessionId, lastActivity FROM agent_sessions WHERE agentId = ? AND status = ?'
     ).get('task:' + taskId, 'active') as { sessionId: string; lastActivity: number } | undefined;
     if (!row?.sessionId) return null;
-    // Expire sessions older than 2 hours
-    if (Date.now() - row.lastActivity > 2 * 60 * 60 * 1000) return null;
+    // Expire sessions older than 24 hours
+    if (Date.now() - row.lastActivity > 24 * 60 * 60 * 1000) return null;
     return row.sessionId;
   } catch { return null; }
 }
@@ -461,6 +468,10 @@ function buildTaskMessage(task: Record<string, unknown>): string {
 
   // ── Fresh task / normal flow ─────────────────────────────────────────────────
   lines.push(
+    `**First step:** Search your memory for relevant context before starting:`,
+    `\`mcp__memory__memory_search\` with query: "${task.title}"`,
+    `If you find relevant notes, incorporate them. If not, proceed with fresh context.`,
+    ``,
     `You have been assigned a new task. Work on it autonomously now.`,
     ``,
     `## REQUIRED workflow — follow every step in order:`,
@@ -536,8 +547,9 @@ function isAgentCircuitOpen(agentId: string): boolean {
   if (!record) return false;
   if (record.lockedUntil) {
     if (Date.now() < record.lockedUntil) return true;
-    // Lock expired — reset
+    // Lock expired — reset and notify
     agentFailureCounts.delete(agentId);
+    emitSSEEvent('circuit.closed', { agentId });
     return false;
   }
   return record.count >= CIRCUIT_BREAKER_THRESHOLD;
@@ -556,14 +568,33 @@ function recordAgentFailure(agentId: string) {
   if (newCount >= CIRCUIT_BREAKER_THRESHOLD) {
     console.warn(`[taskDispatcher] Circuit OPEN for agent ${agentId} — locked for 10 minutes`);
     trackEvent('circuit.open', { agentId, failures: newCount }, agentId);
+    emitSSEEvent('circuit.open', { agentId, failures: newCount, lockedUntil: agentFailureCounts.get(agentId)?.lockedUntil ?? null });
     try {
       getDb().prepare(`UPDATE agents SET status = 'offline' WHERE id = ?`).run(agentId);
     } catch { /* non-critical */ }
   }
 }
 
+/** Export circuit breaker state for API routes / health checks */
+export function getCircuitBreakerState(): Record<string, { open: boolean; failures: number; lockedUntil: number | null }> {
+  const result: Record<string, { open: boolean; failures: number; lockedUntil: number | null }> = {};
+  for (const [agentId, record] of agentFailureCounts.entries()) {
+    const open = isAgentCircuitOpen(agentId);
+    result[agentId] = {
+      open,
+      failures: record.count,
+      lockedUntil: record.lockedUntil ?? null,
+    };
+  }
+  return result;
+}
+
 function recordAgentSuccess(agentId: string) {
+  const hadRecord = agentFailureCounts.has(agentId);
   agentFailureCounts.delete(agentId);
+  if (hadRecord) {
+    emitSSEEvent('circuit.closed', { agentId });
+  }
 }
 
 // ── Dispatch debounce ────────────────────────────────────────────────────────
@@ -784,6 +815,7 @@ export function dispatchTask(taskId: string): boolean {
 
     // Handle spawn errors (e.g. ENOENT if claude binary not found)
     proc.on('error', (err) => {
+      activeDispatches = Math.max(0, activeDispatches - 1);
       console.error(`[taskDispatcher] Spawn error for task ${taskId}:`, err);
       try {
         db.prepare(

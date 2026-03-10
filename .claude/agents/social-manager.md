@@ -103,6 +103,6 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 
 Save all output files to `~/mission-control/library/`:
 - **Campaign assets and copy**: `library/campaigns/campaign-{name}-{date}/docs/`
-- **Content calendars**: `library/campaigns/campaign-{name}-{date}/docs/stratagies/`
+- **Content calendars**: `library/campaigns/campaign-{name}-{date}/docs/strategies/`
 - **Drafted tweets / threads**: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_tweets_description.md`
 - Always create a campaign folder for each initiative: `library/campaigns/campaign-{name}-{date}/`

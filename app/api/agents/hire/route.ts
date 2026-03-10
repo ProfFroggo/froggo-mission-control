@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync, existsSync, copyFileSync, readFileSync } from
 import { join } from 'path';
 import { homedir } from 'os';
 import { getDb } from '@/lib/database';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -190,6 +191,20 @@ export async function POST(request: NextRequest) {
       UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updatedAt = ?
       WHERE id = ?
     `).run(avatarPath, Date.now(), id);
+
+    // Post-hire onboarding: create welcome inbox message
+    try {
+      const now = Date.now();
+      const welcomeBody = `You've been hired as ${role || 'Agent'}. Your workspace is at ~/mission-control/agents/${id}/. Read your SOUL.md to understand your purpose and CLAUDE.md for platform instructions. Start by reviewing the task board.`;
+      db.prepare(`
+        INSERT INTO inbox (type, title, content, context, status, createdAt, metadata)
+        VALUES ('system', ?, ?, ?, 'unread', ?, '{}')
+      `).run('Welcome to the team', welcomeBody, null, now);
+    } catch { /* non-critical */ }
+
+    // Emit SSE events
+    emitSSEEvent('agent.hired', { agentId: id, name, role: role || 'Agent' });
+    emitSSEEvent('agent.updated', { id });
 
     return NextResponse.json({
       path: workspaceDir,

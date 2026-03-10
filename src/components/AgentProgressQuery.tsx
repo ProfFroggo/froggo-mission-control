@@ -51,7 +51,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
     };
 
     checkAgent();
-    const interval = setInterval(checkAgent, 10000);
+    const interval = setInterval(checkAgent, 30000); // 30s (was 10s — too aggressive)
     return () => clearInterval(interval);
   }, [taskId]);
 

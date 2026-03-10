@@ -119,5 +119,5 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 Save all output files to `~/mission-control/library/`:
 - **Market research / analysis**: `library/docs/research/YYYY-MM-DD_research_description.md`
 - **Financial reports**: `library/docs/research/YYYY-MM-DD_finance_description.md`
-- **Strategy documents**: `library/docs/stratagies/YYYY-MM-DD_strategy_description.md`
+- **Strategy documents**: `library/docs/strategies/YYYY-MM-DD_strategy_description.md`
 - Include date range and data sources in all reports

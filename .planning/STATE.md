@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v8.0 Platform Quality — Phase 79 (Stability Fixes)
+**Current focus:** v9.0 Agent Intelligence — Phase 87 (Memory Protocol Foundation)
 
 ## Current Position
 
-Phase: 79 of 86 (stability-fixes)
+Phase: 87 of 97 (memory-protocol-foundation)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-03-09 — v8.0 roadmap created (8 phases, 79–86); full platform audit complete
+Last activity: 2026-03-10 — v9.0 roadmap created (11 phases, 22 plans)
 
-Progress: ░░░░░░░░░░ 0% (v8.0 — 0/8 phases done)
+Progress: ██████████░░ 87% (v9.0 — 0/11 phases done)
 
 ## Performance Metrics
 
@@ -81,6 +81,17 @@ None.
 - Agent workspace CLAUDE.md files: replaced defunct derek-db CLI with mcp__mission-control_db__* MCP tools
 - Task session expiry: 2 hours (shorter than chat 30-min in-memory; task sessions are discrete)
 
+### Key Decisions (v9.0)
+
+- Memory protocol: Stop hook (memory-capture.js) is primary; TASK_SUFFIX instruction is fallback
+- Session expiry raised 2h → 24h; cleanup cron deletes sessions >7 days
+- Structured memory frontmatter: date, agent, task, tags, confidence — enforced by memory_write
+- Expertise map lives at `memory/agents/expertise-map.md` — auto-appended on every write
+- Memory injection token budget: 1500 tokens max; dropped if total prompt would exceed model limit
+- Clara pattern file per-agent: `memory/agents/clara/agent-patterns/{agentId}.md`
+- Vector embeddings: Phase 96 — requires research on Anthropic embeddings API
+- Task templates: generated after 5+ similar completions; offered in TaskModal
+
 ### Key Decisions (v8.0)
 
 - Interactive chat → Anthropic SDK streaming (not CLI); CLI retained for task dispatch
@@ -109,6 +120,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: v8.0 roadmap created. Full platform audit synthesized (3 agents, 110+ gaps). STATE.md + ROADMAP.md updated. Phase directories 79–86 created. Ready to plan Phase 79.
+Last session: 2026-03-10
+Stopped at: v9.0 roadmap created — 11 phases (87–97), 22 plans. Source: ~/Downloads/froggo-agent-intelligence-roadmap.md. Phase 87 ready to plan.
 Resume file: None

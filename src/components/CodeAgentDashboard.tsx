@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
@@ -149,6 +149,11 @@ export default function CodeAgentDashboard() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Read-only notice */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-info-subtle border-b border-mission-control-border text-info text-xs">
+        <Info size={13} />
+        <span>Dev module — read-only diagnostics. The Cron Jobs tab manages scheduled jobs; all other panels are display-only.</span>
+      </div>
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">

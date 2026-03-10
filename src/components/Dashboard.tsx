@@ -5,7 +5,7 @@ import {
   Zap, Shield, AlertTriangle, Inbox,
   ListTodo, Activity, MapPin, Video, ChevronRight,
   Loader2, XCircle, DollarSign,
-  MessageSquare, Mail, Twitter, FileText, type LucideIcon
+  MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
@@ -345,8 +345,8 @@ function ActivityFeed({
             <div className="divide-y divide-mission-control-border/20">
               {activities.map(a => (
                 <div key={a.id} className="px-4 py-2.5 flex items-start gap-3">
-                  <span className="text-sm flex-shrink-0 mt-0.5">
-                    {a.type === 'chat' ? '💬' : a.type === 'task' ? '📋' : a.type === 'agent' ? '🤖' : a.type === 'error' ? '⚠️' : '📡'}
+                  <span className="flex-shrink-0 mt-0.5 text-mission-control-text-muted">
+                    {a.type === 'chat' ? <MessageSquare size={14} /> : a.type === 'task' ? <Clipboard size={14} /> : a.type === 'agent' ? <Bot size={14} /> : a.type === 'error' ? <AlertTriangle size={14} /> : <Radio size={14} />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-mission-control-text-dim line-clamp-1">{a.message}</p>

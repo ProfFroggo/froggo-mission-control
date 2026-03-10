@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles } from 'lucide-react';
+import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles, GraduationCap } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { catalogApi } from '../lib/api';
@@ -281,7 +281,9 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-xl">🎓</div>
+          <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+            <GraduationCap size={22} />
+          </div>
           <div className="flex-1">
             <h2 className="font-bold text-mission-control-text">HR — Agent Creator</h2>
             <p className="text-xs text-teal-400">
@@ -375,7 +377,9 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'hr' && (
-                  <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-0.5">🎓</div>
+                  <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5 text-teal-400">
+                    <GraduationCap size={14} />
+                  </div>
                 )}
                 <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
@@ -418,7 +422,9 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center text-sm mr-2">🎓</div>
+                <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center mr-2 text-teal-400">
+                  <GraduationCap size={14} />
+                </div>
                 <div className="bg-mission-control-surface px-4 py-3 rounded-xl">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

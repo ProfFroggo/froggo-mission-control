@@ -13,7 +13,7 @@
       "id": "approvals",
       "label": "Approvals",
       "icon": "ShieldAlert",
-      "entrypoint": "./views/InboxPanel.tsx"
+      "entrypoint": "./views/ApprovalQueuePanel.tsx"
     }
   ],
   "dependencies": {

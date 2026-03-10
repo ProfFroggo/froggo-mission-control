@@ -30,13 +30,19 @@ function getDb(): Database.Database {
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
+/** Build auth headers for requests to the Next.js app. */
+function authHeaders(): Record<string, string> {
+  const token = process.env.INTERNAL_API_TOKEN;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 /** Fire-and-forget POST to the Next.js app (port 3000). */
 function firePost(urlPath: string, body: object): void {
   const encoded = JSON.stringify(body);
   const req = http.request({
     hostname: '127.0.0.1', port: 3000,
     path: urlPath, method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded) },
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded), ...authHeaders() },
   }, (res) => { res.resume(); });
   req.on('error', () => { /* app may not be running */ });
   req.setTimeout(3000, () => req.destroy());
@@ -50,7 +56,7 @@ function firePatch(taskId: string, body: object): void {
   const req = http.request({
     hostname: '127.0.0.1', port: 3000,
     path: `/api/tasks/${encodeURIComponent(taskId)}`, method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded) },
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded), ...authHeaders() },
   }, (res) => { res.resume(); });
   req.on('error', () => {});
   req.setTimeout(5000, () => req.destroy());
