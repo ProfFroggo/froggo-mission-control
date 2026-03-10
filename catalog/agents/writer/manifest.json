@@ -17,5 +17,5 @@
   "requiredTools": [],
   "version": "1.0.0",
   "category": "utility",
-  "core": true
+  "core": false
 }

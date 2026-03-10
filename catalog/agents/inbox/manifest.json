@@ -10,5 +10,6 @@
   "requiredSkills": ["agent-routing"],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "operations"
+  "category": "operations",
+  "core": true
 }
