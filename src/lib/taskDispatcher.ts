@@ -8,7 +8,7 @@ import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
 import { trackEvent } from './telemetry';
 import { emitSSEEvent } from './sseEmitter';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -350,6 +350,83 @@ function loadPermissionPrompt(agentId: string, trustTier: string): string {
   return lines.join('\n');
 }
 
+// ── Memory injection ──────────────────────────────────────────────────────────
+
+/**
+ * Search the memory vault for notes relevant to this task.
+ * Returns a formatted section string (empty string if no results or error).
+ */
+function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?: string | null): string {
+  try {
+    const vaultDir = join(HOME, 'mission-control', 'memory');
+    const agentDir = join(vaultDir, 'agents', agentId);
+
+    if (!existsSync(agentDir)) return '';
+
+    const files = readdirSync(agentDir)
+      .filter(f => f.endsWith('.md'))
+      .map(f => ({ name: f, path: join(agentDir, f), mtime: statSync(join(agentDir, f)).mtimeMs }))
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(0, 20); // Check last 20 notes
+
+    if (files.length === 0) return '';
+
+    // Simple relevance: keyword overlap between task title/desc and note filename/content
+    const queryWords = new Set(
+      `${taskTitle} ${taskDescription || ''}`.toLowerCase()
+        .split(/\W+/).filter(w => w.length > 3)
+    );
+
+    const scored = files.map(f => {
+      const content = readFileSync(f.path, 'utf-8');
+      const nameWords = f.name.toLowerCase().split(/[-_.\s]+/);
+      const contentWords = content.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+      const score = [...queryWords].filter(w => nameWords.includes(w) || contentWords.slice(0, 200).includes(w)).length;
+      return { ...f, content: content.slice(0, 600), score };
+    }).filter(f => f.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+
+    if (scored.length === 0) return '';
+
+    // Token budget guard: ~1500 token limit (chars / 4)
+    const TOKEN_BUDGET = 1500 * 4; // chars
+    let totalChars = 0;
+    const capped = scored.filter(f => {
+      totalChars += f.content.length;
+      return totalChars <= TOKEN_BUDGET;
+    });
+
+    if (capped.length === 0) return '';
+
+    const sections = capped.map(f => `### ${f.name.replace('.md', '')}\n${f.content}`).join('\n\n---\n\n');
+    return `\n\n## Your Relevant Memory\n_Found ${capped.length} note(s) related to this task:_\n\n${sections}\n\n---\n`;
+  } catch {
+    return ''; // Non-critical — never block dispatch
+  }
+}
+
+/**
+ * Check for a handoff note from a previous agent assignment.
+ * Returns formatted handoff section or empty string.
+ */
+function loadHandoffNote(taskId: string, agentId: string): string {
+  try {
+    const agentsDir = join(HOME, 'mission-control', 'memory', 'agents');
+    if (!existsSync(agentsDir)) return '';
+
+    const agentFolders = readdirSync(agentsDir);
+
+    for (const folder of agentFolders) {
+      if (folder === agentId) continue; // Skip self
+      const handoffPath = join(agentsDir, folder, 'handoffs', `${taskId}.md`);
+      if (existsSync(handoffPath)) {
+        const content = readFileSync(handoffPath, 'utf-8');
+        return `\n\n## Handoff from Previous Agent\n${content.slice(0, 800)}\n`;
+      }
+    }
+  } catch {}
+  return '';
+}
+
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
 function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
@@ -358,16 +435,33 @@ function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
   return `\n\n## Available API Keys\nThe following API keys are available as environment variables:\n${names.map(n => `- \`process.env.${n}\``).join('\n')}`;
 }
 
-function buildTaskSystemPrompt(agentId: string, trustTier: string, apiKeyEnv: Record<string, string>): string | null {
+function buildTaskSystemPrompt(
+  agentId: string,
+  trustTier: string,
+  apiKeyEnv: Record<string, string>,
+  task?: Record<string, unknown>
+): string | null {
   const skills = loadAgentSkills(agentId);
   const permPrompt = loadPermissionPrompt(agentId, trustTier);
   const apiKeyPrompt = buildApiKeyPrompt(apiKeyEnv);
+
+  // Inject relevant memory and handoff notes if task context available
+  const relevantMemory = task
+    ? loadRelevantMemory(agentId, task.title as string, task.description as string | null)
+    : '';
+  const handoffNote = task
+    ? loadHandoffNote(task.id as string, agentId)
+    : '';
+
+  if (relevantMemory && task) {
+    trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
+  }
 
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -379,6 +473,8 @@ function buildTaskSystemPrompt(agentId: string, trustTier: string, apiKeyEnv: Re
       if (agent.role) parts.push(`You are ${agent.name || agentId}, a ${agent.role}.`);
       if (agent.personality) parts.push(agent.personality);
       if (skills) parts.push(skills);
+      if (relevantMemory) parts.push(relevantMemory);
+      if (handoffNote) parts.push(handoffNote);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
@@ -679,7 +775,7 @@ export function dispatchTask(taskId: string): boolean {
       args.push('--resume', existingSession);
       // Session already has context — don't add --system-prompt
     } else {
-      const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv);
+      const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
       if (systemPrompt) args.push('--system-prompt', systemPrompt);
     }
 
