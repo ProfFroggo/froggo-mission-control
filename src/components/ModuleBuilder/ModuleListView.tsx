@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Package, Clock } from 'lucide-react';
+import { Plus, Trash2, Package, Clock, CheckCircle2 } from 'lucide-react';
 import ErrorDisplay from '../ErrorDisplay';
 import { showToast } from '../Toast';
 
@@ -8,9 +8,80 @@ interface ModuleListItem {
   name: string;
   description: string;
   status: string;
+  overallProgress: number;
   overall_progress: number;
+  taskIds: string[];
+  createdAt: number;
+  updatedAt: number;
   created_at: number;
   updated_at: number;
+}
+
+interface MiniProgressProps {
+  moduleId: string;
+  taskIds: string[];
+  onBuild: () => void;
+}
+
+function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
+  const [pct, setPct] = useState<number | null>(null);
+  const [completed, setCompleted] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    if (!taskIds || taskIds.length === 0) return;
+    fetch(`/api/modules/${moduleId}/tasks`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setPct(data.progressPct);
+          setCompleted(data.completed);
+          setTotal(data.total);
+        }
+      })
+      .catch(() => {});
+  }, [moduleId, taskIds]);
+
+  if (!taskIds || taskIds.length === 0) {
+    return (
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs text-mission-control-text-dim">Not started</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onBuild(); }}
+          className="text-xs px-2.5 py-1 bg-mission-control-accent hover:opacity-90 text-white rounded transition-opacity"
+        >
+          Build
+        </button>
+      </div>
+    );
+  }
+
+  if (pct === null) return null;
+
+  const allDone = pct === 100;
+  return (
+    <div className="mt-3">
+      <div className="flex items-center justify-between text-[10px] text-mission-control-text-dim mb-1">
+        {allDone ? (
+          <span className="flex items-center gap-1 text-green-400">
+            <CheckCircle2 size={10} /> Complete
+          </span>
+        ) : (
+          <span>{completed}/{total} tasks</span>
+        )}
+        <span>{pct}%</span>
+      </div>
+      <div className="w-full h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{
+            width: `${pct}%`,
+            background: allDone ? 'var(--color-success)' : 'var(--color-accent)',
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 interface ModuleListViewProps {
@@ -112,11 +183,11 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                 {/* Status badge */}
                 <div className="flex items-center justify-between mb-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    mod.status === 'finished'
+                    mod.status === 'built' || mod.status === 'finished'
                       ? 'bg-green-500/20 text-green-400'
                       : 'bg-yellow-500/20 text-yellow-400'
                   }`}>
-                    {mod.status === 'finished' ? 'Complete' : 'In Progress'}
+                    {mod.status === 'built' || mod.status === 'finished' ? 'Built' : 'In Progress'}
                   </span>
                   <button
                     onClick={(e) => handleDelete(e, mod.id, mod.name)}
@@ -139,21 +210,17 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                   </p>
                 )}
 
-                {/* Progress bar */}
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
-                    <span>{mod.overall_progress}%</span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={10} /> {timeAgo(mod.updated_at)}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-mission-control-accent rounded-full transition-all"
-                      style={{ width: `${mod.overall_progress}%` }}
-                    />
-                  </div>
+                {/* Timestamp */}
+                <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim mt-2">
+                  <Clock size={10} /> {timeAgo(mod.updatedAt || mod.updated_at || 0)}
                 </div>
+
+                {/* Progress */}
+                <MiniProgress
+                  moduleId={mod.id}
+                  taskIds={mod.taskIds || []}
+                  onBuild={() => onSelectModule(mod.id)}
+                />
               </div>
             ))}
           </div>

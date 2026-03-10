@@ -4,7 +4,8 @@ import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
 import { useConversationFlow } from './useConversationFlow';
-import { generateTasks, exportSpecAsJson } from './TaskGenerator';
+import { generateTasksForModule, exportSpecAsJson } from './TaskGenerator';
+import { showToast } from '../Toast';
 import type { ModuleSpec } from './types';
 
 interface ModuleBuilderViewProps {
@@ -88,10 +89,34 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
 
   const handleGenerateTasks = async () => {
     try {
-      const result = await generateTasks(spec as ModuleSpec);
-      alert(`Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
-    } catch (err: any) {
-      alert(`Task generation failed: ${err.message}`);
+      const tasks = generateTasksForModule(spec as ModuleSpec, saved.id, flow.wireframe);
+      const taskIds: string[] = [];
+      for (const task of tasks) {
+        const { subtasks, ...taskBody } = task;
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(taskBody),
+        });
+        if (!res.ok) throw new Error(`Task creation failed: ${res.status}`);
+        const created = await res.json();
+        taskIds.push(created.id);
+        for (const subtask of subtasks || []) {
+          await fetch(`/api/tasks/${created.id}/subtasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(subtask),
+          });
+        }
+      }
+      await fetch(`/api/modules/${saved.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskIds, status: 'built' }),
+      });
+      showToast('success', 'Tasks Created', `${taskIds.length} tasks created for ${spec.name}`);
+    } catch (err: unknown) {
+      showToast('error', 'Task Generation Failed', (err as Error).message);
     }
   };
 
