@@ -62,6 +62,8 @@ const LAUNCHAGENT  = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-con
 const CRON_AGENT   = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
 const SYSTEMD_SVC  = path.join(HOME, '.config', 'systemd', 'user', 'mission-control.service');
 const SYSTEMD_CRON = path.join(HOME, '.config', 'systemd', 'user', 'mission-control-cron.service');
+const PORTLESS_AGENT = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.portless.plist');
+const PORTLESS_URL   = 'http://mission-control.localhost:1355';
 const IS_MAC       = os.platform() === 'darwin';
 const IS_LINUX     = os.platform() === 'linux';
 
@@ -105,6 +107,80 @@ function findClaudeBin() {
     '/opt/homebrew/bin/claude',
   ];
   return candidates.find(f => existsSync(f)) || 'claude';
+}
+
+function findPortlessBin() {
+  const candidates = [
+    '/opt/homebrew/bin/portless',
+    '/usr/local/bin/portless',
+    path.join(HOME, '.npm-global', 'bin', 'portless'),
+    path.join(HOME, '.local', 'bin', 'portless'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  try {
+    const found = execSync('which portless 2>/dev/null', { encoding: 'utf-8', timeout: 3000 }).trim();
+    if (found && existsSync(found)) return found;
+  } catch {}
+  return null;
+}
+
+function setupPortless(appPort) {
+  let portlessBin = findPortlessBin();
+  if (!portlessBin) {
+    try {
+      info('Installing portless for stable .localhost URL...');
+      execSync('npm install -g portless', { stdio: 'pipe', timeout: 30000 });
+      portlessBin = findPortlessBin();
+    } catch {
+      return null;
+    }
+  }
+  if (!portlessBin) return null;
+
+  // Start proxy daemon (idempotent — does nothing if already running)
+  try { execSync(`"${portlessBin}" proxy start`, { stdio: 'pipe', timeout: 5000 }); } catch {}
+
+  // Register alias
+  try {
+    execSync(`"${portlessBin}" alias mission-control ${appPort}`, { stdio: 'pipe', timeout: 5000 });
+  } catch { return null; }
+
+  // Sync /etc/hosts for Safari compat (best-effort, may require sudo)
+  try { execSync(`"${portlessBin}" hosts sync`, { stdio: 'pipe', timeout: 5000 }); } catch {}
+
+  // Persist portless proxy across reboots via LaunchAgent (macOS only)
+  if (IS_MAC) {
+    const portlessLogPath = path.join(MC_LOGS, 'portless.log');
+    const portlessPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mission-control.portless</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${portlessBin}</string>
+    <string>proxy</string>
+    <string>start</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>${portlessLogPath}</string>
+  <key>StandardErrorPath</key>
+  <string>${portlessLogPath}</string>
+</dict>
+</plist>`;
+    writeFileSync(PORTLESS_AGENT, portlessPlist);
+    try { execSync(`launchctl unload "${PORTLESS_AGENT}" 2>/dev/null || true`, { stdio: 'pipe' }); } catch {}
+    try { execSync(`launchctl load -w "${PORTLESS_AGENT}"`, { stdio: 'pipe' }); } catch {}
+  }
+
+  return PORTLESS_URL;
 }
 
 function isPortFree(port) {
@@ -939,12 +1015,23 @@ WantedBy=default.target
   }
 
   console.log('');
-  const appUrl = `http://localhost:${finalPort}`;
+  const localUrl = `http://localhost:${finalPort}`;
   // Pass ?setup=1 on first launch so the wizard shows even if localStorage is stale
-  const launchUrl = `${appUrl}?setup=1`;
 
   if (finalHealth) {
-    success(`Running at ${appUrl}`);
+    success(`Running at ${localUrl}`);
+
+    // ── Portless stable URL ────────────────────────────────────────────────
+    step('Configuring stable URL (portless)');
+    const portlessResult = setupPortless(finalPort);
+    const appUrl = portlessResult || localUrl;
+    const launchUrl = `${appUrl}?setup=1`;
+    if (portlessResult) {
+      success(`Stable URL: ${portlessResult}`);
+    } else {
+      warn(`Portless unavailable — using ${localUrl}`);
+    }
+
     openBrowser(launchUrl);
 
     // ── Final summary ─────────────────────────────────────────────────────
@@ -954,6 +1041,9 @@ WantedBy=default.target
     console.log(c.bold(c.green('╚══════════════════════════════════════╝')));
     console.log('');
     console.log(`  Opening dashboard at ${c.bold(c.cyan(appUrl))} — setup wizard will launch automatically`);
+    if (portlessResult) {
+      console.log(`  ${c.dim(`(also accessible at ${localUrl})`)}`);
+    }
     console.log('');
     console.log(`  ${c.bold('Data:')}       ~/mission-control/`);
     console.log(`  ${c.bold('Platform:')}   ${INSTALL_DIR}`);
