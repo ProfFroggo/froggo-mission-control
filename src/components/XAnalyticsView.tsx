@@ -19,6 +19,9 @@ interface ContentPost {
   content: string;
   status: string;
   created_at: number;
+  likes?: number;
+  retweets?: number;
+  impressions?: number;
 }
 
 const MOCK_COMPETITORS = [
@@ -43,12 +46,20 @@ export function XAnalyticsView() {
       setSummary({
         followers: metrics.followers_count ?? 0,
         following: metrics.following_count ?? 0,
-        tweet_count: metrics.tweet_count ?? 0,
+        tweetCount: metrics.tweet_count ?? 0,
+        totalLikes: tweets.reduce((s: number, t: any) => s + (t.public_metrics?.like_count ?? 0), 0),
+        totalRetweets: tweets.reduce((s: number, t: any) => s + (t.public_metrics?.retweet_count ?? 0), 0),
+        totalReplies: tweets.reduce((s: number, t: any) => s + (t.public_metrics?.reply_count ?? 0), 0),
+        totalImpressions: tweets.reduce((s: number, t: any) => s + (t.public_metrics?.impression_count ?? 0), 0),
+        engagementRate: 0,
+        recentTweetCount: tweets.length,
         estimated: false,
       });
       setTopContent(tweets.slice(0, 10).map((t: any) => ({
         id: t.id,
         content: t.text,
+        status: 'posted',
+        created_at: t.created_at ? new Date(t.created_at).getTime() : Date.now(),
         likes: t.public_metrics?.like_count ?? 0,
         retweets: t.public_metrics?.retweet_count ?? 0,
         impressions: t.public_metrics?.impression_count ?? 0,
