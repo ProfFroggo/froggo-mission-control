@@ -41,7 +41,7 @@ export const XMentionsView: React.FC = () => {
       const allItems = await inboxApi.getAll();
       const items = (Array.isArray(allItems) ? allItems : [])
         .filter((item: any) => item.type === 'x-mention')
-        .filter((item: any) => filter === 'all' || item.status === filter);
+        .filter((item: any) => filter === 'all' || item.reply_status === filter);
       setMentions(items as Mention[]);
       setLoading(false);
     } catch (error) {
@@ -63,20 +63,22 @@ export const XMentionsView: React.FC = () => {
   };
 
   const updateStatus = async (id: string, status: 'pending' | 'considering' | 'ignored' | 'replied') => {
+    // Optimistic update
+    setMentions(prev => prev.map(m => m.id === id ? { ...m, reply_status: status } : m));
     try {
-      // Stub: status updates not available via REST inbox API
-      setMentions(prev => prev.map(m => m.id === id ? { ...m, reply_status: status } : m));
-    } catch (error) {
-      // 'Error updating mention status:', error;
+      await inboxApi.update(Number(id), { reply_status: status });
+    } catch {
+      // Roll back on failure
+      await loadMentions();
     }
   };
 
   const saveNotes = async (id: string, noteText: string) => {
     try {
-      // Stub: notes not available via REST inbox API — update local state only
-      setNotes({ ...notes, [id]: '' });
-    } catch (error) {
-      // 'Error saving notes:', error;
+      await inboxApi.update(Number(id), { notes: noteText });
+      setNotes({ ...notes, [id]: noteText });
+    } catch {
+      // Keep note text in local state even if persist fails
     }
   };
 

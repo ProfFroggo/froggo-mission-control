@@ -22,6 +22,13 @@ interface Campaign {
   start_date?: string;
 }
 
+function countChars(text: string): number {
+  const urls = text.match(/https?:\/\/\S+/g) || [];
+  let count = text.length;
+  for (const url of urls) count = count - url.length + 23;
+  return count;
+}
+
 const STAGE_TYPES = [
   { value: 'tweet', label: 'Single Tweet' },
   { value: 'thread', label: 'Thread' },
@@ -232,11 +239,11 @@ export default function XCampaignView() {
 
   const deleteCampaign = async (id: string) => {
     try {
-      // Campaign delete: just refresh the list (delete not available via REST)
+      await scheduleApi.delete(id);
       showToast('success', 'Campaign deleted');
       loadCampaigns();
-    } catch {
-      showToast('error', 'Delete failed');
+    } catch (error: any) {
+      showToast('error', `Delete failed: ${error.message}`);
     }
   };
 
@@ -413,8 +420,8 @@ export default function XCampaignView() {
                             rows={3}
                             className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
                           />
-                          <div className={`text-xs mt-1 ${stage.content.length > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
-                            {stage.content.length}/280
+                          <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
+                            {countChars(stage.content)}/280
                           </div>
                         </div>
 
