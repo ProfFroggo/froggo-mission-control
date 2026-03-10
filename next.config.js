@@ -4,6 +4,9 @@ const nextConfig = {
   // Native Node addons must not be bundled by Turbopack — loaded at runtime
   serverExternalPackages: ['better-sqlite3', 'keytar'],
   // @ path alias is picked up automatically from tsconfig paths
+  turbopack: {
+    root: __dirname,
+  },
 
   async headers() {
     return [

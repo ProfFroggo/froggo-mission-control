@@ -13,8 +13,8 @@ export function getCurrentUserName(): string {
     return state.name;
   }
   
-  // Fallback to default
-  return 'user';
+  // Fallback to env var or default
+  return process.env.NEXT_PUBLIC_DEFAULT_USER_NAME || 'user';
 }
 
 /**
@@ -23,5 +23,5 @@ export function getCurrentUserName(): string {
  */
 export function useCurrentUserName(): string {
   const name = useUserSettings((state) => state.name);
-  return name && name.trim() ? name : 'user';
+  return name && name.trim() ? name : process.env.NEXT_PUBLIC_DEFAULT_USER_NAME || 'user';
 }
