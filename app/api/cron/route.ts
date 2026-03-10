@@ -17,7 +17,13 @@ const NODE_BIN      = process.execPath;
 
 function readJobs(): Record<string, unknown>[] {
   if (!existsSync(SCHEDULE_PATH)) return [];
-  try { return JSON.parse(readFileSync(SCHEDULE_PATH, 'utf-8')); } catch { return []; }
+  try {
+    const parsed = JSON.parse(readFileSync(SCHEDULE_PATH, 'utf-8'));
+    if (Array.isArray(parsed)) return parsed;
+    // Handle legacy object format e.g. {} or { jobs: [...] }
+    if (parsed && Array.isArray(parsed.jobs)) return parsed.jobs;
+    return [];
+  } catch { return []; }
 }
 
 function writeJobs(jobs: Record<string, unknown>[]): void {
