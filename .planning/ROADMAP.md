@@ -19,6 +19,7 @@ Spec sources:
 - ✅ **v6.1 Codebase Review & Hardening** — Phases 58–70 — SHIPPED 2026-03-07
 - ✅ **v7.0 Install & First-Run Overhaul** — Phases 71–78 — SHIPPED 2026-03-08
 - ✅ **v8.0 Platform Quality** — Phases 79–86 (complete 2026-03-09)
+- 🚧 **v9.0 Agent Intelligence** — Phases 87–97 (in progress)
 
 ---
 
@@ -888,3 +889,173 @@ Plans:
 | 84. Agent Soul Quality | v8.0 | 0/3 | Skipped (not in scope) | - |
 | 85. Observability & Circuit Breakers | v8.0 | 2/2 | Done | 2026-03-09 |
 | 86. E2E Verification v8.0 | v8.0 | 1/1 | Done | 2026-03-09 |
+
+---
+
+### 🚧 v9.0 Agent Intelligence (In Progress)
+
+**Milestone Goal:** Transform agents from stateless executors into learning systems. Wire the three missing loops (write, read, Clara), scale memory infrastructure, and give agents the ability to improve with every task they complete.
+
+**Source:** `~/Downloads/froggo-agent-intelligence-roadmap.md`
+
+---
+
+#### Phase 87: Memory Protocol Foundation
+
+**Goal**: Add explicit memory protocol sections to all 15 agent SOUL.md files. Extend task session expiry from 2 hours to 24 hours. Add session cleanup cron (delete sessions >7 days). Seed the vault with 10 core knowledge articles (architecture, conventions, common gotchas). Add initial memory_search call to task system prompt so agents start looking up context from day one.
+**Depends on**: Phase 86
+**Research**: Unlikely (internal file edits, DB constant change, memory MCP already built)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 87-01: Update all 15 SOUL.md files with memory protocol section; add memory_search instruction to TASK_SUFFIX in taskDispatcher; extend SESSION_EXPIRY_MS to 24h; add session cleanup in claraReviewCron startup sweep
+- [ ] 87-02: Write 10 seed knowledge articles to vault (architecture decisions, task lifecycle, MCP tools reference, common patterns, security conventions, UI conventions, agent capabilities, deployment notes, testing patterns, troubleshooting guide)
+
+---
+
+#### Phase 88: Write Loop — Post-Task Memory Capture
+
+**Goal**: Every completed task generates a structured memory note in the vault. The Stop hook in `.claude/settings.json` fires after each Claude process exits and triggers memory_write. Agents leave a record of what they learned so future sessions start warm.
+**Depends on**: Phase 87
+**Research**: Unlikely (Stop hook slot already exists in settings.json; memory MCP tools built)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 88-01: Implement `tools/hooks/memory-capture.js` — reads Claude session output, extracts task summary, calls memory MCP to write structured note to `~/mission-control/memory/agents/{agentId}/YYYY-MM-DD-{task-slug}.md`; wire into `.claude/settings.json` Stop hook
+- [ ] 88-02: Add end-of-task memory write instruction to TASK_SUFFIX in taskDispatcher (fallback if hook unavailable); add memory write to task_activity on completion; verify notes appear in vault after task completes
+
+---
+
+#### Phase 89: Read Loop — Pre-Dispatch Memory Injection
+
+**Goal**: Before every task starts, query the vault for relevant past notes and inject the top 3 results into the system prompt as `## Your Relevant Memory`. Agents stop starting cold. An agent that worked on a similar task last week automatically gets its own notes injected before the new task.
+**Depends on**: Phase 88
+**Research**: Unlikely (extends buildTaskSystemPrompt() in taskDispatcher; memory MCP search already works)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 89-01: Add `loadRelevantMemory(agentId, taskTitle)` to taskDispatcher — calls memory_search via the memory MCP HTTP interface, returns top 3 results (max 1500 tokens), injects as `## Your Relevant Memory` section before TASK_SUFFIX; skip if no results or budget exceeded
+- [ ] 89-02: Test injection quality — verify correct notes surface for relevant tasks; add token budget guard (drop memory section if total prompt would exceed model limit); log injection hits/misses to telemetry
+
+---
+
+#### Phase 90: Clara Learning Loop
+
+**Goal**: After every review Clara writes a one-line pattern note appending to `~/mission-control/memory/agents/clara/agent-patterns/{agentId}.md`. Clara's system prompt in claraReviewCron loads this file before reviewing that agent. After 10+ reviews Clara knows each agent's strengths and blind spots. Review quality improves over time.
+**Depends on**: Phase 89
+**Research**: Unlikely (extends claraReviewCron.ts; memory file read/write)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 90-01: Update claraReviewCron — after each review decision append pattern line to agent-specific pattern file; format: `YYYY-MM-DD | {title} | {approved/rejected} | {reason-summary}`; create file if not exists
+- [ ] 90-02: Update buildClaraSystemPrompt() to load agent pattern file when reviewing — inject as `## Your Past Reviews of {agentName}`; cap at last 20 lines to control token usage; verify Clara's review notes reference past patterns
+
+---
+
+#### Phase 91: Structured Memory Format + Expertise Map
+
+**Goal**: Standardize all memory notes with YAML frontmatter (date, agent, task, tags, confidence). Update memory_write MCP tool to validate and enforce format. Auto-maintain an expertise map (`memory/agents/expertise-map.md`) that tracks which agent has notes on which topics — making cross-agent knowledge discovery possible.
+**Depends on**: Phase 90
+**Research**: Unlikely (memory MCP tool extension; YAML frontmatter; file append)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 91-01: Define structured memory note format with YAML frontmatter; update memory_write in `tools/memory-mcp/src/index.ts` to accept and validate structured format; update memory_search to filter/boost by tags; backfill seed notes with correct frontmatter
+- [ ] 91-02: Implement expertise map auto-update — when memory_write is called, append agent + tags to `memory/agents/expertise-map.md`; add memory_recall query for expertise map; expose expertise map in AgentPanel expanded view
+
+---
+
+#### Phase 92: Skill Auto-Assignment from Task Keywords
+
+**Goal**: At dispatch time, automatically match task title/description keywords against a TASK_SKILL_MAP and inject matching skills into the system prompt without manual assignment. Agents get react-best-practices for React tasks, security-checklist for API tasks, etc. — without anyone having to remember to assign skills.
+**Depends on**: Phase 91
+**Research**: Unlikely (extends taskDispatcher skill loading; TASK_SKILL_MAP is a static config)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 92-01: Define `TASK_SKILL_MAP` in taskDispatcher (react→react-best-practices, api→security-checklist, test→froggo-testing-patterns, etc.); auto-inject up to 2 matched skills at dispatch time; merge with manually assigned skills (deduplicated); log auto-assigned skills to task activity
+
+---
+
+#### Phase 93: PreCompact Hook — Context Compression
+
+**Goal**: Implement the PreCompact hook in `.claude/settings.json` so when Claude's context window fills up and compaction is triggered, a summary of the current session is written to the agent's vault before compression. No context is ever permanently lost across compaction boundaries.
+**Depends on**: Phase 91
+**Research**: Unlikely (PreCompact hook slot already exists in settings.json; memory write established)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 93-01: Implement `tools/hooks/pre-compact-summary.js` — receives current session state, extracts key decisions/progress/blockers, calls memory_write with category='session' before compaction fires; wire into `.claude/settings.json` PreCompact hook
+- [ ] 93-02: Test compaction survival — verify that long-running tasks that hit context limit still have their progress captured; verify resumed sessions can find pre-compact summary via memory_search; add compaction event to telemetry
+
+---
+
+#### Phase 94: Task Handoff Memory
+
+**Goal**: When a task is reassigned from agent A to agent B, agent A writes a structured handoff note (where I left off, what I tried, what still needs doing). The handoff note is automatically injected into agent B's first session for that task. Reassignments no longer start cold.
+**Depends on**: Phase 93
+**Research**: Unlikely (extends task reassignment PATCH handler + memory injection at dispatch)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 94-01: Add handoff note trigger to task PATCH handler — when `assignedTo` changes and task has prior session, create handoff prompt for outgoing agent; store handoff note to `memory/agents/{oldAgent}/handoffs/{taskId}.md`; link in task activity
+- [ ] 94-02: At dispatch for reassigned tasks, detect existing handoff note and inject it as `## Handoff from {previousAgent}` in system prompt; verify incoming agent acknowledges prior work in first response
+
+---
+
+#### Phase 95: Agent Performance Dashboard
+
+**Goal**: Track per-agent metrics in the telemetry table: task completion rate, Clara approval rate, average task duration by type, memory write frequency, skill usage. Display improvement charts on the Agents page so the user can see which agents are getting smarter and which need support.
+**Depends on**: Phase 94
+**Research**: Unlikely (telemetry table already exists; charting is UI work on existing AgentPanel)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 95-01: Extend telemetry tracking — add per-agent events for: memory_written, skill_used, review_approved, review_rejected, handoff_created, session_compacted; add `/api/agents/{id}/metrics` endpoint returning 30-day summary
+- [ ] 95-02: Build AgentPerformancePanel component — shows approval rate trend (line chart), memory write frequency, skill usage breakdown, top task types; add as new tab in AgentManagementModal; show improvement delta vs 7 days ago
+
+---
+
+#### Phase 96: Vector Embeddings for Semantic Memory Search
+
+**Goal**: Generate embeddings for memory notes at write time using the Anthropic embeddings API. Store alongside notes in QMD. Memory search runs hybrid BM25+vector with re-ranking so semantically similar notes surface even when vocabulary differs ("make search faster" finds "FTS5 performance optimization").
+**Depends on**: Phase 95
+**Research**: Likely (Anthropic embeddings API — confirm current endpoint, model, cost; QMD vector storage format)
+**Research topics**: Anthropic text-embedding-3 API endpoint and cost per note; QMD vector index format; hybrid re-ranking strategy (RRF vs weighted sum)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 96-01: Research and validate Anthropic embeddings API; implement `generateEmbedding(text)` in memory MCP; update memory_write to generate and store embedding alongside note
+- [ ] 96-02: Update memory_search to run BM25 + vector query in parallel; implement RRF (Reciprocal Rank Fusion) re-ranking; update fallback grep path to skip embedding step gracefully
+- [ ] 96-03: Validate search quality improvement — test 20 queries where BM25 fails and vector succeeds; measure latency delta; add embedding generation time to telemetry; write QA report
+
+---
+
+#### Phase 97: Task Template Library + Memory Scale
+
+**Goal**: Auto-generate reusable task templates from recurring patterns (after 5+ similar tasks). A nightly memory decay cron archives notes older than 90 days to keep the hot vault fast. The vault scales to thousands of notes without quality degradation.
+**Depends on**: Phase 96
+**Research**: Unlikely (pattern detection is analytics on existing data; file archival is simple cron)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 97-01: Implement task template detection — after each task completes, check if 5+ tasks with similar title pattern exist; if yes, generate template note to `memory/templates/{pattern}.md`; expose templates in TaskModal ("Similar to past tasks — use template?")
+- [ ] 97-02: Implement memory decay cron — nightly job moves notes older than 90 days to `memory/archive/YYYY/`; notes 14-90 days old flagged as 'warm' (0.7 weight in search); hot vault stays under 500 notes; add vault stats to `/api/metrics`
+
+---
+
+## Progress (v9.0)
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 87. Memory Protocol Foundation | v9.0 | 0/2 | Not started | - |
+| 88. Write Loop — Post-Task Memory | v9.0 | 0/2 | Not started | - |
+| 89. Read Loop — Pre-Dispatch Injection | v9.0 | 0/2 | Not started | - |
+| 90. Clara Learning Loop | v9.0 | 0/2 | Not started | - |
+| 91. Structured Memory Format | v9.0 | 0/2 | Not started | - |
+| 92. Skill Auto-Assignment | v9.0 | 0/1 | Not started | - |
+| 93. PreCompact Hook | v9.0 | 0/2 | Not started | - |
+| 94. Task Handoff Memory | v9.0 | 0/2 | Not started | - |
+| 95. Agent Performance Dashboard | v9.0 | 0/2 | Not started | - |
+| 96. Vector Embeddings | v9.0 | 0/3 | Not started | - |
+| 97. Task Templates + Memory Scale | v9.0 | 0/2 | Not started | - |
