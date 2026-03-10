@@ -305,6 +305,50 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
+    // Auto-generate task template when a task is done and 5+ similar completed tasks exist
+    if (body.status === 'done') {
+      try {
+        const taskTitle = updated.title as string;
+        // Extract first 3-4 words as the "pattern" for matching similar tasks
+        const titleWords = taskTitle.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+        const similarCount = (db.prepare(
+          `SELECT COUNT(*) as count FROM tasks WHERE status = 'done' AND LOWER(title) LIKE ? AND id != ?`
+        ).get(`%${titleWords}%`, id) as { count: number }).count;
+
+        if (similarCount >= 4) { // 4 similar + current = 5+ total
+          const templatesDir = join(HOME, 'mission-control', 'library', 'docs', 'templates');
+          if (!existsSync(templatesDir)) mkdirSync(templatesDir, { recursive: true });
+
+          // Derive slug from title
+          const slug = taskTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50).replace(/-+$/, '');
+          const templatePath = join(templatesDir, `${slug}.md`);
+
+          // Only write if template doesn't already exist (avoid clobbering)
+          if (!existsSync(templatePath)) {
+            const templateContent = [
+              `# Task Template: ${taskTitle}`,
+              ``,
+              `_Auto-generated from ${similarCount + 1} completed tasks. Last updated: ${new Date().toISOString().slice(0, 10)}_`,
+              ``,
+              `## Description`,
+              (updated.description as string | null) || '_Add description here._',
+              ``,
+              `## Suggested Agent`,
+              (updated.assignedTo as string | null) ? `- ${updated.assignedTo}` : `_Assign based on task type._`,
+              ``,
+              `## Planning Notes Template`,
+              (updated.planningNotes as string | null) || `1. Review requirements\n2. Plan implementation\n3. Execute\n4. Verify and submit for review`,
+              ``,
+              `## Suggested Priority`,
+              (updated.priority as string | null) || 'p2',
+            ].join('\n');
+            writeFileSync(templatePath, templateContent, 'utf-8');
+            trackEvent('template.generated', { taskId: id, slug, similarCount: similarCount + 1 });
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
     // Notify SSE clients of task update
     const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
     const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
