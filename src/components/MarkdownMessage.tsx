@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
@@ -13,13 +13,17 @@ interface MarkdownMessageProps {
   mentions?: MentionData;
 }
 
-export default function MarkdownMessage({ content, mentions }: MarkdownMessageProps) {
+// React.memo with custom comparator — only re-renders when content or mentions change.
+// This prevents costly markdown re-parsing during streaming when unrelated state updates.
+const MarkdownMessage = memo(function MarkdownMessage({ content, mentions }: MarkdownMessageProps) {
   return (
     <div className="max-w-none leading-relaxed text-left text-sm">
       {parseMarkdown(content, mentions)}
     </div>
   );
-}
+}, (prev, next) => prev.content === next.content && prev.mentions === next.mentions);
+
+export default MarkdownMessage;
 
 function parseMarkdown(text: string, mentions?: MentionData): React.ReactNode[] {
   const elements: React.ReactNode[] = [];

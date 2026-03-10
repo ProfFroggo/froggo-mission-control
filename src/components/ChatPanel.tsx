@@ -3,6 +3,7 @@ import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOf
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
+import StreamingText from './StreamingText';
 import ContentBlock from './ContentBlock';
 import LiveActivity from './LiveActivity';
 import VoiceChatPanel from './VoiceChatPanel';
@@ -1573,7 +1574,10 @@ const MessageItem = memo(function MessageItem({
                   ))}
                 </div>
               ) : (
-                <MarkdownMessage content={msg.content as string} />
+                <StreamingText
+                  content={msg.content as string}
+                  streaming={!!msg.streaming}
+                />
               )
             ) : (
               <div className="whitespace-pre-wrap leading-relaxed">
@@ -1588,14 +1592,6 @@ const MessageItem = memo(function MessageItem({
                   <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
                 <span>{msg.status}</span>
-              </div>
-            )}
-            {!!msg.streaming && !!msg.content && !msg.status && (
-              <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-mission-control-text' : 'bg-mission-control-accent'}`} />
-                <span className={`text-xs ${isUser ? 'text-white/90' : 'text-mission-control-text-dim'}`}>
-                  typing...
-                </span>
               </div>
             )}
           </div>

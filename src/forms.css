@@ -457,6 +457,34 @@ input[type="radio"]:disabled:not(.unstyled) {
 }
 
 /* ==================== ICON INPUT PADDING OVERRIDES ==================== */
+/* ==================== STREAMING TEXT ANIMATIONS (Phase 100) ==================== */
+
+/* Blinking cursor — matches platform accent color */
+@keyframes mission-control-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background-color: var(--mission-control-accent);
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: mission-control-cursor-blink 1s step-end infinite;
+}
+
+/* Subtle fade-in for new text chunks during streaming */
+@keyframes mission-control-text-appear {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+.streaming-chunk {
+  animation: mission-control-text-appear 0.1s ease-out;
+}
+
 /* forms.css specificity (0,2,1) beats Tailwind pl-* (0,1,0).
    These rules restore Tailwind padding utilities for inputs with icons. */
 input[type="text"].pl-7:not(.unstyled)  { padding-left: 1.75rem; }

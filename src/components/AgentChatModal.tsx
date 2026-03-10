@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import StreamingText from './StreamingText';
 import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
@@ -339,8 +340,10 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                   <Bot size={14} />
                 </div>
                 <div className="max-w-[75%] rounded-2xl rounded-tl-sm px-4 py-3 text-sm bg-mission-control-surface border border-mission-control-border">
-                  <MarkdownMessage content={streamingContent} />
-                  <span className="inline-block w-1 h-3 bg-mission-control-text-dim animate-pulse ml-0.5" />
+                  <StreamingText
+                    content={streamingContent}
+                    streaming={true}
+                  />
                 </div>
               </div>
             )}
