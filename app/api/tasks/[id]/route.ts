@@ -4,6 +4,12 @@ import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
+import { trackEvent } from '@/lib/telemetry';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+const HOME = homedir();
 
 function computeNextDue(currentDue: number, rec: { frequency: string; interval: number }): number {
   const d = new Date(currentDue);
@@ -151,6 +157,41 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
+    // Handoff note: write when assignedTo changes (task is handed off to a new agent)
+    // The outgoing agent's context is captured so the incoming agent can continue smoothly.
+    if ('assignedTo' in body && body.assignedTo) {
+      try {
+        const previousAgent = (updated.assignedTo as string | null) !== body.assignedTo
+          ? (updated.assignedTo as string | null)
+          : null;
+        if (previousAgent && previousAgent !== body.assignedTo) {
+          const handoffDir = join(HOME, 'mission-control', 'memory', 'agents', previousAgent as string, 'handoffs');
+          if (!existsSync(handoffDir)) mkdirSync(handoffDir, { recursive: true });
+          const handoffPath = join(handoffDir, `${id}.md`);
+          const taskTitle = updated.title as string;
+          const lastUpdate = (updated.lastAgentUpdate as string | null) || 'No update recorded';
+          const progress = updated.progress ?? 0;
+          const handoffContent = [
+            `# Handoff Note — Task ${id}`,
+            ``,
+            `**Title:** ${taskTitle}`,
+            `**Previous Agent:** ${previousAgent}`,
+            `**New Agent:** ${body.assignedTo}`,
+            `**Handed off at:** ${new Date().toISOString()}`,
+            `**Progress at handoff:** ${progress}%`,
+            ``,
+            `## Last Agent Update`,
+            lastUpdate,
+            ``,
+            `## Planning Notes`,
+            (updated.planningNotes as string | null) || '_No planning notes._',
+          ].join('\n');
+          writeFileSync(handoffPath, handoffContent, 'utf-8');
+          trackEvent('task.handoff', { taskId: id, from: previousAgent, to: body.assignedTo as string });
+        }
+      } catch { /* non-critical */ }
+    }
+
     // Auto-dispatch triggers:
     // 1. assignedTo set on a todo task (initial assignment)
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
@@ -259,6 +300,50 @@ export async function PATCH(
                 );
               }
             }
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
+    // Auto-generate task template when a task is done and 5+ similar completed tasks exist
+    if (body.status === 'done') {
+      try {
+        const taskTitle = updated.title as string;
+        // Extract first 3-4 words as the "pattern" for matching similar tasks
+        const titleWords = taskTitle.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+        const similarCount = (db.prepare(
+          `SELECT COUNT(*) as count FROM tasks WHERE status = 'done' AND LOWER(title) LIKE ? AND id != ?`
+        ).get(`%${titleWords}%`, id) as { count: number }).count;
+
+        if (similarCount >= 4) { // 4 similar + current = 5+ total
+          const templatesDir = join(HOME, 'mission-control', 'library', 'docs', 'templates');
+          if (!existsSync(templatesDir)) mkdirSync(templatesDir, { recursive: true });
+
+          // Derive slug from title
+          const slug = taskTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50).replace(/-+$/, '');
+          const templatePath = join(templatesDir, `${slug}.md`);
+
+          // Only write if template doesn't already exist (avoid clobbering)
+          if (!existsSync(templatePath)) {
+            const templateContent = [
+              `# Task Template: ${taskTitle}`,
+              ``,
+              `_Auto-generated from ${similarCount + 1} completed tasks. Last updated: ${new Date().toISOString().slice(0, 10)}_`,
+              ``,
+              `## Description`,
+              (updated.description as string | null) || '_Add description here._',
+              ``,
+              `## Suggested Agent`,
+              (updated.assignedTo as string | null) ? `- ${updated.assignedTo}` : `_Assign based on task type._`,
+              ``,
+              `## Planning Notes Template`,
+              (updated.planningNotes as string | null) || `1. Review requirements\n2. Plan implementation\n3. Execute\n4. Verify and submit for review`,
+              ``,
+              `## Suggested Priority`,
+              (updated.priority as string | null) || 'p2',
+            ].join('\n');
+            writeFileSync(templatePath, templateContent, 'utf-8');
+            trackEvent('template.generated', { taskId: id, slug, similarCount: similarCount + 1 });
           }
         }
       } catch { /* non-critical */ }

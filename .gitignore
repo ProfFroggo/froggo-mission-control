@@ -29,9 +29,10 @@ tsconfig.tsbuildinfo
 # ML models (download separately)
 resources/models/
 
-# Memory (internal vault — but NOT the app/api/memory route)
+# Memory (internal vault — but NOT the app/api/memory routes)
 memory/
 !app/api/memory/
+!app/api/agents/
 .planning/
 
 # Machine-specific MCP config (use .mcp.json.example as template)

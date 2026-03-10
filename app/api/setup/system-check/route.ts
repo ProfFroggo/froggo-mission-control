@@ -38,19 +38,20 @@ function checkDatabase(): boolean {
 }
 
 function checkMcpServers(): { ok: boolean; missing: string[] } {
-  const settingsPath = path.join(process.cwd(), '.claude', 'settings.json');
-  if (!existsSync(settingsPath)) return { ok: false, missing: ['mission-control-db', 'memory'] };
+  // Check the generated settings in ~/mission-control/.claude/settings.json
+  const settingsPath = path.join(homedir(), 'mission-control', '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) return { ok: false, missing: ['mission-control_db', 'memory'] };
   try {
     const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    const requiredServers = ['mission-control-db', 'memory'];
+    const requiredServers = ['mission-control_db', 'memory'];
     const installedServerKeys = Object.keys(settings.mcpServers ?? {});
     const missingServers = requiredServers.filter(s =>
-      !installedServerKeys.some(key => key.includes(s))
+      !installedServerKeys.some(key => key === s || key.replace(/-/g, '_') === s.replace(/-/g, '_'))
     );
     const mcpOk = missingServers.length === 0;
     return { ok: mcpOk, missing: missingServers };
   } catch {
-    return { ok: false, missing: ['mission-control-db', 'memory'] };
+    return { ok: false, missing: ['mission-control_db', 'memory'] };
   }
 }
 

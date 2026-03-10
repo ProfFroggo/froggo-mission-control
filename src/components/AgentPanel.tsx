@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, BookOpen } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -78,6 +78,7 @@ export default function AgentPanel() {
   const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
   const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
+  const [memoryNoteCounts, setMemoryNoteCounts] = useState<Record<string, number>>({});
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
   const [addingSkillAgent, setAddingSkillAgent] = useState<string | null>(null);
@@ -252,6 +253,20 @@ export default function AgentPanel() {
     }
   };
 
+  const fetchMemoryNoteCounts = async (agentIds: string[]) => {
+    const results: Record<string, number> = {};
+    await Promise.allSettled(agentIds.map(async (id) => {
+      try {
+        const res = await fetch(`/api/agents/${id}/memory`);
+        if (res.ok) {
+          const data = await res.json();
+          results[id] = data.count || 0;
+        }
+      } catch { /* non-critical */ }
+    }));
+    setMemoryNoteCounts(prev => ({ ...prev, ...results }));
+  };
+
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
@@ -270,7 +285,15 @@ export default function AgentPanel() {
 
   const toggleExpanded = (agentId: string) => {
     const s = new Set(expandedAgents);
-    if (s.has(agentId)) { s.delete(agentId); } else { s.add(agentId); }
+    if (s.has(agentId)) {
+      s.delete(agentId);
+    } else {
+      s.add(agentId);
+      // Lazy-load memory note count when first expanded
+      if (!(agentId in memoryNoteCounts)) {
+        fetchMemoryNoteCounts([agentId]);
+      }
+    }
     setExpandedAgents(s);
   };
 
@@ -724,6 +747,14 @@ export default function AgentPanel() {
                             </button>
                           );
                         })()}
+
+                        {/* Memory vault note count */}
+                        {memoryNoteCounts[agent.id] !== undefined && (
+                          <div className="flex items-center gap-1.5 text-xs mt-2 text-mission-control-text-dim">
+                            <BookOpen size={11} />
+                            <span>Memory: {memoryNoteCounts[agent.id]} note{memoryNoteCounts[agent.id] !== 1 ? 's' : ''} in vault</span>
+                          </div>
+                        )}
 
                         <div>
                           <h4 className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">

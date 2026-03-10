@@ -8,7 +8,7 @@ import { getDb } from './database';
 import { calcCostUsd, ENV } from './env';
 import { trackEvent } from './telemetry';
 import { emitSSEEvent } from './sseEmitter';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -28,6 +28,57 @@ const MODEL_MAP: Record<string, string> = {
 
 function resolveModel(short: string): string {
   return MODEL_MAP[short] ?? (short.startsWith('claude-') ? short : 'claude-sonnet-4-6');
+}
+
+// ── Task-to-skill keyword map ──────────────────────────────────────────────────
+// Maps task title/description keywords → skill slugs to auto-inject.
+// Extend this map as new skills are added to .claude/skills/.
+
+const TASK_SKILL_MAP: Record<string, string[]> = {
+  react:        ['react-best-practices'],
+  component:    ['react-best-practices', 'composition-patterns'],
+  hook:         ['react-best-practices'],
+  nextjs:       ['nextjs-patterns'],
+  'next.js':    ['nextjs-patterns'],
+  route:        ['nextjs-patterns'],
+  api:          ['nextjs-patterns'],
+  typescript:   ['froggo-coding-standards'],
+  refactor:     ['froggo-coding-standards', 'code-review-checklist'],
+  review:       ['code-review-checklist'],
+  test:         ['froggo-testing-patterns'],
+  testing:      ['froggo-testing-patterns'],
+  security:     ['security-checklist'],
+  auth:         ['security-checklist'],
+  git:          ['git-workflow'],
+  branch:       ['git-workflow'],
+  commit:       ['git-workflow'],
+  ui:           ['web-design-guidelines'],
+  design:       ['web-design-guidelines'],
+  accessibility: ['web-design-guidelines'],
+  social:       ['x-twitter-strategy'],
+  twitter:      ['x-twitter-strategy'],
+  tweet:        ['x-twitter-strategy'],
+  routing:      ['agent-routing'],
+  dispatch:     ['agent-routing'],
+  decompose:    ['task-decomposition'],
+  subtask:      ['task-decomposition'],
+  composition:  ['composition-patterns'],
+  compound:     ['composition-patterns'],
+};
+
+/**
+ * Extract skill slugs that are relevant to the task title and description.
+ * Returns deduplicated skill slugs only (no content).
+ */
+function getAutoSkills(taskTitle: string, taskDescription?: string | null): string[] {
+  const text = `${taskTitle} ${taskDescription || ''}`.toLowerCase();
+  const found = new Set<string>();
+  for (const [keyword, skills] of Object.entries(TASK_SKILL_MAP)) {
+    if (text.includes(keyword)) {
+      skills.forEach(s => found.add(s));
+    }
+  }
+  return [...found];
 }
 
 // ── Per-tier allowed tool sets ─────────────────────────────────────────────────
@@ -279,22 +330,38 @@ Do not ask for clarification — interpret and execute. Log activity frequently.
 | Project deliverables | ~/mission-control/library/projects/project-{name}-{date}/ |
 
 File naming: YYYY-MM-DD_description.ext (e.g. 2026-03-06_research-findings.md)
-After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment`;
+After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment
+
+## Memory Protocol
+
+When your task is complete (before marking agent-review):
+Write a memory note using mcp__memory__memory_write:
+- category: 'task'
+- title: 'YYYY-MM-DD-{brief-slug-of-what-you-built}'
+- content: What you built, what worked, what was hard, key patterns discovered, tags
+
+This note helps you and other agents learn from your work.`;
 
 // ── Skills loader ─────────────────────────────────────────────────────────────
 
-function loadAgentSkills(agentId: string): string {
+function loadAgentSkills(agentId: string, extraSlugs: string[] = []): string {
   try {
     const row = getDb()
       .prepare('SELECT value FROM settings WHERE key = ?')
       .get(`agent.${agentId}.skills`) as { value: string } | undefined;
-    if (!row?.value) return '';
-    const slugs: string[] = JSON.parse(row.value);
-    if (!Array.isArray(slugs) || slugs.length === 0) return '';
+    let manualSlugs: string[] = [];
+    if (row?.value) {
+      try { manualSlugs = JSON.parse(row.value); } catch { manualSlugs = []; }
+    }
+    if (!Array.isArray(manualSlugs)) manualSlugs = [];
+
+    // Merge manual + auto slugs, deduplicate
+    const allSlugs = [...new Set([...manualSlugs, ...extraSlugs])];
+    if (allSlugs.length === 0) return '';
 
     const skillsDir = join(process.cwd(), '.claude', 'skills');
     const blocks: string[] = [];
-    for (const slug of slugs) {
+    for (const slug of allSlugs) {
       const skillPath = join(skillsDir, slug, 'SKILL.md');
       if (existsSync(skillPath)) {
         const content = readFileSync(skillPath, 'utf-8').trim();
@@ -340,6 +407,83 @@ function loadPermissionPrompt(agentId: string, trustTier: string): string {
   return lines.join('\n');
 }
 
+// ── Memory injection ──────────────────────────────────────────────────────────
+
+/**
+ * Search the memory vault for notes relevant to this task.
+ * Returns a formatted section string (empty string if no results or error).
+ */
+function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?: string | null): string {
+  try {
+    const vaultDir = join(HOME, 'mission-control', 'memory');
+    const agentDir = join(vaultDir, 'agents', agentId);
+
+    if (!existsSync(agentDir)) return '';
+
+    const files = readdirSync(agentDir)
+      .filter(f => f.endsWith('.md'))
+      .map(f => ({ name: f, path: join(agentDir, f), mtime: statSync(join(agentDir, f)).mtimeMs }))
+      .sort((a, b) => b.mtime - a.mtime)
+      .slice(0, 20); // Check last 20 notes
+
+    if (files.length === 0) return '';
+
+    // Simple relevance: keyword overlap between task title/desc and note filename/content
+    const queryWords = new Set(
+      `${taskTitle} ${taskDescription || ''}`.toLowerCase()
+        .split(/\W+/).filter(w => w.length > 3)
+    );
+
+    const scored = files.map(f => {
+      const content = readFileSync(f.path, 'utf-8');
+      const nameWords = f.name.toLowerCase().split(/[-_.\s]+/);
+      const contentWords = content.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+      const score = [...queryWords].filter(w => nameWords.includes(w) || contentWords.slice(0, 200).includes(w)).length;
+      return { ...f, content: content.slice(0, 600), score };
+    }).filter(f => f.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+
+    if (scored.length === 0) return '';
+
+    // Token budget guard: ~1500 token limit (chars / 4)
+    const TOKEN_BUDGET = 1500 * 4; // chars
+    let totalChars = 0;
+    const capped = scored.filter(f => {
+      totalChars += f.content.length;
+      return totalChars <= TOKEN_BUDGET;
+    });
+
+    if (capped.length === 0) return '';
+
+    const sections = capped.map(f => `### ${f.name.replace('.md', '')}\n${f.content}`).join('\n\n---\n\n');
+    return `\n\n## Your Relevant Memory\n_Found ${capped.length} note(s) related to this task:_\n\n${sections}\n\n---\n`;
+  } catch {
+    return ''; // Non-critical — never block dispatch
+  }
+}
+
+/**
+ * Check for a handoff note from a previous agent assignment.
+ * Returns formatted handoff section or empty string.
+ */
+function loadHandoffNote(taskId: string, agentId: string): string {
+  try {
+    const agentsDir = join(HOME, 'mission-control', 'memory', 'agents');
+    if (!existsSync(agentsDir)) return '';
+
+    const agentFolders = readdirSync(agentsDir);
+
+    for (const folder of agentFolders) {
+      if (folder === agentId) continue; // Skip self
+      const handoffPath = join(agentsDir, folder, 'handoffs', `${taskId}.md`);
+      if (existsSync(handoffPath)) {
+        const content = readFileSync(handoffPath, 'utf-8');
+        return `\n\n## Handoff from Previous Agent\n${content.slice(0, 800)}\n`;
+      }
+    }
+  } catch {}
+  return '';
+}
+
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
 function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
@@ -348,16 +492,47 @@ function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
   return `\n\n## Available API Keys\nThe following API keys are available as environment variables:\n${names.map(n => `- \`process.env.${n}\``).join('\n')}`;
 }
 
-function buildTaskSystemPrompt(agentId: string, trustTier: string, apiKeyEnv: Record<string, string>): string | null {
-  const skills = loadAgentSkills(agentId);
+function buildTaskSystemPrompt(
+  agentId: string,
+  trustTier: string,
+  apiKeyEnv: Record<string, string>,
+  task?: Record<string, unknown>
+): string | null {
+  // Auto-detect relevant skills from task keywords
+  const autoSkillSlugs = task
+    ? getAutoSkills(task.title as string, task.description as string | null)
+    : [];
+
+  const skills = loadAgentSkills(agentId, autoSkillSlugs);
   const permPrompt = loadPermissionPrompt(agentId, trustTier);
   const apiKeyPrompt = buildApiKeyPrompt(apiKeyEnv);
+
+  // Inject relevant memory and handoff notes if task context available
+  const relevantMemory = task
+    ? loadRelevantMemory(agentId, task.title as string, task.description as string | null)
+    : '';
+  const handoffNote = task
+    ? loadHandoffNote(task.id as string, agentId)
+    : '';
+
+  if (relevantMemory && task) {
+    trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
+  }
+
+  // Log auto-assigned skills to task activity (non-critical)
+  if (autoSkillSlugs.length > 0 && task?.id) {
+    try {
+      getDb().prepare(
+        `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+      ).run(task.id as string, 'system', 'skill_auto_assigned', `Auto-skills: ${autoSkillSlugs.join(', ')}`, Date.now());
+    } catch { /* non-critical */ }
+  }
 
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -369,6 +544,8 @@ function buildTaskSystemPrompt(agentId: string, trustTier: string, apiKeyEnv: Re
       if (agent.role) parts.push(`You are ${agent.name || agentId}, a ${agent.role}.`);
       if (agent.personality) parts.push(agent.personality);
       if (skills) parts.push(skills);
+      if (relevantMemory) parts.push(relevantMemory);
+      if (handoffNote) parts.push(handoffNote);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
@@ -669,7 +846,7 @@ export function dispatchTask(taskId: string): boolean {
       args.push('--resume', existingSession);
       // Session already has context — don't add --system-prompt
     } else {
-      const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv);
+      const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
       if (systemPrompt) args.push('--system-prompt', systemPrompt);
     }
 
