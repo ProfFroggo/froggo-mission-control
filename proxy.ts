@@ -1,11 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// middleware.ts
-// API authentication middleware — protects all /api/* routes with bearer token.
+// proxy.ts (formerly middleware.ts)
+// API authentication proxy — protects all /api/* routes with bearer token.
 // Leave INTERNAL_API_TOKEN empty (default) to disable auth in local dev.
 
 import { NextRequest, NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Only protect /api/* routes
   if (!request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.next();
