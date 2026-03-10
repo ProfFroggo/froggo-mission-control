@@ -30,6 +30,57 @@ function resolveModel(short: string): string {
   return MODEL_MAP[short] ?? (short.startsWith('claude-') ? short : 'claude-sonnet-4-6');
 }
 
+// ── Task-to-skill keyword map ──────────────────────────────────────────────────
+// Maps task title/description keywords → skill slugs to auto-inject.
+// Extend this map as new skills are added to .claude/skills/.
+
+const TASK_SKILL_MAP: Record<string, string[]> = {
+  react:        ['react-best-practices'],
+  component:    ['react-best-practices', 'composition-patterns'],
+  hook:         ['react-best-practices'],
+  nextjs:       ['nextjs-patterns'],
+  'next.js':    ['nextjs-patterns'],
+  route:        ['nextjs-patterns'],
+  api:          ['nextjs-patterns'],
+  typescript:   ['froggo-coding-standards'],
+  refactor:     ['froggo-coding-standards', 'code-review-checklist'],
+  review:       ['code-review-checklist'],
+  test:         ['froggo-testing-patterns'],
+  testing:      ['froggo-testing-patterns'],
+  security:     ['security-checklist'],
+  auth:         ['security-checklist'],
+  git:          ['git-workflow'],
+  branch:       ['git-workflow'],
+  commit:       ['git-workflow'],
+  ui:           ['web-design-guidelines'],
+  design:       ['web-design-guidelines'],
+  accessibility: ['web-design-guidelines'],
+  social:       ['x-twitter-strategy'],
+  twitter:      ['x-twitter-strategy'],
+  tweet:        ['x-twitter-strategy'],
+  routing:      ['agent-routing'],
+  dispatch:     ['agent-routing'],
+  decompose:    ['task-decomposition'],
+  subtask:      ['task-decomposition'],
+  composition:  ['composition-patterns'],
+  compound:     ['composition-patterns'],
+};
+
+/**
+ * Extract skill slugs that are relevant to the task title and description.
+ * Returns deduplicated skill slugs only (no content).
+ */
+function getAutoSkills(taskTitle: string, taskDescription?: string | null): string[] {
+  const text = `${taskTitle} ${taskDescription || ''}`.toLowerCase();
+  const found = new Set<string>();
+  for (const [keyword, skills] of Object.entries(TASK_SKILL_MAP)) {
+    if (text.includes(keyword)) {
+      skills.forEach(s => found.add(s));
+    }
+  }
+  return [...found];
+}
+
 // ── Per-tier allowed tool sets ─────────────────────────────────────────────────
 // No --dangerously-skip-permissions ever. Each tier explicitly states what it may use.
 
@@ -293,18 +344,24 @@ This note helps you and other agents learn from your work.`;
 
 // ── Skills loader ─────────────────────────────────────────────────────────────
 
-function loadAgentSkills(agentId: string): string {
+function loadAgentSkills(agentId: string, extraSlugs: string[] = []): string {
   try {
     const row = getDb()
       .prepare('SELECT value FROM settings WHERE key = ?')
       .get(`agent.${agentId}.skills`) as { value: string } | undefined;
-    if (!row?.value) return '';
-    const slugs: string[] = JSON.parse(row.value);
-    if (!Array.isArray(slugs) || slugs.length === 0) return '';
+    let manualSlugs: string[] = [];
+    if (row?.value) {
+      try { manualSlugs = JSON.parse(row.value); } catch { manualSlugs = []; }
+    }
+    if (!Array.isArray(manualSlugs)) manualSlugs = [];
+
+    // Merge manual + auto slugs, deduplicate
+    const allSlugs = [...new Set([...manualSlugs, ...extraSlugs])];
+    if (allSlugs.length === 0) return '';
 
     const skillsDir = join(process.cwd(), '.claude', 'skills');
     const blocks: string[] = [];
-    for (const slug of slugs) {
+    for (const slug of allSlugs) {
       const skillPath = join(skillsDir, slug, 'SKILL.md');
       if (existsSync(skillPath)) {
         const content = readFileSync(skillPath, 'utf-8').trim();
@@ -441,7 +498,12 @@ function buildTaskSystemPrompt(
   apiKeyEnv: Record<string, string>,
   task?: Record<string, unknown>
 ): string | null {
-  const skills = loadAgentSkills(agentId);
+  // Auto-detect relevant skills from task keywords
+  const autoSkillSlugs = task
+    ? getAutoSkills(task.title as string, task.description as string | null)
+    : [];
+
+  const skills = loadAgentSkills(agentId, autoSkillSlugs);
   const permPrompt = loadPermissionPrompt(agentId, trustTier);
   const apiKeyPrompt = buildApiKeyPrompt(apiKeyEnv);
 
@@ -455,6 +517,15 @@ function buildTaskSystemPrompt(
 
   if (relevantMemory && task) {
     trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
+  }
+
+  // Log auto-assigned skills to task activity (non-critical)
+  if (autoSkillSlugs.length > 0 && task?.id) {
+    try {
+      getDb().prepare(
+        `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+      ).run(task.id as string, 'system', 'skill_auto_assigned', `Auto-skills: ${autoSkillSlugs.join(', ')}`, Date.now());
+    } catch { /* non-critical */ }
   }
 
   const dir = join(HOME, 'mission-control', 'agents', agentId);
