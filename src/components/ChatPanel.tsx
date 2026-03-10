@@ -800,14 +800,23 @@ export default function ChatPanel() {
     addActivity({ type: 'chat', message: `You: ${text.slice(0, 50)}...`, timestamp: Date.now() });
 
     try {
-      // Stream from REST API — no gateway needed
-      const response = await fetch(`/api/agents/${selectedAgent.id}/stream`, {
+      // Stream from SDK chat route — true character-by-character output
+      // /stream is reserved for background task dispatch only; /chat is for interactive use
+      const response = await fetch(`/api/agents/${selectedAgent.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: content, model: 'claude-sonnet-4-6', sessionKey: selectedAgent.dbSessionKey }),
       });
 
       if (!response.ok || !response.body) {
+        if (response.status === 429) {
+          showToast('error', 'Agent unavailable', 'Agent is busy — please wait a moment and try again.');
+          setMessages(prev => prev.map(m =>
+            m.id === assistantId ? { ...m, content: 'Agent is busy — please wait a moment and try again.', streaming: false } : m
+          ));
+          setLoading(false);
+          return;
+        }
         throw new Error(`Stream error: ${response.status} ${response.statusText}`);
       }
 
@@ -833,63 +842,28 @@ export default function ChatPanel() {
           try {
             const evt = JSON.parse(raw);
 
-            if (evt.type === 'assistant' && Array.isArray(evt.message?.content)) {
-              const blocks: any[] = evt.message.content;
-              const thinking = blocks.find((b: any) => b.type === 'thinking');
-              const toolUse  = blocks.find((b: any) => b.type === 'tool_use');
-              const text     = blocks.filter((b: any) => b.type === 'text').map((b: any) => b.text ?? '').join('');
-
-              if (text) {
-                // Text turn — accumulate and show, keep streaming:true until done
-                accumulated += text;
-                structuredContent = null;
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
-                ));
-              } else if (toolUse) {
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, status: `Using: ${toolUse.name}` } : m
-                ));
-              } else if (thinking) {
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, status: 'Thinking...' } : m
-                ));
-              }
-              // Never set streaming:false here — wait for done/result
-            } else if (evt.type === 'result' && typeof evt.result === 'string') {
-              // Definitive final text from Claude CLI — always authoritative
-              if (evt.result) {
-                accumulated = evt.result;
-                setMessages(prev => prev.map(m =>
-                  m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
-                ));
-              }
-            } else if (evt.type === 'text' && typeof evt.text === 'string') {
-              // Fallback: non-JSON lines from stderr/stdout
+            if (evt.type === 'text_delta' && typeof evt.text === 'string') {
+              // SDK chat route: true character-by-character text_delta events
               accumulated += evt.text;
-              setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: accumulated } : m
-              ));
-            } else if (evt.type === 'error' && typeof evt.text === 'string') {
-              // Server-side error (e.g. agent busy, spawn failure) — surface it
-              accumulated = evt.text;
+              structuredContent = null;
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
               ));
-            } else if (evt.type === 'timeout') {
-              accumulated = 'Response timed out — the agent took too long. Please try again.';
+              // Re-enable input once text starts arriving
+              setLoading(false);
+            } else if (evt.type === 'error') {
+              // Server-side error — surface it in the message bubble
+              const errText = evt.error || evt.text || 'An error occurred';
+              accumulated = errText;
               setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: accumulated, status: undefined } : m
+                m.id === assistantId ? { ...m, content: errText, status: undefined, streaming: false } : m
               ));
+              setLoading(false);
+              break;
             } else if (evt.type === 'done') {
               setMessages(prev => prev.map(m =>
                 m.id === assistantId ? { ...m, streaming: false, status: undefined } : m
               ));
-              setLoading(false);
-            }
-
-            // Re-enable input once agent starts doing something
-            if (evt.type === 'assistant' || evt.type === 'text' || evt.type === 'result' || evt.type === 'error' || evt.type === 'timeout') {
               setLoading(false);
             }
           } catch { /* skip malformed */ }
@@ -900,7 +874,7 @@ export default function ChatPanel() {
       if (!accumulated) {
         setMessages(prev => prev.map(m =>
           m.id === assistantId
-            ? { ...m, content: 'No response received. The session may have expired — please try again.', streaming: false }
+            ? { ...m, content: 'No response received. Please try again.', streaming: false }
             : m
         ));
       } else {
@@ -913,10 +887,8 @@ export default function ChatPanel() {
       currentResponseRef.current = accumulated;
       currentContentRef.current = structuredContent ?? accumulated;
 
-      // Save to DB — always save plain text (not ContentBlock[] JSON)
-      if (accumulated && selectedAgent) {
-        saveMessageToDb('assistant', accumulated);
-      }
+      // Note: chat route persists messages server-side; saveMessageToDb is a local DB fallback
+      // only. The route already saved via saveMessage(). Skip to avoid double-save.
 
       if (speakResponses) speak(accumulated);
 

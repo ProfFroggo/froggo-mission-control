@@ -488,6 +488,23 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
     -- ══════════════════════════════════════════
+    -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_key TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+      content TEXT NOT NULL,
+      model TEXT,
+      input_tokens INTEGER,
+      output_tokens INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_key, created_at);
+    CREATE INDEX IF NOT EXISTS idx_chat_messages_agent ON chat_messages(agent_id, created_at);
+
+    -- ══════════════════════════════════════════
     -- TELEMETRY (Phase 85)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS telemetry (

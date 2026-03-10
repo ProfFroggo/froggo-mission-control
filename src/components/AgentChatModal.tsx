@@ -94,13 +94,21 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
     let reply = '';
     try {
-      const res = await fetch(`/api/agents/${agentId}/stream`, {
+      // Use SDK chat route for true character-by-character streaming
+      // /stream is reserved for background task dispatch; /chat is for interactive use
+      const res = await fetch(`/api/agents/${agentId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userText, sessionKey }),
         signal: ctrl.signal,
       });
-      if (!res.ok) throw new Error(`Stream error: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 429) {
+          setMessages(prev => [...prev, { role: 'system', content: 'Agent is busy — please wait a moment and try again.', timestamp: Date.now() }]);
+          return;
+        }
+        throw new Error(`Stream error: ${res.status}`);
+      }
 
       const reader = res.body!.getReader();
       const dec = new TextDecoder();
@@ -118,16 +126,18 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
           if (raw === '[DONE]') break;
           try {
             const chunk = JSON.parse(raw);
-            if (chunk.type === 'result' && chunk.result && !chunk.is_error) {
-              reply = chunk.result;
-              setStreamingContent(reply);
-            } else if (chunk.type === 'text' && chunk.text) {
+            if (chunk.type === 'text_delta' && typeof chunk.text === 'string') {
+              // SDK chat route: true character-by-character text_delta events
               reply += chunk.text;
               setStreamingContent(reply);
-            } else if (chunk.type === 'assistant' && Array.isArray(chunk.message?.content)) {
-              for (const block of chunk.message.content) {
-                if (block.type === 'text') { reply += block.text; setStreamingContent(reply); }
-              }
+            } else if (chunk.type === 'error') {
+              // Surface error in message
+              const errText = chunk.error || 'An error occurred';
+              setStreamingContent('');
+              setMessages(prev => [...prev, { role: 'system', content: errText, timestamp: Date.now() }]);
+              return;
+            } else if (chunk.type === 'done') {
+              // Stream complete — handled below after loop
             }
           } catch { /* non-JSON line, ignore */ }
         }
@@ -137,6 +147,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       setStreamingContent('');
       if (finalReply) {
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: Date.now() }]);
+        // Note: chat route already persists; this is a local fallback for non-SDK-chat sessions
         chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: Date.now() }).catch(() => {});
       } else {
         setMessages(prev => [...prev, { role: 'system', content: 'No response from agent', timestamp: Date.now() }]);
