@@ -63,7 +63,8 @@ function initSchema(db: Database.Database) {
       stageNumber INTEGER,
       stageName TEXT,
       nextStage TEXT,
-      parentTaskId TEXT
+      parentTaskId TEXT,
+      moduleId TEXT
     );
 
     -- ══════════════════════════════════════════
@@ -423,6 +424,8 @@ function initSchema(db: Database.Database) {
       spec TEXT DEFAULT '{}',
       conversationState TEXT DEFAULT '{}',
       overallProgress REAL DEFAULT 0,
+      wireframeHtml TEXT,
+      taskIds TEXT DEFAULT '[]',
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
       updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
@@ -573,10 +576,19 @@ function initSchema(db: Database.Database) {
     // Pending actions: category + executor back-ref on approvals
     `ALTER TABLE approvals ADD COLUMN category TEXT DEFAULT 'agent_approval'`,
     `ALTER TABLE approvals ADD COLUMN actionRef TEXT`,
+    // Module Builder: wireframe + task linking
+    `ALTER TABLE tasks ADD COLUMN moduleId TEXT`,
+    `ALTER TABLE modules_builder ADD COLUMN wireframeHtml TEXT`,
+    `ALTER TABLE modules_builder ADD COLUMN taskIds TEXT DEFAULT '[]'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Module Builder: index for task-by-module queries
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_moduleId ON tasks(moduleId) WHERE moduleId IS NOT NULL`);
+  } catch { /* non-critical */ }
 
   // Phase 79: WAL performance tuning
   try {
