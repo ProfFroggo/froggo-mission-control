@@ -4,6 +4,12 @@ import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
+import { trackEvent } from '@/lib/telemetry';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+const HOME = homedir();
 
 function computeNextDue(currentDue: number, rec: { frequency: string; interval: number }): number {
   const d = new Date(currentDue);
@@ -149,6 +155,41 @@ export async function PATCH(
     const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown> | undefined;
     if (!updated) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Handoff note: write when assignedTo changes (task is handed off to a new agent)
+    // The outgoing agent's context is captured so the incoming agent can continue smoothly.
+    if ('assignedTo' in body && body.assignedTo) {
+      try {
+        const previousAgent = (updated.assignedTo as string | null) !== body.assignedTo
+          ? (updated.assignedTo as string | null)
+          : null;
+        if (previousAgent && previousAgent !== body.assignedTo) {
+          const handoffDir = join(HOME, 'mission-control', 'memory', 'agents', previousAgent as string, 'handoffs');
+          if (!existsSync(handoffDir)) mkdirSync(handoffDir, { recursive: true });
+          const handoffPath = join(handoffDir, `${id}.md`);
+          const taskTitle = updated.title as string;
+          const lastUpdate = (updated.lastAgentUpdate as string | null) || 'No update recorded';
+          const progress = updated.progress ?? 0;
+          const handoffContent = [
+            `# Handoff Note — Task ${id}`,
+            ``,
+            `**Title:** ${taskTitle}`,
+            `**Previous Agent:** ${previousAgent}`,
+            `**New Agent:** ${body.assignedTo}`,
+            `**Handed off at:** ${new Date().toISOString()}`,
+            `**Progress at handoff:** ${progress}%`,
+            ``,
+            `## Last Agent Update`,
+            lastUpdate,
+            ``,
+            `## Planning Notes`,
+            (updated.planningNotes as string | null) || '_No planning notes._',
+          ].join('\n');
+          writeFileSync(handoffPath, handoffContent, 'utf-8');
+          trackEvent('task.handoff', { taskId: id, from: previousAgent, to: body.assignedTo as string });
+        }
+      } catch { /* non-critical */ }
     }
 
     // Auto-dispatch triggers:
