@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v9.0 Agent Intelligence — COMPLETE (all 11 phases done)
+**Current focus:** v10.0 Real-Time Streaming — Phase 98 ready to plan
 
 ## Current Position
 
-Phase: 97 of 97 (task-template-library-memory-decay)
-Plan: Complete
-Status: All 11 phases committed and validated
-Last activity: 2026-03-10 — v9.0 all 11 phases complete (phases 87-97)
+Phase: 98 of 101 (sdk-chat-route)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-10 — v10.0 roadmap initialized (4 phases, 98–101)
 
-Progress: ████████████ 100% (v9.0 — 11/11 phases done)
+Progress: ░░░░░░░░░░ 0% (v10.0 — 0/4 phases done)
 
 ## Performance Metrics
 
@@ -109,6 +109,7 @@ None.
 - Milestone v5.0 created: Projects Module — project data model + REST API, creation wizard, card view, workspace shell with 4 tabs (chat/tasks/automations/files+memory), agent dispatch from project context (Phases 40-49)
 - Milestone v6.0 created: Security Hardening — command injection fix, path traversal fixes (library + soul), Gemini key server-side, CSP headers, input validation sweep (Phases 50-57)
 - Milestone v8.0 created: Platform Quality — full 3-pass audit (frontend 47 issues, API 40 issues, catalog 22 issues), streaming, SSE, auth, soul quality (Phases 79-86)
+- Milestone v10.0 created: Real-Time Streaming — SDK chat route, route separation, StreamingText component, performance hardening (Phases 98-101)
 
 ### Key Decisions (v4.0)
 
@@ -121,5 +122,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: v9.0 complete — all 11 phases (87–97) committed. TypeScript clean, build passes.
-Resume file: None — milestone complete, start v10.0 planning next.
+Stopped at: v10.0 roadmap created — 4 phases (98–101) from streaming-upgrade-plan.md. Phase 98 ready to plan.
+Resume file: None

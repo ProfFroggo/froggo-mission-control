@@ -1059,3 +1059,70 @@ Plans:
 | 95. Agent Performance Dashboard | v9.0 | 0/2 | Not started | - |
 | 96. Vector Embeddings | v9.0 | 0/3 | Not started | - |
 | 97. Task Templates + Memory Scale | v9.0 | 0/2 | Not started | - |
+
+---
+
+### 📋 v10.0 Real-Time Streaming (Planned)
+
+**Milestone Goal:** Replace the buffered Claude CLI subprocess stream with a direct Anthropic SDK stream for interactive chat, delivering true typewriter-style output at 100–200ms latency vs the current 200–750ms chunked output. Cron and task dispatch remain on the CLI route.
+
+#### Phase 98: SDK Chat Route — Wire & Persist
+
+**Goal**: Upgrade `/api/agents/[id]/chat/route.ts` with conversation history loading, message persistence to `chat_messages` SQLite table, system prompt loading from SOUL.md, usage tracking, correct SSE headers, and per-agent lock. DB migration for `chat_messages` if missing.
+**Depends on**: Phase 97
+**Research**: Unlikely (Anthropic SDK already in codebase — `@anthropic-ai/sdk`; patterns follow existing stream route)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 98-01: DB migration — add `chat_messages` table + indexes to `src/lib/database.ts`; verify history route at `app/api/agents/[id]/chat/history/route.ts` loads from table; add `GET /api/agents/[id]/chat/history` call to ChatPanel mount
+- [ ] 98-02: Update `chat/route.ts` — load last 40 messages from DB, persist user + assistant messages, load SOUL.md system prompt, add per-agent lock (reuse `agentLocks` map), add `X-Accel-Buffering: no` and full SSE headers
+- [ ] 98-03: Wire `ChatPanel.tsx` and `AgentChatModal.tsx` to `/chat` — switch fetch URL, update event parsing from `assistant`/`result` to `text_delta`/`done`, progressive `setMessages` on each delta, remove session key management from frontend
+
+---
+
+#### Phase 99: Route Separation — Chat vs Task Dispatch
+
+**Goal**: Make the architectural split between interactive chat (`/chat`) and background task dispatch (`/stream`) explicit and permanent. Audit all callers, add clear doc headers to both routes, remove any `/stream` fallback from frontend components.
+**Depends on**: Phase 98
+**Research**: Unlikely (internal audit + comments)
+**Plans**: 1 plan
+
+Plans:
+- [ ] 99-01: Grep all `/stream` callers — move frontend callers (ChatPanel, AgentChatModal) to `/chat`; add doc header comments to `stream/route.ts` (task dispatch only) and `chat/route.ts` (interactive chat only); add explicit error handling in frontend instead of any `/stream` fallback
+
+---
+
+#### Phase 100: StreamingText Component
+
+**Goal**: Create a `StreamingText` component with blinking cursor during stream, auto-hide cursor on completion. Memoize `MarkdownMessage` with custom comparator. Replace inline streaming display in ChatPanel and AgentChatModal. Add CSS keyframe animations using platform design tokens.
+**Depends on**: Phase 98
+**Research**: Unlikely (internal component using existing Tailwind + CSS vars)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 100-01: Create `src/components/StreamingText.tsx` — `memo` wrapper around `MarkdownMessage`, accepts `content` + `streaming` props, renders blinking cursor when streaming; wrap `MarkdownMessage` in `React.memo` with `(prev, next) => prev.content === next.content` comparator
+- [ ] 100-02: Replace inline streaming divs in `ChatPanel.tsx` and `AgentChatModal.tsx` with `StreamingText`; add CSS animations to `src/forms.css` (`mission-control-cursor-blink`, `mission-control-text-appear` keyframes using `--mission-control-accent` token)
+
+---
+
+#### Phase 101: Performance Hardening
+
+**Goal**: Close all edge cases: client disconnect aborts SDK stream and cleans up lock, 2-minute server-side timeout, 20k-char history budget to prevent context bloat, error events displayed in message bubble, 429 rate limit shown with retry hint.
+**Depends on**: Phase 100
+**Research**: Unlikely (internal hardening using existing patterns)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 101-01: Verify `ReadableStream.cancel()` calls `sdkStream.abort()` and cleans `agentLocks`; add 120s `setTimeout` that enqueues `{type:'error'}` and closes stream; add `X-Accel-Buffering: no` to `stream/route.ts` for consistency
+- [ ] 101-02: Add 20k-char history trim in `chat/route.ts` (40-message DESC LIMIT, reverse, char-count filter); handle `evt.type === 'error'` in `ChatPanel.tsx` (set message status to error); catch 429 in SDK stream loop and emit structured `{type:'error', retryAfter}` event
+
+---
+
+## Progress (v10.0)
+
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 98. SDK Chat Route | v10.0 | 0/3 | Not started | - |
+| 99. Route Separation | v10.0 | 0/1 | Not started | - |
+| 100. StreamingText Component | v10.0 | 0/2 | Not started | - |
+| 101. Performance Hardening | v10.0 | 0/2 | Not started | - |
