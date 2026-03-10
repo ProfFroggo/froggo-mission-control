@@ -237,7 +237,7 @@ export default function SettingsPanel() {
 
   return (
     <div className="h-full overflow-auto p-4">
-      <div className="max-w-8xl mx-auto">
+      <div className="max-w-12xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-heading-2 mb-2 flex items-center gap-2">

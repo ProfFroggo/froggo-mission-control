@@ -132,7 +132,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-mission-control-accent/5 via-transparent to-purple-500/5 animate-gradient-x opacity-50" />
         
-        <div className="relative max-w-8xl mx-auto px-8 py-8">
+        <div className="relative max-w-12xl mx-auto px-8 py-8">
           {/* Greeting & Status Row */}
           <div className="flex items-center justify-between mb-6">
             <div className="space-y-2">
@@ -209,7 +209,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="max-w-8xl mx-auto px-8 py-8 space-y-8">
+      <div className="max-w-12xl mx-auto px-8 py-8 space-y-8">
         
         {/* PRIORITY METRICS - Larger, more prominent cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

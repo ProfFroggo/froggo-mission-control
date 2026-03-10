@@ -10,6 +10,7 @@ export default {
     extend: {
       maxWidth: {
         '8xl': '90rem',
+        '12xl': '120rem',
       },
       borderColor: {
         DEFAULT: 'var(--mission-control-border, #2a2a2a)',
