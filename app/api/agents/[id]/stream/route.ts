@@ -1,4 +1,15 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+/**
+ * TASK DISPATCH ROUTE — /api/agents/[id]/stream
+ *
+ * Used for: background task execution, cron jobs, agent-to-agent dispatch,
+ *           chat rooms, HR agent creation, finance agent, TaskChatTab.
+ * NOT for: interactive 1-1 chat (use /api/agents/[id]/chat instead).
+ *
+ * Uses Claude CLI subprocess with --resume session management.
+ * Streams stream-json format (JSON lines, not text_delta events).
+ * Output is buffered by subprocess — not suitable for typewriter rendering.
+ */
 import { ENV } from '@/lib/env';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
@@ -546,6 +557,7 @@ export async function POST(
       'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
+      'X-Content-Type-Options': 'nosniff',
     },
   });
 }
