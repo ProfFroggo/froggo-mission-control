@@ -84,6 +84,10 @@
       {
         "type": "command",
         "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/precompact-hook.js"
+      },
+      {
+        "type": "command",
+        "command": "/usr/local/bin/node /Users/kevin.macarthur/git/froggo-mission-control/tools/hooks/pre-compact-summary.js"
       }
     ],
     "TeammateIdle": [
