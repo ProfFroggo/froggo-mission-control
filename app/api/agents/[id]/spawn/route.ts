@@ -5,7 +5,7 @@ import { getDb } from '@/lib/database';
 import { validateAgentId } from '@/lib/validateId';
 import { spawn, spawnSync } from 'child_process';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { homedir } from 'os';
 
 export async function POST(
@@ -73,9 +73,11 @@ export async function POST(
 
     // Attempt tmux spawn if tmux session is running
     try {
-      const scriptPath = join(process.cwd(), 'tools', 'agent-start.sh');
-      if (existsSync(scriptPath)) {
-        spawnSync('bash', [scriptPath, id], { timeout: 5000 });
+      const ALLOWED_TOOLS_DIR = join(process.cwd(), 'tools');
+      const scriptPath = join(ALLOWED_TOOLS_DIR, 'agent-start.sh');
+      const resolvedScriptPath = resolve(scriptPath);
+      if (existsSync(resolvedScriptPath) && resolvedScriptPath.startsWith(ALLOWED_TOOLS_DIR)) {
+        spawnSync('bash', [resolvedScriptPath, id], { timeout: 5000 });
       }
     } catch {
       // tmux not available or agent already running — not fatal

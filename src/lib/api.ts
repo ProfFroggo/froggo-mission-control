@@ -16,7 +16,10 @@ async function apiCall<T = any>(path: string, options: ApiOptions = {}): Promise
   }
   const res = await fetch(url.toString(), {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
@@ -110,7 +113,10 @@ export function streamMessage(
 
   fetch(`/api/agents/${agentId}/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
+    },
     body: JSON.stringify({ message, ...(sessionKey ? { sessionKey } : {}) }),
     signal: controller.signal,
   }).then(async (response) => {
@@ -326,6 +332,8 @@ export const scheduleApi = {
   getAll: () => apiCall('/schedule'),
   create: (data: Record<string, unknown>) =>
     apiCall('/schedule', { method: 'POST', body: data }),
+  delete: (id: string) =>
+    apiCall(`/schedule/${id}`, { method: 'DELETE' }),
 };
 
 // ──────────────────────────────────────────────────
@@ -336,44 +344,6 @@ export const libraryApi = {
   getSkills: () => apiCall('/library/skills') as Promise<{ skills: any[] }>,
   createSkill: (data: { name: string; slug?: string; content?: string; url?: string }) =>
     apiCall('/library/skills', { method: 'POST', body: data }),
-};
-
-// ──────────────────────────────────────────────────
-// Compatibility shim — maps legacy IPC channel names to REST API calls
-// ──────────────────────────────────────────────────
-// Maps old IPC channel names to the new API calls.
-// Use ONLY during migration. Refactor components to use typed APIs above in Phase 4.
-
-const IPC_ROUTE_MAP: Record<string, (...args: any[]) => Promise<any>> = {
-  'task:getAll': (filters?: any) => taskApi.getAll(filters),
-  'task:getById': (id: string) => taskApi.getById(id),
-  'task:create': (task: any) => taskApi.create(task),
-  'task:update': (id: string, updates: any) => taskApi.update(id, updates),
-  'task:delete': (id: string) => taskApi.delete(id),
-  'task:addSubtask': (taskId: string, subtask: any) => taskApi.addSubtask(taskId, subtask),
-  'task:addActivity': (taskId: string, activity: any) => taskApi.addActivity(taskId, activity),
-  'task:getActivity': (taskId: string) => taskApi.getActivity(taskId),
-  'agent:getAll': () => agentApi.getAll(),
-  'agent:getById': (id: string) => agentApi.getById(id),
-  'agent:updateStatus': (id: string, status: string) => agentApi.updateStatus(id, status),
-  'agent:spawn': (id: string) => agentApi.spawn(id),
-  'agent:kill': (id: string) => agentApi.kill(id),
-  'approval:getAll': () => approvalApi.getAll(),
-  'approval:create': (data: any) => approvalApi.create(data),
-  'approval:approve': (id: string) => approvalApi.respond(id, 'approved'),
-  'approval:reject': (id: string) => approvalApi.respond(id, 'rejected'),
-  'inbox:getAll': () => inboxApi.getAll(),
-  'inbox:create': (item: any) => inboxApi.create(item),
-  'inbox:markRead': (id: number) => inboxApi.markRead(id),
-  'inbox:convertToTask': (id: number) => inboxApi.convertToTask(id),
-  'module:state:load': () => moduleApi.getState(),
-  'module:state:save': (id: string, enabled: boolean) => moduleApi.setState(id, enabled),
-  'settings:getAll': () => settingsApi.getAll(),
-  'settings:get': (key: string) => settingsApi.get(key),
-  'settings:set': (key: string, value: any) => settingsApi.set(key, value),
-  'analytics:getTokenUsage': (params?: any) => analyticsApi.getTokenUsage(params),
-  'analytics:getTaskStats': () => analyticsApi.getTaskStats(),
-  'analytics:logEvent': (event: any) => analyticsApi.logEvent(event),
 };
 
 // ──────────────────────────────────────────────────
@@ -404,11 +374,3 @@ export const projectsApi = {
     apiCall(`/projects/${id}/dispatch`, { method: 'POST', body: data }),
 };
 
-export function invokeCompat(channel: string, ...args: any[]): Promise<any> {
-  const handler = IPC_ROUTE_MAP[channel];
-  if (!handler) {
-    console.warn(`[API] Unknown IPC channel: ${channel}. Returning empty.`);
-    return Promise.resolve(null);
-  }
-  return handler(...args);
-}

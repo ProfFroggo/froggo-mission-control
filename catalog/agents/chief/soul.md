@@ -122,7 +122,7 @@ Team leads, researchers, and reviewers can run simultaneously. Synthesize findin
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:
-- **Architecture docs**: `library/docs/stratagies/YYYY-MM-DD_strategy_description.md`
+- **Architecture docs**: `library/docs/strategies/YYYY-MM-DD_strategy_description.md`
 - **Code artifacts**: `library/code/` or `library/projects/{name}/code/`
 - **Project docs**: `library/projects/project-{name}-{date}/docs/`
 - Create the project folder at `library/projects/project-{name}-{date}/` when starting a new project

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2 } from 'lucide-react';
-import { agentApi, settingsApi, libraryApi } from '../lib/api';
+import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2 } from 'lucide-react';
+import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import ConfirmDialog from './ConfirmDialog';
+import { isProtectedAgent } from '../lib/agentConfig';
 
 const API_PRESETS = [
   { label: 'Custom',                service: '',               placeholder: 'Your API key or secret' },
@@ -243,7 +245,7 @@ const TIER_PRESETS: Record<string, Record<string, boolean>> = {
 const TIER_COLORS = ['text-success', 'text-info', 'text-warning', 'text-error'];
 const TIER_LABELS = ['Auto', 'Logged', 'Review', 'Explicit'];
 
-type Tab = 'soul' | 'model' | 'skills' | 'tools' | 'api' | 'permissions';
+type Tab = 'soul' | 'model' | 'skills' | 'tools' | 'api' | 'permissions' | 'performance';
 
 interface AgentManagementModalProps {
   isOpen: boolean;
@@ -320,6 +322,30 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const [presetApplied, setPresetApplied] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  // HR actions
+  const [agentStatus, setAgentStatus] = useState<string>('idle');
+  const [showFireConfirm, setShowFireConfirm] = useState(false);
+  const [showDisableConfirm, setShowDisableConfirm] = useState(false);
+  const [hrActionLoading, setHrActionLoading] = useState(false);
+
+  // Tier diff preview
+  const [prevTrustTier, setPrevTrustTier] = useState<string | null>(null);
+
+  // Performance metrics
+  const [metrics, setMetrics] = useState<{
+    tasksCompleted: number;
+    tasksInProgress: number;
+    tasksTotal: number;
+    reviewsApproved: number;
+    reviewsRejected: number;
+    approvalRate: number | null;
+    memoryNotes: number;
+    recentActivity: number;
+    avgCompletionMs: number | null;
+    lastActive: number | null;
+  } | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
   useEffect(() => {
     if (!isOpen) return;
     setLoading(true);
@@ -335,7 +361,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
       settingsApi.get('security.keys'),
       settingsApi.get(`agent.${agentId}.permissions`),
       settingsApi.get(`agent.${agentId}.disallowedTools`),
-    ]).then(([soulR, configR, skillsR, keysR, permR, disallowR]) => {
+      agentApi.getById(agentId),
+    ]).then(([soulR, configR, skillsR, keysR, permR, disallowR, agentR]) => {
       if (soulR.status === 'fulfilled') setSoul(soulR.value?.content || '');
       if (configR.status === 'fulfilled') {
         const c = configR.value as any;
@@ -368,9 +395,23 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
           setAgentDisallowed(Array.isArray(parsed) ? parsed : []);
         } catch { setAgentDisallowed([]); }
       }
+      if (agentR.status === 'fulfilled') {
+        setAgentStatus((agentR.value as any)?.status || 'idle');
+      }
       setLoading(false);
     });
   }, [isOpen, agentId]);
+
+  // Lazy-load performance metrics when tab is activated
+  useEffect(() => {
+    if (tab !== 'performance' || !isOpen || metrics) return;
+    setMetricsLoading(true);
+    fetch(`/api/agents/${agentId}/metrics`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setMetrics(data); })
+      .catch(() => {})
+      .finally(() => setMetricsLoading(false));
+  }, [tab, isOpen, agentId, metrics]);
 
   // ── Saves ─────────────────────────────────────────
   const saveSoul = async () => {
@@ -578,6 +619,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     { id: 'tools',       label: 'Tools',       dirty: toolsDirty || mcpDirty },
     { id: 'api',         label: 'API Keys',    dirty: apiKeysDirty },
     { id: 'permissions', label: 'Permissions', dirty: permDirty },
+    { id: 'performance', label: 'Performance', dirty: false },
   ];
 
   const inputBase = 'w-full bg-mission-control-bg0 border border-mission-control-border rounded px-3 py-2 text-mission-control-text-primary text-sm focus:outline-none focus:border-mission-control-accent';
@@ -1075,6 +1117,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                           key={tier.id}
                           type="button"
                           onClick={() => {
+                            if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
                             // Apply preset overrides for this tier
                             const preset = TIER_PRESETS[tier.id];
@@ -1106,6 +1149,27 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         </span>
                       )}
                     </div>
+                    {/* Tier diff preview */}
+                    {prevTrustTier && prevTrustTier !== trustTier && (() => {
+                      const prevPreset = TIER_PRESETS[prevTrustTier] || {};
+                      const newPreset = TIER_PRESETS[trustTier] || {};
+                      const gained = Object.keys(newPreset).filter(k => newPreset[k] && !prevPreset[k]);
+                      const lost = Object.keys(prevPreset).filter(k => prevPreset[k] && !newPreset[k]);
+                      if (gained.length === 0 && lost.length === 0) return null;
+                      return (
+                        <div className="mt-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-xs space-y-1">
+                          <div className="font-medium text-mission-control-text-dim">
+                            Tier change: {TRUST_TIERS.find(t => t.id === prevTrustTier)?.label} → {TRUST_TIERS.find(t => t.id === trustTier)?.label}
+                          </div>
+                          {gained.length > 0 && (
+                            <div className="text-success">+ Granting: {gained.join(', ')}</div>
+                          )}
+                          {lost.length > 0 && (
+                            <div className="text-error">- Removing: {lost.join(', ')}</div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Per-action overrides — collapsible groups */}
@@ -1215,10 +1279,199 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   </button>
                 </div>
               )}
+
+              {/* ── PERFORMANCE ── */}
+              {tab === 'performance' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BarChart2 size={14} className="text-mission-control-text-dim" />
+                    <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Agent Performance</span>
+                  </div>
+
+                  {metricsLoading ? (
+                    <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">Loading metrics…</div>
+                  ) : !metrics ? (
+                    <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">No metrics available</div>
+                  ) : (
+                    <>
+                      {/* Task stats */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
+                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksCompleted}</div>
+                          <div className="text-xs text-mission-control-text-dim mt-0.5">Tasks Done</div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
+                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksInProgress}</div>
+                          <div className="text-xs text-mission-control-text-dim mt-0.5">In Progress</div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
+                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksTotal}</div>
+                          <div className="text-xs text-mission-control-text-dim mt-0.5">Total Tasks</div>
+                        </div>
+                      </div>
+
+                      {/* Review stats */}
+                      <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border space-y-2">
+                        <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Clara Review Score</div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 rounded-full bg-mission-control-bg0 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-success transition-all"
+                              style={{ width: `${metrics.approvalRate ?? 0}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-bold text-mission-control-text-primary w-10 text-right">
+                            {metrics.approvalRate !== null ? `${metrics.approvalRate}%` : 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 text-xs text-mission-control-text-dim">
+                          <span className="text-success">{metrics.reviewsApproved} approved</span>
+                          <span className="text-error">{metrics.reviewsRejected} rejected</span>
+                        </div>
+                      </div>
+
+                      {/* Memory and activity */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <BookOpen size={12} className="text-mission-control-text-dim" />
+                            <span className="text-xs text-mission-control-text-dim">Memory Notes</span>
+                          </div>
+                          <div className="text-lg font-bold text-mission-control-text-primary">{metrics.memoryNotes}</div>
+                          <div className="text-xs text-mission-control-text-dim">notes in vault</div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <BarChart2 size={12} className="text-mission-control-text-dim" />
+                            <span className="text-xs text-mission-control-text-dim">Recent Activity</span>
+                          </div>
+                          <div className="text-lg font-bold text-mission-control-text-primary">{metrics.recentActivity}</div>
+                          <div className="text-xs text-mission-control-text-dim">actions last 7d</div>
+                        </div>
+                      </div>
+
+                      {/* Avg completion + last active */}
+                      <div className="space-y-2 text-sm">
+                        {metrics.avgCompletionMs !== null && (
+                          <div className="flex justify-between px-1">
+                            <span className="text-mission-control-text-dim text-xs">Avg. completion time</span>
+                            <span className="text-mission-control-text-primary text-xs font-medium">
+                              {metrics.avgCompletionMs < 3600000
+                                ? `${Math.round(metrics.avgCompletionMs / 60000)}m`
+                                : `${(metrics.avgCompletionMs / 3600000).toFixed(1)}h`}
+                            </span>
+                          </div>
+                        )}
+                        {metrics.lastActive !== null && (
+                          <div className="flex justify-between px-1">
+                            <span className="text-mission-control-text-dim text-xs">Last active</span>
+                            <span className="text-mission-control-text-primary text-xs font-medium">
+                              {new Date(metrics.lastActive).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => { setMetrics(null); }}
+                        className="text-xs text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+                      >
+                        Refresh metrics
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
+
+        {/* HR Actions footer — only for non-protected agents */}
+        {!loading && !isProtectedAgent(agentId) && (
+          <div className="flex items-center gap-2 px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
+            {agentStatus === 'disabled' ? (
+              <button
+                type="button"
+                disabled={hrActionLoading}
+                onClick={async () => {
+                  setHrActionLoading(true);
+                  try {
+                    await agentApi.updateStatus(agentId, 'idle');
+                    setAgentStatus('idle');
+                    showToast('Agent enabled', 'success');
+                  } catch { showToast('Failed to enable agent', 'error'); }
+                  finally { setHrActionLoading(false); }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40"
+              >
+                <Power size={14} /> Enable Agent
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={hrActionLoading}
+                onClick={() => setShowDisableConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40"
+              >
+                <PowerOff size={14} /> Disable Agent
+              </button>
+            )}
+            <div className="flex-1" />
+            <button
+              type="button"
+              disabled={hrActionLoading}
+              onClick={() => setShowFireConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40"
+            >
+              <UserMinus size={14} /> Fire Agent
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Fire confirm */}
+      <ConfirmDialog
+        open={showFireConfirm}
+        onClose={() => setShowFireConfirm(false)}
+        onConfirm={async () => {
+          setShowFireConfirm(false);
+          setHrActionLoading(true);
+          try {
+            await catalogApi.fireAgent(agentId);
+            showToast('Agent fired', 'success');
+            fetchAgents();
+            onClose();
+          } catch { showToast('Failed to fire agent', 'error'); }
+          finally { setHrActionLoading(false); }
+        }}
+        title={`Fire ${agentName}?`}
+        message={`Fire ${agentName}? Their workspace will be archived. Active tasks will be paused.`}
+        confirmLabel="Fire Agent"
+        cancelLabel="Cancel"
+        type="danger"
+      />
+
+      {/* Disable confirm */}
+      <ConfirmDialog
+        open={showDisableConfirm}
+        onClose={() => setShowDisableConfirm(false)}
+        onConfirm={async () => {
+          setShowDisableConfirm(false);
+          setHrActionLoading(true);
+          try {
+            await agentApi.updateStatus(agentId, 'disabled');
+            setAgentStatus('disabled');
+            showToast('Agent disabled', 'success');
+          } catch { showToast('Failed to disable agent', 'error'); }
+          finally { setHrActionLoading(false); }
+        }}
+        title={`Disable ${agentName}?`}
+        message={`Disable ${agentName}? Active tasks will pause until re-enabled.`}
+        confirmLabel="Disable"
+        cancelLabel="Cancel"
+        type="warning"
+      />
     </div>
   );
 }

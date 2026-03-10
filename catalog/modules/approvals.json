@@ -4,7 +4,7 @@
   "description": "Human-in-the-loop approval gates for agent actions. Agents request approval for external actions; humans review and approve/reject. Core module — cannot be uninstalled.",
   "version": "1.0.0",
   "category": "communications",
-  "icon": "✅",
+  "icon": "CheckCircle",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

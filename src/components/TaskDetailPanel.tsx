@@ -1,9 +1,9 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-// LEGACY: TaskDetailPanel uses file-level suppression for intentional stable ref patterns.
+// Phase 81: File-level eslint-disable removed.
+// useEffect deps are explicit. Interval raised to 30s.
 // Complex panel with many useEffects for task management - patterns are carefully designed.
-// Review: 2026-02-17 - suppression retained, patterns are safe
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEventBus } from '../lib/useEventBus';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
@@ -69,6 +69,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
   const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
+  // Track current task id for SSE handler
+  const taskIdRef = useRef<string | null>(task?.id ?? null);
+  taskIdRef.current = task?.id ?? null;
+
+  // Refs to stable callbacks for SSE handler (avoids stale closures before callbacks are defined)
+  const loadSubtasksRef = useRef<(() => void) | null>(null);
+  const loadActivityRef = useRef<(() => void) | null>(null);
+
+  // Subscribe to task.updated SSE events — refetch when this task changes
+  useEventBus('task.updated', (data) => {
+    const d = data as { id: string };
+    if (d?.id && d.id === taskIdRef.current) {
+      loadSubtasksRef.current?.();
+      loadActivityRef.current?.();
+    }
+  });
+
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isRemoteAgent = task?.assignedTo && !assignedAgent && !['', 'none', 'unassigned'].includes(task.assignedTo);
@@ -97,6 +114,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       setLoadingActivity(false);
     }
   }, [task, loadTaskActivity]);
+
+  // Wire refs for SSE handler (must be after callbacks are defined)
+  loadSubtasksRef.current = loadSubtasks;
+  loadActivityRef.current = loadActivity;
 
   // Load attachments from REST API
   const loadAttachments = useCallback(async () => {
@@ -152,14 +173,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     loadActivity();
     loadAttachments();
 
-    // Poll for updates while task is in progress
+    // Poll for updates while task is in progress — 30s (SSE drives real-time updates)
     const interval = setInterval(() => {
       if (task.status === 'in-progress') {
         loadSubtasks();
         loadActivity();
         loadAttachments();
       }
-    }, 3000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [task, loadSubtasks, loadActivity, loadAttachments]);
@@ -455,11 +476,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     });
     
     if (success) {
-      setSubtasks(subtasks.map(s => 
-        s.id === subtaskId 
+      const updatedSubtasks = subtasks.map(s =>
+        s.id === subtaskId
           ? { ...s, completed: !s.completed, completedAt: !s.completed ? Date.now() : undefined }
           : s
-      ));
+      );
+      setSubtasks(updatedSubtasks);
+      // Update task progress field
+      if (task) {
+        const completedCount = updatedSubtasks.filter(s => s.completed).length;
+        const progressPct = updatedSubtasks.length > 0 ? Math.round((completedCount / updatedSubtasks.length) * 100) : 0;
+        taskApi.update(task.id, { progress: progressPct }).catch(() => { /* non-critical */ });
+      }
       loadActivity(); // Refresh activity to show the update
     }
   };
@@ -798,6 +826,34 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Subtasks Tab */}
         {activeTab === 'subtasks' && (
           <div className="p-4">
+            {/* Progress bar */}
+            {subtasks.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+                  <span>Progress</span>
+                  <span>{completedSubtasks}/{subtasks.length} complete</span>
+                </div>
+                <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success rounded-full transition-all duration-300"
+                    style={{ width: `${subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0}%` }}
+                  />
+                </div>
+                {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
+                  <div className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-success-subtle border border-success-border">
+                    <CheckCircle size={16} className="text-success flex-shrink-0" />
+                    <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
+                    <button
+                      type="button"
+                      onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
+                      className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors flex-shrink-0"
+                    >
+                      Move to Review
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {/* Add Subtask */}
             <div className="flex gap-2 mb-4">
               <input
@@ -817,71 +873,72 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </button>
             </div>
 
-            {/* Loading State */}
-            {loadingSubtasks && subtasks.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
-                <Loader2 size={24} className="animate-spin mr-2" />
-                Loading subtasks...
-              </div>
-            )}
-
             {/* Subtask List */}
-            <div className="space-y-2">
-              {subtasks.map((st, _idx) => (
-                <div
-                  key={st.id}
-                  className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                    st.completed 
-                      ? 'bg-success-subtle border-success-border' 
-                      : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
-                  }`}
-                >
-                  <button
-                    onClick={() => handleToggleSubtask(st.id)}
-                    className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
-                      st.completed 
-                        ? 'bg-success text-white' 
-                        : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+            {loadingSubtasks ? (
+              <div className="space-y-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-mission-control-border">
+                    <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
+                    <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
+                  </div>
+                ))}
+              </div>
+            ) : subtasks.length === 0 ? (
+              <div className="text-center text-mission-control-text-dim py-8">
+                <FileText size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No subtasks yet</p>
+                <p className="text-xs">Break down this task into smaller steps</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {subtasks.map((st, _idx) => (
+                  <div
+                    key={st.id}
+                    className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                      st.completed
+                        ? 'bg-success-subtle border-success-border'
+                        : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
                     }`}
                   >
-                    {st.completed && <Check size={14} />}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}>
-                      {st.title}
-                    </span>
-                    {st.description && (
-                      <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                    <button
+                      onClick={() => handleToggleSubtask(st.id)}
+                      className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
+                        st.completed
+                          ? 'bg-success text-white'
+                          : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                      }`}
+                    >
+                      {st.completed && <Check size={14} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className={`flex-1 min-w-0 truncate text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-sm'}`}>
+                        {st.title}
+                      </span>
+                      {st.description && (
+                        <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                      )}
+                      {st.completedAt && (
+                        <p className="text-xs text-success/60 mt-0.5">
+                          Completed {formatTime(st.completedAt)}
+                          {st.completedBy && ` by ${agents.find(a => a.id === st.completedBy)?.name || st.completedBy}`}
+                        </p>
+                      )}
+                    </div>
+                    {st.assignedTo && (
+                      <span className="text-xs bg-mission-control-border px-2 py-0.5 rounded flex-shrink-0">
+                        {agents.find(a => a.id === st.assignedTo)?.name || st.assignedTo}
+                      </span>
                     )}
-                    {st.completedAt && (
-                      <p className="text-xs text-success/60 mt-0.5">
-                        Completed {formatTime(st.completedAt)}
-                        {st.completedBy && ` by ${agents.find(a => a.id === st.completedBy)?.name || st.completedBy}`}
-                      </p>
-                    )}
+                    <button
+                      onClick={() => handleDeleteSubtask(st.id)}
+                      className="p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                  {st.assignedTo && (
-                    <span className="text-xs bg-mission-control-border px-2 py-0.5 rounded flex-shrink-0">
-                      {agents.find(a => a.id === st.assignedTo)?.name || st.assignedTo}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => handleDeleteSubtask(st.id)}
-                    className="p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-              
-              {!loadingSubtasks && subtasks.length === 0 && (
-                <div className="text-center text-mission-control-text-dim py-8">
-                  <FileText size={32} className="mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No subtasks yet</p>
-                  <p className="text-xs">Break down this task into smaller steps</p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -916,6 +973,73 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <Lightbulb size={12} className="inline mr-1" />Use this space for planning, brainstorming, research notes, or any thoughts about this task.
               Changes are auto-saved after 1 second.
             </p>
+
+            {/* Dependencies */}
+            <div className="mt-6">
+              <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+                <AlertCircle size={16} className="text-mission-control-accent" />
+                Blocked By
+              </h3>
+              {(task.blockedBy || []).length > 0 ? (
+                <div className="space-y-2 mb-3">
+                  {(task.blockedBy as string[]).map(depId => {
+                    const depTask = useStore.getState().tasks.find(t => t.id === depId);
+                    return (
+                      <div key={depId} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
+                        <span className="flex-1 truncate">{depTask?.title || depId}</span>
+                        {depTask && (
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+                            {depTask.status}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = (task.blockedBy as string[]) || [];
+                            taskApi.update(task.id, { blockedBy: current.filter((id: string) => id !== depId) })
+                              .then(() => showToast('success', 'Dependency removed'))
+                              .catch(() => showToast('error', 'Failed to remove dependency'));
+                          }}
+                          className="p-1 text-error hover:bg-error-subtle rounded transition-colors flex-shrink-0"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-mission-control-text-dim mb-3">No dependencies</p>
+              )}
+              <select
+                defaultValue=""
+                onChange={async (e) => {
+                  const depId = e.target.value;
+                  if (!depId) return;
+                  e.target.value = '';
+                  const current = (task.blockedBy as string[]) || [];
+                  if (current.includes(depId)) return;
+                  // Simple cycle check: ensure depId doesn't already block this task
+                  const depTask = useStore.getState().tasks.find(t => t.id === depId);
+                  if (depTask?.blockedBy && (depTask.blockedBy as string[]).includes(task.id)) {
+                    showToast('error', 'Circular dependency', 'That task already depends on this one');
+                    return;
+                  }
+                  try {
+                    await taskApi.update(task.id, { blockedBy: [...current, depId] });
+                    showToast('success', 'Dependency added');
+                  } catch { showToast('error', 'Failed to add dependency'); }
+                }}
+                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+              >
+                <option value="">+ Add dependency (blocked by)...</option>
+                {useStore.getState().tasks
+                  .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
+                  .map(t => (
+                    <option key={t.id} value={t.id}>{t.title} [{t.status}]</option>
+                  ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -940,51 +1064,58 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </button>
             </div>
 
-            {loadingActivity && activities.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
-                <Loader2 size={24} className="animate-spin mr-2" />
-                Loading activity...
-              </div>
-            )}
-
-            <div className="space-y-1">
-              {activities.map((act, _idx) => (
-                <div
-                  key={act.id}
-                  className="flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
-                >
-                  <div className="mt-1 p-1 rounded bg-mission-control-bg">
-                    {getActivityIcon(act.action)}
+            {loadingActivity ? (
+              <div className="space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex gap-3 p-2">
+                    <div className="w-6 h-6 rounded-full bg-mission-control-surface animate-pulse shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-24 rounded bg-mission-control-surface animate-pulse" />
+                      <div className="h-4 w-3/4 rounded bg-mission-control-surface animate-pulse" />
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">{act.message}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-mission-control-text-dim">
-                        {formatTime(act.timestamp)}
-                      </span>
-                      {act.agentId && (
-                        <span className="text-xs text-mission-control-accent">
-                          {agents.find(a => a.id === act.agentId)?.name || act.agentId}
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {activities.map((act, _idx) => (
+                  <div
+                    key={act.id}
+                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
+                  >
+                    <div className="mt-1 p-1 rounded bg-mission-control-bg">
+                      {getActivityIcon(act.action)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm">{act.message}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-mission-control-text-dim">
+                          {formatTime(act.timestamp)}
                         </span>
+                        {act.agentId && (
+                          <span className="text-xs text-mission-control-accent">
+                            {agents.find(a => a.id === act.agentId)?.name || act.agentId}
+                          </span>
+                        )}
+                      </div>
+                      {act.details && (
+                        <pre className="mt-1 text-xs bg-mission-control-bg p-2 rounded overflow-x-auto max-h-32">
+                          {act.details}
+                        </pre>
                       )}
                     </div>
-                    {act.details && (
-                      <pre className="mt-1 text-xs bg-mission-control-bg p-2 rounded overflow-x-auto max-h-32">
-                        {act.details}
-                      </pre>
-                    )}
                   </div>
-                </div>
-              ))}
-              
-              {!loadingActivity && activities.length === 0 && (
-                <div className="text-center text-mission-control-text-dim py-8">
-                  <Activity size={32} className="mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No activity yet</p>
-                  <p className="text-xs">Activity will appear here as work progresses</p>
-                </div>
-              )}
-            </div>
+                ))}
+
+                {activities.length === 0 && (
+                  <div className="text-center text-mission-control-text-dim py-8">
+                    <Activity size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No activity yet</p>
+                    <p className="text-xs">Activity will appear here as work progresses</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -1298,7 +1429,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               onClick={handlePoke}
               disabled={poking}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-accent/20 hover:text-mission-control-accent transition-colors disabled:opacity-50"
-              title="Poke Brain for status update"
+              title="Poke agent (⌘⇧P)"
             >
               {poking ? <Loader2 size={16} className="animate-spin" /> : <span className="text-lg">🫵</span>}
               Poke

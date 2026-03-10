@@ -518,10 +518,76 @@ async function cmdSetup(force = false) {
   success(`Node.js ${process.versions.node}`);
 
   const claudeBin = findClaudeBin();
-  if (claudeBin === 'claude' && !existsSync('/usr/local/bin/claude')) {
-    warn('Claude Code CLI not found in PATH. Install it after setup: npm install -g @anthropic-ai/claude-code');
+  const claudeNotFound = claudeBin === 'claude' && !existsSync('/usr/local/bin/claude') &&
+    !existsSync('/opt/homebrew/bin/claude') && !existsSync(path.join(HOME, '.npm-global', 'bin', 'claude'));
+
+  if (claudeNotFound) {
+    console.log('');
+    warn('Claude Code CLI not found.');
+    console.log([
+      '',
+      '  ' + c.bold('Claude Code is required for agent sessions.'),
+      '',
+      '  Install it now:',
+      '    ' + c.cyan('npm install -g @anthropic-ai/claude-code'),
+      '',
+      '  Then authenticate:',
+      '    ' + c.cyan('claude'),
+      '',
+      '  Once authenticated, re-run: ' + c.cyan('mission-control setup'),
+      '',
+    ].join('\n'));
+    process.exit(1);
+  }
+  success(`Claude Code CLI: ${claudeBin}`);
+
+  // ── Verify Claude Code is authenticated ──────────────────────────────────
+  const claudeConfigPath = path.join(HOME, '.claude.json');
+  let claudeAuthenticated = false;
+  if (existsSync(claudeConfigPath)) {
+    try {
+      const cfg = JSON.parse(readFileSync(claudeConfigPath, 'utf-8'));
+      claudeAuthenticated = !!(cfg.hasCompletedOnboarding || cfg.oauthAccount || cfg.primaryApiKey);
+    } catch { /* unreadable — assume not authenticated */ }
+  }
+
+  if (!claudeAuthenticated) {
+    console.log('');
+    warn('Claude Code is not authenticated.');
+    console.log([
+      '',
+      '  ' + c.bold('Agent sessions require Claude Code to be signed in.'),
+      '',
+      '  Open a new terminal and run:',
+      '    ' + c.cyan('claude'),
+      '',
+      '  Follow the prompts to log in with your Anthropic account.',
+      '  Then come back here and press ' + c.bold('Enter') + ' to continue.',
+      '',
+    ].join('\n'));
+
+    await new Promise(resolve => {
+      process.stdout.write('  Press Enter once you have authenticated Claude Code... ');
+      process.stdin.setEncoding('utf-8');
+      process.stdin.resume();
+      process.stdin.once('data', () => { process.stdin.pause(); resolve(); });
+    });
+
+    // Re-check
+    let recheckOk = false;
+    if (existsSync(claudeConfigPath)) {
+      try {
+        const cfg = JSON.parse(readFileSync(claudeConfigPath, 'utf-8'));
+        recheckOk = !!(cfg.hasCompletedOnboarding || cfg.oauthAccount || cfg.primaryApiKey);
+      } catch { /* ignore */ }
+    }
+    if (!recheckOk) {
+      warn('Could not verify authentication — continuing anyway. Agents may not respond until you sign in.');
+    } else {
+      success('Claude Code authenticated');
+    }
   } else {
-    success(`Claude Code CLI: ${claudeBin}`);
+    success('Claude Code authenticated');
   }
 
   // ── Defaults (all credentials collected in-app at /setup) ───────────────

@@ -4,7 +4,7 @@
   "description": "Meeting scheduling, agendas, notes, and action items. Coordinate team standups and planning sessions.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "📅",
+  "icon": "Video",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

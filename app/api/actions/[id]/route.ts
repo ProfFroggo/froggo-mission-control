@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { spawnSync } from 'child_process';
 import path from 'path';
+import { existsSync } from 'fs';
 import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -64,13 +65,22 @@ export async function POST(req: NextRequest, { params }: Params) {
       payload = JSON.parse(row.payload || '{}');
     }
 
-    const executorPath = path.join(process.cwd(), 'tools', 'executors', row.executor);
+    const ALLOWED_EXECUTORS_DIR = path.join(process.cwd(), 'tools', 'executors');
+    const executorPath = path.join(ALLOWED_EXECUTORS_DIR, row.executor);
+    const resolvedExecutorPath = path.resolve(executorPath);
+    if (!resolvedExecutorPath.startsWith(ALLOWED_EXECUTORS_DIR)) {
+      return NextResponse.json({ error: 'Invalid executor path' }, { status: 400 });
+    }
+    if (!existsSync(resolvedExecutorPath)) {
+      return NextResponse.json({ error: 'Executor not found' }, { status: 404 });
+    }
+
     const now = Date.now();
 
     db.prepare('UPDATE pending_actions SET status = ?, updatedAt = ? WHERE id = ?')
       .run('executing', now, id);
 
-    const result = spawnSync('python3', [executorPath, JSON.stringify(payload)], {
+    const result = spawnSync('python3', [resolvedExecutorPath, JSON.stringify(payload)], {
       encoding: 'utf-8',
       timeout: 60_000,
       env: { ...process.env },

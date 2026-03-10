@@ -13,6 +13,9 @@ import { matchTaskToAgent } from '../lib/agents';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
 import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/api';
+import { useEventBus } from '../lib/useEventBus';
+import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
+import { getApprovalTypeConfig } from '../lib/approvalTypes';
 
 const logger = createLogger('InboxPanel');
 
@@ -46,8 +49,8 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
   critical: { bg: 'bg-error-subtle', text: 'text-error', border: 'border-error-border' },
   high: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
-  medium: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
-  low: { bg: 'bg-info-subtle', text: 'text-info', border: 'border-info-border' },
+  medium: { bg: 'bg-mission-control-surface', text: 'text-mission-control-text-muted', border: 'border-mission-control-border' },
+  low: { bg: 'bg-success-subtle', text: 'text-success', border: 'border-success-border' },
 };
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
@@ -132,6 +135,7 @@ export default function InboxPanel() {
   const [selectedItemForAI, setSelectedItemForAI] = useState<InboxItem | null>(null);
 
   const loadInbox = useCallback(async () => {
+    if ((window as any).__appVisible === false) return; // Skip when tab hidden
     setLoading(true);
     try {
       // Load inbox items via REST API
@@ -212,11 +216,10 @@ export default function InboxPanel() {
     // loadInbox wrapped in useCallback, safe to call without adding to deps
   }, []);
 
-  useEffect(() => {
-    loadInbox();
-    const interval = setInterval(loadInbox, 5000); // Poll every 5s
-    return () => clearInterval(interval);
-  }, [loadInbox]);
+  useVisibilityPolling(loadInbox, 60_000);
+
+  // Phase 82: SSE-driven real-time inbox updates
+  useEventBus('inbox.count', () => { loadInbox(); });
 
   // Helper to determine if an item is a review vs approval
   const isReviewItem = (item: InboxItem): boolean => {
@@ -1303,7 +1306,7 @@ export default function InboxPanel() {
                         <ShieldAlert size={20} className="flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
-                            <span className="font-semibold text-sm">⚠️ Potential {warning.type.replace('_', ' ')}</span>
+                            <span className="font-semibold text-sm flex items-center gap-1"><AlertTriangle size={14} className="text-warning shrink-0" /> Potential {warning.type.replace('_', ' ')}</span>
                             <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
                               {warning.risk} risk
                             </span>
@@ -1332,7 +1335,7 @@ export default function InboxPanel() {
                       <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
                           <span className="text-xs font-medium px-2 py-0.5 bg-mission-control-border rounded">
-                            {config.label}
+                            {getApprovalTypeConfig(item.type).label}
                           </span>
                           
                           {/* Keyboard hint for focused item */}

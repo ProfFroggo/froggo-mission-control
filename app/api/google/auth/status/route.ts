@@ -1,48 +1,16 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
-import { isAuthenticated, loadTokens, getAuthenticatedClient, createOAuth2Client } from '@/lib/googleAuth';
+import { isAuthenticated, loadTokens } from '@/lib/googleAuth';
 
 export async function GET() {
-  const hasTokens = isAuthenticated();
+  if (!isAuthenticated()) {
+    return NextResponse.json({ authenticated: false, hasCredentials: true });
+  }
+
   const tokens = loadTokens();
-
-  // Check if we have OAuth client credentials (client_secret.json or tokens file)
-  const hasClientCredentials = createOAuth2Client() !== null;
-
-  if (!hasTokens) {
-    if (!hasClientCredentials) {
-      // No OAuth app credentials at all — user must set up Google Cloud Console
-      return NextResponse.json({
-        authenticated: false,
-        hasCredentials: false,
-        needsSetup: true,
-        setupInstructions: 'Create a Google OAuth 2.0 Client ID at console.cloud.google.com and save client_secret.json to ~/.config/google-workspace-mcp/',
-      });
-    }
-    // Have credentials but no tokens — show Connect button
-    return NextResponse.json({
-      authenticated: false,
-      hasCredentials: true,
-    });
-  }
-
-  // Try to verify the token is actually valid by checking if we can build a client
-  try {
-    const client = await getAuthenticatedClient();
-    if (!client) {
-      return NextResponse.json({ authenticated: false, hasCredentials: hasClientCredentials });
-    }
-
-    return NextResponse.json({
-      authenticated: true,
-      hasCredentials: true,
-      email: tokens?.email ?? null,
-    });
-  } catch {
-    return NextResponse.json({
-      authenticated: false,
-      hasCredentials: true,
-      error: 'OAuth credentials may be invalid or expired',
-    });
-  }
+  return NextResponse.json({
+    authenticated: true,
+    hasCredentials: true,
+    email: tokens?.email ?? null,
+  });
 }

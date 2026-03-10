@@ -518,7 +518,7 @@ export default function XAutomationsTab() {
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         automation.enabled
                           ? 'bg-success-subtle text-success'
-                          : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
+                          : 'bg-mission-control-surface text-mission-control-text-dim'
                       }`}>
                         {automation.enabled ? 'Active' : 'Disabled'}
                       </span>
@@ -534,7 +534,7 @@ export default function XAutomationsTab() {
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
                           ? 'bg-success-subtle text-success hover:bg-success-subtle'
-                          : 'bg-mission-control-bg0/20 text-mission-control-text-dim hover:bg-mission-control-bg0/30'
+                          : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}
                     >

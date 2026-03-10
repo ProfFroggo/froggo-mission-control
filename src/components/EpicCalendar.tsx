@@ -84,12 +84,12 @@ export default function EpicCalendar({
     setShowEventModal(true);
   };
 
-  // Create new event via gog CLI
+  // Create new event via Calendar API
   const createEvent = async (formData: EventFormData): Promise<boolean> => {
     try {
       const { summary, start, end, description, location, isAllDay } = formData;
       
-      // Convert datetime-local format to ISO format for gog CLI
+      // Convert datetime-local format to ISO format
       const startISO = isAllDay 
         ? new Date(start).toISOString().split('T')[0]
         : new Date(start).toISOString();
@@ -128,7 +128,7 @@ export default function EpicCalendar({
     }
   };
 
-  // Update existing event via gog CLI
+  // Update existing event via Calendar API
   const updateEvent = async (eventId: string, formData: EventFormData): Promise<boolean> => {
     try {
       const { summary, start, end, description, location, isAllDay } = formData;

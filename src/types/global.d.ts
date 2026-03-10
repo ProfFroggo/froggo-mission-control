@@ -1098,7 +1098,7 @@ declare global {
         unread: () => Promise<{ success: boolean; count: number; byPlatform?: { [platform: string]: number } }>;
         onUpdate: (cb: (data: any) => void) => () => void;
       };
-      // Email (gog CLI)
+      // Email (Google Workspace MCP / Gmail API)
       email: {
         accounts: () => Promise<{ success: boolean; accounts?: string[]; error?: string }>;
         unread: (account?: string) => Promise<{ success: boolean; emails: Email[] & { threads?: Email[] }; account?: string }>;
@@ -1111,7 +1111,7 @@ declare global {
         starred: (account?: string) => Promise<{ success: boolean; emails?: Email[]; count?: number; error?: string }>;
         action: (emailId: string, action?: string) => Promise<{ success: boolean; count?: number; error?: string }>;
       };
-      // Calendar (gog CLI + aggregation service)
+      // Calendar (Google Workspace MCP / Calendar API)
       calendar: {
         events: (account?: string, days?: number) => Promise<{ success: boolean; events: CalendarEvent[] & { events?: CalendarEvent[] }; account?: string }>;
         today: () => Promise<{ success: boolean; events: CalendarEvent[] & { events?: CalendarEvent[] }; account?: string }>;

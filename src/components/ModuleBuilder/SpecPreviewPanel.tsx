@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   CheckCircle2, Circle, Package, Layers, Database, Settings, Shield, Code2,
-  LayoutGrid, ListChecks, User,
+  LayoutGrid, ListChecks, User, RefreshCw,
 } from 'lucide-react';
 import type { ModuleSpec, SectionProgress } from './types';
 import type { LiveTask } from './useConversationFlow';
@@ -17,6 +17,7 @@ interface Props {
   liveTasks: LiveTask[];
   onGenerateTasks: () => void;
   onExportJson: () => void;
+  onRegenerateWireframe?: () => void;
 }
 
 const complexityColors: Record<string, string> = {
@@ -34,7 +35,7 @@ const agentColors: Record<string, string> = {
 };
 
 export default function SpecPreviewPanel({
-  spec, sectionProgress, isComplete, wireframe, liveTasks, onGenerateTasks, onExportJson,
+  spec, sectionProgress, isComplete, wireframe, liveTasks, onGenerateTasks, onExportJson, onRegenerateWireframe,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('spec');
 
@@ -44,9 +45,23 @@ export default function SpecPreviewPanel({
     complexity = plan.priority === 'p0' ? 'complex' : plan.priority === 'p1' ? 'medium' : 'simple';
   } catch { /* spec incomplete */ }
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number; action?: React.ReactNode }[] = [
     { id: 'spec', label: 'Spec', icon: <Package size={14} /> },
-    { id: 'wireframe', label: 'Wireframe', icon: <LayoutGrid size={14} />, badge: wireframe ? 1 : 0 },
+    {
+      id: 'wireframe',
+      label: 'Wireframe',
+      icon: <LayoutGrid size={14} />,
+      badge: wireframe ? 1 : 0,
+      action: onRegenerateWireframe ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRegenerateWireframe(); }}
+          title="Regenerate wireframe"
+          className="ml-1 p-0.5 hover:text-mission-control-text text-mission-control-text-dim rounded transition-colors"
+        >
+          <RefreshCw size={11} />
+        </button>
+      ) : undefined,
+    },
     { id: 'tasks', label: 'Tasks', icon: <ListChecks size={14} />, badge: liveTasks.length },
   ];
 
@@ -88,6 +103,7 @@ export default function SpecPreviewPanel({
                   {tab.badge}
                 </span>
               )}
+              {tab.action}
             </button>
           ))}
         </div>
@@ -96,7 +112,7 @@ export default function SpecPreviewPanel({
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'spec' && <SpecTab spec={spec} sectionProgress={sectionProgress} />}
-        {activeTab === 'wireframe' && <WireframeTab wireframe={wireframe} spec={spec} />}
+        {activeTab === 'wireframe' && <WireframeTab wireframe={wireframe} spec={spec} onRegenerate={onRegenerateWireframe} />}
         {activeTab === 'tasks' && <TasksTab liveTasks={liveTasks} />}
       </div>
 
@@ -285,13 +301,13 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
 
 // ─── Wireframe Tab ─────────────────────────────────────────────────
 
-function WireframeTab({ wireframe, spec }: { wireframe: string; spec: Partial<ModuleSpec> }) {
+function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; spec: Partial<ModuleSpec>; onRegenerate?: () => void }) {
   if (!wireframe) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim px-8">
         <LayoutGrid size={48} strokeWidth={1} />
         <p className="mt-3 text-sm text-center">
-          Wireframe will generate after you complete the <strong>Features & UI</strong> section
+          Complete the Features section to generate wireframe
         </p>
       </div>
     );
@@ -299,14 +315,37 @@ function WireframeTab({ wireframe, spec }: { wireframe: string; spec: Partial<Mo
 
   return (
     <div className="p-5 space-y-4">
-      <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
-        {spec.name || 'Module'} Layout
-      </h3>
-      <pre className="bg-mission-control-bg0 text-green-400 text-xs p-4 rounded-lg overflow-x-auto font-mono leading-snug whitespace-pre">
-{wireframe}
-      </pre>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+          {spec.name || 'Module'} Layout
+        </h3>
+        {onRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded border border-mission-control-border"
+          >
+            <RefreshCw size={11} /> Regenerate
+          </button>
+        )}
+      </div>
+      <div
+        className="wireframe-preview-container"
+        style={{
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          maxHeight: '480px',
+          background: '#0d0d1a',
+          borderRadius: '8px',
+          padding: '16px',
+        }}
+      >
+        <div
+          className="wireframe-canvas"
+          dangerouslySetInnerHTML={{ __html: wireframe }}
+        />
+      </div>
       <p className="text-[10px] text-mission-control-text-dim">
-        Auto-generated wireframe based on layout: {spec.layout || 'single-panel'} with {spec.views?.length || 0} views
+        Auto-generated wireframe · layout: {spec.layout || 'single-panel'} · {spec.views?.length || 0} views
       </p>
     </div>
   );

@@ -4,7 +4,7 @@
   "description": "AI-assisted writing workspace. Drafts, edits, and publishes long-form content with Writer agent collaboration.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "✍️",
+  "icon": "PenLine",
   "responsibleAgent": "writer",
   "requiredAgents": ["writer"],
   "requiredNpm": [],

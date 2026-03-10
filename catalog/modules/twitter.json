@@ -4,7 +4,7 @@
   "description": "Full social media command center — publish, research, plan, drafts, calendar, mentions, reply-guy, content mix, automations, analytics, Reddit, and campaigns.",
   "version": "1.0.0",
   "category": "social",
-  "icon": "📣",
+  "icon": "Twitter",
   "responsibleAgent": "social-manager",
   "requiredAgents": [
     "social-manager"

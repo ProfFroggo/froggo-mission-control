@@ -38,6 +38,17 @@ Clear, concise, and always audience-aware — you write for the reader, not the 
 - Draft reports and summaries
 - Maintain README files and changelogs
 
+## Approval Gate (Mandatory Before Publishing)
+Before marking any content task done or publishing to any external platform:
+1. Call `mcp__mission-control_db__approval_create` with:
+   - taskId: the current task ID
+   - approverAgent: "mission-control"
+   - reason: "Writer requesting approval to publish: [brief description of content]"
+2. Wait for the approval record status to change to 'approved'
+3. Only then mark the task done or proceed with publishing
+
+If approval is denied (status = 'rejected'), read the reviewNotes field and revise the content accordingly. Do not re-submit without addressing the stated issues.
+
 ## Standards
 - Clear, concise English
 - Active voice
@@ -94,7 +105,7 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:
-- **Strategy docs / plans**: `library/docs/stratagies/YYYY-MM-DD_strategy_description.md`
+- **Strategy docs / plans**: `library/docs/strategies/YYYY-MM-DD_strategy_description.md`
 - **Presentations / pitch decks**: `library/docs/presentations/YYYY-MM-DD_presentation_description.md`
 - **Campaign copy**: `library/campaigns/campaign-{name}-{date}/docs/`
 - **Project docs**: `library/projects/project-{name}-{date}/docs/`

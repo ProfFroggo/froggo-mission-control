@@ -73,6 +73,16 @@ function App() {
     loadTasksFromDB();
   }, [loadApprovals, fetchAgents, loadTasksFromDB]);
 
+  // Phase 79: Root-level visibility handler — pauses polling when tab is hidden
+  useEffect(() => {
+    const handleVisibility = () => {
+      (window as any).__appVisible = !document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    (window as any).__appVisible = true;
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   // Handle Google OAuth callback — ?code= lands on the root page after redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -405,8 +415,9 @@ function App() {
         </ErrorBoundary>
         
         {/* Main content - each panel already wrapped via ProtectedPanels */}
-        <main 
+        <main
           id="main-content"
+          tabIndex={-1}
           className="flex-1 overflow-hidden relative z-0"
           role="main"
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}

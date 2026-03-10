@@ -144,6 +144,18 @@ export default function BaseModal({
     }
   }, [isOpen]);
 
+  // Auto-focus first focusable element when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      const focusable = modalRef.current?.querySelector<HTMLElement>(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
+      );
+      focusable?.focus();
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
   // ESC key handler
   useEffect(() => {
     if (!isOpen || preventEscClose) return;
@@ -397,7 +409,7 @@ export function BaseModalButton({
   const variantStyles = {
     primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim',
     secondary: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
-    danger: 'bg-red-500 text-white hover:bg-red-600',
+    danger: 'bg-error text-white hover:bg-error-hover',
     ghost: 'hover:bg-mission-control-border',
   }[variant];
 

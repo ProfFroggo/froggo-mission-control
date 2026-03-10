@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
 
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC`;
+    const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
       parentTaskId,
       recurrence,
       recurrenceParentId,
+      moduleId,
     } = body;
 
     db.prepare(`
@@ -124,13 +126,13 @@ export async function POST(request: NextRequest) {
         reviewerId, reviewStatus, reviewNotes, tags, labels, planningNotes,
         dueDate, estimatedHours, blockedBy, blocks, progress, lastAgentUpdate,
         createdAt, updatedAt, projectName, stageNumber, stageName, nextStage, parentTaskId,
-        recurrence, recurrenceParentId
+        recurrence, recurrenceParentId, moduleId
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
-        ?, ?
+        ?, ?, ?
       )
     `).run(
       id, title, description ?? null, status, priority, project ?? null, project_id ?? null, assignedTo ?? null,
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
       dueDate ?? null, estimatedHours ?? null,
       JSON.stringify(blockedBy), JSON.stringify(blocks), progress, lastAgentUpdate ?? null,
       now, now, projectName ?? null, stageNumber ?? null, stageName ?? null, nextStage ?? null, parentTaskId ?? null,
-      recurrence ? JSON.stringify(recurrence) : null, recurrenceParentId ?? null
+      recurrence ? JSON.stringify(recurrence) : null, recurrenceParentId ?? null, moduleId ?? null
     );
 
     // Auto-assign Clara as reviewer if none set
@@ -153,6 +155,9 @@ export async function POST(request: NextRequest) {
     if (assignedTo && (status === 'todo' || status === 'in-progress')) {
       dispatchTask(id);
     }
+
+    // Notify SSE clients of new task
+    emitSSEEvent('task.created', { id, status, assignedTo: assignedTo ?? null });
 
     return NextResponse.json(parseTask(task), { status: 201 });
   } catch (error) {

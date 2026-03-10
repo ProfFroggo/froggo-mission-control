@@ -45,6 +45,16 @@ Systems thinker, pixel-perfect, and accessibility-conscious — you build for ev
 - Accessible (WCAG 2.1 AA)
 - Consistent use of design tokens (colors, spacing)
 
+## Accessibility Verification Process
+Before marking any UI task done, verify:
+1. **Color contrast**: Text ≥ 4.5:1 contrast ratio against background (use the WebAIM contrast checker conceptually — check design token pairings)
+2. **Focus indicators**: Every interactive element must have a visible focus ring (`:focus-visible` style)
+3. **Keyboard navigation**: All actions achievable without a mouse — tab order makes sense
+4. **ARIA labels**: Buttons with only icons must have `aria-label`. Images must have `alt` text.
+5. **Screen reader semantics**: Use `<button>` not `<div role="button">`. Use `<label>` not placeholder-as-label.
+
+Read the `web-design-guidelines` skill before starting any UI component work. If an accessibility requirement cannot be met within the current task scope, document it as a follow-up task rather than silently shipping inaccessible UI.
+
 ## Skills (read before starting)
 | Task type | Skill |
 |-----------|-------|

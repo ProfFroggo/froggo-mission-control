@@ -4,6 +4,7 @@ import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
 import { spawnSync } from 'child_process';
 import path from 'path';
+import { existsSync } from 'fs';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -102,8 +103,17 @@ export async function POST(req: NextRequest) {
         VALUES (?, ?, ?, ?, ?, ?, 'executing', NULL, NULL, ?, ?)
       `).run(actionId, type, agentId ?? null, description ?? null, payloadJson, executor, now, now);
 
-      const executorPath = path.join(process.cwd(), 'tools', 'executors', executor);
-      const result = spawnSync('python3', [executorPath, payloadJson], {
+      const ALLOWED_EXECUTORS_DIR = path.join(process.cwd(), 'tools', 'executors');
+      const executorPath = path.join(ALLOWED_EXECUTORS_DIR, executor);
+      const resolvedExecutorPath = path.resolve(executorPath);
+      if (!resolvedExecutorPath.startsWith(ALLOWED_EXECUTORS_DIR)) {
+        return NextResponse.json({ error: 'Invalid executor path' }, { status: 400 });
+      }
+      if (!existsSync(resolvedExecutorPath)) {
+        return NextResponse.json({ error: 'Executor not found' }, { status: 404 });
+      }
+
+      const result = spawnSync('python3', [resolvedExecutorPath, payloadJson], {
         encoding: 'utf-8',
         timeout: 60_000,
         env: { ...process.env },

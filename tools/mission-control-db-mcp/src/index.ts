@@ -30,13 +30,19 @@ function getDb(): Database.Database {
 
 // ── HTTP helpers ──────────────────────────────────────────────────────────────
 
+/** Build auth headers for requests to the Next.js app. */
+function authHeaders(): Record<string, string> {
+  const token = process.env.INTERNAL_API_TOKEN;
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 /** Fire-and-forget POST to the Next.js app (port 3000). */
 function firePost(urlPath: string, body: object): void {
   const encoded = JSON.stringify(body);
   const req = http.request({
     hostname: '127.0.0.1', port: 3000,
     path: urlPath, method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded) },
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded), ...authHeaders() },
   }, (res) => { res.resume(); });
   req.on('error', () => { /* app may not be running */ });
   req.setTimeout(3000, () => req.destroy());
@@ -50,7 +56,7 @@ function firePatch(taskId: string, body: object): void {
   const req = http.request({
     hostname: '127.0.0.1', port: 3000,
     path: `/api/tasks/${encodeURIComponent(taskId)}`, method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded) },
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded), ...authHeaders() },
   }, (res) => { res.resume(); });
   req.on('error', () => {});
   req.setTimeout(5000, () => req.destroy());
@@ -411,6 +417,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }) }] };
         }
 
+        // HARD RULE: only Clara can mark a task done — agents must move to review first
+        if (args?.status === 'done' && !['review'].includes(current.status)) {
+          // Allow system/clara to advance (reviewStatus=approved auto-advance is handled below)
+          const callerIsClara = args?.reviewStatus === 'approved'; // Clara sets both together
+          if (!callerIsClara) {
+            return { content: [{ type: 'text', text: JSON.stringify({
+              error: 'WORKFLOW_VIOLATION: agents cannot mark tasks done directly. Move to status="review" first — Clara will approve and advance to done.',
+              hint: 'Set status="review" with lastAgentUpdate describing what was completed. Clara reviews and moves to done.',
+            }) }] };
+          }
+        }
+
+        // SOFT GUARD: warn if moving to review with incomplete subtasks
+        if (args?.status === 'review') {
+          const incomplete = (db.prepare(
+            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ? AND completed = 0'
+          ).get(taskId) as { c: number }).c;
+          const total = (db.prepare(
+            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?'
+          ).get(taskId) as { c: number }).c;
+          if (total > 0 && incomplete > 0) {
+            return { content: [{ type: 'text', text: JSON.stringify({
+              error: `INCOMPLETE_WORK: ${incomplete} of ${total} subtasks are not yet completed. Complete all subtasks before submitting for review, or mark irrelevant ones complete with a note.`,
+              incomplete,
+              total,
+            }) }] };
+          }
+        }
+
         const sets = ['updatedAt = ?'];
         const vals: any[] = [now];
 
@@ -445,10 +480,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           db.prepare('UPDATE tasks SET reviewerId = ? WHERE id = ?').run('clara', taskId);
         }
 
-        // Trigger Clara review via HTTP when task enters review
-        if (newStatus === 'review') {
-          firePost('/api/agents/clara/review', { taskId });
-        }
+        // Clara review is triggered by the 3-minute cron sweep in claraReviewCron.ts.
+        // No immediate HTTP dispatch here — the cron is the single trigger.
 
         // Auto-log activity — only for meaningful changes, not noise
         const statusChanged = newStatus !== undefined && newStatus !== current.status;

@@ -98,8 +98,8 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:
-- **Strategy documents**: `library/docs/stratagies/YYYY-MM-DD_strategy_description.md`
-- **Campaign briefs / plans**: `library/campaigns/campaign-{name}-{date}/docs/stratagies/`
+- **Strategy documents**: `library/docs/strategies/YYYY-MM-DD_strategy_description.md`
+- **Campaign briefs / plans**: `library/campaigns/campaign-{name}-{date}/docs/strategies/`
 - **Growth reports**: `library/docs/research/YYYY-MM-DD_growth_description.md`
 - Create campaign folders at `library/campaigns/campaign-{name}-{date}/` when launching new campaigns
 - Naming: use kebab-case for campaign names, e.g. `campaign-q2-defi-push-2026-03`

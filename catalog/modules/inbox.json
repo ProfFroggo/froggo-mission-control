@@ -4,7 +4,7 @@
   "description": "Unified communications inbox with 3-pane layout for messages across all channels. Core module — cannot be uninstalled.",
   "version": "1.0.0",
   "category": "communications",
-  "icon": "📥",
+  "icon": "Inbox",
   "responsibleAgent": "inbox",
   "requiredAgents": [],
   "requiredNpm": [],

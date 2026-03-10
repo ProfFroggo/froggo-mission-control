@@ -88,7 +88,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
       }
     };
     checkStatus();
-    const interval = setInterval(checkStatus, 10000);
+    const interval = setInterval(checkStatus, 60000); // Poll every 60s (was 10s)
     return () => clearInterval(interval);
   }, []);
 

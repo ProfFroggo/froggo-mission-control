@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
+import { emitSSEEvent } from '@/lib/sseEmitter';
+import { trackEvent } from '@/lib/telemetry';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+const HOME = homedir();
 
 function computeNextDue(currentDue: number, rec: { frequency: string; interval: number }): number {
   const d = new Date(currentDue);
@@ -76,6 +83,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'description must be 5000 characters or fewer' }, { status: 400 });
     }
 
+    const VALID_STATUSES = ['todo', 'internal-review', 'in-progress', 'agent-review', 'human-review', 'done'];
+    const VALID_PRIORITIES = ['p0', 'p1', 'p2', 'p3', ''];
+    if (body.status !== undefined && !VALID_STATUSES.includes(body.status as string)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+    if (body.priority !== undefined && !VALID_PRIORITIES.includes(body.priority as string)) {
+      return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
+    }
+
     const setClauses: string[] = [];
     const values: unknown[] = [];
 
@@ -141,6 +157,41 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
+    // Handoff note: write when assignedTo changes (task is handed off to a new agent)
+    // The outgoing agent's context is captured so the incoming agent can continue smoothly.
+    if ('assignedTo' in body && body.assignedTo) {
+      try {
+        const previousAgent = (updated.assignedTo as string | null) !== body.assignedTo
+          ? (updated.assignedTo as string | null)
+          : null;
+        if (previousAgent && previousAgent !== body.assignedTo) {
+          const handoffDir = join(HOME, 'mission-control', 'memory', 'agents', previousAgent as string, 'handoffs');
+          if (!existsSync(handoffDir)) mkdirSync(handoffDir, { recursive: true });
+          const handoffPath = join(handoffDir, `${id}.md`);
+          const taskTitle = updated.title as string;
+          const lastUpdate = (updated.lastAgentUpdate as string | null) || 'No update recorded';
+          const progress = updated.progress ?? 0;
+          const handoffContent = [
+            `# Handoff Note — Task ${id}`,
+            ``,
+            `**Title:** ${taskTitle}`,
+            `**Previous Agent:** ${previousAgent}`,
+            `**New Agent:** ${body.assignedTo}`,
+            `**Handed off at:** ${new Date().toISOString()}`,
+            `**Progress at handoff:** ${progress}%`,
+            ``,
+            `## Last Agent Update`,
+            lastUpdate,
+            ``,
+            `## Planning Notes`,
+            (updated.planningNotes as string | null) || '_No planning notes._',
+          ].join('\n');
+          writeFileSync(handoffPath, handoffContent, 'utf-8');
+          trackEvent('task.handoff', { taskId: id, from: previousAgent, to: body.assignedTo as string });
+        }
+      } catch { /* non-critical */ }
+    }
+
     // Auto-dispatch triggers:
     // 1. assignedTo set on a todo task (initial assignment)
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
@@ -188,10 +239,16 @@ export async function PATCH(
     // Gate auto-sets Clara as reviewer and may push back to 'todo' if incomplete
     const movingToReview = 'status' in body && body.status === 'review';
     if (movingToReview) {
-      runReviewGate(id);
+      const gateResult = runReviewGate(id);
       // Re-fetch after gate may have modified the task
       const afterGate = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown> | undefined;
-      if (afterGate) return NextResponse.json(parseTask(afterGate));
+      if (afterGate) {
+        const response = parseTask(afterGate) as Record<string, unknown>;
+        if (!gateResult.passed && gateResult.failures.length > 0) {
+          response.gateRejection = { reason: gateResult.failures.join(' | ') };
+        }
+        return NextResponse.json(response);
+      }
     }
 
     // Auto-spawn next occurrence when a recurring task is marked done
@@ -248,6 +305,75 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
+    // Auto-generate task template when a task is done and 5+ similar completed tasks exist
+    if (body.status === 'done') {
+      try {
+        const taskTitle = updated.title as string;
+        // Extract first 3-4 words as the "pattern" for matching similar tasks
+        const titleWords = taskTitle.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+        const similarCount = (db.prepare(
+          `SELECT COUNT(*) as count FROM tasks WHERE status = 'done' AND LOWER(title) LIKE ? AND id != ?`
+        ).get(`%${titleWords}%`, id) as { count: number }).count;
+
+        if (similarCount >= 4) { // 4 similar + current = 5+ total
+          const templatesDir = join(HOME, 'mission-control', 'library', 'docs', 'templates');
+          if (!existsSync(templatesDir)) mkdirSync(templatesDir, { recursive: true });
+
+          // Derive slug from title
+          const slug = taskTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50).replace(/-+$/, '');
+          const templatePath = join(templatesDir, `${slug}.md`);
+
+          // Only write if template doesn't already exist (avoid clobbering)
+          if (!existsSync(templatePath)) {
+            const templateContent = [
+              `# Task Template: ${taskTitle}`,
+              ``,
+              `_Auto-generated from ${similarCount + 1} completed tasks. Last updated: ${new Date().toISOString().slice(0, 10)}_`,
+              ``,
+              `## Description`,
+              (updated.description as string | null) || '_Add description here._',
+              ``,
+              `## Suggested Agent`,
+              (updated.assignedTo as string | null) ? `- ${updated.assignedTo}` : `_Assign based on task type._`,
+              ``,
+              `## Planning Notes Template`,
+              (updated.planningNotes as string | null) || `1. Review requirements\n2. Plan implementation\n3. Execute\n4. Verify and submit for review`,
+              ``,
+              `## Suggested Priority`,
+              (updated.priority as string | null) || 'p2',
+            ].join('\n');
+            writeFileSync(templatePath, templateContent, 'utf-8');
+            trackEvent('template.generated', { taskId: id, slug, similarCount: similarCount + 1 });
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
+    // Notify SSE clients of task update
+    const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
+    const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
+    if (taskId) emitSSEEvent('task.updated', { id: taskId, status: taskStatus ?? null });
+
+    // When a task moves to 'done', emit task.unblocked for tasks that were blocked by it
+    if (body.status === 'done' && taskId) {
+      try {
+        const allTasks = db.prepare('SELECT id, blockedBy FROM tasks WHERE blockedBy IS NOT NULL AND blockedBy != \'[]\' AND status != ?').all('done') as { id: string; blockedBy: string }[];
+        for (const t of allTasks) {
+          try {
+            const deps = JSON.parse(t.blockedBy) as string[];
+            if (deps.includes(taskId)) {
+              // Remove this task from the blockedBy array
+              const newDeps = deps.filter((d: string) => d !== taskId);
+              db.prepare('UPDATE tasks SET blockedBy = ?, updatedAt = ? WHERE id = ?').run(JSON.stringify(newDeps), Date.now(), t.id);
+              if (newDeps.length === 0) {
+                emitSSEEvent('task.unblocked', { id: t.id, unblockedBy: taskId });
+              }
+            }
+          } catch { /* skip malformed */ }
+        }
+      } catch { /* non-critical */ }
+    }
+
     return NextResponse.json(parseTask(updated));
   } catch (error) {
     console.error('PATCH /api/tasks/[id] error:', error);
@@ -262,6 +388,20 @@ export async function DELETE(
   try {
     const { id } = await params;
     const db = getDb();
+
+    // Cascade cleanup — non-critical, run before main delete
+    try {
+      db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id);
+    } catch { /* non-critical */ }
+    try {
+      const approvalIds = db.prepare(
+        `SELECT id FROM approvals WHERE json_extract(metadata, '$.taskId') = ?`
+      ).all(id) as { id: string }[];
+      for (const { id: approvalId } of approvalIds) {
+        db.prepare('DELETE FROM approvals WHERE id = ?').run(approvalId);
+      }
+    } catch { /* non-critical */ }
+
     const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
 
     if (result.changes === 0) {

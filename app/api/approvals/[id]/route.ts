@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { dispatchTask } from '@/lib/taskDispatcher';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 import { spawnSync } from 'child_process';
 import path from 'path';
 
@@ -94,9 +95,27 @@ export async function PATCH(
               `UPDATE tasks SET status = 'in-progress', reviewStatus = 'rejected',
                reviewNotes = ?, updatedAt = ? WHERE id = ?`
             ).run(notes ?? null, now, taskId);
-            const taskRow = db.prepare('SELECT assignedTo FROM tasks WHERE id = ?')
-              .get(taskId) as { assignedTo: string | null } | undefined;
-            if (taskRow?.assignedTo) dispatchTask(taskId);
+            const taskRow = db.prepare('SELECT assignedTo, title FROM tasks WHERE id = ?')
+              .get(taskId) as { assignedTo: string | null; title: string } | undefined;
+            if (taskRow?.assignedTo) {
+              dispatchTask(taskId);
+              // Notify the agent via their chat room
+              try {
+                const agentId = taskRow.assignedTo;
+                const roomId = `agent-${agentId}`;
+                const roomExists = db.prepare('SELECT id FROM chat_rooms WHERE id = ?').get(roomId);
+                if (roomExists) {
+                  const msgId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                  db.prepare(`
+                    INSERT INTO chat_room_messages (id, roomId, agentId, role, content, timestamp)
+                    VALUES (?, ?, 'system', 'system', ?, ?)
+                  `).run(msgId, roomId,
+                    `Your approval request for task "${taskRow.title}" was rejected. Reason: ${notes || '(no reason given)'}. Please revise and resubmit.`,
+                    now
+                  );
+                }
+              } catch { /* non-critical */ }
+            }
           }
           db.prepare(
             `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
@@ -145,6 +164,15 @@ export async function PATCH(
     if (typeof updated.metadata === 'string') {
       try { updated.metadata = JSON.parse(updated.metadata as string); } catch { updated.metadata = {}; }
     }
+
+    // Emit inbox.count SSE event so sidebar badge updates immediately
+    try {
+      const pendingCount = (db.prepare(
+        "SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'"
+      ).get() as { c: number }).c;
+      emitSSEEvent('inbox.count', { count: pendingCount });
+    } catch { /* non-critical */ }
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('PATCH /api/approvals/[id] error:', error);

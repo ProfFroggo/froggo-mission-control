@@ -8,7 +8,8 @@ import { ENV } from './env';
 
 import { getDb } from './database';
 import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
-import { existsSync, readFileSync } from 'fs';
+import { trackEvent } from './telemetry';
+import { existsSync, readFileSync, mkdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -22,46 +23,69 @@ const REVIEW_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 // Track tasks currently being reviewed to avoid duplicates
 const inReview = new Set<string>();
 
-function readFile(path: string): string | null {
-  if (!existsSync(path)) return null;
-  return readFileSync(path, 'utf-8').trim();
+function readFile(filePath: string): string | null {
+  if (!existsSync(filePath)) return null;
+  return readFileSync(filePath, 'utf-8').trim();
 }
 
-function buildClaraSystemPrompt(): string {
+function buildClaraSystemPrompt(assignedTo?: string): string {
   const soul = readFile(join(HOME, 'mission-control', 'agents', 'clara', 'SOUL.md'));
   const mem = readFile(join(HOME, 'mission-control', 'agents', 'clara', 'MEMORY.md'));
   let prompt = soul || 'You are Clara, the quality reviewer for the Mission Control platform.';
-  if (mem) prompt += `\n\n---\n## Your Memory\n${mem}`;
+  if (mem && mem.trim()) prompt += `\n\n---\n## Your Memory\n${mem}`;
+
+  // Load agent-specific review history
+  if (assignedTo) {
+    const patternFile = join(HOME, 'mission-control', 'memory', 'agents', 'clara', 'agent-patterns', `${assignedTo}.md`);
+    const patterns = readFile(patternFile);
+    if (patterns) {
+      // Keep last 20 lines to control token usage
+      const recentPatterns = patterns.split('\n').filter(Boolean).slice(-20).join('\n');
+      prompt += `\n\n---\n## Your Past Reviews of ${assignedTo}\n${recentPatterns}`;
+    }
+  }
+
   return prompt;
+}
+
+function resetReviewStatus(taskId: unknown): void {
+  try {
+    getDb()
+      .prepare("UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE id = ? AND reviewStatus = 'in-review'")
+      .run(Date.now(), taskId);
+  } catch { /* non-critical */ }
 }
 
 export function spawnClaraReview(task: Record<string, unknown>): void {
   if (inReview.has(task.id as string)) return;
   inReview.add(task.id as string);
 
+  const assignedTo = (task.assignedTo as string | undefined) || undefined;
+
   const message = [
     `## Review Task: ${task.id}`,
     `**Title:** ${task.title}`,
     task.description ? `**Description:** ${task.description}` : null,
-    `**Assigned to:** ${task.assignedTo || 'unassigned'}`,
+    `**Assigned to:** ${assignedTo || 'unassigned'}`,
     `**Progress:** ${task.progress ?? 0}%`,
     task.lastAgentUpdate ? `**Agent's update:** ${task.lastAgentUpdate}` : null,
     '',
     'Review this task and update it immediately:',
-    `- Approved → mcp__mission-control-db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "..." }`,
-    `- Rejected → mcp__mission-control-db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues>" }`,
+    `- Approved → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "..." }`,
+    `- Rejected → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues>" }`,
     '',
     'Make your decision now. Do not ask clarifying questions.',
   ].filter(Boolean).join('\n');
 
-  // Mark as in-review immediately
+  // Stamp reviewedAt so we can detect stale in-review rows
+  const startedAt = Date.now();
+  trackEvent('clara.review.start', { taskId: task.id });
   try {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = 'in-review', updatedAt = ? WHERE id = ?")
-      .run(Date.now(), task.id);
+      .run(startedAt, task.id);
   } catch { /* non-critical */ }
 
-  const claraDir = join(HOME, 'mission-control', 'agents', 'clara');
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
 
   const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT,
@@ -71,9 +95,9 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     '--model', 'claude-haiku-4-5-20251001',
     '--allowedTools', TIER_TOOLS['worker'].join(','),
     '--disallowedTools', loadDisallowedTools('clara').join(','),
-    '--system-prompt', buildClaraSystemPrompt(),
+    '--system-prompt', buildClaraSystemPrompt(assignedTo),
   ], {
-    cwd: existsSync(claraDir) ? claraDir : HOME,
+    cwd: process.cwd(),
     env: cleanEnv as NodeJS.ProcessEnv,
     stdio: 'pipe',
   });
@@ -83,17 +107,46 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
   proc.stdout.resume();
   proc.stderr.resume();
 
+  // Kill Clara's process after 3 minutes — prevents zombie reviews
+  const reviewTimeout = setTimeout(() => {
+    try { proc.kill(); } catch { /* already exited */ }
+  }, 3 * 60_000);
+
   proc.on('close', () => {
+    clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
+    trackEvent('clara.review.complete', { taskId: task.id });
+    // If Clara exited without calling task_update (MCP failure, model responded without
+    // using tools, process killed), reviewStatus is still 'in-review' in the DB.
+    // Reset it so the next cron sweep retries.
+    resetReviewStatus(task.id);
+
+    // After Clara's review, log the outcome to her pattern memory
+    setTimeout(() => {
+      try {
+        const reviewed = getDb()
+          .prepare(`SELECT reviewStatus, reviewNotes FROM tasks WHERE id = ?`)
+          .get(task.id as string) as { reviewStatus: string; reviewNotes: string } | undefined;
+
+        if (reviewed?.reviewStatus === 'approved' || reviewed?.reviewStatus === 'rejected') {
+          const patternDir = join(HOME, 'mission-control', 'memory', 'agents', 'clara', 'agent-patterns');
+          mkdirSync(patternDir, { recursive: true });
+
+          const agentId = assignedTo || 'unknown';
+          const patternFile = join(patternDir, `${agentId}.md`);
+          const date = new Date().toISOString().slice(0, 10);
+          const line = `${date} | ${task.title} | ${reviewed.reviewStatus} | ${(reviewed.reviewNotes || '').slice(0, 200)}\n`;
+          appendFileSync(patternFile, line, 'utf-8');
+          trackEvent('memory.written', { agentId: 'clara' });
+        }
+      } catch { /* non-critical */ }
+    }, 2000); // Brief delay so DB write from MCP has settled
   });
 
   proc.on('error', () => {
+    clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
-    try {
-      getDb()
-        .prepare("UPDATE tasks SET reviewStatus = NULL WHERE id = ? AND reviewStatus = 'in-review'")
-        .run(task.id);
-    } catch { /* non-critical */ }
+    resetReviewStatus(task.id);
   });
 }
 
@@ -141,6 +194,18 @@ export function startClaraReviewCron(): void {
   if (g._claraReviewCron) return;
   // Set sentinel immediately (before setInterval) to prevent concurrent callers from racing in
   g._claraReviewCron = true as unknown as ReturnType<typeof setInterval>;
+
+  // On startup: reset any tasks stuck at 'in-review' from a previous server session.
+  // The in-memory inReview Set is empty after restart, so these would never be retried
+  // without this cleanup.
+  try {
+    const stale = getDb()
+      .prepare(`UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE status = 'review' AND reviewStatus = 'in-review'`)
+      .run(Date.now());
+    if (stale.changes > 0) {
+      console.log(`[clara-review-cron] Reset ${stale.changes} stale in-review task(s) from previous session`);
+    }
+  } catch { /* DB may not be ready yet — runReviewCycle will handle them */ }
 
   const interval = setInterval(runReviewCycle, REVIEW_INTERVAL_MS);
   interval.unref?.();

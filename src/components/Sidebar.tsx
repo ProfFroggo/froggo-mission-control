@@ -9,6 +9,8 @@ import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
 import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
+import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
+import { useEventBus } from '../lib/useEventBus';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
 // Must include ALL DEFAULT_PANELS ids so panels appear immediately (before async initAll() runs).
@@ -99,15 +101,30 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     }
   }, []);
 
-  useEffect(() => {
-    loadInboxCount();
-    const interval = setInterval(loadInboxCount, 15000);
-    return () => clearInterval(interval);
-  }, [loadInboxCount]);
+  useVisibilityPolling(loadInboxCount, 60_000);
+
+  // Subscribe to SSE inbox.count events — updates badge immediately when approvals are resolved
+  useEventBus('inbox.count', (data) => {
+    const d = data as { count: number };
+    if (typeof d?.count === 'number') {
+      setInboxCount(d.count);
+    }
+  });
+
+  // Subscribe to module.installed events — refresh nav when a new module is installed
+  useEventBus('module.installed', () => {
+    usePanelConfigStore.getState().syncWithViewRegistry();
+  });
 
   return (
     <>
-    <aside 
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-3 focus:py-2 focus:text-xs focus:bg-mission-control-accent focus:text-white focus:rounded-md"
+    >
+      Skip to content
+    </a>
+    <aside
       className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out z-0 ${
         expanded ? 'w-52' : 'w-16'
       }`}
@@ -141,7 +158,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               <button
                 key={id}
                 onClick={() => onNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
                   isActive
                     ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
                     : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'

@@ -125,6 +125,6 @@ Log each phase result. Mark subtask complete. Update progress before next phase.
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:
-- **Agent specs / briefs**: `library/docs/stratagies/YYYY-MM-DD_agent_description.md`
+- **Agent specs / briefs**: `library/docs/strategies/YYYY-MM-DD_agent_description.md`
 - **Onboarding docs**: `library/docs/YYYY-MM-DD_onboarding_description.md`
 - **Team reports**: `library/docs/research/YYYY-MM-DD_hr_description.md`

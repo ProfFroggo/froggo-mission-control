@@ -182,7 +182,7 @@ export const XReplyGuyView: React.FC = () => {
                   />
                   <span className="flex items-center gap-1">
                     <Zap size={12} className="text-warning" />
-                    Fast-track (skip approval)
+                    Fast-track approval (tier 1)
                   </span>
                 </label>
               </div>
@@ -211,7 +211,7 @@ export const XReplyGuyView: React.FC = () => {
             {fastTrack && (
               <div className="text-xs text-warning bg-warning-subtle p-2 rounded flex items-center gap-1">
                 <Zap size={12} />
-                Fast-track enabled: Draft will be auto-approved and ready to post immediately
+                Fast-track: routes to tier 1 approval (minimal review required)
               </div>
             )}
           </div>

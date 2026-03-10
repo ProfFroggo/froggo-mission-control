@@ -130,7 +130,7 @@ function buildAccountsFromSources(
 ): Account[] {
   const accounts: Account[] = [];
 
-  // Email accounts from gog auth discovery (or fallback)
+  // Email accounts from Google OAuth (or fallback)
   emailAccounts.forEach((entry, i) => {
     accounts.push({
       id: `email-${entry.email}`,
@@ -242,7 +242,7 @@ function sanitizeInlineHtml(html: string): string {
   return sanitizeHtml(html);
 }
 
-// Parse email headers from body output (gog gmail read returns headers + body)
+// Parse email headers from body output (Gmail API returns headers + body)
 function parseEmailBodyAndMeta(raw: string): { body: string; metadata: EmailMetadata } {
   const metadata: EmailMetadata = {};
   const lines = raw.split('\n');

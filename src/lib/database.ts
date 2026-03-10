@@ -63,7 +63,8 @@ function initSchema(db: Database.Database) {
       stageNumber INTEGER,
       stageName TEXT,
       nextStage TEXT,
-      parentTaskId TEXT
+      parentTaskId TEXT,
+      moduleId TEXT
     );
 
     -- ══════════════════════════════════════════
@@ -423,6 +424,8 @@ function initSchema(db: Database.Database) {
       spec TEXT DEFAULT '{}',
       conversationState TEXT DEFAULT '{}',
       overallProgress REAL DEFAULT 0,
+      wireframeHtml TEXT,
+      taskIds TEXT DEFAULT '[]',
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
       updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
@@ -479,7 +482,72 @@ function initSchema(db: Database.Database) {
     -- Approvals: requester queries
     CREATE INDEX IF NOT EXISTS idx_approvals_requester ON approvals(requester, createdAt DESC);
 
+    -- Phase 79: additional composite indexes for Clara review and activity lookup
+    CREATE INDEX IF NOT EXISTS idx_tasks_status_review ON tasks(status, reviewStatus);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_task_created ON task_activity(taskId, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
+
+    -- ══════════════════════════════════════════
+    -- TELEMETRY (Phase 85)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts INTEGER NOT NULL,
+      event TEXT NOT NULL,
+      data TEXT,
+      agentId TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_telemetry_event_ts ON telemetry(event, ts DESC);
+
     -- No default rooms seeded — rooms are created on demand
+
+    -- ══════════════════════════════════════════
+    -- FINANCE
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS finance_accounts (
+      id          TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      name        TEXT NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('checking','savings','credit','investment','crypto','other')),
+      balance     REAL DEFAULT 0,
+      currency    TEXT DEFAULT 'USD',
+      institution TEXT,
+      notes       TEXT,
+      createdAt   INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt   INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_transactions (
+      id          TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      accountId   TEXT NOT NULL REFERENCES finance_accounts(id) ON DELETE CASCADE,
+      amount      REAL NOT NULL,
+      type        TEXT NOT NULL CHECK(type IN ('income','expense','transfer')),
+      category    TEXT,
+      description TEXT,
+      date        INTEGER NOT NULL,
+      recurring   INTEGER DEFAULT 0,
+      tags        TEXT DEFAULT '[]',
+      createdAt   INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_budgets (
+      id        TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      category  TEXT NOT NULL,
+      limit_amt REAL NOT NULL,
+      spent     REAL DEFAULT 0,
+      period    TEXT DEFAULT 'monthly' CHECK(period IN ('weekly','monthly','quarterly','yearly')),
+      active    INTEGER DEFAULT 1,
+      createdAt INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE TABLE IF NOT EXISTS finance_scenarios (
+      id         TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      name       TEXT NOT NULL,
+      projection TEXT DEFAULT '{}',
+      notes      TEXT,
+      createdAt  INTEGER DEFAULT (unixepoch() * 1000),
+      updatedAt  INTEGER DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_finance_txns_account ON finance_transactions(accountId, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_finance_txns_category ON finance_transactions(category, date DESC);
+    CREATE INDEX IF NOT EXISTS idx_finance_budgets_active ON finance_budgets(active, period);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
@@ -508,10 +576,30 @@ function initSchema(db: Database.Database) {
     // Pending actions: category + executor back-ref on approvals
     `ALTER TABLE approvals ADD COLUMN category TEXT DEFAULT 'agent_approval'`,
     `ALTER TABLE approvals ADD COLUMN actionRef TEXT`,
+    // Module Builder: wireframe + task linking
+    `ALTER TABLE tasks ADD COLUMN moduleId TEXT`,
+    `ALTER TABLE modules_builder ADD COLUMN wireframeHtml TEXT`,
+    `ALTER TABLE modules_builder ADD COLUMN taskIds TEXT DEFAULT '[]'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Module Builder: index for task-by-module queries
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_moduleId ON tasks(moduleId) WHERE moduleId IS NOT NULL`);
+  } catch { /* non-critical */ }
+
+  // Phase 79: WAL performance tuning
+  try {
+    db.pragma('wal_autocheckpoint = 400');
+    db.pragma('synchronous = NORMAL');
+  } catch { /* non-critical */ }
+
+  // Clean up sessions older than 7 days
+  try {
+    db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  } catch { /* non-critical */ }
 
   syncCatalogAgents(db);
   syncCatalogModules(db);

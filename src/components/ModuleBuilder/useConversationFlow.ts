@@ -253,9 +253,31 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
 
   const generateWireframe = useCallback(
     async (currentSpec: Partial<ModuleSpec>) => {
-      const prompt = `Generate an ASCII wireframe for this module layout. Type: ${currentSpec.type}, Layout: ${currentSpec.layout}, Views: ${currentSpec.views?.map(v => v.name).join(', ') || 'none'}, Components: ${currentSpec.components?.map(c => c.type).join(', ') || 'none'}. Use box-drawing chars, keep under 25 lines, 60 chars wide. Output ONLY the wireframe, no [[ANSWER_READY]] tag.`;
-      const result = await tryLLMQuiet(prompt);
-      const clean = result.replace(ANSWER_EXTRACT_RE, '').trim();
+      const wireframePrompt = `Generate a clean HTML wireframe for this UI module.
+
+Module: ${currentSpec.name || 'Untitled'}
+Type: ${currentSpec.type || 'page'}
+Layout: ${currentSpec.layout || 'single-panel'}
+Views: ${currentSpec.views?.map(v => v.name).join(', ') || 'main view'}
+Components: ${currentSpec.components?.map(c => c.type).join(', ') || 'content'}
+
+Rules:
+- Return ONLY a self-contained HTML fragment (no <html>/<head>/<body> tags)
+- Use only inline styles
+- Max width: 580px, use percentage widths for responsiveness
+- Color palette: background panels use #1a1a2e, cards use #16213e, borders use #0f3460, accent use #e94560, text use #eee
+- Show navigation bar if hasNavigation is true
+- Show tab bar if layout is 'tabs'
+- Show sidebar+main if layout is 'split'
+- Show responsive grid if layout is 'grid'
+- Each view/section: a labeled box with a subtle border
+- Components: show as placeholder boxes with their type labeled (e.g. "[ Chart ]", "[ Table ]", "[ Form ]")
+- Keep it minimal, clean, dark theme
+- Max 50 lines of HTML
+- NO JavaScript
+Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
+      const result = await tryLLMQuiet(wireframePrompt);
+      const clean = result.replace(ANSWER_EXTRACT_RE, '').replace(/^```html?\n?/mi, '').replace(/\n?```$/m, '').trim();
       if (clean) setWireframe(clean);
     },
     [tryLLMQuiet],
@@ -478,6 +500,8 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
     jumpToSection,
     askCurrentQuestion,
     getState,
+    generateWireframe,
+    setWireframe,
   };
 }
 

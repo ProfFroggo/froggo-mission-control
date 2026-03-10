@@ -1,27 +1,16 @@
 // GoogleOAuthSetup — shown in CommsInbox when Google is not authenticated.
-// Handles the OAuth flow: click → redirect to Google → code lands at localhost:3000 → exchanged for tokens.
+// Handles the OAuth/PKCE flow: click → redirect to Google → code lands at localhost → exchanged for tokens.
 
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, AlertCircle, Loader, Copy } from 'lucide-react';
-import { showToast } from './Toast';
-
-interface AuthStatus {
-  authenticated: boolean;
-  hasCredentials?: boolean;
-  needsSetup?: boolean;
-  email?: string | null;
-  error?: string;
-}
+import { Mail, AlertCircle, Loader } from 'lucide-react';
 
 interface Props {
   onAuthenticated: (email: string) => void;
 }
 
 export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
-  const [status, setStatus] = useState<'checking' | 'needs-setup' | 'ready' | 'error'>('checking');
-  const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const checkForCallback = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
@@ -43,32 +32,16 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
         return true;
       } else {
         setError(data.error ?? 'Authentication failed');
-        setStatus('ready');
       }
     } catch {
       setError('Failed to complete authentication');
-      setStatus('ready');
     }
     setConnecting(false);
     return false;
   }, [onAuthenticated]);
 
   useEffect(() => {
-    checkForCallback().then(handled => {
-      if (handled) return;
-
-      fetch('/api/google/auth/status')
-        .then(r => r.json())
-        .then((data: AuthStatus) => {
-          setAuthStatus(data);
-          if (data.needsSetup || !data.hasCredentials) {
-            setStatus('needs-setup');
-          } else {
-            setStatus('ready');
-          }
-        })
-        .catch(() => setStatus('ready'));
-    });
+    checkForCallback();
   }, [checkForCallback]);
 
   const handleConnect = async () => {
@@ -89,71 +62,11 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
     }
   };
 
-  const copyPath = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => showToast('success', 'Copied', text));
-  };
-
-  if (status === 'checking' || connecting) {
+  if (connecting) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-mission-control-text-dim">
         <Loader size={32} className="animate-spin text-mission-control-accent" />
-        <span className="text-sm">{connecting ? 'Connecting to Google...' : 'Checking...'}</span>
-      </div>
-    );
-  }
-
-  if (status === 'needs-setup') {
-    return (
-      <div className="flex flex-col h-full overflow-y-auto">
-        <div className="p-6 max-w-lg mx-auto w-full">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={20} className="text-red-400" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">Google OAuth Credentials Missing</h3>
-              <p className="text-xs text-mission-control-text-dim">Connect Google to enable Gmail and Calendar access.</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 text-sm">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-              <p className="font-medium text-xs uppercase tracking-wider text-mission-control-text-dim">Setup Steps</p>
-              <Step n={1} text="Go to Google Cloud Console → Credentials and create an OAuth 2.0 Client ID (Desktop app)" />
-              <div className="flex items-center gap-2 bg-mission-control-bg rounded px-3 py-2 text-xs font-mono">
-                <span className="flex-1 text-mission-control-accent truncate">console.cloud.google.com/apis/credentials</span>
-                <button
-                  onClick={() => copyPath('https://console.cloud.google.com/apis/credentials')}
-                  className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text"
-                  title="Copy URL"
-                >
-                  <Copy size={12} />
-                </button>
-              </div>
-              <Step n={2} text="Download the JSON and save it to:" />
-              <div className="flex items-center gap-2 bg-mission-control-bg rounded px-3 py-2 text-xs font-mono">
-                <span className="flex-1 text-mission-control-accent truncate">~/.config/google-workspace-mcp/client_secret.json</span>
-                <button
-                  onClick={() => copyPath('~/.config/google-workspace-mcp/client_secret.json')}
-                  className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text"
-                  title="Copy path"
-                >
-                  <Copy size={12} />
-                </button>
-              </div>
-              <Step n={3} text='Reload — a "Connect Google Account" button will appear' />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => window.location.reload()}
-                className="text-xs px-3 py-2 border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-              >
-                Reload after setup
-              </button>
-            </div>
-          </div>
-        </div>
+        <span className="text-sm">Connecting to Google...</span>
       </div>
     );
   }
@@ -177,13 +90,6 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
         </div>
       )}
 
-      {authStatus?.error && (
-        <div className="flex items-center gap-2 text-yellow-400 text-xs bg-yellow-400/10 border border-yellow-400/20 rounded-lg px-3 py-2 w-full">
-          <AlertCircle size={14} className="flex-shrink-0" />
-          <span>{authStatus.error}</span>
-        </div>
-      )}
-
       <button
         onClick={handleConnect}
         className="flex items-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors w-full justify-center"
@@ -195,15 +101,6 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
       <p className="text-xs text-mission-control-text-dim/60">
         Grants read/send access to Gmail and read/write to Google Calendar. Revoke in Settings at any time.
       </p>
-    </div>
-  );
-}
-
-function Step({ n, text }: { n: number; text: string }) {
-  return (
-    <div className="flex gap-2.5 items-start">
-      <span className="w-5 h-5 rounded-full bg-mission-control-accent/20 text-mission-control-accent text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{n}</span>
-      <span className="text-xs text-mission-control-text/80 leading-relaxed">{text}</span>
     </div>
   );
 }

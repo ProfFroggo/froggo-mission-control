@@ -12,6 +12,7 @@ export default function LogsTab() {
   const logRef = useRef<HTMLDivElement>(null);
 
   const loadLogs = useCallback(async (append = false) => {
+    if ((window as any).__appVisible === false) return; // Skip when tab hidden
     try {
       const result = await gateway.tailLogs(append && cursor ? { cursor, limit: 100 } : { limit: 200 });
       if (result?.lines) {
@@ -36,7 +37,7 @@ export default function LogsTab() {
 
   useEffect(() => {
     if (!polling) return;
-    const interval = setInterval(() => loadLogs(true), 3000);
+    const interval = setInterval(() => loadLogs(true), 30000); // Poll every 30s (was 3s)
     return () => clearInterval(interval);
   }, [polling, cursor]);
 

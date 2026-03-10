@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -70,6 +70,9 @@ export default function ChatPanel() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const lastUserMessageRef = useRef<string>('');
   const { agents: chatAgents } = useAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -105,6 +108,8 @@ export default function ChatPanel() {
   const currentContentRef = useRef<string | ContentBlock[]>(''); // Full structured content
   const currentMsgIdRef = useRef<string>('');
   const currentRunIdRef = useRef<string>('');
+  // Phase 80: AbortController for SDK streaming cancellation
+  const sdkAbortControllerRef = useRef<AbortController | null>(null);
 
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +140,7 @@ export default function ChatPanel() {
     // Load from DB for this agent
     setMessages([]);
     setHistoryLoaded(true); // prevent gateway fallback race
+    setLoadingMessages(true);
     try {
       const result = await chatApi.getMessages(agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
@@ -159,6 +165,8 @@ export default function ChatPanel() {
       }
     } catch (_err) {
       // DB load failed — start with empty messages
+    } finally {
+      setLoadingMessages(false);
     }
   }, [selectedAgent, messages]);
 
@@ -188,6 +196,7 @@ export default function ChatPanel() {
       }
       // Mark as loaded IMMEDIATELY to prevent race conditions
       setHistoryLoaded(true);
+      setLoadingMessages(true);
 
       try {
         const result = await chatApi.getMessages(selectedAgent.dbSessionKey);
@@ -211,6 +220,8 @@ export default function ChatPanel() {
         }
       } catch (_err) {
         // DB load failed — start with empty messages
+      } finally {
+        setLoadingMessages(false);
       }
     };
     loadFromDb();
@@ -701,47 +712,60 @@ export default function ChatPanel() {
     if (!text && attachments.length === 0) return;
     if (!selectedAgent) return;
     
-    // Clear suggestions when sending
+    // Clear suggestions and prior stream error when sending
     setSuggestedReplies([]);
+    setStreamError(null);
+    lastUserMessageRef.current = text;
 
     // Build message content with actual file contents
     let content = text;
     const fileContents: string[] = [];
+    const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.bash', '.sql', '.r', '.rb', '.go', '.rs', '.swift', '.kt'];
+
     for (const att of attachments) {
-      if (att.dataUrl) {
-        // Text-based files: decode and include content inline
-        const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.bash', '.sql', '.r', '.rb', '.go', '.rs', '.swift', '.kt'];
-        const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
-        
-        if (isTextFile) {
-          // Text file: decode and include content
-          try {
-            const base64 = att.dataUrl.split(',')[1];
-            const decoded = atob(base64);
-            fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
-          } catch (_e) {
-            fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
-          }
-        } else if (att.type.startsWith('image/')) {
-          // Image: Include base64 data URL (fs.writeBase64 not available in web)
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
-        } else if (att.type === 'application/pdf') {
-          // PDF: fs.writeBase64 not available in web — inform user
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
-        } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
-          // Audio file: whisper transcription not available in web version
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Audio transcription not available in web version]`);
-        } else {
-          // Other files: fs.writeBase64 not available in web — include metadata only
-          // TODO Phase 4: migrate — [web-not-available] not available in web
-          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+      if (!att.dataUrl) continue;
+
+      const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
+      const isImage = att.type.startsWith('image/');
+      const isPdf = att.type === 'application/pdf';
+      const isAudio = att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext));
+
+      if (isTextFile) {
+        // Text files: decode and include content inline
+        try {
+          const base64 = att.dataUrl.split(',')[1];
+          const decoded = atob(base64);
+          fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
+        } catch {
+          fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
+      } else if (isImage || isPdf) {
+        // Images and PDFs: upload to server, give agent the file path to read
+        try {
+          const blob = await fetch(att.dataUrl).then(r => r.blob());
+          const form = new FormData();
+          form.append('file', blob, att.name);
+          const res = await fetch('/api/agents/upload', { method: 'POST', body: form });
+          if (res.ok) {
+            const { path } = await res.json();
+            if (isImage) {
+              fileContents.push(`\n\n[Image attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — file path: ${path}\nUse the Read tool to view this image.]`);
+            } else {
+              fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — file path: ${path}\nUse the Read tool to read this PDF.]`);
+            }
+          } else {
+            fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — upload failed, cannot be read]`);
+          }
+        } catch {
+          fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} — could not upload]`);
+        }
+      } else if (isAudio) {
+        fileContents.push(`\n\n[Audio file attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — audio transcription not supported]`);
+      } else {
+        fileContents.push(`\n\n[File attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})]`);
       }
     }
-    
+
     if (fileContents.length > 0) {
       content = text + fileContents.join('');
     }
@@ -906,12 +930,19 @@ export default function ChatPanel() {
           ? { ...m, content: friendlyError, streaming: false }
           : m
       ));
+      setStreamError(e instanceof Error ? e.message : 'Could not send message');
       setLoading(false);
       currentResponseRef.current = '';
       currentContentRef.current = '';
       currentMsgIdRef.current = '';
       showToast('error', 'Message failed', e instanceof Error ? e.message : 'Could not send message');
     }
+  };
+
+  const handleRetry = () => {
+    if (!lastUserMessageRef.current) return;
+    setInput(lastUserMessageRef.current);
+    setStreamError(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -992,9 +1023,15 @@ export default function ChatPanel() {
 
   // Guard against null selectedAgent (agents still loading)
   if (!selectedAgent) {
-    return (
+    return chatAgents.length === 0 ? (
       <div className="h-full flex items-center justify-center">
         <Spinner size={32} />
+      </div>
+    ) : (
+      <div className="flex flex-col items-center justify-center h-full text-mission-control-text-muted">
+        <MessageCircle size={40} className="mb-4 opacity-30" />
+        <p className="text-sm font-medium">Select an agent to start chatting</p>
+        <p className="text-xs mt-1 opacity-70">Choose from the agent panel on the left</p>
       </div>
     );
   }
@@ -1207,23 +1244,28 @@ export default function ChatPanel() {
       )}
 
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
-        {messages.length === 0 ? (
-          <div className="text-center py-16 text-mission-control-text-dim">
-            <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">Hey! I&apos;m {selectedAgent.name}</p>
-            <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
-            <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
-              {['Check my calendar', 'Draft a tweet', 'What tasks are pending?', 'Check my emails'].map((q) => (
-                <button
-                  key={q}
-                  onClick={() => setInput(q)}
-                  className="px-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+      <div
+        className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}
+        aria-live="polite"
+        aria-label="Conversation messages"
+      >
+        {loadingMessages ? (
+          <div className="space-y-3 p-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className={`flex gap-3 ${i % 2 === 0 ? 'flex-row-reverse' : ''}`}>
+                <div className="w-7 h-7 rounded-full bg-mission-control-surface animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-3/4 ml-auto' : 'w-2/3'}`} />
+                  <div className={`h-4 rounded bg-mission-control-surface animate-pulse ${i % 2 === 0 ? 'w-1/2 ml-auto' : 'w-1/2'}`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
+            <Sparkles size={32} className="mb-3 opacity-30" />
+            <p className="text-sm font-medium">New conversation</p>
+            <p className="text-xs mt-1 opacity-70">Send a message to get started</p>
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
           <EmptyState
@@ -1290,6 +1332,28 @@ export default function ChatPanel() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Stream error banner */}
+        {streamError && (
+          <div className="flex items-center gap-2 p-3 mb-3 rounded-md bg-error/10 border border-error/20 text-error text-sm">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span className="flex-1">{streamError}</span>
+            <button
+              onClick={handleRetry}
+              className="text-xs underline hover:no-underline shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading suggestions indicator */}
+        {loadingSuggestions && (
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-1 py-1 mb-2">
+            <Loader2 size={12} className="animate-spin" />
+            <span>Loading suggestions...</span>
           </div>
         )}
 
@@ -1381,6 +1445,7 @@ export default function ChatPanel() {
           <button
             onClick={sendMessage}
             disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
+            title="Send message (Enter)"
             className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}

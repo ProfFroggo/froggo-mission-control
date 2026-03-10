@@ -129,6 +129,6 @@ Team leads, researchers, and reviewers can run simultaneously. Synthesize findin
 Mission Control does not produce direct file output but is responsible for folder structure:
 - **Create project folders**: `library/projects/project-{name}-{date}/` when a new project starts
 - **Create campaign folders**: `library/campaigns/campaign-{name}-{date}/` when a new campaign starts
-- Subfolders `code/`, `design/{ui,images,media}/`, `docs/{research,presentations,stratagies}/` are created automatically
+- Subfolders `code/`, `design/{ui,images,media}/`, `docs/{research,presentations,strategies}/` are created automatically
 - Instruct other agents to save their outputs to the appropriate project/campaign subfolder
 - File naming: `YYYY-MM-DD_type_description.ext`

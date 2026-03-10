@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Loader2, Sparkles } from 'lucide-react';
+import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Sparkles } from 'lucide-react';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
@@ -9,7 +9,7 @@ import { agentApi, analyticsApi } from '../lib/api';
 const LS_TRAINING_VIEWED = 'hr-training-last-viewed';
 const LS_REPORTS_VIEWED = 'hr-reports-last-viewed';
 
-type IndicatorState = 'training-running' | 'report-running' | 'new-training' | 'new-report' | null;
+type IndicatorState = 'new-training' | 'new-report' | null;
 
 interface TeamHealth {
   totalAgents: number;
@@ -59,25 +59,10 @@ export default function HRSection() {
     }
   }, []);
 
-  // Poll cron status + check for new files
+  // Poll for new training/report files only (no phantom cron job references)
   const checkIndicator = useCallback(async () => {
     try {
-      const [cronData, logsData] = await Promise.all([
-        fetch('/api/cron').then(r => r.ok ? r.json() : { jobs: [] }).catch(() => ({ jobs: [] })),
-        fetch('/api/training-logs').then(r => r.ok ? r.json() : []).catch(() => []),
-      ]);
-
-      const jobs: any[] = cronData.jobs ?? [];
-      const trainingJob = jobs.find((j: any) => j.id === 'job-hr-daily-training');
-      const reportJob = jobs.find((j: any) => j.id === 'job-hr-weekly-report');
-
-      const trainingRunning = !!trainingJob?.state?.runningAtMs &&
-        Date.now() - trainingJob.state.runningAtMs < 30 * 60 * 1000; // running in last 30 min
-      const reportRunning = !!reportJob?.state?.runningAtMs &&
-        Date.now() - reportJob.state.runningAtMs < 30 * 60 * 1000;
-
-      if (trainingRunning) { setIndicator('training-running'); return; }
-      if (reportRunning) { setIndicator('report-running'); return; }
+      const logsData = await fetch('/api/training-logs').then(r => r.ok ? r.json() : []).catch(() => []);
 
       // Check for new files since last viewed
       const files: any[] = Array.isArray(logsData) ? logsData : [];
@@ -121,13 +106,7 @@ export default function HRSection() {
   };
 
   const indicatorEl = indicator && (
-    <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-      indicator === 'training-running' || indicator === 'report-running'
-        ? 'bg-teal-500/10 text-teal-300 border-teal-500/30 animate-pulse'
-        : 'bg-success-subtle text-success border-success-border'
-    }`}>
-      {indicator === 'training-running' && <><Loader2 size={10} className="animate-spin" /> Training</>}
-      {indicator === 'report-running' && <><Loader2 size={10} className="animate-spin" /> Report</>}
+    <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border bg-success-subtle text-success border-success-border">
       {indicator === 'new-training' && <><Sparkles size={10} /> New training</>}
       {indicator === 'new-report' && <><Sparkles size={10} /> New report</>}
     </span>

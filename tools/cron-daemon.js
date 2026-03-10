@@ -326,7 +326,15 @@ function checkJobs() {
     if (!job.enabled) return job;
 
     if (isDue(job, now)) {
-      runApiJob(job).catch(e => log(`[${job.id}] runApiJob error: ${e.message}`));
+      runApiJob(job).catch(e => {
+        log(`[${job.id}] runApiJob error: ${e.message}`);
+        // Phase 85: log to cron-errors.log for observability
+        try {
+          const fs = require('fs');
+          const errLogPath = path.join(HOME, 'mission-control', 'cron-errors.log');
+          fs.appendFileSync(errLogPath, `${new Date().toISOString()} Job ${job.id} failed: ${e.message}\n`);
+        } catch { /* non-critical */ }
+      });
       updated = true;
       const nextRunAtMs = computeNextRun(job, now);
       const newState = { ...job.state, lastRunAtMs: now, nextRunAtMs };

@@ -4,7 +4,7 @@
   "description": "Real-time voice interaction with agents via browser microphone. Powered by Gemini Live and voice bridge.",
   "version": "1.0.0",
   "category": "communications",
-  "icon": "🎙️",
+  "icon": "Mic",
   "responsibleAgent": "voice",
   "requiredAgents": ["voice"],
   "requiredNpm": [],

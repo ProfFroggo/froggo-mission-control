@@ -37,14 +37,21 @@ function checkDatabase(): boolean {
   }
 }
 
-function checkMcpServers(): boolean {
-  const settingsPath = path.join(process.cwd(), '.claude', 'settings.json');
-  if (!existsSync(settingsPath)) return false;
+function checkMcpServers(): { ok: boolean; missing: string[] } {
+  // Check the generated settings in ~/mission-control/.claude/settings.json
+  const settingsPath = path.join(homedir(), 'mission-control', '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) return { ok: false, missing: ['mission-control_db', 'memory'] };
   try {
     const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    return Object.keys(settings.mcpServers ?? {}).length > 0;
+    const requiredServers = ['mission-control_db', 'memory'];
+    const installedServerKeys = Object.keys(settings.mcpServers ?? {});
+    const missingServers = requiredServers.filter(s =>
+      !installedServerKeys.some(key => key === s || key.replace(/-/g, '_') === s.replace(/-/g, '_'))
+    );
+    const mcpOk = missingServers.length === 0;
+    return { ok: mcpOk, missing: missingServers };
   } catch {
-    return false;
+    return { ok: false, missing: ['mission-control_db', 'memory'] };
   }
 }
 
@@ -70,14 +77,19 @@ function checkCronDaemon(): boolean {
 export async function GET() {
   const cli = checkCliInstalled();
   const database = checkDatabase();
-  const mcp = checkMcpServers();
+  const mcpResult = checkMcpServers();
   const agentsInfo = checkAgentsOnDisk();
   const cronDaemon = checkCronDaemon();
 
   return NextResponse.json({
     cli: { ok: cli, label: 'Claude CLI installed' },
     database: { ok: database, label: 'Task database found', critical: true },
-    mcp: { ok: mcp, label: 'MCP servers configured' },
+    mcp: {
+      ok: mcpResult.ok,
+      label: mcpResult.ok
+        ? 'MCP servers configured'
+        : `MCP servers missing: ${mcpResult.missing.join(', ')}`,
+    },
     agents: { ok: agentsInfo.ok, label: `Agent souls on disk (${agentsInfo.count} found)`, count: agentsInfo.count },
     cronDaemon: { ok: cronDaemon, label: 'Cron daemon LaunchAgent installed' },
   });

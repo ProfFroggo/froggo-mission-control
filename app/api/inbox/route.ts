@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 import { join } from 'path';
 import { homedir } from 'os';
 import { TIER_TOOLS, loadDisallowedTools } from '@/lib/taskDispatcher';
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC`).all(...values) as Record<string, unknown>[];
+    const rows = db.prepare(`SELECT * FROM inbox ${where} ORDER BY createdAt DESC LIMIT 200`).all(...values) as Record<string, unknown>[];
 
     return NextResponse.json(rows.map(parseInboxItem));
   } catch (error) {
@@ -74,6 +75,9 @@ export async function POST(request: NextRequest) {
     `).run(type, title, content, context ?? null, channel ?? null, source_channel ?? null, status ?? null, now, JSON.stringify(metadata), JSON.stringify(tags), project ?? null);
 
     const item = db.prepare('SELECT * FROM inbox WHERE id = ?').get(result.lastInsertRowid) as Record<string, unknown>;
+
+    // Notify SSE clients of new inbox item
+    emitSSEEvent('inbox.count', { id: result.lastInsertRowid, type, title });
 
     // Fire-and-forget: wake inbox agent to triage the new item
     try {

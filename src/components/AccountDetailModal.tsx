@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink } from 'lucide-react';
+import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink, Mail, Calendar, HardDrive, Users, ListTodo, BarChart2, Lock, type LucideIcon } from 'lucide-react';
 import { ConnectedAccount, DataType } from '../types/accounts';
 
 interface Props {
@@ -9,12 +9,12 @@ interface Props {
   onRemove: () => void;
 }
 
-const DATA_TYPE_ICONS = {
-  email: '📧',
-  calendar: '📅',
-  drive: '💾',
-  contacts: '👥',
-  tasks: '✅',
+const DATA_TYPE_ICONS: Record<string, LucideIcon> = {
+  email: Mail,
+  calendar: Calendar,
+  drive: HardDrive,
+  contacts: Users,
+  tasks: ListTodo,
 };
 
 const PERMISSION_LABELS = {
@@ -149,16 +149,15 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 border-b-2 transition-colors capitalize ${
+              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition-colors capitalize ${
                 activeTab === tab
                   ? 'border-mission-control-accent text-mission-control-accent'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              {tab === 'overview' && '📊'}
-              {tab === 'permissions' && '🔐'}
-              {tab === 'security' && '🛡️'}
-              {' '}
+              {tab === 'overview' && <BarChart2 size={14} />}
+              {tab === 'permissions' && <Lock size={14} />}
+              {tab === 'security' && <Shield size={14} />}
               {tab}
             </button>
           ))}
@@ -220,12 +219,14 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               <section>
                 <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Connected Services</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {account.dataTypes.map((type) => (
+                  {account.dataTypes.map((type) => {
+                    const DtIcon = DATA_TYPE_ICONS[type] ?? ListTodo;
+                    return (
                     <div
                       key={type}
                       className="flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border"
                     >
-                      <span className="text-2xl">{DATA_TYPE_ICONS[type]}</span>
+                      <DtIcon size={20} className="text-mission-control-text-dim flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-medium capitalize">{type}</div>
                         <div className="text-xs text-mission-control-text-dim">
@@ -236,7 +237,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       </div>
                       <CheckCircle size={16} className="text-success" />
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
 
@@ -246,10 +248,10 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
                     <span className="text-mission-control-text-dim">Status</span>
-                    <span className={`font-medium ${getStatusColor()}`}>
-                      {account.status === 'connected' ? '✅ Connected' :
-                       account.status === 'error' ? '❌ Error' :
-                       account.status === 'needs-reauth' ? '⚠️ Needs Reauth' : '🔄 Checking'}
+                    <span className={`font-medium flex items-center gap-1.5 ${getStatusColor()}`}>
+                      {account.status === 'connected' ? <><CheckCircle size={14} /> Connected</> :
+                       account.status === 'error' ? <><X size={14} /> Error</> :
+                       account.status === 'needs-reauth' ? <><AlertTriangle size={14} /> Needs Reauth</> : <><RefreshCw size={14} /> Checking</>}
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
@@ -320,13 +322,15 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               <section>
                 <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Granted Permissions</h3>
                 <div className="space-y-3">
-                  {account.scopes.map((scope, idx) => (
+                  {account.scopes.map((scope, idx) => {
+                    const ScopeIcon = DATA_TYPE_ICONS[scope.type] ?? ListTodo;
+                    return (
                     <div
                       key={idx}
                       className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border"
                     >
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl">{DATA_TYPE_ICONS[scope.type]}</span>
+                        <ScopeIcon size={20} className="text-mission-control-text-dim flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium capitalize">{scope.type}</span>
@@ -339,7 +343,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                         <CheckCircle size={16} className="text-success mt-0.5" />
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
 
@@ -393,8 +398,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Key size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Storage</span>
                     </div>
-                    <span className="font-medium text-success">
-                      ✅ Encrypted
+                    <span className="font-medium text-success flex items-center gap-1">
+                      <CheckCircle size={14} /> Encrypted
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
@@ -402,8 +407,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Shield size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">OAuth Protocol</span>
                     </div>
-                    <span className="font-medium text-success">
-                      ✅ Secure
+                    <span className="font-medium text-success flex items-center gap-1">
+                      <CheckCircle size={14} /> Secure
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
@@ -411,8 +416,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Clock size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Refresh</span>
                     </div>
-                    <span className="font-medium text-success">
-                      ✅ Automatic
+                    <span className="font-medium text-success flex items-center gap-1">
+                      <CheckCircle size={14} /> Automatic
                     </span>
                   </div>
                 </div>
@@ -422,23 +427,23 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                 <h4 className="font-medium mb-2">How Mission Control keeps your data safe</h4>
                 <ul className="space-y-2 text-sm text-mission-control-text-dim">
                   <li className="flex items-start gap-2">
-                    <span>🔐</span>
+                    <Lock size={14} className="mt-0.5 flex-shrink-0" />
                     <span>OAuth tokens are encrypted using system keychain</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span>🔄</span>
+                    <RefreshCw size={14} className="mt-0.5 flex-shrink-0" />
                     <span>Tokens auto-refresh and never stored in plain text</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span>🛡️</span>
+                    <Shield size={14} className="mt-0.5 flex-shrink-0" />
                     <span>All API calls use secure HTTPS connections</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span>👁️</span>
+                    <CheckCircle size={14} className="mt-0.5 flex-shrink-0" />
                     <span>No data is ever shared with third parties</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span>🗑️</span>
+                    <X size={14} className="mt-0.5 flex-shrink-0" />
                     <span>Removing account immediately revokes all access</span>
                   </li>
                 </ul>

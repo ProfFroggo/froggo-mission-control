@@ -4,7 +4,7 @@
   "description": "Platform analytics, usage metrics, agent performance tracking, and reporting dashboards.",
   "version": "1.0.0",
   "category": "productivity",
-  "icon": "📊",
+  "icon": "BarChart2",
   "responsibleAgent": "mission-control",
   "requiredAgents": [],
   "requiredNpm": [],

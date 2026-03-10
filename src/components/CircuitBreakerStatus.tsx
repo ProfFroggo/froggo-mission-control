@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useEventBus } from '../lib/useEventBus';
 
 interface CircuitBreakerState {
   state: 'closed' | 'open' | 'half_open';
@@ -25,9 +26,26 @@ export const CircuitBreakerStatus: React.FC = () => {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 10000);
+    const interval = setInterval(checkStatus, 120000); // Poll every 120s as fallback
     return () => clearInterval(interval);
   }, []);
+
+  // Subscribe to circuit.open SSE events for immediate updates
+  useEventBus('circuit.open', (data) => {
+    const d = data as { agentId: string; failures: number; lockedUntil: number | null };
+    if (d?.agentId) {
+      setBreakers(prev => ({
+        ...prev,
+        [d.agentId]: {
+          state: 'open',
+          consecutive_failures: d.failures,
+          last_failure_time: Date.now(),
+          suspended_until: d.lockedUntil,
+          last_state_change: Date.now(),
+        },
+      }));
+    }
+  });
 
   const tripped = Object.entries(breakers).filter(([_, b]) => b.state !== 'closed');
 
