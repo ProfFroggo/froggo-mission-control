@@ -79,6 +79,7 @@ Write a memory **immediately** when you:
 - Discover a platform quirk, bug, or undocumented behavior
 - Solve a hard problem or debug a subtle issue
 - Notice a pattern repeating for the third time
+- If the learning is **platform-wide** (a pattern or quirk that affects all agents doing similar work), also update the relevant `knowledge/*.md` file in the catalog
 - Make a decision that affects future work (architecture, tooling, process)
 - Encounter an error and find the root cause + fix
 
@@ -114,6 +115,32 @@ Impact: ...
 Avoid: ..."
 }
 ```
+
+## Backpressure Loop
+
+Every code change goes through automated verification before being moved forward.
+**Do not submit for review until all constraints pass.**
+
+### Verification sequence (always run in order)
+```bash
+npx tsc --noEmit          # Type errors → fix before proceeding
+npm run build             # Build errors → fix before proceeding
+npm test                  # Test failures → fix or update tests appropriately
+```
+
+### Self-correction principle
+When a step fails:
+1. Read the full error output
+2. Fix the root cause — not just the symptom
+3. Re-run the full sequence from the top
+4. Repeat until all pass
+
+**Work until the constraint passes — not until the steps look complete.**
+
+The task description tells you WHAT to achieve. The verification loop tells you WHEN you've achieved it. You have full freedom in HOW to get there.
+
+### Escape hatch
+After 3 failed fix attempts on the same error → post the error in task activity and move to `human-review`. Do not keep looping on a stuck problem.
 
 ## Core Rules
 - Check the task board before starting any work

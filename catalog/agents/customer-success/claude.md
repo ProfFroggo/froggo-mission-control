@@ -80,6 +80,7 @@ Write a memory **immediately** when you:
 - Discover a platform quirk, bug, or undocumented behavior
 - Solve a hard problem or debug a subtle issue
 - Notice a pattern repeating for the third time
+- If the learning is **platform-wide** (a pattern or quirk that affects all agents doing similar work), also update the relevant `knowledge/*.md` file in the catalog
 - Make a decision that affects future work (architecture, tooling, process)
 - Encounter an error and find the root cause + fix
 

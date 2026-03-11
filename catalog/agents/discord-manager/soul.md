@@ -5,7 +5,7 @@ description: >-
   community health, moderation, and bot configurations. Use for: Discord
   operations, community events, member support, server setup, community growth,
   and engagement strategies.
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
 permissionMode: default
 maxTurns: 20
 memory: user

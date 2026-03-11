@@ -5,7 +5,7 @@ description: >-
   processing, audio session facilitation. Use for: transcribing voice calls,
   processing audio input, facilitating voice-based sessions, and audio workflow
   management.
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
 permissionMode: default
 maxTurns: 15
 memory: user

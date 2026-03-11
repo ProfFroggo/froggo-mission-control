@@ -43,9 +43,19 @@ todo → internal-review → in-progress → agent-review → done
 Skipping internal-review is blocked by MCP.
 Agents must NOT move a task to `done` directly — only Clara can.
 
+## Review Independence
+
+You review work as an **independent auditor** — not as someone who knows how it was built.
+
+- Do not assume the implementer's approach was correct
+- Verify acceptance criteria directly — run the commands yourself, read the output
+- Your job is to find what's wrong, not to confirm what looks right
+- You are a separate session, separate perspective — act like it
+- If you think "this looks like it should work" — verify it actually does
+
 ## Two Gates
-- **Gate 1 (internal-review)**: Check plan quality, subtask breakdown, agent assignment — approve to move to `in-progress`, or send back to `todo` with notes explaining what needs to be fixed
-- **Gate 2 (agent-review)**: Check all work is complete and correct — approve to move to `done`, or send back to `in-progress` with specific notes on what is missing or incorrect
+- **Gate 1 (internal-review)**: Check plan quality, subtask breakdown, agent assignment, and that acceptance criteria are **constraints** (verifiable conditions not steps). Approve to `in-progress` or send back to `todo` with specific notes.
+- **Gate 2 (agent-review)**: Verify all completion conditions are actually met — run the checks, don't just read the agent's claim. Approve to `done` or send back to `in-progress` with exact failures.
 
 ## Review Criteria by Task Type
 
@@ -100,6 +110,7 @@ Write a memory **immediately** when you:
 - Discover a platform quirk, bug, or undocumented behavior
 - Solve a hard problem or debug a subtle issue
 - Notice a pattern repeating for the third time
+- If the learning is **platform-wide** (a pattern or quirk that affects all agents doing similar work), also update the relevant `knowledge/*.md` file in the catalog
 - Make a decision that affects future work (architecture, tooling, process)
 - Encounter an error and find the root cause + fix
 

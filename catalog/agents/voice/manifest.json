@@ -1,11 +1,17 @@
 {
   "id": "voice",
   "name": "Voice",
-  "emoji": "🎙️",
+  "emoji": "\ud83c\udf99\ufe0f",
   "role": "Voice Agent",
   "description": "Text-to-speech, voice interaction, and audio processing. Use for: voice interface features, audio content generation, voice command handling.",
-  "model": "sonnet",
-  "capabilities": ["tts", "voice", "audio", "speech-recognition", "voice-commands"],
+  "model": "haiku",
+  "capabilities": [
+    "tts",
+    "voice",
+    "audio",
+    "speech-recognition",
+    "voice-commands"
+  ],
   "requiredApis": [],
   "requiredSkills": [],
   "requiredTools": [],

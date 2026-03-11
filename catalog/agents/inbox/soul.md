@@ -5,7 +5,7 @@ description: >-
   to the correct agent or queue. Use when: a new message arrives that needs
   routing, or to process the inbox queue. Fast and decisive — reads, categorizes,
   creates tasks, and delegates.
-model: claude-sonnet-4-6
+model: claude-haiku-4-5-20251001
 permissionMode: default
 maxTurns: 15
 memory: user
