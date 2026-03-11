@@ -585,6 +585,8 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE catalog_agents ADD COLUMN avatar TEXT`,
     `ALTER TABLE catalog_agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,
     `ALTER TABLE catalog_agents ADD COLUMN enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE catalog_agents ADD COLUMN createdAt INTEGER DEFAULT (unixepoch() * 1000)`,
+    `ALTER TABLE catalog_agents ADD COLUMN updatedAt INTEGER DEFAULT (unixepoch() * 1000)`,
     `ALTER TABLE agents ADD COLUMN role TEXT`,
     `ALTER TABLE agents ADD COLUMN emoji TEXT DEFAULT '🤖'`,
     `ALTER TABLE agents ADD COLUMN color TEXT DEFAULT '#00BCD4'`,

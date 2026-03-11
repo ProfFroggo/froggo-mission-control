@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
     const db = getDb();
     db.prepare(`
-      INSERT INTO catalog_agents (id, name, emoji, role, description, model, capabilities, requiredApis, requiredSkills, requiredTools, version, category, installed, created_at, updated_at)
+      INSERT INTO catalog_agents (id, name, emoji, role, description, model, capabilities, requiredApis, requiredSkills, requiredTools, version, category, installed, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name         = excluded.name,
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         version      = excluded.version,
         category     = excluded.category,
         installed    = 1,
-        updated_at   = excluded.updated_at
+        updatedAt    = excluded.updatedAt
     `).run(
       id, name, manifest.emoji, manifest.role, manifest.description, manifest.model,
       JSON.stringify(manifest.capabilities),

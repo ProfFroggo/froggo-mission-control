@@ -186,11 +186,16 @@ export async function POST(request: NextRequest) {
       personality || ''
     );
 
-    // Mark installed in catalog
-    db.prepare(`
-      UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updatedAt = ?
-      WHERE id = ?
-    `).run(avatarPath, Date.now(), id);
+    // Mark installed in catalog (try both column name variants for migration safety)
+    try {
+      db.prepare(`UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updatedAt = ? WHERE id = ?`)
+        .run(avatarPath, Date.now(), id);
+    } catch {
+      try {
+        db.prepare(`UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updated_at = ? WHERE id = ?`)
+          .run(avatarPath, Date.now(), id);
+      } catch { /* non-critical — catalog will sync on next restart */ }
+    }
 
     // Seed presets from catalog JSON (model, trust_tier, skills, tools, apiKeys)
     // Uses ON CONFLICT DO NOTHING so re-hires never overwrite user customizations
