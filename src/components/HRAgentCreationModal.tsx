@@ -87,6 +87,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   const [creationError, setCreationError] = useState<string | null>(null);
   const [pendingConfig, setPendingConfig] = useState<CreatedAgent | null>(null);
   const [generatedAvatarSvg, setGeneratedAvatarSvg] = useState<string | null>(null);
+  const [generatedAvatarPng, setGeneratedAvatarPng] = useState<string | null>(null); // base64
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stepsEndRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<{ role: string; content: string }[]>([]);
@@ -317,14 +318,15 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       const res = await fetch(`/api/agents/${cfg.id}/avatar/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji: cfg.emoji, color: cfg.color, name: cfg.name, role: cfg.role }),
+        body: JSON.stringify({ emoji: cfg.emoji, color: cfg.color, name: cfg.name, role: cfg.role, personality: cfg.personality }),
       });
       if (!res.ok) throw new Error(`Avatar gen failed: ${res.status}`);
       const data = await res.json();
-      if (data.svg) setGeneratedAvatarSvg(data.svg);
+      if (data.png) setGeneratedAvatarPng(data.png);
+      else if (data.svg) setGeneratedAvatarSvg(data.svg);
       setCreationSteps(prev => prev.map(s =>
         s.id === 'avatar'
-          ? { ...s, detail: data.method === 'dalle3' ? 'DALL-E 3 Pixar-style image generated' : 'Styled SVG avatar created' }
+          ? { ...s, detail: data.method === 'gemini' ? 'Gemini Pixar-style headshot generated' : 'Styled SVG avatar created' }
           : s
       ));
     });
@@ -374,7 +376,8 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `${cfg.emoji} ${cfg.name} — First Day Onboarding`,
-          description: `Welcome to the team! Complete these orientation steps to get up to speed.\n\n**Role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}\n\n**Key skills to leverage:**\n${skillsList}${specsList}\n\n**Plan:** Work through each subtask in order. Start with your identity files, then introduce yourself, then begin your first assignment.`,
+          description: `Welcome to the team, ${cfg.name}! Your first day orientation task. Work through each subtask in order to get up to speed.\n\n**Role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}`,
+          planningNotes: `## Onboarding Plan\n\n1. Read identity files (SOUL.md + CLAUDE.md)\n2. Introduce yourself in the mission-control chat\n3. Review your assigned skills and tools\n4. Complete your first assignment\n\n## Skills to leverage\n${skillsList}${specsList}\n\n## Notes\n- Trust tier: ${researchedTier} — ${researchedTier === 'worker' ? 'you have full autonomy' : 'check in before major decisions'}\n- Model: ${researchedModel}\n- All tasks must follow the pipeline: todo → internal-review → in-progress → agent-review → done`,
           assignedTo: cfg.id,
           priority: 'p2',
           status: 'todo',
@@ -451,7 +454,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {/* Agent card */}
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-teal-500/40 flex items-center justify-center bg-teal-500/20 flex-shrink-0">
-                <span className="text-2xl">{pendingConfig.emoji}</span>
+                {generatedAvatarPng ? (
+                  <img src={`data:image/png;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl">{pendingConfig.emoji}</span>
+                )}
               </div>
               <div>
                 <div className="font-semibold text-mission-control-text">{pendingConfig.name}</div>
@@ -513,7 +520,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {/* Done card */}
             {creationDone && (
               <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
-                <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
+                {generatedAvatarPng ? (
+                  <img src={`data:image/png;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-teal-500/40 object-cover" />
+                ) : (
+                  <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
+                )}
                 <div className="font-semibold text-teal-400">{pendingConfig.name} is live!</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">
                   Find them in the Agents panel · Onboarding task created

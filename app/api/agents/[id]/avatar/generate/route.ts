@@ -38,63 +38,81 @@ function buildSvgAvatar(emoji: string, color: string, name: string): string {
       <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="${darker}" flood-opacity="0.5"/>
     </filter>
   </defs>
-  <!-- Background circle -->
   <circle cx="128" cy="128" r="128" fill="url(#bg)"/>
-  <!-- Inner glow -->
   <circle cx="128" cy="128" r="100" fill="url(#glow)"/>
-  <!-- Subtle texture ring -->
   <circle cx="128" cy="128" r="118" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
-  <!-- Main emoji -->
   <text x="128" y="152" font-size="100" text-anchor="middle" dominant-baseline="middle"
     font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif"
     filter="url(#shadow)">${emoji}</text>
-  <!-- Name initials watermark -->
   <text x="128" y="218" font-size="18" font-weight="800" text-anchor="middle"
     fill="rgba(255,255,255,0.45)" font-family="system-ui, -apple-system, sans-serif"
     letter-spacing="4">${initials}</text>
 </svg>`;
 }
 
-// ─── DALL-E 3 generation ──────────────────────────────────────────────────────
+// ─── Gemini Imagen generation ─────────────────────────────────────────────────
 
-async function generateDallEAvatar(name: string, role: string, emoji: string): Promise<Buffer | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+async function getGeminiKey(): Promise<string | null> {
+  // 1. Keychain (stored by setup wizard via /api/settings/gemini_api_key)
+  try {
+    const { keychainGet } = await import('@/lib/keychain');
+    const val = await keychainGet('gemini_api_key');
+    if (val) return val.trim();
+  } catch { /* keytar unavailable */ }
+
+  // 2. Env var fallback
+  const envKey = process.env.GEMINI_API_KEY;
+  if (envKey && envKey.trim()) return envKey.trim();
+
+  // 3. Settings DB fallback
+  try {
+    const db = getDb();
+    const row = db.prepare(`SELECT value FROM settings WHERE key = 'gemini_api_key'`).get() as { value: string } | undefined;
+    if (row?.value) return row.value.trim();
+  } catch { /* ignore */ }
+
+  return null;
+}
+
+async function generateGeminiAvatar(name: string, role: string, personality: string): Promise<Buffer | null> {
+  const apiKey = await getGeminiKey();
   if (!apiKey) return null;
 
-  const prompt = `Pixar 3D animated character portrait of a friendly AI assistant named "${name}" who works as a "${role}". Expressive cartoon face, large round eyes, smooth skin, soft studio lighting, vivid saturated colors. The character looks helpful, approachable, and slightly whimsical. Square composition, clean gradient background. No text, no labels. Professional high quality render.`;
+  const prompt = `Pixar 3D animated character portrait headshot of a friendly AI assistant named "${name}" who works as "${role}". ${personality ? `Personality: ${personality}.` : ''} Expressive cartoon face, large round eyes, smooth Pixar-style skin, warm studio lighting, vivid saturated colors. The character looks helpful, intelligent, and slightly whimsical. Square composition, soft gradient background. No text, no labels, no watermarks. High quality Pixar render, cinematic lighting.`;
 
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'dall-e-3',
-      prompt,
-      size: '1024x1024',
-      quality: 'standard',
-      n: 1,
-      response_format: 'b64_json',
-    }),
-  });
+  // Use Imagen 3 via the Gemini API
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1',
+          personGeneration: 'allow_adult',
+        },
+      }),
+    }
+  );
 
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText);
-    throw new Error(`DALL-E 3 error ${res.status}: ${err.slice(0, 120)}`);
+    throw new Error(`Gemini Imagen error ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json() as { data: Array<{ b64_json: string }> };
-  const b64 = data.data?.[0]?.b64_json;
-  if (!b64) throw new Error('DALL-E 3 returned no image data');
+  const data = await res.json() as { predictions?: Array<{ bytesBase64Encoded?: string }> };
+  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
+  if (!b64) throw new Error('Gemini Imagen returned no image data');
   return Buffer.from(b64, 'base64');
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 // POST /api/agents/[id]/avatar/generate
-// Attempts DALL-E 3 Pixar-style generation if OPENAI_API_KEY is set.
-// Always falls back to a styled SVG avatar.
+// Generates a Pixar-style headshot via Gemini Imagen 3 if GEMINI_API_KEY is set.
+// Falls back to a styled SVG avatar with emoji + initials.
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
@@ -102,30 +120,33 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (guard) return guard;
 
     const body = await req.json().catch(() => ({}));
-    const emoji = String(body.emoji ?? '🤖');
-    const color = String(body.color ?? '#00BCD4');
-    const name  = String(body.name  ?? id);
-    const role  = String(body.role  ?? '');
+    const emoji       = String(body.emoji       ?? '🤖');
+    const color       = String(body.color       ?? '#00BCD4');
+    const name        = String(body.name        ?? id);
+    const role        = String(body.role        ?? '');
+    const personality = String(body.personality ?? '');
 
     const assetsDir = join(HOME, 'mission-control', 'agents', id, 'assets');
     mkdirSync(assetsDir, { recursive: true });
 
     let avatarPath: string;
-    let method: 'dalle3' | 'svg' = 'svg';
+    let method: 'gemini' | 'svg' = 'svg';
     let svgData: string | null = null;
+    let pngBase64: string | null = null;
 
-    // Try DALL-E 3 first
+    // Try Gemini Imagen first
     try {
-      const pngBuffer = await generateDallEAvatar(name, role, emoji);
+      const pngBuffer = await generateGeminiAvatar(name, role, personality);
       if (pngBuffer) {
         avatarPath = join(assetsDir, 'avatar.png');
         writeFileSync(avatarPath, pngBuffer);
-        method = 'dalle3';
+        method = 'gemini';
+        pngBase64 = pngBuffer.toString('base64');
       } else {
-        throw new Error('No OPENAI_API_KEY — falling back to SVG');
+        throw new Error('No GEMINI_API_KEY configured');
       }
-    } catch {
-      // SVG fallback
+    } catch (genErr) {
+      console.warn('[avatar/generate] Gemini failed, using SVG fallback:', genErr instanceof Error ? genErr.message : genErr);
       svgData = buildSvgAvatar(emoji, color, name);
       avatarPath = join(assetsDir, 'avatar.svg');
       writeFileSync(avatarPath, svgData, 'utf-8');
@@ -141,7 +162,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
     } catch { /* non-critical */ }
 
-    return NextResponse.json({ path: avatarPath, method, svg: svgData });
+    return NextResponse.json({ path: avatarPath, method, svg: svgData, png: pngBase64 });
   } catch (error) {
     console.error('POST /api/agents/[id]/avatar/generate error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

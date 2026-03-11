@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 
+// SQLite stores booleans as 0/1 integers — coerce to JS boolean for the client
+function normalizeSubtask(row: Record<string, unknown>) {
+  return { ...row, completed: row.completed === 1 || row.completed === true };
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -11,9 +16,9 @@ export async function GET(
     const db = getDb();
     const subtasks = db.prepare(
       'SELECT * FROM subtasks WHERE taskId = ? ORDER BY position ASC, createdAt ASC'
-    ).all(id);
+    ).all(id) as Record<string, unknown>[];
 
-    return NextResponse.json(subtasks);
+    return NextResponse.json(subtasks.map(normalizeSubtask));
   } catch (error) {
     console.error('GET /api/tasks/[id]/subtasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -43,8 +48,8 @@ export async function POST(
       VALUES (?, ?, ?, ?, 0, ?, ?, ?)
     `).run(subtaskId, taskId, title, description ?? null, assignedTo ?? null, position, now);
 
-    const subtask = db.prepare('SELECT * FROM subtasks WHERE id = ?').get(subtaskId);
-    return NextResponse.json(subtask, { status: 201 });
+    const subtask = db.prepare('SELECT * FROM subtasks WHERE id = ?').get(subtaskId) as Record<string, unknown>;
+    return NextResponse.json(normalizeSubtask(subtask), { status: 201 });
   } catch (error) {
     console.error('POST /api/tasks/[id]/subtasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
