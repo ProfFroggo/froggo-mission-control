@@ -388,13 +388,31 @@ export async function POST(
             sessions.delete(sessionKey);
             try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
 
+            // Inject recent conversation history so agent has context in the fresh session
+            let historyContext = '';
+            try {
+              const rows = getDb()
+                .prepare(`SELECT role, content FROM messages
+                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
+                .all(sessionKey) as { role: string; content: string }[];
+              if (rows.length > 0) {
+                const reversed = rows.reverse();
+                const history = reversed.map((r, i) => {
+                  const speaker = r.role === 'user' ? 'User' : 'Assistant';
+                  const limit = i >= reversed.length - 10 ? 1500 : 600;
+                  return `${speaker}: ${r.content.slice(0, limit)}`;
+                }).join('\n');
+                historyContext = `\n\n---\n## Conversation context (session restored after expiry)\n${history}\n---`;
+              }
+            } catch { /* non-critical — proceed without history */ }
+
             const freshArgs = [
               '--print', '--output-format', 'stream-json', '--verbose',
               '--model', chatModel,
               '--allowedTools', allowed.join(','),
               '--disallowedTools', disallowed.join(','),
             ];
-            const sp = buildSystemPrompt(agentId);
+            const sp = (buildSystemPrompt(agentId) ?? '') + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
             const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });

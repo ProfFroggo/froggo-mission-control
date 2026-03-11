@@ -467,20 +467,20 @@ export async function POST(
             sessions.delete(sessionKey);
             try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
 
-            // Build history context from last 20 stored messages for this surface
+            // Build history context from stored messages for this surface
             let historyContext = '';
             try {
               const rows = getDb()
                 .prepare(`SELECT role, content FROM messages
-                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 40`)
+                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
                 .all(sessionKey) as { role: string; content: string }[];
               if (rows.length > 0) {
                 // Older messages get truncated more aggressively; recent ones stay fuller
                 const reversed = rows.reverse();
                 const history = reversed.map((r, i) => {
                   const speaker = r.role === 'user' ? 'User' : 'Assistant';
-                  // Last 10 messages: 800 chars each; earlier: 300 chars
-                  const limit = i >= reversed.length - 10 ? 800 : 300;
+                  // Last 10 messages: 1500 chars each; earlier: 600 chars
+                  const limit = i >= reversed.length - 10 ? 1500 : 600;
                   return `${speaker}: ${r.content.slice(0, limit)}`;
                 }).join('\n');
                 historyContext = `\n\n---\n## Conversation context (session restored after expiry)\n${history}\n---`;
