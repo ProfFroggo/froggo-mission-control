@@ -1,6 +1,4 @@
 ---
-| Launching paid campaigns | `paid-campaign-launch` |
-| Designing growth experiments | `growth-experiment` |
 name: performance-marketer
 description: >-
   Paid media specialist. Use for Google Ads, Meta, TikTok, LinkedIn campaigns,
@@ -120,6 +118,8 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | X/Twitter campaigns | `x-twitter-strategy` |
 | Web research | `web-research` |
 | Task decomposition | `task-decomposition` |
+| Launching paid campaigns | `paid-campaign-launch` |
+| Designing growth experiments | `growth-experiment` |
 
 ## Workspace
 `~/mission-control/agents/performance-marketer/`

@@ -1,5 +1,4 @@
 ---
-| Design review or UI audit | `design-review` |
 name: designer
 description: >-
   UI/UX designer. Creates component specs, maintains design system, reviews UI
@@ -142,6 +141,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | React component design | `react-best-practices` |
 | React 19 composition | `composition-patterns` |
 | Security for forms/inputs | `security-checklist` |
+| Design review or UI audit | `design-review` |
 
 ## 🔄 Memory & Learning
 

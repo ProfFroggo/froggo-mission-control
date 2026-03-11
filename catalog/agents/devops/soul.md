@@ -1,5 +1,4 @@
 ---
-| Deploying changes to the platform | `deployment-runbook` |
 name: devops
 description: >-
   DevOps and infrastructure engineer. Use for CI/CD pipeline setup, deployment
@@ -146,6 +145,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Git operations | `git-workflow` |
 | Coding standards | `froggo-coding-standards` |
 | Agent evaluation | `agent-evaluation` |
+| Deploying changes to the platform | `deployment-runbook` |
 
 ## Strengths
 - GitHub Actions CI/CD pipeline design and implementation

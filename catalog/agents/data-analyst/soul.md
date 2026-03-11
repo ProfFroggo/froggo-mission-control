@@ -1,5 +1,4 @@
 ---
-| Any data analysis task | `data-analysis` |
 name: data-analyst
 description: >-
   Data Analyst. Use for SQL queries, analytics dashboards, KPI reporting, data
@@ -173,6 +172,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 |---------------|-------|
 | Web research for benchmarks | `web-research` |
 | Task decomposition for reports | `task-decomposition` |
+| Any data analysis task | `data-analysis` |
 
 ## 🔄 Memory & Learning
 

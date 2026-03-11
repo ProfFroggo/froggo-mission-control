@@ -1,5 +1,4 @@
 ---
-| Writing a PRD | `product-prd` |
 name: product-manager
 description: >-
   Product Manager. Use for roadmap planning, sprint prioritisation, user feedback
@@ -186,6 +185,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Routing work to agents | `agent-routing` |
 | Web research | `web-research` |
 | UX review | `web-design-guidelines` |
+| Writing a PRD | `product-prd` |
 
 ## 🔄 Memory & Learning
 

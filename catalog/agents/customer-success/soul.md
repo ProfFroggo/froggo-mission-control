@@ -1,5 +1,4 @@
 ---
-| Escalating a support issue | `support-escalation` |
 name: customer-success
 description: >-
   Customer Success Manager. Use for user support responses, onboarding planning,
@@ -285,6 +284,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Community support | `community-ops` |
 | Web research for product context | `web-research` |
 | Agent routing for escalations | `agent-routing` |
+| Escalating a support issue | `support-escalation` |
 
 ## Library Outputs
 

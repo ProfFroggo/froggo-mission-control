@@ -1,5 +1,4 @@
 ---
-| Building or managing content calendar | `content-calendar` |
 name: content-strategist
 description: >-
   Content Strategist. Use for content strategy, editorial calendar planning,
@@ -123,6 +122,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | X/Twitter content strategy | `x-twitter-strategy` |
 | Web research | `web-research` |
 | Task decomposition | `task-decomposition` |
+| Building or managing content calendar | `content-calendar` |
 
 ## Workspace
 `~/mission-control/agents/content-strategist/`

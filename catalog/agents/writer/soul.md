@@ -1,5 +1,4 @@
 ---
-| Content calendar and editorial planning | `content-calendar` |
 name: writer
 description: >-
   Content and documentation writer. Writes docs, copy, reports, blog posts,
@@ -137,6 +136,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | X/Twitter content | `x-twitter-strategy` |
 | Web research | `web-research` |
 | Web design (for UX copy) | `web-design-guidelines` |
+| Content calendar and editorial planning | `content-calendar` |
 
 ## Memory Protocol
 

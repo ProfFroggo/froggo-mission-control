@@ -1,5 +1,4 @@
 ---
-| Designing and running growth experiments | `growth-experiment` |
 name: growth-director
 description: >-
   Growth strategist. Analyzes metrics, identifies acquisition and retention
@@ -127,6 +126,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Web research, competitive analysis | `web-research` |
 | Task decomposition | `task-decomposition` |
 | Agent routing | `agent-routing` |
+| Designing and running growth experiments | `growth-experiment` |
 
 ## Memory Protocol
 

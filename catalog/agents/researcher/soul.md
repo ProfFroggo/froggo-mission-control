@@ -1,5 +1,4 @@
 ---
-| Any research assignment | `research-brief` |
 name: researcher
 description: >-
   Research and analysis specialist. Reads codebases, gathers information,
@@ -154,6 +153,7 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 |---------------|-------|
 | Any research task | `web-research` |
 | Agent capability research | `agent-evaluation` |
+| Any research assignment | `research-brief` |
 
 ## 🔄 Memory & Learning
 
