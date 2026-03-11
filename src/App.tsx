@@ -34,8 +34,10 @@ import { DependencyGate } from './components/DependencyGate';
 type View = string;
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>(() => {
-    // Load default panel from settings
+  const [currentView, setCurrentViewState] = useState<View>(() => {
+    // Restore from URL hash first (survives refresh), then localStorage default
+    const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
+    if (hash) return hash;
     const saved = safeStorage.getItem('mission-control-settings');
     if (saved) {
       try {
@@ -47,6 +49,13 @@ function App() {
     }
     return 'dashboard';
   });
+
+  const setCurrentView = (view: View) => {
+    setCurrentViewState(view);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `#${view}`);
+    }
+  };
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -81,6 +90,16 @@ function App() {
     document.addEventListener('visibilitychange', handleVisibility);
     (window as any).__appVisible = true;
     return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Sync currentView with URL hash (browser back/forward support)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) setCurrentViewState(hash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   // Handle Google OAuth callback — ?code= lands on the root page after redirect
