@@ -20,11 +20,12 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const guard = validateAgentId(id);
   if (guard) return new NextResponse(null, { status: 400 });
 
-  // 1. Hired workspace avatar (webp preferred, png fallback)
-  // 2. Catalog package avatar (webp preferred, png fallback)
+  // 1. Hired workspace avatar (webp → png → svg)
+  // 2. Catalog package avatar (webp → png)
   const candidates = [
     { path: join(HOME, 'mission-control', 'agents', id, 'assets', 'avatar.webp'), type: 'image/webp' },
     { path: join(HOME, 'mission-control', 'agents', id, 'assets', 'avatar.png'), type: 'image/png' },
+    { path: join(HOME, 'mission-control', 'agents', id, 'assets', 'avatar.svg'), type: 'image/svg+xml' },
     { path: join(process.cwd(), 'catalog', 'agents', id, 'avatar.webp'), type: 'image/webp' },
     { path: join(process.cwd(), 'catalog', 'agents', id, 'avatar.png'), type: 'image/png' },
   ];

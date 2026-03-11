@@ -29,7 +29,7 @@ interface CreationStep {
   id: string;
   label: string;
   detail: string;
-  status: 'pending' | 'running' | 'done' | 'error';
+  status: 'pending' | 'running' | 'done' | 'error' | 'skipped';
   errorMsg?: string;
 }
 
@@ -58,10 +58,20 @@ Rules:
   AGENT_CONFIG:{"name":"...","role":"...","style":"...","skills":["..."],"personality":"..."}
 - Be warm, human, and brief. You're building a real team member.`;
 
+function inferTrustTier(role: string): 'worker' | 'apprentice' {
+  const lower = role.toLowerCase();
+  if (/senior|lead|architect|principal|staff|head|chief|director|vp/.test(lower)) return 'worker';
+  return 'apprentice';
+}
+
 function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'catalog',   label: 'Add to agent catalog',       detail: 'catalog/agents/{id}.json',                status: 'pending' },
-    { id: 'workspace', label: 'Create workspace & register', detail: '~/mission-control/agents/{id}/ + agents table', status: 'pending' },
+    { id: 'catalog',     label: 'Register in agent catalog',    detail: 'catalog/agents/{id}.json',                         status: 'pending' },
+    { id: 'workspace',   label: 'Create workspace & identity',   detail: '~/mission-control/agents/{id}/ + agents table',    status: 'pending' },
+    { id: 'avatar',      label: 'Generate profile picture',      detail: 'Pixar-style SVG avatar from role & color',         status: 'pending' },
+    { id: 'permissions', label: 'Configure trust & permissions', detail: 'Set permission tier based on role seniority',       status: 'pending' },
+    { id: 'skills',      label: 'Assign skills & tools',         detail: 'Save capabilities to agent settings',              status: 'pending' },
+    { id: 'training',    label: 'Seed onboarding task',          detail: 'Create a first-day orientation task',              status: 'pending' },
   ];
 }
 
@@ -75,6 +85,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   const [creationDone, setCreationDone] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
   const [pendingConfig, setPendingConfig] = useState<CreatedAgent | null>(null);
+  const [generatedAvatarSvg, setGeneratedAvatarSvg] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stepsEndRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<{ role: string; content: string }[]>([]);
@@ -110,7 +121,6 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       conversationRef.current.push({ role: 'user', content: userMessage });
     }
 
-    // Build the full prompt with system instructions + history
     const history = conversationRef.current
       .map(m => `${m.role === 'user' ? 'User' : 'HR'}: ${m.content}`)
       .join('\n');
@@ -131,7 +141,6 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
       setIsTyping(false);
 
-      // Check if HR has finished collecting info and output AGENT_CONFIG
       const configMatch = reply.match(/AGENT_CONFIG:(\{.+\})/);
       if (configMatch) {
         try {
@@ -140,7 +149,6 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
           const emoji = pickEmoji(config.role);
           const color = AGENT_COLORS[Math.floor(Math.random() * AGENT_COLORS.length)];
 
-          // Show HR's confirmation message (everything before the JSON line)
           const visibleReply = reply.replace(/AGENT_CONFIG:\{.+\}/, '').trim();
           if (visibleReply) addHRMessage(visibleReply);
 
@@ -150,7 +158,9 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             emoji,
             role: config.role,
             color,
-            capabilities: Array.isArray(config.skills) ? config.skills : config.skills?.split(',').map((s: string) => s.trim()) || [],
+            capabilities: Array.isArray(config.skills)
+              ? config.skills
+              : config.skills?.split(',').map((s: string) => s.trim()) || [],
             personality: config.personality,
           });
 
@@ -161,7 +171,6 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         }
       }
 
-      // Normal conversational reply
       const cleanReply = reply.replace(/^HR:\s*/i, '').trim();
       addHRMessage(cleanReply);
       conversationRef.current.push({ role: 'hr', content: cleanReply });
@@ -207,6 +216,16 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     }
   };
 
+  const softStep = async (stepId: string, fn: () => Promise<void>): Promise<void> => {
+    updateStep(stepId, 'running');
+    try {
+      await fn();
+      updateStep(stepId, 'done');
+    } catch {
+      updateStep(stepId, 'skipped');
+    }
+  };
+
   const startCreation = async (cfg: CreatedAgent) => {
     const steps = buildSteps(cfg.id);
     setCreationSteps(steps);
@@ -214,50 +233,99 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setCreationDone(false);
     setCreationError(null);
 
-    const stepFns: Array<{ id: string; fn: () => Promise<void> }> = [
-      {
-        id: 'catalog',
-        fn: () => catalogApi.registerAgent({
-          id: cfg.id,
-          name: cfg.name,
-          emoji: cfg.emoji,
-          role: cfg.role,
-          description: cfg.role,
-          capabilities: cfg.capabilities,
-          category: 'custom',
-          model: 'sonnet',
-          version: '1.0.0',
-        }),
-      },
-      {
-        // hire route: creates workspace + SOUL.md + CLAUDE.md + registers in agents table + marks catalog installed=1
-        id: 'workspace',
-        fn: () => catalogApi.hireAgent({
-          id: cfg.id,
-          name: cfg.name,
-          emoji: cfg.emoji,
-          role: cfg.role,
-          personality: cfg.personality,
-          capabilities: cfg.capabilities,
-          color: cfg.color,
-        }),
-      },
-    ];
-
-    let failed = false;
-    for (const { id, fn } of stepFns) {
-      const ok = await runStep(id, fn);
-      if (!ok) { failed = true; break; }
+    // ── Step 1: Catalog ──
+    const catalogOk = await runStep('catalog', () =>
+      catalogApi.registerAgent({
+        id: cfg.id,
+        name: cfg.name,
+        emoji: cfg.emoji,
+        role: cfg.role,
+        description: cfg.role,
+        capabilities: cfg.capabilities,
+        category: 'custom',
+        model: 'sonnet',
+        version: '1.0.0',
+      })
+    );
+    if (!catalogOk) {
+      setCreationError('Could not register agent in catalog.');
+      return;
     }
 
-    if (failed) {
-      setCreationError('One or more steps failed. Check above for details.');
-    } else {
-      useStore.getState().fetchAgents();
-      onAgentCreated?.(cfg);
-      showToast(`${cfg.emoji} ${cfg.name} created!`, 'success');
-      setCreationDone(true);
+    // ── Step 2: Workspace ──
+    const workspaceOk = await runStep('workspace', () =>
+      catalogApi.hireAgent({
+        id: cfg.id,
+        name: cfg.name,
+        emoji: cfg.emoji,
+        role: cfg.role,
+        personality: cfg.personality,
+        capabilities: cfg.capabilities,
+        color: cfg.color,
+      })
+    );
+    if (!workspaceOk) {
+      setCreationError('Could not create agent workspace.');
+      return;
     }
+
+    // ── Step 3: Avatar (soft — never blocks) ──
+    await softStep('avatar', async () => {
+      const res = await fetch(`/api/agents/${cfg.id}/avatar/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emoji: cfg.emoji, color: cfg.color, name: cfg.name }),
+      });
+      if (!res.ok) throw new Error(`Avatar gen failed: ${res.status}`);
+      const data = await res.json();
+      if (data.svg) setGeneratedAvatarSvg(data.svg);
+    });
+
+    // ── Step 4: Permissions (soft) ──
+    await softStep('permissions', async () => {
+      const trustTier = inferTrustTier(cfg.role);
+      const res = await fetch(`/api/agents/${cfg.id}/config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trustTier }),
+      });
+      if (!res.ok) throw new Error('Permissions PATCH failed');
+    });
+
+    // ── Step 5: Skills & tools (soft) ──
+    await softStep('skills', async () => {
+      const res = await fetch(`/api/agents/${cfg.id}/config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skills: cfg.capabilities,
+          tools: inferTools(cfg.role, cfg.capabilities),
+        }),
+      });
+      if (!res.ok) throw new Error('Skills PATCH failed');
+    });
+
+    // ── Step 6: Onboarding task (soft) ──
+    await softStep('training', async () => {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${cfg.emoji} ${cfg.name} — Onboarding`,
+          description: `Welcome to the team! Your first tasks:\n\n1. Read your SOUL.md at ~/mission-control/agents/${cfg.id}/SOUL.md\n2. Read your CLAUDE.md for platform instructions\n3. Introduce yourself in the mission-control chat room\n4. Check the task board for your first assignment\n\nYour role: ${cfg.role}\nPersonality: ${cfg.personality}`,
+          assignedTo: cfg.id,
+          priority: 'p2',
+          status: 'todo',
+          tags: JSON.stringify(['onboarding', 'orientation']),
+        }),
+      });
+      if (!res.ok) throw new Error('Task creation failed');
+    });
+
+    useStore.getState().fetchAgents();
+    onAgentCreated?.(cfg);
+    showToast(`${cfg.emoji} ${cfg.name} is on the team!`, 'success');
+    setCreationDone(true);
   };
 
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -270,7 +338,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     closeTimeoutRef.current = setTimeout(onClose, 200);
   };
 
-  const doneCount = creationSteps.filter(s => s.status === 'done').length;
+  const doneCount = creationSteps.filter(s => s.status === 'done' || s.status === 'skipped').length;
   const totalSteps = creationSteps.length;
   const progressPct = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
 
@@ -300,9 +368,18 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         {/* Creating stage */}
         {stage === 'creating' && pendingConfig && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[300px]">
+            {/* Agent card */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-teal-500/20 border border-teal-500/40 flex items-center justify-center text-2xl">
-                {pendingConfig.emoji}
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-teal-500/40 flex items-center justify-center bg-teal-500/20 flex-shrink-0">
+                {generatedAvatarSvg ? (
+                  <img
+                    src={`data:image/svg+xml;base64,${btoa(generatedAvatarSvg)}`}
+                    alt={pendingConfig.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">{pendingConfig.emoji}</span>
+                )}
               </div>
               <div>
                 <div className="font-semibold text-mission-control-text">{pendingConfig.name}</div>
@@ -312,6 +389,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
               {creationDone && <Sparkles size={18} className="ml-auto text-teal-400" />}
             </div>
 
+            {/* Progress bar */}
             {totalSteps > 0 && (
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-mission-control-text-dim mb-1">
@@ -319,48 +397,67 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                   <span>{progressPct}%</span>
                 </div>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-teal-400'}`} style={{ width: `${progressPct}%` }} />
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-teal-400'}`}
+                    style={{ width: `${progressPct}%` }}
+                  />
                 </div>
               </div>
             )}
 
+            {/* Steps list */}
             <div className="space-y-2">
               {creationSteps.map((step) => (
                 <div key={step.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-300 ${
-                  step.status === 'running' ? 'bg-teal-500/5 border-teal-500/30' :
-                  step.status === 'done'    ? 'bg-success-subtle border-success-border' :
-                  step.status === 'error'   ? 'bg-error-subtle border-error-border' :
+                  step.status === 'running'  ? 'bg-teal-500/5 border-teal-500/30' :
+                  step.status === 'done'     ? 'bg-success-subtle border-success-border' :
+                  step.status === 'skipped'  ? 'bg-mission-control-surface/30 border-mission-control-border opacity-60' :
+                  step.status === 'error'    ? 'bg-error-subtle border-error-border' :
                   'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
-                    {step.status === 'running' && <Loader2 size={16} className="text-teal-400 animate-spin" />}
-                    {step.status === 'done'    && <CheckCircle size={16} className="text-success" />}
-                    {step.status === 'error'   && <XCircle size={16} className="text-error" />}
-                    {step.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
+                    {step.status === 'running'  && <Loader2 size={16} className="text-teal-400 animate-spin" />}
+                    {step.status === 'done'     && <CheckCircle size={16} className="text-success" />}
+                    {step.status === 'skipped'  && <Circle size={16} className="text-mission-control-text-dim" />}
+                    {step.status === 'error'    && <XCircle size={16} className="text-error" />}
+                    {step.status === 'pending'  && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
                       step.status === 'done'    ? 'text-success' :
                       step.status === 'error'   ? 'text-error' :
                       step.status === 'running' ? 'text-teal-400' :
+                      step.status === 'skipped' ? 'text-mission-control-text-dim' :
                       'text-mission-control-text-dim'
                     }`}>{step.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">
-                      {step.errorMsg || step.detail}
+                      {step.errorMsg || (step.status === 'skipped' ? 'Skipped — not critical' : step.detail)}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* Done card */}
             {creationDone && (
               <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
-                <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
+                {generatedAvatarSvg ? (
+                  <img
+                    src={`data:image/svg+xml;base64,${btoa(generatedAvatarSvg)}`}
+                    alt={pendingConfig.name}
+                    className="w-14 h-14 rounded-full mx-auto mb-2 border border-teal-500/30"
+                  />
+                ) : (
+                  <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
+                )}
                 <div className="font-semibold text-teal-400">{pendingConfig.name} is live!</div>
-                <div className="text-xs text-mission-control-text-dim mt-1">Find them in the Agents panel</div>
+                <div className="text-xs text-mission-control-text-dim mt-1">
+                  Find them in the Agents panel · Onboarding task created
+                </div>
               </div>
             )}
 
+            {/* Error banner */}
             {creationError && (
               <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-xl">
                 <div className="text-sm text-error font-medium">Onboarding failed</div>
@@ -402,6 +499,10 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                   <span className="text-xl">{pendingConfig.emoji}</span>
                   <span className="font-semibold text-teal-400">{pendingConfig.name}</span>
                   <span className="text-xs text-mission-control-text-dim">· {pendingConfig.role}</span>
+                </div>
+                <div className="text-xs text-mission-control-text-dim space-y-0.5">
+                  <div>Skills: {pendingConfig.capabilities.slice(0, 4).join(', ')}{pendingConfig.capabilities.length > 4 ? '...' : ''}</div>
+                  <div>Trust tier: {inferTrustTier(pendingConfig.role)}</div>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <button
@@ -477,6 +578,17 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   );
 }
 
+function inferTools(role: string, capabilities: string[]): string[] {
+  const lower = (role + ' ' + capabilities.join(' ')).toLowerCase();
+  const tools: string[] = [];
+  if (/code|dev|engineer|program|build|debug/.test(lower)) tools.push('Bash', 'Read', 'Edit', 'Write');
+  if (/search|research|web|browse/.test(lower)) tools.push('WebSearch', 'WebFetch');
+  if (/git|version|branch|commit/.test(lower)) tools.push('Bash');
+  if (/file|doc|write|content/.test(lower)) tools.push('Read', 'Write', 'Edit');
+  if (/data|analytic|sql|database/.test(lower)) tools.push('Bash', 'Read');
+  return [...new Set(tools)];
+}
+
 function pickEmoji(role: string): string {
   const map: Record<string, string> = {
     devops: '🔧', qa: '🧪', test: '🧪', design: '🎨', data: '📊',
@@ -486,6 +598,8 @@ function pickEmoji(role: string): string {
     children: '🧒', story: '📖', creative: '🎭', publish: '📰',
     market: '📣', social: '📱', finance: '💰', legal: '⚖️', research: '🔬',
     analytic: '📊', video: '🎬', audio: '🎵', photo: '📷',
+    reply: '💬', community: '🌐', crypto: '🪙', onchain: '⛓️',
+    intern: '🎓', hr: '🤝', ops: '⚙️', growth: '📈',
   };
   const lower = role.toLowerCase();
   return Object.entries(map).find(([k]) => lower.includes(k))?.[1] || '🤖';
