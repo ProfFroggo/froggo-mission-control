@@ -1,12 +1,29 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { exec, execSync } from 'child_process';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
 import { ENV } from '@/lib/env';
 
 const PACKAGE_NAME = 'froggo-mission-control';
 const NPM_REGISTRY_URL = `https://registry.npmjs.org/${PACKAGE_NAME}/latest`;
+
+// Resolve npm bin — LaunchAgent PATH doesn't include it, so find via process.execPath
+function findNpm(): string {
+  const nodeDir = dirname(process.execPath);
+  const candidates = [
+    join(nodeDir, 'npm'),
+    join(nodeDir, '..', 'bin', 'npm'),
+    '/opt/homebrew/bin/npm',
+    '/usr/local/bin/npm',
+    '/usr/bin/npm',
+  ];
+  const found = candidates.find(p => existsSync(p));
+  if (found) return found;
+  // Last resort: try which
+  try { return execSync('which npm', { encoding: 'utf-8', timeout: 3000 }).trim(); } catch {}
+  return 'npm';
+}
 
 // Cache registry check for 1 hour
 let registryCache: RegistryInfo | null = null;
@@ -109,46 +126,90 @@ export async function POST() {
 
       send('Starting update...');
 
-      // Detect PM2
-      exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
-        const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
+      const npmBin = findNpm();
+      const nodeBin = process.execPath;
+      const launchAgent = join(process.env.HOME || '', 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
+      const isMac = process.platform === 'darwin';
 
-        // Run npm install -g to update
-        const updateCmd = `npm install -g ${PACKAGE_NAME}@latest --prefer-online 2>&1`;
-        send(`Running: ${updateCmd}`);
+      // Run npm install -g to update
+      const updateCmd = `"${npmBin}" install -g ${PACKAGE_NAME}@latest --prefer-online 2>&1`;
+      send(`Running: npm install -g ${PACKAGE_NAME}@latest --prefer-online`);
 
-        const child = exec(updateCmd, {
-          env: { ...process.env, FORCE_COLOR: '0' },
+      const child = exec(updateCmd, {
+        env: { ...process.env, FORCE_COLOR: '0', SKIP_MC_POSTINSTALL: '1' },
+        timeout: 300000,
+      });
+
+      child.stdout?.on('data', (data: string) => {
+        data.split('\n').filter(Boolean).forEach((l: string) => send(l));
+      });
+
+      child.stderr?.on('data', (data: string) => {
+        data.split('\n').filter(Boolean).forEach((l: string) => send(l));
+      });
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          done(false, `Update failed (exit code ${code}). Check the log above.`);
+          return;
+        }
+
+        send('');
+        send('Package installed. Building dashboard...');
+
+        // Find the new install dir and rebuild
+        const newInstallDir = join(dirname(dirname(npmBin)), 'lib', 'node_modules', PACKAGE_NAME);
+        const nextScript = join(newInstallDir, 'node_modules', 'next', 'dist', 'bin', 'next');
+
+        const buildChild = exec(
+          `"${nodeBin}" "${nextScript}" build`,
+          { cwd: newInstallDir, env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, timeout: 300000 }
+        );
+
+        buildChild.stdout?.on('data', (data: string) => {
+          data.split('\n').filter(Boolean).slice(-3).forEach((l: string) => send(l));
+        });
+        buildChild.stderr?.on('data', (data: string) => {
+          // Only forward non-verbose build lines
+          data.split('\n').filter(l => l.includes('error') || l.includes('warn')).forEach((l: string) => send(l));
         });
 
-        child.stdout?.on('data', (data: string) => {
-          data.split('\n').filter(Boolean).forEach((l: string) => send(l));
-        });
-
-        child.stderr?.on('data', (data: string) => {
-          data.split('\n').filter(Boolean).forEach((l: string) => send(l));
-        });
-
-        child.on('close', (code) => {
-          if (code !== 0) {
-            done(false, `Update failed (exit code ${code}). Check the log above.`);
+        buildChild.on('close', (buildCode) => {
+          if (buildCode !== 0) {
+            done(false, 'Build failed. Run `mission-control build` to retry, then `mission-control restart`.');
             return;
           }
 
-          send('');
-          send('Update installed successfully.');
+          send('Build complete. Restarting...');
 
-          if (hasPm2) {
-            send('Restarting via PM2...');
-            exec('pm2 restart mission-control-dashboard', (restartErr) => {
-              if (restartErr) {
-                done(true, 'Updated. PM2 restart failed — restart manually: pm2 restart mission-control-dashboard');
-              } else {
-                done(true, 'Updated and restarted. The page will reload shortly.');
-              }
+          // Restart via LaunchAgent (macOS) or PM2
+          if (isMac && existsSync(launchAgent)) {
+            exec(`/bin/launchctl stop com.mission-control.app`, () => {
+              setTimeout(() => {
+                exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
+                  if (restartErr) {
+                    done(true, 'Updated. Restart failed — run: mission-control restart');
+                  } else {
+                    done(true, 'Updated and restarted. Page will reload in a moment.');
+                  }
+                });
+              }, 2000);
             });
           } else {
-            done(true, 'Updated. Please restart the app: run `mission-control restart` or restart your terminal session.');
+            exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
+              const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
+              if (hasPm2) {
+                exec('pm2 restart mission-control-dashboard', (restartErr) => {
+                  if (restartErr) {
+                    done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
+                  } else {
+                    done(true, 'Updated and restarted. Page will reload in a moment.');
+                  }
+                });
+              } else {
+                done(true, 'Updated. Run `mission-control restart` to apply changes.');
+              }
+            });
           }
         });
       });
