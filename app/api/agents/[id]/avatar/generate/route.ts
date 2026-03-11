@@ -81,9 +81,9 @@ async function generateGeminiAvatar(name: string, role: string, personality: str
 
   const prompt = `Pixar 3D animated character portrait headshot of a friendly AI assistant named "${name}" who works as "${role}". ${personality ? `Personality: ${personality}.` : ''} Expressive cartoon face, large round eyes, smooth Pixar-style skin, warm studio lighting, vivid saturated colors. The character looks helpful, intelligent, and slightly whimsical. Square composition, soft gradient background. No text, no labels, no watermarks. High quality Pixar render, cinematic lighting.`;
 
-  // Use Imagen 3 via the Gemini API
+  // Use Imagen 4 via the Gemini API
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

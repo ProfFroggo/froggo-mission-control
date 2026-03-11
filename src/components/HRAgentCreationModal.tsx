@@ -69,7 +69,7 @@ function buildSteps(_agentId: string): CreationStep[] {
     { id: 'catalog',     label: 'Register in agent catalog',    detail: 'catalog/agents/{id}.json',                              status: 'pending' },
     { id: 'workspace',   label: 'Create workspace & identity',   detail: '~/mission-control/agents/{id}/ + agents table',         status: 'pending' },
     { id: 'research',    label: 'Research role & skills',        detail: 'AI-powered skill discovery for this role',              status: 'pending' },
-    { id: 'avatar',      label: 'Generate profile picture',      detail: 'Pixar-style avatar (DALL-E 3 or styled SVG)',           status: 'pending' },
+    { id: 'avatar',      label: 'Generate profile picture',      detail: 'Generating Pixar-style headshot via Gemini Imagen...',  status: 'pending' },
     { id: 'permissions', label: 'Configure trust & permissions', detail: 'Set permission tier and recommended model',             status: 'pending' },
     { id: 'skills',      label: 'Assign skills & tools',         detail: 'Apply researched capabilities to agent settings',       status: 'pending' },
     { id: 'training',    label: 'Seed onboarding task',          detail: 'Create a first-day orientation task',                   status: 'pending' },
