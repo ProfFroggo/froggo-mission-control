@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map } from 'lucide-react';
+import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2 } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
-import { settingsApi } from '../lib/api';
+import { settingsApi, updateApi } from '../lib/api';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
@@ -114,7 +114,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup';
+type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup' | 'platform';
 
 interface SystemHealth { cli: boolean; database: boolean; backend: string; }
 
@@ -125,6 +125,214 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok?: bo
       <span className={`font-mono text-xs ${ok === false ? 'text-error' : ok === true ? 'text-success' : 'text-mission-control-text-dim'}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Platform Update Tab
+// ─────────────────────────────────────────────
+function PlatformUpdateTab() {
+  const [versionInfo, setVersionInfo] = useState<{ current: string; latest: string | null; updateAvailable: boolean; releaseNotes: string | null; error?: string } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [log, setLog] = useState<string[]>([]);
+  const [updateDone, setUpdateDone] = useState<{ success: boolean; message: string } | null>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+
+  const checkVersion = async () => {
+    setChecking(true);
+    try {
+      const data = await updateApi.check();
+      setVersionInfo(data);
+    } catch {
+      setVersionInfo({ current: 'unknown', latest: null, updateAvailable: false, releaseNotes: null, error: 'Could not reach npm registry' });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => { checkVersion(); }, []);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [log]);
+
+  const handleUpdate = async () => {
+    setUpdating(true);
+    setLog([]);
+    setUpdateDone(null);
+
+    try {
+      const res = await fetch('/api/update', { method: 'POST' });
+      if (!res.body) throw new Error('No response body');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const evt = JSON.parse(line.slice(6));
+            if (evt.done) {
+              setUpdateDone({ success: evt.success, message: evt.message });
+              if (evt.success) {
+                // Reload after 3 seconds if PM2 restarted
+                if (evt.message.includes('reload')) {
+                  setTimeout(() => window.location.reload(), 3000);
+                }
+                checkVersion();
+              }
+            } else if (evt.line !== undefined) {
+              setLog(prev => [...prev, evt.line]);
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err: any) {
+      setUpdateDone({ success: false, message: err.message });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Version Card */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-mission-control-text flex items-center gap-2">
+            <Package size={16} />
+            Platform Updates
+          </h2>
+          <button
+            onClick={checkVersion}
+            disabled={checking}
+            className="text-xs text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={checking ? 'animate-spin' : ''} />
+            {checking ? 'Checking...' : 'Check now'}
+          </button>
+        </div>
+
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
+          {/* Current version */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-mission-control-text-dim">Installed version</span>
+            <span className="font-mono text-mission-control-text">
+              {versionInfo ? `v${versionInfo.current}` : '—'}
+            </span>
+          </div>
+
+          {/* Latest version */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-mission-control-text-dim">Latest version</span>
+            <span className="font-mono text-mission-control-text">
+              {checking ? (
+                <span className="text-mission-control-text-dim">checking...</span>
+              ) : versionInfo?.latest ? (
+                `v${versionInfo.latest}`
+              ) : (
+                <span className="text-mission-control-text-dim">unavailable</span>
+              )}
+            </span>
+          </div>
+
+          {/* Status banner */}
+          {versionInfo && !checking && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm mt-1 ${
+              versionInfo.error
+                ? 'bg-warning-subtle text-warning border border-warning/20'
+                : versionInfo.updateAvailable
+                  ? 'bg-info-subtle text-info border border-info/20'
+                  : 'bg-success-subtle text-success border border-success/20'
+            }`}>
+              {versionInfo.error ? (
+                <><AlertCircle size={14} /> Registry unavailable — {versionInfo.error}</>
+              ) : versionInfo.updateAvailable ? (
+                <><ArrowUpCircle size={14} /> v{versionInfo.latest} is available</>
+              ) : (
+                <><Check size={14} /> Up to date</>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Release notes */}
+      {versionInfo?.updateAvailable && versionInfo.releaseNotes && (
+        <section>
+          <h3 className="text-sm font-medium text-mission-control-text mb-2 flex items-center gap-2">
+            <ArrowUpCircle size={14} className="text-info" />
+            What's in v{versionInfo.latest}
+          </h3>
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 max-h-48 overflow-y-auto">
+            <pre className="text-xs text-mission-control-text-dim whitespace-pre-wrap font-sans leading-5">
+              {versionInfo.releaseNotes}
+            </pre>
+          </div>
+        </section>
+      )}
+
+      {/* Update button */}
+      {versionInfo?.updateAvailable && !updateDone?.success && (
+        <button
+          onClick={handleUpdate}
+          disabled={updating}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+        >
+          {updating ? (
+            <><Loader2 size={16} className="animate-spin" /> Updating...</>
+          ) : (
+            <><ArrowUpCircle size={16} /> Update to v{versionInfo.latest}</>
+          )}
+        </button>
+      )}
+
+      {/* Live log */}
+      {(updating || log.length > 0) && (
+        <section>
+          <div className="flex items-center gap-2 mb-2">
+            <Terminal size={14} className="text-mission-control-text-dim" />
+            <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">Install log</span>
+          </div>
+          <div
+            ref={logRef}
+            className="bg-black rounded-xl border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-green-400 space-y-0.5"
+          >
+            {log.map((line, i) => (
+              <div key={i} className="leading-5">{line || '\u00a0'}</div>
+            ))}
+            {updating && (
+              <div className="flex items-center gap-1 text-mission-control-text-dim">
+                <Loader2 size={10} className="animate-spin" />
+                <span>running...</span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Result banner */}
+      {updateDone && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${
+          updateDone.success
+            ? 'bg-success-subtle border-success/20 text-success'
+            : 'bg-error-subtle border-error/20 text-error'
+        }`}>
+          {updateDone.success
+            ? <Check size={16} className="mt-0.5 shrink-0" />
+            : <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          }
+          <span>{updateDone.message}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -345,6 +553,17 @@ export default function SettingsPanel() {
             <Database size={16} />
             Export & Backup
           </button>
+          <button
+            onClick={() => setActiveTab('platform')}
+            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'platform'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <Package size={16} />
+            Platform
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -352,6 +571,7 @@ export default function SettingsPanel() {
         {activeTab === 'security' && <SecuritySettings />}
         {activeTab === 'accessibility' && <AccessibilitySettings />}
         {activeTab === 'exportBackup' && <ExportBackupTab />}
+        {activeTab === 'platform' && <PlatformUpdateTab />}
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
@@ -701,7 +921,7 @@ export default function SettingsPanel() {
         )}
 
         {/* Actions (shown for most tabs except special ones) */}
-        {!['security', 'accounts', 'config', 'logs', 'exportBackup'].includes(activeTab) && (
+        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform'].includes(activeTab) && (
           <div className="flex gap-3 mt-8">
             <button
               onClick={handleSave}

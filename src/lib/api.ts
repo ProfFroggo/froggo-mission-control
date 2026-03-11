@@ -374,3 +374,7 @@ export const projectsApi = {
     apiCall(`/projects/${id}/dispatch`, { method: 'POST', body: data }),
 };
 
+export const updateApi = {
+  check: () => apiCall<{ current: string; latest: string | null; updateAvailable: boolean; releaseNotes: string | null; error?: string }>('/update'),
+};
+
