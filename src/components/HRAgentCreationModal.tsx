@@ -369,19 +369,37 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     await softStep('training', async () => {
       const skillsList = researchedSkills.slice(0, 6).map(s => `- ${s}`).join('\n');
       const specsList  = researchedSpecs.length > 0 ? `\n\n**Specializations discovered:**\n${researchedSpecs.map(s => `- ${s}`).join('\n')}` : '';
-      const res = await fetch('/api/tasks', {
+      const taskRes = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `${cfg.emoji} ${cfg.name} — First Day Onboarding`,
-          description: `Welcome to the team! Complete these orientation steps:\n\n1. Read your SOUL.md at \`~/mission-control/agents/${cfg.id}/SOUL.md\`\n2. Read your CLAUDE.md for platform instructions\n3. Introduce yourself in the mission-control chat room\n4. Review your assigned skills and tools in the Manage modal\n\n**Your role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}\n\n**Key skills to leverage:**\n${skillsList}${specsList}`,
+          description: `Welcome to the team! Complete these orientation steps to get up to speed.\n\n**Role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}\n\n**Key skills to leverage:**\n${skillsList}${specsList}\n\n**Plan:** Work through each subtask in order. Start with your identity files, then introduce yourself, then begin your first assignment.`,
           assignedTo: cfg.id,
           priority: 'p2',
           status: 'todo',
           tags: JSON.stringify(['onboarding', 'orientation']),
         }),
       });
-      if (!res.ok) throw new Error('Task creation failed');
+      if (!taskRes.ok) throw new Error('Task creation failed');
+      const task = await taskRes.json();
+      const taskId = task.id;
+
+
+      // Seed subtasks
+      const subtasks = [
+        { title: `Read identity files`, description: `Read your SOUL.md at ~/mission-control/agents/${cfg.id}/SOUL.md and your CLAUDE.md for platform instructions.` },
+        { title: `Introduce yourself`, description: `Post an introduction in the mission-control chat room using the chat_post MCP tool. Mention your role, personality, and what you are here to do.` },
+        { title: `Review skills and tools`, description: `Open the Manage modal in the Agents panel and confirm your assigned skills, tools, and trust tier are correct.` },
+        { title: `Complete first assignment`, description: `Ask for your first task in the mission-control chat room or check the task board for a todo item assigned to you.` },
+      ];
+      for (const sub of subtasks) {
+        await fetch(`/api/tasks/${taskId}/subtasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...sub, assignedTo: cfg.id }),
+        });
+      }
     });
 
     useStore.getState().fetchAgents();
