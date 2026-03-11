@@ -66,12 +66,13 @@ function inferTrustTier(role: string): 'worker' | 'apprentice' {
 
 function buildSteps(_agentId: string): CreationStep[] {
   return [
-    { id: 'catalog',     label: 'Register in agent catalog',    detail: 'catalog/agents/{id}.json',                         status: 'pending' },
-    { id: 'workspace',   label: 'Create workspace & identity',   detail: '~/mission-control/agents/{id}/ + agents table',    status: 'pending' },
-    { id: 'avatar',      label: 'Generate profile picture',      detail: 'Pixar-style SVG avatar from role & color',         status: 'pending' },
-    { id: 'permissions', label: 'Configure trust & permissions', detail: 'Set permission tier based on role seniority',       status: 'pending' },
-    { id: 'skills',      label: 'Assign skills & tools',         detail: 'Save capabilities to agent settings',              status: 'pending' },
-    { id: 'training',    label: 'Seed onboarding task',          detail: 'Create a first-day orientation task',              status: 'pending' },
+    { id: 'catalog',     label: 'Register in agent catalog',    detail: 'catalog/agents/{id}.json',                              status: 'pending' },
+    { id: 'workspace',   label: 'Create workspace & identity',   detail: '~/mission-control/agents/{id}/ + agents table',         status: 'pending' },
+    { id: 'research',    label: 'Research role & skills',        detail: 'AI-powered skill discovery for this role',              status: 'pending' },
+    { id: 'avatar',      label: 'Generate profile picture',      detail: 'Pixar-style avatar (DALL-E 3 or styled SVG)',           status: 'pending' },
+    { id: 'permissions', label: 'Configure trust & permissions', detail: 'Set permission tier and recommended model',             status: 'pending' },
+    { id: 'skills',      label: 'Assign skills & tools',         detail: 'Apply researched capabilities to agent settings',       status: 'pending' },
+    { id: 'training',    label: 'Seed onboarding task',          detail: 'Create a first-day orientation task',                   status: 'pending' },
   ];
 }
 
@@ -220,9 +221,15 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     updateStep(stepId, 'running');
     try {
       await fn();
-      updateStep(stepId, 'done');
+      // fn() may have already called updateStep('done') with a custom detail — only
+      // set done if still running (guards against the research step's self-update)
+      setCreationSteps(prev => prev.map(s =>
+        s.id === stepId && s.status === 'running' ? { ...s, status: 'done' } : s
+      ));
     } catch {
-      updateStep(stepId, 'skipped');
+      setCreationSteps(prev => prev.map(s =>
+        s.id === stepId && s.status === 'running' ? { ...s, status: 'skipped' } : s
+      ));
     }
   };
 
@@ -232,6 +239,13 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     setStage('creating');
     setCreationDone(false);
     setCreationError(null);
+
+    // Research results — populated by step 3, consumed by steps 4–6
+    let researchedSkills: string[]  = cfg.capabilities;
+    let researchedTools: string[]   = inferTools(cfg.role, cfg.capabilities);
+    let researchedModel             = 'sonnet';
+    let researchedTier              = inferTrustTier(cfg.role);
+    let researchedSpecs: string[]   = [];
 
     // ── Step 1: Catalog ──
     const catalogOk = await runStep('catalog', () =>
@@ -269,50 +283,98 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       return;
     }
 
-    // ── Step 3: Avatar (soft — never blocks) ──
+    // ── Step 3: Research role & skills (soft — enriches downstream steps) ──
+    await softStep('research', async () => {
+      const res = await fetch('/api/agents/hr/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: cfg.name,
+          role: cfg.role,
+          capabilities: cfg.capabilities,
+          personality: cfg.personality,
+        }),
+      });
+      if (!res.ok) throw new Error(`Research failed: ${res.status}`);
+      const data = await res.json();
+      if (Array.isArray(data.skills)          && data.skills.length > 0)          researchedSkills = data.skills;
+      if (Array.isArray(data.tools)           && data.tools.length > 0)           researchedTools  = data.tools;
+      if (Array.isArray(data.specializations) && data.specializations.length > 0) researchedSpecs  = data.specializations;
+      if (data.suggestedModel) researchedModel = data.suggestedModel;
+      if (data.trustTier)      researchedTier  = data.trustTier;
+
+      // Update step detail to show what was found
+      updateStep('research', 'done');
+      setCreationSteps(prev => prev.map(s =>
+        s.id === 'research'
+          ? { ...s, detail: `Found ${researchedSkills.length} skills · ${researchedTools.length} tools · model: ${researchedModel}` }
+          : s
+      ));
+    });
+
+    // ── Step 4: Avatar (soft) ──
     await softStep('avatar', async () => {
       const res = await fetch(`/api/agents/${cfg.id}/avatar/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji: cfg.emoji, color: cfg.color, name: cfg.name }),
+        body: JSON.stringify({ emoji: cfg.emoji, color: cfg.color, name: cfg.name, role: cfg.role }),
       });
       if (!res.ok) throw new Error(`Avatar gen failed: ${res.status}`);
       const data = await res.json();
       if (data.svg) setGeneratedAvatarSvg(data.svg);
+      setCreationSteps(prev => prev.map(s =>
+        s.id === 'avatar'
+          ? { ...s, detail: data.method === 'dalle3' ? 'DALL-E 3 Pixar-style image generated' : 'Styled SVG avatar created' }
+          : s
+      ));
     });
 
-    // ── Step 4: Permissions (soft) ──
+    // ── Step 5: Permissions — uses researched tier + model (soft) ──
     await softStep('permissions', async () => {
-      const trustTier = inferTrustTier(cfg.role);
       const res = await fetch(`/api/agents/${cfg.id}/config`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trustTier }),
+        body: JSON.stringify({ trustTier: researchedTier, model: researchedModel }),
       });
       if (!res.ok) throw new Error('Permissions PATCH failed');
+      setCreationSteps(prev => prev.map(s =>
+        s.id === 'permissions'
+          ? { ...s, detail: `Tier: ${researchedTier} · Model: ${researchedModel}` }
+          : s
+      ));
     });
 
-    // ── Step 5: Skills & tools (soft) ──
+    // ── Step 6: Skills & tools — uses researched data (soft) ──
     await softStep('skills', async () => {
+      // Merge specializations into capabilities for richer context
+      const allCapabilities = [...new Set([...cfg.capabilities, ...researchedSpecs])];
       const res = await fetch(`/api/agents/${cfg.id}/config`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          skills: cfg.capabilities,
-          tools: inferTools(cfg.role, cfg.capabilities),
+          capabilities: allCapabilities,
+          skills: researchedSkills,
+          tools: researchedTools,
         }),
       });
       if (!res.ok) throw new Error('Skills PATCH failed');
+      setCreationSteps(prev => prev.map(s =>
+        s.id === 'skills'
+          ? { ...s, detail: researchedSkills.slice(0, 3).join(', ') + (researchedSkills.length > 3 ? ` +${researchedSkills.length - 3} more` : '') }
+          : s
+      ));
     });
 
-    // ── Step 6: Onboarding task (soft) ──
+    // ── Step 7: Onboarding task (soft) ──
     await softStep('training', async () => {
+      const skillsList = researchedSkills.slice(0, 6).map(s => `- ${s}`).join('\n');
+      const specsList  = researchedSpecs.length > 0 ? `\n\n**Specializations discovered:**\n${researchedSpecs.map(s => `- ${s}`).join('\n')}` : '';
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: `${cfg.emoji} ${cfg.name} — Onboarding`,
-          description: `Welcome to the team! Your first tasks:\n\n1. Read your SOUL.md at ~/mission-control/agents/${cfg.id}/SOUL.md\n2. Read your CLAUDE.md for platform instructions\n3. Introduce yourself in the mission-control chat room\n4. Check the task board for your first assignment\n\nYour role: ${cfg.role}\nPersonality: ${cfg.personality}`,
+          title: `${cfg.emoji} ${cfg.name} — First Day Onboarding`,
+          description: `Welcome to the team! Complete these orientation steps:\n\n1. Read your SOUL.md at \`~/mission-control/agents/${cfg.id}/SOUL.md\`\n2. Read your CLAUDE.md for platform instructions\n3. Introduce yourself in the mission-control chat room\n4. Review your assigned skills and tools in the Manage modal\n\n**Your role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}\n\n**Key skills to leverage:**\n${skillsList}${specsList}`,
           assignedTo: cfg.id,
           priority: 'p2',
           status: 'todo',
