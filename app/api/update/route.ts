@@ -128,15 +128,22 @@ export async function POST() {
 
       const npmBin = findNpm();
       const nodeBin = process.execPath;
+      const nodeBinDir = dirname(nodeBin);
       const launchAgent = join(process.env.HOME || '', 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
       const isMac = process.platform === 'darwin';
+
+      // Ensure node and npm bin dir are on PATH so npm's shebang (#!/usr/bin/env node) resolves
+      const existingPath = process.env.PATH || '';
+      const augmentedPath = [nodeBinDir, dirname(npmBin), '/usr/local/bin', '/opt/homebrew/bin', existingPath]
+        .filter(Boolean)
+        .join(':');
 
       // Run npm install -g to update
       const updateCmd = `"${npmBin}" install -g ${PACKAGE_NAME}@latest --prefer-online 2>&1`;
       send(`Running: npm install -g ${PACKAGE_NAME}@latest --prefer-online`);
 
       const child = exec(updateCmd, {
-        env: { ...process.env, FORCE_COLOR: '0' },
+        env: { ...process.env, FORCE_COLOR: '0', PATH: augmentedPath },
         timeout: 300000,
       });
 
