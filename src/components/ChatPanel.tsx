@@ -888,8 +888,10 @@ export default function ChatPanel() {
       currentResponseRef.current = accumulated;
       currentContentRef.current = structuredContent ?? accumulated;
 
-      // Note: chat route persists messages server-side; saveMessageToDb is a local DB fallback
-      // only. The route already saved via saveMessage(). Skip to avoid double-save.
+      // Persist the assistant response to the DB so history survives page reload
+      if (accumulated) {
+        saveMessageToDb('assistant', accumulated);
+      }
 
       if (speakResponses) speak(accumulated);
 
