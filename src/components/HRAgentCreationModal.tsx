@@ -455,7 +455,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-teal-500/40 flex items-center justify-center bg-teal-500/20 flex-shrink-0">
                 {generatedAvatarPng ? (
-                  <img src={`data:image/png;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
+                  <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-2xl">{pendingConfig.emoji}</span>
                 )}
@@ -521,7 +521,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {creationDone && (
               <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
                 {generatedAvatarPng ? (
-                  <img src={`data:image/png;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-teal-500/40 object-cover" />
+                  <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-teal-500/40 object-cover" />
                 ) : (
                   <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
                 )}

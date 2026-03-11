@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { getDb } from '@/lib/database';
+import sharp from 'sharp';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -138,10 +139,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     try {
       const pngBuffer = await generateGeminiAvatar(name, role, personality);
       if (pngBuffer) {
-        avatarPath = join(assetsDir, 'avatar.png');
-        writeFileSync(avatarPath, pngBuffer);
+        // Convert PNG → WebP (512×512, quality 90)
+        const webpBuffer = await sharp(pngBuffer)
+          .resize(512, 512, { fit: 'cover' })
+          .webp({ quality: 90 })
+          .toBuffer();
+        avatarPath = join(assetsDir, 'avatar.webp');
+        writeFileSync(avatarPath, webpBuffer);
         method = 'gemini';
-        pngBase64 = pngBuffer.toString('base64');
+        pngBase64 = webpBuffer.toString('base64');
       } else {
         throw new Error('No GEMINI_API_KEY configured');
       }
