@@ -206,7 +206,7 @@ export default function MeetingsPanel() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const transcriptBufferRef = useRef('');
   const meetingDbIdRef = useRef<string | null>(null);
 
@@ -982,13 +982,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionCtor) throw new Error('Speech recognition not supported in this browser. Use Chrome or Edge.');
 
-    const recognition: SpeechRecognition = new SpeechRecognitionCtor();
+    const recognition: any = new SpeechRecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = 'en-US';
     recognitionRef.current = recognition;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (!event.results[i].isFinal) continue;
         const text = event.results[i][0].transcript.trim();
@@ -1002,7 +1002,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       }
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       if (event.error === 'no-speech') return;
       logger.error('[SpeechRecognition] error:', event.error);
     };

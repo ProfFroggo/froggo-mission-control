@@ -36,7 +36,7 @@ export interface MeetingSummary {
 }
 
 export class MeetingTranscriber {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any = null;
   private onTranscriptCallback: ((segment: TranscriptionSegment) => void) | null = null;
   private geminiApiKey: string | null = null;
 
@@ -93,14 +93,14 @@ export class MeetingTranscriber {
       );
     }
 
-    this.recognition = new SpeechRecognitionCtor() as SpeechRecognition;
+    this.recognition = new SpeechRecognitionCtor();
     this.recognition.continuous = true;
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-US';
 
     let pendingFinalText = '';
 
-    this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+    this.recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         const text = result[0].transcript.trim();
@@ -130,7 +130,7 @@ export class MeetingTranscriber {
       void pendingFinalText; // suppress unused warning
     };
 
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    this.recognition.onerror = (event: any) => {
       // 'no-speech' is normal during silences — restart quietly
       if (event.error === 'no-speech') {
         this.recognition?.start();
