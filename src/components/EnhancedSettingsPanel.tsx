@@ -305,10 +305,17 @@ function PlatformUpdateTab() {
   const [updating, setUpdating] = useState(false);
   const [updateLog, setUpdateLog] = useState<string[]>([]);
   const [updateResult, setUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [reloadCountdown, setReloadCountdown] = useState<number | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { checkVersion(); }, []);
   useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [updateLog]);
+  useEffect(() => {
+    if (reloadCountdown === null) return;
+    if (reloadCountdown <= 0) { window.location.reload(); return; }
+    const t = setTimeout(() => setReloadCountdown(c => (c ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  }, [reloadCountdown]);
 
   const checkVersion = async () => {
     setChecking(true);
@@ -341,7 +348,10 @@ function PlatformUpdateTab() {
           try {
             const payload = JSON.parse(line.slice(5).trim());
             if (payload.line !== undefined) setUpdateLog(prev => [...prev, payload.line]);
-            if (payload.done) setUpdateResult({ success: payload.success, message: payload.message });
+            if (payload.done) {
+              setUpdateResult({ success: payload.success, message: payload.message });
+              if (payload.success) setReloadCountdown(10);
+            }
           } catch { /* ignore malformed */ }
         }
       }
@@ -438,6 +448,19 @@ function PlatformUpdateTab() {
             {updateResult.success ? 'Update complete' : 'Update failed'}
           </div>
           <div className="text-xs text-mission-control-text-dim mt-1">{updateResult.message}</div>
+          {updateResult.success && reloadCountdown !== null && (
+            <div className="mt-3 flex items-center gap-3">
+              <span className="text-xs text-mission-control-text-dim">
+                Reloading in {reloadCountdown}s...
+              </span>
+              <button
+                onClick={() => window.location.reload()}
+                className="text-xs px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
+              >
+                Reload now
+              </button>
+            </div>
+          )}
         </div>
       )}
 

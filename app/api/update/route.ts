@@ -128,15 +128,22 @@ export async function POST() {
 
       const npmBin = findNpm();
       const nodeBin = process.execPath;
+      const nodeBinDir = dirname(nodeBin);
       const launchAgent = join(process.env.HOME || '', 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
       const isMac = process.platform === 'darwin';
+
+      // Ensure node and npm bin dir are on PATH so npm's shebang (#!/usr/bin/env node) resolves
+      const existingPath = process.env.PATH || '';
+      const augmentedPath = [nodeBinDir, dirname(npmBin), '/usr/local/bin', '/opt/homebrew/bin', existingPath]
+        .filter(Boolean)
+        .join(':');
 
       // Run npm install -g to update
       const updateCmd = `"${npmBin}" install -g ${PACKAGE_NAME}@latest --prefer-online 2>&1`;
       send(`Running: npm install -g ${PACKAGE_NAME}@latest --prefer-online`);
 
       const child = exec(updateCmd, {
-        env: { ...process.env, FORCE_COLOR: '0' },
+        env: { ...process.env, FORCE_COLOR: '0', PATH: augmentedPath, SKIP_MC_POSTINSTALL: '1' },
         timeout: 300000,
       });
 
@@ -155,37 +162,77 @@ export async function POST() {
         }
 
         send('');
-        send('Update installed. Restarting...');
+        send('Package installed. Building app...');
 
-        // Restart via LaunchAgent (macOS) or PM2
-        if (isMac && existsSync(launchAgent)) {
-          exec(`/bin/launchctl stop com.mission-control.app`, () => {
-            setTimeout(() => {
-              exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
-                if (restartErr) {
-                  done(true, 'Updated. Restart failed — run: mission-control restart');
-                } else {
-                  done(true, 'Updated and restarted. Page will reload in a moment.');
-                }
-              });
-            }, 2000);
-          });
-        } else {
-          exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
-            const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
-            if (hasPm2) {
-              exec('pm2 restart mission-control-dashboard', (restartErr) => {
-                if (restartErr) {
-                  done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
-                } else {
-                  done(true, 'Updated and restarted. Page will reload in a moment.');
-                }
-              });
-            } else {
-              done(true, 'Updated. Run `mission-control restart` to apply changes.');
-            }
-          });
-        }
+        // Find the new install directory via npm root -g
+        let newInstallDir = process.cwd();
+        try {
+          const npmRoot = execSync(`"${npmBin}" root -g`, {
+            encoding: 'utf-8',
+            timeout: 15000,
+            env: { ...process.env, PATH: augmentedPath },
+          }).trim();
+          const candidate = join(npmRoot, PACKAGE_NAME);
+          if (existsSync(candidate)) newInstallDir = candidate;
+        } catch { /* fallback to cwd */ }
+
+        send(`Building in ${newInstallDir}...`);
+
+        const nextBin = join(newInstallDir, 'node_modules', '.bin', 'next');
+        const buildCmd = `"${nodeBin}" "${nextBin}" build`;
+
+        const buildChild = exec(buildCmd, {
+          cwd: newInstallDir,
+          env: { ...process.env, FORCE_COLOR: '0', PATH: augmentedPath },
+          timeout: 300000,
+        });
+
+        buildChild.stdout?.on('data', (data: string) => {
+          data.split('\n').filter(Boolean).forEach((l: string) => send(l));
+        });
+        buildChild.stderr?.on('data', (data: string) => {
+          data.split('\n').filter(Boolean).forEach((l: string) => send(l));
+        });
+
+        buildChild.on('close', (buildCode) => {
+          if (buildCode !== 0) {
+            done(false, `Build failed (exit code ${buildCode}). Try: mission-control restart`);
+            return;
+          }
+
+          send('');
+          send('Build complete. Restarting...');
+
+          // Restart via LaunchAgent (macOS) or PM2
+          if (isMac && existsSync(launchAgent)) {
+            exec(`/bin/launchctl stop com.mission-control.app`, () => {
+              setTimeout(() => {
+                exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
+                  if (restartErr) {
+                    done(true, 'Updated. Restart failed — run: mission-control restart');
+                  } else {
+                    done(true, 'Updated and restarted successfully.');
+                  }
+                });
+              }, 2000);
+            });
+          } else {
+            exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
+              const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
+              if (hasPm2) {
+                exec('pm2 restart mission-control-dashboard', (restartErr) => {
+                  if (restartErr) {
+                    done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
+                  } else {
+                    done(true, 'Updated and restarted successfully.');
+                  }
+                });
+              } else {
+                done(true, 'Updated. Run `mission-control restart` to apply changes.');
+              }
+            });
+          }
+        });
       });
     },
   });
