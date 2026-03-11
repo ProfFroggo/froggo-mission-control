@@ -7,6 +7,12 @@
 - Library: `~/mission-control/library/` — all agent output files go here
 - MCP servers: `tools/mission-control-db-mcp/` and `tools/memory-mcp/`
 
+## Git Workflow ⚠️ MANDATORY
+- **All work goes on `dev` branch** — never commit directly to `main`
+- `main` is release-only — CI publishes to npm on every push to `main`
+- Flow: `dev` → PR → `main` → npm publish
+- Always confirm you are on `dev` before starting any work: `git checkout dev`
+
 ## Key Rules
 - Check task board before starting work
 - Post activity on every meaningful decision
