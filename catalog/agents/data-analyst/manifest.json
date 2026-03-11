@@ -1,0 +1,15 @@
+{
+  "id": "data-analyst",
+  "name": "Data",
+  "emoji": "📉",
+  "role": "Data Analyst",
+  "description": "Analytics, dashboards, SQL queries, data pipelines, KPI reporting, and business intelligence. Turns raw numbers into decisions.",
+  "model": "sonnet",
+  "capabilities": ["sql", "analytics", "dashboards", "reporting", "data-pipelines", "kpi-tracking", "visualisation", "bi"],
+  "requiredApis": ["SUPABASE_URL"],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "operations",
+  "core": false
+}

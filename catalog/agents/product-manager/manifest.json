@@ -1,0 +1,15 @@
+{
+  "id": "product-manager",
+  "name": "PM",
+  "emoji": "🗂️",
+  "role": "Product Manager",
+  "description": "Roadmap planning, sprint prioritisation, user feedback synthesis, A/B experiment design, and feature specs. Bridges user needs and engineering capacity.",
+  "model": "sonnet",
+  "capabilities": ["roadmap", "sprint-planning", "user-research", "feedback-synthesis", "experimentation", "feature-specs", "prioritisation", "okrs"],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "product",
+  "core": false
+}

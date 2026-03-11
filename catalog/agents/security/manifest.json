@@ -1,0 +1,15 @@
+{
+  "id": "security",
+  "name": "Security",
+  "emoji": "🛡️",
+  "role": "Security & Compliance Engineer",
+  "description": "Security audits, threat modelling, OWASP reviews, compliance checks (GDPR, SOC2), and agent trust architecture. Catches vulnerabilities before they ship.",
+  "model": "sonnet",
+  "capabilities": ["security-audit", "threat-modelling", "owasp", "compliance", "gdpr", "penetration-testing", "code-security", "trust-architecture"],
+  "requiredApis": [],
+  "requiredSkills": ["security-checklist"],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "engineering",
+  "core": false
+}
