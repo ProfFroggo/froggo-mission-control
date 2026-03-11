@@ -757,7 +757,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
               {metricsLoading ? (
                 <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading metrics…</div>
               ) : metrics ? (
-                <AgentMetricsCard agentId={agentId} agentName={agentName} metrics={metrics as any} />
+                <AgentMetricsCard agentId={agentId} agentName={agentName} metrics={{ ...(metrics as any), _role: ({ 'mission-control': 'orchestrator', 'hr': 'hr', 'clara': 'qc', 'inbox': 'inbox' } as Record<string, string>)[agentId] }} />
               ) : (
                 <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">No metrics yet</div>
               )}

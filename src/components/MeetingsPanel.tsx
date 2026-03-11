@@ -129,6 +129,8 @@ export default function MeetingsPanel() {
 
   // Meeting state
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showTitleInput, setShowTitleInput] = useState(false);
@@ -189,6 +191,13 @@ export default function MeetingsPanel() {
     setLoadingUpcomingEvents(false);
   }, []);
 
+  // Enumerate audio input devices
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices()
+      .then(devices => setAudioDevices(devices.filter(d => d.kind === 'audioinput')))
+      .catch(() => {});
+  }, []);
+
   // Refs
   const listeningRef = useRef(false);
   const isMutedRef = useRef(isMuted);
@@ -197,6 +206,7 @@ export default function MeetingsPanel() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptBufferRef = useRef('');
   const meetingDbIdRef = useRef<string | null>(null);
 
@@ -806,7 +816,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     return created;
   }, [meetingActionItems]);
 
-  // Gemini Live Transcription
+  // --- LEGACY: kept for file-upload transcription path only ---
   const connectGeminiTranscription = useCallback(async (_stream: MediaStream) => {
     const apiKey = await getGeminiApiKey();
     if (!apiKey || apiKey.trim() === '') {
@@ -966,18 +976,50 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     }
   }, []);
 
+  // Web Speech API Transcription — defined after cleanupWithGemini to avoid TDZ
+  const startSpeechRecognition = useCallback((meetingDbId: string | null) => {
+    const SpeechRecognitionCtor =
+      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) throw new Error('Speech recognition not supported in this browser. Use Chrome or Edge.');
+
+    const recognition: SpeechRecognition = new SpeechRecognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) continue;
+        const text = event.results[i][0].transcript.trim();
+        if (!text) continue;
+        setMeetingTranscript(prev => [...prev, text]);
+        setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
+        if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
+        const actions = detectActionItems(text);
+        if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
+        cleanupWithGemini(text);
+      }
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'no-speech') return;
+      logger.error('[SpeechRecognition] error:', event.error);
+    };
+
+    recognition.onend = () => {
+      if (listeningRef.current && recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch { /* already running */ }
+      }
+    };
+
+    recognition.start();
+  }, [detectActionItems, cleanupWithGemini, saveTranscriptToDb]);
+
   const startMeeting = useCallback(async () => {
     if (listeningRef.current) return;
     setStartError(null);
     setStatusMessage('Starting meeting...');
-
-    // Check Gemini API key before anything else
-    const apiKey = await getGeminiApiKey();
-    if (!apiKey || apiKey.trim() === '') {
-      setStartError('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
-      setStatusMessage('');
-      return;
-    }
 
     setMeetingTranscript([]);
     setMeetingTranscriptLines([]);
@@ -988,8 +1030,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     const startTime = Date.now();
     setMeetingStartTime(startTime);
     const title = meetingTitle.trim() || `Meeting ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+    let dbId: string | null = null;
     try {
-      const dbId = await saveMeetingToDb(title, {
+      dbId = await saveMeetingToDb(title, {
         agenda: meetingAgenda,
         participants: meetingParticipants,
         notes: meetingNotes,
@@ -999,13 +1042,36 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       // DB save failure is non-blocking — meeting continues
     }
     try {
+      // Acquire mic with selected device — keeps stream for audio level metering
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+        audio: {
+          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000,
+        },
       });
+      streamRef.current = stream;
+      // Wire audio level analyser
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      const pollLevel = () => {
+        if (!listeningRef.current || !analyserRef.current) return;
+        const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(data);
+        setAudioLevel(data.reduce((a, b) => a + b) / data.length / 255);
+        requestAnimationFrame(pollLevel);
+      };
+      pollLevel();
+
       listeningRef.current = true;
       setListening(true);
-      const ws = await connectGeminiTranscription(stream);
-      startAudioStreaming(stream, ws);
+      startSpeechRecognition(dbId);
       setMeetingActive(true);
       setShowTitleInput(false);
       setMeetingAgenda('');
@@ -1014,17 +1080,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       setStatusMessage('Recording...');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes('Permission denied') || msg.includes('NotAllowedError')) {
-        setStartError('Microphone permission denied. Allow mic access in System Settings → Privacy → Microphone.');
-      } else {
-        setStartError(`Failed to start recording: ${msg}`);
-      }
+      setStartError(`Failed to start recording: ${msg}`);
       setStatusMessage('');
       setMeetingStartTime(null);
       listeningRef.current = false;
       setListening(false);
     }
-  }, [setMeetingActive, connectGeminiTranscription, startAudioStreaming, meetingTitle, meetingAgenda, meetingParticipants, meetingNotes, saveMeetingToDb]);
+  }, [setMeetingActive, startSpeechRecognition, selectedDeviceId, meetingTitle, meetingAgenda, meetingParticipants, meetingNotes, saveMeetingToDb]);
 
   const endMeeting = useCallback(async () => {
     if (endMeetingInProgressRef.current) return;
@@ -1034,6 +1096,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         const finalText = transcriptBufferRef.current.trim();
         transcriptBufferRef.current = '';
         setMeetingTranscript(prev => [...prev, finalText]);
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null; // prevent auto-restart
+        try { recognitionRef.current.stop(); } catch { /* ignore */ }
+        recognitionRef.current = null;
       }
       if (wsRef.current) {
         try { wsRef.current.close(); } catch { /* ignore */ }
@@ -1270,60 +1337,67 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                   <div className="p-6">
                     {isMeetingActive ? (
-                      <div className="space-y-6">
-                        {/* Active Meeting Status */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="relative">
-                              <div className="w-16 h-16 rounded-2xl bg-error-subtle flex items-center justify-center">
-                                <span className="text-3xl font-mono font-bold text-error">
-                                  {formatDuration(elapsedTime)}
-                                </span>
-                              </div>
-                              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-mission-control-text">{meetingTitle || 'Untitled Meeting'}</p>
-                              <p className="text-sm text-mission-control-text-dim">Recording with Gemini Live</p>
-                            </div>
+                      <div className="space-y-4">
+                        {/* Header row */}
+                        <div className="flex items-center gap-3">
+                          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-error-subtle flex items-center justify-center">
+                            <Mic size={18} className="text-error" />
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-mission-control-text truncate">{meetingTitle || 'Untitled Meeting'}</p>
+                            <p className="text-xs text-mission-control-text-dim">
+                              {formatDuration(elapsedTime)} · {audioDevices.find(d => d.deviceId === selectedDeviceId)?.label?.split('(')[0].trim() || 'Default mic'}
+                            </p>
                           </div>
                           <button
                             onClick={endMeeting}
-                            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-red-500/20"
+                            className="flex-shrink-0 px-4 py-2 bg-error hover:bg-error/80 text-white rounded-xl font-medium flex items-center gap-2 text-sm transition-colors"
                           >
-                            <PhoneOff size={20} />
-                            End Meeting
+                            <PhoneOff size={15} /> End
                           </button>
                         </div>
 
-                        {/* Audio Level */}
-                        <div>
-                          <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-100 rounded-full"
-                              style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-mission-control-text-dim mt-2">Audio level</p>
+                        {/* Audio waveform */}
+                        <div className="flex items-end gap-0.5 h-8 px-1">
+                          {Array.from({ length: 32 }).map((_, i) => {
+                            const active = i / 32 < audioLevel * 1.4;
+                            const height = active ? `${30 + Math.sin(i * 0.9 + Date.now() / 200) * 50}%` : '15%';
+                            return (
+                              <div key={i} className={`flex-1 rounded-full transition-all duration-75 ${active ? 'bg-success' : 'bg-mission-control-border'}`}
+                                style={{ height }} />
+                            );
+                          })}
                         </div>
 
-                        {/* Minimal Live Indicator */}
-                        <div className="bg-mission-control-bg rounded-xl p-4">
-                          <div className="flex items-center gap-2 text-mission-control-text-dim">
-                            <Loader2 size={16} className="animate-spin" />
-                            <span className="text-sm">
-                              {meetingTranscript.length > 0 
-                                ? `${meetingTranscript.length} segments captured`
-                                : 'Listening for speech...'
-                              }
-                            </span>
-                          </div>
-                          {meetingTranscript.length > 0 && (
-                            <p className="text-sm text-mission-control-text mt-2 line-clamp-2">
-                              {meetingTranscript[meetingTranscript.length - 1]}
-                            </p>
+                        {/* Live transcript feed */}
+                        <div className="bg-mission-control-bg rounded-xl p-4 min-h-[80px]">
+                          {meetingTranscript.length > 0 ? (
+                            <div className="space-y-1.5">
+                              {meetingTranscript.slice(-4).map((line, i, arr) => (
+                                <p key={i} className={`text-sm leading-relaxed transition-opacity ${i === arr.length - 1 ? 'text-mission-control-text' : 'text-mission-control-text-dim opacity-60'}`}>
+                                  {line}
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 text-mission-control-text-dim h-full">
+                              <span className="flex gap-1 items-center">
+                                {[0, 1, 2].map(i => (
+                                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-success animate-bounce"
+                                    style={{ animationDelay: `${i * 0.2}s` }} />
+                                ))}
+                              </span>
+                              <span className="text-sm">Listening…</span>
+                            </div>
                           )}
                         </div>
+
+                        {meetingTranscript.length > 0 && (
+                          <p className="text-xs text-mission-control-text-dim text-right">
+                            {meetingTranscript.length} segment{meetingTranscript.length !== 1 ? 's' : ''} · {meetingActionItems.length} action item{meetingActionItems.length !== 1 ? 's' : ''} detected
+                          </p>
+                        )}
                       </div>
                     ) : showTitleInput ? (
                       <div className="space-y-4">
@@ -1368,6 +1442,22 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             rows={2}
                             className="w-full px-4 py-2.5 bg-mission-control-bg border border-mission-control-border rounded-xl text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20 resize-none"
                           />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-mission-control-text mb-1.5">Microphone</label>
+                          <select
+                            value={selectedDeviceId}
+                            onChange={e => setSelectedDeviceId(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-mission-control-bg border border-mission-control-border rounded-xl text-mission-control-text focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20 text-sm"
+                          >
+                            <option value="">System Default</option>
+                            {audioDevices.map(d => (
+                              <option key={d.deviceId} value={d.deviceId}>
+                                {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         {startError && (
