@@ -24,6 +24,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Localhost requests are always allowed — auth is for remote access only
+  const host = request.headers.get('host') || '';
+  if (host.includes('localhost') || host.startsWith('127.') || host.startsWith('[::1]')) {
+    return NextResponse.next();
+  }
+
   const authHeader = request.headers.get('Authorization');
   const bearerToken = authHeader?.replace('Bearer ', '');
 
