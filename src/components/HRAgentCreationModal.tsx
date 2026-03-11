@@ -433,15 +433,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {/* Agent card */}
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-teal-500/40 flex items-center justify-center bg-teal-500/20 flex-shrink-0">
-                {generatedAvatarSvg ? (
-                  <img
-                    src={`data:image/svg+xml;base64,${btoa(generatedAvatarSvg)}`}
-                    alt={pendingConfig.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl">{pendingConfig.emoji}</span>
-                )}
+                <span className="text-2xl">{pendingConfig.emoji}</span>
               </div>
               <div>
                 <div className="font-semibold text-mission-control-text">{pendingConfig.name}</div>
@@ -503,15 +495,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
             {/* Done card */}
             {creationDone && (
               <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
-                {generatedAvatarSvg ? (
-                  <img
-                    src={`data:image/svg+xml;base64,${btoa(generatedAvatarSvg)}`}
-                    alt={pendingConfig.name}
-                    className="w-14 h-14 rounded-full mx-auto mb-2 border border-teal-500/30"
-                  />
-                ) : (
-                  <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
-                )}
+                <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
                 <div className="font-semibold text-teal-400">{pendingConfig.name} is live!</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">
                   Find them in the Agents panel · Onboarding task created

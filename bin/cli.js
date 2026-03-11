@@ -203,7 +203,11 @@ async function findFreePort(start = 3000) {
 }
 
 function getPort() {
-  return parseInt(process.env.PORT || '3000', 10);
+  if (process.env.PORT) return parseInt(process.env.PORT, 10);
+  // Read from .env file to preserve port across restarts
+  const envPort = parseEnvFile(ENV_FILE).PORT;
+  if (envPort) return parseInt(envPort, 10);
+  return 3000;
 }
 
 function isRunning(port) {
@@ -1192,8 +1196,18 @@ async function cmdStart() {
   }
   const health = await waitForServer(port, 30);
   console.log('');
-  if (health) success(`Running at http://localhost:${port}`);
-  else warn('Server slow to start — check: mission-control logs');
+  if (health) {
+    // Restore portless stable URL if proxy is already installed
+    if (IS_MAC) {
+      const portlessResult = setupPortless(port);
+      if (portlessResult) success(`Running at ${portlessResult}`);
+      else success(`Running at http://localhost:${port}`);
+    } else {
+      success(`Running at http://localhost:${port}`);
+    }
+  } else {
+    warn('Server slow to start — check: mission-control logs');
+  }
 }
 
 async function cmdStop() {
