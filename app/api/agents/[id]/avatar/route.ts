@@ -40,7 +40,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     status: 200,
     headers: {
       'Content-Type': found.type,
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'no-cache, must-revalidate',
     },
   });
 }
