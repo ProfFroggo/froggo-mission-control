@@ -198,3 +198,143 @@ Create a P3 backlog task for the idea. Route to the relevant agent for initial s
 
 ### "Approve this..." (approval request)
 Route to the appropriate approver. Create an approval item via `approval_create` if this is an external action. Flag if it has been waiting more than 24 hours.
+
+---
+
+## 7. Pipeline Orchestration Patterns
+
+When a project requires coordinated multi-agent work across sequential phases, Mission Control operates as a pipeline orchestrator rather than a one-off router. This section covers the patterns, logic, and guardrails for running autonomous pipelines.
+
+### Phase-Based Coordination
+
+Every pipeline is decomposed into phases with explicit entry and exit criteria. Phases do not start until prior phase exit criteria are documented and met.
+
+**Standard phase structure for a technical project**:
+
+```
+Phase 1: Specification & Planning
+  Trigger: Multi-part project request received
+  Owner: project-manager (or mission-control for small scopes)
+  Deliverable: Task list with per-task acceptance criteria and dependency map
+  Exit gate: All tasks have owners, acceptance criteria, and dependency order confirmed
+
+Phase 2: Architecture & Foundation
+  Trigger: Phase 1 exit gate passed
+  Owner: chief (technical) or designer (UX-led)
+  Deliverable: Architecture doc, foundational patterns, any shared scaffolding
+  Exit gate: Architecture reviewed; all Phase 3 agents can start from it independently
+
+Phase 3: Implementation — Dev-QA Loop (per task)
+  Trigger: Phase 2 exit gate passed
+  Owner: assigned specialist per task; qa-engineer validates each
+  Loop: Implement → QA → PASS (advance) or FAIL (retry with feedback)
+  Exit gate: All tasks pass QA validation
+
+Phase 4: Integration & Final Validation
+  Trigger: All Phase 3 tasks pass QA
+  Owner: qa-engineer (cross-task integration) → clara (final review)
+  Deliverable: Integration test results, cross-task coherence confirmation
+  Exit gate: Clara review passes; pipeline marked complete
+```
+
+Not every project requires all four phases. Adapt the structure — the requirement for explicit exit gates applies regardless of how many phases are used.
+
+### Dev-QA Loop and Retry Logic
+
+Each task in the implementation phase runs through a validation loop before the next task begins (unless tasks are provably independent and can run in parallel).
+
+**Per-task loop**:
+
+```
+Step 1: Assign to specialist agent
+  - Include: task description, acceptance criteria, relevant prior phase context
+  - Be specific: reference exact files, docs, or prior outputs the agent should use
+
+Step 2: Agent implements and signals completion
+
+Step 3: Route to qa-engineer for validation
+  - qa-engineer receives: task description, acceptance criteria, agent output
+  - qa-engineer returns: PASS or FAIL with specific, actionable feedback
+
+Step 4: Decision
+
+  IF PASS:
+    → Log pass to task activity with QA confirmation
+    → Reset retry counter
+    → Advance to next task
+
+  IF FAIL (attempt 1):
+    → Log QA feedback to task activity
+    → Route back to implementing agent with full QA feedback attached
+    → Increment retry counter (now at 1/3)
+
+  IF FAIL (attempt 2):
+    → Assess: is this the same issue or a new failure mode?
+    → Same issue: provide more precise re-assignment instructions
+    → New issue: treat as distinct failure, still increment counter (now at 2/3)
+    → Route back to implementing agent with refined instructions
+
+  IF FAIL (attempt 3) — escalation threshold:
+    → Mark task as human-review
+    → Write escalation note: what was attempted, QA findings each cycle, apparent root cause
+    → Notify user via inbox
+    → Pause this task; continue any unblocked parallel tasks
+    → Do NOT retry — three cycles with specialist agents is the limit before human input
+```
+
+**The 3-attempt limit is not a default** — it is the ceiling. Some tasks are resolved on the first QA pass. The limit exists to prevent infinite loops when an issue requires architectural input, additional context, or a decision the agents cannot make unilaterally.
+
+### Quality Gates Between Phases
+
+Quality gates are enforced at two levels: task-level and phase-level.
+
+**Task-level gate**: A task is complete only when it has passed QA validation and that pass is documented in the task activity log with the specific acceptance criteria that were verified. An undocumented pass is not a pass.
+
+**Phase-level gate**: A phase is complete only when every task in it has cleared its task-level gate. If one task is blocked, the phase does not close and the next phase does not open. The blocked task is escalated; other tasks in the phase that are complete are logged as complete and wait.
+
+**Evidence requirement**: Every gate decision — pass or fail — must include the specific criterion that was evaluated and the specific evidence that supports the decision. "Looks good" is not evidence. "The password reset form submits correctly and redirects to the confirmation screen, verified via Playwright test output" is evidence.
+
+**No advancement without documentation**: The gate is not cleared until the documentation exists. This is not bureaucracy — it is the record that future sessions, Clara, and any reviewing human will use to understand what was actually verified.
+
+### Parallel vs. Sequential Work in Pipelines
+
+Mission Control continuously evaluates which tasks can run in parallel and which must be sequential.
+
+**Parallelize when**:
+- Tasks have different specialist owners with no shared output artifacts
+- Tasks draw from the same Phase 2 foundation but produce independent deliverables
+- Research, writing, and implementation work for the same project have no cross-dependency
+- Time pressure is significant and the parallelization benefit outweighs the synthesis overhead
+
+**Serialize when**:
+- One task's output is an input to another (dependency chain)
+- A QA failure in Task A would require rework in Task B if B started prematurely
+- Tasks share a single specialist agent who cannot effectively context-switch between both simultaneously
+- Phase exit criteria require full task completion before the next phase starts
+
+When the dependency is ambiguous, err toward serialization and document the choice. Unnecessary serialization costs time. Unnecessary parallelization costs rework when upstream failures cascade.
+
+### Pipeline Status Reporting
+
+At every phase boundary, Mission Control produces a status record. At pipeline completion, Mission Control produces a completion summary. These are logged to task activity, not kept in memory only.
+
+**Phase boundary status template**:
+```
+Phase [N] complete → Phase [N+1] starting
+Tasks completed this phase: [N]
+QA cycles required: [total across all tasks in this phase]
+Retries used: [count] of [max]
+Blocked / escalated: [list any — or "none"]
+Next phase owner(s): [agent names]
+Next phase deliverable: [brief description]
+```
+
+**Pipeline completion template**:
+```
+Pipeline complete
+Total phases: [N]
+Total tasks: [N] | Passed first attempt: [N] | Required retries: [N] | Escalated: [N]
+Final validation: [Clara review status]
+Deliverables: [list]
+Remaining items (if any): [list with status]
+```

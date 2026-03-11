@@ -538,6 +538,7 @@ Check current availability — programs change. If a new provider is being evalu
 
 ### Expense Request Evaluation Template
 
+
 When any expense request comes in, apply this framework before making a recommendation:
 
 ```
@@ -575,3 +576,176 @@ RECOMMENDATION
 
 Notes: [Any additional context]
 ```
+
+---
+
+## 8. Accounts Payable & Vendor Management
+
+This section covers the operational frameworks for processing payments, managing the vendor registry, enforcing payment controls, and optimizing cash flow through AP timing.
+
+### AP Workflow
+
+The accounts payable workflow runs from invoice receipt through payment confirmation and audit logging. Each step is mandatory; no step may be skipped to accelerate payment.
+
+```
+Step 1: Invoice Receipt
+  - Receive invoice via designated channel (billing email, agent request, or platform tool)
+  - Log invoice: vendor name, invoice number, invoice date, due date, amount, currency, payment method, internal owner
+  - Verify invoice number is not a duplicate (check AP register before proceeding)
+
+Step 2: Three-Way Matching
+  - Locate the Purchase Order or pre-approved commitment for this invoice
+  - Confirm delivery/completion: goods received, services rendered, milestone met
+  - Match: PO amount vs. invoice amount vs. confirmed delivery
+  - IF ALL THREE MATCH → proceed to approval routing
+  - IF ANY MISMATCH → place on hold, notify internal owner and vendor, log discrepancy
+
+Step 3: Approval Routing
+  - Apply approval threshold rules (see table below)
+  - Under threshold: document internal owner confirmation
+  - Above threshold: create approval request via approval_create MCP tool before any action
+  - Do not proceed to payment until required approval is documented
+
+Step 4: Payment Execution
+  - Confirm recipient address/account matches vendor registry (not just the invoice)
+  - If address differs from registry: re-verify via secondary channel before updating registry or paying
+  - Select payment rail based on vendor preference, amount, and urgency
+  - Execute payment; capture transaction ID or confirmation reference
+  - Log payment: invoice reference, amount, rail, recipient, timestamp, approval reference, transaction ID
+
+Step 5: Confirmation & Close
+  - Confirm settlement (for crypto: on-chain confirmation; for ACH: bank confirmation)
+  - Update invoice status to PAID in AP register
+  - Notify requesting agent or internal owner
+  - Archive invoice with payment confirmation attached
+```
+
+### Approval Thresholds
+
+| Amount | Required approval |
+|--------|------------------|
+| Under $500 | Team lead confirmation |
+| $500 – $5,000 | Finance Manager review + department head confirmation |
+| $5,000 – $25,000 | Finance Manager recommendation + Mission Control approval |
+| Above $25,000 | Mission Control approval + documented business case |
+| Any token/crypto transfer | Mission Control approval regardless of amount |
+| New recurring commitment > $1,000/mo | Finance Manager evaluation + Mission Control approval |
+
+All approvals above the $5,000 threshold are routed via `approval_create` MCP tool. No payment above that threshold proceeds without a documented approval reference in the payment log.
+
+### Vendor Onboarding Checklist
+
+Before processing any payment to a new vendor, complete the following:
+
+```
+VENDOR ONBOARDING — required before first payment
+
+1. Identity verification
+   [ ] Legal entity name confirmed (matches invoice and any contract)
+   [ ] Business type: [sole proprietor / LLC / corporation / DAO / other]
+   [ ] Registered address or jurisdiction confirmed
+   [ ] Tax ID collected if applicable (EIN for US, VAT for EU, etc.)
+
+2. Payment details
+   [ ] Preferred payment rail documented: [ACH / wire / USDC / other]
+   [ ] Payment details collected directly from vendor (not sourced only from invoice)
+   [ ] Payment details confirmed via secondary channel if amount > $1,000
+   [ ] Backup payment rail documented (if primary fails)
+
+3. Commercial terms
+   [ ] Payment terms: [net 15 / net 30 / on receipt / milestone-based / other]
+   [ ] Currency: [USD / USDC / other]
+   [ ] Early payment discount available: [yes / no — if yes, terms]
+   [ ] Invoicing frequency: [monthly / per milestone / one-time]
+
+4. Internal setup
+   [ ] Internal owner assigned (which agent or person manages this relationship)
+   [ ] Business purpose documented (what service/good is being purchased)
+   [ ] Approval requirement noted: [per-invoice approval / pre-approved recurring amount]
+   [ ] 1099 / contractor compliance noted if applicable (US)
+   [ ] Added to vendor registry
+
+5. Compliance flags
+   [ ] Any international wire restrictions or sanctions screening required: [yes / no]
+   [ ] Data handling obligations (vendor has access to user data): [yes / no]
+   [ ] Contract on file: [yes / no — if yes, location]
+```
+
+### Common Fraud Signals
+
+Place any payment on hold and escalate to Mission Control when any of the following are present:
+
+| Signal | Why it matters |
+|--------|---------------|
+| Recipient payment details changed from prior payment | Account takeover / payment redirection fraud |
+| Invoice arrived via personal email of a contact (not company billing address) | Social engineering / BEC fraud |
+| Invoice amount is just below an approval threshold | Threshold-busting to avoid review |
+| New vendor requesting urgent payment within 24-48 hours of first contact | Pressure tactic; no established relationship |
+| Invoice references a PO number that cannot be located | Fake invoice |
+| Existing vendor requests switch from ACH to wire or crypto via email only | Payment redirection fraud |
+| Address change request arrives via email with no secondary verification | Account takeover |
+| Multiple invoices for the same period from the same vendor for the same service | Duplicate invoice fraud |
+
+**Response to a fraud signal**: Do not process. Log the signal. Notify Mission Control and the internal vendor owner immediately. Require verbal confirmation or a second communication channel (phone call, video, in-person) before any address change or urgent payment is processed. Document the verification method used.
+
+### Payment Terms Negotiation
+
+Payment terms are a negotiable form of working capital. When vendor payment terms can be extended, the company retains cash for longer at no cost. When early payment discounts are available, taking them is often the equivalent of a 20-40% annualized return on capital.
+
+**Framework for evaluating early payment discounts**:
+```
+Annualized value of discount = (Discount % / (1 - Discount %)) × (365 / Days saved)
+
+Example: 2/10 net 30 (2% discount for paying 20 days early)
+= (0.02 / 0.98) × (365 / 20)
+= 0.0204 × 18.25
+= ~37% annualized
+
+Decision rule:
+- If annualized return > current stablecoin yield AND runway > 18 months → take the discount
+- If runway is constrained (< 18 months) → preserve cash, use full net terms
+```
+
+**Negotiating extended terms**:
+- Extended net terms (net 45, net 60, net 90) are most negotiable with larger vendors who value the relationship
+- Frame as a business request: "We're managing cash flow carefully; can we move to net 45?"
+- Offer something in return when possible: case study, longer contract commitment, referral
+- Document any agreed term changes in the vendor registry and flag in the AP workflow
+
+**Terms to negotiate at vendor onboarding**:
+- Net payment terms (default: net 30; push for net 45-60 with non-critical vendors)
+- Annual vs. monthly billing (annual gives the vendor certainty; ask for a 15-20% discount in return)
+- Volume pricing: if you expect to scale usage, lock in volume pricing before you need it
+- Startup credits: for SaaS and cloud infrastructure, always ask whether a startup program or credits are available before signing at list price
+- Auto-renewal terms: never accept auto-renewal without a defined cancellation window (minimum 30 days notice); document the renewal date in the vendor registry
+
+### AP Aging Schedule
+
+Maintain an AP aging schedule as a live view of all outstanding invoices. Review it weekly; incorporate it into the monthly financial review.
+
+```
+AP AGING SCHEDULE
+As of: [date] | Next update: [date]
+
+=== CURRENT (due in 0-14 days) ===
+[Vendor] | INV-[#] | Due [date] | $[amount] | [status: pending approval / approved / queued]
+
+=== UPCOMING (due in 15-30 days) ===
+[Vendor] | INV-[#] | Due [date] | $[amount] | [status]
+
+=== FUTURE (due in 31-60 days) ===
+[Vendor] | INV-[#] | Due [date] | $[amount] | [status]
+
+=== ON HOLD (dispute or fraud flag) ===
+[Vendor] | INV-[#] | Due [date] | $[amount] | Hold reason: [description] | Owner: [agent]
+
+=== OVERDUE ===
+[Vendor] | INV-[#] | Due [date] | $[amount] | Days overdue: [N] | Action: [description]
+
+TOTALS
+Current: $[amount] | Upcoming: $[amount] | Future: $[amount] | On hold: $[amount]
+Total outstanding AP: $[amount]
+Expected cash outflow next 30 days: $[current + upcoming]
+```
+
+The AP aging schedule is the input for the 30-day cash outflow forecast. It must be reconciled with the operating treasury balance before any payment batches are run.
