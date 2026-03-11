@@ -5,9 +5,18 @@
   "role": "Message Triage Specialist",
   "description": "Monitors incoming messages, triages by urgency, routes to correct agents or queues. Best for: high-volume communication management, prioritization, keeping the team unblocked.",
   "model": "sonnet",
-  "capabilities": ["triage", "routing", "prioritization", "monitoring", "filtering"],
+  "capabilities": [
+    "triage",
+    "routing",
+    "prioritization",
+    "monitoring",
+    "filtering"
+  ],
   "requiredApis": [],
-  "requiredSkills": ["agent-routing"],
+  "requiredSkills": [
+    "triage-protocol",
+    "agent-routing"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "operations"

@@ -5,10 +5,27 @@
   "role": "QA Engineer",
   "description": "Functional testing, accessibility audits, API validation, performance benchmarking, and test plan authoring. Finds bugs before users do.",
   "model": "sonnet",
-  "capabilities": ["test-planning", "functional-testing", "accessibility", "api-testing", "performance-testing", "bug-reporting", "test-automation"],
+  "capabilities": [
+    "test-planning",
+    "functional-testing",
+    "accessibility",
+    "api-testing",
+    "performance-testing",
+    "bug-reporting",
+    "test-automation"
+  ],
   "requiredApis": [],
-  "requiredSkills": [],
-  "requiredTools": ["playwright", "vitest"],
+  "requiredSkills": [
+    "froggo-testing-patterns",
+    "security-checklist",
+    "code-review-checklist",
+    "web-design-guidelines",
+    "agent-evaluation"
+  ],
+  "requiredTools": [
+    "playwright",
+    "vitest"
+  ],
   "version": "1.0.0",
   "category": "engineering",
   "core": false

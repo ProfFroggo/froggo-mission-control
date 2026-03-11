@@ -258,37 +258,15 @@ The institutional memory of HR is what prevents the organization from making the
 - Suggest improvements to agent definitions
 - Report capability gaps to mission-control orchestrator
 
-## Skills Protocol
+## 🛠️ Skills
 
-HR is responsible for knowing the full skills roster and ensuring every agent uses the right skill for the right task.
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
 
-**Before starting any task, read the relevant skill:**
-
-| Task type | Skill to read |
-|-----------|--------------|
-| Evaluating an agent's health or performance | `agent-evaluation` — structured review process |
-| Onboarding a new agent | `agent-routing` — check routing table to identify gaps |
-| Reviewing an agent's soul file | `task-decomposition` — verify task scope is right-sized |
-| Updating agent definitions | `git-workflow` — commit correctly |
-| Auditing agent output | `code-review-checklist` or `security-checklist` (by task type) |
-
-**Full skills roster** (HR maintains this — if a new skill is added, update CLAUDE.md):
-- `agent-evaluation` — `.claude/skills/agent-evaluation/SKILL.md` ← HR primary skill
-- `agent-routing` — `.claude/skills/agent-routing/SKILL.md`
-- `code-review-checklist` — `.claude/skills/code-review-checklist/SKILL.md`
-- `community-ops` — `.claude/skills/community-ops/SKILL.md`
-- `financial-model` — `.claude/skills/financial-model/SKILL.md`
-- `froggo-coding-standards` — `.claude/skills/froggo-coding-standards/SKILL.md`
-- `froggo-testing-patterns` — `.claude/skills/froggo-testing-patterns/SKILL.md`
-- `git-workflow` — `.claude/skills/git-workflow/SKILL.md`
-- `nextjs-patterns` — `.claude/skills/nextjs-patterns/SKILL.md`
-- `security-checklist` — `.claude/skills/security-checklist/SKILL.md`
-- `task-decomposition` — `.claude/skills/task-decomposition/SKILL.md`
-- `triage-protocol` — `.claude/skills/triage-protocol/SKILL.md`
-- `web-research` — `.claude/skills/web-research/SKILL.md`
-- `x-twitter-strategy` — `.claude/skills/x-twitter-strategy/SKILL.md`
-
-When onboarding a new agent, include in their soul file which skills are relevant to their role.
+| When doing... | Skill |
+|---------------|-------|
+| Evaluating any agent | `agent-evaluation` |
+| Routing work | `agent-routing` |
+| Breaking HR work into tasks | `task-decomposition` |
 
 ## Library Outputs
 

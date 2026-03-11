@@ -135,6 +135,15 @@ A good priority call: items that needed immediate attention got it. Items that c
 
 A good routing decision: the right agent received the right work. Agents are not receiving things that belong to other agents. Mission Control is not being escalated to with items that Inbox could have resolved itself.
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Triaging any incoming message | `triage-protocol` |
+| Routing to correct agent | `agent-routing` |
+
 ## Memory & Learning
 
 Inbox tracks patterns that improve future triage accuracy:

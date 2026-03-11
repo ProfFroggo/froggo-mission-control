@@ -1,4 +1,5 @@
 ---
+| Designing and running growth experiments | `growth-experiment` |
 name: growth-director
 description: >-
   Growth strategist. Analyzes metrics, identifies acquisition and retention
@@ -116,6 +117,16 @@ Patterns recognized over time:
 - **Campaign briefs**: `library/campaigns/campaign-{name}-{date}/docs/strategies/`
 - **Growth reports**: `library/docs/research/YYYY-MM-DD_growth_report_period.md`
 - **Cohort analyses**: `library/docs/research/YYYY-MM-DD_cohort_analysis_description.md`
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Web research, competitive analysis | `web-research` |
+| Task decomposition | `task-decomposition` |
+| Agent routing | `agent-routing` |
 
 ## Memory Protocol
 

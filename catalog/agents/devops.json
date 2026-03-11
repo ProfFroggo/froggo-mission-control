@@ -5,10 +5,32 @@
   "role": "DevOps & Infrastructure Engineer",
   "description": "CI/CD pipelines, deployment automation, server infrastructure, monitoring, and platform reliability. Keeps the lights on.",
   "model": "sonnet",
-  "capabilities": ["ci-cd", "deployment", "infrastructure", "monitoring", "docker", "cloud", "scripting", "reliability"],
-  "requiredApis": ["AWS_ACCESS_KEY", "GITHUB_TOKEN"],
-  "requiredSkills": [],
-  "requiredTools": ["bash", "docker", "git"],
+  "capabilities": [
+    "ci-cd",
+    "deployment",
+    "infrastructure",
+    "monitoring",
+    "docker",
+    "cloud",
+    "scripting",
+    "reliability"
+  ],
+  "requiredApis": [
+    "AWS_ACCESS_KEY",
+    "GITHUB_TOKEN"
+  ],
+  "requiredSkills": [
+    "security-checklist",
+    "git-workflow",
+    "froggo-coding-standards",
+    "agent-evaluation",
+    "deployment-runbook"
+  ],
+  "requiredTools": [
+    "bash",
+    "docker",
+    "git"
+  ],
   "version": "1.0.0",
   "category": "engineering",
   "core": false

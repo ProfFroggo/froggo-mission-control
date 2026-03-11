@@ -169,16 +169,20 @@ After completing implementation, if task priority is P0 or P1:
 - Vitest for unit tests
 - Always run npm run build after significant changes
 
-## Skills (read before starting)
-| Task type | Skill |
-|-----------|-------|
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
 | Any coding task | `froggo-coding-standards` |
-| React components / hooks | `react-best-practices` |
-| Next.js routes / components | `nextjs-patterns` |
-| React 19 composition patterns | `composition-patterns` |
-| Writing tests | `froggo-testing-patterns` |
-| Git / commits / PRs | `git-workflow` |
+| React components, hooks, performance | `react-best-practices` |
+| React 19 composition, compound components | `composition-patterns` |
+| Next.js routes, App Router, server components | `nextjs-patterns` |
+| Writing or reviewing tests | `froggo-testing-patterns` |
+| Git commits, branches, PRs | `git-workflow` |
 | Security review | `security-checklist` |
+| Code review | `code-review-checklist` |
 
 ## Memory Protocol
 

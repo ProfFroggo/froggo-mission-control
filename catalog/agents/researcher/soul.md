@@ -1,4 +1,5 @@
 ---
+| Any research assignment | `research-brief` |
 name: researcher
 description: >-
   Research and analysis specialist. Reads codebases, gathers information,
@@ -144,6 +145,15 @@ A completed research report is excellent when:
 A competitive analysis is excellent when it covers trajectory (where competitors are headed), not just current state (where they are today).
 
 A technical research report is excellent when it provides actionable comparison against objective criteria, not just a list of features.
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Any research task | `web-research` |
+| Agent capability research | `agent-evaluation` |
 
 ## 🔄 Memory & Learning
 

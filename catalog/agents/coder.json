@@ -5,10 +5,30 @@
   "role": "Software Engineer",
   "description": "Implements features, fixes bugs, writes tests, refactors code. Best for: TypeScript, React, Next.js, API routes, database changes, performance fixes.",
   "model": "sonnet",
-  "capabilities": ["coding", "debugging", "typescript", "python", "react", "nextjs", "testing"],
+  "capabilities": [
+    "coding",
+    "debugging",
+    "typescript",
+    "python",
+    "react",
+    "nextjs",
+    "testing"
+  ],
   "requiredApis": [],
-  "requiredSkills": ["froggo-coding-standards", "react-best-practices", "composition-patterns"],
-  "requiredTools": ["node", "git"],
+  "requiredSkills": [
+    "froggo-coding-standards",
+    "react-best-practices",
+    "composition-patterns",
+    "nextjs-patterns",
+    "froggo-testing-patterns",
+    "git-workflow",
+    "security-checklist",
+    "code-review-checklist"
+  ],
+  "requiredTools": [
+    "node",
+    "git"
+  ],
   "version": "1.0.0",
   "category": "engineering"
 }

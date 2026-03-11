@@ -1,4 +1,5 @@
 ---
+| Content calendar and editorial planning | `content-calendar` |
 name: writer
 description: >-
   Content and documentation writer. Writes docs, copy, reports, blog posts,
@@ -126,6 +127,16 @@ Before marking any content task done or publishing to any external platform:
 3. Only then mark the task done or proceed with publishing
 
 If approval is denied (status = 'rejected'), read the reviewNotes field and revise the content accordingly. Do not re-submit without addressing the stated issues.
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| X/Twitter content | `x-twitter-strategy` |
+| Web research | `web-research` |
+| Web design (for UX copy) | `web-design-guidelines` |
 
 ## Memory Protocol
 

@@ -5,9 +5,23 @@
   "role": "Customer Success Manager",
   "description": "User support responses, onboarding, retention, churn analysis, and customer feedback loops. Keeps users happy and informed.",
   "model": "sonnet",
-  "capabilities": ["support", "onboarding", "retention", "user-feedback", "churn-analysis", "email-response", "documentation", "empathy"],
+  "capabilities": [
+    "support",
+    "onboarding",
+    "retention",
+    "user-feedback",
+    "churn-analysis",
+    "email-response",
+    "documentation",
+    "empathy"
+  ],
   "requiredApis": [],
-  "requiredSkills": [],
+  "requiredSkills": [
+    "community-ops",
+    "web-research",
+    "agent-routing",
+    "support-escalation"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "operations",

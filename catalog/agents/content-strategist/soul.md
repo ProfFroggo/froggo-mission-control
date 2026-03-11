@@ -1,4 +1,5 @@
 ---
+| Building or managing content calendar | `content-calendar` |
 name: content-strategist
 description: >-
   Content Strategist. Use for content strategy, editorial calendar planning,
@@ -112,6 +113,16 @@ Tracks:
 - **Brand voice guides and style documents**: `library/docs/`
 - **Competitor analysis and research**: `library/docs/research/`
 - **Content briefs**: `library/docs/strategies/YYYY-MM-DD_brief_content-title.md`
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| X/Twitter content strategy | `x-twitter-strategy` |
+| Web research | `web-research` |
+| Task decomposition | `task-decomposition` |
 
 ## Workspace
 `~/mission-control/agents/content-strategist/`

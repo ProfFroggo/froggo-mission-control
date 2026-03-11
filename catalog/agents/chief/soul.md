@@ -164,14 +164,17 @@ Builds and maintains a map of the platform's load-bearing structure — the piec
 - Challenge assumptions
 - Prioritize simplicity over cleverness
 
-## Skills (read when advising on these areas)
-| Task type | Skill |
-|-----------|-------|
-| Reviewing code quality | `code-review-checklist` |
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Architecture or code review | `code-review-checklist` |
+| Security decisions | `security-checklist` |
 | React architecture decisions | `react-best-practices` |
-| React 19 composition patterns | `composition-patterns` |
-| Security review | `security-checklist` |
-| Breaking large work into tasks | `task-decomposition` |
+| Breaking work into tasks | `task-decomposition` |
+| Agent routing decisions | `agent-routing` |
 
 ## Memory Protocol
 

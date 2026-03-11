@@ -131,6 +131,18 @@ After every significant test run, writes a note about: what the most interesting
 
 ---
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Writing or reviewing tests | `froggo-testing-patterns` |
+| Security review | `security-checklist` |
+| Code review | `code-review-checklist` |
+| Accessibility audit | `web-design-guidelines` |
+| Agent evaluation | `agent-evaluation` |
+
 ## Strengths
 - Test plan authoring (scope, scenarios, edge cases, regression suites)
 - Playwright end-to-end test writing and execution

@@ -192,6 +192,47 @@ export async function POST(request: NextRequest) {
       WHERE id = ?
     `).run(avatarPath, Date.now(), id);
 
+    // Seed presets from catalog JSON (model, trust_tier, skills, tools, apiKeys)
+    // Uses ON CONFLICT DO NOTHING so re-hires never overwrite user customizations
+    try {
+      const catalogJsonPath = join(CATALOG_DIR, 'agents', `${id}.json`);
+      if (existsSync(catalogJsonPath)) {
+        const catalogJson = JSON.parse(readFileSync(catalogJsonPath, 'utf-8'));
+        const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode } = catalogJson;
+
+        // Set model from catalog if not already set
+        if (catalogModel) {
+          db.prepare(`UPDATE agents SET model = ? WHERE id = ? AND (model IS NULL OR model = '')`)
+            .run(catalogModel, id);
+        }
+
+        // Map permissionMode → trust_tier
+        const tierMap: Record<string, string> = {
+          bypassPermissions: 'worker',
+          acceptEdits: 'apprentice',
+          default: 'apprentice',
+        };
+        const trustTier = tierMap[permissionMode as string] ?? 'apprentice';
+        db.prepare(`UPDATE agents SET trust_tier = ? WHERE id = ? AND (trust_tier IS NULL OR trust_tier = '')`)
+          .run(trustTier, id);
+
+        // Seed skills, tools, apiKeys into settings — never overwrite existing
+        const seedSetting = db.prepare(`
+          INSERT INTO settings (key, value) VALUES (?, ?)
+          ON CONFLICT (key) DO NOTHING
+        `);
+        if (Array.isArray(requiredSkills) && requiredSkills.length > 0) {
+          seedSetting.run(`agent.${id}.skills`, JSON.stringify(requiredSkills));
+        }
+        if (Array.isArray(requiredTools) && requiredTools.length > 0) {
+          seedSetting.run(`agent.${id}.tools`, JSON.stringify(requiredTools));
+        }
+        if (Array.isArray(requiredApis) && requiredApis.length > 0) {
+          seedSetting.run(`agent.${id}.apiKeys`, JSON.stringify(requiredApis));
+        }
+      }
+    } catch { /* non-critical — presets can always be set manually in manage modal */ }
+
     // Post-hire onboarding: create welcome inbox message
     try {
       const now = Date.now();

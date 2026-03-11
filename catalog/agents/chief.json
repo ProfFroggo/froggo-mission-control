@@ -5,10 +5,25 @@
   "role": "Lead Engineer & Architect",
   "description": "Architecture decisions, complex system design, senior technical guidance. Use for: architectural decisions, hard technical problems, mentoring Coder, final technical sign-off.",
   "model": "opus",
-  "capabilities": ["architecture", "code-review", "mentoring", "typescript", "systems-design"],
+  "capabilities": [
+    "architecture",
+    "code-review",
+    "mentoring",
+    "typescript",
+    "systems-design"
+  ],
   "requiredApis": [],
-  "requiredSkills": ["code-review-checklist", "security-checklist"],
-  "requiredTools": ["node", "git"],
+  "requiredSkills": [
+    "code-review-checklist",
+    "security-checklist",
+    "react-best-practices",
+    "task-decomposition",
+    "agent-routing"
+  ],
+  "requiredTools": [
+    "node",
+    "git"
+  ],
   "version": "1.0.0",
   "category": "engineering"
 }

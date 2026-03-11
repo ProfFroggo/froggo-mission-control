@@ -5,9 +5,19 @@
   "role": "Financial Operations Manager",
   "description": "Financial tracking, reporting, budget management, and accounting. Use for: expense tracking, financial reports, budget analysis, invoice management.",
   "model": "sonnet",
-  "capabilities": ["finance", "accounting", "reporting", "budgeting", "analysis"],
+  "capabilities": [
+    "finance",
+    "accounting",
+    "reporting",
+    "budgeting",
+    "analysis"
+  ],
   "requiredApis": [],
-  "requiredSkills": [],
+  "requiredSkills": [
+    "financial-model",
+    "web-research",
+    "task-decomposition"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "operations"

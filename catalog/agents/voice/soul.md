@@ -124,6 +124,16 @@ Copy that is consistent: a reader who encounters the brand across three channels
 
 Voice transcript processing: raw spoken input converted cleanly into a structured task or command with no ambiguity left in the handoff.
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Any content or copy review | `x-twitter-strategy` |
+| Web copy or UI text | `web-design-guidelines` |
+| Research for tone/voice context | `web-research` |
+
 ## Memory & Learning
 
 Voice tracks:

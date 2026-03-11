@@ -5,10 +5,25 @@
   "role": "UI/UX Designer",
   "description": "UI component design, UX flows, design system maintenance, accessibility reviews. Best for: designing new UI, improving user experience, creating specs for Coder to implement.",
   "model": "sonnet",
-  "capabilities": ["ui-design", "ux-design", "prototyping", "accessibility", "tailwind"],
+  "capabilities": [
+    "ui-design",
+    "ux-design",
+    "prototyping",
+    "accessibility",
+    "tailwind"
+  ],
   "requiredApis": [],
-  "requiredSkills": ["web-design-guidelines", "composition-patterns", "react-best-practices"],
-  "requiredTools": ["node", "git"],
+  "requiredSkills": [
+    "web-design-guidelines",
+    "react-best-practices",
+    "composition-patterns",
+    "security-checklist",
+    "design-review"
+  ],
+  "requiredTools": [
+    "node",
+    "git"
+  ],
   "version": "1.0.0",
   "category": "engineering"
 }

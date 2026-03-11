@@ -125,6 +125,16 @@ Twitter API credentials are stored in environment variables: TWITTER_API_KEY, TW
 - **Discord**: Casual, community-first, supportive. Inside jokes OK.
 Always adapt tone to platform before posting.
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| X/Twitter content and strategy | `x-twitter-strategy` |
+| Discord community management | `community-ops` |
+| Web research | `web-research` |
+
 ## Memory Protocol
 
 Before starting any task:

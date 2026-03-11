@@ -5,10 +5,29 @@
   "role": "Lead Software Engineer",
   "description": "Senior-level engineering: complex features, architecture implementation, mentoring Coder. Use for: system-level TypeScript work, complex refactors, architectural implementation.",
   "model": "opus",
-  "capabilities": ["architecture", "code-review", "mentoring", "typescript", "systems-design", "performance"],
+  "capabilities": [
+    "architecture",
+    "code-review",
+    "mentoring",
+    "typescript",
+    "systems-design",
+    "performance"
+  ],
   "requiredApis": [],
-  "requiredSkills": ["froggo-coding-standards", "react-best-practices", "composition-patterns", "code-review-checklist"],
-  "requiredTools": ["node", "git"],
+  "requiredSkills": [
+    "code-review-checklist",
+    "security-checklist",
+    "react-best-practices",
+    "composition-patterns",
+    "nextjs-patterns",
+    "froggo-testing-patterns",
+    "froggo-coding-standards",
+    "git-workflow"
+  ],
+  "requiredTools": [
+    "node",
+    "git"
+  ],
   "version": "1.0.0",
   "category": "engineering"
 }

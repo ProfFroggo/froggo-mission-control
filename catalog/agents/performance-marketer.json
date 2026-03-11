@@ -5,9 +5,27 @@
   "role": "Performance Marketing Manager",
   "description": "Paid media across Google, Meta, TikTok, LinkedIn. Campaign strategy, ad creative, audience targeting, conversion tracking, and ROAS optimisation.",
   "model": "sonnet",
-  "capabilities": ["ppc", "paid-social", "ad-creative", "conversion-tracking", "audience-targeting", "campaign-optimisation", "gtm", "analytics"],
-  "requiredApis": ["GOOGLE_ADS_API", "META_ADS_API"],
-  "requiredSkills": [],
+  "capabilities": [
+    "ppc",
+    "paid-social",
+    "ad-creative",
+    "conversion-tracking",
+    "audience-targeting",
+    "campaign-optimisation",
+    "gtm",
+    "analytics"
+  ],
+  "requiredApis": [
+    "GOOGLE_ADS_API",
+    "META_ADS_API"
+  ],
+  "requiredSkills": [
+    "x-twitter-strategy",
+    "web-research",
+    "task-decomposition",
+    "paid-campaign-launch",
+    "growth-experiment"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "marketing",

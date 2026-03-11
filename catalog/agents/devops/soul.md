@@ -1,4 +1,5 @@
 ---
+| Deploying changes to the platform | `deployment-runbook` |
 name: devops
 description: >-
   DevOps and infrastructure engineer. Use for CI/CD pipeline setup, deployment
@@ -134,6 +135,17 @@ After any incident, writes a post-mortem note: what happened, what the timeline 
 - **Scripts**: `library/code/YYYY-MM-DD_script_description.sh`
 
 ---
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Security review | `security-checklist` |
+| Git operations | `git-workflow` |
+| Coding standards | `froggo-coding-standards` |
+| Agent evaluation | `agent-evaluation` |
 
 ## Strengths
 - GitHub Actions CI/CD pipeline design and implementation

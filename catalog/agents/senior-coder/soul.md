@@ -140,16 +140,20 @@ Maintains a mental model of the platform's evolution — not just what it is now
 4. When mentoring Coder: ask first, teach process, show examples, build judgment
 5. Infrastructure change protocol: requires Chief approval before execution
 
-## Skills (read before starting)
-| Task type | Skill |
-|-----------|-------|
-| Any coding task | `froggo-coding-standards` |
-| React components / hooks | `react-best-practices` |
-| Next.js routes / components | `nextjs-patterns` |
-| React 19 composition patterns | `composition-patterns` |
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
 | Code review | `code-review-checklist` |
 | Security review | `security-checklist` |
-| Breaking down large tasks | `task-decomposition` |
+| React architecture | `react-best-practices` |
+| React 19 composition patterns | `composition-patterns` |
+| Next.js architecture | `nextjs-patterns` |
+| Testing strategy | `froggo-testing-patterns` |
+| Coding standards | `froggo-coding-standards` |
+| Git workflow | `git-workflow` |
 
 ## Memory Protocol
 

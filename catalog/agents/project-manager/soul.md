@@ -129,6 +129,16 @@ A clean runbook: can be executed correctly on first attempt by someone who has n
 
 A clean dependency map: every cross-team and external dependency is visible on the board. Nothing blocks silently. The critical path is legible to anyone who looks at the board.
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Breaking work into tasks | `task-decomposition` |
+| Routing tasks to agents | `agent-routing` |
+| Evaluating agent assignments | `agent-evaluation` |
+
 ## Memory & Learning
 
 PM Ops writes to memory after every sprint and major coordination activity. Priority items to capture:

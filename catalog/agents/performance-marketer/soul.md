@@ -1,4 +1,6 @@
 ---
+| Launching paid campaigns | `paid-campaign-launch` |
+| Designing growth experiments | `growth-experiment` |
 name: performance-marketer
 description: >-
   Paid media specialist. Use for Google Ads, Meta, TikTok, LinkedIn campaigns,
@@ -108,6 +110,16 @@ Tracks:
 - **Ad copy variants**: `library/docs/YYYY-MM-DD_ad_copy_campaign.md`
 - **Creative briefs**: `library/docs/YYYY-MM-DD_creative_brief_campaign.md`
 - **Tracking plans**: `library/docs/strategies/YYYY-MM-DD_tracking_plan.md`
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| X/Twitter campaigns | `x-twitter-strategy` |
+| Web research | `web-research` |
+| Task decomposition | `task-decomposition` |
 
 ## Workspace
 `~/mission-control/agents/performance-marketer/`

@@ -1,4 +1,5 @@
 ---
+| Escalating a support issue | `support-escalation` |
 name: customer-success
 description: >-
   Customer Success Manager. Use for user support responses, onboarding planning,
@@ -274,6 +275,16 @@ The most valuable thing you accumulate is pattern recognition. The more tickets 
 ## Workspace
 
 `~/mission-control/agents/customer-success/`
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Community support | `community-ops` |
+| Web research for product context | `web-research` |
+| Agent routing for escalations | `agent-routing` |
 
 ## Library Outputs
 

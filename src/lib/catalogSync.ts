@@ -123,6 +123,55 @@ export function syncCatalogAgents(db: Database.Database): void {
         AND installed = 0
     `).run();
   } catch { /* agents table may not exist in tests */ }
+
+  // Seed presets (model, trust_tier, skills, tools, apiKeys) for all installed agents
+  // that are missing them. Runs every startup — ON CONFLICT DO NOTHING ensures
+  // existing user customizations are never overwritten.
+  try {
+    const tierMap: Record<string, string> = {
+      bypassPermissions: 'worker',
+      acceptEdits: 'apprentice',
+      default: 'apprentice',
+    };
+    const seedSetting = db.prepare(`
+      INSERT INTO settings (key, value) VALUES (?, ?)
+      ON CONFLICT (key) DO NOTHING
+    `);
+    const installedIds = db.prepare(
+      `SELECT id FROM agents WHERE status != 'archived'`
+    ).all() as { id: string }[];
+
+    for (const { id } of installedIds) {
+      // Prefer flat catalog JSON (has requiredSkills/Tools/Apis), fall back to manifest.json
+      const flatPath     = join(CATALOG_DIR, 'agents', `${id}.json`);
+      const manifestPath = join(CATALOG_DIR, 'agents', id, 'manifest.json');
+      const jsonPath = existsSync(flatPath) ? flatPath : existsSync(manifestPath) ? manifestPath : null;
+      if (!jsonPath) continue;
+
+      let manifest: Record<string, unknown>;
+      try { manifest = JSON.parse(readFileSync(jsonPath, 'utf-8')); } catch { continue; }
+
+      const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode } = manifest as {
+        requiredSkills?: string[]; requiredTools?: string[]; requiredApis?: string[];
+        model?: string; permissionMode?: string;
+      };
+
+      if (catalogModel) {
+        db.prepare(`UPDATE agents SET model = ? WHERE id = ? AND (model IS NULL OR model = '')`)
+          .run(catalogModel, id);
+      }
+      const trustTier = tierMap[permissionMode ?? ''] ?? 'apprentice';
+      db.prepare(`UPDATE agents SET trust_tier = ? WHERE id = ? AND (trust_tier IS NULL OR trust_tier = '')`)
+        .run(trustTier, id);
+
+      if (Array.isArray(requiredSkills) && requiredSkills.length > 0)
+        seedSetting.run(`agent.${id}.skills`, JSON.stringify(requiredSkills));
+      if (Array.isArray(requiredTools) && requiredTools.length > 0)
+        seedSetting.run(`agent.${id}.tools`, JSON.stringify(requiredTools));
+      if (Array.isArray(requiredApis) && requiredApis.length > 0)
+        seedSetting.run(`agent.${id}.apiKeys`, JSON.stringify(requiredApis));
+    }
+  } catch { /* non-critical — presets can be set manually */ }
 }
 
 export function syncCatalogModules(db: Database.Database): void {

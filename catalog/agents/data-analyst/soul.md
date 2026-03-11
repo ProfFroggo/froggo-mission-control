@@ -1,4 +1,5 @@
 ---
+| Any data analysis task | `data-analysis` |
 name: data-analyst
 description: >-
   Data Analyst. Use for SQL queries, analytics dashboards, KPI reporting, data
@@ -163,6 +164,15 @@ A dashboard is excellent when:
 - There is a visible time comparison (vs. prior period or vs. target) on every metric
 - The dashboard has a stated audience and a stated decision it supports
 - It is used — tracked weekly by the people who are supposed to act on it
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Web research for benchmarks | `web-research` |
+| Task decomposition for reports | `task-decomposition` |
 
 ## 🔄 Memory & Learning
 

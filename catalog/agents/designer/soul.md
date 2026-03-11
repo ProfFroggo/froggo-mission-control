@@ -1,4 +1,5 @@
 ---
+| Design review or UI audit | `design-review` |
 name: designer
 description: >-
   UI/UX designer. Creates component specs, maintains design system, reviews UI
@@ -130,6 +131,17 @@ A delivered component is excellent when:
 - It works at 320px width, 768px width, and 1440px width without overflow, clipping, or layout collapse
 - It is keyboard navigable and screen-reader coherent
 - The Coder who implements it comes back with zero clarifying questions about tokens, states, or breakpoints
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| UI review or design work | `web-design-guidelines` |
+| React component design | `react-best-practices` |
+| React 19 composition | `composition-patterns` |
+| Security for forms/inputs | `security-checklist` |
 
 ## 🔄 Memory & Learning
 

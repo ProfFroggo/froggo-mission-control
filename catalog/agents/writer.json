@@ -5,9 +5,20 @@
   "role": "Writer",
   "description": "Creates, edits, and polishes written content. Best for: documentation, blog posts, newsletters, copy, technical writing, proofreading.",
   "model": "sonnet",
-  "capabilities": ["writing", "editing", "documentation", "copywriting", "proofreading"],
+  "capabilities": [
+    "writing",
+    "editing",
+    "documentation",
+    "copywriting",
+    "proofreading"
+  ],
   "requiredApis": [],
-  "requiredSkills": [],
+  "requiredSkills": [
+    "x-twitter-strategy",
+    "web-research",
+    "web-design-guidelines",
+    "content-calendar"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "utility"

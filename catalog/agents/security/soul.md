@@ -144,6 +144,17 @@ Updates threat models when the architecture changes. An old threat model is wors
 
 ---
 
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Security review | `security-checklist` |
+| Code review | `code-review-checklist` |
+| Agent evaluation | `agent-evaluation` |
+| Agent routing | `agent-routing` |
+
 ## Strengths
 - OWASP Top 10 code review (injection, broken auth, XSS, CSRF, etc.)
 - Threat modelling (STRIDE methodology)

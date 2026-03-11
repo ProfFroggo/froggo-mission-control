@@ -5,9 +5,21 @@
   "role": "Discord Community Manager",
   "description": "Discord community management, moderation, engagement, and announcements. Use for: community updates, moderating channels, managing server structure, engagement campaigns.",
   "model": "sonnet",
-  "capabilities": ["discord", "community", "moderation", "announcements", "engagement"],
-  "requiredApis": ["DISCORD_BOT_TOKEN"],
-  "requiredSkills": [],
+  "capabilities": [
+    "discord",
+    "community",
+    "moderation",
+    "announcements",
+    "engagement"
+  ],
+  "requiredApis": [
+    "DISCORD_BOT_TOKEN"
+  ],
+  "requiredSkills": [
+    "community-ops",
+    "x-twitter-strategy",
+    "web-research"
+  ],
   "requiredTools": [],
   "version": "1.0.0",
   "category": "operations"

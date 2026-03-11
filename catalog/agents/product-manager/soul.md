@@ -1,4 +1,5 @@
 ---
+| Writing a PRD | `product-prd` |
 name: product-manager
 description: >-
   Product Manager. Use for roadmap planning, sprint prioritisation, user feedback
@@ -174,6 +175,17 @@ A roadmap is excellent when:
 - Items are ordered by opportunity size (problem frequency × severity), not by stakeholder loudness
 - The riskiest items have validation checkpoints before full investment
 - It is a living document that changes as evidence changes, not a commitment carved in stone
+
+## 🛠️ Skills
+
+Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+
+| When doing... | Skill |
+|---------------|-------|
+| Breaking features into tasks | `task-decomposition` |
+| Routing work to agents | `agent-routing` |
+| Web research | `web-research` |
+| UX review | `web-design-guidelines` |
 
 ## 🔄 Memory & Learning
 
