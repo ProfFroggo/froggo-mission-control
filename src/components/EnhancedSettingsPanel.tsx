@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
-  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot
+  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
@@ -233,7 +233,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'window';
+type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform';
 
 // Collapsible section component
 interface SectionProps {
@@ -290,6 +290,173 @@ function Tooltip({ text }: { text: string }) {
           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-mission-control-border" />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Platform Update Tab ──────────────────────────────────────────────────────
+
+function PlatformUpdateTab() {
+  const [versionInfo, setVersionInfo] = useState<{
+    current: string; latest: string | null; updateAvailable: boolean;
+    releaseNotes: string | null; error?: string;
+  } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateLog, setUpdateLog] = useState<string[]>([]);
+  const [updateResult, setUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
+  const logEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { checkVersion(); }, []);
+  useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [updateLog]);
+
+  const checkVersion = async () => {
+    setChecking(true);
+    try {
+      const res = await fetch('/api/update');
+      const data = await res.json();
+      setVersionInfo(data);
+    } catch { /* network error */ }
+    setChecking(false);
+  };
+
+  const runUpdate = async () => {
+    setUpdating(true);
+    setUpdateLog([]);
+    setUpdateResult(null);
+    try {
+      const res = await fetch('/api/update', { method: 'POST' });
+      if (!res.body) throw new Error('No stream');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const payload = JSON.parse(line.slice(5).trim());
+            if (payload.line !== undefined) setUpdateLog(prev => [...prev, payload.line]);
+            if (payload.done) setUpdateResult({ success: payload.success, message: payload.message });
+          } catch { /* ignore malformed */ }
+        }
+      }
+    } catch (err) {
+      setUpdateResult({ success: false, message: err instanceof Error ? err.message : 'Update failed' });
+    }
+    setUpdating(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Version card */}
+      <div className="p-5 bg-mission-control-surface rounded-xl border border-mission-control-border">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-mission-control-accent/10 flex items-center justify-center">
+            <Package size={20} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <div className="font-semibold text-mission-control-text">Mission Control</div>
+            <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
+          </div>
+          <button onClick={checkVersion} disabled={checking} className="ml-auto p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim" title="Check for updates">
+            <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        {versionInfo ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-mission-control-text-dim">Installed</span>
+              <span className="font-mono text-mission-control-text">v{versionInfo.current}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-mission-control-text-dim">Latest</span>
+              <span className={`font-mono ${versionInfo.latest ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
+                {versionInfo.latest ? `v${versionInfo.latest}` : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-mission-control-text-dim">Status</span>
+              {versionInfo.updateAvailable ? (
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium">Update available</span>
+              ) : (
+                <span className="px-2 py-0.5 bg-success-subtle text-success rounded-full text-xs font-medium">Up to date</span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-mission-control-text-dim">{checking ? 'Checking...' : 'Click refresh to check version'}</div>
+        )}
+      </div>
+
+      {/* Release notes */}
+      {versionInfo?.releaseNotes && (
+        <div className="p-4 bg-mission-control-surface rounded-xl border border-mission-control-border">
+          <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">
+            What&apos;s in v{versionInfo.latest}
+          </div>
+          <div className="text-sm text-mission-control-text whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+            {versionInfo.releaseNotes}
+          </div>
+        </div>
+      )}
+
+      {/* Update button */}
+      {versionInfo?.updateAvailable && !updateResult && (
+        <button
+          onClick={runUpdate}
+          disabled={updating}
+          className="w-full py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-60"
+        >
+          {updating ? <><RefreshCw size={16} className="animate-spin" /> Installing...</> : <><Download size={16} /> Install v{versionInfo.latest}</>}
+        </button>
+      )}
+
+      {/* Live install log */}
+      {updateLog.length > 0 && (
+        <div className="bg-black/60 rounded-xl border border-mission-control-border p-4 font-mono text-xs space-y-1 max-h-56 overflow-y-auto">
+          <div className="flex items-center gap-2 text-mission-control-text-dim mb-2">
+            <Terminal size={12} />
+            <span>Install log</span>
+          </div>
+          {updateLog.filter(Boolean).map((line, i) => (
+            <div key={i} className="text-green-400/90">{line}</div>
+          ))}
+          <div ref={logEndRef} />
+        </div>
+      )}
+
+      {/* Result banner */}
+      {updateResult && (
+        <div className={`p-4 rounded-xl border ${updateResult.success ? 'bg-success-subtle border-success-border' : 'bg-error-subtle border-error-border'}`}>
+          <div className={`font-medium text-sm ${updateResult.success ? 'text-success' : 'text-error'}`}>
+            {updateResult.success ? 'Update complete' : 'Update failed'}
+          </div>
+          <div className="text-xs text-mission-control-text-dim mt-1">{updateResult.message}</div>
+        </div>
+      )}
+
+      {/* Manual install hint */}
+      <div className="p-4 bg-mission-control-surface/50 rounded-xl border border-mission-control-border">
+        <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2">Manual update</div>
+        <div className="flex items-center gap-2 font-mono text-xs bg-black/40 rounded-lg px-3 py-2 text-mission-control-text-dim">
+          <Terminal size={11} />
+          npm install -g froggo-mission-control@latest
+        </div>
+        <a
+          href="https://github.com/ProfFroggo/froggo-mission-control/releases"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 flex items-center gap-1 text-xs text-mission-control-accent hover:underline"
+        >
+          <ExternalLink size={11} /> View all releases on GitHub
+        </a>
+      </div>
     </div>
   );
 }
@@ -557,11 +724,11 @@ export default function EnhancedSettingsPanel() {
               { id: 'performance', label: 'Performance', icon: <Cpu size={14} /> },
               { id: 'data', label: 'Data', icon: <HardDrive size={14} /> },
               { id: 'accessibility', label: 'Accessibility', icon: <Eye size={14} /> },
-              { id: 'window', label: 'Window', icon: <Monitor size={14} /> },
               { id: 'developer', label: 'Developer', icon: <Code size={14} /> },
               { id: 'automation', label: 'Automation', icon: <Zap size={14} /> },
               { id: 'accounts', label: 'Accounts', icon: <LinkIcon size={14} /> },
               { id: 'security', label: 'Security', icon: <Shield size={14} /> },
+              { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1231,87 +1398,6 @@ export default function EnhancedSettingsPanel() {
           </div>
         )}
 
-        {/* WINDOW TAB */}
-        {(activeTab === 'window' || searchQuery) && (
-          <div className="space-y-6">
-            {settingsMatch('window startup tray minimize close') && (
-              <CollapsibleSection 
-                title="Window Behavior" 
-                icon={<Monitor size={16} />}
-                description="Configure window and startup behavior"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Launch on Startup</div>
-                      <div className="text-sm text-mission-control-text-dim">Start app when you log in</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.launchOnStartup}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, launchOnStartup: checked } }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Start Minimized</div>
-                      <div className="text-sm text-mission-control-text-dim">Launch app minimized to tray</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.startMinimized}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, startMinimized: checked } }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Minimize to Tray</div>
-                      <div className="text-sm text-mission-control-text-dim">Minimize to system tray instead of taskbar</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.minimizeToTray}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, minimizeToTray: checked } }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Close to Tray</div>
-                      <div className="text-sm text-mission-control-text-dim">Keep app running in background when closed</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.closeToTray}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, closeToTray: checked } }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Always on Top</div>
-                      <div className="text-sm text-mission-control-text-dim">Keep window above other windows</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.alwaysOnTop}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, alwaysOnTop: checked } }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Remember Window Position</div>
-                      <div className="text-sm text-mission-control-text-dim">Restore window position on launch</div>
-                    </div>
-                    <Toggle
-                      checked={settings.window.rememberWindowPosition}
-                      onChange={(checked) => setSettings(s => ({ ...s, window: { ...s.window, rememberWindowPosition: checked } }))}
-                    />
-                  </div>
-                </div>
-              </CollapsibleSection>
-            )}
-          </div>
-        )}
-
         {/* DEVELOPER TAB */}
         {(activeTab === 'developer' || searchQuery) && (
           <div className="space-y-6">
@@ -1497,8 +1583,11 @@ export default function EnhancedSettingsPanel() {
           </div>
         )}
 
+        {/* PLATFORM TAB */}
+        {activeTab === 'platform' && <PlatformUpdateTab />}
+
         {/* Actions */}
-        {!['security', 'accounts', 'config', 'logs', 'exportBackup'].includes(activeTab) && (
+        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform'].includes(activeTab) && (
           <div className="flex gap-3 mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
             <button
               onClick={handleSave}
