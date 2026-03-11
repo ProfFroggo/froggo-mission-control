@@ -27,6 +27,48 @@ todo → internal-review → in-progress → agent-review → done
 - Never mark done directly — Clara reviews first
 - `blocked` status does not exist — use `human-review`
 
+## Memory Protocol
+
+### Session Start
+1. `mcp__memory__memory_recall` — load your recent memories
+2. `mcp__memory__memory_search { "query": "<task topic>" }` — find task-relevant context before starting
+
+### When to Write Memories
+Write a memory **immediately** when you:
+- Complete a non-trivial task (anything requiring > 15 min of work)
+- Discover a platform quirk, bug, or undocumented behavior
+- Solve a hard problem or debug a subtle issue
+- Notice a pattern repeating for the third time
+- Make a decision that affects future work (architecture, tooling, process)
+- Encounter an error and find the root cause + fix
+
+**Do NOT write** memories for:
+- Task status or progress — use the task board
+- Information already in the codebase — just read the file next time
+- USER.md preferences — stored there already
+- Temporary context that won't matter next session
+- Obvious facts or platform basics
+
+### What to Include
+Every memory file should contain:
+- **Date**: YYYY-MM-DD
+- **Context**: What you were doing and why
+- **Learning**: The specific insight, fix, decision, or pattern
+- **Impact**: Why this matters for future work
+- **Avoid**: What not to repeat
+
+### File Naming
+`YYYY-MM-DD-brief-topic.md`
+Examples: `2026-01-15-stripe-webhook-quirk.md`, `2026-02-03-task-decomp-pattern.md`
+
+### Session End
+```
+mcp__memory__memory_write {
+  "path": "~/mission-control/memory/agents/discord-manager/YYYY-MM-DD-topic.md",
+  "content": "## [Title]\n\nDate: YYYY-MM-DD\nContext: ...\nLearning: ...\nImpact: ...\nAvoid: ..."
+}
+```
+
 ## Core Rules
 - Check the task board before starting any work
 - Post activity on every meaningful decision
