@@ -467,15 +467,31 @@ export async function POST(
             sessions.delete(sessionKey);
             try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
 
-            // Build history context from stored messages for this surface
+            // Build history context from stored messages for this surface.
+            // Session key format determines which table to read:
+            //   chat room sessions: "{roomId}-{agentId}" → chat_room_messages (roomId col)
+            //   all other sessions: messages table (sessionKey col)
             let historyContext = '';
             try {
-              const rows = getDb()
-                .prepare(`SELECT role, content FROM messages
-                          WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
-                .all(sessionKey) as { role: string; content: string }[];
+              // Room session: sessionKey = "{roomId}-{agentId}", roomId starts with "room-"
+              const roomId = sessionKey.endsWith(`-${id}`) && sessionKey.startsWith('room-')
+                ? sessionKey.slice(0, sessionKey.length - id.length - 1)
+                : null;
+
+              let rows: { role: string; content: string }[];
+              if (roomId) {
+                rows = getDb()
+                  .prepare(`SELECT role, content FROM chat_room_messages
+                            WHERE roomId = ? ORDER BY timestamp DESC LIMIT 100`)
+                  .all(roomId) as { role: string; content: string }[];
+              } else {
+                rows = getDb()
+                  .prepare(`SELECT role, content FROM messages
+                            WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
+                  .all(sessionKey) as { role: string; content: string }[];
+              }
+
               if (rows.length > 0) {
-                // Older messages get truncated more aggressively; recent ones stay fuller
                 const reversed = rows.reverse();
                 const history = reversed.map((r, i) => {
                   const speaker = r.role === 'user' ? 'User' : 'Assistant';
