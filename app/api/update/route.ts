@@ -136,7 +136,7 @@ export async function POST() {
       send(`Running: npm install -g ${PACKAGE_NAME}@latest --prefer-online`);
 
       const child = exec(updateCmd, {
-        env: { ...process.env, FORCE_COLOR: '0', SKIP_MC_POSTINSTALL: '1' },
+        env: { ...process.env, FORCE_COLOR: '0' },
         timeout: 300000,
       });
 
@@ -155,63 +155,37 @@ export async function POST() {
         }
 
         send('');
-        send('Package installed. Building dashboard...');
+        send('Update installed. Restarting...');
 
-        // Find the new install dir and rebuild
-        const newInstallDir = join(dirname(dirname(npmBin)), 'lib', 'node_modules', PACKAGE_NAME);
-        const nextScript = join(newInstallDir, 'node_modules', 'next', 'dist', 'bin', 'next');
-
-        const buildChild = exec(
-          `"${nodeBin}" "${nextScript}" build`,
-          { cwd: newInstallDir, env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' }, timeout: 300000 }
-        );
-
-        buildChild.stdout?.on('data', (data: string) => {
-          data.split('\n').filter(Boolean).slice(-3).forEach((l: string) => send(l));
-        });
-        buildChild.stderr?.on('data', (data: string) => {
-          // Only forward non-verbose build lines
-          data.split('\n').filter(l => l.includes('error') || l.includes('warn')).forEach((l: string) => send(l));
-        });
-
-        buildChild.on('close', (buildCode) => {
-          if (buildCode !== 0) {
-            done(false, 'Build failed. Run `mission-control build` to retry, then `mission-control restart`.');
-            return;
-          }
-
-          send('Build complete. Restarting...');
-
-          // Restart via LaunchAgent (macOS) or PM2
-          if (isMac && existsSync(launchAgent)) {
-            exec(`/bin/launchctl stop com.mission-control.app`, () => {
-              setTimeout(() => {
-                exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
-                  if (restartErr) {
-                    done(true, 'Updated. Restart failed — run: mission-control restart');
-                  } else {
-                    done(true, 'Updated and restarted. Page will reload in a moment.');
-                  }
-                });
-              }, 2000);
-            });
-          } else {
-            exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
-              const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
-              if (hasPm2) {
-                exec('pm2 restart mission-control-dashboard', (restartErr) => {
-                  if (restartErr) {
-                    done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
-                  } else {
-                    done(true, 'Updated and restarted. Page will reload in a moment.');
-                  }
-                });
-              } else {
-                done(true, 'Updated. Run `mission-control restart` to apply changes.');
-              }
-            });
-          }
-        });
+        // Restart via LaunchAgent (macOS) or PM2
+        if (isMac && existsSync(launchAgent)) {
+          exec(`/bin/launchctl stop com.mission-control.app`, () => {
+            setTimeout(() => {
+              exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
+                if (restartErr) {
+                  done(true, 'Updated. Restart failed — run: mission-control restart');
+                } else {
+                  done(true, 'Updated and restarted. Page will reload in a moment.');
+                }
+              });
+            }, 2000);
+          });
+        } else {
+          exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
+            const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
+            if (hasPm2) {
+              exec('pm2 restart mission-control-dashboard', (restartErr) => {
+                if (restartErr) {
+                  done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
+                } else {
+                  done(true, 'Updated and restarted. Page will reload in a moment.');
+                }
+              });
+            } else {
+              done(true, 'Updated. Run `mission-control restart` to apply changes.');
+            }
+          });
+        }
       });
     },
   });

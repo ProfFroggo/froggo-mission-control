@@ -9,7 +9,32 @@
 import path from 'path';
 import os from 'os';
 import { execSync } from 'child_process';
-import { existsSync, realpathSync } from 'fs';
+import { existsSync, realpathSync, readFileSync } from 'fs';
+
+// Load .env from ~/mission-control/ (survives npm updates) before Next.js reads process.env.
+// This runs once at module init so all ENV values below see the correct vars.
+(function loadUserEnv() {
+  const candidates = [
+    path.join(os.homedir(), 'mission-control', '.env'),
+    path.join(process.cwd(), '.env'),
+  ];
+  for (const p of candidates) {
+    if (!existsSync(p)) continue;
+    try {
+      const lines = readFileSync(p, 'utf-8').split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq === -1) continue;
+        const key = trimmed.slice(0, eq).trim();
+        const val = trimmed.slice(eq + 1).trim();
+        if (!(key in process.env)) process.env[key] = val; // don't override LaunchAgent-injected vars
+      }
+    } catch { /* non-fatal */ }
+    break; // use first file found
+  }
+})();
 
 // ── Search backend detection ────────────────────────────────────────────────
 // Resolved once at startup. Order of preference: qmd > ripgrep > none.

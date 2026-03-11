@@ -56,7 +56,13 @@ const MC_MEMORY    = path.join(MC_HOME, 'memory');
 const MC_LIBRARY   = path.join(MC_HOME, 'library');
 const MC_AGENTS    = path.join(MC_HOME, 'agents');
 const MC_LOGS      = path.join(MC_HOME, 'logs');
-const ENV_FILE     = path.join(INSTALL_DIR, '.env');
+// .env lives in ~/mission-control/ (user data dir) so it survives npm updates.
+// Fall back to INSTALL_DIR for legacy installs that still have it there.
+const ENV_FILE     = existsSync(path.join(MC_HOME, '.env'))
+  ? path.join(MC_HOME, '.env')
+  : existsSync(path.join(INSTALL_DIR, '.env'))
+    ? path.join(INSTALL_DIR, '.env')
+    : path.join(MC_HOME, '.env');  // new installs write here
 const LOG_FILE     = path.join(HOME, 'Library', 'Logs', 'mission-control-app.plist');
 const LAUNCHAGENT  = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
 const CRON_AGENT   = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
