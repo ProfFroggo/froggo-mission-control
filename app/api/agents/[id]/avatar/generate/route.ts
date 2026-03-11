@@ -79,33 +79,33 @@ async function generateGeminiAvatar(name: string, role: string, personality: str
   const apiKey = await getGeminiKey();
   if (!apiKey) return null;
 
-  const prompt = `Pixar 3D animated character portrait headshot of a friendly AI assistant named "${name}" who works as "${role}". ${personality ? `Personality: ${personality}.` : ''} Expressive cartoon face, large round eyes, smooth Pixar-style skin, warm studio lighting, vivid saturated colors. The character looks helpful, intelligent, and slightly whimsical. Square composition, soft gradient background. No text, no labels, no watermarks. High quality Pixar render, cinematic lighting.`;
+  const prompt = `Generate a Pixar-style 3D animated cartoon character portrait for an AI agent named "${name}" whose role is "${role}". ${personality ? `Personality: ${personality}.` : ''} Style: Pixar/Disney 3D animation, expressive cartoon face, big friendly eyes, smooth stylized skin, vivid colors, soft studio lighting, clean gradient background. Square crop, face and shoulders only. No text, no watermarks.`;
 
-  // Use Imagen 4 via the Gemini API
+  // Use Gemini Flash Image model (generateContent API)
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        instances: [{ prompt }],
-        parameters: {
-          sampleCount: 1,
-          aspectRatio: '1:1',
-          personGeneration: 'allow_adult',
-        },
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
       }),
     }
   );
 
   if (!res.ok) {
     const err = await res.text().catch(() => res.statusText);
-    throw new Error(`Gemini Imagen error ${res.status}: ${err.slice(0, 200)}`);
+    throw new Error(`Gemini image error ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json() as { predictions?: Array<{ bytesBase64Encoded?: string }> };
-  const b64 = data.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) throw new Error('Gemini Imagen returned no image data');
+  const data = await res.json() as {
+    candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string } }> } }>;
+  };
+  const parts = data.candidates?.[0]?.content?.parts ?? [];
+  const imgPart = parts.find(p => p.inlineData?.data);
+  const b64 = imgPart?.inlineData?.data;
+  if (!b64) throw new Error('Gemini returned no image data');
   return Buffer.from(b64, 'base64');
 }
 

@@ -227,9 +227,10 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       setCreationSteps(prev => prev.map(s =>
         s.id === stepId && s.status === 'running' ? { ...s, status: 'done' } : s
       ));
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       setCreationSteps(prev => prev.map(s =>
-        s.id === stepId && s.status === 'running' ? { ...s, status: 'skipped' } : s
+        s.id === stepId && s.status === 'running' ? { ...s, status: 'skipped', errorMsg: msg.slice(0, 100) } : s
       ));
     }
   };
@@ -510,7 +511,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                       'text-mission-control-text-dim'
                     }`}>{step.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">
-                      {step.errorMsg || (step.status === 'skipped' ? 'Skipped — not critical' : step.detail)}
+                      {step.status === 'skipped' ? (step.errorMsg ? `Skipped: ${step.errorMsg}` : 'Skipped') : (step.errorMsg || step.detail)}
                     </div>
                   </div>
                 </div>
