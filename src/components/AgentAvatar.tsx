@@ -47,7 +47,7 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
     <div className={`${s.container} relative rounded-full overflow-hidden flex-shrink-0 ${ring ? `ring ${s.ring} ${theme.ring}` : statusRing} ${className}`}>
       {hasPic ? (
         <img
-          src={`/api/agents/${agentId}/avatar`}
+          src={`/api/agents/${agentId}/avatar?v=${agentId}-${Math.floor(Date.now() / 60000)}`}
           alt={`${agentId} avatar`}
           className="w-full h-full object-cover"
           onError={() => setImgError(true)}
