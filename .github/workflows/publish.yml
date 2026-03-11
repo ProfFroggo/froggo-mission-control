@@ -42,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-version
     if: needs.check-version.outputs.version_changed == 'true'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
