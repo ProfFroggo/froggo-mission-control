@@ -55,7 +55,12 @@ if (!(globalThis as any)._chatReapInterval) {
   (globalThis as any)._chatReapInterval.unref();
 }
 
-const MAX_SESSION_AGE_MS = 60 * 60_000;
+// How old a stored session can be before we skip --resume preemptively.
+// Keepalive pings every 25 min, so sessions stay fresh as long as the server runs.
+// 4h gives a generous window to survive brief server restarts / laptop sleeps.
+// Beyond 4h the Anthropic session is definitely expired; stale-resume recovery handles
+// any false positives in the 1–4h range.
+const MAX_SESSION_AGE_MS = 4 * 60 * 60_000;
 
 function loadSessionFromDb(sessionKey: string): SessionEntry | null {
   try {
@@ -263,7 +268,25 @@ export async function POST(
         if (resumeId) {
           args.push('--resume', resumeId);
         } else {
-          const systemPrompt = buildSystemPrompt(agentId);
+          // Fresh session — inject recent conversation history so agent has context
+          // even when starting a new Claude session (expired, first of day, server restart).
+          let historyContext = '';
+          try {
+            const rows = getDb()
+              .prepare(`SELECT role, content FROM messages
+                        WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
+              .all(sessionKey) as { role: string; content: string }[];
+            if (rows.length > 0) {
+              const reversed = rows.reverse();
+              const history = reversed.map((r, i) => {
+                const speaker = r.role === 'user' ? 'User' : 'Assistant';
+                const limit = i >= reversed.length - 10 ? 1500 : 600;
+                return `${speaker}: ${r.content.slice(0, limit)}`;
+              }).join('\n');
+              historyContext = `\n\n---\n## Previous conversation context\n${history}\n---`;
+            }
+          } catch { /* non-critical */ }
+          const systemPrompt = (buildSystemPrompt(agentId) ?? '') + historyContext;
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }
 

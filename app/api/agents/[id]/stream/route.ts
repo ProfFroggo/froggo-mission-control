@@ -123,7 +123,11 @@ if (!(globalThis as any)._reapInterval) {
   (globalThis as any)._reapInterval.unref();
 }
 
-const MAX_SESSION_AGE_MS = 60 * 60_000; // 1 hour — older sessions are likely expired on Anthropic's servers
+// How old a stored session can be before we skip --resume preemptively.
+// Keepalive pings every 25 min so sessions stay fresh while the server runs.
+// 4h covers brief server restarts / laptop sleeps; stale-resume recovery handles
+// any false positives in the 1–4h range where Anthropic may have expired the session.
+const MAX_SESSION_AGE_MS = 4 * 60 * 60_000;
 
 function loadSessionFromDb(agentId: string): SessionEntry | null {
   try {
@@ -335,8 +339,34 @@ export async function POST(
           // Resume existing conversation — history is preserved by the CLI
           args.push('--resume', resumeId);
         } else {
-          // New conversation — inject system prompt
-          const systemPrompt = buildSystemPrompt(id);
+          // Fresh session — inject recent history so agent has context even after
+          // session expiry, server restart, or first message of a new day.
+          let historyContext = '';
+          try {
+            // Room sessions: "{roomId}-{agentId}" → read chat_room_messages
+            const roomId = sessionKey.endsWith(`-${id}`) && sessionKey.startsWith('room-')
+              ? sessionKey.slice(0, sessionKey.length - id.length - 1)
+              : null;
+            const rows: { role: string; content: string }[] = roomId
+              ? (getDb()
+                  .prepare(`SELECT role, content FROM chat_room_messages
+                            WHERE roomId = ? ORDER BY timestamp DESC LIMIT 100`)
+                  .all(roomId) as { role: string; content: string }[])
+              : (getDb()
+                  .prepare(`SELECT role, content FROM messages
+                            WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
+                  .all(sessionKey) as { role: string; content: string }[]);
+            if (rows.length > 0) {
+              const reversed = rows.reverse();
+              const history = reversed.map((r, i) => {
+                const speaker = r.role === 'user' ? 'User' : 'Assistant';
+                const limit = i >= reversed.length - 10 ? 1500 : 600;
+                return `${speaker}: ${r.content.slice(0, limit)}`;
+              }).join('\n');
+              historyContext = `\n\n---\n## Previous conversation context\n${history}\n---`;
+            }
+          } catch { /* non-critical */ }
+          const systemPrompt = (buildSystemPrompt(id) ?? '') + historyContext;
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }
 
