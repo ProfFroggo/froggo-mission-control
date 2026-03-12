@@ -145,7 +145,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           .webp({ quality: 90 })
           .toBuffer();
         avatarPath = join(assetsDir, 'avatar.webp');
-        writeFileSync(avatarPath, webpBuffer);
+        writeFileSync(avatarPath, new Uint8Array(webpBuffer));
         method = 'gemini';
         pngBase64 = webpBuffer.toString('base64');
       } else {
