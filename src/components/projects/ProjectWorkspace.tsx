@@ -686,6 +686,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const [agents, setAgents] = useState<any[]>([]);
   const [showMemberPanel, setShowMemberPanel] = useState(false);
   const [addingAgent, setAddingAgent] = useState<string | null>(null);
+  const { updateRoomAgents } = useChatRoomStore();
+  const projectRoomId = `project-${project.id}`;
 
   const sc = STATUS_CONFIG[project.status] ?? STATUS_CONFIG.active;
 
@@ -693,7 +695,9 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     // Load full project with members
     projectsApi.get(project.id).then(data => {
       setProject(data as Project);
-      setMembers((data as any).members ?? []);
+      const loadedMembers = (data as any).members ?? [];
+      setMembers(loadedMembers);
+      updateRoomAgents(projectRoomId, loadedMembers.map((m: ProjectMember) => m.agentId));
     }).catch(() => {});
     // Load all agents for member management
     agentApi.getAll().then(setAgents).catch(() => {});
@@ -704,7 +708,9 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     try {
       await projectsApi.addMember(project.id, agentId);
       const updated = await projectsApi.get(project.id);
-      setMembers((updated as any).members ?? []);
+      const newMembers = (updated as any).members ?? [];
+      setMembers(newMembers);
+      updateRoomAgents(projectRoomId, newMembers.map((m: ProjectMember) => m.agentId));
       showToast('Agent added to project', 'success');
     } catch {
       showToast('Failed to add agent', 'error');
@@ -716,7 +722,11 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const handleRemoveMember = async (agentId: string) => {
     try {
       await projectsApi.removeMember(project.id, agentId);
-      setMembers(prev => prev.filter(m => m.agentId !== agentId));
+      setMembers(prev => {
+        const next = prev.filter(m => m.agentId !== agentId);
+        updateRoomAgents(projectRoomId, next.map(m => m.agentId));
+        return next;
+      });
     } catch {
       showToast('Failed to remove agent', 'error');
     }
