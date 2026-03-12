@@ -350,6 +350,19 @@ const CHAT_TIER_TOOLS: Record<string, string[]> = {
   trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
   admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
 };
+// Reverse map: short tool name → full MCP tool ID
+// Built from all known tool lists so modal Tool tab toggles feed into --allowedTools.
+// Modal saves short names (e.g. "image_generate"); stream needs full IDs.
+const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
+  const m = new Map<string, string>();
+  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS];
+  for (const full of allFull) {
+    const parts = full.split('__');
+    if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
+  }
+  return m;
+})();
+
 const CHAT_DEFAULT_DISALLOWED = [
   'Bash(rm -rf *)', 'Bash(sudo *)', 'Bash(curl *)', 'Bash(wget *)',
   'Bash(git push --force *)', 'Bash(git reset --hard *)',
@@ -368,9 +381,22 @@ function resolveAgentTools(agentId: string, sessionKey?: string): { allowed: str
     if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch { /* use default */ } }
     const agentRow2 = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.disallowedTools`) as { value: string } | undefined;
     if (agentRow2?.value) { try { disallowed = [...new Set([...disallowed, ...JSON.parse(agentRow2.value)])]; } catch { /* ignore */ } }
+    // Tools enabled in Agent Management Modal → expand short names to full MCP IDs
+    const toolsRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.tools`) as { value: string } | undefined;
+    if (toolsRow?.value) {
+      try {
+        const shorts: string[] = JSON.parse(toolsRow.value) ?? [];
+        const expanded = shorts.flatMap(s => {
+          if (s.startsWith('mcp__')) return [s]; // already a full ID
+          const full = SHORT_TO_FULL_MCP.get(s);
+          return full ? [full] : [];
+        });
+        additionalAllowed = [...new Set([...additionalAllowed, ...expanded])];
+      } catch { /* ignore */ }
+    }
     // Permanently granted tools (stored in DB by user via ToolPermissionCard)
     const grantedRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.grantedTools`) as { value: string } | undefined;
-    if (grantedRow?.value) { try { additionalAllowed = JSON.parse(grantedRow.value) ?? []; } catch { /* ignore */ } }
+    if (grantedRow?.value) { try { additionalAllowed = [...new Set([...additionalAllowed, ...JSON.parse(grantedRow.value)])]; } catch { /* ignore */ } }
   } catch { /* use defaults */ }
   // Session-scoped grants (cleared on server restart)
   const sessionKey2 = sessionKey ?? agentId;
