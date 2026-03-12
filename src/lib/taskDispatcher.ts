@@ -498,6 +498,35 @@ function loadHandoffNote(taskId: string, agentId: string): string {
   return '';
 }
 
+// ── Project context injection ─────────────────────────────────────────────────
+
+function buildProjectContext(projectId: string): string {
+  try {
+    const projectDir = join(HOME, 'mission-control', 'library', 'projects', projectId);
+    const readFile = (name: string): string | null => {
+      const p = join(projectDir, name);
+      return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
+    };
+
+    const goal    = readFile('GOAL.md');
+    const status  = readFile('STATUS.md');
+    const context = readFile('CONTEXT.md');
+
+    const lines = [
+      `\n\n## Project Context`,
+      `**Project directory**: \`${projectDir}\``,
+      `**IMPORTANT**: Save ALL output files (code, designs, docs, scripts) to this directory.`,
+      `Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\``,
+      `After saving any file, log it: \`mcp__mission-control_db__task_add_attachment\``,
+    ];
+    if (goal)    lines.push(`\n### GOAL.md\n${goal}`);
+    if (status)  lines.push(`\n### STATUS.md\n${status}`);
+    if (context) lines.push(`\n### CONTEXT.md\n${context}`);
+    lines.push(`\nUpdate STATUS.md whenever you make significant progress.`);
+    return lines.join('\n');
+  } catch { return ''; }
+}
+
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
 function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
@@ -542,11 +571,14 @@ function buildTaskSystemPrompt(
     } catch { /* non-critical */ }
   }
 
+  // Inject project context if this task belongs to a project
+  const projectContext = task?.project_id ? buildProjectContext(task.project_id as string) : '';
+
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + relevantMemory + handoffNote + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
