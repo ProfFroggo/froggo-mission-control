@@ -734,22 +734,42 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     <div className="flex flex-col h-full bg-mission-control-bg0">
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
-        {/* Breadcrumb + actions */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+        {/* Breadcrumb + members + actions */}
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors flex-shrink-0"
             >
               <ArrowLeft size={14} /> Projects
             </button>
-            <span className="text-mission-control-text-dim">/</span>
-            <span className="text-sm font-medium text-mission-control-text-primary flex items-center gap-1.5">
+            <span className="text-mission-control-text-dim flex-shrink-0">/</span>
+            <span className="text-sm font-medium text-mission-control-text-primary flex items-center gap-1.5 truncate">
               {(() => { const BcIcon = getProjectIcon(project.emoji); return <BcIcon size={14} style={{ color: project.color }} />; })()}
               {project.name}
             </span>
+            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>{sc.label}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Member avatars */}
+            <div className="flex items-center -space-x-1.5">
+              {members.slice(0, 5).map(m => (
+                <AgentAvatar
+                  key={m.agentId}
+                  agentId={m.agentId}
+                  size="xs"
+                  className="ring-1 ring-mission-control-surface"
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setShowMemberPanel(v => !v)}
+              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface px-2 py-1 rounded transition-colors"
+            >
+              <Users size={12} /> {members.length}
+              <ChevronDown size={10} />
+            </button>
+            <div className="w-px h-4 bg-mission-control-border" />
             <button
               onClick={() => setShowDispatch(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium"
@@ -774,48 +794,6 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 </>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Project identity */}
-        <div className="flex items-center gap-4 px-4 pb-3">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${project.color}20`, border: `2px solid ${project.color}40` }}
-          >
-            {(() => { const WsIcon = getProjectIcon(project.emoji); return <WsIcon size={22} style={{ color: project.color }} />; })()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-mission-control-text-primary">{project.name}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>{sc.label}</span>
-            </div>
-            {project.goal && (
-              <p className="text-xs text-mission-control-text-dim mt-0.5 flex items-center gap-1">
-                <Target size={10} /> {project.goal}
-              </p>
-            )}
-          </div>
-
-          {/* Member avatars */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center -space-x-1.5">
-              {members.slice(0, 5).map(m => (
-                <AgentAvatar
-                  key={m.agentId}
-                  agentId={m.agentId}
-                  size="xs"
-                  className="ring-1 ring-mission-control-surface"
-                />
-              ))}
-            </div>
-            <button
-              onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface px-2 py-1 rounded transition-colors"
-            >
-              <Users size={12} /> {members.length}
-              <ChevronDown size={10} />
-            </button>
           </div>
         </div>
 
