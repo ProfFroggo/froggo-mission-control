@@ -100,13 +100,14 @@ export async function POST(request: NextRequest) {
       tx();
     }
 
-    // Auto-create a chat room for the project
+    // Auto-create a chat room for the project, seeded with the project members
     try {
       const roomId = `project-${id}`;
+      const roomAgents = Array.isArray(memberAgentIds) ? memberAgentIds : [];
       db.prepare(`
-        INSERT OR IGNORE INTO chat_rooms (id, name, topic, project_id, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(roomId, `${emoji || '📁'} ${name.trim()}`, `Project chat for ${name.trim()}`, id, now, now);
+        INSERT OR IGNORE INTO chat_rooms (id, name, topic, agents, project_id, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(roomId, `${emoji || '📁'} ${name.trim()}`, `Project chat for ${name.trim()}`, JSON.stringify(roomAgents), id, now, now);
     } catch { /* project_id column might not exist on old DBs */ }
 
     // Auto-create library folder

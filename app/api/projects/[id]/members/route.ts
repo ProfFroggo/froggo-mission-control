@@ -44,6 +44,24 @@ export async function POST(request: NextRequest, { params }: Params) {
       `).run(id, agentId, role, Date.now());
     }
 
+    // Sync agents list to the project chat room
+    try {
+      const roomId = `project-${id}`;
+      const roomRow = db.prepare('SELECT agents FROM chat_rooms WHERE id = ?').get(roomId) as { agents: string } | undefined;
+      if (roomRow !== undefined) {
+        let agents: string[] = [];
+        try { agents = JSON.parse(roomRow?.agents || '[]'); } catch { agents = []; }
+        if (!Array.isArray(agents)) agents = [];
+        if (action === 'remove') {
+          agents = agents.filter((a: string) => a !== agentId);
+        } else if (!agents.includes(agentId)) {
+          agents.push(agentId);
+        }
+        db.prepare('UPDATE chat_rooms SET agents = ?, updatedAt = ? WHERE id = ?')
+          .run(JSON.stringify(agents), Date.now(), roomId);
+      }
+    } catch { /* non-critical */ }
+
     db.prepare('UPDATE projects SET updatedAt = ? WHERE id = ?').run(Date.now(), id);
     return NextResponse.json({ ok: true });
   } catch (error) {
