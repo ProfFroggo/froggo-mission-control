@@ -3,55 +3,46 @@ name: Publish to npm
 on:
   push:
     branches: [main]
-    paths:
-      - 'package.json'
 
 jobs:
-  check-version:
-    name: Check if version changed
-    runs-on: ubuntu-latest
-    outputs:
-      version_changed: ${{ steps.check.outputs.changed }}
-      new_version: ${{ steps.check.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Check if package.json version changed
-        id: check
-        run: |
-          NEW=$(node -p "require('./package.json').version")
-          OLD=$(git show HEAD~1:package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "0.0.0")
-          echo "Old version: $OLD"
-          echo "New version: $NEW"
-          if [ "$NEW" != "$OLD" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "version=$NEW" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "version=$NEW" >> $GITHUB_OUTPUT
-          fi
-
   publish:
-    name: Publish
+    name: Auto-bump, publish, release
     runs-on: ubuntu-latest
-    needs: check-version
-    if: needs.check-version.outputs.version_changed == 'true'
+    # Skip the bot's own version bump commits to prevent infinite loops
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, 'chore: bump version')"
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Use a PAT if available so the bump commit can trigger other workflows;
+          # falls back to GITHUB_TOKEN (which won't re-trigger workflows — also fine)
+          token: ${{ secrets.BUMP_PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          NEW=$(npm version patch --no-git-tag-version)
+          echo "version=$NEW" >> $GITHUB_OUTPUT
+          echo "Bumped to $NEW"
+
+      - name: Commit version bump
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: bump version ${{ steps.bump.outputs.version }} [skip ci]"
+          git push
 
       - name: Publish to npm
         run: npm publish --access public
@@ -61,8 +52,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.check-version.outputs.new_version }}
-          name: v${{ needs.check-version.outputs.new_version }}
+          tag_name: ${{ steps.bump.outputs.version }}
+          name: ${{ steps.bump.outputs.version }}
           generate_release_notes: true
           make_latest: true
         env:
