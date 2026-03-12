@@ -225,18 +225,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     if (!ok2) { setCreateError('Workspace setup failed.'); return; }
 
     await runStep('notify', async () => {
-      // Post a task for Mission Control to acknowledge the new project
-      await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: `New project ready: ${projName}`,
-          description: `Project "${projName}" has been created. Goal: ${projGoal || 'N/A'}. Assigned agents: ${selectedAgents.join(', ') || 'none'}.`,
-          assigned_to: 'mission-control',
-          priority: 'medium',
-          status: 'todo',
-        }),
-      });
+      // no-op — project creation no longer auto-creates a task
     });
 
     setPhase('done');
