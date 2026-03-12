@@ -19,7 +19,9 @@
     "web-design-guidelines",
     "content-calendar"
   ],
-  "requiredTools": [],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "utility"
 }

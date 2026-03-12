@@ -26,7 +26,8 @@
   ],
   "requiredTools": [
     "node",
-    "git"
+    "git",
+    "image_generate"
   ],
   "version": "1.0.0",
   "category": "engineering"

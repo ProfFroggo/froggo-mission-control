@@ -14,7 +14,9 @@
   ],
   "requiredApis": [],
   "requiredSkills": [],
-  "requiredTools": [],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "custom"
 }
