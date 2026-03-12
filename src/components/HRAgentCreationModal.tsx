@@ -69,6 +69,7 @@ function buildSteps(_agentId: string): CreationStep[] {
     { id: 'catalog',     label: 'Register in agent catalog',    detail: 'catalog/agents/{id}.json',                              status: 'pending' },
     { id: 'workspace',   label: 'Create workspace & identity',   detail: '~/mission-control/agents/{id}/ + agents table',         status: 'pending' },
     { id: 'research',    label: 'Research role & skills',        detail: 'AI-powered skill discovery for this role',              status: 'pending' },
+    { id: 'soul',        label: 'Write agent soul',              detail: 'Generate SOUL.md with identity, skills & principles',   status: 'pending' },
     { id: 'avatar',      label: 'Generate profile picture',      detail: 'Generating Pixar-style headshot via Gemini Imagen...',  status: 'pending' },
     { id: 'permissions', label: 'Configure trust & permissions', detail: 'Set permission tier and recommended model',             status: 'pending' },
     { id: 'skills',      label: 'Assign skills & tools',         detail: 'Apply researched capabilities to agent settings',       status: 'pending' },
@@ -310,6 +311,59 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       setCreationSteps(prev => prev.map(s =>
         s.id === 'research'
           ? { ...s, detail: `Found ${researchedSkills.length} skills · ${researchedTools.length} tools · model: ${researchedModel}` }
+          : s
+      ));
+    });
+
+    // ── Step 3b: Write SOUL.md (soft) ──
+    await softStep('soul', async () => {
+      const skillsSection   = researchedSkills.map(s => `- ${s}`).join('\n');
+      const toolsSection    = researchedTools.map(t => `- ${t}`).join('\n');
+      const specsSection    = researchedSpecs.length > 0 ? `\n## Domain Specializations\n${researchedSpecs.map(s => `- ${s}`).join('\n')}` : '';
+      const soulContent = `# ${cfg.name} — Soul File
+
+## Identity
+- **Name**: ${cfg.name}
+- **ID**: ${cfg.id}
+- **Role**: ${cfg.role}
+- **Personality**: ${cfg.personality}
+- **Trust Tier**: ${researchedTier}
+- **Model**: ${researchedModel}
+
+## Purpose
+You are ${cfg.name}, a specialized AI agent on the Mission Control team. Your role is ${cfg.role}. You bring ${cfg.personality.toLowerCase()} energy to every task.
+
+## Core Skills
+${skillsSection}
+${specsSection}
+
+## Tools Available
+${toolsSection}
+
+## Operating Principles
+1. Always read your task brief fully before starting work.
+2. Post activity updates on meaningful decisions using the task_activity_create MCP tool.
+3. Check in with the team before taking external actions (emails, deploys, posts).
+4. Trust tier \`${researchedTier}\` — ${researchedTier === 'worker' ? 'you have full autonomy to act within your domain.' : 'check in before major decisions or irreversible actions.'}
+5. Use the task pipeline: todo → internal-review → in-progress → agent-review → done. Never move a task to done yourself — that is Clara's job.
+6. When blocked, set status to human-review and explain why.
+
+## Communication Style
+${cfg.personality}
+
+## Knowledge Context
+You were created on ${new Date().toISOString().split('T')[0]} and assigned to the Mission Control platform. Read platform instructions in CLAUDE.md before starting tasks.
+`;
+
+      const res = await fetch(`/api/agents/${cfg.id}/soul`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: soulContent }),
+      });
+      if (!res.ok) throw new Error(`Soul write failed: ${res.status}`);
+      setCreationSteps(prev => prev.map(s =>
+        s.id === 'soul'
+          ? { ...s, detail: `SOUL.md written — ${researchedSkills.length} skills · ${researchedTools.length} tools` }
           : s
       ));
     });

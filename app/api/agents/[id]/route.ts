@@ -33,7 +33,23 @@ export async function GET(
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     }
 
-    return NextResponse.json(parseAgent(agent));
+    const parsed = parseAgent(agent);
+
+    // Enrich with skills + tools from settings table
+    const getSetting = (key: string): string[] => {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${id}.${key}`) as { value: string } | undefined;
+      if (!row?.value) return [];
+      try { const p = JSON.parse(row.value); return Array.isArray(p) ? p : []; } catch { return []; }
+    };
+    const skills = getSetting('skills');
+    const tools  = getSetting('tools');
+
+    return NextResponse.json({
+      ...parsed,
+      skills: skills.map(s => ({ name: s, proficiency: 0.7, lastUsed: 'N/A', successCount: 0, failureCount: 0 })),
+      tools,
+      trustTier: parsed.trust_tier || 'apprentice',
+    });
   } catch (error) {
     console.error('GET /api/agents/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
