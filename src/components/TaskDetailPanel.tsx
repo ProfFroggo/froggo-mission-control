@@ -1420,76 +1420,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — only shown when there are actions to display */}
+      {((task.status as string) === 'done' || task.parentTaskId) && (
       <div className="p-6 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl flex-shrink-0">
         <div className="flex gap-2">
-          {/* Poke Button - Ask Brain for status update */}
-          {task.status !== 'done' && (
-            <button
-              onClick={handlePoke}
-              disabled={poking}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-accent/20 hover:text-mission-control-accent transition-colors disabled:opacity-50"
-              title="Poke agent (⌘⇧P)"
-            >
-              {poking ? <Loader2 size={16} className="animate-spin" /> : <span className="text-lg">🫵</span>}
-              Poke
-            </button>
-          )}
-          {task.status !== 'done' && (
-            <div className="flex-1 flex flex-col gap-1">
-              <button
-                onClick={async () => {
-                  if (!validation.allowed) {
-                    showToast('error', 'Cannot mark as done', validation.reasons.join('; '));
-                    return;
-                  }
-                  
-                  // Check for active agent before approving
-                  setCheckingAgent(true);
-                  const activeAgent = await checkForActiveAgent();
-                  setCheckingAgent(false);
-                  
-                  if (activeAgent) {
-                    setActiveAgentInfo({
-                      sessionKey: activeAgent.key as string,
-                      displayName: (activeAgent.label || activeAgent.key) as string
-                    });
-                    setShowAgentActiveModal(true);
-                  } else {
-                    // No active agent - proceed with approval
-                    updateTask(task.id, { status: 'done' });
-                    logTaskActivity(task.id, 'task_completed', 'Task marked as done');
-                    showToast('success', 'Task completed ✓');
-                  }
-                }}
-                disabled={!validation.allowed || checkingAgent}
-                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-                  validation.allowed && !checkingAgent
-                    ? 'bg-success text-white hover:bg-success-hover'
-                    : 'bg-muted/50 text-muted cursor-not-allowed'
-                }`}
-                title={validation.allowed ? 'Mark task as done' : validation.reasons.join('\n')}
-              >
-                {checkingAgent ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Checking...
-                  </>
-                ) : (
-                  <>
-                    {!validation.allowed && <AlertCircle size={16} />}
-                    <CheckCircle size={16} />
-                    Mark Done
-                  </>
-                )}
-              </button>
-              {!validation.allowed && (
-                <div className="text-xs text-error px-2">
-                  {validation.reasons[0]}
-                </div>
-              )}
-            </div>
-          )}
           {task.status === 'done' && (
             <>
               <button
@@ -1518,6 +1452,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
         </div>
       </div>
+      )}
 
       {/* Reopen Task Modal */}
       {showReopenModal && (
