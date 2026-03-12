@@ -57,18 +57,27 @@ async function callClaude(prompt: string): Promise<string> {
 
 // POST /api/agents/hr/research
 export async function POST(req: NextRequest) {
-  const { name, role, capabilities, personality, style } = await req.json();
+  const { name, role, capabilities, personality, style, conversation } = await req.json();
 
   if (!role) {
     return NextResponse.json({ error: 'role is required' }, { status: 400 });
   }
+
+  // Build conversation context block if available (HR interview transcript)
+  const conversationBlock = Array.isArray(conversation) && conversation.length > 0
+    ? `\n\nHR Interview transcript (use this for deeper context):\n${
+        conversation.slice(-20) // last 20 turns
+          .map((m: { role: string; content: string }) => `${m.role === 'user' ? 'User' : 'HR'}: ${m.content}`)
+          .join('\n')
+      }`
+    : '';
 
   const prompt = `Research the optimal skill set for this AI agent:
 - Name: ${name || 'Unknown'}
 - Role: ${role}
 - Style: ${style || 'not specified'}
 - Self-described capabilities: ${Array.isArray(capabilities) ? capabilities.join(', ') : (capabilities || 'none')}
-- Personality: ${personality || 'not specified'}
+- Personality: ${personality || 'not specified'}${conversationBlock}
 
 Return the JSON:`;
 

@@ -17,6 +17,7 @@ interface CreatedAgent {
   color: string;
   capabilities: string[];
   personality: string;
+  style?: string;
 }
 
 interface Message {
@@ -165,6 +166,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
               ? config.skills
               : config.skills?.split(',').map((s: string) => s.trim()) || [],
             personality: config.personality,
+            style: config.style,
           });
 
           conversationRef.current.push({ role: 'hr', content: visibleReply || reply });
@@ -296,6 +298,8 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
           role: cfg.role,
           capabilities: cfg.capabilities,
           personality: cfg.personality,
+          style: cfg.style,
+          conversation: conversationRef.current,
         }),
       });
       if (!res.ok) throw new Error(`Research failed: ${res.status}`);
@@ -444,12 +448,24 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
       const taskId = task.id;
 
 
-      // Seed subtasks
+      // Seed subtasks — written for autonomous agent execution via MCP tools
       const subtasks = [
-        { title: `Read identity files`, description: `Read your SOUL.md at ~/mission-control/agents/${cfg.id}/SOUL.md and your CLAUDE.md for platform instructions.` },
-        { title: `Introduce yourself`, description: `Post an introduction in the mission-control chat room using the chat_post MCP tool. Mention your role, personality, and what you are here to do.` },
-        { title: `Review skills and tools`, description: `Open the Manage modal in the Agents panel and confirm your assigned skills, tools, and trust tier are correct.` },
-        { title: `Complete first assignment`, description: `Ask for your first task in the mission-control chat room or check the task board for a todo item assigned to you.` },
+        {
+          title: `Read identity files and confirm role`,
+          description: `Use the Read tool to read ~/mission-control/agents/${cfg.id}/SOUL.md and ~/mission-control/agents/${cfg.id}/CLAUDE.md. Then call mcp__mission-control_db__task_add_activity to confirm you have read them and state your role and core skills in one sentence.`,
+        },
+        {
+          title: `Post introduction to team chat`,
+          description: `Call mcp__mission-control_db__chat_post to post an introduction to the mission-control room. Include: who you are, your role (${cfg.role}), your top 3 skills, and how you can help the team. Keep it short and direct.`,
+        },
+        {
+          title: `Write first memory entry`,
+          description: `Call mcp__memory__memory_write to create your first memory note. Category: "identity". Content: your role, key skills, trust tier, and one sentence about what you do best.`,
+        },
+        {
+          title: `Confirm ready for first assignment`,
+          description: `Call mcp__mission-control_db__task_add_activity to confirm you are ready. Message: "Onboarding complete — ${cfg.role} ready for first assignment." Then check the task board with mcp__mission-control_db__task_list { "assignedTo": "${cfg.id}", "status": "todo" } and start any waiting task.`,
+        },
       ];
       for (const sub of subtasks) {
         await fetch(`/api/tasks/${taskId}/subtasks`, {
