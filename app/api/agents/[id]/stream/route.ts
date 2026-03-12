@@ -113,6 +113,85 @@ function buildTaskContext(taskId: string): string {
   } catch { return ''; }
 }
 
+const PROJECT_ROOM_SUFFIX = `
+
+## Project Room Protocol
+
+You are working inside a project room. Project files are your shared memory — keep them current.
+
+**After every meaningful exchange, update the relevant file(s):**
+
+### File update rules
+| What happened | Update this file |
+|---------------|-----------------|
+| Goal clarified, scope changed, success criteria added | GOAL.md |
+| Work started, milestone reached, blocked, completed | STATUS.md |
+| New decision made, tech choice, constraint discovered | CONTEXT.md |
+| All three evolve | Update all three |
+
+### How to update
+Use the Write tool with the full updated content (not append — full overwrite):
+- \`Write ~/mission-control/library/projects/{projectId}/STATUS.md\`
+- \`Write ~/mission-control/library/projects/{projectId}/GOAL.md\`
+- \`Write ~/mission-control/library/projects/{projectId}/CONTEXT.md\`
+
+### Save all output to the project directory
+All artifacts, plans, code, designs, and deliverables go in the project folder:
+\`~/mission-control/library/projects/{projectId}/\`
+Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\`
+After saving any file, log it to the task board: \`mcp__mission-control-db__task_add_attachment\`
+
+### STATUS.md format
+\`\`\`
+# Status — {Project Name}
+**Phase**: {current phase}
+**Updated**: {date}
+
+## What's done
+- ...
+
+## In progress
+- ...
+
+## Blocked / needs input
+- ...
+
+## Next
+- ...
+\`\`\`
+`;
+
+function buildProjectRoomContext(roomId: string): string {
+  try {
+    // roomId format: "project-{projectId}"
+    if (!roomId.startsWith('project-')) return '';
+    const projectId = roomId.slice('project-'.length);
+    const projectDir = join(HOME, 'mission-control', 'library', 'projects', projectId);
+
+    const readFile = (name: string): string | null => {
+      const p = join(projectDir, name);
+      return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
+    };
+
+    const goal    = readFile('GOAL.md');
+    const status  = readFile('STATUS.md');
+    const context = readFile('CONTEXT.md');
+
+    if (!goal && !status && !context) return '';
+
+    const lines = [
+      `\n\n---\n## Project Files (keep these updated as you work)\n`,
+      `**Project directory**: \`~/mission-control/library/projects/${projectId}/\`\n`,
+    ];
+    if (goal)    lines.push(`### GOAL.md\n${goal}`);
+    if (status)  lines.push(`\n### STATUS.md\n${status}`);
+    if (context) lines.push(`\n### CONTEXT.md\n${context}`);
+    lines.push('\n---');
+
+    return lines.join('\n') + PROJECT_ROOM_SUFFIX.replace(/\{projectId\}/g, projectId);
+  } catch { return ''; }
+}
+
 function buildSystemPrompt(id: string): string | null {
   const dir = join(HOME, 'mission-control', 'agents', id);
   const soul = readCached(soulCache, join(dir, 'SOUL.md'));
@@ -384,7 +463,8 @@ export async function POST(
           let historyContext = '';
           try {
             // Room sessions: "{roomId}-{agentId}" → read chat_room_messages
-            const roomId = sessionKey.endsWith(`-${id}`) && sessionKey.startsWith('room-')
+            // Handles both room-* and project-* prefixed room IDs
+            const roomId = sessionKey.endsWith(`-${id}`) && (sessionKey.startsWith('room-') || sessionKey.startsWith('project-'))
               ? sessionKey.slice(0, sessionKey.length - id.length - 1)
               : null;
             const rows: { role: string; content: string }[] = roomId
@@ -407,7 +487,14 @@ export async function POST(
             }
           } catch { /* non-critical */ }
           const taskCtx = sessionKey.startsWith('task:') ? buildTaskContext(sessionKey.slice(5)) : '';
-          const systemPrompt = (buildSystemPrompt(id) ?? '') + taskCtx + historyContext;
+          // Project room: inject live GOAL/STATUS/CONTEXT files + update instructions
+          const projectRoomId = (() => {
+            if (!sessionKey.endsWith(`-${id}`)) return null;
+            const rId = sessionKey.slice(0, sessionKey.length - id.length - 1);
+            return rId.startsWith('project-') ? rId : null;
+          })();
+          const projectCtx = projectRoomId ? buildProjectRoomContext(projectRoomId) : '';
+          const systemPrompt = (buildSystemPrompt(id) ?? '') + taskCtx + projectCtx + historyContext;
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }
 
@@ -581,7 +668,13 @@ export async function POST(
               '--disallowedTools', disallowed.join(','),
             ];
             const retryTaskCtx = sessionKey.startsWith('task:') ? buildTaskContext(sessionKey.slice(5)) : '';
-            const sp = (buildSystemPrompt(id) ?? '') + retryTaskCtx + historyContext;
+            const retryProjectRoomId = (() => {
+              if (!sessionKey.endsWith(`-${id}`)) return null;
+              const rId = sessionKey.slice(0, sessionKey.length - id.length - 1);
+              return rId.startsWith('project-') ? rId : null;
+            })();
+            const retryProjectCtx = retryProjectRoomId ? buildProjectRoomContext(retryProjectRoomId) : '';
+            const sp = (buildSystemPrompt(id) ?? '') + retryTaskCtx + retryProjectCtx + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
             const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
