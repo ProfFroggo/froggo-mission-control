@@ -123,10 +123,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     setPortError(false);
   }, [portUrl, loadedPortUrl]);
 
-  // Filter artifacts by session if provided
-  const displayArtifacts = sessionId
+  // Filter artifacts by session if provided, newest first
+  const displayArtifacts = (sessionId
     ? artifacts.filter(a => a.sessionId === sessionId)
-    : getFilteredArtifacts();
+    : getFilteredArtifacts()
+  ).slice().sort((a, b) => b.timestamp - a.timestamp);
 
   const selectedArtifact = artifacts.find(a => a.id === selectedArtifactId);
 
