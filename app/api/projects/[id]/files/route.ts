@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     const filePath = join(dir, safeName);
     if (encoding === 'base64') {
-      writeFileSync(filePath, Buffer.from(content, 'base64'));
+      writeFileSync(filePath, new Uint8Array(Buffer.from(content, 'base64')));
     } else {
       writeFileSync(filePath, content, 'utf-8');
     }

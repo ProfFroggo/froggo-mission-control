@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     const relPath = join('design', 'images', fname);
     const absPath = join(LIBRARY_PATH, relPath);
     mkdirSync(join(LIBRARY_PATH, 'design', 'images'), { recursive: true });
-    writeFileSync(absPath, Buffer.from(b64, 'base64'));
+    writeFileSync(absPath, new Uint8Array(Buffer.from(b64, 'base64')));
 
     // Register in library_files DB
     const fileId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
