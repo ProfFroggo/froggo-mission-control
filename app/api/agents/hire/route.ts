@@ -69,6 +69,14 @@ Pipeline roles:
    \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary of deliverables>" }\`
    \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "agent-review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
 
+## Subtask Rules — every subtask you create must be agent-executable
+Each subtask description MUST specify the exact tool or file path:
+- Use MCP tools: \`mcp__mission-control_db__*\`, \`mcp__memory__*\`
+- Use filesystem tools: Read, Write, Edit a specific path
+- Use Bash, WebSearch, WebFetch if your tier allows
+
+NEVER write subtasks that say "review X in the UI", "open the dashboard", or vague instructions without a tool call. If something requires human input, set task status to \`human-review\` instead.
+
 ## Core Rules
 - Post activity on every meaningful decision — minimum 3 updates per task
 - If blocked: \`mcp__mission-control_db__task_update { "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }\`
