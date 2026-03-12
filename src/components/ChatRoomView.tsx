@@ -23,6 +23,7 @@ interface AttachedFile {
 interface ChatRoomViewProps {
   roomId: string;
   onBack: () => void;
+  hideDelete?: boolean;
 }
 
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
@@ -34,7 +35,7 @@ function formatToolName(name: string): string {
   return last.replace(/_/g, ' ');
 }
 
-export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
+export default function ChatRoomView({ roomId, onBack, hideDelete = false }: ChatRoomViewProps) {
   const { rooms, addMessage, updateMessage, updateRoomAgents, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
@@ -677,6 +678,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <Phone size={16} />
           </button>
+          {!hideDelete && (
           <button
             onClick={() => {
               showConfirm({
@@ -698,6 +700,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <Trash2 size={16} />
           </button>
+          )}
         </div>
       </div>
 

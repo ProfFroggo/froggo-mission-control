@@ -94,7 +94,7 @@ function ChatTab({ project }: { project: Project }) {
 
   return (
     <div className="h-full">
-      <ChatRoomView roomId={room.id} onBack={() => {}} />
+      <ChatRoomView roomId={room.id} onBack={() => {}} hideDelete />
     </div>
   );
 }
