@@ -27,6 +27,13 @@ interface ChatRoomViewProps {
 
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
 
+// Convert tool names like mcp__mission-control_db__task_update → "task_update"
+function formatToolName(name: string): string {
+  const parts = name.split('__');
+  const last = parts[parts.length - 1] || name;
+  return last.replace(/_/g, ' ');
+}
+
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const { rooms, addMessage, updateMessage, updateRoomAgents, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
@@ -66,6 +73,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [showMentions, setShowMentions] = useState(false);
   // Track in-progress task status per agent (agentId -> { taskId, title, lastAgentUpdate })
   const [agentTaskStatus, setAgentTaskStatus] = useState<Record<string, { id: string; title: string; lastAgentUpdate: string | null }>>({});
+  // Track current tool call + thinking excerpt per streaming message (msgId -> label)
+  const [streamingStatus, setStreamingStatus] = useState<Record<string, string>>({});;
   const [mentionFilter, setMentionFilter] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
   const [showManageMembers, setShowManageMembers] = useState(false);
@@ -323,6 +332,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         if (settled) return;
         settled = true;
         setTypingAgents(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+        setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
         // Clear shared refs only if they still belong to this agent
         if (pendingAgentRef.current === agentId) {
           pendingAgentRef.current = null;
@@ -391,6 +401,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       content += block.text;
                       pendingContentRef.current = content;
                       updateMessage(roomId, msgId, { content });
+                      // Clear streaming status once text starts flowing
+                      setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
+                    } else if (block.type === 'tool_use' && block.name) {
+                      // Show which tool is being called
+                      const toolLabel = formatToolName(block.name as string);
+                      setStreamingStatus(prev => ({ ...prev, [msgId]: toolLabel }));
+                    } else if (block.type === 'thinking' && block.thinking) {
+                      // Show a truncated excerpt of the thinking
+                      const excerpt = (block.thinking as string).slice(0, 120).replace(/\n+/g, ' ').trim();
+                      setStreamingStatus(prev => ({ ...prev, [msgId]: excerpt + (block.thinking.length > 120 ? '…' : '') }));
                     }
                   }
                 } else if (evt.type === 'result' && evt.result) {
@@ -791,14 +811,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
-                      <div className="flex items-center gap-2 py-1">
-                        <div className="flex gap-1">
+                      <div className="flex items-start gap-2 py-1 max-w-xs">
+                        <div className="flex gap-1 mt-1 shrink-0">
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-sm text-mission-control-text-dim">
-                          {msg.agentId ? agentName(msg.agentId) : 'Agent'} is thinking...
+                        <span className="text-sm text-mission-control-text-dim leading-snug">
+                          {streamingStatus[msg.id]
+                            ? streamingStatus[msg.id]
+                            : 'thinking...'}
                         </span>
                       </div>
                     ) : !isUser ? (
