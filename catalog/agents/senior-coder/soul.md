@@ -142,7 +142,7 @@ Maintains a mental model of the platform's evolution — not just what it is now
 
 ## 🛠️ Skills
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | When doing... | Skill |
 |---------------|-------|
@@ -154,6 +154,8 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Testing strategy | `froggo-testing-patterns` |
 | Coding standards | `froggo-coding-standards` |
 | Git workflow | `git-workflow` |
+| Generating images | `image-generation` |
+| Removing image backgrounds / cutouts | `image-cutout` |
 
 ## Memory Protocol
 
