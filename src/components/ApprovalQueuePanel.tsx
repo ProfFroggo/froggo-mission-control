@@ -9,6 +9,7 @@ import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import { useStore } from '../store/store';
+import { useChatRoomStore } from '../store/chatRoomStore';
 import { getApprovalTypeConfig } from '../lib/approvalTypes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -641,6 +642,135 @@ interface CardProps {
   onCancel: () => void;
 }
 
+function AgentActionCard({
+  approval, isResponding, note, showActions,
+  onNoteChange, onApprove, onReject, linkedTask,
+}: {
+  approval: Approval; isResponding: boolean; note: string; showActions: boolean;
+  onNoteChange: (v: string) => void; onApprove: () => void; onReject: () => void;
+  linkedTask?: { id: string; title: string; status: string; project?: string } | undefined;
+}) {
+  const setActiveRoom = useChatRoomStore(s => s.setActiveRoom);
+
+  const handleDiscuss = () => {
+    const agentId = (approval.metadata?.agentId ?? approval.requester) as string | undefined;
+    if (agentId) {
+      setActiveRoom(`agent-${agentId}`);
+      window.location.hash = 'chat';
+    }
+  };
+
+  const timeAgo = (() => {
+    const diff = Date.now() - approval.createdAt;
+    if (diff < 60_000) return 'just now';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return new Date(approval.createdAt).toLocaleDateString();
+  })();
+
+  const hasNote = note.trim().length > 0;
+
+  return (
+    <div className="border-l-2 border-orange-400/50 bg-mission-control-surface/30 px-5 py-4 space-y-3">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 p-1.5 rounded-md bg-orange-400/10 shrink-0">
+          <Zap className="w-3.5 h-3.5 text-orange-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm">{approval.title}</span>
+            {approval.status !== 'pending' && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                approval.status === 'approved' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+              }`}>
+                {approval.status}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-mission-control-text-dim">
+            {approval.requester && <span className="flex items-center gap-1"><Bot className="w-3 h-3" />{approval.requester}</span>}
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* What the agent wants to do */}
+      <div className="space-y-1">
+        <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Agent is asking to</div>
+        <div className="text-sm text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
+          {approval.content}
+        </div>
+      </div>
+
+      {/* Context */}
+      {approval.context && (
+        <div className="space-y-1">
+          <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context</div>
+          <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2 leading-relaxed">
+            {approval.context}
+          </div>
+        </div>
+      )}
+
+      {/* Linked task */}
+      {linkedTask && (
+        <div className="flex items-center gap-2 text-xs bg-mission-control-border/20 rounded-lg px-3 py-2">
+          <ListTodo className="w-3.5 h-3.5 text-mission-control-accent shrink-0" />
+          <span className="font-medium">{linkedTask.title}</span>
+          {linkedTask.project && <span className="text-mission-control-text-dim">· {linkedTask.project}</span>}
+        </div>
+      )}
+
+      {/* Review notes (after decision) */}
+      {!showActions && approval.notes && (
+        <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2">
+          <span className="font-medium text-mission-control-text">Notes: </span>{approval.notes}
+        </div>
+      )}
+
+      {/* Actions */}
+      {showActions && (
+        <div className="space-y-2 pt-1">
+          <textarea
+            value={note}
+            onChange={e => onNoteChange(e.target.value)}
+            placeholder="Optional feedback for the agent — add instructions, constraints, or context before approving or rejecting…"
+            rows={2}
+            className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={onApprove}
+              disabled={isResponding}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50"
+            >
+              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
+            </button>
+            <button
+              onClick={onReject}
+              disabled={isResponding}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-error-border bg-error-subtle text-error text-xs font-semibold hover:bg-error/20 transition-all disabled:opacity-50"
+            >
+              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+              {hasNote ? 'Reject with Reason' : 'Reject'}
+            </button>
+            <button
+              onClick={handleDiscuss}
+              title="Open chat with this agent"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-xs font-medium hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Discuss
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ApprovalCard({
   approval, isExpanded, isResponding, isEditing, editedContent, note,
   showActions, isScheduledView, linkedTask,
@@ -649,6 +779,23 @@ function ApprovalCard({
   const cfg = TYPE_CONFIG[approval.type] || TYPE_CONFIG.action;
   const Icon = cfg.icon;
   const isExecutable = EXECUTABLE_TYPES.has(approval.type) || approval.category === 'executable_action' || approval.category === 'scheduled_action';
+  const isAgentAction = approval.type === 'action' && !!(approval.metadata?.taskId);
+
+  // Agent-action (HIL) approvals get a dedicated rich card
+  if (isAgentAction) {
+    return (
+      <AgentActionCard
+        approval={approval}
+        isResponding={isResponding}
+        note={note}
+        showActions={showActions}
+        onNoteChange={onNoteChange}
+        onApprove={onApprove}
+        onReject={onReject}
+        linkedTask={linkedTask}
+      />
+    );
+  }
 
   const timeAgo = (() => {
     const diff = Date.now() - approval.createdAt;

@@ -160,6 +160,47 @@ export async function PATCH(
       }
     }
 
+    // ── Downstream: agent-action approvals (HIL re-dispatch) ──────────────────
+    // When an agent calls approval_create with metadata.taskId to request permission
+    // for an irreversible action, approving re-dispatches the agent to continue.
+    if (existing.type !== 'task' && !actionRef) {
+      try {
+        const meta = typeof existing.metadata === 'string'
+          ? JSON.parse(existing.metadata) : (existing.metadata || {});
+        const taskId = meta.taskId as string | undefined;
+        const agentId = (meta.agentId ?? existing.requester) as string | undefined;
+        if (taskId && agentId) {
+          const now = Date.now();
+          const taskRow = db.prepare('SELECT status, title FROM tasks WHERE id = ?')
+            .get(taskId) as { status: string; title: string } | undefined;
+          if (taskRow) {
+            if (action === 'approved') {
+              // Record approval in task activity so agent sees it on re-dispatch
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'human', 'action_approved',
+                `Human approved: ${existing.title}. ${notes ? 'Notes: ' + notes : 'Proceed.'}`, now);
+              // Resume task and re-dispatch agent
+              db.prepare(
+                `UPDATE tasks SET status = 'in-progress', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+              ).run(`Approval granted: ${existing.title}`, now, taskId);
+              dispatchTask(taskId);
+            } else if (action === 'rejected') {
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'human', 'action_rejected',
+                `Human rejected: ${existing.title}. ${notes ? 'Reason: ' + notes : 'Do not proceed.'}`, now);
+              // Re-dispatch so agent knows the request was denied and can decide next step
+              db.prepare(
+                `UPDATE tasks SET status = 'in-progress', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+              ).run(`Approval denied: ${existing.title}. ${notes || 'Find an alternative approach.'}`, now, taskId);
+              dispatchTask(taskId);
+            }
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
     const updated = db.prepare('SELECT * FROM approvals WHERE id = ?').get(id) as Record<string, unknown>;
     if (typeof updated.metadata === 'string') {
       try { updated.metadata = JSON.parse(updated.metadata as string); } catch { updated.metadata = {}; }
