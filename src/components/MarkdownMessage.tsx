@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Monitor, FileCode } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
@@ -11,21 +11,28 @@ interface MentionData {
 interface MarkdownMessageProps {
   content: string;
   mentions?: MentionData;
+  onArtifactOpen?: (lang: string, code: string) => void;  // NEW
 }
 
 // React.memo with custom comparator — only re-renders when content or mentions change.
 // This prevents costly markdown re-parsing during streaming when unrelated state updates.
-const MarkdownMessage = memo(function MarkdownMessage({ content, mentions }: MarkdownMessageProps) {
+const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArtifactOpen }: MarkdownMessageProps) {
   return (
     <div className="max-w-none leading-relaxed text-left text-sm">
-      {parseMarkdown(content, mentions)}
+      {parseMarkdown(content, mentions, onArtifactOpen)}
     </div>
   );
-}, (prev, next) => prev.content === next.content && prev.mentions === next.mentions);
+}, (prev, next) =>
+  prev.content === next.content &&
+  prev.mentions === next.mentions &&
+  prev.onArtifactOpen === next.onArtifactOpen
+);
 
 export default MarkdownMessage;
 
-function parseMarkdown(text: string, mentions?: MentionData): React.ReactNode[] {
+const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx']);
+
+function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (lang: string, code: string) => void): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
   const lines = text.split('\n');
   let i = 0;
@@ -43,9 +50,20 @@ function parseMarkdown(text: string, mentions?: MentionData): React.ReactNode[] 
         codeLines.push(lines[i]);
         i++;
       }
-      elements.push(
-        <CodeBlock key={key++} code={codeLines.join('\n')} language={lang} />
-      );
+      if (PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
+        elements.push(
+          <ArtifactCard
+            key={key++}
+            lang={lang}
+            code={codeLines.join('\n')}
+            onOpen={onArtifactOpen}
+          />
+        );
+      } else {
+        elements.push(
+          <CodeBlock key={key++} code={codeLines.join('\n')} language={lang} />
+        );
+      }
       i++;
       continue;
     }
@@ -129,7 +147,7 @@ function escapeHtml(text: string): string {
 
 /**
  * Format inline markdown with XSS protection using escape-first approach
- * 
+ *
  * SECURITY MODEL:
  * 1. Escape ALL HTML entities first (prevents any tag injection)
  * 2. Use controlled regex to reintroduce ONLY 3 safe tag types:
@@ -137,14 +155,14 @@ function escapeHtml(text: string): string {
  *    - <code> for `code` (hardcoded safe class attribute)
  *    - <a> for [text](url) (URLs validated by sanitizeUrl())
  * 3. Render with dangerouslySetInnerHTML (safe because step 1 escaped everything)
- * 
+ *
  * SECURITY GUARANTEES:
  * - No script injection possible (escapeHtml prevents <script> tags)
  * - No event handlers possible (escapeHtml prevents onclick/onerror/etc.)
  * - No dangerous protocols (sanitizeUrl blocks javascript:/data:/etc.)
  * - Regex patterns are non-overlapping and deterministic
  * - Failed URL validation degrades to plain text (safe fallback)
- * 
+ *
  * AUDIT: 2026-03-03 - Reviewed and approved (LOW RISK - SECURE)
  * Security audit: 2026-03-03 — dangerouslySetInnerHTML usage reviewed and approved (LOW RISK - SECURE)
  */
@@ -203,6 +221,85 @@ function formatInline(text: string, mentions?: MentionData): React.ReactNode {
   // SECURITY: content is escapeHtml()'d first; only safe tags (strong/code/a) are re-introduced
   // via controlled regex. URLs are validated by sanitizeUrl() (utils/sanitize.ts).
   return <span dangerouslySetInnerHTML={{ __html: remaining }} />;
+}
+
+function extractArtifactTitle(lang: string, code: string): string {
+  // Try <title> tag for HTML
+  const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch) return titleMatch[1].trim();
+
+  // Try first HTML comment
+  const commentMatch = code.match(/<!--\s*([^\n-][^\n]*?)\s*-->/);
+  if (commentMatch) return commentMatch[1].trim();
+
+  // Try first JSX/TSX export default or function name
+  const funcMatch = code.match(/(?:export\s+default\s+function|function)\s+(\w+)/);
+  if (funcMatch) return funcMatch[1];
+
+  // Fallback
+  const labels: Record<string, string> = {
+    html: 'HTML Document', htm: 'HTML Document', svg: 'SVG Image',
+    jsx: 'React Component', tsx: 'React Component',
+  };
+  return labels[lang.toLowerCase()] || `${lang.toUpperCase()} File`;
+}
+
+function ArtifactCard({ lang, code, onOpen }: {
+  lang: string;
+  code: string;
+  onOpen?: (lang: string, code: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const title = extractArtifactTitle(lang, code);
+  const lineCount = code.split('\n').length;
+  const preview = code.split('\n').slice(0, 3).join('\n');
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="my-3 rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border-b border-mission-control-border">
+        <FileCode size={14} className="text-mission-control-accent flex-shrink-0" />
+        <span className="text-xs font-semibold text-mission-control-text flex-1 truncate">{title}</span>
+        <span className="text-xs text-mission-control-text-dim font-mono">{lang.toUpperCase()}</span>
+        <span className="text-xs text-mission-control-text-dim">{lineCount} lines</span>
+      </div>
+      {/* Code preview */}
+      <div className="px-3 py-2 bg-mission-control-bg/50">
+        <pre className="text-xs font-mono text-mission-control-text-dim overflow-hidden whitespace-pre leading-relaxed" style={{ maxHeight: '3.6em' }}>
+          {preview}
+        </pre>
+        {lineCount > 3 && (
+          <span className="text-xs text-mission-control-text-dim opacity-60">+{lineCount - 3} more lines…</span>
+        )}
+      </div>
+      {/* Actions */}
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-mission-control-border bg-mission-control-surface">
+        {onOpen && (
+          <button
+            onClick={() => onOpen(lang, code)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded hover:bg-mission-control-accent/90 transition-colors"
+          >
+            <Monitor size={12} />
+            Open Preview
+          </button>
+        )}
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border text-xs rounded hover:bg-mission-control-border transition-colors ml-auto"
+        >
+          {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function CodeBlock({ code, language }: { code: string; language: string }) {

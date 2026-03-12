@@ -21,6 +21,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import EmptyState from './EmptyState';
 import ArtifactPanel from './ArtifactPanel';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
+import { useArtifactStore } from '../store/artifactStore';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 
@@ -88,6 +89,16 @@ export default function ChatPanel() {
     })),
     selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''
   );
+
+  // Artifact store — for wiring "Open Preview" cards in messages
+  const { artifacts, selectArtifact, isCollapsed: artifactPanelCollapsed, setCollapsed: setArtifactCollapsed } = useArtifactStore();
+  const handleArtifactOpen = useCallback((lang: string, code: string) => {
+    const match = artifacts.find(a => a.content.trim() === code.trim());
+    if (match) {
+      selectArtifact(match.id);
+      if (artifactPanelCollapsed) setArtifactCollapsed(false);
+    }
+  }, [artifacts, selectArtifact, artifactPanelCollapsed, setArtifactCollapsed]);
 
   // Load chat rooms from DB on mount; always open on 1-1 chat (not a room)
   useEffect(() => { loadRooms(); setActiveRoom(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1268,6 +1279,7 @@ export default function ChatPanel() {
                 isStarred={isStarred}
                 selectedAgent={selectedAgent}
                 onToggleStar={handleToggleStar}
+                onArtifactOpen={handleArtifactOpen}
               />
             );
           })
@@ -1468,6 +1480,7 @@ interface MessageItemProps {
   isStarred: boolean;
   selectedAgent: ChatAgent;
   onToggleStar: (msg: StructuredChatMessage, e: React.MouseEvent) => void;
+  onArtifactOpen?: (lang: string, code: string) => void;
 }
 
 const MessageItem = memo(function MessageItem({
@@ -1479,6 +1492,7 @@ const MessageItem = memo(function MessageItem({
   isStarred,
   selectedAgent,
   onToggleStar,
+  onArtifactOpen,
 }: MessageItemProps) {
   return (
     <div
@@ -1574,13 +1588,14 @@ const MessageItem = memo(function MessageItem({
               Array.isArray(msg.content) ? (
                 <div className="space-y-1">
                   {msg.content.map((block, idx) => (
-                    <ContentBlock key={idx} block={block} index={idx} />
+                    <ContentBlock key={idx} block={block} index={idx} onArtifactOpen={onArtifactOpen} />
                   ))}
                 </div>
               ) : (
                 <StreamingText
                   content={msg.content as string}
                   streaming={!!msg.streaming}
+                  onArtifactOpen={onArtifactOpen}
                 />
               )
             ) : (

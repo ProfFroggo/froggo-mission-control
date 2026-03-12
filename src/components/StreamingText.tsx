@@ -7,6 +7,7 @@ interface StreamingTextProps {
   content: string;
   streaming: boolean;
   className?: string;
+  onArtifactOpen?: (lang: string, code: string) => void;
 }
 
 /**
@@ -20,10 +21,11 @@ export const StreamingText = memo(function StreamingText({
   content,
   streaming,
   className,
+  onArtifactOpen,
 }: StreamingTextProps) {
   return (
     <div className={className}>
-      <MarkdownMessage content={content} />
+      <MarkdownMessage content={content} onArtifactOpen={onArtifactOpen} />
       {streaming && (
         <span
           className="streaming-cursor"

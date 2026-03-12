@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Code,
+  Code2,
   Image as ImageIcon,
   FileText,
   Database,
@@ -11,6 +12,8 @@ import {
   Download,
   Trash2,
   History,
+  Monitor,
+  Globe,
   type LucideIcon,
 } from 'lucide-react';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
@@ -38,6 +41,11 @@ const ARTIFACT_COLORS: Record<ArtifactType, string> = {
   data: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30',
 };
 
+function isPreviewable(artifact: Artifact): boolean {
+  const lang = artifact.metadata?.language?.toLowerCase();
+  return lang === 'html' || lang === 'htm' || lang === 'svg';
+}
+
 export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   const {
     artifacts,
@@ -50,6 +58,9 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   } = useArtifactStore();
 
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [viewTab, setViewTab] = useState<'preview' | 'code' | 'port'>('code');
+  const [portUrl, setPortUrl] = useState<string>('');
+  const [loadedPortUrl, setLoadedPortUrl] = useState<string>('');
 
   // Resize state — all stable refs, no useCallback needed
   const MIN_WIDTH = 280;
@@ -89,6 +100,18 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       window.removeEventListener('mouseup', onMouseUp);
     };
   }, []); // stable — only refs and stable setWidth used inside
+
+  // Reset viewTab when selected artifact changes
+  useEffect(() => {
+    const artifact = artifacts.find(a => a.id === selectedArtifactId);
+    if (artifact && isPreviewable(artifact)) {
+      setViewTab('preview');
+    } else {
+      setViewTab('code');
+    }
+    setPortUrl('');
+    setLoadedPortUrl('');
+  }, [selectedArtifactId, artifacts]);
 
   // Filter artifacts by session if provided
   const displayArtifacts = sessionId
@@ -378,10 +401,83 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
             </div>
           )}
 
+          {/* Tab Bar — only for previewable artifacts */}
+          {isPreviewable(selectedArtifact) && (
+            <div className="flex border-b border-mission-control-border bg-mission-control-surface px-4">
+              {(['preview', 'code', 'port'] as const).map(tab => {
+                const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
+                const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setViewTab(tab)}
+                    className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                      viewTab === tab
+                        ? 'border-mission-control-accent text-mission-control-accent'
+                        : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
+                  >
+                    <TabIcon size={14} className="mr-1.5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Artifact Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {renderArtifactContent(selectedArtifact)}
-          </div>
+          {isPreviewable(selectedArtifact) && viewTab === 'preview' ? (
+            <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
+              <iframe
+                srcDoc={selectedArtifact.content}
+                sandbox="allow-scripts allow-forms allow-popups"
+                className="w-full h-full border-0 rounded-b-lg bg-white"
+                title={selectedArtifact.title}
+                style={{ minHeight: '400px' }}
+              />
+            </div>
+          ) : isPreviewable(selectedArtifact) && viewTab === 'port' ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-4 border-b border-mission-control-border space-y-2">
+                <label className="block text-xs font-medium text-mission-control-text">
+                  Local Dev Server URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={portUrl}
+                    onChange={e => setPortUrl(e.target.value)}
+                    placeholder="http://localhost:3000"
+                    className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                    onKeyDown={e => { if (e.key === 'Enter') setLoadedPortUrl(portUrl); }}
+                  />
+                  <button
+                    onClick={() => setLoadedPortUrl(portUrl)}
+                    className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Load
+                  </button>
+                </div>
+                <p className="text-xs text-mission-control-text-dim">
+                  Only works if a local dev server is running on that port
+                </p>
+              </div>
+              {loadedPortUrl && (
+                <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
+                  <iframe
+                    src={loadedPortUrl}
+                    className="w-full h-full border-0 rounded-b-lg"
+                    title="Local preview"
+                    style={{ minHeight: '400px' }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-4">
+              {renderArtifactContent(selectedArtifact)}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">

@@ -11,14 +11,15 @@ interface ContentBlockProps {
     id?: string;
   };
   index: number;
+  onArtifactOpen?: (lang: string, code: string) => void;
 }
 
-export default function ContentBlock({ block, index: _index }: ContentBlockProps) {
+export default function ContentBlock({ block, index: _index, onArtifactOpen }: ContentBlockProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Text blocks - render normally
   if (block.type === 'text') {
-    return <MarkdownMessage content={block.text || ''} />;
+    return <MarkdownMessage content={block.text || ''} onArtifactOpen={onArtifactOpen} />;
   }
 
   // Thinking blocks - collapsible with icon (skip empty ones)
