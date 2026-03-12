@@ -229,6 +229,162 @@ function ActionPreview({ approval }: { approval: Approval }) {
   }
 }
 
+// ─── Human Review Section ─────────────────────────────────────────────────────
+
+interface HumanReviewTask {
+  id: string;
+  title: string;
+  status: string;
+  assignedTo?: string;
+  project?: string;
+  lastAgentUpdate?: string;
+  description?: string;
+}
+
+function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
+  const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(humanReviewTasks.map(t => t.id)));
+
+  if (humanReviewTasks.length === 0) return null;
+
+  const toggle = (id: string) => setExpanded(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+
+  const resume = async (taskId: string, withFeedback?: string) => {
+    setSubmitting(prev => new Set(prev).add(taskId));
+    try {
+      if (withFeedback?.trim()) {
+        await fetch(`/api/tasks/${taskId}/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'human_feedback', message: withFeedback.trim() }),
+        });
+      }
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in-progress' }),
+      });
+      setFeedback(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+      showToast('success', 'Task resumed');
+    } catch { showToast('error', 'Failed to resume'); }
+    finally { setSubmitting(prev => { const n = new Set(prev); n.delete(taskId); return n; }); }
+  };
+
+  const close = async (taskId: string) => {
+    setSubmitting(prev => new Set(prev).add(taskId));
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+      showToast('success', 'Task cancelled');
+    } catch { showToast('error', 'Failed to cancel'); }
+    finally { setSubmitting(prev => { const n = new Set(prev); n.delete(taskId); return n; }); }
+  };
+
+  return (
+    <div className="border-b border-mission-control-border">
+      <div className="px-6 py-3 flex items-center gap-2 bg-warning-subtle/20">
+        <AlertTriangle size={13} className="text-warning flex-shrink-0" />
+        <span className="text-xs font-semibold text-warning uppercase tracking-wide">
+          Needs Your Input — {humanReviewTasks.length} task{humanReviewTasks.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="divide-y divide-mission-control-border/40">
+        {humanReviewTasks.map(task => {
+          const isOpen = expanded.has(task.id);
+          const isBusy = submitting.has(task.id);
+          const reason = task.lastAgentUpdate?.replace(/^Blocked:\s*/i, '').trim();
+
+          return (
+            <div key={task.id} className="bg-mission-control-surface/40">
+              {/* Header row */}
+              <button
+                onClick={() => toggle(task.id)}
+                className="w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-mission-control-surface/60 transition-colors"
+              >
+                <AlertTriangle size={14} className="text-warning mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{task.title}</div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-mission-control-text-dim">
+                    {task.assignedTo && <span>{task.assignedTo}</span>}
+                    {task.project && <><span>·</span><span>{task.project}</span></>}
+                  </div>
+                  {reason && !isOpen && (
+                    <div className="mt-1 text-xs text-warning/80 truncate">{reason}</div>
+                  )}
+                </div>
+                {isOpen ? <ChevronUp size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" /> : <ChevronDown size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" />}
+              </button>
+
+              {/* Expanded body */}
+              {isOpen && (
+                <div className="px-5 pb-4 space-y-3">
+                  {/* Blocked reason */}
+                  {reason && (
+                    <div className="flex gap-2 p-3 rounded-lg bg-warning-subtle/30 border border-warning-border/40">
+                      <AlertTriangle size={13} className="text-warning flex-shrink-0 mt-0.5" />
+                      <div>
+                        <div className="text-xs font-semibold text-warning mb-0.5">Why it stopped</div>
+                        <div className="text-xs text-mission-control-text leading-relaxed">{reason}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Task description if no reason */}
+                  {!reason && task.description && (
+                    <div className="text-xs text-mission-control-text-dim p-3 rounded-lg bg-mission-control-border/20">
+                      {task.description}
+                    </div>
+                  )}
+
+                  {/* Feedback input */}
+                  <div>
+                    <label className="text-xs font-medium text-mission-control-text-dim block mb-1.5">
+                      Your feedback or instructions to the agent
+                    </label>
+                    <textarea
+                      value={feedback[task.id] || ''}
+                      onChange={e => setFeedback(prev => ({ ...prev, [task.id]: e.target.value }))}
+                      placeholder="Tell the agent what to do next, provide missing info, or clarify requirements…"
+                      rows={3}
+                      className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => resume(task.id, feedback[task.id])}
+                      disabled={isBusy}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
+                    >
+                      {isBusy ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
+                      {feedback[task.id]?.trim() ? 'Send Feedback & Resume' : 'Resume Work'}
+                    </button>
+                    <button
+                      onClick={() => close(task.id)}
+                      disabled={isBusy}
+                      className="px-3 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-xs font-medium hover:bg-mission-control-surface hover:text-error hover:border-error-border transition-all disabled:opacity-50"
+                    >
+                      Cancel Task
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ApprovalQueuePanel() {
@@ -399,62 +555,7 @@ export default function ApprovalQueuePanel() {
       )}
 
       {/* Human-review tasks section (pending tab only) */}
-      {statusTab === 'pending' && (() => {
-        const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
-        if (humanReviewTasks.length === 0) return null;
-        return (
-          <div className="px-6 py-4 border-b border-mission-control-border bg-warning-subtle/30">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={14} className="text-warning flex-shrink-0" />
-              <span className="text-sm font-medium text-warning">Tasks Awaiting Human Action ({humanReviewTasks.length})</span>
-            </div>
-            <div className="space-y-2">
-              {humanReviewTasks.map(task => (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl bg-mission-control-surface border border-warning-border">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{task.title}</div>
-                    <div className="text-xs text-mission-control-text-dim mt-0.5">
-                      {task.assignedTo && `Agent: ${task.assignedTo}`}{task.project ? ` · ${task.project}` : ''}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await fetch(`/api/tasks/${task.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'in-progress' }),
-                        });
-                        showToast('success', 'Task resumed');
-                      } catch { showToast('error', 'Failed to resume task'); }
-                    }}
-                    className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors flex-shrink-0"
-                  >
-                    Resume Work
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await fetch(`/api/tasks/${task.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'done' }),
-                        });
-                        showToast('success', 'Task closed');
-                      } catch { showToast('error', 'Failed to close task'); }
-                    }}
-                    className="px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex-shrink-0"
-                  >
-                    Close
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {statusTab === 'pending' && <HumanReviewSection tasks={tasks} />}
 
       {/* List */}
       <div className="flex-1 overflow-y-auto">
