@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ file: LOG_PATH, cursor: size, size, lines: [], truncated: false });
     }
 
-    const buf = Buffer.alloc(readLen);
+    const buf = new Uint8Array(readLen);
     const fd = openSync(LOG_PATH, 'r');
     readSync(fd, buf, 0, readLen, start);
     closeSync(fd);
 
-    const text = buf.toString('utf-8');
+    const text = Buffer.from(buf).toString('utf-8');
     const rawLines = text.split('\n').filter(Boolean);
     const lines = rawLines.slice(-limit);
     const truncated = rawLines.length > limit;
