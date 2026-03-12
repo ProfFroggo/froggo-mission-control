@@ -146,7 +146,7 @@ const MCP_DB_TOOLS = [
   'mcp__mission-control-db__chat_post', 'mcp__mission-control-db__chat_read',
   'mcp__mission-control-db__chat_rooms_list', 'mcp__mission-control-db__subtask_create',
   'mcp__mission-control-db__subtask_update', 'mcp__mission-control-db__schedule_create',
-  'mcp__mission-control-db__schedule_list',
+  'mcp__mission-control-db__schedule_list', 'mcp__mission-control-db__image_generate',
 ];
 const MCP_MEMORY_TOOLS = [
   'mcp__memory__memory_search', 'mcp__memory__memory_recall',
