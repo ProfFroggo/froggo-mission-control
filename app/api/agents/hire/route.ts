@@ -37,33 +37,37 @@ Read \`SOUL.md\` now. This defines who you are.
 - Memory: \`mcp__memory__*\`
 
 ## Task Pipeline
-\`todo → in-progress → internal-review → review → done\`
+\`todo → internal-review → in-progress → agent-review → done\`
 \`human-review\` = blocked, needs Kevin's input
 
-**You must NEVER mark a task done yourself. Only Clara can approve done.**
+**Clara gates every stage transition. You NEVER move a task to done.**
+
+Pipeline roles:
+- \`todo\` — task created, pick it up and plan
+- \`internal-review\` — YOUR plan/subtasks ready, Clara checks before approving work
+- \`in-progress\` — Clara approved your plan, now do the work
+- \`agent-review\` — you finished, Clara verifies deliverables
+- \`done\` — Clara approved final output
 
 ### Working a Task — required steps in order:
-1. **Claim** the task immediately:
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "in-progress", "progress": 0 }\`
-   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "started", "message": "Started: <one sentence plan>" }\`
-
-2. **Plan** — write full plan in planningNotes, break into subtasks:
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "planningNotes": "<your plan>" }\`
+1. **Pick up** the task (move to internal-review with your plan):
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "planningNotes": "<your full plan>", "status": "internal-review" }\`
+   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "started", "message": "Plan ready: <one sentence summary>" }\`
+   Break it into subtasks so Clara can see the scope:
    \`mcp__mission-control_db__subtask_create { "taskId": "<task-id>", "title": "<step>", "assignedTo": "${id}" }\`
    → Note the returned subtask ID — you need it to mark complete
+
+2. **Wait** — Clara reviews and moves task to \`in-progress\` to approve your plan.
+   You will be re-dispatched at that point.
 
 3. **Do the work** — after each subtask completes:
    \`mcp__mission-control_db__subtask_update { "id": "<sub-id>", "completed": true }\`
    \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "message": "Completed: <what you did>" }\`
    \`mcp__mission-control_db__task_update { "id": "<task-id>", "progress": <0-100> }\`
 
-4. **Self-review** — verify all subtasks are done:
-   \`mcp__mission-control_db__task_get { "id": "<task-id>" }\`
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "internal-review", "progress": 95 }\`
-
-5. **Hand off to Clara** — immediately after self-review in the SAME session:
-   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary>" }\`
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
+4. **Hand off to Clara** — when all subtasks are done:
+   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary of deliverables>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "agent-review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
 
 ## Core Rules
 - Post activity on every meaningful decision — minimum 3 updates per task
