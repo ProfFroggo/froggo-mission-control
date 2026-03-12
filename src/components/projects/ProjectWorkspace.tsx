@@ -66,13 +66,14 @@ function ChatTab({ project }: { project: Project }) {
       setActiveRoom(resolvedRoomIdRef.current);
       return;
     }
-    // Look for an existing room whose name matches this project
-    const existing = rooms.find(r => r.name === project.name || r.name === project.id);
+    // Project rooms are always created with id `project-{projectId}`
+    const projectRoomId = `project-${project.id}`;
+    const existing = rooms.find(r => r.id === projectRoomId);
     if (existing) {
       resolvedRoomIdRef.current = existing.id;
       setActiveRoom(existing.id);
     } else {
-      // Rooms loaded but none found — create once
+      // Rooms loaded but none found — create once with project members
       const memberIds = (project.members ?? []).map((m: ProjectMember) => m.agentId);
       const newId = createRoom(project.name, memberIds);
       resolvedRoomIdRef.current = newId;
