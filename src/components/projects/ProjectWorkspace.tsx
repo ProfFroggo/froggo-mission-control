@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Zap, FolderOpen, Bot,
   Settings, Users, Plus, Trash2, Target, Edit3, X,
   FileText, Image, File as FileIcon, Upload,
-  ChevronDown
+  ChevronDown, ShieldAlert, ShieldCheck, Check
 } from 'lucide-react';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
@@ -19,12 +19,13 @@ import ChatRoomView from '../ChatRoomView';
 import ProjectDispatchModal from './ProjectDispatchModal';
 import Kanban from '../Kanban';
 
-type TabId = 'chat' | 'tasks' | 'automations' | 'files';
+type TabId = 'chat' | 'tasks' | 'automations' | 'approvals' | 'files';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat',        label: 'Chat',        icon: MessageSquare },
   { id: 'tasks',       label: 'Tasks',       icon: LayoutGrid },
   { id: 'automations', label: 'Automations', icon: Zap },
+  { id: 'approvals',   label: 'Approvals',   icon: ShieldAlert },
   { id: 'files',       label: 'Files',       icon: FolderOpen },
 ];
 
@@ -253,6 +254,132 @@ function AutomationsTab({ project }: { project: Project }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Approvals Tab ─────────────────────────────────────────────────────────────
+
+interface ProjectApproval {
+  id: string; type: string; title: string; content: string; context?: string;
+  metadata?: Record<string, unknown>; status: string; requester?: string;
+  createdAt: number; respondedAt?: number; notes?: string;
+}
+
+function ApprovalsTab({ project }: { project: Project }) {
+  const [approvals, setApprovals] = useState<ProjectApproval[]>([]);
+  const [tasks, setTasks] = useState<{ id: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [responding, setResponding] = useState<Set<string>>(new Set());
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [allApprovals, projectTasks] = await Promise.all([
+        fetch('/api/approvals?status=pending').then(r => r.json()),
+        fetch(`/api/tasks?project_id=${project.id}`).then(r => r.json()),
+      ]);
+      const taskIds = new Set<string>(
+        Array.isArray(projectTasks) ? projectTasks.map((t: { id: string }) => t.id) : []
+      );
+      setTasks(Array.isArray(projectTasks) ? projectTasks : []);
+      const filtered = (Array.isArray(allApprovals) ? allApprovals : []).filter((a: ProjectApproval) => {
+        const meta = a.metadata || {};
+        return meta.projectId === project.id || taskIds.has(meta.taskId as string);
+      });
+      setApprovals(filtered);
+    } catch { /* non-critical */ }
+    finally { setLoading(false); }
+  }, [project.id]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const respond = async (id: string, action: 'approved' | 'rejected') => {
+    setResponding(prev => new Set(prev).add(id));
+    try {
+      await fetch(`/api/approvals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, notes: feedback[id] || undefined }),
+      });
+      setApprovals(prev => prev.filter(a => a.id !== id));
+      setFeedback(prev => { const n = { ...prev }; delete n[id]; return n; });
+    } catch { /* non-critical */ }
+    finally { setResponding(prev => { const n = new Set(prev); n.delete(id); return n; }); }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32 text-mission-control-text-dim gap-2 text-sm">
+        <Spinner size={12} />Loading approvals…
+      </div>
+    );
+  }
+
+  if (approvals.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-32 gap-2 text-mission-control-text-dim">
+        <ShieldCheck size={28} className="opacity-30" />
+        <p className="text-sm">No pending approvals for this project</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-mission-control-border/40">
+      {approvals.map(a => {
+        const isBusy = responding.has(a.id);
+        const hasNote = (feedback[a.id] || '').trim().length > 0;
+        const taskTitle = tasks.find((t: { id: string; title?: string } & { id: string }) => t.id === (a.metadata?.taskId as string | undefined))?.['title'] as string | undefined;
+        return (
+          <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-orange-400/40">
+            <div className="flex items-start gap-2">
+              <Zap size={13} className="text-orange-400 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">{a.title}</div>
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-mission-control-text-dim">
+                  {a.requester && <span>{a.requester}</span>}
+                  {taskTitle && <><span>·</span><span className="truncate">{taskTitle}</span></>}
+                </div>
+              </div>
+            </div>
+            <div className="text-xs text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
+              {a.content}
+            </div>
+            {a.context && (
+              <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2">
+                {a.context}
+              </div>
+            )}
+            <textarea
+              value={feedback[a.id] || ''}
+              onChange={e => setFeedback(prev => ({ ...prev, [a.id]: e.target.value }))}
+              placeholder="Optional feedback or notes…"
+              rows={2}
+              className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => respond(a.id, 'approved')}
+                disabled={isBusy}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
+              >
+                {isBusy ? <Spinner size={12} /> : <Check size={12} />}
+                {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
+              </button>
+              <button
+                onClick={() => respond(a.id, 'rejected')}
+                disabled={isBusy}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-error-border bg-error-subtle text-error text-xs font-semibold hover:bg-error/20 disabled:opacity-50 transition-all"
+              >
+                {isBusy ? <Spinner size={12} /> : <X size={12} />}
+                {hasNote ? 'Reject with Reason' : 'Reject'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -753,6 +880,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         {activeTab === 'chat'        && <ChatTab project={project} />}
         {activeTab === 'tasks'       && <Kanban projectId={project.id} projectName={project.name} onNewTask={() => setShowDispatch(true)} />}
         {activeTab === 'automations' && <AutomationsTab project={project} />}
+        {activeTab === 'approvals'   && <ApprovalsTab project={project} />}
         {activeTab === 'files'       && <FilesTab project={project} />}
       </div>
 
