@@ -301,6 +301,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
       },
     },
+    {
+      name: 'image_generate',
+      description: 'Generate an image using Gemini AI and save it to the library. Returns a markdown string like ![prompt](url) that you can paste directly into chat_post content to display the image inline.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'Detailed description of the image to generate' },
+          agentId: { type: 'string', description: 'Your agent ID' },
+          filename: { type: 'string', description: 'Optional short filename (letters/numbers/hyphens, no extension)' },
+        },
+        required: ['prompt', 'agentId'],
+      },
+    },
   ],
 }));
 
@@ -686,6 +699,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           jobs = jobs.filter((j: any) => !!j.enabled === !!args.enabled);
         }
         return { content: [{ type: 'text', text: JSON.stringify(jobs) }] };
+      }
+
+      // ── image_generate ──────────────────────────────────────────────────────
+      case 'image_generate': {
+        const prompt = String(args?.prompt ?? '').trim();
+        if (!prompt) return { content: [{ type: 'text', text: JSON.stringify({ error: 'prompt is required' }) }], isError: true };
+
+        const payload = JSON.stringify({
+          prompt,
+          agentId: args?.agentId ?? 'unknown',
+          filename: args?.filename ?? '',
+        });
+
+        const result = await new Promise<string>((resolve) => {
+          const req = http.request(
+            {
+              hostname: '127.0.0.1',
+              port: parseInt(process.env.PORT ?? '3000', 10),
+              path: '/api/generate-image',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload),
+                ...authHeaders(),
+              },
+            },
+            (res) => {
+              let body = '';
+              res.on('data', (chunk) => { body += chunk; });
+              res.on('end', () => resolve(body));
+            },
+          );
+          req.on('error', (e) => resolve(JSON.stringify({ error: e.message })));
+          req.setTimeout(60_000, () => { req.destroy(); resolve(JSON.stringify({ error: 'Image generation timed out' })); });
+          req.write(payload);
+          req.end();
+        });
+
+        let parsed: any;
+        try { parsed = JSON.parse(result); } catch { parsed = { error: result }; }
+
+        if (parsed.error) {
+          return { content: [{ type: 'text', text: JSON.stringify(parsed) }], isError: true };
+        }
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              markdown: parsed.markdown,
+              url: parsed.url,
+              filePath: parsed.filePath,
+              filename: parsed.filename,
+              hint: `Post the markdown field to chat_post to display the image inline.`,
+            }),
+          }],
+        };
       }
 
       default:
