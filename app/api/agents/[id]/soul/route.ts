@@ -4,11 +4,12 @@ import { validateAgentId } from '@/lib/validateId';
 import path from 'path';
 import fs from 'fs';
 
-const AGENTS_DIR = path.join(process.cwd(), '.claude', 'agents');
+import os from 'os';
+const WORKSPACE_AGENTS_DIR = path.join(os.homedir(), 'mission-control', 'agents');
 const MAX_SOUL_BYTES = 50 * 1024; // 50KB
 
 function getSoulPath(id: string): string {
-  return path.join(AGENTS_DIR, `${id}.md`);
+  return path.join(WORKSPACE_AGENTS_DIR, id, 'SOUL.md');
 }
 
 export async function GET(
@@ -55,8 +56,9 @@ export async function PUT(
     }
 
     // Ensure directory exists
-    if (!fs.existsSync(AGENTS_DIR)) {
-      fs.mkdirSync(AGENTS_DIR, { recursive: true });
+    const agentDir = path.join(WORKSPACE_AGENTS_DIR, id);
+    if (!fs.existsSync(agentDir)) {
+      fs.mkdirSync(agentDir, { recursive: true });
     }
 
     const filePath = getSoulPath(id);
