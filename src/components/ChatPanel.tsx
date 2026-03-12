@@ -53,7 +53,9 @@ interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
 
 export default function ChatPanel() {
   const { addActivity } = useStore();
-  const { rooms, activeRoomId, setActiveRoom, createRoom, loadRooms } = useChatRoomStore();
+  const { rooms: allRooms, activeRoomId, setActiveRoom, createRoom, loadRooms } = useChatRoomStore();
+  // Project rooms (id: project-*) are managed by the Projects module — exclude from chat panel
+  const rooms = allRooms.filter(r => !r.id.startsWith('project-'));
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
   const [messages, setMessages] = useState<StructuredChatMessage[]>([]);
