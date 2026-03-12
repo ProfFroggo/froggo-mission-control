@@ -1,6 +1,6 @@
 ---
 name: image-cutout
-description: High-quality programmatic background removal — covers tool selection by use case, Python and Node.js implementations, alpha matting for hair/fur, edge refinement, and output best practices.
+description: High-quality programmatic background removal — covers tool selection by use case, SAM 2 maximum quality pipeline, BiRefNet-HD, alpha matting for hair/fur, FBA Matting, edge refinement, and output best practices.
 ---
 
 # Image Cutout (Background Removal)
@@ -17,18 +17,31 @@ Always output **PNG with alpha channel**. Never output JPEG for cutouts.
 
 ---
 
+## Quality Tiers
+
+| Tier | Approach | When to use |
+|------|----------|-------------|
+| **Maximum** | SAM 2 + FBA Matting | Hero shots, complex hair, precise control |
+| **Excellent** | `rembg` birefnet-hd + alpha matte | High-res assets, portraits, products |
+| **Good / fast** | `rembg` birefnet-general | Batch, standard web assets |
+| **Paid API** | remove.bg / PhotoRoom API | Client deliverables where quality is non-negotiable |
+| **Browser/Edge** | `@imgly/background-removal` | Frontend / Node.js pipelines |
+
+**Default pick for most work**: `rembg` with `birefnet-hd` (high-res input) or `birefnet-general` (standard). Upgrade to SAM 2 + FBA Matting when hair, fur, or fine translucent detail matters.
+
+---
+
 ## Tool Selection by Use Case
 
 | Use case | Best tool | Quality |
 |----------|-----------|---------|
-| Products / hard edges | `rembg` (u2net) | Excellent |
-| People / portraits | `rembg` (birefnet-general) + alpha matte | Excellent |
-| Hair / fur / fine detail | `rembg` + `pymatting` alpha matting | Best possible |
-| Batch / CI pipeline | `rembg` CLI or Python loop | Fast |
-| Maximum quality, paid | remove.bg API | Reference quality |
-| Browser / Edge runtime | `@imgly/background-removal` (Node/WASM) | Good |
-
-**Default pick**: `rembg` with `birefnet-general` model covers 90% of cases with no API cost.
+| Products / hard edges | `rembg` (birefnet-general) | Excellent |
+| Portraits, standard res | `rembg` (birefnet-general) + alpha matte | Excellent |
+| High-res portraits / large images | `rembg` (birefnet-hd) + alpha matte | Superior |
+| Hair / fur / fine detail — maximum quality | SAM 2 + FBA Matting | Best possible |
+| Batch / CI pipeline | `rembg` (birefnet-general) loop | Fast |
+| Maximum quality, paid | remove.bg or PhotoRoom API | Reference |
+| Browser / Edge runtime | `@imgly/background-removal` (WASM) | Good |
 
 ---
 
@@ -64,20 +77,22 @@ remove_background("photo.jpg", "photo_cutout.png")
 ```python
 from rembg import remove, new_session
 
-# Best overall quality (default recommendation)
+# BEST quality for high-res inputs (>1 MP) — recommended for professional work
+session = new_session("birefnet-hd")
+
+# Best overall for standard resolution — covers most use cases
 session = new_session("birefnet-general")
 
-# Fastest, still good for products/objects
+# Fastest, still good for products/objects on a deadline
 session = new_session("u2net")
 
-# Optimised for human portraits
+# Optimised for human portraits at standard resolution
 session = new_session("u2net_human_seg")
-
-# Best for animals
-session = new_session("birefnet-general")  # also handles animals well
 
 result = remove(input_data, session=session)
 ```
+
+> **birefnet-hd vs birefnet-general**: use `hd` for source images larger than ~1 megapixel or when you need the sharpest possible edge retention. It processes slower but recovers finer detail.
 
 ### With PIL post-processing
 
@@ -107,19 +122,129 @@ high_quality_cutout("portrait.jpg", "portrait_cutout.png")
 
 ---
 
-## Alpha Matting — for hair, fur, and fine edges
+## Maximum Quality (Free) — SAM 2 + FBA Matting
 
-Standard segmentation leaves fringe on fine detail. Alpha matting recovers sub-pixel transparency.
+This is the best result achievable without any API cost. Use it for hero shots, fashion cutouts, complex hair, or any time the output will be prominent.
+
+**How it works:**
+1. **SAM 2** (Segment Anything Model 2) generates a pixel-perfect segmentation mask using automatic or point-guided prompting — handles complex subjects far better than any automatic-only model
+2. **FBA Matting** (F, B, Alpha decomposition) runs a learned alpha matte over the SAM 2 mask transition zone, recovering sub-pixel transparency in hair, fur, and wispy edges
 
 ```bash
-pip install pymatting rembg pillow numpy
+pip install segment-anything-2 torch torchvision pillow numpy requests
+# FBA Matting — clone and install
+git clone https://github.com/MarcoForte/FBA_Matting.git
+pip install -e FBA_Matting/
+# Download SAM 2 checkpoint (choose one):
+# sam2_hiera_large.pt  ← best quality
+# sam2_hiera_base_plus.pt  ← good balance
+wget https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt
+```
+
+```python
+import torch
+import numpy as np
+from PIL import Image
+from sam2.build_sam import build_sam2
+from sam2.automatic_mask_generator import SAM2AutomaticMaskGenerator
+import cv2
+
+def sam2_cutout(
+    input_path: str,
+    output_path: str,
+    checkpoint: str = "sam2_hiera_large.pt",
+    config: str = "sam2_hiera_l.yaml",
+    use_fba_matting: bool = True,
+) -> None:
+    """
+    Maximum quality cutout pipeline:
+    1. SAM 2 automatic segmentation to get the primary subject mask
+    2. Optional FBA Matting refinement on the edge transition zone
+    """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+
+    # Load image
+    img = np.array(Image.open(input_path).convert("RGB"))
+    h, w = img.shape[:2]
+
+    # --- Step 1: SAM 2 segmentation ---
+    sam2 = build_sam2(config, checkpoint, device=device)
+    mask_generator = SAM2AutomaticMaskGenerator(
+        model=sam2,
+        points_per_side=64,          # more points = finer coverage
+        pred_iou_thresh=0.88,
+        stability_score_thresh=0.95,
+        crop_n_layers=1,
+        crop_n_points_downscale_factor=2,
+    )
+
+    masks = mask_generator.generate(img)
+
+    # Pick the largest mask (primary subject)
+    primary = max(masks, key=lambda m: m["area"])
+    coarse_mask = primary["segmentation"].astype(np.uint8) * 255  # H x W, uint8
+
+    if not use_fba_matting:
+        # Fast path: apply coarse mask directly
+        rgba = np.dstack([img, coarse_mask])
+        Image.fromarray(rgba, "RGBA").save(output_path, "PNG")
+        print(f"Saved (SAM 2 only): {output_path}")
+        return
+
+    # --- Step 2: FBA Matting refinement ---
+    # Build trimap from SAM 2 mask: erode for definite FG, dilate for unknown zone
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    fg_mask  = cv2.erode(coarse_mask, kernel, iterations=3)   # definite foreground
+    bg_mask  = cv2.dilate(coarse_mask, kernel, iterations=3)  # outside = definite background
+    trimap = np.full((h, w), 128, dtype=np.uint8)             # 128 = unknown
+    trimap[fg_mask == 255] = 255                              # definite FG
+    trimap[bg_mask == 0]   = 0                                # definite BG
+
+    # FBA Matting expects normalised float32
+    img_f32 = img.astype(np.float32) / 255.0
+    tri_f32 = trimap.astype(np.float32) / 255.0
+
+    from FBA_Matting.demo import pred  # from the cloned repo
+    alpha = pred(img_f32, tri_f32)     # returns H x W float32 alpha [0,1]
+
+    alpha_u8 = (alpha * 255).clip(0, 255).astype(np.uint8)
+    rgba = np.dstack([img, alpha_u8])
+    Image.fromarray(rgba, "RGBA").save(output_path, "PNG")
+    print(f"Saved (SAM 2 + FBA Matting): {output_path}")
+
+
+sam2_cutout("portrait.jpg", "portrait_cutout.png")
+```
+
+> **SAM 2 with point prompts** (when you know where the subject is):
+> ```python
+> from sam2.sam2_image_predictor import SAM2ImagePredictor
+> predictor = SAM2ImagePredictor(build_sam2(config, checkpoint, device=device))
+> predictor.set_image(img)
+> # Click on the subject — (x, y) pixel coordinates
+> masks, scores, _ = predictor.predict(
+>     point_coords=np.array([[w//2, h//2]]),  # centre of image
+>     point_labels=np.array([1]),             # 1 = foreground
+>     multimask_output=True,
+> )
+> best_mask = masks[np.argmax(scores)]
+> ```
+> Point prompts give far more precise control than automatic mode when the background is complex.
+
+---
+
+## Alpha Matting — rembg built-in (good, fast)
+
+For most portraits and products, rembg's built-in PyMatting is sufficient and much simpler to set up than the full SAM 2 pipeline.
+
+```bash
+pip install rembg pillow
 ```
 
 ```python
 from rembg import remove
 from PIL import Image
-import numpy as np
-from pymatting import estimate_alpha_cf, stack_images
 import io
 
 def cutout_with_alpha_matting(
@@ -129,31 +254,22 @@ def cutout_with_alpha_matting(
     background_threshold: int = 10,
     erode_size: int = 10,
 ) -> None:
-    """
-    Two-pass cutout:
-    1. rembg produces a coarse mask
-    2. pymatting refines the alpha matte in the transition zone (hair/fur/glass)
-    """
-    img = Image.open(input_path).convert("RGBA")
-
-    # Pass 1: coarse mask from rembg
     with open(input_path, 'rb') as f:
         coarse_bytes = remove(
             f.read(),
-            alpha_matting=True,                        # rembg built-in matting
+            alpha_matting=True,
             alpha_matting_foreground_threshold=foreground_threshold,
             alpha_matting_background_threshold=background_threshold,
             alpha_matting_erode_size=erode_size,
         )
-
     result = Image.open(io.BytesIO(coarse_bytes)).convert("RGBA")
     result.save(output_path, "PNG")
-    print(f"Alpha matte saved: {output_path}")
+    print(f"Saved: {output_path}")
 
-cutout_with_alpha_matting("model_hair.jpg", "model_hair_cutout.png")
+cutout_with_alpha_matting("portrait.jpg", "portrait_cutout.png")
 ```
 
-> `alpha_matting=True` activates rembg's built-in PyMatting pipeline. Use foreground_threshold 240 / background_threshold 10 as starting defaults, then tune if edges are too aggressive or too soft.
+> Tune: raise `foreground_threshold` if too much fringe is kept; lower `background_threshold` if background bleeds in. `erode_size` controls how wide the uncertain transition zone is.
 
 ---
 
@@ -225,9 +341,9 @@ await cutout("./photo.jpg", "./photo_cutout.png");
 
 ---
 
-## remove.bg API (maximum quality, paid)
+## remove.bg API (paid — skip if using SAM 2)
 
-Use when quality is critical and cost is acceptable (e.g. hero product shots, key marketing assets).
+The SAM 2 + FBA Matting pipeline above matches or exceeds remove.bg quality at zero cost. Only use this if you need a fast one-liner with no GPU setup, or if the project has a budget for API credits.
 
 ```python
 import requests
