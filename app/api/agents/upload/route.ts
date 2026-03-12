@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     const filename = `${Date.now()}-${safeName}`;
     const filePath = join(UPLOAD_DIR, filename);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    writeFileSync(filePath, buffer);
+    const buffer = await file.arrayBuffer();
+    writeFileSync(filePath, new Uint8Array(buffer));
 
     return NextResponse.json({ path: filePath, name: file.name, size: file.size, type: file.type });
   } catch (err) {
