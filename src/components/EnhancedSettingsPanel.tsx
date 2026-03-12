@@ -317,10 +317,10 @@ function PlatformUpdateTab() {
     return () => clearTimeout(t);
   }, [reloadCountdown]);
 
-  const checkVersion = async () => {
+  const checkVersion = async (force = false) => {
     setChecking(true);
     try {
-      const res = await fetch('/api/update');
+      const res = await fetch(force ? '/api/update?force=1' : '/api/update');
       const data = await res.json();
       setVersionInfo(data);
     } catch { /* network error */ }
@@ -373,7 +373,7 @@ function PlatformUpdateTab() {
             <div className="font-semibold text-mission-control-text">Mission Control</div>
             <div className="text-xs text-mission-control-text-dim">froggo-mission-control</div>
           </div>
-          <button onClick={checkVersion} disabled={checking} className="ml-auto p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim" title="Check for updates">
+          <button onClick={() => checkVersion(true)} disabled={checking} className="ml-auto p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim" title="Check for updates">
             <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
           </button>
         </div>

@@ -83,8 +83,10 @@ function compareVersions(a: string, b: string): number {
 }
 
 // GET — check current vs latest version
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    if (searchParams.get('force') === '1') registryCache = null;
     const current = getCurrentVersion();
     const info = await getLatestInfo();
     const updateAvailable = compareVersions(info.version, current) > 0;
