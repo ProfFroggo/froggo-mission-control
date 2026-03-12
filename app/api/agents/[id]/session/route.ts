@@ -49,7 +49,11 @@ export async function DELETE(
     const guard = validateAgentId(id);
     if (guard) return guard;
     const db = getDb();
-    db.prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(id);
+    // Clear all session key variants for this agent (raw, chat:, modal:)
+    const stmt = db.prepare('DELETE FROM agent_sessions WHERE agentId = ?');
+    stmt.run(id);
+    stmt.run(`chat:${id}`);
+    stmt.run(`modal:${id}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/agents/[id]/session error:', error);
