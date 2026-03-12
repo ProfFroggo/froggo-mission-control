@@ -192,6 +192,14 @@ function formatInline(text: string, mentions?: MentionData): React.ReactNode {
     return `<a href="${sanitizedUrl}" class="text-mission-control-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   });
 
+  // Bare URLs — auto-link any standalone http/https URL not already inside an <a>
+  remaining = remaining.replace(/(https?:\/\/[^\s<>"']+)/g, (_, url) => {
+    const sanitizedUrl = sanitizeUrl(url);
+    if (!sanitizedUrl) return url;
+    const display = url.length > 60 ? url.slice(0, 57) + '\u2026' : url;
+    return `<a href="${sanitizedUrl}" class="text-mission-control-accent hover:underline underline-offset-2 font-medium break-all" target="_blank" rel="noopener noreferrer">${display}</a>`;
+  });
+
   // SECURITY: content is escapeHtml()'d first; only safe tags (strong/code/a) are re-introduced
   // via controlled regex. URLs are validated by sanitizeUrl() (utils/sanitize.ts).
   return <span dangerouslySetInnerHTML={{ __html: remaining }} />;
