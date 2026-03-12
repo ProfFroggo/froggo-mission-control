@@ -712,12 +712,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
-                {!isWorking && task.status !== 'done' && (
+                {!isWorking && !['done', 'in-progress', 'internal-review', 'agent-review', 'review'].includes(task.status) && (
                   <button onClick={handleStart} className="p-1 bg-success text-white rounded hover:bg-success-hover flex-shrink-0" title="Start Work">
                     <Play size={11} />
                   </button>
                 )}
-                {isWorking && <Loader2 size={12} className="animate-spin text-warning flex-shrink-0" />}
+                {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-warning flex-shrink-0" />}
               </div>
             ) : isRemoteAgent ? (
               <div className="flex items-center gap-1 min-w-0">
@@ -822,7 +822,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       </div>
 
       {/* Tab Content */}
-      <div className={`flex-1 ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
+      <div className={`flex-1 min-h-0 ${activeTab === 'chat' ? 'overflow-hidden flex flex-col' : 'overflow-y-auto'}`}>
         {/* Subtasks Tab */}
         {activeTab === 'subtasks' && (
           <div className="p-4">
