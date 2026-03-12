@@ -2,6 +2,26 @@
 // Gemini TTS — REST-based text-to-speech using Chirp 3 voices.
 // Uses generateContent with responseModalities:AUDIO instead of Gemini Live WebSocket.
 
+/** Parse sample rate and bit depth from a Gemini audio MIME type string.
+ *  e.g. "audio/L16;rate=24000" → { sampleRate: 24000, bitsPerSample: 16 }
+ */
+function parseAudioMime(mimeType: string): { sampleRate: number; bitsPerSample: number } {
+  let sampleRate = 24000;
+  let bitsPerSample = 16;
+  const parts = mimeType.split(';');
+  for (const part of parts) {
+    const p = part.trim();
+    if (p.toLowerCase().startsWith('rate=')) {
+      const n = parseInt(p.split('=')[1], 10);
+      if (!isNaN(n)) sampleRate = n;
+    } else if (/^audio\/L\d+$/i.test(p)) {
+      const n = parseInt(p.split('L')[1], 10);
+      if (!isNaN(n)) bitsPerSample = n;
+    }
+  }
+  return { sampleRate, bitsPerSample };
+}
+
 const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
 const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent`;
 
@@ -61,6 +81,9 @@ export async function geminiTts(
   const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
   if (!part?.data) return;
 
+  // Parse sample rate and bit depth from MIME type (e.g. "audio/L16;rate=24000")
+  const { sampleRate, bitsPerSample } = parseAudioMime(part.mimeType ?? '');
+
   // Decode base64 → bytes
   let bytes: Uint8Array;
   try {
@@ -73,8 +96,6 @@ export async function geminiTts(
 
   if (signal?.aborted) return;
 
-  // Gemini TTS returns raw PCM: 16-bit signed little-endian, 24000 Hz, mono
-  const sampleRate = 24000;
   let ctx: AudioContext;
   try {
     ctx = new AudioContext({ sampleRate });
@@ -85,11 +106,15 @@ export async function geminiTts(
     return;
   }
 
-  const pcm = new Int16Array(bytes.buffer);
+  // Decode raw PCM — signed little-endian, mono
+  const divisor = Math.pow(2, bitsPerSample - 1);
+  const pcm = bitsPerSample === 16
+    ? new Int16Array(bytes.buffer)
+    : new Int8Array(bytes.buffer);
   const audioBuffer = ctx.createBuffer(1, pcm.length, sampleRate);
   const channelData = audioBuffer.getChannelData(0);
   for (let i = 0; i < pcm.length; i++) {
-    channelData[i] = pcm[i] / 32768;
+    channelData[i] = pcm[i] / divisor;
   }
 
   return new Promise((resolve) => {
