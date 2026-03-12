@@ -352,7 +352,12 @@ export async function PATCH(
     // Notify SSE clients of task update
     const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
     const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
-    if (taskId) emitSSEEvent('task.updated', { id: taskId, status: taskStatus ?? null });
+    if (taskId) emitSSEEvent('task.updated', {
+      id: taskId,
+      status: taskStatus ?? null,
+      assignedTo: (updated as Record<string, unknown>)?.assignedTo ?? null,
+      lastAgentUpdate: (updated as Record<string, unknown>)?.lastAgentUpdate ?? null,
+    });
 
     // When a task moves to 'done', emit task.unblocked for tasks that were blocked by it
     if (body.status === 'done' && taskId) {
