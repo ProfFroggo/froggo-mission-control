@@ -20,46 +20,46 @@ const VOICE_PROFILES: Record<string, AgentVoiceProfile> = {
   // Kevin / user — not used for TTS but defined for completeness
   'mission-control': { pitch: 1.0,  rate: 1.0,  preferFemale: false },
 
-  // Technical agents — lower pitch, confident
-  'coder':           { pitch: 0.85, rate: 1.05, preferFemale: false },
-  'engineer':        { pitch: 0.8,  rate: 1.0,  preferFemale: false },
-  'developer':       { pitch: 0.9,  rate: 1.05, preferFemale: false },
+  // Technical agents — deeper, faster
+  'coder':           { pitch: 0.70, rate: 1.10, preferFemale: false },
+  'engineer':        { pitch: 0.65, rate: 1.05, preferFemale: false },
+  'developer':       { pitch: 0.75, rate: 1.08, preferFemale: false },
 
-  // Creative/writing agents — slightly higher pitch, natural pace
-  'writer':          { pitch: 1.15, rate: 0.95, preferFemale: false },
-  'designer':        { pitch: 1.1,  rate: 0.98, preferFemale: true  },
-  'creative':        { pitch: 1.2,  rate: 1.0,  preferFemale: true  },
+  // Creative/writing agents — higher, slightly slower
+  'writer':          { pitch: 1.35, rate: 0.92, preferFemale: true  },
+  'designer':        { pitch: 1.30, rate: 0.95, preferFemale: true  },
+  'creative':        { pitch: 1.28, rate: 0.97, preferFemale: true  },
 
   // Research/analytical — measured, clear
-  'researcher':      { pitch: 1.0,  rate: 0.92, preferFemale: true  },
-  'analyst':         { pitch: 0.95, rate: 0.9,  preferFemale: false },
-  'data':            { pitch: 0.9,  rate: 0.95, preferFemale: false },
+  'researcher':      { pitch: 1.10, rate: 0.88, preferFemale: true  },
+  'analyst':         { pitch: 0.90, rate: 0.85, preferFemale: false },
+  'data':            { pitch: 0.85, rate: 0.90, preferFemale: false },
 
-  // Leadership — authoritative, deliberate
-  'chief':           { pitch: 1.05, rate: 0.88, preferFemale: true  },
-  'director':        { pitch: 0.8,  rate: 0.9,  preferFemale: false },
-  'manager':         { pitch: 0.88, rate: 0.92, preferFemale: false },
+  // Leadership — noticeably deeper and deliberate
+  'chief':           { pitch: 0.60, rate: 0.82, preferFemale: false },
+  'director':        { pitch: 0.65, rate: 0.85, preferFemale: false },
+  'manager':         { pitch: 0.75, rate: 0.88, preferFemale: false },
 
   // Support/HR — warm, accessible
-  'hr':              { pitch: 1.1,  rate: 0.95, preferFemale: true  },
-  'support':         { pitch: 1.05, rate: 1.0,  preferFemale: true  },
+  'hr':              { pitch: 1.25, rate: 0.90, preferFemale: true  },
+  'support':         { pitch: 1.20, rate: 0.93, preferFemale: true  },
 
   // Growth/marketing — energetic
-  'growth':          { pitch: 1.05, rate: 1.08, preferFemale: false },
-  'marketing':       { pitch: 1.1,  rate: 1.05, preferFemale: true  },
+  'growth':          { pitch: 1.05, rate: 1.15, preferFemale: false },
+  'marketing':       { pitch: 1.15, rate: 1.10, preferFemale: true  },
 
   // Reply/social
-  'reply-guy':       { pitch: 0.95, rate: 1.1,  preferFemale: false },
-  'social':          { pitch: 1.0,  rate: 1.05, preferFemale: true  },
+  'reply-guy':       { pitch: 0.90, rate: 1.18, preferFemale: false },
+  'social':          { pitch: 1.05, rate: 1.10, preferFemale: true  },
 
   // Clara (project manager / reviewer)
-  'clara':           { pitch: 1.08, rate: 0.93, preferFemale: true  },
-  'project-manager': { pitch: 1.05, rate: 0.95, preferFemale: false },
+  'clara':           { pitch: 1.20, rate: 0.90, preferFemale: true  },
+  'project-manager': { pitch: 1.10, rate: 0.92, preferFemale: false },
 
   // Named agents from agent-voices config
-  'jess':            { pitch: 1.15, rate: 0.92, preferFemale: true  },
-  'ox':              { pitch: 0.72, rate: 0.9,  preferFemale: false },
-  'degen-frog':      { pitch: 0.95, rate: 1.15, preferFemale: false },
+  'jess':            { pitch: 1.30, rate: 0.90, preferFemale: true  },
+  'ox':              { pitch: 0.60, rate: 0.85, preferFemale: false },
+  'degen-frog':      { pitch: 0.90, rate: 1.20, preferFemale: false },
   'voice':           { pitch: 1.0,  rate: 1.05, preferFemale: false },
 };
 
@@ -81,8 +81,8 @@ export function getVoiceProfile(agentId: string): AgentVoiceProfile {
   // Hash-based deterministic fallback so same agent always gets same voice
   const hash = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return {
-    pitch: 0.85 + (hash % 7) * 0.05,  // 0.85 – 1.15
-    rate:  0.90 + (hash % 5) * 0.04,  // 0.90 – 1.06
+    pitch: 0.65 + (hash % 9) * 0.10,  // 0.65 – 1.45
+    rate:  0.82 + (hash % 6) * 0.06,  // 0.82 – 1.12
     preferFemale: hash % 2 === 0,
   };
 }
