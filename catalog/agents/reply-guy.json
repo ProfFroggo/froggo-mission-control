@@ -13,7 +13,9 @@
     "Customer service"
   ],
   "requiredApis": [],
-  "requiredSkills": [],
+  "requiredSkills": [
+    "image-generation"
+  ],
   "requiredTools": [
     "image_generate"
   ],

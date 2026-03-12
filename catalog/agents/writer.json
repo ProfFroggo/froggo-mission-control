@@ -17,7 +17,8 @@
     "x-twitter-strategy",
     "web-research",
     "web-design-guidelines",
-    "content-calendar"
+    "content-calendar",
+    "image-generation"
   ],
   "requiredTools": [
     "image_generate"

@@ -19,7 +19,8 @@
   "requiredSkills": [
     "x-twitter-strategy",
     "community-ops",
-    "web-research"
+    "web-research",
+    "image-generation"
   ],
   "requiredTools": [
     "image_generate"

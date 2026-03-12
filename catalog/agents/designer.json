@@ -18,7 +18,8 @@
     "react-best-practices",
     "composition-patterns",
     "security-checklist",
-    "design-review"
+    "design-review",
+    "image-generation"
   ],
   "requiredTools": [
     "node",
