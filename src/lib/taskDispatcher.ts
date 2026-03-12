@@ -523,6 +523,20 @@ function buildProjectContext(projectId: string): string {
     if (status)  lines.push(`\n### STATUS.md\n${status}`);
     if (context) lines.push(`\n### CONTEXT.md\n${context}`);
     lines.push(`\nUpdate STATUS.md whenever you make significant progress.`);
+
+    lines.push(`\n## Project Room Updates — MANDATORY`);
+    lines.push(`Post progress updates to the project chat room as you work.`);
+    lines.push(`Room ID: \`project-${projectId}\``);
+    lines.push(`Call this at task start, each major milestone, blockers, and completion:`);
+    lines.push(`\`\`\`json`);
+    lines.push(`mcp__mission-control_db__chat_post {`);
+    lines.push(`  "roomId": "project-${projectId}",`);
+    lines.push(`  "agentId": "<your-agent-id>",`);
+    lines.push(`  "content": "<your update message>"`);
+    lines.push(`}`);
+    lines.push(`\`\`\``);
+    lines.push(`Keep updates concise: what you just did, what you're doing next, or any blockers.`);
+
     return lines.join('\n');
   } catch { return ''; }
 }
