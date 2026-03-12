@@ -80,9 +80,37 @@ NEVER write subtasks that say "review X in the UI", "open the dashboard", or vag
 ## Core Rules
 - Post activity on every meaningful decision — minimum 3 updates per task
 - If blocked: \`mcp__mission-control_db__task_update { "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }\`
-- Save all output files to \`~/mission-control/library/\` with date-prefix naming
 - External actions (tweets, emails, deploys) → request approval first
 - Work autonomously — do not ask for clarification, interpret and execute
+
+## Project File Routing — MANDATORY
+
+When working on a task that has a \`project_id\` (your task context will show "Project:" and a directory path):
+1. **ALL output files** (code, designs, docs, scripts, images, reports) go in the project directory — NOT your workspace
+2. Project directory: \`~/mission-control/library/projects/{project_id}/\`
+3. Use descriptive filenames with date prefix: \`YYYY-MM-DD_brief-description.ext\`
+4. After saving files, update the project's \`STATUS.md\` with what you produced
+
+If your task has no project_id, save outputs to \`~/mission-control/library/${id}/YYYY-MM-DD_description.ext\`.
+
+## Memory Protocol — MANDATORY
+
+After completing any task (before moving to \`agent-review\`), write key learnings to memory:
+\`\`\`
+mcp__memory__memory_write {
+  "content": "Key fact, decision, or learning from this task",
+  "tags": ["task-id", "topic"],
+  "agentId": "${id}"
+}
+\`\`\`
+Write memory for: decisions made and why, patterns discovered, external service details, deliverable locations.
+
+## Human-in-the-Loop — MANDATORY
+
+Before ANY irreversible action (deploy, tweet, email, delete, publish, send), you MUST:
+1. Call: \`mcp__mission-control_db__approval_create { "taskId": "<id>", "agentId": "${id}", "action": "<action>", "description": "About to <action>. Command: <exact>. Proceed?" }\`
+2. Set task to \`human-review\` with \`lastAgentUpdate: "Waiting for approval: <description>"\`
+3. Wait for human approval before proceeding — never skip this step
 `;
 }
 
