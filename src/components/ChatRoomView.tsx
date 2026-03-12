@@ -53,6 +53,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
+  // Track in-progress task status per agent (agentId -> { taskId, title, lastAgentUpdate })
+  const [agentTaskStatus, setAgentTaskStatus] = useState<Record<string, { id: string; title: string; lastAgentUpdate: string | null }>>({});
   const [mentionFilter, setMentionFilter] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
   const [showManageMembers, setShowManageMembers] = useState(false);
@@ -74,6 +76,51 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       loadMessages(roomId);
     }
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch in-progress task status for room agents
+  useEffect(() => {
+    if (!room?.agents?.length) return;
+
+    const fetchStatuses = async () => {
+      try {
+        const res = await fetch(`/api/tasks?status=in-progress&limit=50`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const tasks: { id: string; title: string; assignedTo: string | null; lastAgentUpdate: string | null }[] = Array.isArray(data) ? data : (data.tasks || []);
+        const map: Record<string, { id: string; title: string; lastAgentUpdate: string | null }> = {};
+        for (const t of tasks) {
+          if (t.assignedTo && room.agents.includes(t.assignedTo)) {
+            map[t.assignedTo] = { id: t.id, title: t.title, lastAgentUpdate: t.lastAgentUpdate };
+          }
+        }
+        setAgentTaskStatus(map);
+      } catch { /* non-critical */ }
+    };
+
+    fetchStatuses();
+
+    // Subscribe to SSE task.updated events
+    const es = new EventSource('/api/sse');
+    es.addEventListener('task.updated', (e: MessageEvent) => {
+      try {
+        const d = JSON.parse(e.data);
+        if (!d.assignedTo || !room.agents.includes(d.assignedTo)) return;
+        if (d.status === 'in-progress') {
+          setAgentTaskStatus(prev => ({
+            ...prev,
+            [d.assignedTo]: { id: d.id, title: prev[d.assignedTo]?.title || '', lastAgentUpdate: d.lastAgentUpdate ?? null },
+          }));
+        } else {
+          setAgentTaskStatus(prev => {
+            const next = { ...prev };
+            delete next[d.assignedTo];
+            return next;
+          });
+        }
+      } catch { /* ignore parse errors */ }
+    });
+    return () => es.close();
+  }, [roomId, room?.agents?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -781,6 +828,21 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
           </div>
         )}
+
+        {/* Agent background task status — shows what dispatched agents are working on */}
+        {Object.entries(agentTaskStatus).map(([agentId, task]) => (
+          task.lastAgentUpdate ? (
+            <div key={agentId} className="mx-4 mb-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border/60 flex items-start gap-2.5 text-xs">
+              <AgentAvatar agentId={agentId} size="xs" />
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-mission-control-text">{agentName(agentId)}</span>
+                <span className="text-mission-control-text-dim mx-1.5">•</span>
+                <span className="text-mission-control-text-dim">{task.title}</span>
+                <p className="mt-0.5 text-mission-control-text-dim truncate">{task.lastAgentUpdate}</p>
+              </div>
+            </div>
+          ) : null
+        ))}
 
         <div ref={messagesEndRef} />
       </div>
