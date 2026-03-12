@@ -10,6 +10,7 @@ import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface AttachedFile {
   id: string;
@@ -48,6 +49,16 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       extractFromUser: false,
     }
   );
+
+  // Artifact store — for wiring "Open Preview" cards in messages
+  const { artifacts, selectArtifact, isCollapsed: artifactPanelCollapsed, setCollapsed: setArtifactCollapsed } = useArtifactStore();
+  const handleArtifactOpen = useCallback((lang: string, code: string) => {
+    const match = artifacts.find(a => a.content.trim() === code.trim());
+    if (match) {
+      selectArtifact(match.id);
+      if (artifactPanelCollapsed) setArtifactCollapsed(false);
+    }
+  }, [artifacts, selectArtifact, artifactPanelCollapsed, setArtifactCollapsed]);
 
   // Helper to get agent name from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
@@ -794,6 +805,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <MarkdownMessage
                         content={msg.content}
                         mentions={{ ids: room.agents, names: Object.fromEntries(room.agents.map(id => [id, agentName(id)])) }}
+                        onArtifactOpen={handleArtifactOpen}
                       />
                     ) : (
                       <MentionText 
