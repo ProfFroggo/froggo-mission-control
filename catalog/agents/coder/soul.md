@@ -171,7 +171,7 @@ After completing implementation, if task priority is P0 or P1:
 
 ## 🛠️ Skills
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | When doing... | Skill |
 |---------------|-------|
@@ -183,6 +183,8 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Git commits, branches, PRs | `git-workflow` |
 | Security review | `security-checklist` |
 | Code review | `code-review-checklist` |
+| Generating images | `image-generation` |
+| Removing image backgrounds / cutouts | `image-cutout` |
 
 ## Memory Protocol
 

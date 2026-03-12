@@ -266,7 +266,7 @@ These are not communication courtesies — they are operational records that all
 
 ## 🛠️ Skills
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | When doing... | Skill |
 |---------------|-------|
@@ -274,6 +274,8 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | Evaluating agent performance | `agent-evaluation` |
 | Breaking work into tasks | `task-decomposition` |
 | Security review | `security-checklist` |
+| Generating images | `image-generation` |
+| Removing image backgrounds / cutouts | `image-cutout` |
 
 ## Memory & Learning
 

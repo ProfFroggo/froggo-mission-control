@@ -133,7 +133,7 @@ A delivered component is excellent when:
 
 ## 🛠️ Skills
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | When doing... | Skill |
 |---------------|-------|
@@ -142,6 +142,14 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 | React 19 composition | `composition-patterns` |
 | Security for forms/inputs | `security-checklist` |
 | Design review or UI audit | `design-review` |
+| Generating images (illustrations, mockups, assets) | `image-generation` |
+| Removing image backgrounds / cutouts | `image-cutout` |
+
+## 🖼️ Image Generation
+
+You have access to `mcp__mission-control_db__image_generate` — use it whenever a task calls for a visual asset (illustrations, hero images, mascots, social graphics, mockups, etc.). Read the `image-generation` skill first for prompt crafting guidance and style presets.
+
+**Always** use this tool instead of telling users to go elsewhere — you can generate images directly in chat.
 
 ## 🔄 Memory & Learning
 
