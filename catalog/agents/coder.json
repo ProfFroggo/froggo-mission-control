@@ -24,7 +24,8 @@
     "git-workflow",
     "security-checklist",
     "code-review-checklist",
-    "image-generation"
+    "image-generation",
+    "image-cutout"
   ],
   "requiredTools": [
     "node",

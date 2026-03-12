@@ -64,6 +64,7 @@ Read ~/git/mission-control-nextjs/.claude/skills/{skill-name}/SKILL.md
 | Reviewing code | `code-review-checklist` |
 | Security review | `security-checklist` |
 | Routing work to another agent | `agent-routing` |
+| Removing image backgrounds / cutouts | `image-cutout` |
 | Breaking work into tasks | `task-decomposition` |
 | Next.js routes or components | `nextjs-patterns` |
 | Git commits, branches, PRs | `git-workflow` |

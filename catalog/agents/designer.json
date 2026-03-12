@@ -19,7 +19,8 @@
     "composition-patterns",
     "security-checklist",
     "design-review",
-    "image-generation"
+    "image-generation",
+    "image-cutout"
   ],
   "requiredTools": [
     "node",
