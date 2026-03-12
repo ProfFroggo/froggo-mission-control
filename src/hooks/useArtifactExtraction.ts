@@ -29,6 +29,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+  streaming?: boolean; // when true, content is incomplete — do not process yet
 }
 
 /**
@@ -65,6 +66,9 @@ export function useArtifactExtraction(
       if (message.role === 'user' && !extractFromUser) continue;
       if (message.role === 'assistant' && !extractFromAssistant) continue;
       if (message.role === 'system') continue;
+
+      // Skip messages still streaming — content is incomplete, don't mark as processed
+      if (message.streaming) continue;
 
       // Check if message contains artifacts
       if (!containsArtifacts(message.content)) {
