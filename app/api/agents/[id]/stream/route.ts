@@ -73,6 +73,46 @@ Write to the appropriate category:
 
 Use mcp__memory__memory_recall at the START of each conversation to load relevant context before responding.`;
 
+function buildTaskContext(taskId: string): string {
+  try {
+    const db = getDb();
+    const task = db.prepare(`
+      SELECT id, title, description, status, progress, assignedTo, planningNotes, lastAgentUpdate
+      FROM tasks WHERE id = ?
+    `).get(taskId) as {
+      id: string; title: string; description?: string; status: string;
+      progress?: number; assignedTo?: string; planningNotes?: string; lastAgentUpdate?: string;
+    } | undefined;
+    if (!task) return '';
+
+    const subtasks = db.prepare(`
+      SELECT title, description, completed FROM subtasks WHERE taskId = ? ORDER BY id ASC
+    `).all(taskId) as { title: string; description?: string; completed: number }[];
+
+    const lines: string[] = [
+      `\n\n---\n## Current Task Context`,
+      `**Task ID**: ${task.id}`,
+      `**Title**: ${task.title}`,
+      `**Status**: ${task.status}`,
+      `**Progress**: ${task.progress ?? 0}%`,
+    ];
+    if (task.assignedTo) lines.push(`**Assigned to**: ${task.assignedTo}`);
+    if (task.description) lines.push(`**Description**: ${task.description}`);
+    if (task.planningNotes) lines.push(`**Planning notes**: ${task.planningNotes}`);
+    if (task.lastAgentUpdate) lines.push(`**Last update**: ${task.lastAgentUpdate}`);
+    if (subtasks.length > 0) {
+      lines.push(`\n**Subtasks**:`);
+      for (const s of subtasks) {
+        const done = s.completed ? '✓' : '○';
+        lines.push(`  ${done} ${s.title}${s.description ? ` — ${s.description.slice(0, 200)}` : ''}`);
+      }
+    }
+    lines.push(`\nYou are chatting about this specific task. When the user asks about progress, status, or what you're working on, refer to the task details above.`);
+    lines.push(`---`);
+    return lines.join('\n');
+  } catch { return ''; }
+}
+
 function buildSystemPrompt(id: string): string | null {
   const dir = join(HOME, 'mission-control', 'agents', id);
   const soul = readCached(soulCache, join(dir, 'SOUL.md'));
@@ -366,7 +406,8 @@ export async function POST(
               historyContext = `\n\n---\n## Previous conversation context\n${history}\n---`;
             }
           } catch { /* non-critical */ }
-          const systemPrompt = (buildSystemPrompt(id) ?? '') + historyContext;
+          const taskCtx = sessionKey.startsWith('task:') ? buildTaskContext(sessionKey.slice(5)) : '';
+          const systemPrompt = (buildSystemPrompt(id) ?? '') + taskCtx + historyContext;
           if (systemPrompt) args.push('--system-prompt', systemPrompt);
         }
 
@@ -539,7 +580,8 @@ export async function POST(
               '--allowedTools', allowed.join(','),
               '--disallowedTools', disallowed.join(','),
             ];
-            const sp = (buildSystemPrompt(id) ?? '') + historyContext;
+            const retryTaskCtx = sessionKey.startsWith('task:') ? buildTaskContext(sessionKey.slice(5)) : '';
+            const sp = (buildSystemPrompt(id) ?? '') + retryTaskCtx + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
             const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
