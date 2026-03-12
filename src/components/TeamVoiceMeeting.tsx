@@ -15,14 +15,15 @@ import ScreenSourcePicker, { type ScreenSource } from './ScreenSourcePicker';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
-import { geminiLive } from '../lib/geminiLiveService';
+import { geminiLive, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { createLogger } from '../utils/logger';
 import { speakWithAgentVoice } from '../lib/voiceConfig';
+import { geminiTts } from '../lib/geminiTts';
 
 const logger = createLogger('TeamVoice');
 
-// Browser speech synthesis helpers (replaced googleTTS)
+// Legacy Web Speech cancellation (kept for abort path cleanup)
 function stopSpeaking() { window.speechSynthesis.cancel(); }
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
@@ -167,6 +168,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const currentUserTextRef = useRef('');
   const volumeRef = useRef(1);
   const agentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { volumeRef.current = volume; }, [volume]);
 
@@ -526,25 +528,36 @@ Respond as ${agentName(agentId)}:`;
     processNextAgent();
   }, [roomId, muted, updateMessage, processNextAgent]);
 
-  // ── Speak agent response via browser speech ──
+  // ── Speak agent response — Gemini TTS (Chirp 3) with Web Speech fallback ──
   const speakAgentResponse = async (_agentId: string, text: string) => {
     setSpeakingAgent(_agentId);
     setCanInterrupt(true);
+
+    // Abort any previous TTS
+    ttsAbortRef.current?.abort();
+    const abort = new AbortController();
+    ttsAbortRef.current = abort;
+
     try {
-      // Apply selected speaker device to a silent AudioContext so the OS routes output
-      if (speakerDeviceIdRef.current) {
-        try {
-          const ctx = new AudioContext();
-          if (typeof (ctx as any).setSinkId === 'function') {
-            await (ctx as any).setSinkId(speakerDeviceIdRef.current);
-          }
-          ctx.close();
-        } catch { /* setSinkId not supported */ }
+      if (apiKeyRef.current) {
+        // Use Gemini TTS — per-agent Chirp 3 voice, interruptible
+        const voice = getGeminiVoiceForAgent(_agentId);
+        await geminiTts(
+          text,
+          voice,
+          apiKeyRef.current,
+          volumeRef.current,
+          speakerDeviceIdRef.current || undefined,
+          abort.signal,
+        );
+      } else {
+        // No Gemini key — fall back to Web Speech API
+        await speakWithAgentVoice(text, _agentId, volumeRef.current);
       }
-      await speakWithAgentVoice(text, _agentId, volumeRef.current);
     } catch {
-      // Speech synthesis failed silently
+      // Silently swallow — never block the meeting
     }
+
     setCanInterrupt(false);
     setSpeakingAgent(null);
     setSpeakLevel(0);
@@ -640,9 +653,10 @@ Respond as ${agentName(agentId)}:`;
       clearTimeout(agentTimeoutRef.current);
       agentTimeoutRef.current = null;
     }
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
     stopListeningFn();
     stopSpeaking();
-    window.speechSynthesis.cancel();
 
     if (screenSharing) {
       geminiLive.stopVideo();
@@ -669,13 +683,22 @@ Respond as ${agentName(agentId)}:`;
   };
 
   const interruptAll = () => {
+    // Abort Gemini TTS (Web Audio)
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    // Also cancel Web Speech fallback
     stopSpeaking();
-    window.speechSynthesis.cancel();
+    // Cancel any in-flight agent timeout
+    if (agentTimeoutRef.current) {
+      clearTimeout(agentTimeoutRef.current);
+      agentTimeoutRef.current = null;
+    }
     setSpeakingAgent(null);
     setSpeakLevel(0);
     agentQueueRef.current = [];
     setSpeakQueue([]);
     setProcessingAgent(null);
+    clearPending();
     if (isActiveRef.current) {
       setTimeout(() => startListening(), 300);
     }

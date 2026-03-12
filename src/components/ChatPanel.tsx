@@ -21,7 +21,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import EmptyState from './EmptyState';
 import ArtifactPanel from './ArtifactPanel';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
-import { useArtifactStore } from '../store/artifactStore';
+import { useArtifactOpen } from '../hooks/useArtifactOpen';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 
@@ -91,14 +91,7 @@ export default function ChatPanel() {
   );
 
   // Artifact store — for wiring "Open Preview" cards in messages
-  const { artifacts, selectArtifact, isCollapsed: artifactPanelCollapsed, setCollapsed: setArtifactCollapsed } = useArtifactStore();
-  const handleArtifactOpen = useCallback((lang: string, code: string) => {
-    const match = artifacts.find(a => a.content.trim() === code.trim());
-    if (match) {
-      selectArtifact(match.id);
-      if (artifactPanelCollapsed) setArtifactCollapsed(false);
-    }
-  }, [artifacts, selectArtifact, artifactPanelCollapsed, setArtifactCollapsed]);
+  const handleArtifactOpen = useArtifactOpen();
 
   // Load chat rooms from DB on mount; always open on 1-1 chat (not a room)
   useEffect(() => { loadRooms(); setActiveRoom(null); }, []); // eslint-disable-line react-hooks/exhaustive-deps

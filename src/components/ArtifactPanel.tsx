@@ -14,6 +14,9 @@ import {
   History,
   Monitor,
   Globe,
+  RefreshCw,
+  Expand,
+  WifiOff,
   type LucideIcon,
 } from 'lucide-react';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
@@ -61,6 +64,8 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   const [viewTab, setViewTab] = useState<'preview' | 'code' | 'port'>('code');
   const [portUrl, setPortUrl] = useState<string>('');
   const [loadedPortUrl, setLoadedPortUrl] = useState<string>('');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [portError, setPortError] = useState(false);
 
   // Resize state — all stable refs, no useCallback needed
   const MIN_WIDTH = 280;
@@ -112,6 +117,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     setPortUrl('');
     setLoadedPortUrl('');
   }, [selectedArtifactId, artifacts]);
+
+  // Reset portError when portUrl or loadedPortUrl changes
+  useEffect(() => {
+    setPortError(false);
+  }, [portUrl, loadedPortUrl]);
 
   // Filter artifacts by session if provided
   const displayArtifacts = sessionId
@@ -403,25 +413,48 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
 
           {/* Tab Bar — only for previewable artifacts */}
           {isPreviewable(selectedArtifact) && (
-            <div className="flex border-b border-mission-control-border bg-mission-control-surface px-4">
-              {(['preview', 'code', 'port'] as const).map(tab => {
-                const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
-                const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
-                return (
+            <div className="flex items-center border-b border-mission-control-border bg-mission-control-surface px-4">
+              <div className="flex flex-1">
+                {(['preview', 'code', 'port'] as const).map(tab => {
+                  const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
+                  const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setViewTab(tab)}
+                      className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                        viewTab === tab
+                          ? 'border-mission-control-accent text-mission-control-accent'
+                          : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
+                    >
+                      <TabIcon size={14} className="mr-1.5" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  onClick={() => setReloadKey(k => k + 1)}
+                  className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                  title="Reload preview"
+                >
+                  <RefreshCw size={14} />
+                </button>
+                {viewTab === 'preview' && (
                   <button
-                    key={tab}
-                    onClick={() => setViewTab(tab)}
-                    className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                      viewTab === tab
-                        ? 'border-mission-control-accent text-mission-control-accent'
-                        : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-                    }`}
+                    onClick={() => {
+                      const win = window.open('', '_blank');
+                      if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
+                    }}
+                    className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                    title="Open in new window"
                   >
-                    <TabIcon size={14} className="mr-1.5" />
-                    {label}
+                    <Expand size={14} />
                   </button>
-                );
-              })}
+                )}
+              </div>
             </div>
           )}
 
@@ -429,6 +462,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
           {isPreviewable(selectedArtifact) && viewTab === 'preview' ? (
             <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
               <iframe
+                key={`preview-${selectedArtifact.id}-${reloadKey}`}
                 srcDoc={selectedArtifact.content}
                 sandbox="allow-scripts allow-forms allow-popups"
                 className="w-full h-full border-0 rounded-b-lg bg-white"
@@ -463,13 +497,28 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
                 </p>
               </div>
               {loadedPortUrl && (
-                <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
+                <div className="flex-1 relative overflow-hidden" style={{ minHeight: '400px' }}>
                   <iframe
                     src={loadedPortUrl}
                     className="w-full h-full border-0 rounded-b-lg"
                     title="Local preview"
                     style={{ minHeight: '400px' }}
+                    onError={() => setPortError(true)}
+                    onLoad={() => setPortError(false)}
                   />
+                  {portError && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-mission-control-bg text-mission-control-text-dim gap-3">
+                      <WifiOff size={32} className="opacity-50" />
+                      <p className="text-sm font-medium text-mission-control-text">Could not connect to localhost</p>
+                      <p className="text-xs text-mission-control-text-dim">Make sure the dev server is running on that port</p>
+                      <button
+                        onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
+                        className="mt-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-xs hover:bg-mission-control-border transition-colors"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
