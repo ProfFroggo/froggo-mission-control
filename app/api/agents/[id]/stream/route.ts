@@ -14,7 +14,7 @@ import { ENV } from '@/lib/env';
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
-import { existsSync, readFileSync, statSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
@@ -489,7 +489,17 @@ export async function POST(
         // and ~/.claude/settings.json via directory traversal. Creating it if it doesn't exist.
         // (Using HOME directly would skip ~/mission-control/ in the search path, causing MCP
         // servers to not be found and all tool calls to silently fail → 120s timeout.)
-        try { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); } catch {}
+        try {
+          if (!existsSync(dir)) {
+            mkdirSync(dir, { recursive: true });
+            // Seed .mcp.json so Claude Code finds MCP servers without relying on
+            // parent-directory traversal (which can stop at a .git/.claude boundary).
+            const parentMcp = join(HOME, 'mission-control', '.mcp.json');
+            if (existsSync(parentMcp)) {
+              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp));
+            }
+          }
+        } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
 
         const { allowed, disallowed } = resolveAgentTools(id, sessionKey);

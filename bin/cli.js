@@ -895,6 +895,11 @@ async function cmdSetup(force = false) {
     if (!existsSync(dstMemory)) {
       writeFileSync(dstMemory, '# Memory\n');
     }
+
+    // Write .mcp.json directly into the workspace so Claude Code always finds MCP
+    // servers regardless of directory traversal behaviour (e.g. traversal stops at a
+    // .git or .claude directory somewhere in the parent tree).
+    writeFileSync(path.join(agentWorkspaceDir, '.mcp.json'), mcpJson);
   }
   success('Core agent workspaces bootstrapped');
 

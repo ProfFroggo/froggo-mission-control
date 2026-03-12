@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ENV, calcCostUsd } from '@/lib/env';
 import { getDb } from '@/lib/database';
-import { existsSync, readFileSync, statSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
@@ -281,7 +281,17 @@ export async function POST(
 
         // cwd = agent workspace so Claude can find MCP config
         const dir = join(HOME, 'mission-control', 'agents', agentId);
-        try { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); } catch {}
+        try {
+          if (!existsSync(dir)) {
+            mkdirSync(dir, { recursive: true });
+            // Seed .mcp.json so Claude Code finds MCP servers without relying on
+            // parent-directory traversal (which can stop at a .git/.claude boundary).
+            const parentMcp = join(HOME, 'mission-control', '.mcp.json');
+            if (existsSync(parentMcp)) {
+              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp));
+            }
+          }
+        } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
 
         const { allowed, disallowed } = resolveAgentTools(agentId);
