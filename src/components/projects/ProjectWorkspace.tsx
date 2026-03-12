@@ -5,7 +5,7 @@ import { formatTimeAgo } from '../../utils/formatting';
 import {
   ArrowLeft, MessageSquare, LayoutGrid, Zap, FolderOpen, Bot,
   Settings, Users, Plus, Trash2, Target, Edit3, X,
-  FileText, Image, File as FileIcon, Upload,
+  FileText, Image, File as FileIcon, Upload, RefreshCw,
   ChevronDown, ShieldAlert, ShieldCheck, Check
 } from 'lucide-react';
 import { getProjectIcon } from './projectIcons';
@@ -411,6 +411,13 @@ function FilesTab({ project }: { project: Project }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Poll every 5 s while on the files section so agent-created artifacts appear automatically
+  useEffect(() => {
+    if (activeSection !== 'files') return;
+    const id = setInterval(load, 5000);
+    return () => clearInterval(id);
+  }, [activeSection, load]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -479,10 +486,20 @@ function FilesTab({ project }: { project: Project }) {
           Memory Search
         </button>
         {activeSection === 'files' && (
-          <label className="ml-auto flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
-            <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
-            <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-          </label>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface rounded transition-colors"
+              title="Refresh files"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
+              <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
+              <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          </div>
         )}
       </div>
 
