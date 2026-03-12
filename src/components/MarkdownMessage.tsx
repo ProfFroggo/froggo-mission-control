@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Copy, Check, Monitor, FileCode } from 'lucide-react';
+import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
@@ -32,7 +32,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
 
 export default MarkdownMessage;
 
-const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx']);
+const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx', 'react']);
 
 function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (lang: string, code: string) => void, streaming?: boolean): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
@@ -52,7 +52,7 @@ function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (l
         codeLines.push(lines[i]);
         i++;
       }
-      if (!streaming && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
+      if (!streaming && onArtifactOpen) {
         elements.push(
           <ArtifactCard
             key={key++}
@@ -246,6 +246,14 @@ function extractArtifactTitle(lang: string, code: string): string {
   return labels[lang.toLowerCase()] || `${lang.toUpperCase()} File`;
 }
 
+function artifactIcon(lang: string) {
+  const l = lang.toLowerCase();
+  if (l === 'mermaid') return GitBranch;
+  if (l === 'json') return FileJson;
+  if (['md', 'markdown', 'txt', 'text'].includes(l)) return FileTextIcon;
+  return FileCode;
+}
+
 function ArtifactCard({ lang, code, onOpen }: {
   lang: string;
   code: string;
@@ -254,8 +262,8 @@ function ArtifactCard({ lang, code, onOpen }: {
   const [copied, setCopied] = useState(false);
 
   const title = extractArtifactTitle(lang, code);
-  const lineCount = code.split('\n').length;
-  const preview = code.split('\n').slice(0, 3).join('\n');
+  const lineCount = code.split('\n').filter(l => l.trim()).length;
+  const Icon = artifactIcon(lang);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);
@@ -264,42 +272,26 @@ function ArtifactCard({ lang, code, onOpen }: {
   };
 
   return (
-    <div className="my-3 rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border-b border-mission-control-border">
-        <FileCode size={14} className="text-mission-control-accent flex-shrink-0" />
-        <span className="text-xs font-semibold text-mission-control-text flex-1 truncate">{title}</span>
-        <span className="text-xs text-mission-control-text-dim font-mono">{lang.toUpperCase()}</span>
-        <span className="text-xs text-mission-control-text-dim">{lineCount} lines</span>
-      </div>
-      {/* Code preview */}
-      <div className="px-3 py-2 bg-mission-control-bg/50">
-        <pre className="text-xs font-mono text-mission-control-text-dim overflow-hidden whitespace-pre leading-relaxed" style={{ maxHeight: '3.6em' }}>
-          {preview}
-        </pre>
-        {lineCount > 3 && (
-          <span className="text-xs text-mission-control-text-dim opacity-60">+{lineCount - 3} more lines…</span>
-        )}
-      </div>
-      {/* Actions */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-mission-control-border bg-mission-control-surface">
-        {onOpen && (
-          <button
-            onClick={() => onOpen(lang, code)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded hover:bg-mission-control-accent/90 transition-colors"
-          >
-            <Monitor size={12} />
-            Open Preview
-          </button>
-        )}
+    <div className="my-2 flex items-center gap-2.5 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-colors group">
+      <Icon size={14} className="text-mission-control-accent flex-shrink-0" />
+      <span className="text-xs font-medium text-mission-control-text flex-1 truncate">{title}</span>
+      <span className="text-xs text-mission-control-text-dim font-mono opacity-60">{lang.toUpperCase()}</span>
+      <span className="text-xs text-mission-control-text-dim opacity-50">{lineCount}L</span>
+      <button
+        onClick={handleCopy}
+        className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100"
+        title="Copy code"
+      >
+        {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+      </button>
+      {onOpen && (
         <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border text-xs rounded hover:bg-mission-control-border transition-colors ml-auto"
+          onClick={() => onOpen(lang, code)}
+          className="flex items-center gap-1 px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 text-xs rounded hover:bg-mission-control-accent hover:text-white transition-colors"
         >
-          {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-          {copied ? 'Copied' : 'Copy'}
+          <ExternalLink size={11} /> Open
         </button>
-      </div>
+      )}
     </div>
   );
 }

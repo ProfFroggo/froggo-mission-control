@@ -1,11 +1,28 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useEffect, useRef } from 'react';
 import { useArtifactStore } from '../store/artifactStore';
+import type { ArtifactType } from '../store/artifactStore';
 import {
   extractAllArtifacts,
   containsArtifacts,
   generateArtifactTitle,
+  getArtifactExtension,
 } from '../utils/artifactExtractor';
+
+function saveArtifactToProject(projectId: string, title: string, type: ArtifactType, content: string, language?: string) {
+  const ext = getArtifactExtension(type, language);
+  const safeName = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 60) || type;
+  const filename = `${safeName}.${ext}`;
+  fetch(`/api/projects/${projectId}/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: filename, content, encoding: 'utf-8' }),
+  }).catch(() => { /* non-critical */ });
+}
 
 export interface Message {
   id: string;
@@ -24,6 +41,7 @@ export function useArtifactExtraction(
     autoExtract?: boolean;
     extractFromUser?: boolean;
     extractFromAssistant?: boolean;
+    projectId?: string;
   } = {}
 ) {
   const { addArtifact, addVersion, artifacts } = useArtifactStore();
@@ -33,6 +51,7 @@ export function useArtifactExtraction(
     autoExtract = true,
     extractFromUser = false,
     extractFromAssistant = true,
+    projectId,
   } = options;
 
   useEffect(() => {
@@ -89,6 +108,10 @@ export function useArtifactExtraction(
             metadata: artifact.metadata,
             tags: [message.role],
           });
+          // Persist to project directory if in a project context
+          if (projectId && artifact.type !== 'image') {
+            saveArtifactToProject(projectId, title, artifact.type, artifact.content, artifact.metadata?.language);
+          }
         }
       }
 

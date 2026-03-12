@@ -5,7 +5,7 @@ import { formatTimeAgo } from '../../utils/formatting';
 import {
   ArrowLeft, MessageSquare, LayoutGrid, Zap, FolderOpen, Bot,
   Settings, Users, Plus, Trash2, Target, Edit3, X,
-  FileText, Image, File as FileIcon, Upload,
+  FileText, Image, File as FileIcon, Upload, RefreshCw,
   ChevronDown, ShieldAlert, ShieldCheck, Check
 } from 'lucide-react';
 import { getProjectIcon } from './projectIcons';
@@ -94,7 +94,7 @@ function ChatTab({ project }: { project: Project }) {
 
   return (
     <div className="h-full">
-      <ChatRoomView roomId={room.id} onBack={() => {}} hideDelete />
+      <ChatRoomView roomId={room.id} onBack={() => {}} hideDelete hideHeader />
     </div>
   );
 }
@@ -411,6 +411,13 @@ function FilesTab({ project }: { project: Project }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Poll every 5 s while on the files section so agent-created artifacts appear automatically
+  useEffect(() => {
+    if (activeSection !== 'files') return;
+    const id = setInterval(load, 5000);
+    return () => clearInterval(id);
+  }, [activeSection, load]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -479,10 +486,20 @@ function FilesTab({ project }: { project: Project }) {
           Memory Search
         </button>
         {activeSection === 'files' && (
-          <label className="ml-auto flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
-            <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
-            <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-          </label>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface rounded transition-colors"
+              title="Refresh files"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
+              <Upload size={12} /> {uploading ? 'Uploading...' : 'Upload'}
+              <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          </div>
         )}
       </div>
 
@@ -686,6 +703,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const [agents, setAgents] = useState<any[]>([]);
   const [showMemberPanel, setShowMemberPanel] = useState(false);
   const [addingAgent, setAddingAgent] = useState<string | null>(null);
+  const { updateRoomAgents } = useChatRoomStore();
+  const projectRoomId = `project-${project.id}`;
 
   const sc = STATUS_CONFIG[project.status] ?? STATUS_CONFIG.active;
 
@@ -693,7 +712,9 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     // Load full project with members
     projectsApi.get(project.id).then(data => {
       setProject(data as Project);
-      setMembers((data as any).members ?? []);
+      const loadedMembers = (data as any).members ?? [];
+      setMembers(loadedMembers);
+      updateRoomAgents(projectRoomId, loadedMembers.map((m: ProjectMember) => m.agentId));
     }).catch(() => {});
     // Load all agents for member management
     agentApi.getAll().then(setAgents).catch(() => {});
@@ -704,7 +725,9 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     try {
       await projectsApi.addMember(project.id, agentId);
       const updated = await projectsApi.get(project.id);
-      setMembers((updated as any).members ?? []);
+      const newMembers = (updated as any).members ?? [];
+      setMembers(newMembers);
+      updateRoomAgents(projectRoomId, newMembers.map((m: ProjectMember) => m.agentId));
       showToast('Agent added to project', 'success');
     } catch {
       showToast('Failed to add agent', 'error');
@@ -716,7 +739,11 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const handleRemoveMember = async (agentId: string) => {
     try {
       await projectsApi.removeMember(project.id, agentId);
-      setMembers(prev => prev.filter(m => m.agentId !== agentId));
+      setMembers(prev => {
+        const next = prev.filter(m => m.agentId !== agentId);
+        updateRoomAgents(projectRoomId, next.map(m => m.agentId));
+        return next;
+      });
     } catch {
       showToast('Failed to remove agent', 'error');
     }
@@ -734,22 +761,42 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
     <div className="flex flex-col h-full bg-mission-control-bg0">
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
-        {/* Breadcrumb + actions */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+        {/* Breadcrumb + members + actions */}
+        <div className="flex items-center justify-between px-4 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors flex-shrink-0"
             >
               <ArrowLeft size={14} /> Projects
             </button>
-            <span className="text-mission-control-text-dim">/</span>
-            <span className="text-sm font-medium text-mission-control-text-primary flex items-center gap-1.5">
+            <span className="text-mission-control-text-dim flex-shrink-0">/</span>
+            <span className="text-sm font-medium text-mission-control-text-primary flex items-center gap-1.5 truncate">
               {(() => { const BcIcon = getProjectIcon(project.emoji); return <BcIcon size={14} style={{ color: project.color }} />; })()}
               {project.name}
             </span>
+            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>{sc.label}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Member avatars */}
+            <div className="flex items-center -space-x-1.5">
+              {members.slice(0, 5).map(m => (
+                <AgentAvatar
+                  key={m.agentId}
+                  agentId={m.agentId}
+                  size="xs"
+                  className="ring-1 ring-mission-control-surface"
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setShowMemberPanel(v => !v)}
+              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface px-2 py-1 rounded transition-colors"
+            >
+              <Users size={12} /> {members.length}
+              <ChevronDown size={10} />
+            </button>
+            <div className="w-px h-4 bg-mission-control-border" />
             <button
               onClick={() => setShowDispatch(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium"
@@ -774,48 +821,6 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 </>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Project identity */}
-        <div className="flex items-center gap-4 px-4 pb-3">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: `${project.color}20`, border: `2px solid ${project.color}40` }}
-          >
-            {(() => { const WsIcon = getProjectIcon(project.emoji); return <WsIcon size={22} style={{ color: project.color }} />; })()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-mission-control-text-primary">{project.name}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>{sc.label}</span>
-            </div>
-            {project.goal && (
-              <p className="text-xs text-mission-control-text-dim mt-0.5 flex items-center gap-1">
-                <Target size={10} /> {project.goal}
-              </p>
-            )}
-          </div>
-
-          {/* Member avatars */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center -space-x-1.5">
-              {members.slice(0, 5).map(m => (
-                <AgentAvatar
-                  key={m.agentId}
-                  agentId={m.agentId}
-                  size="xs"
-                  className="ring-1 ring-mission-control-surface"
-                />
-              ))}
-            </div>
-            <button
-              onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface px-2 py-1 rounded transition-colors"
-            >
-              <Users size={12} /> {members.length}
-              <ChevronDown size={10} />
-            </button>
           </div>
         </div>
 
