@@ -56,6 +56,16 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
     return () => { abortRef.current?.abort(); };
   }, []);
 
+  const persistMessage = useCallback(async (role: string, content: string) => {
+    try {
+      await fetch(`/api/chat/sessions/${encodeURIComponent(sessionKey)}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, content }),
+      });
+    } catch { /* non-critical */ }
+  }, [sessionKey]);
+
   const sendMessage = useCallback(async () => {
     if (!input.trim() || sending || !agentId) return;
     const text = input.trim();
@@ -64,6 +74,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
     setStreaming('');
 
     setMessages(prev => [...prev, { role: 'user', content: text, timestamp: Date.now() }]);
+    persistMessage('user', text);
 
     try {
       abortRef.current?.abort();
@@ -116,6 +127,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
 
       if (accumulated) {
         setMessages(prev => [...prev, { role: 'agent', content: accumulated, timestamp: Date.now() }]);
+        persistMessage('assistant', accumulated);
       }
     } catch (e: unknown) {
       if ((e as Error)?.name !== 'AbortError') {
@@ -129,7 +141,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
       setStreaming('');
       setSending(false);
     }
-  }, [input, sending, agentId, sessionKey]);
+  }, [input, sending, agentId, sessionKey, persistMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
