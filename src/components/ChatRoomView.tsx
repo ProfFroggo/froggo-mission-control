@@ -44,6 +44,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [loading, setLoading] = useState(false);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   // Auto-extract artifacts from messages
+  const projectId = roomId.startsWith('project-') ? roomId.slice('project-'.length) : undefined;
   useArtifactExtraction(
     room?.messages.map(m => ({
       id: m.id,
@@ -56,6 +57,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
       autoExtract: true,
       extractFromAssistant: true,
       extractFromUser: false,
+      projectId,
     }
   );
 
