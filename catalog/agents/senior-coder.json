@@ -23,7 +23,8 @@
     "froggo-testing-patterns",
     "froggo-coding-standards",
     "git-workflow",
-    "image-generation"
+    "image-generation",
+    "image-cutout"
   ],
   "requiredTools": [
     "node",

@@ -52,6 +52,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
       role: m.role === 'user' ? 'user' : 'assistant',
       content: m.content,
       timestamp: m.timestamp,
+      streaming: m.streaming,
     })) || [],
     roomId,
     {
