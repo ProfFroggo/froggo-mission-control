@@ -213,20 +213,20 @@ export async function PATCH(
         if (taskRow) {
           // Only create if no pending approval for this task already exists
           const existing = db.prepare(
-            `SELECT id FROM approvals WHERE type = 'task' AND status = 'pending'
+            `SELECT id FROM approvals WHERE status = 'pending'
              AND json_extract(metadata, '$.taskId') = ?`
           ).get(id);
           if (!existing) {
             const approvalId = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             db.prepare(`
               INSERT INTO approvals (id, type, title, content, context, metadata, status, requester, tier, createdAt)
-              VALUES (?, 'task', ?, ?, ?, ?, 'pending', ?, 3, ?)
+              VALUES (?, 'action', ?, ?, ?, ?, 'pending', ?, 3, ?)
             `).run(
               approvalId,
-              taskRow.title,
+              `Blocked: ${taskRow.title}`,
               taskRow.lastAgentUpdate || taskRow.description || 'Task requires human review',
               taskRow.planningNotes || null,
-              JSON.stringify({ taskId: id, project: taskRow.project, priority: taskRow.priority }),
+              JSON.stringify({ taskId: id, agentId: taskRow.assignedTo, project: taskRow.project, priority: taskRow.priority }),
               taskRow.assignedTo || null,
               now
             );
