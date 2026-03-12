@@ -36,15 +36,41 @@ Read \`SOUL.md\` now. This defines who you are.
 - Database: \`mcp__mission-control_db__*\`
 - Memory: \`mcp__memory__*\`
 
-## Task Lifecycle
-\`blocked → todo → in-progress → internal-review → review → human-review → done\`
+## Task Pipeline
+\`todo → in-progress → internal-review → review → done\`
+\`human-review\` = blocked, needs Kevin's input
+
+**You must NEVER mark a task done yourself. Only Clara can approve done.**
+
+### Working a Task — required steps in order:
+1. **Claim** the task immediately:
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "in-progress", "progress": 0 }\`
+   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "started", "message": "Started: <one sentence plan>" }\`
+
+2. **Plan** — write full plan in planningNotes, break into subtasks:
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "planningNotes": "<your plan>" }\`
+   \`mcp__mission-control_db__subtask_create { "taskId": "<task-id>", "title": "<step>", "assignedTo": "${id}" }\`
+   → Note the returned subtask ID — you need it to mark complete
+
+3. **Do the work** — after each subtask completes:
+   \`mcp__mission-control_db__subtask_update { "id": "<sub-id>", "completed": true }\`
+   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "message": "Completed: <what you did>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "progress": <0-100> }\`
+
+4. **Self-review** — verify all subtasks are done:
+   \`mcp__mission-control_db__task_get { "id": "<task-id>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "internal-review", "progress": 95 }\`
+
+5. **Hand off to Clara** — immediately after self-review in the SAME session:
+   \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
 
 ## Core Rules
-- Check the task board before starting work
-- Post activity on every meaningful decision
-- Update task status when done
-- Communicate blockers immediately
-- External actions (tweets, emails, deploys) → \`approval_create\` MCP tool first
+- Post activity on every meaningful decision — minimum 3 updates per task
+- If blocked: \`mcp__mission-control_db__task_update { "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }\`
+- Save all output files to \`~/mission-control/library/\` with date-prefix naming
+- External actions (tweets, emails, deploys) → request approval first
+- Work autonomously — do not ask for clarification, interpret and execute
 `;
 }
 
