@@ -37,7 +37,7 @@
       "command": "/usr/local/bin/node",
       "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/memory-mcp/dist/index.js"],
       "env": {
-        "VAULT_PATH": "/Users/kevin.macarthur/mission-control/memory",
+        "VAULT_PATH": "/Users/kevin.macarthur/mission-control",
         "QMD_BIN": "/Users/kevin.macarthur/.npm-global/bin/qmd",
         "LOG_DIR": "/Users/kevin.macarthur/mission-control/logs"
       }
