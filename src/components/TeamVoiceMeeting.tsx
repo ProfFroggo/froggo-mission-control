@@ -18,18 +18,11 @@ import { useStore } from '../store/store';
 import { geminiLive } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { createLogger } from '../utils/logger';
+import { speakWithAgentVoice } from '../lib/voiceConfig';
 
 const logger = createLogger('TeamVoice');
 
 // Browser speech synthesis helpers (replaced googleTTS)
-function speakBrowser(text: string): Promise<void> {
-  return new Promise((resolve) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    window.speechSynthesis.speak(utterance);
-  });
-}
 function stopSpeaking() { window.speechSynthesis.cancel(); }
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
@@ -106,6 +99,16 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     loadApiKey()
       .then(key => { apiKeyRef.current = key; })
       .catch(err => console.error('[TeamVoiceMeeting] Failed to load API key:', err));
+  }, []);
+
+  // Preload Web Speech API voices (they load asynchronously in Chrome)
+  useEffect(() => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices(); // trigger initial load
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices(); // cache on change
+      };
+    }
   }, []);
 
   // Keep device ID refs in sync
@@ -385,7 +388,7 @@ Respond as ${agentName(agentId)}:`;
       setSpeakingAgent(null);
       setProcessingAgent(null);
       if (isActiveRef.current) {
-        setTimeout(() => startListening(), 500);
+        setTimeout(() => startListening(), 200);
       }
       return;
     }
@@ -497,7 +500,7 @@ Respond as ${agentName(agentId)}:`;
           ctx.close();
         } catch { /* setSinkId not supported */ }
       }
-      await speakBrowser(text);
+      await speakWithAgentVoice(text, _agentId, volumeRef.current);
     } catch {
       // Speech synthesis failed silently
     }
