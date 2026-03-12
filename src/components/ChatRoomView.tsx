@@ -24,6 +24,7 @@ interface ChatRoomViewProps {
   roomId: string;
   onBack: () => void;
   hideDelete?: boolean;
+  hideHeader?: boolean;
 }
 
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
@@ -35,7 +36,7 @@ function formatToolName(name: string): string {
   return last.replace(/_/g, ' ');
 }
 
-export default function ChatRoomView({ roomId, onBack, hideDelete = false }: ChatRoomViewProps) {
+export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideHeader = false }: ChatRoomViewProps) {
   const { rooms, addMessage, updateMessage, updateRoomAgents, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
@@ -587,7 +588,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className={`p-4 border-b flex items-center gap-3 ${
+        {!hideHeader && <div className={`p-4 border-b flex items-center gap-3 ${
           isTeamMeeting
             ? 'bg-warning/10 border-amber-500/30'
             : 'bg-mission-control-surface border-mission-control-border'
@@ -702,7 +703,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Voice Meeting Mode */}
       {voiceMode ? (
