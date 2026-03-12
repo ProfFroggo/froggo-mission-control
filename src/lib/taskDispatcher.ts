@@ -315,6 +315,20 @@ You are in autonomous task mode. Work through the assigned task using the MCP to
 Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
 Do not ask for clarification — interpret and execute. Log activity frequently.
 
+## Subtask rules — CRITICAL
+Every subtask you create MUST be executable by a Claude agent using only:
+- MCP tools (mcp__mission-control_db__*, mcp__memory__*)
+- Filesystem tools (Read, Write, Edit, Glob, Grep)
+- Shell (Bash) if your tier allows
+- Web tools (WebSearch, WebFetch) if your tier allows
+
+NEVER create subtasks that require:
+- Opening a UI, clicking buttons, or viewing a browser
+- Human manual review (use human-review task status instead)
+- Vague instructions like "review X" without specifying the exact MCP call or file path
+
+Each subtask description must name the exact tool call or file path the agent will use to complete it.
+
 ## Library file routing — ALWAYS use the correct path when saving output files:
 | File type | Save to |
 |-----------|---------|
