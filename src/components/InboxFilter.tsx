@@ -63,7 +63,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
   const [filterName, setFilterName] = useState('');
   const [showQuickHelp, setShowQuickHelp] = useState(false);
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load saved filters from localStorage
   useEffect(() => {
