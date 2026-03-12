@@ -13,8 +13,12 @@
     "Customer service"
   ],
   "requiredApis": [],
-  "requiredSkills": [],
-  "requiredTools": [],
+  "requiredSkills": [
+    "image-generation"
+  ],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "custom"
 }

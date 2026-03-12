@@ -18,6 +18,7 @@ import { existsSync, readFileSync, statSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
+import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -55,6 +56,11 @@ To message another agent directly, use:
   mcp__mission-control-db__chat_post { roomId: "agent:{target-id}", agentId: "{your-id}", content: "..." }
 This immediately wakes the target agent. Use it to delegate work, ask questions, or send results.
 Agent IDs: mission-control, coder, clara, chief, hr
+
+## Tool Permission Requests
+If you need to use a specific tool that is not available in your current session, output this exact XML tag on its own line — do NOT say you can't do it, instead request the permission:
+<tool_request tool="mcp__mission-control-db__tool_name" reason="one sentence explaining what you need it for" />
+The user will be shown an approval dialog in the chat. Once approved, ask them to resend their message.
 
 ## Memory Protocol (mandatory)
 After EVERY message, call mcp__memory__memory_write if ANY of the following are true:
@@ -274,8 +280,14 @@ function soulMtime(id: string): number {
 
 // ── Agent tool permissions ───────────────────────────────────────────────────
 // Mirrors the trust-tier system in taskDispatcher.ts.
-// No --dangerously-skip-permissions — each tier explicitly states what it may use.
+// --allowedTools pre-approves tools so Claude Code never prompts for them.
+// Tools NOT in the list are auto-denied (stdin is closed; no TTY for dialogs).
+// When an agent needs an unlisted tool, it outputs <tool_request> and the
+// ToolPermissionCard is shown in chat to grant/reject via the approve API.
 // Permissions are set per-agent in the Agent Management UI (Permissions tab).
+
+// Session-scoped tool grants — shared module so approve route can write to the same Map
+import { sessionToolGrants } from '@/lib/toolPermissions';
 
 const MCP_DB_TOOLS = [
   // Claude CLI normalizes server name underscores to hyphens in tool IDs
@@ -287,7 +299,7 @@ const MCP_DB_TOOLS = [
   'mcp__mission-control-db__chat_post', 'mcp__mission-control-db__chat_read',
   'mcp__mission-control-db__chat_rooms_list', 'mcp__mission-control-db__subtask_create',
   'mcp__mission-control-db__subtask_update', 'mcp__mission-control-db__schedule_create',
-  'mcp__mission-control-db__schedule_list',
+  'mcp__mission-control-db__schedule_list', 'mcp__mission-control-db__image_generate',
 ];
 const MCP_MEMORY_TOOLS = [
   'mcp__memory__memory_search', 'mcp__memory__memory_recall',
@@ -338,15 +350,29 @@ const CHAT_TIER_TOOLS: Record<string, string[]> = {
   trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
   admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS],
 };
+// Reverse map: short tool name → full MCP tool ID
+// Built from all known tool lists so modal Tool tab toggles feed into --allowedTools.
+// Modal saves short names (e.g. "image_generate"); stream needs full IDs.
+const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
+  const m = new Map<string, string>();
+  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS];
+  for (const full of allFull) {
+    const parts = full.split('__');
+    if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
+  }
+  return m;
+})();
+
 const CHAT_DEFAULT_DISALLOWED = [
   'Bash(rm -rf *)', 'Bash(sudo *)', 'Bash(curl *)', 'Bash(wget *)',
   'Bash(git push --force *)', 'Bash(git reset --hard *)',
   'Bash(chmod *)', 'Bash(chown *)', 'Bash(kill *)', 'Bash(pkill *)',
 ];
 
-function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: string[] } {
+function resolveAgentTools(agentId: string, sessionKey?: string): { allowed: string[]; disallowed: string[] } {
   let trustTier = 'apprentice';
   let disallowed = [...CHAT_DEFAULT_DISALLOWED];
+  let additionalAllowed: string[] = [];
   try {
     const db = getDb();
     const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(agentId) as { trust_tier?: string } | undefined;
@@ -355,8 +381,30 @@ function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: st
     if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch { /* use default */ } }
     const agentRow2 = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.disallowedTools`) as { value: string } | undefined;
     if (agentRow2?.value) { try { disallowed = [...new Set([...disallowed, ...JSON.parse(agentRow2.value)])]; } catch { /* ignore */ } }
+    // Tools enabled in Agent Management Modal → expand short names to full MCP IDs
+    const toolsRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.tools`) as { value: string } | undefined;
+    if (toolsRow?.value) {
+      try {
+        const shorts: string[] = JSON.parse(toolsRow.value) ?? [];
+        const expanded = shorts.flatMap(s => {
+          if (s.startsWith('mcp__')) return [s]; // already a full ID
+          const full = SHORT_TO_FULL_MCP.get(s);
+          return full ? [full] : [];
+        });
+        additionalAllowed = [...new Set([...additionalAllowed, ...expanded])];
+      } catch { /* ignore */ }
+    }
+    // Permanently granted tools (stored in DB by user via ToolPermissionCard)
+    const grantedRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.grantedTools`) as { value: string } | undefined;
+    if (grantedRow?.value) { try { additionalAllowed = [...new Set([...additionalAllowed, ...JSON.parse(grantedRow.value)])]; } catch { /* ignore */ } }
   } catch { /* use defaults */ }
-  return { allowed: CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'], disallowed };
+  // Session-scoped grants (cleared on server restart)
+  const sessionKey2 = sessionKey ?? agentId;
+  const sessionGrants = sessionToolGrants.get(sessionKey2);
+  if (sessionGrants?.size) additionalAllowed = [...new Set([...additionalAllowed, ...sessionGrants])];
+  const base = CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'];
+  const allowed = additionalAllowed.length ? [...new Set([...base, ...additionalAllowed])] : base;
+  return { allowed, disallowed };
 }
 
 // ── Per-agent spawn lock ─────────────────────────────────────────────────────
@@ -444,7 +492,7 @@ export async function POST(
         try { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
 
-        const { allowed, disallowed } = resolveAgentTools(id);
+        const { allowed, disallowed } = resolveAgentTools(id, sessionKey);
         const args = [
           '--print',                        // non-interactive, exits after response
           '--output-format', 'stream-json', // JSON event stream on stdout
@@ -550,6 +598,40 @@ export async function POST(
                 input_tokens?: number; output_tokens?: number;
                 result?: string; is_error?: boolean;
               };
+              // Scan assistant text blocks for <tool_request> tags and emit permission events
+              if (parsed.type === 'assistant' && (parsed as { message?: { content?: unknown[] } }).message?.content) {
+                const content = (parsed as { message: { content: Array<{ type?: string; text?: string }> } }).message.content;
+                for (const block of content) {
+                  if (block.type === 'text' && block.text) {
+                    const toolReqPattern = /<tool_request\s+tool="([^"]+)"\s+reason="([^"]+)"\s*\/>/g;
+                    let m;
+                    while ((m = toolReqPattern.exec(block.text)) !== null) {
+                      const toolName = m[1];
+                      const reason = m[2];
+                      // Strip the tag from the text so it doesn't render in chat
+                      block.text = block.text.replace(m[0], '').trim();
+                      // Create approval record
+                      try {
+                        const approvalId = randomUUID();
+                        getDb().prepare(`
+                          INSERT INTO approvals (id, type, title, content, context, metadata, status, requester, tier, category, actionRef, createdAt)
+                          VALUES (?, 'tool_permission', ?, ?, ?, ?, 'pending', ?, 3, 'tool_permission', ?, ?)
+                        `).run(
+                          approvalId,
+                          `Tool permission: ${toolName}`,
+                          reason,
+                          `Agent ${id} is requesting permission to use ${toolName}`,
+                          JSON.stringify({ toolName, agentId: id, sessionKey }),
+                          id,
+                          `tool:${id}:${toolName}`,
+                          Date.now()
+                        );
+                        enc({ type: 'tool_permission_request', toolName, reason, approvalId, agentId: id });
+                      } catch { /* non-critical */ }
+                    }
+                  }
+                }
+              }
               enc(parsed);
               if (parsed.type === 'result') {
                 // Treat is_error with empty result as a failed resume — trigger retry below

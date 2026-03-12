@@ -19,9 +19,12 @@
   "requiredSkills": [
     "x-twitter-strategy",
     "community-ops",
-    "web-research"
+    "web-research",
+    "image-generation"
   ],
-  "requiredTools": [],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "marketing"
 }

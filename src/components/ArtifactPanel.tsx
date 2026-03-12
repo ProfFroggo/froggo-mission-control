@@ -123,10 +123,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     setPortError(false);
   }, [portUrl, loadedPortUrl]);
 
-  // Filter artifacts by session if provided
-  const displayArtifacts = sessionId
+  // Filter artifacts by session if provided, newest first
+  const displayArtifacts = (sessionId
     ? artifacts.filter(a => a.sessionId === sessionId)
-    : getFilteredArtifacts();
+    : getFilteredArtifacts()
+  ).slice().sort((a, b) => b.timestamp - a.timestamp);
 
   const selectedArtifact = artifacts.find(a => a.id === selectedArtifactId);
 
@@ -313,69 +314,32 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
       {/* Artifact List or Detail View */}
       {selectedArtifact ? (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Artifact Header */}
-          <div className="p-4 border-b border-mission-control-border space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <button
-                onClick={() => selectArtifact(null)}
-                className="p-1 rounded hover:bg-mission-control-border transition-colors flex-shrink-0"
-              >
-                <ChevronLeft size={16} className="text-mission-control-text-dim" />
-              </button>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm truncate">{selectedArtifact.title}</h4>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-2 py-0.5 rounded text-xs border ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
-                    {selectedArtifact.type}
-                  </span>
-                  <span className="text-xs text-mission-control-text-dim">
-                    v{selectedArtifact.currentVersion}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleCopy(selectedArtifact.content)}
-                className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-xs flex items-center justify-center gap-1.5"
-                title="Copy content"
-              >
-                <Copy size={14} />
-                Copy
-              </button>
-              <button
-                onClick={() => handleDownload(selectedArtifact)}
-                className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors text-xs flex items-center justify-center gap-1.5"
-                title="Download"
-              >
-                <Download size={14} />
-                Download
-              </button>
+          {/* Artifact Header — single compact row */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-mission-control-border">
+            <button
+              onClick={() => selectArtifact(null)}
+              className="p-1 rounded hover:bg-mission-control-border transition-colors flex-shrink-0"
+            >
+              <ChevronLeft size={15} className="text-mission-control-text-dim" />
+            </button>
+            <span className="font-medium text-sm truncate flex-1 min-w-0">{selectedArtifact.title}</span>
+            <span className={`px-1.5 py-0.5 rounded text-xs border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
+              {selectedArtifact.type}
+            </span>
+            <span className="text-xs text-mission-control-text-dim flex-shrink-0">v{selectedArtifact.currentVersion}</span>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button onClick={() => handleCopy(selectedArtifact.content)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Copy"><Copy size={13} /></button>
+              <button onClick={() => handleDownload(selectedArtifact)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Download"><Download size={13} /></button>
               <button
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
-                className={`px-3 py-1.5 border rounded-lg transition-colors text-xs flex items-center justify-center gap-1.5 ${
-                  showVersionHistory
-                    ? 'bg-mission-control-accent text-white border-mission-control-accent'
-                    : 'bg-mission-control-bg border-mission-control-border hover:bg-mission-control-border'
-                }`}
+                className={`p-1.5 rounded transition-colors ${showVersionHistory ? 'text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'}`}
                 title="Version history"
-              >
-                <History size={14} />
-              </button>
+              ><History size={13} /></button>
               <button
-                onClick={() => {
-                  if (confirm('Delete this artifact?')) {
-                    deleteArtifact(selectedArtifact.id);
-                    selectArtifact(null);
-                  }
-                }}
-                className="px-3 py-1.5 bg-error-subtle border border-error text-error rounded-lg hover:bg-error hover:text-white transition-colors text-xs flex items-center justify-center gap-1.5"
+                onClick={() => { if (confirm('Delete this artifact?')) { deleteArtifact(selectedArtifact.id); selectArtifact(null); } }}
+                className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                 title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
+              ><Trash2 size={13} /></button>
             </div>
           </div>
 

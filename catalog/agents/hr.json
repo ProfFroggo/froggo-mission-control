@@ -18,7 +18,9 @@
     "agent-routing",
     "task-decomposition"
   ],
-  "requiredTools": [],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "management"
 }

@@ -11,6 +11,7 @@ import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
+import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
 
 interface AttachedFile {
   id: string;
@@ -86,6 +87,8 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [stopped, setStopped] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const turnResponseCountRef = useRef(0);
+  // Pending tool permission requests — keyed by approvalId
+  const [pendingPermissions, setPendingPermissions] = useState<Map<string, ToolPermissionRequest & { msgId: string }>>(new Map());
 
   // Load message history from DB when opening a room (only if empty)
   useEffect(() => {
@@ -417,6 +420,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 } else if (evt.type === 'error' && evt.text) {
                   content = evt.text;
                   pendingContentRef.current = content;
+                } else if (evt.type === 'tool_permission_request' && evt.toolName && evt.approvalId) {
+                  const req: ToolPermissionRequest & { msgId: string } = {
+                    approvalId: evt.approvalId as string,
+                    toolName: evt.toolName as string,
+                    reason: (evt.reason as string) ?? '',
+                    agentId: (evt.agentId as string) ?? agentId,
+                    sessionKey: `${roomId}-${agentId}`,
+                    msgId,
+                  };
+                  setPendingPermissions(prev => new Map(prev).set(req.approvalId, req));
                 } else if (evt.type === 'timeout') {
                   content = 'Response timed out — please try again.';
                   pendingContentRef.current = content;
@@ -777,9 +790,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             const showAvatar = !prev || prev.agentId !== msg.agentId || prev.role !== msg.role;
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+            // Collect any pending permission requests for this message
+            const msgPermissions = [...pendingPermissions.values()].filter(p => p.msgId === msg.id);
+
             return (
+              <div key={msg.id}>
               <div
-                key={msg.id}
                 className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${showAvatar ? 'mt-4' : 'mt-1'}`}
               >
                 {/* Avatar */}
@@ -844,6 +860,29 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   </div>
                   <span className="text-xs text-mission-control-text-dim mt-1 px-1">{time}</span>
                 </div>
+              </div>
+              {/* Tool permission cards for this message */}
+              {msgPermissions.length > 0 && (
+                <div className="mt-2 ml-12 space-y-2">
+                  {msgPermissions.map(perm => (
+                    <ToolPermissionCard
+                      key={perm.approvalId}
+                      request={perm}
+                      onResolved={(approvalId, _granted) => {
+                        // Keep the card visible in resolved state (handled internally)
+                        // Remove from pending after a delay so user sees the resolved state
+                        setTimeout(() => {
+                          setPendingPermissions(prev => {
+                            const next = new Map(prev);
+                            next.delete(approvalId);
+                            return next;
+                          });
+                        }, 4000);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
               </div>
             );
           });

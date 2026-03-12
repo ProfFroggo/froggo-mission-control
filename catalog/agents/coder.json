@@ -23,11 +23,13 @@
     "froggo-testing-patterns",
     "git-workflow",
     "security-checklist",
-    "code-review-checklist"
+    "code-review-checklist",
+    "image-generation"
   ],
   "requiredTools": [
     "node",
-    "git"
+    "git",
+    "image_generate"
   ],
   "version": "1.0.0",
   "category": "engineering"

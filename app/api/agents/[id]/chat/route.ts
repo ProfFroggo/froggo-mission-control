@@ -146,7 +146,7 @@ const MCP_DB_TOOLS = [
   'mcp__mission-control-db__chat_post', 'mcp__mission-control-db__chat_read',
   'mcp__mission-control-db__chat_rooms_list', 'mcp__mission-control-db__subtask_create',
   'mcp__mission-control-db__subtask_update', 'mcp__mission-control-db__schedule_create',
-  'mcp__mission-control-db__schedule_list',
+  'mcp__mission-control-db__schedule_list', 'mcp__mission-control-db__image_generate',
 ];
 const MCP_MEMORY_TOOLS = [
   'mcp__memory__memory_search', 'mcp__memory__memory_recall',
@@ -173,17 +173,46 @@ const CHAT_DEFAULT_DISALLOWED = [
   'Bash(chmod *)', 'Bash(chown *)', 'Bash(kill *)', 'Bash(pkill *)',
 ];
 
+// Reverse map: short tool name → full MCP tool ID (for modal Tools tab integration)
+const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const full of [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS]) {
+    const parts = full.split('__');
+    if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
+  }
+  return m;
+})();
+
 function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: string[] } {
   let trustTier = 'apprentice';
   let disallowed = [...CHAT_DEFAULT_DISALLOWED];
+  let additionalAllowed: string[] = [];
   try {
     const db = getDb();
     const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(agentId) as { trust_tier?: string } | undefined;
     trustTier = agentRow?.trust_tier ?? 'apprentice';
     const globalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('security.disallowedTools') as { value: string } | undefined;
     if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch { /* use default */ } }
+    // Modal Tools tab — short names expanded to full MCP IDs
+    const toolsRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.tools`) as { value: string } | undefined;
+    if (toolsRow?.value) {
+      try {
+        const shorts: string[] = JSON.parse(toolsRow.value) ?? [];
+        const expanded = shorts.flatMap(s => {
+          if (s.startsWith('mcp__')) return [s];
+          const full = SHORT_TO_FULL_MCP.get(s);
+          return full ? [full] : [];
+        });
+        additionalAllowed = [...new Set([...additionalAllowed, ...expanded])];
+      } catch { /* ignore */ }
+    }
+    // Permanently granted tools (ToolPermissionCard)
+    const grantedRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.grantedTools`) as { value: string } | undefined;
+    if (grantedRow?.value) { try { additionalAllowed = [...new Set([...additionalAllowed, ...JSON.parse(grantedRow.value)])]; } catch { /* ignore */ } }
   } catch { /* use defaults */ }
-  return { allowed: CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'], disallowed };
+  const base = CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'];
+  const allowed = additionalAllowed.length ? [...new Set([...base, ...additionalAllowed])] : base;
+  return { allowed, disallowed };
 }
 
 // ── Route ────────────────────────────────────────────────────────────────────

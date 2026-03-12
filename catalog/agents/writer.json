@@ -17,9 +17,12 @@
     "x-twitter-strategy",
     "web-research",
     "web-design-guidelines",
-    "content-calendar"
+    "content-calendar",
+    "image-generation"
   ],
-  "requiredTools": [],
+  "requiredTools": [
+    "image_generate"
+  ],
   "version": "1.0.0",
   "category": "utility"
 }

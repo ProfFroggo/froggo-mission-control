@@ -22,11 +22,13 @@
     "nextjs-patterns",
     "froggo-testing-patterns",
     "froggo-coding-standards",
-    "git-workflow"
+    "git-workflow",
+    "image-generation"
   ],
   "requiredTools": [
     "node",
-    "git"
+    "git",
+    "image_generate"
   ],
   "version": "1.0.0",
   "category": "engineering"

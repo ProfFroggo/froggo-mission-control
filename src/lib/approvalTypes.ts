@@ -11,7 +11,8 @@ export type ApprovalType =
   | 'message'
   | 'action'
   | 'delete_file'
-  | 'git_push';
+  | 'git_push'
+  | 'tool_permission';
 
 export interface ApprovalTypeConfig {
   label: string;
@@ -29,7 +30,8 @@ export const APPROVAL_TYPE_CONFIG: Record<string, ApprovalTypeConfig> = {
   message:     { label: 'Message',     className: 'text-review bg-review-subtle' },
   action:      { label: 'Action',      className: 'text-success bg-success-subtle' },
   delete_file: { label: 'Delete File', className: 'text-error bg-error-subtle' },
-  git_push:    { label: 'Git Push',    className: 'text-warning bg-warning-subtle' },
+  git_push:       { label: 'Git Push',       className: 'text-warning bg-warning-subtle' },
+  tool_permission: { label: 'Tool Permission', className: 'text-info bg-info-subtle' },
 };
 
 const FALLBACK_CONFIG: ApprovalTypeConfig = {

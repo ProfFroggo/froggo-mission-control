@@ -44,6 +44,7 @@ const MCP_SERVERS = [
       'task_create', 'task_update', 'task_get', 'task_list',
       'task_activity_create', 'agent_sessions_create', 'agent_sessions_get',
       'chat_post', 'chat_read', 'approval_create', 'schedule_create', 'schedule_list',
+      'image_generate',
     ],
   },
   {
