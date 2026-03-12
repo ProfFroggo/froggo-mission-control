@@ -12,27 +12,29 @@ interface MarkdownMessageProps {
   content: string;
   mentions?: MentionData;
   onArtifactOpen?: (lang: string, code: string) => void;  // NEW
+  streaming?: boolean;
 }
 
 // React.memo with custom comparator — only re-renders when content or mentions change.
 // This prevents costly markdown re-parsing during streaming when unrelated state updates.
-const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArtifactOpen }: MarkdownMessageProps) {
+const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArtifactOpen, streaming }: MarkdownMessageProps) {
   return (
     <div className="max-w-none leading-relaxed text-left text-sm">
-      {parseMarkdown(content, mentions, onArtifactOpen)}
+      {parseMarkdown(content, mentions, streaming ? undefined : onArtifactOpen, streaming)}
     </div>
   );
 }, (prev, next) =>
   prev.content === next.content &&
   prev.mentions === next.mentions &&
-  prev.onArtifactOpen === next.onArtifactOpen
+  prev.onArtifactOpen === next.onArtifactOpen &&
+  prev.streaming === next.streaming
 );
 
 export default MarkdownMessage;
 
 const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx']);
 
-function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (lang: string, code: string) => void): React.ReactNode[] {
+function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (lang: string, code: string) => void, streaming?: boolean): React.ReactNode[] {
   const elements: React.ReactNode[] = [];
   const lines = text.split('\n');
   let i = 0;
@@ -50,7 +52,7 @@ function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (l
         codeLines.push(lines[i]);
         i++;
       }
-      if (PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
+      if (!streaming && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
         elements.push(
           <ArtifactCard
             key={key++}

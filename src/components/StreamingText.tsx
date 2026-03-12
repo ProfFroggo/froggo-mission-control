@@ -25,7 +25,7 @@ export const StreamingText = memo(function StreamingText({
 }: StreamingTextProps) {
   return (
     <div className={className}>
-      <MarkdownMessage content={content} onArtifactOpen={onArtifactOpen} />
+      <MarkdownMessage content={content} onArtifactOpen={onArtifactOpen} streaming={streaming} />
       {streaming && (
         <span
           className="streaming-cursor"

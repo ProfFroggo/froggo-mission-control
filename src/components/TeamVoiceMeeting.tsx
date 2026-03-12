@@ -15,14 +15,15 @@ import ScreenSourcePicker, { type ScreenSource } from './ScreenSourcePicker';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
-import { geminiLive } from '../lib/geminiLiveService';
+import { geminiLive, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { createLogger } from '../utils/logger';
 import { speakWithAgentVoice } from '../lib/voiceConfig';
+import { geminiTts } from '../lib/geminiTts';
 
 const logger = createLogger('TeamVoice');
 
-// Browser speech synthesis helpers (replaced googleTTS)
+// Legacy Web Speech cancellation (kept for abort path cleanup)
 function stopSpeaking() { window.speechSynthesis.cancel(); }
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
@@ -67,6 +68,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const [partialTranscript, setPartialTranscript] = useState('');
   const [showScreenPicker, setShowScreenPicker] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
+  const [canInterrupt, setCanInterrupt] = useState(false);
 
   // Device selection
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
@@ -165,6 +167,8 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const agentQueueRef = useRef<string[]>([]);
   const currentUserTextRef = useRef('');
   const volumeRef = useRef(1);
+  const agentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ttsAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => { volumeRef.current = volume; }, [volume]);
 
@@ -417,9 +421,35 @@ Respond as ${agentName(agentId)}:`;
       streaming: true,
     });
 
+    // Build prompt — append screen sharing note if active
+    // NOTE: Full vision (sending actual screenshot) requires multimodal API support.
+    // gateway.sendChatWithCallbacks sends text only. Adding contextual note for now.
+    // TODO: Upgrade to multimodal when /api/agents/[id]/run supports image content.
+    let messageToSend = userText;
+    if (screenSharing) {
+      messageToSend += `\n\n[Context: Kevin is currently sharing their screen during this voice meeting. Keep that in mind when responding — they may be referencing something visible on screen.]`;
+    }
+
+    // 30-second timeout — skip agent if they don't respond in time
+    if (agentTimeoutRef.current) clearTimeout(agentTimeoutRef.current);
+    agentTimeoutRef.current = setTimeout(() => {
+      agentTimeoutRef.current = null;
+      const timedOutName = agents.find(a => a.id === agentId)?.name || agentId;
+      setTranscript(prev => [...prev, {
+        id: `sys-${Date.now()}`,
+        speaker: 'system',
+        content: `[${timedOutName} timed out — skipping]`,
+        timestamp: Date.now(),
+        type: 'text',
+      }]);
+      updateMessage(roomId, msgId, { content: '[No response — timed out]', streaming: false });
+      clearPending();
+      processNextAgent();
+    }, 30_000);
+
     try {
       const sessionKey = `agent:${agentId}:room:${roomId}`;
-      const prompt = buildContext(agentId, userText);
+      const prompt = buildContext(agentId, messageToSend);
 
       await gateway.sendChatWithCallbacks(prompt, sessionKey, {
         onDelta: (delta) => {
@@ -431,9 +461,17 @@ Respond as ${agentName(agentId)}:`;
           updateMessage(roomId, msgId, { content });
         },
         onEnd: () => {
+          if (agentTimeoutRef.current) {
+            clearTimeout(agentTimeoutRef.current);
+            agentTimeoutRef.current = null;
+          }
           finishCurrentAgent();
         },
         onError: (error) => {
+          if (agentTimeoutRef.current) {
+            clearTimeout(agentTimeoutRef.current);
+            agentTimeoutRef.current = null;
+          }
           updateMessage(roomId, msgId, {
             content: `Error: ${error}`,
             streaming: false,
@@ -445,6 +483,10 @@ Respond as ${agentName(agentId)}:`;
 
       setSessionKey(roomId, agentId, sessionKey);
     } catch (e: unknown) {
+      if (agentTimeoutRef.current) {
+        clearTimeout(agentTimeoutRef.current);
+        agentTimeoutRef.current = null;
+      }
       updateMessage(roomId, msgId, {
         content: `Error: ${e instanceof Error ? e.message : 'Failed to reach agent'}`,
         streaming: false,
@@ -452,7 +494,7 @@ Respond as ${agentName(agentId)}:`;
       clearPending();
       processNextAgent();
     }
-  }, [room, roomId, buildContext, addMessage, updateMessage, setSessionKey, processNextAgent]);
+  }, [room, roomId, screenSharing, agents, buildContext, addMessage, updateMessage, setSessionKey, processNextAgent]);
 
   // ── Finish current agent response → speak it ──
   const finishCurrentAgent = useCallback(async () => {
@@ -486,24 +528,37 @@ Respond as ${agentName(agentId)}:`;
     processNextAgent();
   }, [roomId, muted, updateMessage, processNextAgent]);
 
-  // ── Speak agent response via browser speech ──
+  // ── Speak agent response — Gemini TTS (Chirp 3) with Web Speech fallback ──
   const speakAgentResponse = async (_agentId: string, text: string) => {
     setSpeakingAgent(_agentId);
+    setCanInterrupt(true);
+
+    // Abort any previous TTS
+    ttsAbortRef.current?.abort();
+    const abort = new AbortController();
+    ttsAbortRef.current = abort;
+
     try {
-      // Apply selected speaker device to a silent AudioContext so the OS routes output
-      if (speakerDeviceIdRef.current) {
-        try {
-          const ctx = new AudioContext();
-          if (typeof (ctx as any).setSinkId === 'function') {
-            await (ctx as any).setSinkId(speakerDeviceIdRef.current);
-          }
-          ctx.close();
-        } catch { /* setSinkId not supported */ }
+      if (apiKeyRef.current) {
+        // Use Gemini TTS — per-agent Chirp 3 voice, interruptible
+        const voice = getGeminiVoiceForAgent(_agentId);
+        await geminiTts(
+          text,
+          voice,
+          apiKeyRef.current,
+          volumeRef.current,
+          speakerDeviceIdRef.current || undefined,
+          abort.signal,
+        );
+      } else {
+        // No Gemini key — fall back to Web Speech API
+        await speakWithAgentVoice(text, _agentId, volumeRef.current);
       }
-      await speakWithAgentVoice(text, _agentId, volumeRef.current);
     } catch {
-      // Speech synthesis failed silently
+      // Silently swallow — never block the meeting
     }
+
+    setCanInterrupt(false);
     setSpeakingAgent(null);
     setSpeakLevel(0);
     speakAnalyserRef.current = null;
@@ -594,9 +649,14 @@ Respond as ${agentName(agentId)}:`;
   };
 
   const endMeeting = async () => {
+    if (agentTimeoutRef.current) {
+      clearTimeout(agentTimeoutRef.current);
+      agentTimeoutRef.current = null;
+    }
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
     stopListeningFn();
     stopSpeaking();
-    window.speechSynthesis.cancel();
 
     if (screenSharing) {
       geminiLive.stopVideo();
@@ -623,13 +683,22 @@ Respond as ${agentName(agentId)}:`;
   };
 
   const interruptAll = () => {
+    // Abort Gemini TTS (Web Audio)
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    // Also cancel Web Speech fallback
     stopSpeaking();
-    window.speechSynthesis.cancel();
+    // Cancel any in-flight agent timeout
+    if (agentTimeoutRef.current) {
+      clearTimeout(agentTimeoutRef.current);
+      agentTimeoutRef.current = null;
+    }
     setSpeakingAgent(null);
     setSpeakLevel(0);
     agentQueueRef.current = [];
     setSpeakQueue([]);
     setProcessingAgent(null);
+    clearPending();
     if (isActiveRef.current) {
       setTimeout(() => startListening(), 300);
     }
@@ -1005,15 +1074,34 @@ Respond as ${agentName(agentId)}:`;
         <div className="flex items-center justify-center gap-3">
           {isActive && (
             <>
-              {/* Mic toggle */}
+              {/* Mic toggle / interrupt */}
               <button
-                onClick={() => listening ? stopListeningFn() : startListening()}
-                disabled={!!speakingAgent || !!processingAgent}
+                onClick={() => {
+                  if (canInterrupt && speakingAgent) {
+                    // Interrupt: cancel TTS, clear queue, start listening immediately
+                    window.speechSynthesis.cancel();
+                    agentQueueRef.current = [];
+                    setSpeakQueue([]);
+                    setCanInterrupt(false);
+                    setSpeakingAgent(null);
+                    setSpeakLevel(0);
+                    clearPending();
+                    setTimeout(() => startListening(), 100);
+                  } else if (listening) {
+                    stopListeningFn();
+                  } else {
+                    startListening();
+                  }
+                }}
+                disabled={!canInterrupt && (!!processingAgent && !speakingAgent)}
                 className={`p-4 rounded-full transition-all ${
-                  listening
+                  canInterrupt && speakingAgent
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 ring-2 ring-red-400 animate-pulse'
+                    : listening
                     ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110'
                     : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'
                 } disabled:opacity-40`}
+                title={canInterrupt && speakingAgent ? 'Interrupt agent' : listening ? 'Stop listening' : 'Start listening'}
               >
                 {listening ? <Mic size={20} /> : <MicOff size={20} />}
               </button>
