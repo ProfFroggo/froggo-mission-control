@@ -623,7 +623,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-    <div className="w-[700px] max-w-[95vw] max-h-[90vh] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    <div className="w-[700px] max-w-[95vw] max-h-[90vh] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
