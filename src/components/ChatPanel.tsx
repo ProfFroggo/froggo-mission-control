@@ -934,12 +934,14 @@ export default function ChatPanel() {
     setMessages([]);
     messageCacheRef.current.delete(selectedAgent.id);
     window.speechSynthesis.cancel();
-    // TODO Phase 4: migrate — clearMessages endpoint not yet in API; session delete as fallback
     try {
+      // Delete chat message history from messages table
       await chatApi.deleteSession(selectedAgent.dbSessionKey);
-    } catch (_err) {
-      // Non-fatal — UI already cleared
-    }
+    } catch (_err) { /* Non-fatal */ }
+    try {
+      // Reset Claude CLI session so next message starts fresh (no stale --resume)
+      await fetch(`/api/agents/${selectedAgent.id}/session`, { method: 'DELETE' });
+    } catch (_err) { /* Non-fatal */ }
   };
 
   const reconnect = () => {
