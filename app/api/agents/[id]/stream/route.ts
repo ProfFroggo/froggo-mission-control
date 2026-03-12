@@ -280,8 +280,10 @@ function soulMtime(id: string): number {
 
 // ── Agent tool permissions ───────────────────────────────────────────────────
 // Mirrors the trust-tier system in taskDispatcher.ts.
-// --dangerously-skip-permissions is set so the subprocess never blocks on a TTY dialog.
-// Instead, in-chat ToolPermissionCard is shown when agents request unlisted tools.
+// --allowedTools pre-approves tools so Claude Code never prompts for them.
+// Tools NOT in the list are auto-denied (stdin is closed; no TTY for dialogs).
+// When an agent needs an unlisted tool, it outputs <tool_request> and the
+// ToolPermissionCard is shown in chat to grant/reject via the approve API.
 // Permissions are set per-agent in the Agent Management UI (Permissions tab).
 
 // Session-scoped tool grants — shared module so approve route can write to the same Map
@@ -470,7 +472,6 @@ export async function POST(
           '--output-format', 'stream-json', // JSON event stream on stdout
           '--verbose',                      // required by stream-json format
           '--model', chatModel,
-          '--dangerously-skip-permissions', // prevent TTY permission dialogs blocking subprocess
           '--allowedTools', allowed.join(','),
           '--disallowedTools', disallowed.join(','),
         ];
