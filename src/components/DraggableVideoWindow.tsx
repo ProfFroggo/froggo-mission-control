@@ -16,7 +16,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('VideoWindow');
 
 interface DraggableVideoWindowProps {
-  videoRef: React.RefObject<HTMLVideoElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
   videoStream: MediaStream | null;
   videoMode: 'camera' | 'screen';
   onClose: () => void;
@@ -213,7 +213,7 @@ export default function DraggableVideoWindow({
 
       {/* Video */}
       <video
-        ref={videoRef}
+        ref={videoRef as React.RefObject<HTMLVideoElement>}
         autoPlay
         muted
         playsInline
