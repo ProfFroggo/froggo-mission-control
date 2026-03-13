@@ -448,6 +448,22 @@ export default function AgentPanel() {
                       <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={{ ...metrics, _role: AGENT_ROLES[agent.id] }} compact={true} />
                     </div>
 
+                    {/* Last active timestamp */}
+                    {agent.lastActivity && (
+                      <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim mb-2">
+                        <Clock size={9} />
+                        <span>Last active: {(() => {
+                          const diffMs = Date.now() - agent.lastActivity!;
+                          const diffMin = Math.floor(diffMs / 60_000);
+                          const diffHr = Math.floor(diffMs / 3_600_000);
+                          if (diffMs < 60_000) return 'just now';
+                          if (diffMin < 60) return `${diffMin}m ago`;
+                          if (diffHr < 24) return `${diffHr}h ago`;
+                          return `${Math.floor(diffHr / 24)}d ago`;
+                        })()}</span>
+                      </div>
+                    )}
+
                     {/* Footer: capability tags + tier badge */}
                     <div className="flex items-center gap-1 flex-wrap">
                       {agent.capabilities?.slice(0, 3).map((cap, i) => (
