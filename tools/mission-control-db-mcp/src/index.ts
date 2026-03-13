@@ -64,6 +64,26 @@ function firePatch(taskId: string, body: object): void {
   req.end();
 }
 
+/** Awaitable PATCH — returns parsed response body. Used by agent_status_set. */
+function awaitPatch(urlPath: string, body: object): Promise<any> {
+  const encoded = JSON.stringify(body);
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: '127.0.0.1', port: 3000,
+      path: urlPath, method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(encoded), ...authHeaders() },
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ raw: data }); } });
+    });
+    req.on('error', (e) => resolve({ error: e.message }));
+    req.setTimeout(8000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+    req.write(encoded);
+    req.end();
+  });
+}
+
 // ── Server ────────────────────────────────────────────────────────────────────
 
 const server = new Server(
@@ -74,21 +94,46 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
-      name: 'task_list',
-      description: 'List tasks, optionally filtered by status, assignee, or project. Use task_get(id) for full details including planningNotes and subtasks before starting work on any specific task.',
+      name: 'project_context',
+      description: 'Get full context for a project — name, goal, status, milestones, assigned agents, and open task count. Call this at the start of any work session to understand what project you are working in. If no projectId is given, lists all active projects with key metrics.',
       inputSchema: {
         type: 'object',
         properties: {
-          status: { type: 'string', description: 'Filter by status (todo, internal-review, in-progress, review, human-review, done)' },
+          projectId: { type: 'string', description: 'Project ID (optional — omit to list all active projects)' },
+        },
+      },
+    },
+    {
+      name: 'agent_status_set',
+      description: 'Update your own status and current focus area. Call this when you start a task (status=busy, currentTask="what you are doing") and when you finish (status=idle). Keeps the team dashboard accurate so others know what each agent is working on.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agentId: { type: 'string', description: 'Your agent ID' },
+          status: { type: 'string', description: 'New status: active | idle | busy' },
+          currentTask: { type: 'string', description: 'Brief description of what you are currently working on (optional)' },
+        },
+        required: ['agentId', 'status'],
+      },
+    },
+    {
+      name: 'task_list',
+      description: 'List tasks with flexible filtering. Tips: use assignedToMe=true + status="in-progress" to find your active work; use status="todo" to see unstarted tasks; use project filter to scope to one project. Always call task_get(id) for full planningNotes and subtasks before starting work.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter by status: todo | internal-review | in-progress | review | human-review | done' },
           assignedTo: { type: 'string', description: 'Filter by agent ID' },
+          assignedToMe: { type: 'boolean', description: 'If true, only return tasks assigned to the agentId specified in the agentId param (shortcut for assignedTo)' },
+          agentId: { type: 'string', description: 'Your agent ID — used when assignedToMe=true' },
           project: { type: 'string', description: 'Filter by project name' },
-          limit: { type: 'number', description: 'Max tasks to return (default 50)' },
+          limit: { type: 'number', description: 'Max tasks to return (default 20, max 50)' },
         },
       },
     },
     {
       name: 'task_get',
-      description: 'Get a task by ID. Always call this before starting work on a task to get the latest planningNotes, subtasks, and acceptance criteria. Returns planningNotes, acceptanceCriteria, and incompleteSubtasks at the top — read these first. Also includes attachments and recent activity.',
+      description: 'Get a task by ID with full context. Always call this before starting work — returns planningNotes, acceptanceCriteria, and incompleteSubtasks at the top. Also returns all subtasks with completion status, last 5 activity entries, assigned agent name, and a workContext summary of what has already been done.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -328,6 +373,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: 'campaign_context',
+      description: 'Get active campaigns with their channels, goals, status, and assigned agents. Call this when working on marketing, growth, or campaign-related tasks to understand what campaigns are running. Returns "No campaigns found" if no campaigns table or data exists yet.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter by status (optional, e.g. "active")' },
+        },
+      },
+    },
+    {
       name: 'knowledge_search',
       description: 'Search the knowledge base for brand guidelines, company context, writing style, design standards, and other workspace knowledge the human has curated. Call this at the start of any task involving brand, content, design, or company context. Returns matching articles with full content.',
       inputSchema: {
@@ -382,7 +437,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (!task) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
         const subtasks = db.prepare('SELECT * FROM subtasks WHERE taskId = ? ORDER BY position ASC').all(args?.id) as any[];
         const attachments = db.prepare('SELECT id, fileName, filePath, category, uploadedBy, createdAt FROM task_attachments WHERE taskId = ? ORDER BY createdAt DESC').all(args?.id);
-        const activity = db.prepare('SELECT agentId, action, message, timestamp FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 10').all(args?.id);
+        const activity = db.prepare('SELECT agentId, action, message, timestamp FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 5').all(args?.id) as any[];
+
+        // Resolve assigned agent name
+        let assignedAgentName: string | null = null;
+        if (task.assignedTo) {
+          const agent = db.prepare('SELECT name FROM agents WHERE id = ?').get(task.assignedTo) as { name?: string } | undefined;
+          assignedAgentName = agent?.name ?? null;
+        }
 
         // Extract acceptance criteria from planningNotes if structured
         let acceptanceCriteria: string[] = [];
@@ -395,6 +457,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             .filter((l: string) => l.length > 0);
         }
 
+        // Build workContext summary from activity log — gives agent a quick sense of what's been done
+        const workContext = activity.length > 0
+          ? activity
+              .slice()
+              .reverse()
+              .map((a: any) => `[${new Date(a.timestamp).toISOString()}] ${a.agentId ?? 'system'}: ${a.message}`)
+              .join('\n')
+          : 'No activity logged yet — this task has not been started.';
+
         // Surface critical info first so Claude reads it before anything else
         const summary = {
           hint: 'Read planningNotes and incompleteSubtasks carefully before starting. These define what done looks like.',
@@ -403,11 +474,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           status: task.status,
           priority: task.priority,
           assignedTo: task.assignedTo,
+          assignedAgentName,
           // CRITICAL — at top level so Claude sees them immediately
           planningNotes: task.planningNotes,
           acceptanceCriteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : (task.acceptanceCriteria || 'See planningNotes'),
           incompleteSubtasks: subtasks.filter((s: any) => !s.completed),
-          completedSubtasks: subtasks.filter((s: any) => s.completed),
+          completedSubtasks: subtasks.filter((s: any) => s.completed).map((s: any) => ({ id: s.id, title: s.title, completedAt: s.completedAt })),
+          // Work context — what's already been done
+          workContext,
           // Supporting context below
           description: task.description,
           project: task.project,
