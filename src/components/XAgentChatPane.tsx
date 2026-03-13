@@ -22,6 +22,7 @@ interface ChatMessage {
 
 // Agent routing mapping: tab -> primary agent ID
 const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
+  pipeline: { agentId: 'social-manager', displayName: 'Social Manager' },
   publish: { agentId: 'writer', displayName: 'Writer' },
   research: { agentId: 'researcher', displayName: 'Researcher' },
   plan: { agentId: 'writer', displayName: 'Writer' },
@@ -38,12 +39,14 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
 
 // Set of valid tabs for validation
 const tabsWithoutUndefined = new Set<XTab>([
-  'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
+  'pipeline', 'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
   'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns'
 ]);
 
 // System prompts for each tab to give context to the agent
 const TAB_CONTEXT: Record<XTab, string> = {
+  pipeline: `You are the Social Manager agent overseeing the content pipeline. Current context: Pipeline (Kanban) View. Your role: Help move content through the production stages, advise on approval decisions, suggest scheduling strategy, and identify bottlenecks in the content workflow.`,
+
   publish: `You are the Writer agent helping compose and publish X/Twitter posts. Current context: X/Twitter Publish Tab. Your role: Help craft engaging tweets, suggest improvements to copy, recommend hashtags, and assist with thread composition.`,
 
   research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
