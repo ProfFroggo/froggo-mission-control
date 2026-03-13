@@ -1344,8 +1344,8 @@ export default function ChatPanel() {
 
       {/* Connection banner removed — chat uses REST API, gateway is optional */}
 
-      {/* Input */}
-      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface ${isVoiceMode ? 'hidden' : ''}`}>
+      {/* Input — sticky bottom on mobile so it's always accessible */}
+      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface sticky bottom-0 sm:relative ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1605,7 +1605,7 @@ const MessageItem = memo(function MessageItem({
       </div>
 
       {/* ChatMessage content column */}
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[90%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
           <div className={`text-xs font-medium mb-1 px-1 ${

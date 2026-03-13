@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
-  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone,
+  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -50,7 +50,10 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? saved === 'true' : true; // Default: open
   });
-  
+
+  // Mobile: sidebar hidden by default; toggled via hamburger button
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   // Listen for sidebar state changes from settings
   useEffect(() => {
     const handler = () => {
@@ -86,12 +89,12 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     const width = expanded ? 208 : 64; // w-52 = 208px, w-16 = 64px
     onWidthChange?.(width);
   }, [expanded, onWidthChange]);
-  
+
   // Persist sidebar expanded state to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarExpanded', String(expanded));
   }, [expanded]);
-  
+
   // Load pending inbox item count — used for both approvals and notifications badges
   // Also counts human-review tasks so the approvals badge reflects "needs your attention" total
   const loadInboxCount = useCallback(async () => {
@@ -135,6 +138,12 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     usePanelConfigStore.getState().syncWithViewRegistry();
   });
 
+  // Helper: navigate and close mobile sidebar
+  const handleNavigate = (view: View) => {
+    onNavigate(view);
+    setMobileOpen(false);
+  };
+
   return (
     <>
     <a
@@ -143,12 +152,45 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     >
       Skip to content
     </a>
-    <aside
-      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out z-0 ${
-        expanded ? 'w-52' : 'w-16'
+
+    {/* Mobile hamburger button — only visible on small screens when sidebar is closed */}
+    <button
+      onClick={() => setMobileOpen(true)}
+      className={`fixed top-3 left-3 z-40 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all duration-200 sm:hidden ${
+        mobileOpen ? 'hidden' : 'flex'
       }`}
+      aria-label="Open navigation"
+    >
+      <Menu size={20} aria-hidden="true" />
+    </button>
+
+    {/* Mobile backdrop — closes sidebar when tapped outside */}
+    {mobileOpen && (
+      <div
+        className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm sm:hidden"
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
+    )}
+
+    <aside
+      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-40
+        sm:relative sm:translate-x-0 sm:z-0
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
+        ${expanded ? 'w-52' : 'w-16'}
+      `}
       aria-label="Main navigation"
     >
+      {/* Mobile close button inside the sidebar */}
+      <button
+        onClick={() => setMobileOpen(false)}
+        className="absolute top-3 right-3 p-1.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all sm:hidden"
+        aria-label="Close navigation"
+      >
+        <X size={16} aria-hidden="true" />
+      </button>
+
       {/* Search button */}
       <div className="px-2 pt-3 pb-1">
         <button
@@ -194,11 +236,11 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             if (id === 'approvals') badge = inboxCount;
             if (id === 'notifications') badge = inboxCount;
             if (id === 'kanban') badge = activeTasks;
-            
+
             return (
               <button
                 key={id}
-                onClick={() => onNavigate(id)}
+                onClick={() => handleNavigate(id)}
                 className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
                   isActive
                     ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
@@ -210,7 +252,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                 data-view={id}
               >
                 <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
-                
+
                 {expanded && (
                   <>
                     <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
@@ -226,7 +268,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                     )}
                   </>
                 )}
-                
+
                 {!expanded && badge > 0 && (
                   <NumberBadge
                     count={badge}
@@ -243,7 +285,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       </nav>
 
       {/* Live Agent Activity Bar */}
-      <AgentActivityBar onNavigate={onNavigate} expanded={expanded} />
+      <AgentActivityBar onNavigate={handleNavigate} expanded={expanded} />
 
       {/* Bottom section */}
       <div className="p-2 border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">
@@ -262,7 +304,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           )}
           {/* Help - only visible when expanded */}
           {expanded && onOpenHelp && (
-            <button 
+            <button
               onClick={onOpenHelp}
               className="no-drag p-1.5 rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title="Help (⌘H)"
@@ -272,8 +314,8 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             </button>
           )}
           {/* Settings - always visible */}
-          <button 
-            onClick={() => onNavigate('settings')}
+          <button
+            onClick={() => handleNavigate('settings')}
             className={`no-drag p-1.5 rounded-lg transition-all duration-200 ${
               currentView === 'settings'
                 ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
