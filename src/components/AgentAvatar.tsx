@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface AgentAvatarProps {
@@ -21,11 +21,32 @@ const sizeMap = {
   '2xl': { container: 'w-20 h-20', text: 'text-5xl', ring: 'ring-3' },
 };
 
+// Retry delays (ms) after a 404 — covers the window where the agent was
+// just hired but avatar generation hasn't saved the file yet.
+const RETRY_DELAYS = [2000, 5000, 10000];
+
 export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', className = '', ring = false, status }: AgentAvatarProps) {
   const [imgError, setImgError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const theme = getAgentTheme(agentId);
   const s = sizeMap[size];
   const hasPic = !imgError;
+
+  const handleImgError = useCallback(() => {
+    if (retryCount < RETRY_DELAYS.length) {
+      retryTimer.current = setTimeout(() => {
+        setRetryCount(n => n + 1);
+        setImgError(false);
+      }, RETRY_DELAYS[retryCount]);
+    } else {
+      setImgError(true);
+    }
+  }, [retryCount]);
+
+  useEffect(() => {
+    return () => { if (retryTimer.current) clearTimeout(retryTimer.current); };
+  }, []);
 
   // Status-based ring styles
   const statusRing = status ? (() => {
@@ -47,10 +68,10 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
     <div className={`${s.container} relative rounded-full overflow-hidden flex-shrink-0 ${ring ? `ring ${s.ring} ${theme.ring}` : statusRing} ${className}`}>
       {hasPic ? (
         <img
-          src={`/api/agents/${agentId}/avatar?v=${agentId}-${Math.floor(Date.now() / 60000)}`}
+          src={`/api/agents/${agentId}/avatar?v=${agentId}-${Math.floor(Date.now() / 60000)}-${retryCount}`}
           alt={`${agentId} avatar`}
           className="w-full h-full object-cover"
-          onError={() => setImgError(true)}
+          onError={handleImgError}
         />
       ) : (
         <span className={`absolute inset-0 flex items-center justify-center ${s.text} ${theme.bg}`}>
