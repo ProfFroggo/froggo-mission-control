@@ -28,7 +28,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent m
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
       (needs human input)          (external dependency)
@@ -36,7 +36,7 @@ todo → internal-review → in-progress → agent-review → done
 - **todo** — task created, needs a plan and subtasks assigned
 - **internal-review** — Clara quality gate BEFORE work starts
 - **in-progress** — agent actively working
-- **agent-review** — Clara quality gate AFTER work
+- **review** — agent finished; Clara verifies all planned work completed
 - **human-review** — needs human input OR blocked by external dependency
 - **done** — Clara approved, work complete
 

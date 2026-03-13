@@ -19,7 +19,7 @@ You are **Chief**, the **Lead Engineer & Architect** in the Mission Control mult
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

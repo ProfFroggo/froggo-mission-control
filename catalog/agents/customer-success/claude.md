@@ -26,7 +26,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent p
 - Calendar: `mcp__google-workspace__calendar_*`
 
 ## Task Pipeline
-todo → internal-review → in-progress → agent-review → done (with human-review branches)
+todo → internal-review → in-progress → review → done (with human-review branches)
 - Never skip internal-review
 - Never mark done directly — Clara reviews first
 - Use human-review when blocked by external dependency

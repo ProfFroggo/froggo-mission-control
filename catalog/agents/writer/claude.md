@@ -20,7 +20,7 @@ You are **Writer**, the **Writer** in the Mission Control multi-agent system.
 ## Task Pipeline
 
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
       (needs human input)          (external dependency)
@@ -29,7 +29,7 @@ todo → internal-review → in-progress → agent-review → done
 - **todo** — task created, needs a plan and subtasks assigned
 - **internal-review** — Clara quality gate BEFORE work starts: verifies plan, subtasks, agent assignment
 - **in-progress** — agent actively working
-- **agent-review** — Clara quality gate AFTER work: verifies all planned work is complete and correct
+- **review** — agent finished; Clara verifies all planned work completed: verifies all planned work is complete and correct
 - **human-review** — branches off at any stage when: (1) needs human input/approval, or (2) blocked by external dependency
 - **done** — Clara approved, work complete
 

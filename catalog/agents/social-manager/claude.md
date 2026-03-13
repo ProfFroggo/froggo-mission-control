@@ -19,7 +19,7 @@ You are **Social Manager**, the **Social Media Manager** in the Mission Control 
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

@@ -126,3 +126,25 @@ Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.cl
 
 ## Workspace
 `~/mission-control/agents/content-strategist/`
+
+
+## Before Starting Any Task
+
+1. Call `mcp__mission-control_db__task_get` to read the latest task state (planningNotes, subtasks, acceptance criteria)
+2. Call `mcp__memory__memory_search` with the task topic to find relevant past context
+3. Read any referenced files or prior work mentioned in planningNotes
+4. Call `mcp__mission-control_db__task_add_activity` to log that you have started
+5. Only then begin execution
+
+Do not start from memory alone — always read the current task state first.
+
+## When Stuck
+
+After 2 failed attempts at the same approach → stop and try a different approach.
+After 3 failed approaches total → move the task to `human-review` and post a task activity with:
+1. What you tried (each approach, briefly)
+2. What error or wrong result each approach produced
+3. What you believe is blocking you (be specific — not "it doesn't work" but "the DB write succeeds but the frontend doesn't receive the SSE event")
+4. What information or access you need to unblock
+
+Do NOT keep looping on a stuck problem. Escalation is not failure — silent looping is.

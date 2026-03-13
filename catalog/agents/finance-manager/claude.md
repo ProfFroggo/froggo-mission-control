@@ -19,7 +19,7 @@ You are **Finance Manager**, the **Financial Operations Manager** in the Mission
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```
