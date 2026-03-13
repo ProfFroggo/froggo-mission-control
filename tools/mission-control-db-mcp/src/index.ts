@@ -314,6 +314,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['prompt', 'agentId'],
       },
     },
+    {
+      name: 'image_remove_background',
+      description: 'Remove the background from an image and save an optimised transparent PNG back to the library. Uses rembg birefnet-hd with alpha matting for maximum edge quality — handles hair, fur, and complex edges. Pass the filePath returned by image_generate, or a path relative to ~/mission-control/library/. Returns markdown you can embed in chat.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          inputPath: { type: 'string', description: 'Path to the source image. Absolute path, path relative to ~/mission-control/library/, or just the filename.' },
+          agentId:   { type: 'string', description: 'Your agent ID' },
+          model:     { type: 'string', description: 'rembg model to use. Default: birefnet-hd (best quality). Options: birefnet-hd, birefnet-general (faster), u2net.' },
+        },
+        required: ['inputPath', 'agentId'],
+      },
+    },
   ],
 }));
 
@@ -754,6 +767,72 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               filePath: parsed.filePath,
               filename: parsed.filename,
               hint: `Image auto-posted to your chat room. Include the markdown field in your text response too so the user sees your commentary alongside the image.`,
+            }),
+          }],
+        };
+      }
+
+      // ── image_remove_background ─────────────────────────────────────────────
+      case 'image_remove_background': {
+        const inputPath = String(args?.inputPath ?? '').trim();
+        if (!inputPath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'inputPath is required' }) }], isError: true };
+
+        const payload = JSON.stringify({
+          inputPath,
+          agentId: args?.agentId ?? 'unknown',
+          model: args?.model ?? 'birefnet-hd',
+        });
+
+        const result = await new Promise<string>((resolve) => {
+          const req = http.request(
+            {
+              hostname: '127.0.0.1',
+              port: parseInt(process.env.PORT ?? '3000', 10),
+              path: '/api/remove-background',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload),
+                ...authHeaders(),
+              },
+            },
+            (res) => {
+              let body = '';
+              res.on('data', (chunk) => { body += chunk; });
+              res.on('end', () => resolve(body));
+            },
+          );
+          req.on('error', (e) => resolve(JSON.stringify({ error: e.message })));
+          req.setTimeout(130_000, () => { req.destroy(); resolve(JSON.stringify({ error: 'Background removal timed out' })); });
+          req.write(payload);
+          req.end();
+        });
+
+        let parsed: any;
+        try { parsed = JSON.parse(result); } catch { parsed = { error: result }; }
+
+        if (parsed.error) {
+          return { content: [{ type: 'text', text: JSON.stringify(parsed) }], isError: true };
+        }
+
+        // Auto-post the cutout to the agent's chat room
+        try {
+          const agentId = args?.agentId ?? 'unknown';
+          db.prepare(
+            'INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)'
+          ).run(agentId, agentId, parsed.markdown, Date.now());
+        } catch { /* non-critical */ }
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              markdown: parsed.markdown,
+              url: parsed.url,
+              filePath: parsed.filePath,
+              filename: parsed.filename,
+              hint: 'Background removed and saved as optimised transparent PNG. Image auto-posted to your chat room. Include the markdown in your response too.',
             }),
           }],
         };
