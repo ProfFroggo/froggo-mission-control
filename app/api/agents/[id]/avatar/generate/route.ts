@@ -158,7 +158,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       writeFileSync(avatarPath, svgData, 'utf-8');
     }
 
-    // Update catalog_agents avatar pointer
+    // Update avatar pointer in both tables
     try {
       const db = getDb();
       try {
@@ -166,6 +166,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       } catch {
         db.prepare(`UPDATE catalog_agents SET avatar = ?, updated_at = ? WHERE id = ?`).run(avatarPath, Date.now(), id);
       }
+      // Also update agents table so the UI knows this agent has a custom avatar
+      db.prepare(`UPDATE agents SET avatar = ? WHERE id = ?`).run(avatarPath, id);
     } catch { /* non-critical */ }
 
     return NextResponse.json({ path: avatarPath, method, svg: svgData, png: pngBase64 });
