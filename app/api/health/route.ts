@@ -1,12 +1,14 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import path from 'path';
+import { execSync } from 'child_process';
 import { startDispatcherCron } from '@/lib/taskDispatcherCron';
 import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
+import { ENV } from '@/lib/env';
 
 // Start background crons on server boot (once-per-process guard against HMR re-runs)
 if (!(globalThis as any).__healthInitialized) {
@@ -17,6 +19,31 @@ if (!(globalThis as any).__healthInitialized) {
   startMemoryDecayCron();
 }
 
+function checkClaudeCli(): { found: boolean; authenticated: boolean; path: string } {
+  const bin = ENV.CLAUDE_BIN;
+  const found = !!(bin && (bin === 'claude' || existsSync(bin)));
+
+  // Check ~/.claude.json for auth state
+  let authenticated = false;
+  try {
+    const cfgPath = path.join(homedir(), '.claude.json');
+    if (existsSync(cfgPath)) {
+      const cfg = JSON.parse(readFileSync(cfgPath, 'utf-8'));
+      authenticated = !!(cfg.hasCompletedOnboarding || cfg.oauthAccount || cfg.primaryApiKey);
+    }
+  } catch { /* unreadable */ }
+
+  // Fallback: try running claude --version (quick, non-interactive)
+  if (found && !authenticated) {
+    try {
+      execSync(`"${bin}" --version`, { timeout: 3000, stdio: 'pipe' });
+      authenticated = true; // if it runs without auth error, we're good
+    } catch { /* not authenticated or not found */ }
+  }
+
+  return { found, authenticated, path: bin };
+}
+
 export async function GET() {
   const dbPath = path.join(homedir(), 'mission-control', 'data', 'mission-control.db');
   const database = existsSync(dbPath);
@@ -25,10 +52,13 @@ export async function GET() {
   const cronDaemonInstalled = existsSync(cronPlist);
 
   const vaultStats = getVaultStats();
+  const claudeStatus = checkClaudeCli();
 
   return NextResponse.json({
-    // We use Claude Code CLI — no external gateway needed
-    cli: true,
+    cli: claudeStatus.found && claudeStatus.authenticated,
+    claudeFound: claudeStatus.found,
+    claudeAuthenticated: claudeStatus.authenticated,
+    claudePath: claudeStatus.path,
     gateway: true,
     config: true,
     database,

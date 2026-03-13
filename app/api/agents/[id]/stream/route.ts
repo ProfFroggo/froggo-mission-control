@@ -682,10 +682,11 @@ export async function POST(
           }
         });
 
+        let stderrBuf = '';
         proc.stderr.on('data', (data: Buffer) => {
-          // Log to server console for diagnostics — not shown to client
-          const msg = data.toString().trim();
-          if (msg) console.error(`[stream/${id}/stderr]`, msg.slice(0, 500));
+          const msg = data.toString();
+          stderrBuf += msg;
+          if (msg.trim()) console.error(`[stream/${id}/stderr]`, msg.trim().slice(0, 500));
         });
 
         const timeout = setTimeout(() => {
@@ -701,6 +702,15 @@ export async function POST(
         const finishStream = (code: number | null) => {
           agentLocks.delete(id); // release lock
           if (streamCancelled) return; // client disconnected — controller already closed
+          // Surface actionable error when Claude CLI exits with no output
+          if (!resultReceived && code !== 0 && stderrBuf) {
+            const errText = stderrBuf.trim().slice(0, 400);
+            const isAuth = /not logged in|authentication|api.?key|unauthorized|login|claude.ai/i.test(errText);
+            const friendly = isAuth
+              ? 'Claude Code is not authenticated. Run `claude` in a terminal and log in, then restart Mission Control.'
+              : `Agent process failed (exit ${code}): ${errText}`;
+            enc({ type: 'text', text: friendly });
+          }
           enc({ type: 'done', code: code ?? 0 });
           try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
           try { controller.close(); } catch { /* already closed */ }
