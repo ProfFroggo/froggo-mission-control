@@ -26,9 +26,17 @@ export const runtime = 'nodejs';
 const HOME = homedir();
 // Spawn claude via process.execPath + real .js path to avoid #!/usr/bin/env node
 // shebang failure in LaunchAgent / systemd environments where 'node' isn't on PATH.
+// If CLAUDE_SCRIPT is a native binary (Homebrew Cask), spawn it directly instead of
+// wrapping with node — node /opt/homebrew/bin/claude fails with SyntaxError.
 const CLAUDE_BIN    = ENV.CLAUDE_BIN;
 const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN      = process.execPath; // absolute path to the current node binary
+const IS_NATIVE_BIN = !CLAUDE_SCRIPT.endsWith('.js');
+function spawnClaude(args: string[], opts: Parameters<typeof spawn>[2]): ReturnType<typeof spawn> {
+  return IS_NATIVE_BIN
+    ? spawn(CLAUDE_SCRIPT, args, opts!)
+    : spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], opts!);
+}
 
 // ── File cache ─────────────────────────────────────────────────────────────
 interface CacheEntry { content: string; mtime: number; }
@@ -579,7 +587,7 @@ export async function POST(
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
         if (!cleanEnv.TMPDIR)  { cleanEnv.TMPDIR  = tmpdir(); }
 
-        const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
+        const proc = spawnClaude(args, {
           cwd,
           env: cleanEnv,
           stdio: 'pipe',
@@ -779,7 +787,7 @@ export async function POST(
             const sp = (buildSystemPrompt(id) ?? '') + retryTaskCtx + retryProjectCtx + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
-            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
+            const fresh = spawnClaude(freshArgs, { cwd, env: cleanEnv, stdio: 'pipe' });
             fresh.stdin.write(sanitizedMessage);
             fresh.stdin.end();
 

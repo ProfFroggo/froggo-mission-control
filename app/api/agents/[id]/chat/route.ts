@@ -24,6 +24,12 @@ export const runtime = 'nodejs';
 const HOME = homedir();
 const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN = process.execPath;
+const IS_NATIVE_BIN = !CLAUDE_SCRIPT.endsWith('.js');
+function spawnClaude(args: string[], opts: Parameters<typeof spawn>[2]): ReturnType<typeof spawn> {
+  return IS_NATIVE_BIN
+    ? spawn(CLAUDE_SCRIPT, args, opts!)
+    : spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], opts!);
+}
 const LOCK_TTL_MS = 3 * 60_000;
 const STREAM_TIMEOUT_MS = 120_000;
 
@@ -347,7 +353,7 @@ export async function POST(
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
         if (!cleanEnv.TMPDIR)  { cleanEnv.TMPDIR  = tmpdir(); }
 
-        const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], { cwd, env: cleanEnv, stdio: 'pipe' });
+        const proc = spawnClaude(args, { cwd, env: cleanEnv, stdio: 'pipe' });
         activeProc = proc;
 
         const sanitizedMessage = `<user_message>\n${message}\n</user_message>`;
@@ -477,7 +483,7 @@ export async function POST(
             const sp = (buildSystemPrompt(agentId) ?? '') + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
-            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
+            const fresh = spawnClaude(freshArgs, { cwd, env: cleanEnv, stdio: 'pipe' });
             fresh.stdin.write(sanitizedMessage);
             fresh.stdin.end();
 
