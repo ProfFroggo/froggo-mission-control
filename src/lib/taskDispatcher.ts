@@ -109,6 +109,7 @@ const MCP_MEMORY = [
   'mcp__memory__memory_recall',
   'mcp__memory__memory_write',
   'mcp__memory__memory_read',
+  'mcp__memory__memory_list',
 ];
 
 const MCP_GOOGLE = [

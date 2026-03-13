@@ -322,8 +322,17 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     stdio: 'pipe',
   });
 
-  proc.stdin!.write(message);
-  proc.stdin!.end();
+  // Wrap stdin write in try-catch so inReview is always cleaned up on failure
+  try {
+    proc.stdin!.write(message);
+    proc.stdin!.end();
+  } catch (e) {
+    inReview.delete(task.id as string);
+    resetReviewStatus(task.id);
+    try { proc.kill(); } catch { /* already exited */ }
+    console.error('[clara-review-cron] stdin write failed for task', task.id, e);
+    return;
+  }
   proc.stdout!.resume();
   proc.stderr!.resume();
 

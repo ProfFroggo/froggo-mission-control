@@ -309,12 +309,12 @@ export async function PATCH(
               if (!existingRecurrence) {
                 db.prepare(`
                   INSERT INTO tasks (
-                    id, title, description, status, priority, project, assignedTo,
+                    id, title, description, status, priority, project, project_id, assignedTo,
                     reviewerId, planningNotes, dueDate, estimatedHours, tags, labels,
                     blockedBy, blocks, progress, createdAt, updatedAt,
                     recurrence, recurrenceParentId
                   ) VALUES (
-                    ?, ?, ?, 'todo', ?, ?, ?,
+                    ?, ?, ?, 'todo', ?, ?, ?, ?,
                     ?, ?, ?, ?, '[]', '[]',
                     '[]', '[]', 0, ?, ?,
                     ?, ?
@@ -322,7 +322,7 @@ export async function PATCH(
                 `).run(
                   nextId,
                   updated.title, updated.description ?? null,
-                  updated.priority ?? 'p2', updated.project ?? null, updated.assignedTo ?? null,
+                  updated.priority ?? 'p2', updated.project ?? null, updated.project_id ?? null, updated.assignedTo ?? null,
                   updated.reviewerId ?? null, updated.planningNotes ?? null,
                   nextDue, updated.estimatedHours ?? null,
                   now, now,

@@ -1021,6 +1021,105 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      // ── project_context ─────────────────────────────────────────────────────
+      case 'project_context': {
+        const projectId = args?.projectId as string | undefined;
+        if (projectId) {
+          // Single project — full context
+          const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId) as Record<string, any> | undefined;
+          if (!project) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Project not found' }) }] };
+          const members = db.prepare(`
+            SELECT pm.agentId, pm.role, a.name as agentName FROM project_members pm
+            LEFT JOIN agents a ON a.id = pm.agentId
+            WHERE pm.projectId = ?
+          `).all(projectId) as any[];
+          const milestones = db.prepare(
+            'SELECT id, title, dueDate, completed, completedAt FROM project_milestones WHERE projectId = ? ORDER BY createdAt ASC'
+          ).all(projectId) as any[];
+          const openTaskCount = (db.prepare(
+            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
+          ).get(projectId) as { c: number }).c;
+          const doneTaskCount = (db.prepare(
+            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status = 'done'"
+          ).get(projectId) as { c: number }).c;
+          return { content: [{ type: 'text', text: JSON.stringify({
+            id: project.id, name: project.name, description: project.description,
+            goal: project.goal, status: project.status, color: project.color,
+            createdAt: project.createdAt, updatedAt: project.updatedAt,
+            members, milestones, openTasks: openTaskCount, doneTasks: doneTaskCount,
+          }, null, 2) }] };
+        } else {
+          // All active projects — summary list
+          const projects = db.prepare(
+            "SELECT id, name, description, goal, status, color, createdAt FROM projects WHERE status = 'active' ORDER BY createdAt DESC LIMIT 20"
+          ).all() as any[];
+          const result = projects.map((p) => {
+            const openTasks = (db.prepare(
+              "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
+            ).get(p.id) as { c: number }).c;
+            const memberCount = (db.prepare(
+              'SELECT COUNT(*) as c FROM project_members WHERE projectId = ?'
+            ).get(p.id) as { c: number }).c;
+            return { ...p, openTasks, memberCount };
+          });
+          return { content: [{ type: 'text', text: JSON.stringify({ projects: result }, null, 2) }] };
+        }
+      }
+
+      // ── agent_status_set ─────────────────────────────────────────────────────
+      case 'agent_status_set': {
+        const agentId = args?.agentId as string;
+        const status = args?.status as string;
+        const currentTask = args?.currentTask as string | undefined;
+        if (!agentId || !status) {
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'agentId and status are required' }) }], isError: true };
+        }
+        const now = Date.now();
+        // Update the agents table — use PATCH through the API to get full side-effects (SSE, etc.)
+        await awaitPatch(`/api/agents/${encodeURIComponent(agentId)}`, {
+          status,
+          ...(currentTask !== undefined ? { currentTaskId: currentTask } : {}),
+          lastActivity: now,
+        });
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, agentId, status, currentTask }) }] };
+      }
+
+      // ── campaign_context ─────────────────────────────────────────────────────
+      case 'campaign_context': {
+        const statusFilter = args?.status as string | undefined;
+        let query = `SELECT id, name, description, type, goal, status, channels, budget, budgetSpent,
+          targetAudience, kpis, startDate, endDate, color, createdAt
+          FROM campaigns`;
+        const params: any[] = [];
+        if (statusFilter) {
+          query += ' WHERE status = ?';
+          params.push(statusFilter);
+        }
+        query += ' ORDER BY createdAt DESC LIMIT 20';
+        let campaigns: any[] = [];
+        try {
+          campaigns = db.prepare(query).all(...params) as any[];
+        } catch {
+          return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], note: 'No campaigns table found — campaigns have not been set up yet.' }) }] };
+        }
+        const result = campaigns.map((c) => {
+          let channels: string[] = [];
+          try { channels = JSON.parse(c.channels); } catch { /* keep empty */ }
+          let kpis: Record<string, unknown> = {};
+          try { kpis = JSON.parse(c.kpis); } catch { /* keep empty */ }
+          const members = db.prepare(`
+            SELECT cm.agentId, cm.role, a.name as agentName FROM campaign_members cm
+            LEFT JOIN agents a ON a.id = cm.agentId
+            WHERE cm.campaignId = ?
+          `).all(c.id) as any[];
+          const openTasks = (db.prepare(
+            "SELECT COUNT(*) as cnt FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
+          ).get(c.id) as { cnt: number }).cnt;
+          return { ...c, channels, kpis, members, openTasks };
+        });
+        return { content: [{ type: 'text', text: JSON.stringify({ campaigns: result, hint: result.length === 0 ? 'No campaigns found. Create one via the Campaigns section in the dashboard.' : `Found ${result.length} campaign(s).` }, null, 2) }] };
+      }
+
       // ── knowledge_search ────────────────────────────────────────────────────
       case 'knowledge_search': {
         const query = String(args?.query ?? '').trim();
