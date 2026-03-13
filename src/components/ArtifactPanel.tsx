@@ -24,6 +24,7 @@ import MarkdownMessage from './MarkdownMessage';
 
 interface ArtifactPanelProps {
   sessionId?: string;
+  agentName?: string;
 }
 
 const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
@@ -49,7 +50,7 @@ function isPreviewable(artifact: Artifact): boolean {
   return lang === 'html' || lang === 'htm' || lang === 'svg';
 }
 
-export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
+export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelProps) {
   const {
     artifacts,
     selectedArtifactId,
@@ -498,9 +499,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
           {displayArtifacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 text-mission-control-text-dim">
               <FileText size={48} className="mb-4 opacity-30" />
-              <p className="text-sm font-medium mb-2">No Artifacts Yet</p>
+              <p className="text-sm font-medium mb-2">No artifacts yet</p>
               <p className="text-xs">
-                Artifacts like code, diagrams, and images will appear here as agents create them.
+                {agentName
+                  ? `Ask ${agentName} to generate code, images, or files — they'll appear here.`
+                  : 'Artifacts like code, diagrams, and images will appear here as agents create them.'}
               </p>
             </div>
           ) : (

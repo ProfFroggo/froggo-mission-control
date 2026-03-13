@@ -341,9 +341,14 @@ export default function ChatPanel() {
     });
   }, [messages, searchQuery]);
 
-  // Scroll to bottom
+  // Scroll to bottom — use a brief timeout so the DOM has settled before scrolling.
+  // Without this, scrollIntoView fires before the new message element is fully rendered,
+  // which causes it to stop just above the last message.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const t = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+    return () => clearTimeout(t);
   }, [messages]);
 
   // Auto-resize textarea
@@ -1486,7 +1491,7 @@ export default function ChatPanel() {
       </div>{/* end inner chat col */}
 
       {/* Artifact Panel — right sidebar */}
-      <ArtifactPanel sessionId={currentSessionId} />
+      <ArtifactPanel sessionId={currentSessionId} agentName={selectedAgent?.name} />
       </div>{/* end body row */}
 
       {/* Image lightbox */}

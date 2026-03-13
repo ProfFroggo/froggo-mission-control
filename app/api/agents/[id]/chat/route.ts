@@ -444,14 +444,21 @@ export async function POST(
           agentLocks.delete(agentId);
         }, STREAM_TIMEOUT_MS);
 
+        // Resolve agent display name for heartbeat messages
+        let agentDisplayName = agentId;
+        try {
+          const agentRow = getDb().prepare('SELECT name FROM agents WHERE id = ?').get(agentId) as { name?: string } | undefined;
+          if (agentRow?.name) agentDisplayName = agentRow.name;
+        } catch { /* non-critical — fall back to agentId */ }
+
         // Send a "still working…" heartbeat every 30s so the UI doesn't look frozen
         const HEARTBEAT_MESSAGES = [
-          'Still working on it…',
-          'Thinking through this carefully…',
-          'Running tools, almost there…',
-          'Processing your request…',
-          'Nearly done…',
-          'Working on it…',
+          `${agentDisplayName} is still working on it…`,
+          `${agentDisplayName} is thinking through this carefully…`,
+          `${agentDisplayName} is running tools, almost there…`,
+          `${agentDisplayName} is processing your request…`,
+          `${agentDisplayName} is nearly done…`,
+          `${agentDisplayName} is working on it…`,
         ];
         let heartbeatCount = 0;
         const heartbeat = setInterval(() => {
