@@ -37,6 +37,16 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
 
+      - name: Verify .next is not in published package
+        run: |
+          PACKED=$(npm pack --dry-run 2>&1)
+          if echo "$PACKED" | grep -q "\.next/"; then
+            echo "ERROR: .next/ would be included in the published package!"
+            echo "Remove .next/ from package.json 'files' array and/or .npmignore"
+            exit 1
+          fi
+          echo "✓ .next/ not in package"
+
       - name: Bump patch version
         id: bump
         run: |
