@@ -204,7 +204,7 @@ function formatInline(text: string, mentions?: MentionData): React.ReactNode {
   remaining = remaining.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, altText, url) => {
     const sanitizedUrl = sanitizeUrl(url);
     if (!sanitizedUrl) return `![${altText}](${escapeHtml(url)})`;
-    return `<img src="${sanitizedUrl}" alt="${altText}" class="max-w-full rounded-lg my-2 block" style="max-height:480px;object-fit:contain;" />`;
+    return `<img src="${sanitizedUrl}" alt="${altText}" class="max-w-full rounded-lg my-2 block cursor-pointer" style="max-height:480px;object-fit:contain;" />`;
   });
 
   // Links [text](url) - with XSS protection for URLs
