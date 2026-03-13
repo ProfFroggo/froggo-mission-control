@@ -942,17 +942,17 @@ export function dispatchTask(taskId: string): boolean {
 
     // Capture stderr for error reporting
     let stderrBuf = '';
-    proc.stderr.on('data', (chunk: Buffer) => {
+    proc.stderr!.on('data', (chunk: Buffer) => {
       stderrBuf += chunk.toString();
     });
 
     // Write message to stdin
-    proc.stdin.write(message);
-    proc.stdin.end();
+    proc.stdin!.write(message);
+    proc.stdin!.end();
 
     // Parse stdout for session_id (from stream-json "result" event)
     let outBuf = '';
-    proc.stdout.on('data', (data: Buffer) => {
+    proc.stdout!.on('data', (data: Buffer) => {
       outBuf += data.toString();
       const lines = outBuf.split('\n');
       outBuf = lines.pop() ?? '';

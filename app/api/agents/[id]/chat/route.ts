@@ -368,7 +368,7 @@ export async function POST(
         let lastTextLength = 0; // track accumulated text to emit incremental text_delta
         let resultReceived = false;
 
-        proc.stdout.on('data', (data: Buffer) => {
+        proc.stdout!.on('data', (data: Buffer) => {
           buf += data.toString();
           const lines = buf.split('\n');
           buf = lines.pop() ?? '';
@@ -429,7 +429,7 @@ export async function POST(
           }
         });
 
-        proc.stderr.on('data', (data: Buffer) => {
+        proc.stderr!.on('data', (data: Buffer) => {
           const msg = data.toString().trim();
           if (msg) console.error(`[chat/${agentId}/stderr]`, msg.slice(0, 500));
         });
