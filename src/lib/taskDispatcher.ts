@@ -313,36 +313,31 @@ export function loadDisallowedTools(agentId: string): string[] {
 const TASK_SUFFIX = `\n\n---
 You are in autonomous task mode. Work through the assigned task using the MCP tools.
 Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
-Do not ask for clarification — interpret and execute.
+Do not ask for clarification — interpret and execute. Log activity frequently.
+
+## Before starting — MANDATORY
+Re-read planningNotes in full before doing anything. All acceptance criteria are in there.
+Call task_activity_create immediately: action="started", message="Started: [one sentence plan]".
 
 ## Task pipeline
 todo → internal-review (Pre-review) → in-progress → review → done
 - You work in the **in-progress** stage.
 - When you finish, set status to **review** (NOT done — only Clara can approve done).
-- If blocked by something only a human can resolve, use **human-review**.
+- If blocked by something only a human can resolve, use **human-review** (NOT blocked — that status does not exist).
 - Never set status to internal-review — the system manages that automatically.
 
 ## Activity logging — MANDATORY
-Call mcp__mission-control_db__task_add_activity at EVERY meaningful step:
-- When you start a subtask
-- When you complete a subtask
-- When you make a significant decision or discovery
-- When you save a file
-- When you hit an obstacle and how you resolved it
+Call mcp__mission-control_db__task_add_activity after every meaningful decision or step — this is your audit trail.
+- When you start a subtask: action="subtask_started"
+- When you complete a subtask: action="subtask_completed", message names what you did
+- When you make a significant decision: action="decision"
+- When you save a file: action="file_saved", message includes the path
+- When you hit an obstacle and resolve it: action="obstacle_resolved"
 Minimum: one activity entry per subtask completed.
 
-## Done criteria — check ALL before calling review
-Before setting status="review", verify:
-- [ ] All subtasks are marked complete (or explicitly noted why one is N/A)
-- [ ] All output files are saved to the correct library path and attached via task_add_attachment
-- [ ] lastAgentUpdate contains a brief summary of what was done and references any output files
-- [ ] Progress is set to 100
-
-When setting review, include in lastAgentUpdate:
-"Completed: [brief summary]. Output: [file paths or 'no files']. Notes: [any caveats]."
-
 ## Subtask rules — CRITICAL
-Every subtask you create MUST be executable by a Claude agent using only:
+When creating subtasks, make them specific and checkable (not vague like "implement feature").
+Every subtask MUST be executable by a Claude agent using only:
 - MCP tools (mcp__mission-control_db__*, mcp__memory__*)
 - Filesystem tools (Read, Write, Edit, Glob, Grep)
 - Shell (Bash) if your tier allows
@@ -354,6 +349,21 @@ NEVER create subtasks that require:
 - Vague instructions like "review X" without specifying the exact MCP call or file path
 
 Each subtask description must name the exact tool call or file path the agent will use to complete it.
+
+## Done criteria — check ALL before moving to review
+Before setting status="review", verify every item:
+- [ ] Every subtask is marked complete (not just most — ALL of them, or document why one is N/A)
+- [ ] All output files are saved to ~/mission-control/library/ with descriptive names and attached via task_add_attachment
+- [ ] task_activity has meaningful entries — not just status changes but real work logs
+- [ ] lastAgentUpdate is a brief summary: what you did, what files you created, any caveats
+
+When setting review, set lastAgentUpdate to:
+"Completed: [brief summary]. Output: [file paths or 'no files']. Notes: [any caveats]."
+
+## Blocker protocol
+If you hit a blocker you cannot resolve autonomously: move task to human-review (NOT blocked — use human-review).
+In lastAgentUpdate, describe exactly: what you tried, what failed, and what specific information or action you need from the human.
+Do NOT leave the task stuck in in-progress — always either complete it or escalate it.
 
 ## Library file routing — ALWAYS use the correct path when saving output files:
 | File type | Save to |
@@ -904,7 +914,19 @@ export function dispatchTask(taskId: string): boolean {
     // Get per-agent model and trust tier from DB
     const agentRow = db.prepare('SELECT model, trust_tier FROM agents WHERE id = ?').get(agentId) as
       { model?: string; trust_tier?: string } | undefined;
-    const model = resolveModel(agentRow?.model ?? 'sonnet');
+    // Priority-based model override: P0/P1 tasks use opus for higher reasoning capacity.
+    // Per-agent model from DB can still override this if explicitly set to opus/sonnet/haiku.
+    const taskPriority = (task.priority as string | null) ?? 'p2';
+    const agentModelPref = agentRow?.model ?? 'sonnet';
+    let effectiveModel = agentModelPref;
+    if (agentModelPref === 'sonnet' || agentModelPref === 'claude-sonnet-4-6') {
+      // Auto-upgrade to opus for P0/P1 unless the agent explicitly prefers a different tier
+      if (taskPriority === 'p0' || taskPriority === 'p1') {
+        effectiveModel = 'opus';
+        console.log(`[taskDispatcher] Auto-upgrading model to opus for ${taskPriority} task ${taskId}`);
+      }
+    }
+    const model = resolveModel(effectiveModel);
     const trustTier = agentRow?.trust_tier ?? 'apprentice';
 
     // Resolve allowed tools for this trust tier
