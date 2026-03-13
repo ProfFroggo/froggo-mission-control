@@ -288,7 +288,7 @@ export async function POST(
             // parent-directory traversal (which can stop at a .git/.claude boundary).
             const parentMcp = join(HOME, 'mission-control', '.mcp.json');
             if (existsSync(parentMcp)) {
-              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp));
+              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
             }
           }
         } catch {}
