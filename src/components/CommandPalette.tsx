@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, Inbox, Brain, Database, Plus, FileText, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, Inbox, Brain, Database, Plus, FileText, Home, Coffee, Play, Terminal, RefreshCw, BookOpen, Library, Bell, LayoutGrid, Clock, FolderOpen, Megaphone, CheckSquare } from 'lucide-react';
+import Fuse from 'fuse.js';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 
@@ -21,6 +22,7 @@ interface Command {
   shortcut?: string;
   category: string;
   action: () => void;
+  meta?: string; // e.g. status badge text
 }
 
 interface CommandPaletteProps {
@@ -34,6 +36,8 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addActivity, connected } = useStore();
+  const tasks = useStore(s => s.tasks);
+  const agents = useStore(s => s.agents);
   const dialogRef = useFocusTrap(isOpen);
   const announce = useAnnounce();
   const { setFocusMode } = useFocusMode();
@@ -61,7 +65,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   }, [promptDialog]);
 
   const commands: Command[] = useMemo(() => [
-    // Navigation
+    // Navigation — existing
     { id: 'nav-inbox', icon: <Mail size={16} />, label: 'Go to Inbox', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
     { id: 'nav-dashboard', icon: <Home size={16} />, label: 'Go to Dashboard', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
     { id: 'nav-analytics', icon: <Zap size={16} />, label: 'Go to Analytics', shortcut: '⌘3', category: 'Navigation', action: () => { onNavigate('analytics'); onClose(); } },
@@ -73,7 +77,21 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
     { id: 'nav-accounts', icon: <Settings size={16} />, label: 'Go to Accounts', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('accounts'); onClose(); } },
     { id: 'nav-approvals', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘0', category: 'Navigation', action: () => { onNavigate('approvals'); onClose(); } },
-    
+
+    // Navigation — missing views
+    { id: 'nav-projects', icon: <FolderOpen size={16} />, label: 'Go to Projects', category: 'Navigation', action: () => { onNavigate('projects'); onClose(); } },
+    { id: 'nav-campaigns', icon: <Megaphone size={16} />, label: 'Go to Campaigns', category: 'Navigation', action: () => { onNavigate('campaigns'); onClose(); } },
+    { id: 'nav-knowledge', icon: <BookOpen size={16} />, label: 'Go to Knowledge', category: 'Navigation', action: () => { onNavigate('knowledge'); onClose(); } },
+    { id: 'nav-library', icon: <Library size={16} />, label: 'Go to Library', category: 'Navigation', action: () => { onNavigate('library'); onClose(); } },
+    { id: 'nav-schedule', icon: <Clock size={16} />, label: 'Go to Schedule', category: 'Navigation', action: () => { onNavigate('schedule'); onClose(); } },
+    { id: 'nav-notifications', icon: <Bell size={16} />, label: 'Go to Notifications', category: 'Navigation', action: () => { onNavigate('notifications'); onClose(); } },
+    { id: 'nav-modules', icon: <LayoutGrid size={16} />, label: 'Go to Modules', category: 'Navigation', action: () => { onNavigate('modules'); onClose(); } },
+
+    // Create shortcuts
+    { id: 'create-task', icon: <Plus size={16} />, label: 'Create new task', category: 'Create', action: () => { window.dispatchEvent(new CustomEvent('new-task')); onClose(); } },
+    { id: 'create-project', icon: <Plus size={16} />, label: 'Create new project', category: 'Create', action: () => { onNavigate('projects'); onClose(); setTimeout(() => window.dispatchEvent(new CustomEvent('new-project')), 100); } },
+    { id: 'create-campaign', icon: <Plus size={16} />, label: 'Create new campaign', category: 'Create', action: () => { onNavigate('campaigns'); onClose(); setTimeout(() => window.dispatchEvent(new CustomEvent('new-campaign')), 100); } },
+
     // Quick Actions
     { id: 'action-calendar', icon: <Calendar size={16} />, label: 'Check Calendar Today', category: 'Actions', action: async () => {
       if (connected) {
@@ -107,7 +125,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       }
       onClose();
     }},
-    
+
     // Memory
     { id: 'memory-search', icon: <Brain size={16} />, label: 'Search Memory (mission-control-db)', category: 'Memory', action: async () => {
       withPrompt(
@@ -139,10 +157,10 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         }
       );
     }},
-    
+
     // Settings
     { id: 'settings', icon: <Settings size={16} />, label: 'Open Settings', category: 'Settings', action: () => { onNavigate('settings'); onClose(); } },
-    
+
     // Quick Actions - Power-ups
     { id: 'quick-tweet', icon: <XIcon size={16} />, label: 'Draft a Post', category: 'Quick', action: async () => {
       withPrompt(
@@ -179,7 +197,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         }
       );
     }},
-    
+
     // Focus Modes
     { id: 'focus-work', icon: <Coffee size={16} />, label: 'Work Mode', category: 'Focus', action: () => {
       setFocusMode('work');
@@ -201,7 +219,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       showToast('info', 'Focus Mode Off');
       onClose();
     }},
-    
+
     // System
     { id: 'sys-refresh', icon: <RefreshCw size={16} />, label: 'Refresh Data', category: 'System', action: () => {
       window.location.reload();
@@ -235,10 +253,63 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [connected, addActivity, withPrompt, withPrompt2, onNavigate, onClose, setFocusMode]);
 
-  const filteredCommands = commands.filter(cmd => 
-    cmd.label.toLowerCase().includes(query.toLowerCase()) ||
-    cmd.category.toLowerCase().includes(query.toLowerCase())
-  );
+  // Recent tasks section (query empty only) — last 5 by updatedAt
+  const recentTaskCommands: Command[] = useMemo(() => {
+    if (query) return [];
+    return [...tasks]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 5)
+      .map(task => ({
+        id: `recent-task-${task.id}`,
+        icon: <CheckSquare size={16} />,
+        label: task.title,
+        category: 'Recent',
+        meta: task.status,
+        action: () => { onNavigate('kanban'); onClose(); },
+      }));
+  }, [query, tasks, onNavigate, onClose]);
+
+  // Active agents section (query empty only)
+  const activeAgentCommands: Command[] = useMemo(() => {
+    if (query) return [];
+    return agents
+      .filter(a => a.status === 'active' || a.status === 'busy')
+      .slice(0, 5)
+      .map(agent => ({
+        id: `agent-${agent.id}`,
+        icon: <Bot size={16} />,
+        label: agent.name,
+        category: 'Agents',
+        meta: agent.status,
+        action: () => { onNavigate('agents'); onClose(); },
+      }));
+  }, [query, agents, onNavigate, onClose]);
+
+  // Task search via Fuse when query is active
+  const taskSearchCommands: Command[] = useMemo(() => {
+    if (!query || tasks.length === 0) return [];
+    const fuse = new Fuse(tasks, { keys: ['title', 'description'], threshold: 0.4 });
+    return fuse.search(query).slice(0, 5).map(({ item }) => ({
+      id: `task-${item.id}`,
+      icon: <CheckSquare size={16} />,
+      label: item.title,
+      category: 'Tasks',
+      shortcut: undefined,
+      meta: item.status,
+      action: () => { onNavigate('kanban'); onClose(); },
+    }));
+  }, [query, tasks, onNavigate, onClose]);
+
+  const filteredCommands = useMemo(() => {
+    const base = query
+      ? commands.filter(cmd =>
+          cmd.label.toLowerCase().includes(query.toLowerCase()) ||
+          cmd.category.toLowerCase().includes(query.toLowerCase())
+        )
+      : commands;
+
+    return [...recentTaskCommands, ...activeAgentCommands, ...base, ...taskSearchCommands];
+  }, [query, commands, recentTaskCommands, activeAgentCommands, taskSearchCommands]);
 
   useEffect(() => {
     if (isOpen) {
@@ -282,19 +353,19 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   let flatIndex = 0;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="command-palette-title"
     >
-      <div 
-        className="absolute inset-0 modal-backdrop backdrop-blur-sm" 
+      <div
+        className="absolute inset-0 modal-backdrop backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-      
-      <div 
+
+      <div
         ref={dialogRef as React.RefObject<HTMLDivElement>}
         className="relative w-full max-w-lg glass-modal rounded-2xl shadow-2xl overflow-hidden"
       >
@@ -319,7 +390,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         </div>
 
         {/* Commands List */}
-        <div 
+        <div
           id="command-list"
           className="max-h-80 overflow-y-auto p-2"
           role="listbox"
@@ -327,7 +398,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         >
           {Object.entries(groupedCommands).map(([category, cmds]) => (
             <div key={category} className="mb-2" role="group" aria-labelledby={`category-${category}`}>
-              <div 
+              <div
                 id={`category-${category}`}
                 className="px-3 py-1 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider"
               >
@@ -336,7 +407,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
               {cmds.map((cmd) => {
                 const currentIndex = flatIndex++;
                 const isSelected = currentIndex === selectedIndex;
-                
+
                 return (
                   <button
                     key={cmd.id}
@@ -352,6 +423,13 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                   >
                     <span className={isSelected ? 'text-white' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
                     <span className="flex-1 text-left">{cmd.label}</span>
+                    {cmd.meta && (
+                      <span className={`px-2 py-0.5 text-xs rounded ${
+                        isSelected ? 'bg-mission-control-text/20' : 'bg-mission-control-border'
+                      }`}>
+                        {cmd.meta}
+                      </span>
+                    )}
                     {cmd.shortcut && (
                       <kbd className={`px-2 py-0.5 text-xs rounded ${
                         isSelected ? 'bg-mission-control-text/20' : 'bg-mission-control-border'
@@ -364,7 +442,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
               })}
             </div>
           ))}
-          
+
           {filteredCommands.length === 0 && (
             <div className="text-center py-8 text-mission-control-text-dim">
               No commands found
