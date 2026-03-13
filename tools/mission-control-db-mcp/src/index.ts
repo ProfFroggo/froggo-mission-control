@@ -478,7 +478,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         if (newStatus !== undefined)               { sets.push('status = ?');          vals.push(newStatus); }
-        if (args?.progress !== undefined)           { sets.push('progress = ?');         vals.push(args.progress); }
+        if (args?.progress !== undefined)           { const progress = Math.max(0, Math.min(100, Number(args.progress))); sets.push('progress = ?'); vals.push(progress); }
         if (args?.lastAgentUpdate)                  { sets.push('lastAgentUpdate = ?');  vals.push(args.lastAgentUpdate); }
         if (args?.planningNotes !== undefined)      { sets.push('planningNotes = ?');    vals.push(args.planningNotes); }
         if (args?.assignedTo !== undefined)         { sets.push('assignedTo = ?');       vals.push(args.assignedTo); }
@@ -599,8 +599,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // ── chat_post ───────────────────────────────────────────────────────────
       case 'chat_post': {
+        const content = String(args?.content ?? '').trim();
+        if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required' }) }], isError: true };
+        if (content.length > 20_000) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content too long (max 20,000 chars)' }) }], isError: true };
         db.prepare('INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)').run(
-          args?.roomId, args?.agentId, args?.content, Date.now()
+          args?.roomId, args?.agentId, content, Date.now()
         );
         return { content: [{ type: 'text', text: JSON.stringify({ success: true }) }] };
       }
