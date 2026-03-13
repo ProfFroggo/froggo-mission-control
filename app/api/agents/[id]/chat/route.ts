@@ -31,7 +31,7 @@ function spawnClaude(args: string[], opts: Parameters<typeof spawn>[2]): ReturnT
     : spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], opts!);
 }
 const LOCK_TTL_MS = 3 * 60_000;
-const STREAM_TIMEOUT_MS = 120_000;
+const STREAM_TIMEOUT_MS = 5 * 60_000; // 5 minutes — image generation and multi-tool tasks need headroom
 
 // ── Per-agent lock ───────────────────────────────────────────────────────────
 type G2 = typeof globalThis & { _chatAgentLocks?: Map<string, number> };
@@ -437,12 +437,27 @@ export async function POST(
         const timeout = setTimeout(() => {
           proc.kill();
           if (!streamCancelled) {
-            enc({ type: 'error', error: 'Response timed out after 120s' });
+            enc({ type: 'error', error: 'Response timed out after 5 minutes' });
             try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
             try { controller.close(); } catch { /* already closed */ }
           }
           agentLocks.delete(agentId);
         }, STREAM_TIMEOUT_MS);
+
+        // Send a "still working…" heartbeat every 30s so the UI doesn't look frozen
+        const HEARTBEAT_MESSAGES = [
+          'Still working on it…',
+          'Processing, hang tight…',
+          'Almost there…',
+          'Still going…',
+        ];
+        let heartbeatCount = 0;
+        const heartbeat = setInterval(() => {
+          if (streamCancelled || resultReceived) { clearInterval(heartbeat); return; }
+          const msg = HEARTBEAT_MESSAGES[heartbeatCount % HEARTBEAT_MESSAGES.length];
+          heartbeatCount++;
+          enc({ type: 'heartbeat', text: msg });
+        }, 30_000);
 
         const finishStream = (code: number | null) => {
           agentLocks.delete(agentId);
@@ -454,6 +469,7 @@ export async function POST(
 
         proc.on('close', (code) => {
           clearTimeout(timeout);
+          clearInterval(heartbeat);
 
           // Stale resume: clear session and retry fresh
           if (!resultReceived && resumeId) {
