@@ -1,4 +1,4 @@
-import { FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, PieChart, Settings, BarChart2, MessageCircle, Send, Rocket } from 'lucide-react';
+import { FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, PieChart, Settings, BarChart2, MessageCircle, Send, Rocket, Columns } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 
 interface XTabBarProps {
@@ -7,6 +7,7 @@ interface XTabBarProps {
 }
 
 const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
+  { id: 'pipeline', label: 'Pipeline', icon: <Columns size={16} /> },
   { id: 'research', label: 'Research', icon: <Zap size={16} /> },
   { id: 'plan', label: 'Content Plan', icon: <FileText size={16} /> },
   { id: 'drafts', label: 'Drafts', icon: <Edit3 size={16} /> },

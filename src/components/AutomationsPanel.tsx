@@ -42,7 +42,7 @@ interface Template {
   name: string;
   description: string;
   category: TemplateCategory;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: any;
   trigger_type: TriggerType;
   trigger_config: Record<string, unknown>;
   steps: Omit<AutomationStep, 'id'>[];
@@ -167,7 +167,7 @@ function StatusBadge({ status }: { status: AutomationStatus }) {
 }
 
 function TriggerIcon({ type }: { type: TriggerType }) {
-  const icons: Record<TriggerType, React.ComponentType<{ size?: number; className?: string }>> = {
+  const icons: Record<TriggerType, any> = {
     schedule: Clock,
     event:    Zap,
     webhook:  Globe,
@@ -217,7 +217,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <TriggerIcon type={automation.trigger_type} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)', truncate: 'true' }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {automation.name}
             </span>
             <StatusBadge status={automation.status} />

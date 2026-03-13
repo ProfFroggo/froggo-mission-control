@@ -332,6 +332,8 @@ export const scheduleApi = {
   getAll: () => apiCall('/schedule'),
   create: (data: Record<string, unknown>) =>
     apiCall('/schedule', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/schedule/${id}`, { method: 'PATCH', body: data }),
   delete: (id: string) =>
     apiCall(`/schedule/${id}`, { method: 'DELETE' }),
 };

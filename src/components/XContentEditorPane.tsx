@@ -1,4 +1,5 @@
 import type { XTab } from './XTwitterPage';
+import XPipelineView from './XPipelineView';
 import XPublishComposer from './XPublishComposer';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
 import XResearchView from './XResearchView';
@@ -17,6 +18,10 @@ interface XContentEditorPaneProps {
 }
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
+  if (tab === 'pipeline') {
+    return <XPipelineView />;
+  }
+
   if (tab === 'publish') {
     return <XPublishComposer />;
   }
