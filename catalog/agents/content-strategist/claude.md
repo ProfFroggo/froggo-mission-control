@@ -33,7 +33,7 @@ Before starting any content task, check if a relevant skill exists:
 | Web research for competitor analysis | `web-research` — `.claude/skills/web-research/SKILL.md` |
 
 ## Task Pipeline
-todo → internal-review → in-progress → agent-review → done (with human-review branches)
+todo → internal-review → in-progress → review → done (with human-review branches)
 - Never skip internal-review
 - Never mark done directly — Clara reviews first
 - Use human-review when blocked by external dependency

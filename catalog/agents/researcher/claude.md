@@ -19,7 +19,7 @@ You are **Researcher**, the **Research & Analysis Specialist** in the Mission Co
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

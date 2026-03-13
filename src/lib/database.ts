@@ -565,6 +565,47 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_finance_txns_account ON finance_transactions(accountId, date DESC);
     CREATE INDEX IF NOT EXISTS idx_finance_txns_category ON finance_transactions(category, date DESC);
     CREATE INDEX IF NOT EXISTS idx_finance_budgets_active ON finance_budgets(active, period);
+
+    -- ══════════════════════════════════════════
+    -- KNOWLEDGE BASE
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS knowledge_base (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'general',
+      tags TEXT NOT NULL DEFAULT '[]',
+      scope TEXT NOT NULL DEFAULT 'all',
+      pinned INTEGER NOT NULL DEFAULT 0,
+      version INTEGER NOT NULL DEFAULT 1,
+      createdBy TEXT NOT NULL DEFAULT 'human',
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_base_links (
+      id TEXT PRIMARY KEY,
+      knowledgeId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      url TEXT NOT NULL,
+      description TEXT,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_base_assets (
+      id TEXT PRIMARY KEY,
+      knowledgeId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+      filePath TEXT NOT NULL,
+      fileName TEXT NOT NULL,
+      mimeType TEXT,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_category ON knowledge_base(category);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_pinned ON knowledge_base(pinned, updatedAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_scope ON knowledge_base(scope);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_links ON knowledge_base_links(knowledgeId);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_base_assets ON knowledge_base_assets(knowledgeId);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
@@ -607,6 +648,63 @@ function initSchema(db: Database.Database) {
   // Module Builder: index for task-by-module queries
   try {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_tasks_moduleId ON tasks(moduleId) WHERE moduleId IS NOT NULL`);
+  } catch { /* non-critical */ }
+
+  // Knowledge Base: FTS virtual table + triggers
+  try {
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_base_fts USING fts5(
+        title, content, tags, content='knowledge_base', content_rowid='rowid'
+      );
+      CREATE TRIGGER IF NOT EXISTS knowledge_base_ai AFTER INSERT ON knowledge_base BEGIN
+        INSERT INTO knowledge_base_fts(rowid, title, content, tags) VALUES (new.rowid, new.title, new.content, new.tags);
+      END;
+      CREATE TRIGGER IF NOT EXISTS knowledge_base_au AFTER UPDATE ON knowledge_base BEGIN
+        INSERT INTO knowledge_base_fts(knowledge_base_fts, rowid, title, content, tags) VALUES('delete', old.rowid, old.title, old.content, old.tags);
+        INSERT INTO knowledge_base_fts(rowid, title, content, tags) VALUES (new.rowid, new.title, new.content, new.tags);
+      END;
+      CREATE TRIGGER IF NOT EXISTS knowledge_base_ad AFTER DELETE ON knowledge_base BEGIN
+        INSERT INTO knowledge_base_fts(knowledge_base_fts, rowid, title, content, tags) VALUES('delete', old.rowid, old.title, old.content, old.tags);
+      END;
+    `);
+  } catch { /* FTS not available or already created */ }
+
+  // Seed example knowledge base articles if empty
+  try {
+    const kbCount = db.prepare('SELECT COUNT(*) as c FROM knowledge_base').get() as { c: number };
+    if (kbCount.c === 0) {
+      const now = Date.now();
+      const articles = [
+        {
+          id: `kb-${now}-1`,
+          title: 'Brand Voice & Tone',
+          category: 'brand',
+          content: `# Brand Voice & Tone\n\nUpdate this article with your brand guidelines.\n\n## Voice\n- Clear and direct\n- Friendly but professional\n- Never condescending\n\n## Tone by context\n- **Marketing copy**: Energetic, aspirational\n- **Support**: Empathetic, patient\n- **Technical docs**: Precise, thorough`,
+          tags: JSON.stringify(['brand', 'voice', 'tone', 'writing']),
+          scope: 'all',
+        },
+        {
+          id: `kb-${now}-2`,
+          title: 'Company Context & Background',
+          category: 'onboarding',
+          content: `# Company Context\n\nUpdate this with your company's background, mission, values, and key facts that all agents should know.\n\n## Mission\n[Your mission here]\n\n## Key products/services\n[List here]\n\n## Target audience\n[Describe here]`,
+          tags: JSON.stringify(['company', 'context', 'onboarding']),
+          scope: 'all',
+        },
+        {
+          id: `kb-${now}-3`,
+          title: 'Design System Guidelines',
+          category: 'guidelines',
+          content: `# Design System Guidelines\n\nUpdate with your design standards.\n\n## Colors\n- Primary: [hex]\n- Secondary: [hex]\n\n## Typography\n- Headings: [font]\n- Body: [font]\n\n## Component rules\n[Add rules here]`,
+          tags: JSON.stringify(['design', 'ui', 'brand', 'guidelines']),
+          scope: 'all',
+        },
+      ];
+      const insert = db.prepare(`INSERT OR IGNORE INTO knowledge_base (id, title, content, category, tags, scope, pinned, version, createdBy, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 0, 1, 'system', ?, ?)`);
+      for (const a of articles) {
+        insert.run(a.id, a.title, a.content, a.category, a.tags, a.scope, now, now);
+      }
+    }
   } catch { /* non-critical */ }
 
   // Phase 79: WAL performance tuning

@@ -761,8 +761,8 @@ export async function POST(
             //   all other sessions: messages table (sessionKey col)
             let historyContext = '';
             try {
-              // Room session: sessionKey = "{roomId}-{agentId}", roomId starts with "room-"
-              const roomId = sessionKey.endsWith(`-${id}`) && sessionKey.startsWith('room-')
+              // Room session: sessionKey = "{roomId}-{agentId}", roomId starts with "room-" or "project-"
+              const roomId = sessionKey.endsWith(`-${id}`) && (sessionKey.startsWith('room-') || sessionKey.startsWith('project-'))
                 ? sessionKey.slice(0, sessionKey.length - id.length - 1)
                 : null;
 

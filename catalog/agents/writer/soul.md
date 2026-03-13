@@ -184,3 +184,14 @@ CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
 cat SUMMARY.md
 ```
 Log each phase result. Mark subtask complete. Update progress before next phase.
+
+## When Stuck
+
+After 2 failed attempts at the same approach → stop and try a different approach.
+After 3 failed approaches total → move the task to `human-review` and post a task activity with:
+1. What you tried (each approach, briefly)
+2. What error or wrong result each approach produced
+3. What you believe is blocking you (be specific — not "it doesn't work" but "the DB write succeeds but the frontend doesn't receive the SSE event")
+4. What information or access you need to unblock
+
+Do NOT keep looping on a stuck problem. Escalation is not failure — silent looping is.

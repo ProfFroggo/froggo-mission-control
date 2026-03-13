@@ -58,7 +58,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'memory_recall',
-      description: 'Recall memories by topic, recency, or agent. Returns recent notes and context.',
+      description: 'Retrieve saved context before starting complex work. Always call this at task start to check if there is relevant prior context: memory_recall({ topic: "project-name" }) or memory_recall({ topic: "agent-name" }). Returns recent notes matching the topic.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -71,28 +71,39 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'memory_write',
-      description: 'Write a memory note to the Obsidian vault. Routes to correct subfolder by category. Auto-adds YAML frontmatter.',
+      description: 'Save important information that you or other agents will need in future sessions. Use after: discovering a key fact about a project, learning a user preference, completing a significant milestone, finding a solution to a recurring problem. category="task" for task outcomes, "decision" for architectural choices, "gotcha" for bugs/pitfalls discovered, "pattern" for reusable solutions, "agent" for agent-specific preferences.',
       inputSchema: {
         type: 'object',
         properties: {
-          content:  { type: 'string', description: 'Content to write' },
-          category: { type: 'string', enum: ['task', 'decision', 'gotcha', 'pattern', 'daily', 'review', 'session', 'agent'], description: 'Memory category' },
-          title:    { type: 'string', description: 'Note title (used as filename)' },
+          content:  { type: 'string', description: 'Clear prose describing what to remember. Be specific — include what happened, why it matters, and any relevant file paths or IDs.' },
+          category: { type: 'string', enum: ['task', 'decision', 'gotcha', 'pattern', 'daily', 'review', 'session', 'agent'], description: 'Memory category — choose the most specific match' },
+          title:    { type: 'string', description: 'Note title in kebab-case (used as filename). Example: "2026-03-14-image-resize-bug-fix"' },
           agent:    { type: 'string', description: 'Agent name if category=agent or task' },
-          tags:     { type: 'array', items: { type: 'string' }, description: 'Tags for this note (used in expertise map)' },
+          tags:     { type: 'array', items: { type: 'string' }, description: 'Tags for this note (used in expertise map). Example: ["image", "bug-fix", "rembg"]' },
         },
         required: ['content', 'category', 'title'],
       },
     },
     {
       name: 'memory_read',
-      description: 'Read a specific file from the Obsidian vault by relative path.',
+      description: 'Retrieve saved context before starting complex work. Always call this at task start to check if there is relevant prior context. Examples: memory_read({ path: "memory/agents/coder/project-name.md" }) or use memory_list to discover what has been saved.',
       inputSchema: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'Relative path within vault (e.g., "knowledge/architecture.md")' },
+          path: { type: 'string', description: 'Relative path within vault (e.g., "memory/knowledge/architecture.md"). Use memory_list to discover available files.' },
         },
         required: ['path'],
+      },
+    },
+    {
+      name: 'memory_list',
+      description: 'List saved memory files, optionally filtered by folder. Use this to discover what has been remembered before starting work. Call at the start of complex tasks to find relevant prior context.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          folder:  { type: 'string', description: 'Subfolder to list (e.g., "memory/agents/coder", "memory/knowledge"). Omit for root listing.' },
+          limit:   { type: 'number', description: 'Max files to return (default 20)' },
+        },
       },
     },
   ],
@@ -305,6 +316,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const content = fs.readFileSync(filePath, 'utf-8');
         return { content: [{ type: 'text', text: content }] };
+      }
+
+      case 'memory_list': {
+        const folder  = (args?.folder as string) || '';
+        const limit   = (args?.limit  as number) || 20;
+        const baseDir = folder ? path.join(VAULT_PATH, folder) : VAULT_PATH;
+
+        if (!fs.existsSync(baseDir)) {
+          return { content: [{ type: 'text', text: `Folder not found: ${folder || '(vault root)'}. Use an empty folder arg to list the vault root.` }] };
+        }
+
+        const files: { path: string; modified: string; size: number }[] = [];
+        const SKIP = new Set(['data', 'logs', 'worktrees', '.git', '.obsidian', 'node_modules']);
+
+        function listDir(dir: string, depth = 0) {
+          if (files.length >= limit || depth > 4) return;
+          try {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+            for (const entry of entries) {
+              if (files.length >= limit) break;
+              if (entry.isDirectory()) {
+                if (!SKIP.has(entry.name)) listDir(path.join(dir, entry.name), depth + 1);
+              } else if (entry.name.endsWith('.md')) {
+                try {
+                  const fullPath = path.join(dir, entry.name);
+                  const stat = fs.statSync(fullPath);
+                  files.push({
+                    path: path.relative(VAULT_PATH, fullPath),
+                    modified: stat.mtime.toISOString().slice(0, 10),
+                    size: stat.size,
+                  });
+                } catch { /* skip */ }
+              }
+            }
+          } catch { /* skip unreadable */ }
+        }
+        listDir(baseDir);
+
+        files.sort((a, b) => b.modified.localeCompare(a.modified));
+        return {
+          content: [{
+            type: 'text',
+            text: files.length > 0
+              ? `Found ${files.length} memory file(s):\n\n` + files.map(f => `- ${f.path} (${f.modified}, ${f.size}b)`).join('\n')
+              : `No memory files found in ${folder || 'vault root'}. Use memory_write to save context.`,
+          }],
+        };
       }
 
       default:

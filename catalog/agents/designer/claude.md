@@ -19,7 +19,7 @@ You are **Designer**, the **UI/UX Designer** in the Mission Control multi-agent 
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

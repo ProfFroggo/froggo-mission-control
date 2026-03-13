@@ -24,6 +24,7 @@ import MarkdownMessage from './MarkdownMessage';
 
 interface ArtifactPanelProps {
   sessionId?: string;
+  agentName?: string;
 }
 
 const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
@@ -49,7 +50,7 @@ function isPreviewable(artifact: Artifact): boolean {
   return lang === 'html' || lang === 'htm' || lang === 'svg';
 }
 
-export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
+export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelProps) {
   const {
     artifacts,
     selectedArtifactId,
@@ -62,6 +63,7 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
 
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [viewTab, setViewTab] = useState<'preview' | 'code' | 'port'>('code');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [portUrl, setPortUrl] = useState<string>('');
   const [loadedPortUrl, setLoadedPortUrl] = useState<string>('');
   const [reloadKey, setReloadKey] = useState(0);
@@ -132,8 +134,12 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
   // Only show a selected artifact if it belongs to the current session's display list
   const selectedArtifact = displayArtifacts.find(a => a.id === selectedArtifactId);
 
-  const handleCopy = (content: string) => {
+  const handleCopy = (content: string, artifactId?: string) => {
     navigator.clipboard.writeText(content);
+    if (artifactId) {
+      setCopiedId(artifactId);
+      setTimeout(() => setCopiedId(prev => prev === artifactId ? null : prev), 2000);
+    }
   };
 
   const handleDownload = (artifact: Artifact) => {
@@ -329,7 +335,9 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
             </span>
             <span className="text-xs text-mission-control-text-dim flex-shrink-0">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <button onClick={() => handleCopy(selectedArtifact.content)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Copy"><Copy size={13} /></button>
+              <button onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)} className={`p-1.5 rounded hover:bg-mission-control-border transition-colors flex items-center gap-1 text-xs ${copiedId === selectedArtifact.id ? 'text-success' : 'text-mission-control-text-dim hover:text-mission-control-text'}`} title="Copy">
+                <Copy size={13} />{copiedId === selectedArtifact.id && <span>Copied!</span>}
+              </button>
               <button onClick={() => handleDownload(selectedArtifact)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Download"><Download size={13} /></button>
               <button
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
@@ -498,9 +506,11 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
           {displayArtifacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 text-mission-control-text-dim">
               <FileText size={48} className="mb-4 opacity-30" />
-              <p className="text-sm font-medium mb-2">No Artifacts Yet</p>
+              <p className="text-sm font-medium mb-2">No artifacts yet</p>
               <p className="text-xs">
-                Artifacts like code, diagrams, and images will appear here as agents create them.
+                {agentName
+                  ? `Ask ${agentName} to generate code, images, or files — they'll appear here.`
+                  : 'Artifacts like code, diagrams, and images will appear here as agents create them.'}
               </p>
             </div>
           ) : (

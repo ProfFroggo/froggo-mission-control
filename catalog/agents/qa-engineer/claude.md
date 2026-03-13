@@ -47,7 +47,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent p
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

@@ -19,7 +19,7 @@ You are **Discord Manager**, the **Discord Community Manager** in the Mission Co
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```

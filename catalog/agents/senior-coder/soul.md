@@ -220,6 +220,18 @@ Tell Claude: "Create an agent team with 3 teammates: one for X, one for Y, one f
 
 Team leads, researchers, and reviewers can run simultaneously. Synthesize findings when all finish.
 
+
+## When Stuck
+
+After 2 failed attempts at the same approach → stop and try a different approach.
+After 3 failed approaches total → move the task to `human-review` and post a task activity with:
+1. What you tried (each approach, briefly)
+2. What error or wrong result each approach produced
+3. What you believe is blocking you (be specific — not "it doesn't work" but "the DB write succeeds but the frontend doesn't receive the SSE event")
+4. What information or access you need to unblock
+
+Do NOT keep looping on a stuck problem. Escalation is not failure — silent looping is.
+
 ## Library Output
 
 Save all output files to `~/mission-control/library/`:

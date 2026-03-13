@@ -1214,7 +1214,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           /* TODO: move to CSS token when design system tokens include status colors */
           : activityIndicator ? activityIndicator.color
           : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
-          : task.priority === 'p0' ? 'border-error-border'
+          : task.priority === 'p0' ? 'border-l-4 border-error-border'
+          : task.priority === 'p1' ? 'border-l-4 border-warning-border'
           : 'border-mission-control-border hover:border-mission-control-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
@@ -1414,8 +1415,19 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         </div>
       )}
 
+      {/* Awaiting Clara badge — shown on Pre-review column cards */}
+      {task.status === 'internal-review' && (
+        <div className="icon-text-tight text-xs px-2 py-1 rounded mb-2 bg-review-subtle text-review">
+          <Clock size={12} className="no-shrink animate-pulse" />
+          <span>Awaiting Clara</span>
+          {task.reviewStatus === 'pre-review' && (
+            <span className="ml-1 opacity-70">— reviewing…</span>
+          )}
+        </div>
+      )}
+
       {/* Clara review status badge */}
-      {task.reviewStatus && (
+      {task.reviewStatus && task.status !== 'internal-review' && (
         <div className={`icon-text-tight text-xs px-2 py-1 rounded mb-2 ${
           task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
           task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :

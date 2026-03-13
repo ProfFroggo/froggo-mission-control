@@ -311,76 +311,55 @@ export function loadDisallowedTools(agentId: string): string[] {
 // ── Task suffix ───────────────────────────────────────────────────────────────
 
 const TASK_SUFFIX = `\n\n---
-You are in autonomous task mode. Work through the assigned task using the MCP tools.
-Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
-Do not ask for clarification — interpret and execute.
+You are working on a task in Mission Control. Your job is to complete it fully and hand it off to Clara for review.
 
-## Task pipeline
-todo → internal-review (Pre-review) → in-progress → review → done
-- You work in the **in-progress** stage.
-- When you finish, set status to **review** (NOT done — only Clara can approve done).
-- If blocked by something only a human can resolve, use **human-review**.
-- Never set status to internal-review — the system manages that automatically.
+## WHAT DONE LOOKS LIKE
+Before you set status="review", every one of these must be true:
+- Every subtask is marked complete — call task_get and verify incompleteSubtasks is empty
+- All output files are saved to ~/mission-control/library/ with YYYY-MM-DD_name.ext names and attached via task_add_attachment
+- task_activity has entries describing what you built at each step
+- lastAgentUpdate contains: "Completed: [summary]. Output: [file paths or 'no files']. Notes: [caveats]."
+- progress is 100
 
-## Activity logging — MANDATORY
-Call mcp__mission-control_db__task_add_activity at EVERY meaningful step:
-- When you start a subtask
-- When you complete a subtask
-- When you make a significant decision or discovery
-- When you save a file
-- When you hit an obstacle and how you resolved it
-Minimum: one activity entry per subtask completed.
+## WORKING PROTOCOL
+0. knowledge_search("{task topic}") — check for relevant brand guidelines, tone of voice, or context before starting
+1. task_get({id}) — read planningNotes and incompleteSubtasks carefully. These define what done looks like.
+2. Check prior context: mcp__memory__memory_recall({ topic: "<task title>" })
+3. Do the work. Save outputs to ~/mission-control/library/.
+4. Call task_add_activity at each meaningful step — this is your audit trail.
+5. Mark each subtask complete as you finish it: subtask_update({ id, completed: true })
+6. When all subtasks done: task_update({ status: "review", progress: 100, lastAgentUpdate: "Completed: ..." })
 
-## Done criteria — check ALL before calling review
-Before setting status="review", verify:
-- [ ] All subtasks are marked complete (or explicitly noted why one is N/A)
-- [ ] All output files are saved to the correct library path and attached via task_add_attachment
-- [ ] lastAgentUpdate contains a brief summary of what was done and references any output files
-- [ ] Progress is set to 100
+## IF BLOCKED
+After 2 real attempts to solve something, move to human-review immediately:
+task_update({ status: "human-review", lastAgentUpdate: "Blocked: <reason>. Tried: <approach 1>, <approach 2>. Need: <what would unblock you>." })
+Do not loop silently — move to human-review so the human can help.
 
-When setting review, include in lastAgentUpdate:
-"Completed: [brief summary]. Output: [file paths or 'no files']. Notes: [any caveats]."
-
-## Subtask rules — CRITICAL
-Every subtask you create MUST be executable by a Claude agent using only:
-- MCP tools (mcp__mission-control_db__*, mcp__memory__*)
-- Filesystem tools (Read, Write, Edit, Glob, Grep)
-- Shell (Bash) if your tier allows
-- Web tools (WebSearch, WebFetch) if your tier allows
-
-NEVER create subtasks that require:
-- Opening a UI, clicking buttons, or viewing a browser
-- Human manual review (use human-review task status instead)
-- Vague instructions like "review X" without specifying the exact MCP call or file path
-
-Each subtask description must name the exact tool call or file path the agent will use to complete it.
-
-## Library file routing — ALWAYS use the correct path when saving output files:
+## FILE ROUTING
 | File type | Save to |
 |-----------|---------|
-| Research docs, analysis, skill maps, notes | ~/mission-control/library/docs/research/ |
-| Strategy, plans, roadmaps | ~/mission-control/library/docs/stratagies/ |
+| Research, analysis, notes | ~/mission-control/library/docs/research/ |
+| Strategy, plans, roadmaps | ~/mission-control/library/docs/strategies/ |
 | Presentations, reports | ~/mission-control/library/docs/presentations/ |
 | Platform/technical docs | ~/mission-control/library/docs/platform/ |
-| Code, scripts, snippets | ~/mission-control/library/code/ |
-| UI designs, mockups | ~/mission-control/library/design/ui/ |
-| Images, graphics | ~/mission-control/library/design/images/ |
-| Video, media | ~/mission-control/library/design/media/ |
-| Campaign assets | ~/mission-control/library/campaigns/campaign-{name}-{date}/ |
-| Project deliverables | ~/mission-control/library/projects/project-{name}-{date}/ |
+| Code, scripts | ~/mission-control/library/code/ |
+| UI designs | ~/mission-control/library/design/ui/ |
+| Images | ~/mission-control/library/design/images/ |
+| Video/media | ~/mission-control/library/design/media/ |
 
-File naming: YYYY-MM-DD_description.ext (e.g. 2026-03-06_research-findings.md)
-After saving any file, add it as an attachment: mcp__mission-control_db__task_add_attachment
+After saving any file: task_add_attachment({ taskId, filePath, fileName, category, uploadedBy })
 
-## Memory Protocol
+## TOOLS AVAILABLE
+task_get, task_update, task_add_activity, task_add_attachment, subtask_create, subtask_update, chat_post, image_generate, image_remove_background, approval_create, mcp__memory__memory_write, mcp__memory__memory_recall, mcp__memory__memory_list, knowledge_search, knowledge_read, knowledge_write
 
-When your task is complete (before marking review):
-Write a memory note using mcp__memory__memory_write:
-- category: 'task'
-- title: 'YYYY-MM-DD-{brief-slug-of-what-you-built}'
-- content: What you built, what worked, what was hard, key patterns discovered, tags
+## PIPELINE
+todo → pre-review → in-progress → review → done
+You are in-progress. Set review when done — Clara verifies then approves to done.
+Never set internal-review yourself. Never set done — only Clara can.
 
-This note helps you and other agents learn from your work.`;
+## SUBTASK RULES
+Make subtasks specific and checkable. Each must be executable using MCP tools, filesystem tools, or Bash.
+Never create subtasks requiring UI interaction, vague review steps, or human action — use human-review status instead.`;
 
 // ── Skills loader ─────────────────────────────────────────────────────────────
 
@@ -524,6 +503,55 @@ function loadHandoffNote(taskId: string, agentId: string): string {
   return '';
 }
 
+// ── Knowledge Base injection ──────────────────────────────────────────────────
+
+/**
+ * Load pinned KB articles (always injected) + keyword-relevant articles.
+ * Returns a formatted section string (empty string if no results or error).
+ */
+function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): string {
+  try {
+    const db = getDb();
+    const query = `${taskTitle} ${taskDesc || ''}`.slice(0, 200);
+
+    // Search pinned articles first (always inject)
+    const pinned = db.prepare(
+      "SELECT id, title, category, content FROM knowledge_base WHERE pinned = 1 AND scope = 'all' ORDER BY updatedAt DESC LIMIT 2"
+    ).all() as Array<{ id: string; title: string; category: string; content: string }>;
+
+    // Then search by relevance using LIKE keyword match
+    const keywords = query.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 5);
+    let relevant: Array<{ id: string; title: string; category: string; content: string }> = [];
+    if (keywords.length > 0) {
+      const conditions = keywords.map(() => '(LOWER(title) LIKE ? OR LOWER(tags) LIKE ?)').join(' OR ');
+      const params = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+      relevant = db.prepare(
+        `SELECT id, title, category, content FROM knowledge_base WHERE (${conditions}) AND pinned = 0 ORDER BY updatedAt DESC LIMIT 3`
+      ).all(...params) as Array<{ id: string; title: string; category: string; content: string }>;
+    }
+
+    const pinnedIds = new Set(pinned.map(p => p.id));
+    const all = [...pinned, ...relevant.filter(r => !pinnedIds.has(r.id))].slice(0, 4);
+    if (all.length === 0) return '';
+
+    // Token budget guard: ~1500 token limit (chars / 4)
+    const TOKEN_BUDGET = 1500 * 4;
+    let totalChars = 0;
+    const capped = all.filter(a => {
+      totalChars += a.content.length;
+      return totalChars <= TOKEN_BUDGET;
+    });
+    if (capped.length === 0) return '';
+
+    const lines = capped.map(a =>
+      `### ${a.title} (${a.category})\n${a.content.slice(0, 600)}${a.content.length > 600 ? `\n[...use knowledge_read(${a.id}) for full content]` : ''}`
+    );
+    return `\n\n## Workspace Knowledge Base\nThe following guidelines from your team's knowledge base are relevant to this task:\n\n${lines.join('\n\n---\n\n')}\n\nFor more KB articles: use knowledge_search(query) to find what you need.\n`;
+  } catch {
+    return ''; // Non-critical — never block dispatch
+  }
+}
+
 // ── Project context injection ─────────────────────────────────────────────────
 
 function buildProjectContext(projectId: string): string {
@@ -598,6 +626,11 @@ function buildTaskSystemPrompt(
     ? loadHandoffNote(task.id as string, agentId)
     : '';
 
+  // Inject relevant Knowledge Base articles
+  const kbContext = task
+    ? loadRelevantKnowledge(task.title as string, task.description as string | null)
+    : '';
+
   if (relevantMemory && task) {
     trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
   }
@@ -618,7 +651,7 @@ function buildTaskSystemPrompt(
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + relevantMemory + handoffNote + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + kbContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -632,6 +665,7 @@ function buildTaskSystemPrompt(
       if (skills) parts.push(skills);
       if (relevantMemory) parts.push(relevantMemory);
       if (handoffNote) parts.push(handoffNote);
+      if (kbContext) parts.push(kbContext);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
@@ -670,19 +704,36 @@ function persistTaskSession(taskId: string, sessionId: string, model: string) {
 
 function buildTaskMessage(task: Record<string, unknown>): string {
   const status = task.status as string;
+  const taskId = task.id as string;
   const lines: string[] = [];
 
-  // ── Context header ──────────────────────────────────────────────────────────
+  // ── TASK CONTEXT ANCHOR — always at the very top ─────────────────────────
+  // This anchor ensures the agent knows exactly what task it's on, even if the
+  // session context window is stale or full of unrelated earlier work.
+  let subtasks: Array<{ id: string; title: string; completed: number }> = [];
+  try {
+    subtasks = getDb()
+      .prepare('SELECT id, title, completed FROM subtasks WHERE taskId = ? ORDER BY position ASC')
+      .all(taskId) as Array<{ id: string; title: string; completed: number }>;
+  } catch { /* non-critical */ }
+
+  const subtaskLines = subtasks.length > 0
+    ? subtasks.map(s => `  [${s.completed ? 'x' : ' '}] ${s.title} (id: ${s.id})`).join('\n')
+    : '  (no subtasks yet — create them with subtask_create)';
+
   lines.push(
-    `**Task ID**: ${task.id}`,
-    `**Title**: ${task.title}`,
-    `**Status**: ${status}`,
+    `=== TASK CONTEXT ANCHOR ===`,
+    `Task ID: ${taskId}`,
+    `Title: ${task.title}`,
+    `Priority: ${task.priority || 'p2'}`,
+    `Assigned to: ${task.assignedTo || '(you)'}`,
+    `Status: ${status}`,
+    `Planning notes: ${task.planningNotes ? String(task.planningNotes).slice(0, 500) + (String(task.planningNotes).length > 500 ? '… (call task_get for full notes)' : '') : '(none — add with task_update)'}`,
+    `Subtasks (${subtasks.length}):`,
+    subtaskLines,
+    `===========================`,
+    ``,
   );
-  if (task.description) lines.push(`**Description**: ${task.description}`);
-  if (task.priority) lines.push(`**Priority**: ${task.priority}`);
-  if (task.project) lines.push(`**Project**: ${task.project}`);
-  if (task.dueDate) lines.push(`**Due**: ${new Date(task.dueDate as number).toLocaleDateString()}`);
-  lines.push(``);
 
   // ── Status-aware instructions ───────────────────────────────────────────────
 
@@ -904,7 +955,19 @@ export function dispatchTask(taskId: string): boolean {
     // Get per-agent model and trust tier from DB
     const agentRow = db.prepare('SELECT model, trust_tier FROM agents WHERE id = ?').get(agentId) as
       { model?: string; trust_tier?: string } | undefined;
-    const model = resolveModel(agentRow?.model ?? 'sonnet');
+    // Priority-based model override: P0/P1 tasks use opus for higher reasoning capacity.
+    // Per-agent model from DB can still override this if explicitly set to opus/sonnet/haiku.
+    const taskPriority = (task.priority as string | null) ?? 'p2';
+    const agentModelPref = agentRow?.model ?? 'sonnet';
+    let effectiveModel = agentModelPref;
+    if (agentModelPref === 'sonnet' || agentModelPref === 'claude-sonnet-4-6') {
+      // Auto-upgrade to opus for P0/P1 unless the agent explicitly prefers a different tier
+      if (taskPriority === 'p0' || taskPriority === 'p1') {
+        effectiveModel = 'opus';
+        console.log(`[taskDispatcher] Auto-upgrading model to opus for ${taskPriority} task ${taskId}`);
+      }
+    }
+    const model = resolveModel(effectiveModel);
     const trustTier = agentRow?.trust_tier ?? 'apprentice';
 
     // Resolve allowed tools for this trust tier
@@ -942,10 +1005,25 @@ export function dispatchTask(taskId: string): boolean {
     // cwd = project root (not agent workspace) so .claude/settings.json MCP config is loaded
     const cwd = process.cwd();
 
-    // Circuit breaker check
+    // Circuit breaker check — escalate to human-review instead of silently dropping
     if (isAgentCircuitOpen(agentId)) {
-      console.warn(`[taskDispatcher] Circuit open for ${agentId} — skipping dispatch of task ${taskId}`);
+      console.warn(`[taskDispatcher] Circuit open for ${agentId} — escalating task ${taskId} to human-review`);
       trackEvent('dispatch.blocked.circuit', { taskId, agentId }, agentId);
+      try {
+        db.prepare(`UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?`).run(Date.now(), taskId);
+        db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(taskId, 'system', 'circuit_open_escalation',
+            `Agent circuit breaker is open (too many recent failures). Task moved to human-review.`, Date.now());
+        // Post to mission-control room so the human sees it
+        try {
+          db.prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
+            .run('mission-control', 'system',
+              `Task "${task.title}" was escalated to human-review: agent ${agentId} circuit breaker is open (too many recent failures).`,
+              Date.now());
+        } catch { /* non-critical */ }
+      } catch (e) {
+        console.error('[taskDispatcher] Failed to escalate circuit-open task:', e);
+      }
       return false;
     }
 

@@ -19,7 +19,7 @@ You are **Growth Director**, the **Strategic Growth Lead** in the Mission Contro
 
 ## Task Pipeline
 ```
-todo → internal-review → in-progress → agent-review → done
+todo → internal-review → in-progress → review → done
               ↕                              ↕
          human-review                  human-review
 ```
