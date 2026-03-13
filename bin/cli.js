@@ -1083,7 +1083,7 @@ WantedBy=default.target
 
   // ── Ensure Next.js build exists ─────────────────────────────────────────
   const nextDir = path.join(INSTALL_DIR, '.next');
-  if (!existsSync(nextDir)) {
+  if (!existsSync(path.join(nextDir, 'BUILD_ID'))) {
     step('Building dashboard (Next.js build not found)...');
     const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
     const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
