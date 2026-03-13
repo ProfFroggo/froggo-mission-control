@@ -200,6 +200,13 @@ function formatInline(text: string, mentions?: MentionData): React.ReactNode {
     return `<code class="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold">${content}</code>`;
   });
 
+  // Images ![alt](url) — must be before links to avoid partial match
+  remaining = remaining.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, altText, url) => {
+    const sanitizedUrl = sanitizeUrl(url);
+    if (!sanitizedUrl) return `![${altText}](${escapeHtml(url)})`;
+    return `<img src="${sanitizedUrl}" alt="${altText}" class="max-w-full rounded-lg my-2 block" style="max-height:480px;object-fit:contain;" />`;
+  });
+
   // Links [text](url) - with XSS protection for URLs
   // Note: text content is already escaped, URL is sanitized separately
   remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, linkText, url) => {
