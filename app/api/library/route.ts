@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { ENV } from '@/lib/env';
+import { resolveLibraryId } from '@/lib/apiAuth';
 import { readFileSync, existsSync } from 'fs';
 import * as path from 'path';
 
@@ -42,15 +43,7 @@ export async function GET(request: NextRequest) {
       if (!id) return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
 
       // First: try to decode as base64 relative path (new filesystem-based IDs)
-      let filePath: string | null = null;
-      try {
-        const decoded = Buffer.from(id, 'base64url').toString('utf8');
-        const candidate = path.join(ENV.LIBRARY_PATH, decoded);
-        if (!candidate.startsWith(ENV.LIBRARY_PATH + path.sep) && candidate !== ENV.LIBRARY_PATH) {
-          return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
-        }
-        if (existsSync(candidate)) filePath = candidate;
-      } catch { /* not a valid base64 path id */ }
+      let filePath: string | null = resolveLibraryId(id);
 
       // Fallback: legacy DB lookup
       if (!filePath) {
@@ -83,16 +76,7 @@ export async function GET(request: NextRequest) {
       const id = searchParams.get('id');
       if (!id) return new NextResponse('id required', { status: 400 });
 
-      let filePath: string | null = null;
-      try {
-        const decoded = Buffer.from(id, 'base64url').toString('utf8');
-        const candidate = path.join(ENV.LIBRARY_PATH, decoded);
-        if (!candidate.startsWith(ENV.LIBRARY_PATH + path.sep) && candidate !== ENV.LIBRARY_PATH) {
-          return new NextResponse('Forbidden', { status: 403 });
-        }
-        if (existsSync(candidate)) filePath = candidate;
-      } catch { /* invalid id */ }
-
+      const filePath = resolveLibraryId(id);
       if (!filePath) return new NextResponse('Not found', { status: 404 });
 
       const bytes = readFileSync(filePath);

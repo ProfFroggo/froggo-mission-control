@@ -6,33 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mkdirSync, existsSync } from 'fs';
 import { join, basename, extname, dirname } from 'path';
-import { homedir } from 'os';
 import { spawn } from 'child_process';
 import { getDb } from '@/lib/database';
+import { resolveLibraryPath } from '@/lib/apiAuth';
+import { ENV } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const HOME        = homedir();
-const LIBRARY_PATH = join(HOME, 'mission-control', 'library');
-
-/** Resolve the caller-supplied path to an absolute path inside the library. */
-function resolveInputPath(inputPath: string): string | null {
-  // Already absolute and exists
-  if (inputPath.startsWith('/') && existsSync(inputPath)) return inputPath;
-
-  // Relative to library root
-  const viaLibrary = join(LIBRARY_PATH, inputPath);
-  if (existsSync(viaLibrary)) return viaLibrary;
-
-  // Just a filename — search common image dirs
-  for (const sub of ['design/images', 'images', 'design']) {
-    const candidate = join(LIBRARY_PATH, sub, basename(inputPath));
-    if (existsSync(candidate)) return candidate;
-  }
-
-  return null;
-}
 
 /** Inline Python script — removes background with rembg birefnet-hd + alpha matting, saves optimised PNG. */
 const PYTHON_SCRIPT = `
@@ -93,9 +73,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'inputPath is required' }, { status: 400 });
     }
 
-    const inputAbs = resolveInputPath(inputPath);
+    const inputAbs = resolveLibraryPath(inputPath);
     if (!inputAbs) {
-      return NextResponse.json({ error: `File not found: ${inputPath}` }, { status: 404 });
+      return NextResponse.json({ error: `File not found or path not allowed: ${inputPath}` }, { status: 404 });
     }
 
     // Build output path: same dir as input, _cutout suffix, .png
@@ -112,8 +92,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Register in library_files DB
-    const relPath = outputAbs.startsWith(LIBRARY_PATH)
-      ? outputAbs.slice(LIBRARY_PATH.length + 1)
+    const relPath = outputAbs.startsWith(ENV.LIBRARY_PATH)
+      ? outputAbs.slice(ENV.LIBRARY_PATH.length + 1)
       : outputAbs;
     const fileId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     try {
