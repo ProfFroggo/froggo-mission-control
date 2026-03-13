@@ -1133,16 +1133,25 @@ export function recoverStuckInProgressTasks(): void {
     if (stuck.length === 0) return;
 
     console.log(`[taskDispatcher] Recovering ${stuck.length} task(s) stuck in in-progress from previous session`);
+    let staggerIndex = 0;
     for (const task of stuck) {
+      // Skip if already queued for re-dispatch (prevents double-dispatch on concurrent callers)
+      if (_redispatchTimeouts.has(task.id)) continue;
+
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(task.id, 'system', 'auto_redispatch',
         'Task was in-progress at server startup — re-dispatching to resume work (attempt 1/3)', Date.now());
 
+      // Exponential backoff stagger: 5s, 15s, 30s, 60s, then 60s for any beyond 4
+      const backoffMs = [5_000, 15_000, 30_000, 60_000];
+      const delay = backoffMs[Math.min(staggerIndex, backoffMs.length - 1)];
+      staggerIndex++;
+
       const t = setTimeout(() => {
         _redispatchTimeouts.delete(task.id);
         dispatchTask(task.id);
-      }, 8000 + Math.random() * 4000); // stagger to avoid thundering herd
+      }, delay);
       _redispatchTimeouts.set(task.id, t);
     }
   } catch (err) {
