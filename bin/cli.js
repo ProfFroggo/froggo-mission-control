@@ -550,32 +550,28 @@ async function cmdSetup(force = false) {
     process.exit(1);
   }
 
-  // Detect Homebrew Cask installation (native binary, not a JS script)
-  // Mission Control spawns claude via Node.js — Homebrew Cask installs a native
-  // binary which fails with "SyntaxError: Invalid or unexpected token".
-  const isHomebrewBin = claudeBin === '/opt/homebrew/bin/claude' || claudeBin === '/usr/local/bin/claude';
-  if (isHomebrewBin) {
-    let realPath = claudeBin;
-    try { realPath = require('fs').realpathSync(claudeBin); } catch { /* ignore */ }
-    if (!realPath.endsWith('.js')) {
-      console.log('');
-      warn('Claude Code is installed via Homebrew Cask (native binary).');
-      console.log([
-        '',
-        '  ' + c.bold('Mission Control requires the npm version of Claude Code.'),
-        '  The Homebrew Cask version is a native binary and cannot be used here.',
-        '',
-        '  Install the npm version alongside it:',
-        '    ' + c.cyan('npm install -g @anthropic-ai/claude-code'),
-        '',
-        '  Then re-run: ' + c.cyan('mission-control setup'),
-        '',
-      ].join('\n'));
-      process.exit(1);
-    }
+  // Check if claude resolves to a native binary (not a JS script).
+  // npm installs claude as a .js script; other install methods (Homebrew, direct
+  // download, etc.) may produce a native binary. Mission Control handles both at
+  // runtime, but warns here so users know npm is the recommended path.
+  let claudeRealPath = claudeBin;
+  try { claudeRealPath = require('fs').realpathSync(claudeBin); } catch { /* symlink unresolvable */ }
+  const isNativeBinary = !claudeRealPath.endsWith('.js');
+  if (isNativeBinary) {
+    console.log('');
+    warn(`Claude Code appears to be a native binary (${claudeBin}).`);
+    console.log([
+      '',
+      '  Mission Control works best with the npm version of Claude Code.',
+      '  If agents are not responding, install it via npm:',
+      '    ' + c.cyan('npm install -g @anthropic-ai/claude-code'),
+      '',
+      '  Continuing setup — native binary will be used as-is.',
+      '',
+    ].join('\n'));
   }
 
-  success(`Claude Code CLI: ${claudeBin}`);
+  success(`Claude Code CLI: ${claudeBin}${isNativeBinary ? ' (native binary)' : ''}`);
 
   // ── Verify Claude Code is authenticated ──────────────────────────────────
   const claudeConfigPath = path.join(HOME, '.claude.json');
