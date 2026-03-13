@@ -1567,6 +1567,38 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       
       {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
 
+      {/* Due today / Overdue badges — only show for incomplete tasks */}
+      {task.dueDate && task.status !== 'done' && (() => {
+        const now = new Date();
+        const due = new Date(task.dueDate);
+        const isOverdue = task.dueDate < Date.now();
+        const isDueToday = !isOverdue &&
+          due.getFullYear() === now.getFullYear() &&
+          due.getMonth() === now.getMonth() &&
+          due.getDate() === now.getDate();
+        if (isOverdue) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-red-400 bg-red-400/10 border-red-400/20">
+                <AlertTriangle size={10} />
+                Overdue
+              </span>
+            </div>
+          );
+        }
+        if (isDueToday) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-amber-400 bg-amber-400/10 border-amber-400/20">
+                <Calendar size={10} />
+                Due today
+              </span>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Task description */}
       {task.description && (
         <p className="text-xs text-mission-control-text-muted line-clamp-2 mt-1 mb-1">{task.description}</p>

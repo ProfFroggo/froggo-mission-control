@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatDueDate } from '../utils/formatting';
-import { ListTodo, Clock, Plus, Trash2, Edit2, RefreshCw, X, Check, User, Repeat } from 'lucide-react';
+import { ListTodo, Clock, Plus, Trash2, Edit2, RefreshCw, X, Check, User, Repeat, CalendarDays, AlertTriangle } from 'lucide-react';
 import { useStore, type Task, type TaskStatus, type TaskPriority, type TaskRecurrence } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -88,6 +88,15 @@ export default function TaskScheduler() {
 
   const unscheduledTasks = useMemo(() =>
     tasks.filter(t => !t.dueDate && t.status !== 'done'), [tasks]);
+
+  // Upcoming tasks in next 7 days (sorted by dueDate ascending)
+  const upcomingTasks = useMemo(() => {
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    return tasks
+      .filter(t => t.dueDate && t.dueDate >= now && t.dueDate <= now + sevenDaysMs && t.status !== 'done')
+      .sort((a, b) => (a.dueDate ?? 0) - (b.dueDate ?? 0));
+  }, [tasks]);
 
   const handleSubmit = async () => {
     if (mode === 'existing') {
@@ -483,6 +492,9 @@ export default function TaskScheduler() {
         </div>
       )}
 
+      {/* Main content: task list + upcoming sidebar */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+
       {/* Task list */}
       <div className="flex-1 overflow-y-auto p-6">
         {filteredTasks.length === 0 ? (
@@ -589,6 +601,79 @@ export default function TaskScheduler() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Upcoming tasks sidebar — next 7 days */}
+      <div className="w-72 shrink-0 border-l border-mission-control-border bg-mission-control-surface overflow-y-auto">
+        <div className="p-4 border-b border-mission-control-border">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-mission-control-text">
+            <CalendarDays size={15} className="text-mission-control-accent" />
+            Next 7 Days
+            {upcomingTasks.length > 0 && (
+              <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent font-medium">
+                {upcomingTasks.length}
+              </span>
+            )}
+          </h3>
+        </div>
+        {upcomingTasks.length === 0 ? (
+          <div className="p-4 text-center text-mission-control-text-dim">
+            <CalendarDays size={32} className="mx-auto opacity-20 mb-2" />
+            <p className="text-xs">No tasks due in the next 7 days</p>
+          </div>
+        ) : (
+          <div className="p-2 space-y-1">
+            {upcomingTasks.map(task => {
+              const now = new Date();
+              const due = task.dueDate ? new Date(task.dueDate) : null;
+              const isDueToday = due &&
+                due.getFullYear() === now.getFullYear() &&
+                due.getMonth() === now.getMonth() &&
+                due.getDate() === now.getDate();
+              const statusColor =
+                task.status === 'in-progress' ? 'text-blue-400' :
+                task.status === 'review' ? 'text-purple-400' :
+                task.status === 'done' ? 'text-green-400' :
+                'text-mission-control-text-dim';
+
+              return (
+                <div
+                  key={task.id}
+                  className={`px-3 py-2 rounded-lg border transition-colors ${
+                    isDueToday
+                      ? 'border-amber-400/30 bg-amber-400/5'
+                      : 'border-mission-control-border hover:border-mission-control-accent/30'
+                  }`}
+                >
+                  <div className="flex items-start gap-1.5">
+                    {isDueToday && (
+                      <AlertTriangle size={11} className="text-amber-400 mt-0.5 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" title={task.title}>
+                        {task.title.length > 24 ? task.title.slice(0, 24) + '…' : task.title}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`text-[10px] ${statusColor}`}>
+                          {STATUS_CONFIG[task.status]?.label ?? task.status}
+                        </span>
+                        {due && (
+                          <span className={`text-[10px] ${isDueToday ? 'text-amber-400 font-medium' : 'text-mission-control-text-dim'}`}>
+                            · {isDueToday ? 'Today' : due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            {' '}
+                            {due.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       </div>
     </div>
   );

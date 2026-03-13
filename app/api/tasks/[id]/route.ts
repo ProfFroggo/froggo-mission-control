@@ -25,7 +25,7 @@ function computeNextDue(currentDue: number, rec: { frequency: string; interval: 
 
 const SCALAR_FIELDS = [
   'title', 'description', 'status', 'priority', 'project', 'project_id', 'assignedTo',
-  'reviewerId', 'reviewStatus', 'reviewNotes', 'planningNotes', 'dueDate',
+  'reviewerId', 'reviewStatus', 'reviewNotes', 'planningNotes', 'dueDate', 'scheduledAt',
   'estimatedHours', 'progress', 'lastAgentUpdate', 'completedAt',
   'projectName', 'stageNumber', 'stageName', 'nextStage', 'parentTaskId',
   'recurrenceParentId',

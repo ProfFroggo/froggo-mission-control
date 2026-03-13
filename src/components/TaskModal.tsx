@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X, FileText, ChevronDown, Lightbulb } from 'lucide-react';
+import { Bot, Flag, Calendar, Clock, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X, FileText, ChevronDown, Lightbulb } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { taskApi } from '../lib/api';
 import { gateway } from '../lib/gateway';
@@ -96,6 +96,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [status, setStatus] = useState<TaskStatus>(initialStatus);
   const [priority, setPriority] = useState<TaskPriority | ''>('p2');
   const [dueDate, setDueDate] = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [reviewerId, setReviewerId] = useState<string>('clara'); // Default to Clara as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
@@ -145,6 +146,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         setProject(initialData.project || 'Default');
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
+        setScheduledAt('');
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
         // Default reviewer to clara
         setReviewerId('clara');
@@ -241,6 +243,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       status,
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
+      scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
       assignedTo: assignedTo || undefined,
       reviewerId: reviewerId || 'clara', // Always set reviewer (default: clara)
       reviewStatus: 'pending' as any, // Initialize review status
@@ -444,6 +447,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setProject('Default');
     setPriority('');
     setDueDate('');
+    setScheduledAt('');
     setAssignedTo('');
     setReviewerId('mission-control'); // Reset to default reviewer
     setSelectedFiles([]); // Clear file selections
@@ -797,6 +801,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     1w
                   </button>
                 </div>
+              </div>
+
+              {/* Schedule for */}
+              <div>
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
+                  <Clock size={14} /> Schedule for
+                </span>
+                <input
+                  id="task-scheduled-at"
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={e => setScheduledAt(e.target.value)}
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
+                />
+                <p className="text-xs text-mission-control-text-dim mt-1">When to start working on this task</p>
               </div>
 
               {/* Project & Status Row */}
