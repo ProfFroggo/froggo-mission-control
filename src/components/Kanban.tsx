@@ -50,7 +50,7 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'todo',            title: 'To Do',            color: 'border-t-info',    iconColor: 'text-info',    bg: 'bg-info-subtle',    icon: <FileText size={14} /> },
-  { id: 'internal-review', title: 'Ready to Start',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
+  { id: 'internal-review', title: 'Internal Review',  color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Search size={14} /> },
   { id: 'in-progress',     title: 'In Progress',      color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning-subtle', icon: <Zap size={14} /> },
   { id: 'review',          title: 'Agent Review',     color: 'border-t-review',  iconColor: 'text-review',  bg: 'bg-review-subtle',  icon: <Bot size={14} /> },
   { id: 'human-review',    title: 'Human Review',     color: 'border-t-warning', iconColor: 'text-warning', bg: 'bg-warning-subtle', icon: <User size={14} /> },

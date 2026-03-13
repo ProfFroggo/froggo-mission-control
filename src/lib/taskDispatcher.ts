@@ -1066,11 +1066,12 @@ export function dispatchTask(taskId: string): boolean {
 
     proc.unref();
 
-    // Auto-advance task to in-progress on dispatch — don't wait for agent to do it
+    // Auto-advance task to in-progress on dispatch — only from internal-review (Clara's gate).
+    // Tasks in todo have not passed the quality gate yet; the dispatcher should not skip it.
     const now2 = Date.now();
     try {
       const cur = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
-      if (cur?.status === 'todo' || cur?.status === 'internal-review') {
+      if (cur?.status === 'internal-review') {
         db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('in-progress', now2, taskId);
       }
       db.prepare(
