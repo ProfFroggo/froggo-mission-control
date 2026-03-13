@@ -78,7 +78,7 @@ export interface Task {
   subtasks?: Subtask[];
   planningNotes?: string; // Planning/brainstorming notes
   tags?: string; // JSON string of tags array
-  reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected';
+  reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected' | 'pre-review' | 'pre-approved' | 'pre-rejected';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
   estimatedHours?: number;

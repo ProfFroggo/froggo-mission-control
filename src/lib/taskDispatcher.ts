@@ -360,16 +360,17 @@ Before setting status="review", verify every item:
 When setting review, set lastAgentUpdate to:
 "Completed: [brief summary]. Output: [file paths or 'no files']. Notes: [any caveats]."
 
-## Blocker protocol
-If you hit a blocker you cannot resolve autonomously: move task to human-review (NOT blocked — use human-review).
-In lastAgentUpdate, describe exactly: what you tried, what failed, and what specific information or action you need from the human.
-Do NOT leave the task stuck in in-progress — always either complete it or escalate it.
+## When stuck protocol
+After 2 failed attempts at the same approach → try a completely different approach.
+After 3 failed approaches total → move the task to 'human-review' immediately.
+In lastAgentUpdate describe: (1) each approach tried, (2) the specific error each produced, (3) the exact blocker, (4) what would unblock you.
+Do NOT keep looping on a stuck problem — silent looping wastes time. Move to human-review so the human can help.
 
 ## Library file routing — ALWAYS use the correct path when saving output files:
 | File type | Save to |
 |-----------|---------|
 | Research docs, analysis, skill maps, notes | ~/mission-control/library/docs/research/ |
-| Strategy, plans, roadmaps | ~/mission-control/library/docs/stratagies/ |
+| Strategy, plans, roadmaps | ~/mission-control/library/docs/strategies/ |
 | Presentations, reports | ~/mission-control/library/docs/presentations/ |
 | Platform/technical docs | ~/mission-control/library/docs/platform/ |
 | Code, scripts, snippets | ~/mission-control/library/code/ |
