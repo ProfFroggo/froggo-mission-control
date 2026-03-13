@@ -22,6 +22,7 @@ import EmptyState from './EmptyState';
 import ArtifactPanel from './ArtifactPanel';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
+import { useArtifactStore } from '../store/artifactStore';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 
@@ -80,6 +81,9 @@ export default function ChatPanel() {
   const { agents: chatAgents } = useAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<{ src: string; alt: string } | null>(null);
+
+  const currentSessionId = selectedAgent?.sessionKey ?? selectedAgent?.id ?? '';
 
   // Auto-extract artifacts from 1-1 chat messages
   useArtifactExtraction(
@@ -89,8 +93,19 @@ export default function ChatPanel() {
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       timestamp: m.timestamp,
     })),
-    selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''
+    currentSessionId
   );
+
+  // Scope the artifact panel to the current agent's session; clear stale selection
+  const { setFilterBySession, getSessionArtifacts, selectArtifact } = useArtifactStore();
+  useEffect(() => {
+    if (!currentSessionId) return;
+    setFilterBySession(currentSessionId);
+    // Auto-select most recent artifact for this session, or clear if none
+    const sessionArtifacts = getSessionArtifacts(currentSessionId);
+    const latest = sessionArtifacts.sort((a, b) => b.timestamp - a.timestamp)[0];
+    selectArtifact(latest?.id ?? null);
+  }, [currentSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Artifact store — for wiring "Open Preview" cards in messages
   const handleArtifactOpen = useArtifactOpen();
@@ -1281,6 +1296,7 @@ export default function ChatPanel() {
                 selectedAgent={selectedAgent}
                 onToggleStar={handleToggleStar}
                 onArtifactOpen={handleArtifactOpen}
+                onImageClick={(src, alt) => setLightboxSrc({ src, alt })}
               />
             );
           })
@@ -1462,8 +1478,44 @@ export default function ChatPanel() {
       </div>{/* end inner chat col */}
 
       {/* Artifact Panel — right sidebar */}
-      <ArtifactPanel sessionId={selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''} />
+      <ArtifactPanel sessionId={currentSessionId} />
       </div>{/* end body row */}
+
+      {/* Image lightbox */}
+      {lightboxSrc && <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />}
+    </div>
+  );
+}
+
+// ============================================
+// Image Lightbox Component
+// ============================================
+
+function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="relative max-w-4xl max-h-[90vh] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+        <img src={src} alt={alt} className="max-w-full max-h-[80vh] rounded-lg object-contain shadow-2xl" />
+        <div className="flex justify-end gap-2">
+          <a
+            href={src}
+            download
+            className="px-4 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text hover:bg-mission-control-bg-alt"
+            onClick={e => e.stopPropagation()}
+          >
+            Download
+          </a>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text hover:bg-mission-control-bg-alt"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1482,6 +1534,7 @@ interface MessageItemProps {
   selectedAgent: ChatAgent;
   onToggleStar: (msg: StructuredChatMessage, e: React.MouseEvent) => void;
   onArtifactOpen?: (lang: string, code: string) => void;
+  onImageClick?: (src: string, alt: string) => void;
 }
 
 const MessageItem = memo(function MessageItem({
@@ -1494,6 +1547,7 @@ const MessageItem = memo(function MessageItem({
   selectedAgent,
   onToggleStar,
   onArtifactOpen,
+  onImageClick,
 }: MessageItemProps) {
   return (
     <div
@@ -1573,6 +1627,11 @@ const MessageItem = memo(function MessageItem({
                 ? 'bg-mission-control-accent text-white rounded-tr-sm'
                 : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm'
             }`}
+            onClick={(e) => {
+              if (onImageClick && e.target instanceof HTMLImageElement) {
+                onImageClick(e.target.src, e.target.alt);
+              }
+            }}
           >
             {!!msg.streaming && !msg.content && !msg.status ? (
               <div className="flex items-center gap-2 py-1">

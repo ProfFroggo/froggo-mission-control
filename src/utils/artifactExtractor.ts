@@ -17,6 +17,7 @@ export function containsArtifacts(content: string): boolean {
   // Check for image URLs or data URLs
   if (/!\[.*?\]\(.*?\)/.test(content)) return true;
   if (/https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(content)) return true;
+  if (/\/api\/library\?action=raw&id=[A-Za-z0-9_-]+/.test(content)) return true;
   
   // Check for mermaid diagrams
   if (/```mermaid[\s\S]*?```/.test(content)) return true;
@@ -109,6 +110,20 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
   const seenUrls = new Set(artifacts.filter(a => a.type === 'image').map(a => a.content));
 
   while ((match = urlRegex.exec(content)) !== null) {
+    const url = match[0];
+    if (!seenUrls.has(url)) {
+      artifacts.push({
+        type: 'image',
+        content: url,
+        metadata: { filename: 'image' },
+      });
+      seenUrls.add(url);
+    }
+  }
+
+  // Extract Mission Control library image URLs
+  const libraryUrlRegex = /\/api\/library\?action=raw&id=[A-Za-z0-9_=-]+/g;
+  while ((match = libraryUrlRegex.exec(content)) !== null) {
     const url = match[0];
     if (!seenUrls.has(url)) {
       artifacts.push({

@@ -735,6 +735,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return { content: [{ type: 'text', text: JSON.stringify(parsed) }], isError: true };
         }
 
+        // Auto-post the image to the agent's chat room so it always appears in chat
+        try {
+          const agentId = args?.agentId ?? 'unknown';
+          const roomId = agentId;
+          db.prepare(
+            'INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)'
+          ).run(roomId, agentId, parsed.markdown, Date.now());
+        } catch { /* non-critical — image generation succeeded regardless */ }
+
         return {
           content: [{
             type: 'text',
@@ -744,7 +753,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               url: parsed.url,
               filePath: parsed.filePath,
               filename: parsed.filename,
-              hint: `Post the markdown field to chat_post to display the image inline.`,
+              hint: `Image auto-posted to your chat room. Include the markdown field in your text response too so the user sees your commentary alongside the image.`,
             }),
           }],
         };

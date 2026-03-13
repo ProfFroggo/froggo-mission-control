@@ -47,6 +47,13 @@ export function useArtifactExtraction(
 ) {
   const { addArtifact, addVersion, artifacts } = useArtifactStore();
   const processedMessages = useRef<Set<string>>(new Set());
+  const prevSessionId = useRef<string | undefined>(sessionId);
+
+  // Reset processed set when session changes so we re-scan the new session's messages
+  if (prevSessionId.current !== sessionId) {
+    prevSessionId.current = sessionId;
+    processedMessages.current = new Set();
+  }
 
   const {
     autoExtract = true,
