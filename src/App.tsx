@@ -396,15 +396,36 @@ function App() {
         }
       }
 
-      // Escape to close command palette
-      if (e.key === 'Escape' && commandPaletteOpen) {
-        setCommandPaletteOpen(false);
+      // Bare-key shortcuts — only when not in a text input
+      const inInput = (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement)?.contentEditable === 'true');
+      if (!inInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // ? → keyboard shortcuts modal
+        if (e.key === '?') {
+          e.preventDefault();
+          setShortcutsOpen(prev => !prev);
+          return;
+        }
+        // N → new task (navigate to kanban + dispatch a create-task event)
+        if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          setCurrentView('kanban');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('kanban:new-task')), 100);
+          return;
+        }
+      }
+
+      // Escape to close any open overlay
+      if (e.key === 'Escape') {
+        if (commandPaletteOpen) { setCommandPaletteOpen(false); return; }
+        if (searchOpen) { setSearchOpen(false); return; }
+        if (shortcutsOpen) { setShortcutsOpen(false); return; }
+        if (helpPanelOpen) { setHelpPanelOpen(false); return; }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandPaletteOpen, toggleMuted]);
+  }, [commandPaletteOpen, searchOpen, shortcutsOpen, helpPanelOpen, toggleMuted]);
 
   return (
     <DependencyGate>

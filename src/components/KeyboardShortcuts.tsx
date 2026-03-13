@@ -84,12 +84,14 @@ const shortcuts = [
     { keys: ['N'], action: 'New Task' },
     { keys: ['?'], action: 'Show Panel Help' },
   ]},
-  { category: 'Inbox (Approvals)', items: [
-    { keys: ['J'], action: 'Next Item' },
-    { keys: ['K'], action: 'Previous Item' },
-    { keys: ['A'], action: 'Approve' },
-    { keys: ['R'], action: 'Reject' },
-    { keys: ['X'], action: 'Defer' },
+  { category: 'Approvals Queue', items: [
+    { keys: ['A'], action: 'Approve focused item' },
+    { keys: ['D'], action: 'Deny focused item' },
+  ]},
+  { category: 'Global (bare keys)', items: [
+    { keys: ['?'], action: 'Show this shortcuts panel' },
+    { keys: ['N'], action: 'New task (navigates to Kanban)' },
+    { keys: ['Esc'], action: 'Close any open modal or panel' },
   ]},
   { category: 'Social Media', items: [
     { keys: ['⌘', 'N'], action: 'New Tweet' },
