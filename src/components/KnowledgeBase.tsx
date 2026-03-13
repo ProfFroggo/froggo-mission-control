@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronRight } from 'lucide-react';
+import EmptyState from './EmptyState';
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
@@ -285,11 +286,13 @@ export default function KnowledgeBase() {
             </div>
           ))
         ) : articles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-mission-control-text-dim text-center">
-            <BookOpen size={32} className="mb-3 opacity-30" />
-            <p className="text-sm font-medium mb-1">No articles found</p>
-            <p className="text-xs">Add brand guidelines, tone of voice, or company context</p>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title={search || category !== 'all' ? 'No articles found' : 'Knowledge base is empty'}
+            description={search || category !== 'all' ? 'Try a different search term or category' : 'Add guidelines, brand voice, and context to help your agents work better'}
+            action={search || category !== 'all' ? undefined : { label: 'New Article', onClick: () => setEditing({ category: 'reference', scope: 'all', pinned: false, tags: [] }) }}
+            size="md"
+          />
         ) : (
           articles.map(article => (
             <div

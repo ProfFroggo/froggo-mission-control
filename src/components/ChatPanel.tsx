@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -1304,10 +1304,13 @@ export default function ChatPanel() {
             ))}
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <Sparkles size={32} className="mb-3 opacity-30" />
-            <p className="text-sm font-medium">New conversation</p>
-            <p className="text-xs mt-1 opacity-70">Send a message to get started</p>
+          <div className="flex-1 flex items-center justify-center h-full">
+            <EmptyState
+              icon={MessageSquare}
+              title="No messages yet"
+              description="Start a conversation with your agent team"
+              size="md"
+            />
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
           <EmptyState

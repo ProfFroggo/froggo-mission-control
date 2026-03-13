@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
-  CheckCircle, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash
+  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash,
+  ClipboardList, Eye, Inbox
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -850,11 +851,15 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       {!loading.tasks && filteredTasks.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
-            type="tasks"
+            icon={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' ? Search : Inbox}
+            title={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' ? 'No tasks match your filters' : 'No tasks yet'}
             description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
               ? 'No tasks match your current filters. Try adjusting your search or filters.'
-              : 'No tasks yet. Create a task to get started.'}
-            action={{ label: 'New Task', onClick: () => handleAddTask('todo') }}
+              : 'Create your first task to get the team working'}
+            action={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+              ? undefined
+              : { label: 'Create task', onClick: () => handleAddTask('todo') }}
+            size="md"
           />
         </div>
       )}
@@ -1049,22 +1054,27 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   ))
                 )}
                 
-                {columnTasks.length === 0 && !loading.tasks && (
-                  column.id !== 'done' ? (
-                    <button
-                      onClick={() => handleAddTask(column.id)}
-                      className="flex flex-col items-center justify-center py-8 w-full text-mission-control-text-dim hover:text-mission-control-text opacity-50 hover:opacity-80 transition-all group"
-                      title={`Add task to ${column.title}`}
-                    >
-                      <Plus size={20} className="mb-1 group-hover:scale-110 transition-transform" />
-                      <p className="text-xs">Add task</p>
-                    </button>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-dim opacity-40">
-                      <p className="text-xs">No done tasks</p>
-                    </div>
-                  )
-                )}
+                {columnTasks.length === 0 && !loading.tasks && (() => {
+                  const columnEmptyStates: Partial<Record<TaskStatus, { icon: typeof ClipboardList; title: string; description: string; showAdd?: boolean }>> = {
+                    'todo':            { icon: ClipboardList, title: 'No open tasks',       description: 'Create a task to get started',          showAdd: true },
+                    'internal-review': { icon: Search,        title: 'Nothing in pre-review', description: 'Tasks awaiting review will appear here' },
+                    'in-progress':     { icon: Zap,           title: 'Nothing in progress', description: 'Assign a task to an agent'              },
+                    'review':          { icon: Eye,           title: 'Nothing to review',   description: 'Completed tasks will appear here'       },
+                    'human-review':    { icon: User,          title: 'No items need review', description: 'Tasks requiring your input appear here' },
+                    'done':            { icon: CheckCircle2,  title: 'No completed tasks yet', description: ''                                    },
+                  };
+                  const cfg = columnEmptyStates[column.id];
+                  if (!cfg) return null;
+                  return (
+                    <EmptyState
+                      icon={cfg.icon}
+                      title={cfg.title}
+                      description={cfg.description}
+                      action={cfg.showAdd ? { label: 'Add task', onClick: () => handleAddTask(column.id) } : undefined}
+                      size="sm"
+                    />
+                  );
+                })()}
               </div>}
             </div>
           );

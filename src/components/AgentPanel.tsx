@@ -357,9 +357,10 @@ export default function AgentPanel() {
           {mainAgents.length === 0 ? (
             <EmptyState
               icon={Bot}
-              title="No agents found"
-              description="No agents are registered yet. Create a worker or check your agent configuration."
-              action={{ label: 'New Worker', onClick: () => setShowCreateModal(true) }}
+              title="No agents yet"
+              description="Hire your first agent to start automating work"
+              action={{ label: 'New Agent', onClick: () => setShowCreateModal(true) }}
+              size="md"
             />
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
