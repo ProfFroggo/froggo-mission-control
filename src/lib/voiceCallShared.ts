@@ -167,7 +167,7 @@ export function buildAgentTools(): GeminiTool[] {
         type: 'object',
         properties: {
           task_id: { type: 'string', description: 'Task ID' },
-          status: { type: 'string', description: 'New status', enum: ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] },
+          status: { type: 'string', description: 'New status (do NOT use internal-review — set by system automatically)', enum: ['todo', 'in-progress', 'review', 'human-review', 'done'] },
           priority: { type: 'string', description: 'New priority', enum: ['low', 'medium', 'high', 'critical'] },
           assigned_to: { type: 'string', description: 'New assignee' },
         },
@@ -587,10 +587,10 @@ Mission Control runs on Claude Code CLI (not a generic chatbot). Your Claude Cod
 Your voice tools (create_task, update_task, list_tasks, memory_search, write_memory, update_state, read_state, read_team_state) call the same underlying data as those MCP tools. When you take action via voice, it persists to the same task board and memory that your Claude Code sessions read.
 
 ## Task Lifecycle
-Tasks move through: blocked → todo → in-progress → internal-review → review → human-review → done
-- internal-review: self-check before handing off
-- review: another agent reviews (default: clara)
-- human-review: needs Kevin's approval
+Tasks move through: todo → pre-review → in-progress → review → done (with human-review branching off at any stage)
+- pre-review (internal-review): Clara's gate — verifies agent, planningNotes, subtasks before dispatching. Set automatically by the system when a task is assigned — do NOT set this manually.
+- review: Clara verifies completed work before marking done
+- human-review: external approvals (tweets, emails, deploys) or genuine blockers needing Kevin's input
 - P0/P1 tasks always go through clara before done
 
 ## Agent Network
