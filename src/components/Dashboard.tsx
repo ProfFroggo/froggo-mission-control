@@ -6,9 +6,10 @@ import {
   ListTodo, Activity, MapPin, Video, ChevronRight,
   Loader2, XCircle, DollarSign,
   MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
-  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search
+  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
+import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
 import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
 
@@ -346,13 +347,37 @@ function ActivityFeed({
   inProgressTasks,
   agentMap,
   activities,
+  allTasks,
   onNavigate,
+  onAgentClick,
 }: {
   inProgressTasks: Task[];
   agentMap: Map<string, Agent>;
   activities: { id: string; type: string; message: string; timestamp: number }[];
+  allTasks: Task[];
   onNavigate?: (view: View) => void;
+  onAgentClick?: (agentId: string) => void;
 }) {
+  // Agent leaderboard: count tasks completed today per agent (status = done, completedAt today)
+  const agentLeaderboard = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayTs = todayStart.getTime();
+    const counts = new Map<string, number>();
+    for (const t of allTasks) {
+      if (!t.assignedTo) continue;
+      // Count tasks that are done and updated today, or in-progress updated today
+      const updatedToday = (typeof t.updatedAt === 'number' ? t.updatedAt : new Date(t.updatedAt).getTime()) >= todayTs;
+      if (updatedToday && (t.status === 'done' || t.status === 'in-progress' || t.status === 'review')) {
+        counts.set(t.assignedTo, (counts.get(t.assignedTo) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([agentId, count]) => ({ agentId, count }));
+  }, [allTasks]);
+
   // Merge in-progress tasks and recent activity into a single feed, last 10 items
   const feedItems = useMemo(() => {
     const taskItems = inProgressTasks.map(t => ({
@@ -392,6 +417,39 @@ function ActivityFeed({
         </button>
       </div>
 
+      {/* Agent leaderboard — top 3 most active today */}
+      {agentLeaderboard.length > 0 && (
+        <div className="px-4 py-3 border-b border-mission-control-border/30 bg-mission-control-bg/20">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Trophy size={12} className="text-amber-400" />
+            <span className="text-[11px] font-semibold text-mission-control-text-dim uppercase tracking-wider">Most Active Today</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {agentLeaderboard.map(({ agentId, count }, idx) => {
+              const agent = agentMap.get(agentId);
+              const rankColors = ['text-amber-400', 'text-slate-400', 'text-amber-700'];
+              return (
+                <button
+                  key={agentId}
+                  onClick={() => onAgentClick?.(agentId)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-mission-control-surface/60 border border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-all group flex-1 min-w-0"
+                  title={`Open ${agent?.name || agentId} details`}
+                >
+                  <span className={`text-xs font-bold ${rankColors[idx]}`}>{idx + 1}</span>
+                  <AgentAvatar agentId={agentId} fallbackEmoji={agent?.avatar} size="xs" />
+                  <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
+                    {agent?.name || agentId}
+                  </span>
+                  <span className="ml-auto text-xs font-semibold text-mission-control-text-dim flex-shrink-0">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto max-h-[400px]">
         {feedItems.length === 0 ? (
           <div className="p-8 text-center">
@@ -416,7 +474,13 @@ function ActivityFeed({
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-0.5">
                         {agent ? (
-                          <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                          <button
+                            onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
+                            className="hover:opacity-80 transition-opacity"
+                            title={`Open ${agent.name} details`}
+                          >
+                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                          </button>
                         ) : (
                           <div className="w-6 h-6 rounded-full bg-mission-control-border flex items-center justify-center">
                             <Bot size={12} className="text-mission-control-text-dim" />
@@ -425,7 +489,16 @@ function ActivityFeed({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-mission-control-text-dim">
-                          <span className="font-medium text-mission-control-text">{agent?.name ?? 'Agent'}</span>
+                          {agent ? (
+                            <button
+                              onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
+                              className="font-medium text-mission-control-text hover:text-mission-control-accent transition-colors"
+                            >
+                              {agent.name}
+                            </button>
+                          ) : (
+                            <span className="font-medium text-mission-control-text">Agent</span>
+                          )}
                           {' '}is working on{' '}
                           <span className="font-medium text-mission-control-text truncate">{task.title}</span>
                         </p>
@@ -471,6 +544,110 @@ function ActivityFeed({
             })}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── TaskThroughputChart ────────────────────────────────────
+
+function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
+  // Build last-7-days completed task counts (SVG bar chart, no external library)
+  const chartData = useMemo(() => {
+    const days: { label: string; date: Date; count: number; isToday: boolean }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const dayStart = d.getTime();
+      const dayEnd = dayStart + 86400000;
+      const isToday = i === 0;
+      const count = tasks.filter(t => {
+        if (t.status !== 'done') return false;
+        const ts = t.completedAt ?? t.updatedAt;
+        const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
+        return tsNum >= dayStart && tsNum < dayEnd;
+      }).length;
+      days.push({
+        label: isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' }),
+        date: d,
+        count,
+        isToday,
+      });
+    }
+    return days;
+  }, [tasks]);
+
+  const maxCount = Math.max(...chartData.map(d => d.count), 1);
+  const chartH = 48; // px height of bar area
+  const barW = 20;
+  const gap = 6;
+  const totalW = (barW + gap) * 7 - gap;
+
+  return (
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={16} className="text-violet-400" />
+          <h2 className="font-semibold text-sm">Tasks Completed</h2>
+          <span className="text-xs text-mission-control-text-dim">last 7 days</span>
+        </div>
+        <span className="text-xs font-semibold text-mission-control-text">
+          {chartData.reduce((s, d) => s + d.count, 0)} total
+        </span>
+      </div>
+      <div className="px-4 pt-4 pb-3">
+        <svg
+          width={totalW}
+          height={chartH + 20}
+          viewBox={`0 0 ${totalW} ${chartH + 20}`}
+          className="w-full"
+          style={{ maxWidth: totalW }}
+          aria-label="Tasks completed per day"
+        >
+          {chartData.map((day, i) => {
+            const barH = maxCount === 0 ? 2 : Math.max(2, Math.round((day.count / maxCount) * chartH));
+            const x = i * (barW + gap);
+            const y = chartH - barH;
+            return (
+              <g key={day.label}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={barH}
+                  rx={3}
+                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : day.count > 0 ? '#6366f130' : '#6366f115'}
+                  stroke={day.isToday ? 'var(--color-accent, #6366f1)' : 'transparent'}
+                  strokeWidth={day.isToday ? 1 : 0}
+                />
+                {day.count > 0 && (
+                  <text
+                    x={x + barW / 2}
+                    y={y - 3}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
+                    fontWeight={day.isToday ? 'bold' : 'normal'}
+                  >
+                    {day.count}
+                  </text>
+                )}
+                <text
+                  x={x + barW / 2}
+                  y={chartH + 15}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
+                  fontWeight={day.isToday ? 'bold' : 'normal'}
+                >
+                  {day.label === 'Today' ? 'Today' : day.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
     </div>
   );
