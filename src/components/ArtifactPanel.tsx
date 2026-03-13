@@ -129,7 +129,8 @@ export default function ArtifactPanel({ sessionId }: ArtifactPanelProps) {
     : getFilteredArtifacts()
   ).slice().sort((a, b) => b.timestamp - a.timestamp);
 
-  const selectedArtifact = artifacts.find(a => a.id === selectedArtifactId);
+  // Only show a selected artifact if it belongs to the current session's display list
+  const selectedArtifact = displayArtifacts.find(a => a.id === selectedArtifactId);
 
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);

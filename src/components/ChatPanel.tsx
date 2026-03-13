@@ -22,6 +22,7 @@ import EmptyState from './EmptyState';
 import ArtifactPanel from './ArtifactPanel';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
+import { useArtifactStore } from '../store/artifactStore';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 
@@ -82,6 +83,8 @@ export default function ChatPanel() {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<{ src: string; alt: string } | null>(null);
 
+  const currentSessionId = selectedAgent?.sessionKey ?? selectedAgent?.id ?? '';
+
   // Auto-extract artifacts from 1-1 chat messages
   useArtifactExtraction(
     messages.map(m => ({
@@ -90,8 +93,19 @@ export default function ChatPanel() {
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       timestamp: m.timestamp,
     })),
-    selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''
+    currentSessionId
   );
+
+  // Scope the artifact panel to the current agent's session; clear stale selection
+  const { setFilterBySession, getSessionArtifacts, selectArtifact } = useArtifactStore();
+  useEffect(() => {
+    if (!currentSessionId) return;
+    setFilterBySession(currentSessionId);
+    // Auto-select most recent artifact for this session, or clear if none
+    const sessionArtifacts = getSessionArtifacts(currentSessionId);
+    const latest = sessionArtifacts.sort((a, b) => b.timestamp - a.timestamp)[0];
+    selectArtifact(latest?.id ?? null);
+  }, [currentSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Artifact store — for wiring "Open Preview" cards in messages
   const handleArtifactOpen = useArtifactOpen();
@@ -1464,7 +1478,7 @@ export default function ChatPanel() {
       </div>{/* end inner chat col */}
 
       {/* Artifact Panel — right sidebar */}
-      <ArtifactPanel sessionId={selectedAgent?.sessionKey ?? selectedAgent?.id ?? ''} />
+      <ArtifactPanel sessionId={currentSessionId} />
       </div>{/* end body row */}
 
       {/* Image lightbox */}
