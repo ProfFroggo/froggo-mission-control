@@ -451,22 +451,24 @@ export async function POST(
           if (agentRow?.name) agentDisplayName = agentRow.name;
         } catch { /* non-critical — fall back to agentId */ }
 
-        // Send a "still working…" heartbeat every 30s so the UI doesn't look frozen
+        // Send a subtle "still working" heartbeat every 45s so the UI doesn't look frozen.
+        // Uses agent name so it feels personal, and conversational language not status-update-y.
+        // subtle:true lets the UI render this with lighter styling (smaller, muted).
         const HEARTBEAT_MESSAGES = [
           `${agentDisplayName} is still working on it…`,
-          `${agentDisplayName} is thinking through this carefully…`,
-          `${agentDisplayName} is running tools, almost there…`,
-          `${agentDisplayName} is processing your request…`,
-          `${agentDisplayName} is nearly done…`,
+          `${agentDisplayName} is thinking this through carefully…`,
+          `${agentDisplayName} is almost there…`,
+          `${agentDisplayName} is checking a few things…`,
           `${agentDisplayName} is working on it…`,
+          `Give ${agentDisplayName} a moment, this needs careful thought…`,
         ];
         let heartbeatCount = 0;
         const heartbeat = setInterval(() => {
           if (streamCancelled || resultReceived) { clearInterval(heartbeat); return; }
           const msg = HEARTBEAT_MESSAGES[heartbeatCount % HEARTBEAT_MESSAGES.length];
           heartbeatCount++;
-          enc({ type: 'heartbeat', text: msg });
-        }, 30_000);
+          enc({ type: 'heartbeat', text: msg, subtle: true });
+        }, 45_000);
 
         // Clear heartbeat if the request is aborted (e.g. user navigates away)
         request.signal.addEventListener('abort', () => {
