@@ -1,7 +1,7 @@
 {
   "id": "designer",
   "name": "Designer",
-  "emoji": "🎨",
+  "emoji": "\ud83c\udfa8",
   "role": "UI/UX Designer",
   "description": "UI component design, UX flows, design system maintenance, accessibility reviews. Best for: designing new UI, improving user experience, creating specs for Coder to implement.",
   "model": "sonnet",
@@ -28,5 +28,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "engineering"
+  "category": "engineering",
+  "mcpTools": [
+    "image_generate"
+  ]
 }

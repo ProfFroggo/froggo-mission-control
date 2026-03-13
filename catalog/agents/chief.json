@@ -1,7 +1,7 @@
 {
   "id": "chief",
   "name": "Chief",
-  "emoji": "🏛️",
+  "emoji": "\ud83c\udfdb\ufe0f",
   "role": "Lead Engineer & Architect",
   "description": "Architecture decisions, complex system design, senior technical guidance. Use for: architectural decisions, hard technical problems, mentoring Coder, final technical sign-off.",
   "model": "opus",
@@ -25,5 +25,9 @@
     "git"
   ],
   "version": "1.0.0",
-  "category": "engineering"
+  "category": "engineering",
+  "mcpTools": [
+    "image_generate",
+    "schedule_create"
+  ]
 }

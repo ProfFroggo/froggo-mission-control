@@ -295,9 +295,17 @@ export async function POST(request: NextRequest) {
         if (Array.isArray(requiredSkills) && requiredSkills.length > 0) {
           seedSetting.run(`agent.${id}.skills`, JSON.stringify(requiredSkills));
         }
-        if (Array.isArray(requiredTools) && requiredTools.length > 0) {
-          seedSetting.run(`agent.${id}.tools`, JSON.stringify(requiredTools));
-        }
+        // Seed MCP tools: base set every agent needs + agent-specific extras from mcpTools
+        const BASE_MCP_TOOLS = [
+          'task_create', 'task_update', 'task_get', 'task_list', 'task_activity_create',
+          'agent_sessions_create', 'agent_sessions_get',
+          'chat_post', 'chat_read', 'approval_create', 'schedule_list',
+          'memory_search', 'memory_recall', 'memory_write', 'memory_read',
+        ];
+        const { mcpTools } = catalogJson as { mcpTools?: string[] };
+        const agentMcpTools = [...new Set([...BASE_MCP_TOOLS, ...(Array.isArray(mcpTools) ? mcpTools : [])])];
+        seedSetting.run(`agent.${id}.tools`, JSON.stringify(agentMcpTools));
+
         if (Array.isArray(requiredApis) && requiredApis.length > 0) {
           seedSetting.run(`agent.${id}.apiKeys`, JSON.stringify(requiredApis));
         }

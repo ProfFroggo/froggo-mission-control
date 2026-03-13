@@ -1,7 +1,7 @@
 {
   "id": "voice",
   "name": "Voice",
-  "emoji": "🎙️",
+  "emoji": "\ud83c\udf99\ufe0f",
   "role": "Voice Agent",
   "description": "Text-to-speech, voice interaction, and audio processing. Use for: voice interface features, audio content generation, voice command handling.",
   "model": "sonnet",
@@ -20,5 +20,6 @@
   ],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "utility"
+  "category": "utility",
+  "mcpTools": []
 }

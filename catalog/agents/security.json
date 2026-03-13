@@ -1,7 +1,7 @@
 {
   "id": "security",
   "name": "Security",
-  "emoji": "🛡️",
+  "emoji": "\ud83d\udee1\ufe0f",
   "role": "Security & Compliance Engineer",
   "description": "Security audits, threat modelling, OWASP reviews, compliance checks (GDPR, SOC2), and agent trust architecture. Catches vulnerabilities before they ship.",
   "model": "sonnet",
@@ -25,5 +25,6 @@
   "requiredTools": [],
   "version": "1.0.0",
   "category": "engineering",
-  "core": false
+  "core": false,
+  "mcpTools": []
 }

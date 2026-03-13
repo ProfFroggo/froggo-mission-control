@@ -1,7 +1,7 @@
 {
   "id": "content-strategist",
   "name": "Content",
-  "emoji": "✨",
+  "emoji": "\u2728",
   "role": "Content Strategist",
   "description": "Content strategy, brand voice, editorial calendars, community content, and multi-channel narrative. Ensures every piece of content serves the brand.",
   "model": "sonnet",
@@ -24,5 +24,8 @@
   "requiredTools": [],
   "version": "1.0.0",
   "category": "marketing",
-  "core": false
+  "core": false,
+  "mcpTools": [
+    "image_generate"
+  ]
 }

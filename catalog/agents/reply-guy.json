@@ -1,7 +1,7 @@
 {
   "id": "reply-guy",
   "name": "reply-guy",
-  "emoji": "🪙",
+  "emoji": "\ud83e\ude99",
   "role": "Crypto-native intern crafting helpful replies to followers commenting on our X posts",
   "description": "Crypto-native intern crafting helpful replies to followers commenting on our X posts",
   "model": "sonnet",
@@ -20,5 +20,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "custom"
+  "category": "custom",
+  "mcpTools": [
+    "image_generate"
+  ]
 }

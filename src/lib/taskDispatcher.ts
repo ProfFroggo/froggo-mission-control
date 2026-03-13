@@ -1028,22 +1028,45 @@ export function dispatchTask(taskId: string): boolean {
           }
         }
 
-        // If agent exited cleanly but task is still at internal-review, re-dispatch
+        // If agent exited cleanly but task is still mid-flight, re-dispatch
         // to complete the handoff (agent's session ended mid-step)
         if (code === 0) {
           const current = db.prepare('SELECT status, assignedTo FROM tasks WHERE id = ?')
             .get(taskId) as { status: string; assignedTo: string | null } | undefined;
-          if (current?.status === 'internal-review' && current?.assignedTo) {
-            db.prepare(
-              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-            ).run(taskId, 'system', 'auto_redispatch',
-              'Task left in internal-review after agent exit — re-dispatching to complete handoff', Date.now());
-            if (!_redispatchTimeouts.has(taskId)) {
-              const t = setTimeout(() => {
-                _redispatchTimeouts.delete(taskId);
-                dispatchTask(taskId);
-              }, 2000);
-              _redispatchTimeouts.set(taskId, t);
+          const stuckInFlight = current?.assignedTo && (
+            current.status === 'internal-review' || current.status === 'in-progress'
+          );
+          if (stuckInFlight) {
+            // Count prior auto-redispatch attempts to prevent infinite loops
+            const redispatchCount = (db.prepare(
+              `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'auto_redispatch'`
+            ).get(taskId) as { cnt: number } | undefined)?.cnt ?? 0;
+
+            if (redispatchCount < 3) {
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'system', 'auto_redispatch',
+                `Task left in ${current.status} after agent exit — re-dispatching to complete handoff (attempt ${redispatchCount + 1}/3)`,
+                Date.now());
+              if (!_redispatchTimeouts.has(taskId)) {
+                const t = setTimeout(() => {
+                  _redispatchTimeouts.delete(taskId);
+                  dispatchTask(taskId);
+                }, 5000);
+                _redispatchTimeouts.set(taskId, t);
+              }
+            } else {
+              // Too many retries — escalate to human
+              db.prepare(
+                `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+              ).run(
+                `Agent exited without completing task after 3 re-dispatch attempts. Needs human review.`,
+                Date.now(), taskId
+              );
+              db.prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'system', 'auto_redispatch_failed',
+                'Moved to human-review after 3 failed re-dispatch attempts', Date.now());
             }
           }
         }
@@ -1066,11 +1089,12 @@ export function dispatchTask(taskId: string): boolean {
 
     proc.unref();
 
-    // Auto-advance task to in-progress on dispatch — don't wait for agent to do it
+    // Auto-advance task to in-progress on dispatch — only from internal-review (Clara's gate).
+    // Tasks in todo have not passed the quality gate yet; the dispatcher should not skip it.
     const now2 = Date.now();
     try {
       const cur = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
-      if (cur?.status === 'todo' || cur?.status === 'internal-review') {
+      if (cur?.status === 'internal-review') {
         db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('in-progress', now2, taskId);
       }
       db.prepare(
@@ -1089,5 +1113,42 @@ export function dispatchTask(taskId: string): boolean {
   } catch (err) {
     console.error('[taskDispatcher] Error:', err);
     return false;
+  }
+}
+
+// ── Startup recovery ──────────────────────────────────────────────────────────
+// Re-queues tasks stuck in 'in-progress' from a previous server session.
+// After a restart, no active dispatch processes exist, so any in-progress task
+// must be re-dispatched to resume work.
+type GD = typeof globalThis & { _dispatcherStartupDone?: boolean };
+
+export function recoverStuckInProgressTasks(): void {
+  const g = globalThis as GD;
+  if (g._dispatcherStartupDone) return;
+  g._dispatcherStartupDone = true;
+
+  try {
+    const db = getDb();
+    const stuck = db.prepare(
+      `SELECT id, assignedTo FROM tasks WHERE status = 'in-progress' AND assignedTo IS NOT NULL`
+    ).all() as { id: string; assignedTo: string }[];
+
+    if (stuck.length === 0) return;
+
+    console.log(`[taskDispatcher] Recovering ${stuck.length} task(s) stuck in in-progress from previous session`);
+    for (const task of stuck) {
+      db.prepare(
+        `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+      ).run(task.id, 'system', 'auto_redispatch',
+        'Task was in-progress at server startup — re-dispatching to resume work (attempt 1/3)', Date.now());
+
+      const t = setTimeout(() => {
+        _redispatchTimeouts.delete(task.id);
+        dispatchTask(task.id);
+      }, 8000 + Math.random() * 4000); // stagger to avoid thundering herd
+      _redispatchTimeouts.set(task.id, t);
+    }
+  } catch (err) {
+    console.error('[taskDispatcher] Startup recovery error:', err);
   }
 }

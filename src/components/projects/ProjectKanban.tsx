@@ -27,7 +27,7 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
 
 const COLUMNS: { id: TaskStatus; label: string; color: string; iconColor: string; borderColor: string; icon: React.ReactNode }[] = [
   { id: 'todo',            label: 'To Do',            color: 'text-info',    iconColor: 'text-info',    borderColor: 'border-t-info',    icon: <FileText size={13} /> },
-  { id: 'internal-review', label: 'Ready to Start',   color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
+  { id: 'internal-review', label: 'Internal Review',   color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
   { id: 'in-progress',     label: 'In Progress',      color: 'text-warning', iconColor: 'text-warning', borderColor: 'border-t-warning', icon: <Zap size={13} /> },
   { id: 'review',          label: 'Agent Review',     color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Bot size={13} /> },
   { id: 'human-review',    label: 'Human Review',     color: 'text-warning', iconColor: 'text-warning', borderColor: 'border-t-warning', icon: <User size={13} /> },

@@ -1,7 +1,7 @@
 {
   "id": "finance-manager",
   "name": "Finance Manager",
-  "emoji": "💰",
+  "emoji": "\ud83d\udcb0",
   "role": "Financial Operations Manager",
   "description": "Financial tracking, reporting, budget management, and accounting. Use for: expense tracking, financial reports, budget analysis, invoice management.",
   "model": "sonnet",
@@ -20,5 +20,6 @@
   ],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "operations"
+  "category": "operations",
+  "mcpTools": []
 }

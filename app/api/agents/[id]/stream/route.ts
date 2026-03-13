@@ -15,7 +15,7 @@ import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
 import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -26,9 +26,17 @@ export const runtime = 'nodejs';
 const HOME = homedir();
 // Spawn claude via process.execPath + real .js path to avoid #!/usr/bin/env node
 // shebang failure in LaunchAgent / systemd environments where 'node' isn't on PATH.
+// If CLAUDE_SCRIPT is a native binary (Homebrew Cask), spawn it directly instead of
+// wrapping with node — node /opt/homebrew/bin/claude fails with SyntaxError.
 const CLAUDE_BIN    = ENV.CLAUDE_BIN;
 const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN      = process.execPath; // absolute path to the current node binary
+const IS_NATIVE_BIN = !CLAUDE_SCRIPT.endsWith('.js');
+function spawnClaude(args: string[], opts: Parameters<typeof spawn>[2]): ReturnType<typeof spawn> {
+  return IS_NATIVE_BIN
+    ? spawn(CLAUDE_SCRIPT, args, opts!)
+    : spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], opts!);
+}
 
 // ── File cache ─────────────────────────────────────────────────────────────
 interface CacheEntry { content: string; mtime: number; }
@@ -490,14 +498,13 @@ export async function POST(
         // (Using HOME directly would skip ~/mission-control/ in the search path, causing MCP
         // servers to not be found and all tool calls to silently fail → 120s timeout.)
         try {
-          if (!existsSync(dir)) {
-            mkdirSync(dir, { recursive: true });
-            // Seed .mcp.json so Claude Code finds MCP servers without relying on
-            // parent-directory traversal (which can stop at a .git/.claude boundary).
-            const parentMcp = join(HOME, 'mission-control', '.mcp.json');
-            if (existsSync(parentMcp)) {
-              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
-            }
+          mkdirSync(dir, { recursive: true });
+          // Always sync .mcp.json into agent workspace — not just on creation.
+          // Ensures MCP servers are found even if workspace existed before .mcp.json
+          // was added, or if the parent .mcp.json was updated after initial hire.
+          const parentMcp = join(HOME, 'mission-control', '.mcp.json');
+          if (existsSync(parentMcp)) {
+            writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
           }
         } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
@@ -565,6 +572,17 @@ export async function POST(
           ANTHROPIC_API_KEY,
           ...cleanEnv
         } = process.env;
+        // Validate Claude binary exists before attempting spawn — gives an immediate
+        // actionable error rather than a 120s silent timeout.
+        if (CLAUDE_SCRIPT !== 'claude' && !existsSync(CLAUDE_SCRIPT)) {
+          enc({ type: 'text', text: `Claude Code not found at ${CLAUDE_SCRIPT}. Run: mission-control setup --force` });
+          enc({ type: 'done', code: 1 });
+          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch {}
+          try { controller.close(); } catch {}
+          agentLocks.delete(id);
+          return;
+        }
+
         // LaunchAgent has a minimal environment (no PATH, USER, LOGNAME, TMPDIR).
         // Ensure these are present so Claude Code can access keychain and system tools.
         if (!cleanEnv.PATH || cleanEnv.PATH.length < 20) {
@@ -575,11 +593,21 @@ export async function POST(
             join(HOME, '.local', 'bin'),
           ].join(':');
         }
+        // Always ensure node's own directory is on PATH — covers nvm, custom installs.
+        const nodeBinDir = dirname(NODE_BIN);
+        if (!cleanEnv.PATH.includes(nodeBinDir)) {
+          cleanEnv.PATH = nodeBinDir + ':' + cleanEnv.PATH;
+        }
+        // Also ensure the claude binary's directory is on PATH for native binary installs.
+        const claudeBinDir = dirname(CLAUDE_BIN);
+        if (claudeBinDir && claudeBinDir !== '.' && !cleanEnv.PATH.includes(claudeBinDir)) {
+          cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
+        }
         if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch { /* ignore */ } }
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
         if (!cleanEnv.TMPDIR)  { cleanEnv.TMPDIR  = tmpdir(); }
 
-        const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
+        const proc = spawnClaude(args, {
           cwd,
           env: cleanEnv,
           stdio: 'pipe',
@@ -682,10 +710,11 @@ export async function POST(
           }
         });
 
+        let stderrBuf = '';
         proc.stderr.on('data', (data: Buffer) => {
-          // Log to server console for diagnostics — not shown to client
-          const msg = data.toString().trim();
-          if (msg) console.error(`[stream/${id}/stderr]`, msg.slice(0, 500));
+          const msg = data.toString();
+          stderrBuf += msg;
+          if (msg.trim()) console.error(`[stream/${id}/stderr]`, msg.trim().slice(0, 500));
         });
 
         const timeout = setTimeout(() => {
@@ -701,6 +730,15 @@ export async function POST(
         const finishStream = (code: number | null) => {
           agentLocks.delete(id); // release lock
           if (streamCancelled) return; // client disconnected — controller already closed
+          // Surface actionable error when Claude CLI exits with no output
+          if (!resultReceived && code !== 0 && stderrBuf) {
+            const errText = stderrBuf.trim().slice(0, 400);
+            const isAuth = /not logged in|authentication|api.?key|unauthorized|login|claude.ai/i.test(errText);
+            const friendly = isAuth
+              ? 'Claude Code is not authenticated. Run `claude` in a terminal and log in, then restart Mission Control.'
+              : `Agent process failed (exit ${code}): ${errText}`;
+            enc({ type: 'text', text: friendly });
+          }
           enc({ type: 'done', code: code ?? 0 });
           try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
           try { controller.close(); } catch { /* already closed */ }
@@ -769,7 +807,7 @@ export async function POST(
             const sp = (buildSystemPrompt(id) ?? '') + retryTaskCtx + retryProjectCtx + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 
-            const fresh = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...freshArgs], { cwd, env: cleanEnv, stdio: 'pipe' });
+            const fresh = spawnClaude(freshArgs, { cwd, env: cleanEnv, stdio: 'pipe' });
             fresh.stdin.write(sanitizedMessage);
             fresh.stdin.end();
 

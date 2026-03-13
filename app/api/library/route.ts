@@ -63,9 +63,17 @@ export async function GET(request: NextRequest) {
 
       if (!filePath) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
+      const mime = getFileMime(filePath);
+      // Binary files (images, video, audio) — return a raw URL instead of contents
+      const isBinary = mime.startsWith('image/') || mime.startsWith('video/') || mime.startsWith('audio/') || mime === 'application/pdf';
+      if (isBinary) {
+        const rawUrl = `/api/library?action=raw&id=${encodeURIComponent(id)}`;
+        return NextResponse.json({ success: true, content: rawUrl, mimeType: mime, isBinary: true });
+      }
+
       try {
         const content = readFileSync(filePath, 'utf8');
-        return NextResponse.json({ success: true, content });
+        return NextResponse.json({ success: true, content, mimeType: mime });
       } catch {
         return NextResponse.json({ success: false, error: 'Could not read file' }, { status: 500 });
       }

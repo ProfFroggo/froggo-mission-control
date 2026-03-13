@@ -1,7 +1,7 @@
 {
   "id": "social-manager",
   "name": "Social Manager",
-  "emoji": "🐦",
+  "emoji": "\ud83d\udc26",
   "role": "Social Media Manager",
   "description": "X/Twitter strategy and content. Use for: tweet drafting, thread creation, engagement strategy, social calendar management.",
   "model": "sonnet",
@@ -26,5 +26,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "marketing"
+  "category": "marketing",
+  "mcpTools": [
+    "image_generate"
+  ]
 }

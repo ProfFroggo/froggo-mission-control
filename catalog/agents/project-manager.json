@@ -1,7 +1,7 @@
 {
   "id": "project-manager",
   "name": "PM Ops",
-  "emoji": "📋",
+  "emoji": "\ud83d\udccb",
   "role": "Project Manager",
   "description": "Cross-functional coordination, sprint ceremonies, stakeholder updates, runbooks, and workflow optimisation. Keeps projects on track and teams unblocked.",
   "model": "sonnet",
@@ -23,5 +23,6 @@
   "requiredTools": [],
   "version": "1.0.0",
   "category": "management",
-  "core": false
+  "core": false,
+  "mcpTools": []
 }

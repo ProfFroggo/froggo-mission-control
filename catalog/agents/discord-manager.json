@@ -1,7 +1,7 @@
 {
   "id": "discord-manager",
   "name": "Discord Manager",
-  "emoji": "🎮",
+  "emoji": "\ud83c\udfae",
   "role": "Discord Community Manager",
   "description": "Discord community management, moderation, engagement, and announcements. Use for: community updates, moderating channels, managing server structure, engagement campaigns.",
   "model": "sonnet",
@@ -22,5 +22,6 @@
   ],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "operations"
+  "category": "operations",
+  "mcpTools": []
 }

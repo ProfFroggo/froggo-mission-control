@@ -7,7 +7,7 @@ import { ENV } from './env';
  */
 
 import { getDb } from './database';
-import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
+import { TIER_TOOLS, loadDisallowedTools, recoverStuckInProgressTasks } from './taskDispatcher';
 import { trackEvent } from './telemetry';
 import { existsSync, readFileSync, mkdirSync, appendFileSync } from 'fs';
 import { join } from 'path';
@@ -206,6 +206,10 @@ export function startClaraReviewCron(): void {
       console.log(`[clara-review-cron] Reset ${stale.changes} stale in-review task(s) from previous session`);
     }
   } catch { /* DB may not be ready yet — runReviewCycle will handle them */ }
+
+  // On startup: re-dispatch tasks stuck in 'in-progress' from a previous server session.
+  // No dispatch processes survive a restart, so these tasks would never advance otherwise.
+  recoverStuckInProgressTasks();
 
   const interval = setInterval(runReviewCycle, REVIEW_INTERVAL_MS);
   interval.unref?.();

@@ -116,7 +116,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
 
 type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup' | 'platform';
 
-interface SystemHealth { cli: boolean; database: boolean; backend: string; }
+interface SystemHealth { cli: boolean; claudeFound: boolean; claudeAuthenticated: boolean; claudePath: string; database: boolean; backend: string; }
 
 function StatusRow({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
@@ -595,7 +595,15 @@ export default function SettingsPanel() {
                 </button>
               </div>
               <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-2 text-sm">
-                <StatusRow label="Claude CLI" value={health ? (health.cli ? 'Ready' : 'Not found') : '…'} ok={health?.cli} />
+                <StatusRow
+                  label="Claude CLI"
+                  value={health ? (
+                    !health.claudeFound ? 'Not found — run: npm install -g @anthropic-ai/claude-code' :
+                    !health.claudeAuthenticated ? 'Not authenticated — run: claude' :
+                    'Ready'
+                  ) : '…'}
+                  ok={health ? (health.claudeFound && health.claudeAuthenticated) : undefined}
+                />
                 <StatusRow label="Database" value={health ? (health.database ? 'Connected' : 'Missing') : '…'} ok={health?.database} />
                 <StatusRow label="MCP Servers" value="mission-control-db · memory" ok={true} />
                 <StatusRow label="Agents" value={agentCount !== null ? `${agentCount} registered` : '…'} ok={agentCount !== null && agentCount > 0} />

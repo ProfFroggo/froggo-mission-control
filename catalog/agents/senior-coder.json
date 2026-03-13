@@ -1,7 +1,7 @@
 {
   "id": "senior-coder",
   "name": "Senior Coder",
-  "emoji": "🧑‍💻",
+  "emoji": "\ud83e\uddd1\u200d\ud83d\udcbb",
   "role": "Lead Software Engineer",
   "description": "Senior-level engineering: complex features, architecture implementation, mentoring Coder. Use for: system-level TypeScript work, complex refactors, architectural implementation.",
   "model": "opus",
@@ -32,5 +32,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "engineering"
+  "category": "engineering",
+  "mcpTools": [
+    "image_generate"
+  ]
 }
