@@ -737,26 +737,23 @@ function buildTaskMessage(task: Record<string, unknown>): string {
     `If blocked at any point:`,
     `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "human-review", "lastAgentUpdate": "Blocked: <reason>" }`,
     ``,
-    `### STEP 4 — Internal review (verify plan & subtasks are complete):`,
-    `Before handing off, verify: planningNotes exist, all subtasks are created, all subtasks are marked complete.`,
-    `Verify with: mcp__mission-control_db__task_get { "id": "${task.id}" }`,
-    `If any subtasks are incomplete — complete them first, then mark them done.`,
-    `Once verified:`,
-    `mcp__mission-control_db__task_update { "id": "${task.id}", "status": "internal-review", "progress": 95 }`,
-    `mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "message": "Internal review: plan verified, all <N> subtasks complete — <summary>" }`,
+    `### STEP 4 — Self-check then hand off to Clara:`,
+    `Before handing off, verify locally (do NOT set status to internal-review — that column is for Clara's pre-work gate, not you):`,
+    `  mcp__mission-control_db__task_get { "id": "${task.id}" }`,
+    `  → Check: planningNotes exist, all subtasks are created, all subtasks marked complete.`,
+    `  → If any subtasks are incomplete — complete them first, then mark them done.`,
+    `Once all subtasks are done:`,
+    `  mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Done: <1-2 sentence summary of deliverables>" }`,
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief label>" }`,
+    `  (Clara verifies the work was actually completed. Approved → done. Rejected → you get re-dispatched with feedback.)`,
     ``,
-    `### STEP 5 — Hand off to Clara (do this IMMEDIATELY after STEP 4 in the same session):`,
-    `Do NOT end your session after setting internal-review. Continue immediately:`,
-    `mcp__mission-control_db__task_add_activity { "taskId": "${task.id}", "agentId": "<your-id>", "action": "completed", "message": "Done: <1-2 sentence summary of deliverables>" }`,
-    `mcp__mission-control_db__task_update { "id": "${task.id}", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <brief label>" }`,
-    `(Clara verifies the work was actually completed. Approved → done. Rejected → you get re-dispatched with feedback.)`,
+    `## Status flow: todo → pre-review → in-progress → review → done`,
+    `- "pre-review" (internal-review) → Clara's gate before work starts. You already passed this — you are now in-progress.`,
+    `- "in-progress"                  → you are actively working right now`,
+    `- "review"                       → Clara verifying your completed work`,
+    `- "human-review"                 → need human input (blocker/decision)`,
     ``,
-    `## Status flow: todo → internal-review → in-progress → internal-review → review → done`,
-    `- "internal-review" (first)  → dispatcher gate before work starts (already passed — you are now in-progress)`,
-    `- "in-progress"              → you are actively working right now`,
-    `- "internal-review" (second) → you verify your own plan + all subtasks complete before handing off`,
-    `- "review"                   → Clara verifying work was done`,
-    `- "human-review"             → need Kevin's input (blocker/decision)`,
+    `IMPORTANT: Do NOT set status to "internal-review" yourself — that is Clara's Pre-review column.`,
     ``,
     `Work autonomously. Do not ask for clarification — interpret and execute.`,
   );
@@ -1033,9 +1030,9 @@ export function dispatchTask(taskId: string): boolean {
         if (code === 0) {
           const current = db.prepare('SELECT status, assignedTo FROM tasks WHERE id = ?')
             .get(taskId) as { status: string; assignedTo: string | null } | undefined;
-          const stuckInFlight = current?.assignedTo && (
-            current.status === 'internal-review' || current.status === 'in-progress'
-          );
+          // Only re-dispatch from in-progress — internal-review is Clara's pre-work gate,
+          // not a state an agent can be stuck in during dispatch.
+          const stuckInFlight = current?.assignedTo && current.status === 'in-progress';
           if (stuckInFlight) {
             // Count prior auto-redispatch attempts to prevent infinite loops
             const redispatchCount = (db.prepare(
