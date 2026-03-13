@@ -832,7 +832,11 @@ async function cmdSetup(force = false) {
       'mission-control-db': {
         command: nodeBin,
         args: [path.join(INSTALL_DIR, 'tools', 'mission-control-db-mcp', 'dist', 'index.js')],
-        env: { DB_PATH: `${MC_DATA}/mission-control.db` },
+        env: {
+          DB_PATH: `${MC_DATA}/mission-control.db`,
+          PORT: String(port),
+          INTERNAL_API_TOKEN: internalToken,
+        },
       },
       memory: {
         command: nodeBin,
