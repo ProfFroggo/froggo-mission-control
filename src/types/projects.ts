@@ -65,3 +65,24 @@ export interface ProjectDispatchInput {
   description: string;
   priority?: 'p0' | 'p1' | 'p2' | 'p3';
 }
+
+export interface ProjectMilestone {
+  id: string;
+  projectId: string;
+  title: string;
+  dueDate?: number;
+  completed: number;  // 0 | 1
+  completedAt?: number;
+  createdAt: number;
+}
+
+export interface CreateMilestoneInput {
+  title: string;
+  dueDate?: number;
+}
+
+export interface UpdateMilestoneInput {
+  title?: string;
+  dueDate?: number;
+  completed?: boolean;
+}

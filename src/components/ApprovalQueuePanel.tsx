@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ShieldAlert, ShieldCheck, ShieldX, Clock, RefreshCw,
   Check, X, ChevronDown, ChevronUp, User, MessageSquare,
   Mail, Zap, ListTodo, Send, Bot, ExternalLink, Trash2,
   GitBranch, CalendarClock, AlertTriangle, Edit2, CheckCircle,
+  CheckSquare, Filter,
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -470,6 +471,24 @@ export default function ApprovalQueuePanel() {
 
   const filtered = approvals.filter(a => matchesFilter(a, filterTab));
 
+  // ── Batch approve-all ────────────────────────────────────────────────────────
+  const [batchConfirm, setBatchConfirm] = useState(false);
+  const [batchWorking, setBatchWorking] = useState(false);
+
+  const approveAll = async () => {
+    if (!batchConfirm) { setBatchConfirm(true); setTimeout(() => setBatchConfirm(false), 4000); return; }
+    setBatchConfirm(false);
+    setBatchWorking(true);
+    const targets = filtered.filter(a => a.status === 'pending');
+    await Promise.allSettled(targets.map(a => approvalApi.respond(a.id, 'approved', undefined, undefined)));
+    showToast(`${targets.length} approvals approved`, 'success');
+    await load(true);
+    setBatchWorking(false);
+  };
+
+  // ── Keyboard shortcut: focused card A/D ──────────────────────────────────────
+  const focusedApprovalId = useRef<string | null>(null);
+
   const pendingCounts = statusTab === 'pending' ? {
     all: approvals.length,
     tasks: approvals.filter(a => a.type === 'task').length,
@@ -529,9 +548,10 @@ export default function ApprovalQueuePanel() {
         })}
       </div>
 
-      {/* Filter tabs (hide on scheduled) */}
+      {/* Filter tabs + batch actions (hide on scheduled) */}
       {statusTab !== 'scheduled' && (
-        <div className="flex gap-1 px-3 py-2 border-b border-mission-control-border/50 bg-mission-control-surface/50">
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-mission-control-border/50 bg-mission-control-surface/50">
+          <Filter className="w-3 h-3 text-mission-control-text-dim shrink-0 mr-0.5" />
           {FILTER_TABS.map(tab => (
             <button
               key={tab.id}
@@ -552,6 +572,21 @@ export default function ApprovalQueuePanel() {
               )}
             </button>
           ))}
+          {/* Batch approve-all — only show in pending tab with multiple items */}
+          {statusTab === 'pending' && filtered.length > 1 && (
+            <button
+              onClick={approveAll}
+              disabled={batchWorking}
+              className={`ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                batchConfirm
+                  ? 'bg-success text-white animate-pulse'
+                  : 'bg-success-subtle text-success border border-success-border hover:bg-success/20'
+              }`}
+            >
+              {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
+              {batchConfirm ? `Confirm — approve all ${filtered.length}` : `Approve all ${filtered.length}`}
+            </button>
+          )}
         </div>
       )}
 
@@ -575,7 +610,7 @@ export default function ApprovalQueuePanel() {
             }
             description={
               statusTab === 'pending'
-                ? 'Items requiring human review will appear here — tasks, X posts, emails, and agent actions.'
+                ? 'Agents are working autonomously — all clear. Items requiring human review will appear here.'
                 : statusTab === 'scheduled'
                 ? 'Approved actions with a future run time will appear here. You can cancel them before they fire.'
                 : undefined
@@ -743,26 +778,25 @@ function AgentActionCard({
             <button
               onClick={onApprove}
               disabled={isResponding}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-success text-white text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50 shadow-sm"
             >
-              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
+              {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              {hasNote ? 'Approve with Feedback' : 'Approve'}
             </button>
             <button
               onClick={onReject}
               disabled={isResponding}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-error-border bg-error-subtle text-error text-xs font-semibold hover:bg-error/20 transition-all disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-error-border bg-error-subtle text-error text-sm font-semibold hover:bg-error/20 transition-all disabled:opacity-50"
             >
-              {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-              {hasNote ? 'Reject with Reason' : 'Reject'}
+              {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+              {hasNote ? 'Reject with Reason' : 'Deny'}
             </button>
             <button
               onClick={handleDiscuss}
               title="Open chat with this agent"
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-xs font-medium hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all"
+              className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm font-medium hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
-              Discuss
+              <MessageSquare className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -780,6 +814,15 @@ function ApprovalCard({
   const Icon = cfg.icon;
   const isExecutable = EXECUTABLE_TYPES.has(approval.type) || approval.category === 'executable_action' || approval.category === 'scheduled_action';
   const isAgentAction = approval.type === 'action' && !!(approval.metadata?.taskId);
+
+  // Keyboard shortcut: A = approve, D = deny when card is focused
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showActions || isResponding) return;
+    const inInput = (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA';
+    if (inInput) return;
+    if (e.key === 'a' || e.key === 'A') { e.preventDefault(); onApprove(); }
+    if (e.key === 'd' || e.key === 'D') { e.preventDefault(); onReject(); }
+  };
 
   // Agent-action (HIL) approvals get a dedicated rich card
   if (isAgentAction) {
@@ -810,9 +853,13 @@ function ApprovalCard({
     : null;
 
   return (
-    <div className={`p-4 hover:bg-mission-control-surface/40 transition-colors ${
-      isExecutable ? 'border-l-2 ' + cfg.border : ''
-    }`}>
+    <div
+      tabIndex={showActions ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`p-4 hover:bg-mission-control-surface/40 transition-colors focus:outline-none focus:ring-1 focus:ring-mission-control-accent/40 ${
+        isExecutable ? 'border-l-2 ' + cfg.border : ''
+      }`}
+    >
       {/* Top row */}
       <div className="flex items-start gap-3">
         <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
@@ -972,7 +1019,7 @@ function ApprovalCard({
             <button
               onClick={onApprove}
               disabled={isResponding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success-subtle hover:bg-success/20 text-success text-xs font-medium border border-success-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               {isExecutable ? 'Approve & Run' : 'Approve'}
@@ -980,10 +1027,10 @@ function ApprovalCard({
             <button
               onClick={onReject}
               disabled={isResponding}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-subtle hover:bg-error/20 text-error text-xs font-medium border border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-error-subtle hover:bg-error/20 text-error text-sm font-semibold border border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-              Reject
+              Deny
             </button>
           </div>
         </div>

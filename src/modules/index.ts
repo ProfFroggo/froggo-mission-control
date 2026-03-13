@@ -23,4 +23,5 @@ import './agent-mgmt';
 import './library';
 import './knowledge';
 import './projects';
+import './campaigns';
 import './schedule';

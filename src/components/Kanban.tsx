@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
-  CheckCircle, Ban, FileText
+  CheckCircle, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -177,6 +177,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [showFilters, setShowFilters] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showHealthCheck, setShowHealthCheck] = useState(false);
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<TaskStatus>>(new Set());
+  const [jumpToTaskInput, setJumpToTaskInput] = useState('');
+  const [showJumpToTask, setShowJumpToTask] = useState(false);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -462,6 +465,32 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setDragOverColumn(null);
   }, []);
 
+  const toggleColumnCollapse = useCallback((columnId: TaskStatus) => {
+    setCollapsedColumns(prev => {
+      const next = new Set(prev);
+      if (next.has(columnId)) next.delete(columnId);
+      else next.add(columnId);
+      return next;
+    });
+  }, []);
+
+  const handleJumpToTask = useCallback((input: string) => {
+    const searchTerm = input.trim().toLowerCase();
+    if (!searchTerm) return;
+    const found = tasks.find(t =>
+      t.id === searchTerm ||
+      t.id.includes(searchTerm) ||
+      t.title.toLowerCase().includes(searchTerm)
+    );
+    if (found) {
+      setSelectedTask(found);
+      setJumpToTaskInput('');
+      setShowJumpToTask(false);
+    } else {
+      showToast('info', 'Task not found', `No task matching "${input}"`);
+    }
+  }, [tasks]);
+
   const handleAddTask = (status: TaskStatus) => {
     if (onNewTask) { onNewTask(); return; }
     setModalStatus(status);
@@ -547,6 +576,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       });
     }
   }, [spawnAgentForTask]);
+
+  const handleTitleEdit = useCallback(async (taskId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    try {
+      await taskApi.update(taskId, { title: newTitle.trim() });
+      updateTask(taskId, { title: newTitle.trim() });
+    } catch {
+      showToast('error', 'Failed to update title');
+    }
+  }, [updateTask]);
 
   const handleMoveTask = async (taskId: string, status: TaskStatus) => {
     setMovingTasks(prev => new Set(prev).add(taskId));
@@ -659,6 +698,35 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               Health Check
             </button>
             
+            {/* Jump to task */}
+            <div className="relative">
+              <button
+                onClick={() => setShowJumpToTask(v => !v)}
+                className="icon-text px-3 py-2 border border-mission-control-border rounded-xl hover:border-mission-control-accent/50 transition-all"
+                title="Jump to task by ID or title"
+              >
+                <Hash size={16} className="flex-shrink-0" />
+                Jump
+              </button>
+              {showJumpToTask && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg p-2 w-64">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={jumpToTaskInput}
+                    onChange={e => setJumpToTaskInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleJumpToTask(jumpToTaskInput);
+                      if (e.key === 'Escape') setShowJumpToTask(false);
+                    }}
+                    placeholder="Task ID or title..."
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                  />
+                  <p className="text-xs text-mission-control-text-dim mt-1.5 px-1">Press Enter to jump</p>
+                </div>
+              )}
+            </div>
+
             {/* New Task */}
             <button
               onClick={() => handleAddTask('todo')}
@@ -748,6 +816,36 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         )}
       </div>
 
+      {/* Quick filter bar */}
+      <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: 'all' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${filters.priority === 'all' ? 'bg-mission-control-accent text-white border-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/50'}`}
+        >All</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p0' ? 'all' : 'p0' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p0' ? 'bg-error-subtle text-error border-error-border' : 'border-mission-control-border hover:border-error-border hover:text-error'}`}
+        ><AlertTriangle size={11} /> P0 Critical</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p1' ? 'all' : 'p1' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p1' ? 'bg-warning-subtle text-warning border-warning-border' : 'border-mission-control-border hover:border-warning-border hover:text-warning'}`}
+        ><ArrowUp size={11} /> P1 High</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p2' ? 'all' : 'p2' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p2' ? 'bg-info-subtle text-info border-info-border' : 'border-mission-control-border hover:border-info-border hover:text-info'}`}
+        ><Circle size={11} /> P2 Normal</button>
+        {agents.filter(a => !isProtectedAgent(a.id)).length > 0 && (
+          <div className="w-px h-4 bg-mission-control-border mx-1" />
+        )}
+        {agents.filter(a => !isProtectedAgent(a.id)).map(a => (
+          <button
+            key={a.id}
+            onClick={() => setFilters(f => ({ ...f, assignee: f.assignee === a.id ? 'all' : a.id }))}
+            className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${filters.assignee === a.id ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/50'}`}
+          >{a.name}</button>
+        ))}
+      </div>
+
       {/* Kanban Board */}
       {!loading.tasks && filteredTasks.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
@@ -767,15 +865,19 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;
           
-          return (
+          const isCollapsed = collapsedColumns.has(column.id);
+
+        return (
             <div
               key={column.id}
               data-column={column.id}
-              className={`flex-shrink-0 w-96 min-w-[320px] flex flex-col rounded-2xl border transition-all ${
-                isDragOver 
-                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20' 
-                  : draggedTask 
-                  ? 'border-mission-control-border bg-mission-control-surface/50' 
+              className={`flex-shrink-0 flex flex-col rounded-2xl border transition-all ${
+                isCollapsed ? 'w-12 min-w-[48px]' : 'w-96 min-w-[320px]'
+              } ${
+                isDragOver
+                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
+                  : draggedTask
+                  ? 'border-mission-control-border bg-mission-control-surface/50'
                   : 'border-mission-control-border bg-mission-control-surface'
               }`}
               onDragOver={(e) => handleDragOver(e, column.id)}
@@ -793,17 +895,24 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="icon-text">
+                <div className={`flex items-center justify-between ${isCollapsed ? '' : 'mb-2'}`}>
+                  <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
+                    <button
+                      onClick={() => toggleColumnCollapse(column.id)}
+                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
+                      title={isCollapsed ? 'Expand column' : 'Collapse column'}
+                    >
+                      {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
+                    </button>
                     <span className={column.iconColor}>{column.icon}</span>
-                    <h3 className="font-semibold text-sm">{column.title}</h3>
+                    {!isCollapsed && <h3 className="font-semibold text-sm">{column.title}</h3>}
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${column.bg} ${column.iconColor}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
-                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
+                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length
                         ? `${columnTasks.length}/${taskCounts.totalDone}`
                         : columnTasks.length}
                     </span>
                   </div>
-                  {column.id === 'done' ? (
+                  {!isCollapsed && (column.id === 'done' ? (
                     <button
                       onClick={() => setShowArchiveConfirm(true)}
                       disabled={isArchiving || columnTasks.length === 0}
@@ -819,11 +928,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     >
                       <Plus size={16} className="flex-shrink-0" />
                     </button>
-                  )}
+                  ))}
                 </div>
-                
+
                 {/* Filter and Sort Controls */}
-                <div className="flex items-center gap-1">
+                {!isCollapsed && <div className="flex items-center gap-1">
                   {/* Sort Dropdown */}
                   <div className="relative">
                     <button
@@ -901,11 +1010,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Tasks */}
-              <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
+              {!isCollapsed && <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
                 {isDragOver && (
                   <div className="w-full h-0.5 bg-mission-control-accent rounded-full mb-2 animate-pulse" />
                 )}
@@ -931,6 +1040,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       onClick={() => setSelectedTask(task)}
                       onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
                       onPoke={() => setPokeTask(task)}
+                      onTitleEdit={handleTitleEdit}
                       isDragging={draggedTask === task.id}
                       isDeleting={deletingTasks.has(task.id)}
                       isSpawning={spawningTasks.has(task.id)}
@@ -955,7 +1065,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     </div>
                   )
                 )}
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -1085,24 +1195,49 @@ interface TaskCardProps {
   onClick: () => void;
   onSetPriority: (priority: TaskPriority) => void;
   onPoke: () => void;
+  onTitleEdit: (taskId: string, newTitle: string) => void;
   isDragging: boolean;
   isDeleting?: boolean;
   isSpawning?: boolean;
   isMoving?: boolean;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, onTitleEdit, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
   const [priorityBtnPos, setPriorityBtnPos] = useState<{top: number, left: number} | null>(null);
   const [assignBtnPos, setAssignBtnPos] = useState<{top: number, left: number} | null>(null);
   const [menuBtnPos, setMenuBtnPos] = useState<{top: number, left: number} | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const editInputRef = useRef<HTMLInputElement>(null);
   
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  
+
+  // Focus edit input when entering edit mode
+  useEffect(() => {
+    if (isEditingTitle && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const startEditTitle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditTitle(task.title);
+    setIsEditingTitle(true);
+  };
+
+  const commitEditTitle = () => {
+    setIsEditingTitle(false);
+    if (editTitle.trim() && editTitle.trim() !== task.title) {
+      onTitleEdit(task.id, editTitle.trim());
+    }
+  };
+
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
@@ -1282,8 +1417,37 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         )}
         
         {/* Title */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 truncate">{task.title}</h4>
+        <div className="flex flex-col flex-1 min-w-0 group/title">
+          {isEditingTitle ? (
+            <input
+              ref={editInputRef}
+              type="text"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEditTitle(); }
+                if (e.key === 'Escape') { setIsEditingTitle(false); setEditTitle(task.title); }
+              }}
+              onBlur={commitEditTitle}
+              onClick={e => e.stopPropagation()}
+              className="font-medium text-sm leading-tight w-full bg-mission-control-bg border border-mission-control-accent rounded px-1.5 py-0.5 focus:outline-none"
+            />
+          ) : (
+            <div className="flex items-center gap-1 min-w-0">
+              <h4
+                className="font-medium text-sm leading-tight flex-1 min-w-0 truncate"
+                onDoubleClick={startEditTitle}
+                title="Double-click to edit"
+              >{task.title}</h4>
+              <button
+                onClick={startEditTitle}
+                className="opacity-0 group-hover/title:opacity-60 hover:!opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-mission-control-border transition-opacity"
+                title="Edit title"
+              >
+                <Pencil size={11} />
+              </button>
+            </div>
+          )}
           {task.updatedAt && (
             <span className="text-[10px] text-mission-control-text-dim mt-0.5">
               {(() => {

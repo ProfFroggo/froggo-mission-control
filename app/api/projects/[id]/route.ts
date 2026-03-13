@@ -79,16 +79,68 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   }
 }
 
-// DELETE /api/projects/:id — archives the project
+// DELETE /api/projects/:id — archives the project and writes a summary to memory vault
 export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
     const db = getDb();
 
-    const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
+    const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Record<string, unknown> | undefined;
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     db.prepare(`UPDATE projects SET status = 'archived', updatedAt = ? WHERE id = ?`).run(Date.now(), id);
+
+    // Write archive summary to memory vault (non-blocking)
+    try {
+      const taskCounts = db.prepare(`
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done
+        FROM tasks WHERE project_id = ?
+      `).get(id) as { total: number; done: number };
+
+      const fileCount = (() => {
+        try {
+          const { readdirSync } = require('fs');
+          const { join } = require('path');
+          const { homedir } = require('os');
+          const dir = join(homedir(), 'mission-control', 'library', 'projects', id);
+          return readdirSync(dir).length;
+        } catch { return 0; }
+      })();
+
+      const createdAt = project.createdAt as number;
+      const now = Date.now();
+      const daysSpan = Math.round((now - createdAt) / 86_400_000);
+      const safeName = String(project.name).replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+
+      const summary = [
+        `# Project Archive: ${project.name}`,
+        '',
+        `**Archived**: ${new Date(now).toISOString().split('T')[0]}`,
+        `**Duration**: ${daysSpan} day${daysSpan !== 1 ? 's' : ''}`,
+        `**Goal**: ${project.goal || '—'}`,
+        '',
+        `## Task Summary`,
+        `- Total tasks: ${taskCounts?.total ?? 0}`,
+        `- Completed: ${taskCounts?.done ?? 0}`,
+        `- Completion rate: ${taskCounts?.total ? Math.round(((taskCounts.done ?? 0) / taskCounts.total) * 100) : 0}%`,
+        '',
+        `## Files`,
+        `- Library files created: ${fileCount}`,
+        '',
+        `_Auto-generated on archive._`,
+      ].join('\n');
+
+      const { writeFileSync, mkdirSync } = require('fs');
+      const { join } = require('path');
+      const { homedir } = require('os');
+      const memDir = join(homedir(), 'mission-control', 'memory', 'knowledge');
+      mkdirSync(memDir, { recursive: true });
+      writeFileSync(join(memDir, `project-${safeName}-summary.md`), summary, 'utf-8');
+    } catch {
+      // non-critical — summary write failure should not fail the archive
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
@@ -19,6 +19,26 @@ const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
 import { isProtectedAgent } from '../lib/agentConfig';
+
+function parseAcceptanceCriteria(planningNotes: string): string[] {
+  const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
+  if (!match) return [];
+  return match[1]
+    .split('\n')
+    .filter(l => l.trim().startsWith('-'))
+    .map(l => l.replace(/^-\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 0) return '0m';
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
 
 interface TaskAttachment {
   id: number;
@@ -48,6 +68,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review' | 'chat'>('subtasks');
+  const [suggestedCriteria, setSuggestedCriteria] = useState<string[]>([]);
+  const [isCreatingCriteriaSubtasks, setIsCreatingCriteriaSubtasks] = useState(false);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
@@ -466,6 +488,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     }
   };
 
+  const handleCreateCriteriaSubtasks = async (criteria: string[]) => {
+    if (!task || criteria.length === 0) return;
+    setIsCreatingCriteriaSubtasks(true);
+    try {
+      for (const criterion of criteria) {
+        const result = await addSubtask(task.id, criterion);
+        if (result) {
+          setSubtasks(prev => [...prev, result]);
+        }
+      }
+      setSuggestedCriteria([]);
+      showToast('success', `${criteria.length} subtask${criteria.length !== 1 ? 's' : ''} added from acceptance criteria`);
+    } finally {
+      setIsCreatingCriteriaSubtasks(false);
+    }
+  };
+
   const handleToggleSubtask = async (subtaskId: string) => {
     const st = subtasks.find(s => s.id === subtaskId);
     if (!st) return;
@@ -766,6 +805,42 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         </div>
       </div>
 
+      {/* Clara review notes callout */}
+      {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected'].includes(task.reviewStatus) && (
+        <div className="mx-4 mt-3 p-3 bg-error-subtle border border-error-border rounded-xl flex items-start gap-2 flex-shrink-0">
+          <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold text-error block mb-0.5">
+              {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s feedback:
+            </span>
+            <p className="text-xs text-error/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+          </div>
+        </div>
+      )}
+      {task.reviewNotes && task.reviewStatus === 'approved' && (
+        <div className="mx-4 mt-3 p-3 bg-success-subtle border border-success-border rounded-xl flex items-start gap-2 flex-shrink-0">
+          <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold text-success block mb-0.5">
+              {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s notes:
+            </span>
+            <p className="text-xs text-success/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Time tracking strip */}
+      <div className="mx-4 mt-2 mb-0 flex items-center gap-4 text-xs text-mission-control-text-dim flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <Timer size={12} className="flex-shrink-0" />
+          <span>Active {formatDuration(task.updatedAt - task.createdAt)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Calendar size={12} className="flex-shrink-0" />
+          <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+
       {/* Tabs */}
       {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
           It serves as a historical record and should never be hidden when task is complete. */}
@@ -854,6 +929,39 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 )}
               </div>
             )}
+            {/* Acceptance criteria auto-subtask suggestion */}
+            {task.planningNotes && suggestedCriteria.length === 0 && subtasks.length === 0 && (() => {
+              const criteria = parseAcceptanceCriteria(task.planningNotes);
+              if (criteria.length === 0) return null;
+              return (
+                <div className="mb-4 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles size={14} className="text-mission-control-accent flex-shrink-0" />
+                    <span className="text-sm font-medium">Auto-generate from Acceptance Criteria</span>
+                  </div>
+                  <p className="text-xs text-mission-control-text-dim mb-2">
+                    Found {criteria.length} item{criteria.length !== 1 ? 's' : ''} in planning notes. Create them as subtasks?
+                  </p>
+                  <ul className="text-xs space-y-0.5 mb-3 pl-2">
+                    {criteria.map((c, i) => (
+                      <li key={i} className="text-mission-control-text-dim flex items-center gap-1.5">
+                        <Check size={11} className="text-mission-control-accent flex-shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handleCreateCriteriaSubtasks(criteria)}
+                    disabled={isCreatingCriteriaSubtasks}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+                  >
+                    {isCreatingCriteriaSubtasks ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                    Create {criteria.length} subtask{criteria.length !== 1 ? 's' : ''}
+                  </button>
+                </div>
+              );
+            })()}
+
             {/* Add Subtask */}
             <div className="flex gap-2 mb-4">
               <input
@@ -1040,6 +1148,40 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   ))}
               </select>
             </div>
+
+            {/* Related Tasks */}
+            {(() => {
+              const allTasks = useStore.getState().tasks;
+              const related = allTasks
+                .filter(t =>
+                  t.id !== task.id &&
+                  t.status !== 'done' &&
+                  (t.project === task.project || t.assignedTo === task.assignedTo)
+                )
+                .slice(0, 3);
+              if (related.length === 0) return null;
+              return (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+                    <Link2 size={16} className="text-mission-control-accent" />
+                    Related Tasks
+                  </h3>
+                  <div className="space-y-1.5">
+                    {related.map(rt => (
+                      <div key={rt.id} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          rt.status === 'in-progress' ? 'bg-warning' :
+                          rt.status === 'review' ? 'bg-review' :
+                          'bg-mission-control-border'
+                        }`} />
+                        <span className="flex-1 truncate text-xs">{rt.title}</span>
+                        <span className="text-xs text-mission-control-text-dim flex-shrink-0">{rt.project}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

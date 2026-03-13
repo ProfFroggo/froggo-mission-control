@@ -372,9 +372,39 @@ export const projectsApi = {
     apiCall(`/projects/${id}/files`, { method: 'POST', body: { name, content, encoding } }),
   dispatch: (id: string, data: any) =>
     apiCall(`/projects/${id}/dispatch`, { method: 'POST', body: data }),
+  getMilestones: (id: string) =>
+    apiCall(`/projects/${id}/milestones`),
+  createMilestone: (id: string, data: { title: string; dueDate?: number }) =>
+    apiCall(`/projects/${id}/milestones`, { method: 'POST', body: data }),
+  updateMilestone: (id: string, milestoneId: string, data: { title?: string; dueDate?: number; completed?: boolean }) =>
+    apiCall(`/projects/${id}/milestones`, { method: 'PATCH', body: { milestoneId, ...data } }),
+  deleteMilestone: (id: string, milestoneId: string) =>
+    apiCall(`/projects/${id}/milestones?milestoneId=${encodeURIComponent(milestoneId)}`, { method: 'DELETE' }),
 };
 
 export const updateApi = {
   check: () => apiCall<{ current: string; latest: string | null; updateAvailable: boolean; releaseNotes: string | null; error?: string }>('/update'),
+};
+
+// ──────────────────────────────────────────────────
+// Campaigns
+// ──────────────────────────────────────────────────
+export const campaignsApi = {
+  list: (status?: string, type?: string) => {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    if (type) params.type = type;
+    return apiCall('/campaigns', { params: Object.keys(params).length ? params : undefined });
+  },
+  get: (id: string) => apiCall(`/campaigns/${id}`),
+  create: (data: any) => apiCall('/campaigns', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiCall(`/campaigns/${id}`, { method: 'PATCH', body: data }),
+  delete: (id: string) => apiCall(`/campaigns/${id}`, { method: 'DELETE' }),
+  addMember: (id: string, agentId: string, role = 'member') =>
+    apiCall(`/campaigns/${id}/members`, { method: 'POST', body: { agentId, role, action: 'add' } }),
+  removeMember: (id: string, agentId: string) =>
+    apiCall(`/campaigns/${id}/members`, { method: 'POST', body: { agentId, action: 'remove' } }),
+  dispatch: (id: string, data: any) =>
+    apiCall(`/campaigns/${id}/dispatch`, { method: 'POST', body: data }),
 };
 

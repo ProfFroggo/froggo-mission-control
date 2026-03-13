@@ -5,7 +5,7 @@ import { formatTimeAgo } from '../../utils/formatting';
 import {
   FolderKanban, Plus, Search, RefreshCw, Archive,
   CheckCircle2, Clock, AlertCircle, ChevronRight,
-  Users, FileText, Zap, MessageSquare, LayoutGrid, List
+  Users, Zap, LayoutGrid, List
 } from 'lucide-react';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
@@ -24,32 +24,76 @@ const STATUS_CONFIG = {
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface border-mission-control-border', icon: Archive },
 } as const;
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)}KB`;
-  return `${(bytes / 1048576).toFixed(1)}MB`;
+// ─── Health Score ──────────────────────────────────────────────────────────────
+
+interface ProjectWithStats {
+  totalTasks?: number;
+  doneTasks?: number;
+  inProgressTasks?: number;
+  lastTaskActivity?: number;
+  memberCount?: number;
 }
 
+function computeHealthScore(project: Project & ProjectWithStats): number {
+  const totalTasks = project.totalTasks ?? 0;
+  const doneTasks = project.doneTasks ?? 0;
+  const lastActivity = Number(project.lastTaskActivity) || project.updatedAt;
+  const now = Date.now();
+  const ageMs = now - lastActivity;
+
+  // Sub-score 1: completion rate (0–40 pts)
+  const completionScore = totalTasks > 0 ? (doneTasks / totalTasks) * 40 : 20;
+
+  // Sub-score 2: recency (0–40 pts)
+  const h24 = 24 * 60 * 60 * 1000;
+  let recencyScore = 40;
+  if (ageMs > h24 * 3) recencyScore = 20;
+  if (ageMs > h24 * 7) recencyScore = 10;
+  if (ageMs > h24 * 14) recencyScore = 0;
+
+  // Sub-score 3: team (0–20 pts) — penalise empty team
+  const memberCount = project.memberCount ?? (project.members?.length ?? 0);
+  const teamScore = memberCount > 0 ? 20 : 5;
+
+  return Math.min(100, Math.round(completionScore + recencyScore + teamScore));
+}
+
+function HealthDot({ score }: { score: number }) {
+  const color =
+    score >= 70 ? 'var(--color-success, #22c55e)' :
+    score >= 40 ? 'var(--color-warning, #f59e0b)' :
+    'var(--color-error, #ef4444)';
+  return (
+    <span
+      title={`Health: ${score}/100`}
+      style={{
+        display: 'inline-block',
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        backgroundColor: color,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+// ─── Project Card ──────────────────────────────────────────────────────────────
+
 interface ProjectCardProps {
-  project: Project & {
-    memberCount?: number;
-    totalTasks?: number;
-    doneTasks?: number;
-    inProgressTasks?: number;
-    todoTasks?: number;
-    lastTaskActivity?: number;
-  };
+  project: Project & ProjectWithStats;
   onClick: () => void;
 }
 
 function ProjectCard({ project, onClick }: ProjectCardProps) {
   const sc = STATUS_CONFIG[project.status] ?? STATUS_CONFIG.active;
   const StatusIcon = sc.icon;
-  const totalTasks = (project.totalTasks as number) ?? 0;
-  const doneTasks = (project.doneTasks as number) ?? 0;
-  const inProgressTasks = (project.inProgressTasks as number) ?? 0;
+  const totalTasks = project.totalTasks ?? 0;
+  const doneTasks = project.doneTasks ?? 0;
+  const inProgressTasks = project.inProgressTasks ?? 0;
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
   const lastActivity = Number(project.lastTaskActivity) || project.updatedAt;
+  const health = computeHealthScore(project);
 
   return (
     <button
@@ -66,9 +110,12 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
             {(() => { const ProjIcon = getProjectIcon(project.emoji); return <ProjIcon size={18} style={{ color: project.color }} />; })()}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-mission-control-text-primary truncate group-hover:text-mission-control-accent transition-colors">
-              {project.name}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-mission-control-text-primary truncate group-hover:text-mission-control-accent transition-colors">
+                {project.name}
+              </h3>
+              <HealthDot score={health} />
+            </div>
             {project.description && (
               <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{project.description}</p>
             )}
@@ -112,7 +159,7 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
               className="ring-1 ring-mission-control-bg0"
             />
           ))}
-          {(project.memberCount as number ?? 0) > 4 && (
+          {(project.memberCount ?? 0) > 4 && (
             <div className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
               +{(project.memberCount as number) - 4}
             </div>
@@ -140,7 +187,8 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
   );
 }
 
-// Empty state
+// ─── Empty state ───────────────────────────────────────────────────────────────
+
 function EmptyProjects({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center flex-1 text-center py-16">
@@ -149,7 +197,7 @@ function EmptyProjects({ onNew }: { onNew: () => void }) {
       </div>
       <h3 className="text-lg font-semibold text-mission-control-text-primary mb-2">No projects yet</h3>
       <p className="text-sm text-mission-control-text-dim max-w-xs mb-6">
-        Create a project to organize tasks, chats, automations, and files around a shared goal.
+        Create a project to organise tasks, chats, automations, and files around a shared goal.
       </p>
       <button
         onClick={onNew}
@@ -160,6 +208,8 @@ function EmptyProjects({ onNew }: { onNew: () => void }) {
     </div>
   );
 }
+
+// ─── Main Panel ────────────────────────────────────────────────────────────────
 
 export default function ProjectsPanel() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -200,7 +250,7 @@ export default function ProjectsPanel() {
   const handleProjectCreated = (project: Project) => {
     setShowCreateWizard(false);
     load(false);
-    showToast(`Project "${project.name}" created!`, 'success');
+    showToast(`Project "${project.name}" created`, 'success');
     setSelectedProject(project);
   };
 
@@ -208,7 +258,6 @@ export default function ProjectsPanel() {
     load(false);
   };
 
-  // If a project is selected, show its workspace
   if (selectedProject) {
     return (
       <ProjectWorkspace
@@ -313,7 +362,7 @@ export default function ProjectsPanel() {
         {!loading && !error && filtered.length === 0 && (
           search ? (
             <div className="text-center py-16 text-mission-control-text-dim text-sm">
-              No projects matching "{search}"
+              No projects matching &quot;{search}&quot;
             </div>
           ) : (
             <EmptyProjects onNew={() => setShowCreateWizard(true)} />

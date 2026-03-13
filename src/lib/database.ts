@@ -608,6 +608,20 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_assets ON knowledge_base_assets(knowledgeId);
 
     -- ══════════════════════════════════════════
+    -- PROJECT MILESTONES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS project_milestones (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      dueDate INTEGER,
+      completed INTEGER DEFAULT 0,
+      completedAt INTEGER,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_project_milestones_projectId ON project_milestones(projectId, createdAt);
+
+    -- ══════════════════════════════════════════
     -- CAMPAIGNS
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaigns (

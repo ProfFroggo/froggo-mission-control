@@ -1,0 +1,34 @@
+{
+  "id": "campaigns",
+  "name": "Campaigns",
+  "version": "1.0.0",
+  "description": "Full-scale marketing campaign management — paid, organic, social, email, CLM, content, PR, influencer, SEO and more.",
+  "author": "Mission Control Team",
+  "icon": "Megaphone",
+  "category": "marketing",
+  "core": true,
+  "defaultDisabled": false,
+
+  "views": [
+    {
+      "id": "campaigns",
+      "label": "Campaigns",
+      "icon": "Megaphone",
+      "entrypoint": "./views/CampaignsPanel.tsx"
+    }
+  ],
+
+  "credentials": [],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": ["read", "write"],
+    "network": false,
+    "shell": false
+  }
+}

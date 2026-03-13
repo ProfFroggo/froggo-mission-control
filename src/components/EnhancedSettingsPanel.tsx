@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
-  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink
+  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink,
+  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
@@ -234,6 +235,53 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
 }
 
 type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform';
+
+// ── Extracted settings sub-sections ──────────────────────────────────────────
+
+function AgentPlatformSection() {
+  return (
+    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Bot size={16} className="text-mission-control-accent" />
+        <h3 className="text-sm font-semibold text-mission-control-text">Agent Platform</h3>
+      </div>
+      <p className="text-xs text-mission-control-text-dim">
+        Agent dispatch, model defaults, and Clara pre-review settings are managed in the{' '}
+        <strong>Config</strong> tab above.
+      </p>
+    </div>
+  );
+}
+
+function ApiKeysSection() {
+  return (
+    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Key size={16} className="text-mission-control-accent" />
+        <h3 className="text-sm font-semibold text-mission-control-text">API Keys</h3>
+      </div>
+      <p className="text-xs text-mission-control-text-dim">
+        API keys (Anthropic, Gemini, etc.) are configured in the{' '}
+        <strong>Config</strong> tab above.
+      </p>
+    </div>
+  );
+}
+
+function DangerZoneSection() {
+  return (
+    <div className="bg-error-subtle rounded-xl border border-error-border p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertTriangle size={16} className="text-error" />
+        <h3 className="text-sm font-semibold text-error">Danger Zone</h3>
+      </div>
+      <p className="text-xs text-mission-control-text-dim">
+        Data reset and circuit-breaker options are available in the{' '}
+        <strong>Config</strong> tab above under the danger zone section.
+      </p>
+    </div>
+  );
+}
 
 // Collapsible section component
 interface SectionProps {
@@ -959,6 +1007,21 @@ export default function EnhancedSettingsPanel() {
                   </p>
                 </div>
               </CollapsibleSection>
+            )}
+
+            {/* ── Agent Platform Section ── */}
+            {settingsMatch('agent model defaults lead worker trivial dispatch pre-review clara concurrent') && (
+              <AgentPlatformSection />
+            )}
+
+            {/* ── API Keys Section ── */}
+            {settingsMatch('api key anthropic gemini secret token test') && (
+              <ApiKeysSection />
+            )}
+
+            {/* ── Danger Zone Section ── */}
+            {settingsMatch('danger zone clear completed tasks reset circuits export data json') && (
+              <DangerZoneSection />
             )}
           </div>
         )}

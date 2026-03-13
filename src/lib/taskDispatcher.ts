@@ -886,6 +886,15 @@ function recordAgentFailure(agentId: string) {
   }
 }
 
+/** Reset all circuit breakers — clears failure counts and lock times for all agents */
+export function resetAllCircuits(): void {
+  const agentIds = [...agentFailureCounts.keys()];
+  agentFailureCounts.clear();
+  for (const agentId of agentIds) {
+    emitSSEEvent('circuit.closed', { agentId });
+  }
+}
+
 /** Export circuit breaker state for API routes / health checks */
 export function getCircuitBreakerState(): Record<string, { open: boolean; failures: number; lockedUntil: number | null }> {
   const result: Record<string, { open: boolean; failures: number; lockedUntil: number | null }> = {};
