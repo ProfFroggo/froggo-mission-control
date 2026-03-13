@@ -166,8 +166,17 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     stdio: 'pipe',
   });
 
-  proc.stdin!.write(message);
-  proc.stdin!.end();
+  // Fix 1a: wrap stdin write in try-catch so inPreReview is always cleaned up
+  try {
+    proc.stdin!.write(message);
+    proc.stdin!.end();
+  } catch (e) {
+    inPreReview.delete(task.id as string);
+    resetPreReviewStatus(task.id);
+    try { proc.kill(); } catch { /* already exited */ }
+    console.error('[clara-review-cron] stdin write failed for task', task.id, e);
+    return;
+  }
   proc.stdout!.resume();
   proc.stderr!.resume();
 
@@ -180,8 +189,16 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     inPreReview.delete(task.id as string);
     trackEvent('clara.pre-review.complete', { taskId: task.id });
 
-    // If Clara exited without acting, reset so the next sweep retries
-    resetPreReviewStatus(task.id);
+    // Fix 1b: only reset reviewStatus if Clara hasn't already made a decision.
+    // If Clara approved/rejected, the DB already has the new status — don't clobber it.
+    try {
+      const dbCheck = getDb();
+      const snapshot = dbCheck.prepare('SELECT status, reviewStatus FROM tasks WHERE id = ?')
+        .get(task.id as string) as { status: string; reviewStatus: string | null } | undefined;
+      if (snapshot?.status === 'internal-review' && snapshot?.reviewStatus === 'pre-review') {
+        resetPreReviewStatus(task.id);
+      }
+    } catch { /* non-critical — fall back to always-reset */ resetPreReviewStatus(task.id); }
 
     // Brief delay so DB write from MCP has settled, then check outcome
     setTimeout(() => {
@@ -219,19 +236,53 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
   const assignedTo = (task.assignedTo as string | undefined) || undefined;
 
+  // Fetch subtasks and activity for richer review context
+  let subtaskSummary = '';
+  let activitySummary = '';
+  try {
+    const dbCtx = getDb();
+    const subtasks = dbCtx.prepare(
+      'SELECT title, completed FROM subtasks WHERE taskId = ? ORDER BY position'
+    ).all(task.id as string) as { title: string; completed: number }[];
+    if (subtasks.length > 0) {
+      const done = subtasks.filter(s => s.completed).length;
+      subtaskSummary = `**Subtasks:** ${done}/${subtasks.length} complete\n` +
+        subtasks.map(s => `  ${s.completed ? '[x]' : '[ ]'} ${s.title}`).join('\n');
+    }
+    const acts = dbCtx.prepare(
+      `SELECT action, message FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 10`
+    ).all(task.id as string) as { action: string; message: string }[];
+    if (acts.length > 0) {
+      activitySummary = '**Recent activity:**\n' +
+        acts.map(a => `  - [${a.action}] ${(a.message || '').slice(0, 120)}`).join('\n');
+    }
+  } catch { /* non-critical */ }
+
   const message = [
-    `## Review Task: ${task.id}`,
+    `## Post-work Review — Task: ${task.id}`,
     `**Title:** ${task.title}`,
     task.description ? `**Description:** ${task.description}` : null,
     `**Assigned to:** ${assignedTo || 'unassigned'}`,
     `**Progress:** ${task.progress ?? 0}%`,
-    task.lastAgentUpdate ? `**Agent's update:** ${task.lastAgentUpdate}` : null,
+    task.lastAgentUpdate ? `**Agent's final update:** ${task.lastAgentUpdate}` : null,
+    subtaskSummary || null,
+    activitySummary || null,
     '',
-    'Review this task and update it immediately:',
-    `- Approved → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "..." }`,
-    `- Rejected → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues>" }`,
+    '## Your review checklist — ALL must pass for approval:',
     '',
-    'Make your decision now. Do not ask clarifying questions.',
+    '1. ALL subtasks complete (not "most" — every single one)',
+    '2. task_activity log has meaningful entries (not just status changes)',
+    '3. Output files saved to library (look for file mentions in activity log)',
+    '4. The deliverable matches what was asked for in the description',
+    '',
+    'If APPROVED: write specific praise about what was done well in reviewNotes.',
+    'If REJECTED: write specific, actionable feedback with example of what good output looks like.',
+    '',
+    'Make your decision now and call task_update immediately:',
+    `- Approved → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "done", "reviewStatus": "approved", "reviewNotes": "<specific praise>" }`,
+    `- Rejected → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "rejected", "reviewNotes": "<specific issues with examples of what good looks like>" }`,
+    '',
+    'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
 
   // Stamp reviewedAt so we can detect stale in-review rows
