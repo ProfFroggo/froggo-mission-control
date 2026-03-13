@@ -95,12 +95,15 @@ export const useArtifactStore = create<ArtifactState>()(
         currentVersion: 1,
       };
 
+      const isImage = artifact.type === 'image';
       set((state) => ({
         artifacts: [...state.artifacts, newArtifact].slice(-MAX_ARTIFACTS),
-        // Auto-select if this is the first artifact or panel is not collapsed
-        selectedArtifactId: state.artifacts.length === 0 || !state.isCollapsed
+        // Always auto-select images; otherwise auto-select only if panel is open
+        selectedArtifactId: state.artifacts.length === 0 || !state.isCollapsed || isImage
           ? id
           : state.selectedArtifactId,
+        // Auto-open the panel when an image arrives
+        isCollapsed: isImage ? false : state.isCollapsed,
       }));
     },
 
