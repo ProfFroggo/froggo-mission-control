@@ -436,8 +436,14 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo ON tasks(assignedTo);
     CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);
+    CREATE INDEX IF NOT EXISTS idx_tasks_projectId ON tasks(project_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_updatedAt ON tasks(updatedAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_tasks_dueDate ON tasks(dueDate) WHERE dueDate IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_task_activity_taskId ON task_activity(taskId);
-    CREATE INDEX IF NOT EXISTS idx_task_activity_timestamp ON task_activity(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_timestamp ON task_activity(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_agentId ON task_activity(agentId);
+    CREATE INDEX IF NOT EXISTS idx_subtasks_taskId ON subtasks(taskId);
+    CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
     CREATE INDEX IF NOT EXISTS idx_messages_sessionKey ON messages(sessionKey);
     CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
     CREATE INDEX IF NOT EXISTS idx_inbox_status ON inbox(status);

@@ -285,13 +285,13 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     }
   }, []);
 
-  // Debounced search
+  // Debounced search — 200ms prevents fetch on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.trim().length >= 2) {
         search(query);
       }
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [query, search]);
 
