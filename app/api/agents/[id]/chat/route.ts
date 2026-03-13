@@ -361,8 +361,8 @@ export async function POST(
         activeProc = proc;
 
         const sanitizedMessage = `<user_message>\n${message}\n</user_message>`;
-        proc.stdin.write(sanitizedMessage);
-        proc.stdin.end();
+        proc.stdin!.write(sanitizedMessage);
+        proc.stdin!.end();
 
         let buf = '';
         let lastTextLength = 0; // track accumulated text to emit incremental text_delta
