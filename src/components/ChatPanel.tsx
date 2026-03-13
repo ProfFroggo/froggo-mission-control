@@ -72,6 +72,7 @@ interface ContentBlock {
 interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
   content: string | ContentBlock[];
   status?: string; // live streaming status: 'Thinking...', 'Using: Bash', etc.
+  subtle?: boolean; // true for heartbeat/working pulses — rendered with lighter styling
 }
 
 export default function ChatPanel() {
@@ -900,10 +901,12 @@ export default function ChatPanel() {
             const evt = JSON.parse(raw);
 
             if (evt.type === 'heartbeat') {
-              // Still-working pulse — show in the message bubble while waiting
+              // Still-working pulse — show in the message bubble while waiting.
+              // subtle:true from server → render with lighter styling (smaller, muted)
               const pulse = evt.text || 'Still working…';
+              const isSubtle = !!evt.subtle;
               setMessages(prev => prev.map(m =>
-                m.id === assistantId ? { ...m, content: pulse, status: 'thinking' } : m
+                m.id === assistantId ? { ...m, content: pulse, status: 'thinking', subtle: isSubtle } : m
               ));
             } else if (evt.type === 'text_delta' && typeof evt.text === 'string') {
               // SDK chat route: true character-by-character text_delta events
@@ -1657,10 +1660,12 @@ const MessageItem = memo(function MessageItem({
 
           {/* ChatMessage bubble */}
           <div
-            className={`relative px-4 py-3 rounded-2xl shadow-sm ${
+            className={`relative rounded-2xl shadow-sm ${
               isUser
-                ? 'bg-mission-control-accent text-white rounded-tr-sm'
-                : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm'
+                ? 'bg-mission-control-accent text-white rounded-tr-sm px-4 py-3'
+                : msg.subtle
+                  ? 'bg-transparent text-mission-control-text-dim border border-mission-control-border/50 rounded-tl-sm px-3 py-1.5 text-sm'
+                  : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm px-4 py-3'
             }`}
             onClick={(e) => {
               if (onImageClick && e.target instanceof HTMLImageElement) {
@@ -1698,7 +1703,7 @@ const MessageItem = memo(function MessageItem({
                 {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
               </div>
             )}
-            {!!msg.streaming && msg.status && (
+            {!!msg.streaming && msg.status && !msg.subtle && (
               <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim">
                 <div className="flex gap-0.5">
                   <div className="w-1 h-1 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
