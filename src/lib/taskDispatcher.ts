@@ -942,10 +942,25 @@ export function dispatchTask(taskId: string): boolean {
     // cwd = project root (not agent workspace) so .claude/settings.json MCP config is loaded
     const cwd = process.cwd();
 
-    // Circuit breaker check
+    // Circuit breaker check — escalate to human-review instead of silently dropping
     if (isAgentCircuitOpen(agentId)) {
-      console.warn(`[taskDispatcher] Circuit open for ${agentId} — skipping dispatch of task ${taskId}`);
+      console.warn(`[taskDispatcher] Circuit open for ${agentId} — escalating task ${taskId} to human-review`);
       trackEvent('dispatch.blocked.circuit', { taskId, agentId }, agentId);
+      try {
+        db.prepare(`UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?`).run(Date.now(), taskId);
+        db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(taskId, 'system', 'circuit_open_escalation',
+            `Agent circuit breaker is open (too many recent failures). Task moved to human-review.`, Date.now());
+        // Post to mission-control room so the human sees it
+        try {
+          db.prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
+            .run('mission-control', 'system',
+              `Task "${task.title}" was escalated to human-review: agent ${agentId} circuit breaker is open (too many recent failures).`,
+              Date.now());
+        } catch { /* non-critical */ }
+      } catch (e) {
+        console.error('[taskDispatcher] Failed to escalate circuit-open task:', e);
+      }
       return false;
     }
 
