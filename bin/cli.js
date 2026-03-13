@@ -201,7 +201,7 @@ function isPortFree(port) {
   } catch { return Promise.resolve(false); }
 }
 
-async function findFreePort(start = 3000) {
+async function findFreePort(start = 43000) {
   for (let p = start; p < start + 20; p++) {
     if (await isPortFree(p)) return p;
   }
@@ -213,7 +213,7 @@ function getPort() {
   // Read from .env file to preserve port across restarts
   const envPort = parseEnvFile(ENV_FILE).PORT;
   if (envPort) return parseInt(envPort, 10);
-  return 3000;
+  return 43000;
 }
 
 function isRunning(port) {
@@ -606,14 +606,11 @@ async function cmdSetup(force = false) {
   // Preserve existing token on re-run; generate a new one on first install
   const internalToken = existingEnv.INTERNAL_API_TOKEN ||
     require('crypto').randomBytes(32).toString('hex');
-  // Auto-detect available port if 3000 is already taken by something else
-  let port = existingEnv.PORT || '3000';
+  // Pick a free high port (avoids collisions with common dev servers on 3000/8080/etc.)
+  // Portless maps this to mission-control.localhost:1355 so the underlying port is invisible.
+  let port = existingEnv.PORT || '';
   if (!existingEnv.PORT) {
-    const preferred = 3000;
-    const free = await findFreePort(preferred);
-    if (free !== preferred) {
-      warn(`Port ${preferred} is in use — using port ${free} instead`);
-    }
+    const free = await findFreePort(43000);
     port = String(free);
   }
 
@@ -1328,7 +1325,7 @@ function cmdConfig() {
   const show = (k, v) => console.log(`  ${k.padEnd(22)} ${v ? c.green(v) : c.dim('not set')}`);
   show('Install dir:', INSTALL_DIR);
   show('Data dir:', MC_HOME);
-  show('Port:', env.PORT || '3000');
+  show('Port:', env.PORT || '43000');
   show('Claude CLI:', env.CLAUDE_BIN || 'auto-detect');
   show('Gemini API Key:', env.GEMINI_API_KEY ? '****' + env.GEMINI_API_KEY.slice(-4) : '');
   show('Internal token:', env.INTERNAL_API_TOKEN ? '****' + env.INTERNAL_API_TOKEN.slice(-4) : '');
