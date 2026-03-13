@@ -849,7 +849,13 @@ export default function ChatPanel() {
           try {
             const evt = JSON.parse(raw);
 
-            if (evt.type === 'text_delta' && typeof evt.text === 'string') {
+            if (evt.type === 'heartbeat') {
+              // Still-working pulse — show in the message bubble while waiting
+              const pulse = evt.text || 'Still working…';
+              setMessages(prev => prev.map(m =>
+                m.id === assistantId ? { ...m, content: pulse, status: 'thinking' } : m
+              ));
+            } else if (evt.type === 'text_delta' && typeof evt.text === 'string') {
               // SDK chat route: true character-by-character text_delta events
               accumulated += evt.text;
               structuredContent = null;

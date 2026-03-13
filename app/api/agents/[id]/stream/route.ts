@@ -725,7 +725,7 @@ export async function POST(
             try { controller.close(); } catch { /* already closed */ }
           }
           agentLocks.delete(id);
-        }, 120_000);
+        }, 5 * 60_000);
 
         const finishStream = (code: number | null) => {
           agentLocks.delete(id); // release lock
@@ -836,7 +836,7 @@ export async function POST(
               fresh.kill();
               enc({ type: 'timeout', text: 'Response timed out' });
               finishStream(null);
-            }, 120_000);
+            }, 5 * 60_000);
             fresh.on('close', (c) => { clearTimeout(freshTimeout); finishStream(c); });
             fresh.on('error', (err) => { clearTimeout(freshTimeout); enc({ type: 'error', text: err.message }); finishStream(null); });
             return; // fresh process handles stream completion
