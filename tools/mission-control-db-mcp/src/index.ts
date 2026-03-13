@@ -327,6 +327,43 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['inputPath', 'agentId'],
       },
     },
+    {
+      name: 'knowledge_search',
+      description: 'Search the knowledge base for brand guidelines, company context, writing style, design standards, and other workspace knowledge the human has curated. Call this at the start of any task involving brand, content, design, or company context. Returns matching articles with full content.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query — keywords, topic, or question' },
+          category: { type: 'string', description: 'Optional filter: brand, guidelines, reference, onboarding, assets, tone, technical' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'knowledge_read',
+      description: 'Read a specific knowledge base article by ID. Use after knowledge_search to get the full article content.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Knowledge base article ID from knowledge_search results' },
+        },
+        required: ['id'],
+      },
+    },
+    {
+      name: 'knowledge_write',
+      description: 'Save a new insight, learning, or piece of knowledge to the shared knowledge base so all agents and future sessions can benefit from it. Use when you discover something important about the brand, a solved problem, a key decision, or operational context worth preserving.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Clear, descriptive title' },
+          content: { type: 'string', description: 'Full markdown content' },
+          category: { type: 'string', description: 'brand | guidelines | reference | onboarding | technical | tone' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Keywords for discovery' },
+        },
+        required: ['title', 'content', 'category'],
+      },
+    },
   ],
 }));
 
