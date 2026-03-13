@@ -947,6 +947,84 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      // ── knowledge_search ────────────────────────────────────────────────────
+      case 'knowledge_search': {
+        const query = String(args?.query ?? '').trim();
+        if (!query) return { content: [{ type: 'text', text: JSON.stringify({ error: 'query required' }) }], isError: true };
+
+        let articles: Record<string, unknown>[] = [];
+        try {
+          // Try FTS first
+          articles = db.prepare(`
+            SELECT kb.id, kb.title, kb.category, kb.tags, kb.content, kb.scope
+            FROM knowledge_base kb
+            JOIN knowledge_base_fts fts ON fts.rowid = kb.rowid
+            WHERE knowledge_base_fts MATCH ?
+            ORDER BY rank LIMIT 5
+          `).all(query) as Record<string, unknown>[];
+        } catch {
+          // Fallback to LIKE search
+          articles = db.prepare(`
+            SELECT id, title, category, tags, content, scope FROM knowledge_base
+            WHERE title LIKE ? OR content LIKE ? OR tags LIKE ?
+            ORDER BY pinned DESC, updatedAt DESC LIMIT 5
+          `).all(`%${query}%`, `%${query}%`, `%${query}%`) as Record<string, unknown>[];
+        }
+
+        const category = args?.category as string | undefined;
+        if (category) articles = articles.filter((a) => a.category === category);
+
+        const result = articles.map((a) => ({
+          id: a.id,
+          title: a.title,
+          category: a.category,
+          tags: (() => { try { return JSON.parse(a.tags as string); } catch { return []; } })(),
+          // Include first 800 chars of content inline so agent doesn't need a second call for short articles
+          contentPreview: (a.content as string).slice(0, 800),
+          fullContentAvailable: (a.content as string).length > 800,
+        }));
+
+        return { content: [{ type: 'text', text: JSON.stringify({ articles: result, hint: result.length === 0 ? 'No articles found. The human may not have added guidelines yet — proceed with best judgment.' : 'Use knowledge_read(id) for full content of any article.' }) }] };
+      }
+
+      // ── knowledge_read ──────────────────────────────────────────────────────
+      case 'knowledge_read': {
+        const article = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(args?.id) as Record<string, unknown> | undefined;
+        if (!article) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Article not found. Use knowledge_search to find available articles.' }) }], isError: true };
+
+        const links = db.prepare('SELECT title, url, description FROM knowledge_base_links WHERE knowledgeId = ? ORDER BY createdAt ASC').all(args?.id);
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          id: article.id,
+          title: article.title,
+          category: article.category,
+          tags: (() => { try { return JSON.parse(article.tags as string); } catch { return []; } })(),
+          content: article.content,
+          links,
+          version: article.version,
+          updatedAt: article.updatedAt,
+        }) }] };
+      }
+
+      // ── knowledge_write ─────────────────────────────────────────────────────
+      case 'knowledge_write': {
+        const title = String(args?.title ?? '').trim();
+        const content = String(args?.content ?? '').trim();
+        const category = String(args?.category ?? 'reference').trim();
+        const tags = Array.isArray(args?.tags) ? args.tags : [];
+
+        if (!title || !content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'title and content required' }) }], isError: true };
+
+        const now = Date.now();
+        const id = `kb-${now}-${Math.random().toString(36).slice(2, 7)}`;
+        db.prepare(`
+          INSERT INTO knowledge_base (id, title, content, category, tags, scope, pinned, version, createdBy, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, 'all', 0, 1, 'agent', ?, ?)
+        `).run(id, title, content, category, JSON.stringify(tags), now, now);
+
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, hint: 'Knowledge saved. Other agents and future sessions can now find this via knowledge_search.' }) }] };
+      }
+
       default:
         return { content: [{ type: 'text', text: `Unknown tool: ${name}` }], isError: true };
     }

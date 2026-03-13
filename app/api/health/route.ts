@@ -9,6 +9,7 @@ import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
 import { ENV } from '@/lib/env';
+import { getDb } from '@/lib/database';
 
 // Start background crons on server boot (once-per-process guard against HMR re-runs)
 if (!(globalThis as any).__healthInitialized) {
@@ -54,6 +55,26 @@ export async function GET() {
   const vaultStats = getVaultStats();
   const claudeStatus = checkClaudeCli();
 
+  // Richer task/agent stats — non-critical, fail gracefully
+  let tasksInProgress = 0;
+  let tasksInReview = 0;
+  let tasksPreReview = 0;
+  let agentsActive = 0;
+  try {
+    const db = getDb();
+    const inProgress = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'in-progress'").get() as { cnt: number };
+    const inReview = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'review'").get() as { cnt: number };
+    const preReview = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'internal-review'").get() as { cnt: number };
+    const activeThreshold = Date.now() - 5 * 60 * 1000; // 5 min
+    const active = db.prepare(
+      "SELECT COUNT(*) as cnt FROM agents WHERE lastSeen > ?"
+    ).get(activeThreshold) as { cnt: number } | undefined;
+    tasksInProgress = inProgress?.cnt ?? 0;
+    tasksInReview = inReview?.cnt ?? 0;
+    tasksPreReview = preReview?.cnt ?? 0;
+    agentsActive = active?.cnt ?? 0;
+  } catch { /* DB may not be ready — non-critical */ }
+
   return NextResponse.json({
     cli: claudeStatus.found && claudeStatus.authenticated,
     claudeFound: claudeStatus.found,
@@ -65,5 +86,9 @@ export async function GET() {
     backend: 'claude-code-cli',
     cronDaemon: cronDaemonInstalled,
     vault: vaultStats,
+    tasksInProgress,
+    tasksInReview,
+    tasksPreReview,
+    agentsActive,
   });
 }
