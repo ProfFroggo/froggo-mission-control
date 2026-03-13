@@ -1,7 +1,7 @@
 {
   "id": "hr",
   "name": "HR",
-  "emoji": "👥",
+  "emoji": "\ud83d\udc65",
   "role": "Agent & Team Manager",
   "description": "Agent creation, team management, skill gap analysis, and onboarding. Use for: hiring new agents, reviewing agent performance, managing team structure.",
   "model": "sonnet",
@@ -22,5 +22,9 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "management"
+  "category": "management",
+  "mcpTools": [
+    "image_generate",
+    "schedule_create"
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "writer",
   "name": "Writer",
-  "emoji": "✍️",
+  "emoji": "\u270d\ufe0f",
   "role": "Writer",
   "description": "Creates, edits, and polishes written content. Best for: documentation, blog posts, newsletters, copy, technical writing, proofreading.",
   "model": "sonnet",
@@ -24,5 +24,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "utility"
+  "category": "utility",
+  "mcpTools": [
+    "image_generate"
+  ]
 }

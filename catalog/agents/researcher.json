@@ -1,7 +1,7 @@
 {
   "id": "researcher",
   "name": "Researcher",
-  "emoji": "🔬",
+  "emoji": "\ud83d\udd2c",
   "role": "Research & Analysis Specialist",
   "description": "Deep research, competitive analysis, technical investigation, and synthesis. Best for: market research, technical feasibility studies, gathering information before building.",
   "model": "sonnet",
@@ -20,5 +20,6 @@
   ],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "utility"
+  "category": "utility",
+  "mcpTools": []
 }

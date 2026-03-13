@@ -1,7 +1,7 @@
 {
   "id": "qa-engineer",
   "name": "QA",
-  "emoji": "🧪",
+  "emoji": "\ud83e\uddea",
   "role": "QA Engineer",
   "description": "Functional testing, accessibility audits, API validation, performance benchmarking, and test plan authoring. Finds bugs before users do.",
   "model": "sonnet",
@@ -28,5 +28,6 @@
   ],
   "version": "1.0.0",
   "category": "engineering",
-  "core": false
+  "core": false,
+  "mcpTools": []
 }

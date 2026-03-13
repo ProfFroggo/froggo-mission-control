@@ -1,7 +1,7 @@
 {
   "id": "growth-director",
   "name": "Growth Director",
-  "emoji": "📈",
+  "emoji": "\ud83d\udcc8",
   "role": "Strategic Growth Lead",
   "description": "Growth strategy, GTM planning, marketing initiatives, and business development. Use for: growth experiments, go-to-market strategy, acquisition channels, funnel optimization.",
   "model": "opus",
@@ -22,5 +22,8 @@
   ],
   "requiredTools": [],
   "version": "1.0.0",
-  "category": "management"
+  "category": "management",
+  "mcpTools": [
+    "image_generate"
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "id": "clara",
   "name": "Clara",
-  "emoji": "🔍",
+  "emoji": "\ud83d\udd0d",
   "role": "Quality Auditor",
   "description": "Code review, quality validation, and security auditing. Use for: pre-merge reviews, security assessments, identifying technical debt, validating P0/P1 work before it ships.",
   "model": "opus",
@@ -26,5 +26,6 @@
     "git"
   ],
   "version": "1.0.0",
-  "category": "engineering"
+  "category": "engineering",
+  "mcpTools": []
 }

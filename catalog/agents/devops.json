@@ -1,7 +1,7 @@
 {
   "id": "devops",
   "name": "DevOps",
-  "emoji": "⚙️",
+  "emoji": "\u2699\ufe0f",
   "role": "DevOps & Infrastructure Engineer",
   "description": "CI/CD pipelines, deployment automation, server infrastructure, monitoring, and platform reliability. Keeps the lights on.",
   "model": "sonnet",
@@ -33,5 +33,6 @@
   ],
   "version": "1.0.0",
   "category": "engineering",
-  "core": false
+  "core": false,
+  "mcpTools": []
 }

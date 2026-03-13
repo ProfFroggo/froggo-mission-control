@@ -1,7 +1,7 @@
 {
   "id": "coder",
   "name": "Coder",
-  "emoji": "💻",
+  "emoji": "\ud83d\udcbb",
   "role": "Software Engineer",
   "description": "Implements features, fixes bugs, writes tests, refactors code. Best for: TypeScript, React, Next.js, API routes, database changes, performance fixes.",
   "model": "sonnet",
@@ -33,5 +33,8 @@
     "image_generate"
   ],
   "version": "1.0.0",
-  "category": "engineering"
+  "category": "engineering",
+  "mcpTools": [
+    "image_generate"
+  ]
 }
