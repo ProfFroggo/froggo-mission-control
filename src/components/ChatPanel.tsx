@@ -240,8 +240,9 @@ export default function ChatPanel() {
           // Deduplicate by message ID to prevent double-entries from DB + stream
           const seen = new Set<string>();
           const deduped = normalized.filter((m: StructuredChatMessage) => {
-            if (seen.has(m.id)) return false;
-            seen.add(m.id);
+            const id = m.id ?? '';
+            if (!id || seen.has(id)) return !id; // keep messages without IDs (no dedup possible)
+            seen.add(id);
             return true;
           });
           setMessages(deduped);
