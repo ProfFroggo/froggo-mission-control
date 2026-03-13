@@ -28,21 +28,22 @@
 ## Task Pipeline
 
 ```
-todo → internal-review → in-progress → agent-review → done
-              ↕                              ↕
-         human-review                  human-review
-      (needs human input)          (external dependency)
+todo → internal-review (displayed as "Pre-review") → in-progress → review → done
+                                                                        ↕
+                                                                   human-review
+                                                                   (any stage)
 ```
 
-- **todo** — task created, needs a plan and subtasks assigned
-- **internal-review** — Clara quality gate BEFORE work starts: verifies plan, subtasks, agent assignment
+- **todo** — task created, needs planningNotes + subtasks before it can proceed
+- **internal-review** (UI label: "Pre-review") — Clara's gate. The SYSTEM automatically moves tasks here when an agent is assigned. Clara checks 3 gates: agent assigned, planningNotes non-empty, subtasks exist. Approved → in-progress + agent dispatched. Rejected → back to todo with notes.
 - **in-progress** — agent actively working
-- **agent-review** — Clara quality gate AFTER work: verifies all planned work is complete and correct
-- **human-review** — branches off at any stage when: (1) needs human input/approval, or (2) blocked by external dependency
-- **done** — Clara approved, work complete
+- **review** — agent finished; Clara verifies all planned work completed. Approved → done. Rejected → in-progress with feedback.
+- **human-review** — branches off at ANY stage for: (1) external actions needing human approval (tweets, emails, deploys) via `approval_create`, (2) genuine blockers needing human decision
+- **done** — Clara approved, work verified complete
 
 **`blocked` status does not exist — use `human-review` instead.**
-**Skipping internal-review (todo → in-progress) is blocked by MCP.**
+**Agents CANNOT set `internal-review` themselves — the SYSTEM manages it automatically when a task is assigned.**
+**`todo → in-progress` is blocked by MCP — tasks must pass Clara's Pre-review gate first.**
 **Agents must NOT move a task to `done` directly — only Clara can after her review passes.**
 
 ## Agent Communication

@@ -79,7 +79,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object',
         properties: {
-          status: { type: 'string', description: 'Filter by status (todo, in-progress, internal-review, review, human-review, blocked, done)' },
+          status: { type: 'string', description: 'Filter by status (todo, internal-review, in-progress, review, human-review, done)' },
           assignedTo: { type: 'string', description: 'Filter by agent ID' },
           project: { type: 'string', description: 'Filter by project name' },
           limit: { type: 'number', description: 'Max tasks to return (default 50)' },
@@ -123,7 +123,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object',
         properties: {
           id: { type: 'string', description: 'Task ID' },
-          status: { type: 'string', description: 'New status: todo | in-progress | internal-review | review | human-review | blocked | done' },
+          status: { type: 'string', description: 'New status: todo | in-progress | review | human-review | done. Do NOT set internal-review — the system manages Pre-review automatically.' },
           progress: { type: 'number', description: 'Progress 0-100' },
           lastAgentUpdate: { type: 'string', description: 'One-line update message visible to the team' },
           planningNotes: { type: 'string', description: 'Full plan details (replaces existing planningNotes)' },
@@ -406,28 +406,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         if (!current) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found' }) }] };
 
-        // HARD RULE: todo → internal-review requires planningNotes + 2+ subtasks + agent assigned
-        // internal-review is the quality gate — agent sets everything up, then requests review
-        if (args?.status === 'internal-review' && current.status === 'todo') {
-          const fullTask = db.prepare('SELECT planningNotes, assignedTo FROM tasks WHERE id = ?').get(taskId) as { planningNotes: string | null; assignedTo: string | null } | undefined;
-          const subtaskCount = (db.prepare('SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?').get(taskId) as { c: number }).c;
-          const errors: string[] = [];
-          if (!fullTask?.planningNotes || fullTask.planningNotes.trim().length < 20) errors.push('planningNotes must contain a meaningful plan');
-          if (subtaskCount < 2) errors.push(`at least 2 subtasks required (currently ${subtaskCount}) — add with subtask_create`);
-          if (!fullTask?.assignedTo) errors.push('task must have an agent assigned (assignedTo)');
-          if (errors.length > 0) {
-            return { content: [{ type: 'text', text: JSON.stringify({
-              error: 'TASK_NOT_READY: cannot move to internal-review until task is fully set up.',
-              requirements: errors,
-              hint: 'Complete all requirements, then set status=internal-review. Clara will review and move to in-progress.'
-            }) }] };
-          }
+        // Agents cannot set internal-review — the system manages Pre-review automatically
+        if (args?.status === 'internal-review') {
+          return { content: [{ type: 'text', text: JSON.stringify({
+            error: 'WORKFLOW_VIOLATION: agents cannot set status to internal-review. The Pre-review column is managed by the system — it is set automatically when a task is assigned to an agent. Clara then reviews and dispatches.',
+            hint: 'If you finished work, set status="review". If blocked, set status="human-review".',
+          })}]};
         }
 
-        // HARD RULE: internal-review → in-progress is Clara's gate — no agent should skip internal-review
+        // HARD RULE: todo → in-progress is blocked — tasks must pass Clara's Pre-review gate first
         if (args?.status === 'in-progress' && current.status === 'todo') {
           return { content: [{ type: 'text', text: JSON.stringify({
-            error: 'WORKFLOW_VIOLATION: cannot move directly from todo to in-progress. Required flow: todo → internal-review → in-progress. Set up planning, subtasks, and assignment first, then move to internal-review.',
+            error: 'WORKFLOW_VIOLATION: cannot move directly from todo to in-progress. Tasks must pass Clara\'s Pre-review gate first. The system sets internal-review automatically when an agent is assigned — Clara will approve and dispatch the agent.',
           }) }] };
         }
 

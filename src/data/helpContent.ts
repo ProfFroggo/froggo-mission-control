@@ -68,25 +68,25 @@ Use this help panel (⌘?) anytime you need guidance.`,
     content: `Every task flows through a defined lifecycle with built-in quality gates.
 
 **Lifecycle:**
-todo → internal-review → in-progress → review → human-review → done
+todo → pre-review → in-progress → review → done (with human-review branching off at any stage)
 
 **Stage Descriptions:**
 
-**todo** — Task created. Set up planning, subtasks (2+), and assign an agent. Then move to internal-review.
+**todo** — Task created. Needs planningNotes and subtasks before it can proceed. Assign an agent and the system moves it to Pre-review automatically.
 
-**internal-review** — Clara's quality gate. Clara verifies the plan is clear, subtasks are defined, and the right agent is assigned before work begins. Clara will send back to todo with notes if the plan is incomplete.
+**pre-review (internal-review)** — Clara's Pre-review gate. Automatically entered when a task is assigned to an agent. Clara verifies: agent assigned, planningNotes written, subtasks created. Approved → dispatched to agent. Rejected → back to Todo with notes on what's missing. Agents cannot set this status manually — the system manages it.
 
 **in-progress** — Agent is working. The assigned agent spawns, reads its task, and executes subtasks. Progress is logged via task activity.
 
-**review** — Agent has submitted. Clara verifies ALL planned work was completed. If incomplete, Clara sends back to in-progress with specific notes. If complete, advances to done or human-review.
+**review** — Agent has submitted. Clara verifies ALL planned work was completed. If incomplete, Clara sends back to in-progress with specific notes. If complete, advances to done.
 
-**human-review** — Required for external actions (tweets, emails, deploys) or when the agent is genuinely blocked and needs a human to unblock. Check the notes to understand what's needed.
+**human-review** — Branches off at ANY stage for: (1) external actions needing human approval (tweets, emails, deploys) via approval_create, (2) genuine blockers needing a human decision. Check the notes to understand what's needed.
 
-**done** — Task complete and verified.
+**done** — Task complete and verified by Clara.
 
 **Important:** There is no "blocked" status. If work is blocked, move to human-review so a human can investigate and unblock.
 
-**Skipping internal-review is blocked by MCP** — you must let Clara validate before work starts.`,
+**The system sets Pre-review (internal-review) automatically** when an agent is assigned — agents do not set this themselves. Clara then reviews and dispatches.`,
     keywords: ['lifecycle', 'workflow', 'status', 'todo', 'review', 'done', 'internal-review', 'in-progress', 'human-review', 'clara', 'blocked'],
     relatedTo: ['kanban', 'tasks'],
     lastUpdated: '2026-03-08'
@@ -114,7 +114,7 @@ todo → internal-review → in-progress → review → human-review → done
 
 **Clara**
 - Quality reviewer — runs automatically on every task
-- Validates plans at internal-review stage
+- Validates plans at Pre-review (internal-review) stage — triggered automatically when a task is assigned
 - Verifies completed work at review stage
 - Approves or rejects with specific, actionable notes
 
@@ -155,9 +155,9 @@ Each agent maintains a persistent Claude CLI session per chat surface. Sessions 
 **Creating Tasks:**
 1. Click "+ New Task" or press N
 2. Add title, description, and priority (P0-P3)
-3. Assign to an agent
+3. Write planningNotes with the full approach and steps
 4. Add 2+ subtasks for complex work
-5. Move to internal-review when ready — Clara validates before work starts
+5. Assign to an agent — the system automatically moves the task to Pre-review for Clara to validate before work starts
 
 **Task Priority:**
 - P0: Critical / on-fire
@@ -393,7 +393,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq-task-lifecycle',
     question: 'What is the task lifecycle?',
-    answer: 'todo → internal-review → in-progress → review → human-review → done. Clara validates plans at internal-review before work starts, and verifies completed work at review before marking done. Skipping internal-review is blocked by MCP.',
+    answer: 'todo → pre-review → in-progress → review → done (with human-review branching off at any stage). Pre-review (internal-review) is set automatically by the system when an agent is assigned — agents cannot set it manually. Clara validates at Pre-review before work starts, and verifies completed work at review before marking done. Moving todo → in-progress directly is blocked by MCP.',
     category: 'Tasks',
     keywords: ['task', 'lifecycle', 'status', 'workflow', 'stages']
   },
@@ -442,7 +442,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq-clara-review',
     question: 'What does Clara do?',
-    answer: 'Clara is the quality reviewer. She runs automatically at two lifecycle stages: (1) internal-review — validates that the plan, subtasks, and agent assignment are correct before work begins; (2) review — verifies that all planned work was completed before marking done. Clara can reject and send tasks back with specific notes.',
+    answer: 'Clara is the quality reviewer. She runs automatically at two lifecycle stages: (1) Pre-review (internal-review) — validates that planningNotes, subtasks, and agent assignment are in place before work begins; tasks enter Pre-review automatically when assigned, agents cannot set it manually; (2) review — verifies that all planned work was completed before marking done. Clara can reject and send tasks back with specific notes.',
     category: 'Agents',
     keywords: ['clara', 'review', 'quality', 'gate', 'approve', 'reject', 'auto']
   },
@@ -471,7 +471,7 @@ export const quickTips: QuickTip[] = [
   {
     id: 'tip-task-subtasks',
     title: 'Always Add Subtasks',
-    description: 'Tasks need 2+ subtasks before Clara will pass internal-review. Break work down before assigning.',
+    description: 'Tasks need planningNotes and 2+ subtasks before Clara will pass Pre-review. Break work down and write the plan before assigning to an agent.',
   },
   {
     id: 'tip-task-chat',

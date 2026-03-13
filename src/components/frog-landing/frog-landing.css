@@ -1,0 +1,343 @@
+/* (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0. */
+/* Frog Landing Page — custom styles and design tokens */
+
+:root {
+  /* Frog palette */
+  --frog-deep: #0d1f17;
+  --frog-forest: #1a3a2a;
+  --frog-canopy: #2d6a4f;
+  --frog-moss: #52b788;
+  --frog-lily: #95d5b2;
+  --frog-mist: #d8f3dc;
+  --frog-amber: #e9c46a;
+  --frog-amber-dark: #f4a261;
+  --frog-ink: #0b1e15;
+  --frog-parchment: #f4f1de;
+}
+
+/* ── Hero ──────────────────────────────────────────── */
+
+.frog-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--frog-deep) 0%,
+    var(--frog-forest) 60%,
+    var(--frog-canopy) 100%
+  );
+}
+
+.frog-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 70%, rgba(82, 183, 136, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 30%, rgba(149, 213, 178, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.frog-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.25;
+  filter: blur(2px);
+}
+
+/* ── Scroll indicator ──────────────────────────────── */
+
+@keyframes frog-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+.frog-scroll-indicator {
+  animation: frog-bounce 2s ease-in-out infinite;
+}
+
+/* ── Facts strip ───────────────────────────────────── */
+
+.frog-facts-strip {
+  background: var(--frog-forest);
+  border-top: 1px solid rgba(82, 183, 136, 0.2);
+  border-bottom: 1px solid rgba(82, 183, 136, 0.2);
+}
+
+.frog-stat-card {
+  background: rgba(13, 31, 23, 0.6);
+  border: 1px solid rgba(82, 183, 136, 0.15);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.frog-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(82, 183, 136, 0.4);
+}
+
+/* ── Species spotlight ─────────────────────────────── */
+
+.frog-species-section {
+  background: var(--frog-deep);
+}
+
+.frog-species-card {
+  background: rgba(26, 58, 42, 0.4);
+  border: 1px solid rgba(82, 183, 136, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.frog-species-card:hover {
+  border-color: rgba(82, 183, 136, 0.3);
+}
+
+.frog-callout {
+  background: rgba(233, 196, 106, 0.08);
+  border-left: 3px solid var(--frog-amber);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+}
+
+/* ── Habitat map ───────────────────────────────────── */
+
+.frog-habitat-section {
+  background: linear-gradient(180deg, var(--frog-deep) 0%, var(--frog-forest) 100%);
+}
+
+.frog-map-container {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  background: rgba(13, 31, 23, 0.6);
+  border: 1px solid rgba(82, 183, 136, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.frog-map-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--frog-moss);
+  border: 2px solid var(--frog-lily);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.frog-map-dot:hover {
+  transform: translate(-50%, -50%) scale(1.4);
+  box-shadow: 0 0 16px rgba(82, 183, 136, 0.5);
+}
+
+.frog-map-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--frog-forest);
+  border: 1px solid rgba(82, 183, 136, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.frog-map-dot:hover .frog-map-tooltip {
+  opacity: 1;
+}
+
+/* ── Gallery ───────────────────────────────────────── */
+
+.frog-gallery-section {
+  background: var(--frog-forest);
+}
+
+.frog-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .frog-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.frog-gallery-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  aspect-ratio: 1;
+}
+
+.frog-gallery-item.span-wide {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+
+.frog-gallery-item.span-tall {
+  grid-row: span 2;
+  aspect-ratio: auto;
+}
+
+.frog-gallery-item:hover {
+  transform: scale(1.02);
+}
+
+.frog-gallery-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(13, 31, 23, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.frog-gallery-item:hover::after {
+  opacity: 1;
+}
+
+/* ── Conservation CTA ──────────────────────────────── */
+
+.frog-cta-section {
+  background: linear-gradient(
+    135deg,
+    var(--frog-deep) 0%,
+    var(--frog-forest) 50%,
+    var(--frog-deep) 100%
+  );
+  border-top: 1px solid rgba(82, 183, 136, 0.2);
+  border-bottom: 1px solid rgba(82, 183, 136, 0.2);
+}
+
+/* ── Footer ────────────────────────────────────────── */
+
+.frog-footer {
+  background: var(--frog-ink);
+  border-top: 1px solid rgba(82, 183, 136, 0.1);
+}
+
+/* ── Buttons ───────────────────────────────────────── */
+
+.frog-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: var(--frog-amber);
+  color: var(--frog-ink);
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.frog-btn-primary:hover {
+  background: var(--frog-amber-dark);
+  transform: translateY(-1px);
+}
+
+.frog-btn-primary:active {
+  transform: translateY(0);
+}
+
+.frog-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--frog-lily);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(149, 213, 178, 0.3);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  text-decoration: none;
+}
+
+.frog-btn-outline:hover {
+  border-color: var(--frog-lily);
+  color: var(--frog-mist);
+}
+
+/* ── Lightbox ──────────────────────────────────────── */
+
+.frog-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 30, 21, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.frog-lightbox-overlay img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+}
+
+/* ── Utility ───────────────────────────────────────── */
+
+.frog-section-padding {
+  padding: 5rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .frog-section-padding {
+    padding: 6rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .frog-section-padding {
+    padding: 8rem 2rem;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .frog-scroll-indicator {
+    animation: none;
+  }
+
+  .frog-stat-card,
+  .frog-gallery-item,
+  .frog-map-dot,
+  .frog-btn-primary {
+    transition: none;
+  }
+}
