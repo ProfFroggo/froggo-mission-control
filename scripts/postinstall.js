@@ -243,22 +243,27 @@ for (const mod of ['better-sqlite3', 'keytar']) {
 }
 
 // ── Build Next.js app ──────────────────────────────────────────────────────
-info('Building dashboard (Next.js)...');
-process.env.NEXT_TELEMETRY_DISABLED = '1';
-
-// Use the actual Next.js JS entry point — avoids the shell wrapper which
-// may fail if node isn't on PATH in the spawn context
-const nextScript = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next');
-const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
-  cwd: ROOT,
-  stdio: 'inherit',
-  env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
-});
-
-if (buildResult.status !== 0) {
-  warn('Next.js build failed — run `mission-control build` to retry');
+const buildId = path.join(ROOT, '.next', 'BUILD_ID');
+if (existsSync(buildId)) {
+  success('Dashboard already built (pre-built in package)');
 } else {
-  success('Dashboard built');
+  info('Building dashboard (Next.js)...');
+  process.env.NEXT_TELEMETRY_DISABLED = '1';
+
+  // Use the actual Next.js JS entry point — avoids the shell wrapper which
+  // may fail if node isn't on PATH in the spawn context
+  const nextScript = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next');
+  const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+  });
+
+  if (buildResult.status !== 0) {
+    warn('Next.js build failed — run `mission-control build` to retry');
+  } else {
+    success('Dashboard built');
+  }
 }
 
 // ── Done ───────────────────────────────────────────────────────────────────
