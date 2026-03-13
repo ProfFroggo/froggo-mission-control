@@ -194,9 +194,12 @@ export async function PATCH(
 
     // Auto-dispatch triggers:
     // 1. assignedTo set on a todo task (initial assignment)
+    // Advance through internal-review first so the task is visible in that column
+    // before the dispatcher moves it to in-progress.
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
     const isTodoStatus = (updated.status as string) === 'todo';
     if (wasAssigned && isTodoStatus) {
+      db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), id);
       dispatchTask(id);
     }
 

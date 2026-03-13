@@ -151,8 +151,11 @@ export async function POST(request: NextRequest) {
 
     const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown>;
 
-    // Auto-dispatch to agent if assigned and status is todo
-    if (assignedTo && (status === 'todo' || status === 'in-progress')) {
+    // Auto-dispatch to agent if assigned and status is todo.
+    // Always advance through internal-review first so the task is visible in that
+    // column before the dispatcher moves it to in-progress.
+    if (assignedTo && status === 'todo') {
+      db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', now, id);
       dispatchTask(id);
     }
 
