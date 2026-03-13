@@ -63,7 +63,7 @@ for (const server of mcpServers) {
   const dir = path.join(ROOT, 'tools', server);
   if (!existsSync(dir)) continue;
   info(`Building ${server}...`);
-  run('npm ci --prefer-offline 2>/dev/null || npm install --no-audit', dir, `npm install ${server}`);
+  run('npm install --no-audit --prefer-offline', dir, `npm install ${server}`);
   run('npm run build', dir, `build ${server}`);
   success(server);
 }
