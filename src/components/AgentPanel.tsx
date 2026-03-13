@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -10,6 +10,7 @@ import { gateway } from '../lib/gateway';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentManagementModal from './AgentManagementModal';
+import AgentHealthDashboard from './AgentHealthDashboard';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import AgentLibraryPanel from './AgentLibraryPanel';
@@ -49,7 +50,8 @@ export default function AgentPanel() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
-  const [view, setView] = useState<'active' | 'library'>('active');
+  const [soulEditAgent, setSoulEditAgent] = useState<{ id: string; name: string } | null>(null);
+  const [view, setView] = useState<'active' | 'health' | 'library'>('active');
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
@@ -271,29 +273,32 @@ export default function AgentPanel() {
 
         {/* View tabs */}
         <div className="flex border-b border-mission-control-border mb-5">
-          <button
-            type="button"
-            onClick={() => setView('active')}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              view === 'active'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Bot size={15} /> Active
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('library')}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              view === 'library'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Library size={15} /> Library
-          </button>
+          {([
+            { key: 'active' as const,  icon: Bot,      label: 'Active' },
+            { key: 'health' as const,  icon: Activity, label: 'Health' },
+            { key: 'library' as const, icon: Library,  label: 'Library' },
+          ]).map(tab => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setView(tab.key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                view === tab.key
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+            >
+              <tab.icon size={15} /> {tab.label}
+            </button>
+          ))}
         </div>
+
+        {/* Health view */}
+        {view === 'health' && (
+          <AgentHealthDashboard
+            onSelectAgent={(id, name) => setManagingAgent({ id, name })}
+          />
+        )}
 
         {/* Library view */}
         {view === 'library' && (
@@ -511,23 +516,30 @@ export default function AgentPanel() {
                       )}
                     </div>
 
-                    {/* Start/Stop — only when applicable */}
-                    {((agent.status === 'idle' && agentTasks.length > 0) || (agent.status === 'busy' && agent.sessionKey)) && (
-                      <div className={`flex items-center gap-1.5 mt-3 pt-2 border-t ${theme.border}`}>
-                        {agent.status === 'idle' && agentTasks.length > 0 && (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                            <Play size={11} /> Start
-                          </button>
-                        )}
-                        {agent.status === 'busy' && agent.sessionKey && (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
-                            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
-                            <Square size={11} /> Stop
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    {/* Start/Stop + Soul link */}
+                    <div className={`flex items-center gap-1.5 mt-3 pt-2 border-t ${theme.border}`}>
+                      {agent.status === 'idle' && agentTasks.length > 0 && (
+                        <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                          <Play size={11} /> Start
+                        </button>
+                      )}
+                      {agent.status === 'busy' && agent.sessionKey && (
+                        <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
+                          <Square size={11} /> Stop
+                        </button>
+                      )}
+                      <div className="flex-1" />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setSoulEditAgent({ id: agent.id, name: agent.name }); }}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-mission-control-text-dim opacity-0 group-hover:opacity-100 hover:text-mission-control-text border border-transparent hover:border-mission-control-border rounded-lg transition-all"
+                        title="Edit soul file"
+                      >
+                        <Settings size={10} /> Soul
+                      </button>
+                    </div>
 
                   </div>
                 </div>
@@ -632,6 +644,7 @@ export default function AgentPanel() {
         {/* Modals */}
         {showCreateModal && <HRAgentCreationModal onClose={() => setShowCreateModal(false)} />}
         {selectedAgent && <AgentDetailModal agentId={selectedAgent} onClose={() => setSelectedAgent(null)} />}
+        {soulEditAgent && <AgentDetailModal agentId={soulEditAgent.id} onClose={() => setSoulEditAgent(null)} initialTab="soul" />}
         {managingAgent && (
           <AgentManagementModal
             isOpen={true}

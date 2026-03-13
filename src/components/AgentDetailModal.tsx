@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare } from 'lucide-react';
+import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
+import AgentActivityTimeline from './AgentActivityTimeline';
+import AgentSoulEditor from './AgentSoulEditor';
 import { agentApi } from '../lib/api';
 
 interface AgentDetailModalProps {
   agentId: string;
   onClose: () => void;
+  initialTab?: 'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul';
 }
 
 interface AgentDetails {
@@ -48,10 +51,10 @@ interface AgentDetails {
   brainNotes: string[];
 }
 
-export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalProps) {
+export default function AgentDetailModal({ agentId, onClose, initialTab }: AgentDetailModalProps) {
   const { agents, tasks, gatewaySessions } = useStore();
   const [isClosing, setIsClosing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'sessions' | 'rules'>('performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul'>(initialTab ?? 'performance');
   const [details, setDetails] = useState<AgentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
@@ -182,9 +185,9 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
       if (e.key === 'Escape') { e.preventDefault(); handleClose(); return; }
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
       if (isCmdOrCtrl && e.key === 'r') { e.preventDefault(); buildDetailsFromRealData(); return; }
-      if (isCmdOrCtrl && /^[1-5]$/.test(e.key)) {
+      if (isCmdOrCtrl && /^[1-6]$/.test(e.key)) {
         e.preventDefault();
-        const tabMap: Record<string, typeof activeTab> = { '1': 'performance', '2': 'skills', '3': 'tasks', '4': 'sessions', '5': 'rules' };
+        const tabMap: Record<string, typeof activeTab> = { '1': 'performance', '2': 'skills', '3': 'tasks', '4': 'sessions', '5': 'rules', '6': 'soul' };
         if (e.key in tabMap) setActiveTab(tabMap[e.key]);
       }
     };
@@ -242,10 +245,26 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                 }}
               />
               <span className="hidden absolute inset-0 flex items-center justify-center text-4xl">{agent.avatar}</span>
+              {/* Status dot */}
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-mission-control-bg ${
+                agent.status === 'busy' || agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-mission-control-text-dim/40'
+              }`} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-mission-control-text">{agent.name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-semibold text-mission-control-text">{agent.name}</h2>
+                {(agent as any).model && (
+                  <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim border border-mission-control-border/60">
+                    <Cpu size={10} />
+                    {(agent as any).model}
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-mission-control-text-dim">{agent.description}</p>
+              {/* Activity timeline */}
+              <div className="mt-3 w-64">
+                <AgentActivityTimeline agentId={agent.id} />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -274,6 +293,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
             { key: 'tasks' as const, icon: Activity, label: `Tasks${details ? ` (${details.totalTasks})` : ''}` },
             { key: 'sessions' as const, icon: Wifi, label: `Sessions${details ? ` (${details.activeSessions.length})` : ''}` },
             { key: 'rules' as const, icon: FileText, label: 'Rules' },
+            { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
           ]).map((tab) => (
             <button
               key={tab.key}
@@ -304,6 +324,24 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
               {/* Performance Tab */}
               {activeTab === 'performance' && (
                 <div className="space-y-6">
+                  {/* Current task — prominent banner */}
+                  {(() => {
+                    const currentTask = details.recentTasks.find(t => t.status === 'in-progress');
+                    if (!currentTask) return null;
+                    return (
+                      <div className="rounded-lg border border-warning-border bg-warning-subtle p-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Activity size={14} className="text-warning flex-shrink-0" />
+                          <span className="text-xs font-semibold text-warning uppercase tracking-wider">Currently working on</span>
+                        </div>
+                        <p className="text-sm font-medium text-mission-control-text">{currentTask.title}</p>
+                        <div className="mt-2 h-1.5 bg-warning/20 rounded-full overflow-hidden">
+                          <div className="h-full bg-warning rounded-full animate-pulse w-2/3" />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className="grid grid-cols-4 gap-4">
                     <div className="bg-mission-control-bg rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
@@ -375,6 +413,42 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                       ))}
                     </div>
                   </div>
+
+                  {/* Recent 5 tasks */}
+                  {details.recentTasks.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3">Recent Tasks</h3>
+                      <div className="space-y-2">
+                        {details.recentTasks.slice(0, 5).map(task => (
+                          <div key={task.id} className="flex items-center justify-between bg-mission-control-bg rounded-lg px-4 py-2.5 gap-3">
+                            <span className="text-sm text-mission-control-text flex-1 min-w-0 truncate">{task.title}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded ${
+                                task.status === 'done' ? 'bg-success-subtle text-success' :
+                                task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
+                                task.status === 'failed' ? 'bg-error-subtle text-error' :
+                                'bg-mission-control-border text-mission-control-text-dim'
+                              }`}>
+                                {task.status}
+                              </span>
+                              {task.completedAt > 0 && (
+                                <span className="text-[11px] text-mission-control-text-dim">
+                                  {new Date(task.completedAt).toLocaleDateString()}
+                                </span>
+                              )}
+                              {task.outcome === 'success' ? (
+                                <CheckCircle size={13} className="text-success" />
+                              ) : task.outcome === 'failed' ? (
+                                <XCircle size={13} className="text-error" />
+                              ) : (
+                                <Clock size={13} className="text-mission-control-text-dim" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -570,6 +644,22 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                       {details.agentRules || 'No AGENT.md file found'}
                     </pre>
                   </div>
+                </div>
+              )}
+
+              {/* Soul Tab */}
+              {activeTab === 'soul' && (
+                <div>
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-1 flex items-center gap-2">
+                      <CalendarDays size={16} />
+                      Soul File Editor
+                    </h3>
+                    <p className="text-xs text-mission-control-text-dim">
+                      The soul file defines {agent.name}&apos;s identity, skills, and operating principles. Agents read this at startup.
+                    </p>
+                  </div>
+                  <AgentSoulEditor agentId={agent.id} agentName={agent.name} />
                 </div>
               )}
             </>
