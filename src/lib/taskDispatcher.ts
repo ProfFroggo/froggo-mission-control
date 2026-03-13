@@ -313,7 +313,33 @@ export function loadDisallowedTools(agentId: string): string[] {
 const TASK_SUFFIX = `\n\n---
 You are in autonomous task mode. Work through the assigned task using the MCP tools.
 Task management: Use mcp__mission-control_db__task_* tools — NOT built-in TaskCreate/TaskList/TaskUpdate.
-Do not ask for clarification — interpret and execute. Log activity frequently.
+Do not ask for clarification — interpret and execute.
+
+## Task pipeline
+todo → internal-review (Pre-review) → in-progress → review → done
+- You work in the **in-progress** stage.
+- When you finish, set status to **review** (NOT done — only Clara can approve done).
+- If blocked by something only a human can resolve, use **human-review**.
+- Never set status to internal-review — the system manages that automatically.
+
+## Activity logging — MANDATORY
+Call mcp__mission-control_db__task_add_activity at EVERY meaningful step:
+- When you start a subtask
+- When you complete a subtask
+- When you make a significant decision or discovery
+- When you save a file
+- When you hit an obstacle and how you resolved it
+Minimum: one activity entry per subtask completed.
+
+## Done criteria — check ALL before calling review
+Before setting status="review", verify:
+- [ ] All subtasks are marked complete (or explicitly noted why one is N/A)
+- [ ] All output files are saved to the correct library path and attached via task_add_attachment
+- [ ] lastAgentUpdate contains a brief summary of what was done and references any output files
+- [ ] Progress is set to 100
+
+When setting review, include in lastAgentUpdate:
+"Completed: [brief summary]. Output: [file paths or 'no files']. Notes: [any caveats]."
 
 ## Subtask rules — CRITICAL
 Every subtask you create MUST be executable by a Claude agent using only:
@@ -348,7 +374,7 @@ After saving any file, add it as an attachment: mcp__mission-control_db__task_ad
 
 ## Memory Protocol
 
-When your task is complete (before marking agent-review):
+When your task is complete (before marking review):
 Write a memory note using mcp__memory__memory_write:
 - category: 'task'
 - title: 'YYYY-MM-DD-{brief-slug-of-what-you-built}'
@@ -1133,16 +1159,25 @@ export function recoverStuckInProgressTasks(): void {
     if (stuck.length === 0) return;
 
     console.log(`[taskDispatcher] Recovering ${stuck.length} task(s) stuck in in-progress from previous session`);
+    let staggerIndex = 0;
     for (const task of stuck) {
+      // Skip if already queued for re-dispatch (prevents double-dispatch on concurrent callers)
+      if (_redispatchTimeouts.has(task.id)) continue;
+
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(task.id, 'system', 'auto_redispatch',
         'Task was in-progress at server startup — re-dispatching to resume work (attempt 1/3)', Date.now());
 
+      // Exponential backoff stagger: 5s, 15s, 30s, 60s, then 60s for any beyond 4
+      const backoffMs = [5_000, 15_000, 30_000, 60_000];
+      const delay = backoffMs[Math.min(staggerIndex, backoffMs.length - 1)];
+      staggerIndex++;
+
       const t = setTimeout(() => {
         _redispatchTimeouts.delete(task.id);
         dispatchTask(task.id);
-      }, 8000 + Math.random() * 4000); // stagger to avoid thundering herd
+      }, delay);
       _redispatchTimeouts.set(task.id, t);
     }
   } catch (err) {

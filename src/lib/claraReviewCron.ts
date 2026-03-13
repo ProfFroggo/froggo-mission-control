@@ -97,30 +97,39 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     subtaskCount = row?.cnt ?? 0;
   } catch { /* non-critical */ }
 
-  const hasAgent       = !!assignedTo;
+  const hasAgent         = !!assignedTo;
   const hasPlanningNotes = !!(task.planningNotes as string | null)?.trim();
-  const hasSubtasks    = subtaskCount >= 1;
+  const hasDescription   = !!(task.description as string | null)?.trim();
+  const hasSubtasks      = subtaskCount >= 1;
+  const hasMinSubtasks   = subtaskCount >= 2;
 
   const message = [
     `## Pre-work Review — Task: ${task.id}`,
     `**Title:** ${task.title}`,
-    task.description ? `**Description:** ${task.description}` : '**Description:** MISSING',
+    hasDescription ? `**Description:** ${task.description}` : '**Description:** MISSING',
     `**Assigned to:** ${assignedTo || 'UNASSIGNED'}`,
     `**Planning notes:** ${hasPlanningNotes ? (task.planningNotes as string).slice(0, 500) : 'MISSING'}`,
     `**Subtasks:** ${subtaskCount} created`,
     `**Priority:** ${task.priority || 'p2'}`,
     '',
-    '## Your job: check all 3 gates. ALL must pass before work starts.',
+    '## Your job: check all 3 gates. Decide now.',
     '',
-    `GATE 1 — Agent assigned: ${hasAgent ? '✓ PASS' : '✗ FAIL — no agent assigned'}`,
-    `GATE 2 — Planning notes: ${hasPlanningNotes ? '✓ PASS' : '✗ FAIL — planningNotes is empty'}`,
-    `GATE 3 — Subtasks: ${hasSubtasks ? `✓ PASS (${subtaskCount})` : '✗ FAIL — no subtasks created yet'}`,
+    `GATE 1 — Agent assigned: ${hasAgent ? 'PASS' : 'FAIL — no agent assigned'}`,
+    `GATE 2 — Planning notes non-empty: ${hasPlanningNotes ? 'PASS' : 'FAIL — planningNotes is empty or missing'}`,
+    `GATE 3 — At least 1 subtask: ${hasSubtasks ? `PASS (${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''})` : 'FAIL — no subtasks created yet'}`,
+    !hasDescription ? 'NOTE — Description is empty (not a hard gate, but worth fixing)' : null,
+    !hasMinSubtasks && hasSubtasks ? 'NOTE — Only 1 subtask. Ask agent to expand subtasks as they work.' : null,
     '',
-    'If ALL gates pass → approve:',
+    '## Decision rules',
+    'ALL 3 gates pass → approve and dispatch.',
+    'Exactly 2 of 3 pass AND the failing gate is minor (only 1 subtask instead of 2, or description missing) → approve, but add a note in reviewNotes asking the agent to expand subtasks as they work.',
+    'Any hard gate fails (no agent assigned, OR planningNotes empty) → reject back to todo.',
+    '',
+    'If approving → use:',
     `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "pre-approved", "reviewNotes": "All gates passed." }`,
     '',
-    'If ANY gate fails → reject back to todo with specific notes listing exactly what is missing:',
-    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "<list each failing gate and what must be added>" }`,
+    'If rejecting → use this exact format. Your reviewNotes MUST list every missing item so the human knows exactly what to fix:',
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "MISSING: [item1], [item2]. To fix: [specific action required for each]." }`,
     '',
     'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
@@ -389,6 +398,32 @@ export function startClaraReviewCron(): void {
       .run(now);
     if (stale.changes > 0) {
       console.log(`[clara-review-cron] Reset ${stale.changes} stale pre-review task(s) from previous session`);
+    }
+  } catch { /* non-critical */ }
+
+  // On startup: recover tasks stuck in internal-review for > 10 minutes with no activity.
+  // These are Clara's dropped reviews (process crash, timeout, etc.) — move back to todo.
+  try {
+    const staleThresholdMs = 10 * 60 * 1000; // 10 minutes
+    const staleCutoff = now - staleThresholdMs;
+    const timedOut = db.prepare(
+      `SELECT t.id FROM tasks t
+       WHERE t.status = 'internal-review'
+         AND t.updatedAt < ?
+         AND NOT EXISTS (
+           SELECT 1 FROM task_activity a
+           WHERE a.taskId = t.id AND a.timestamp > ?
+         )`
+    ).all(staleCutoff, staleCutoff) as { id: string }[];
+
+    for (const { id } of timedOut) {
+      db.prepare(`UPDATE tasks SET status = 'todo', reviewStatus = NULL, updatedAt = ? WHERE id = ?`).run(now, id);
+      db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(id, 'system', 'pre-review-timeout',
+          'Pre-review timed out — please reassign to restart review', now);
+    }
+    if (timedOut.length > 0) {
+      console.log(`[clara-review-cron] Moved ${timedOut.length} timed-out pre-review task(s) back to todo`);
     }
   } catch { /* non-critical */ }
 

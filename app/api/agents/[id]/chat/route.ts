@@ -447,9 +447,11 @@ export async function POST(
         // Send a "still working…" heartbeat every 30s so the UI doesn't look frozen
         const HEARTBEAT_MESSAGES = [
           'Still working on it…',
-          'Processing, hang tight…',
-          'Almost there…',
-          'Still going…',
+          'Thinking through this carefully…',
+          'Running tools, almost there…',
+          'Processing your request…',
+          'Nearly done…',
+          'Working on it…',
         ];
         let heartbeatCount = 0;
         const heartbeat = setInterval(() => {
@@ -458,6 +460,11 @@ export async function POST(
           heartbeatCount++;
           enc({ type: 'heartbeat', text: msg });
         }, 30_000);
+
+        // Clear heartbeat if the request is aborted (e.g. user navigates away)
+        request.signal.addEventListener('abort', () => {
+          clearInterval(heartbeat);
+        });
 
         const finishStream = (code: number | null) => {
           agentLocks.delete(agentId);

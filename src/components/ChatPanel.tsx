@@ -237,8 +237,16 @@ export default function ChatPanel() {
             // Normalize DB integer 0/1 → boolean, and clear any stale streaming state
             return { ...m, streaming: false, status: undefined };
           });
-          setMessages(normalized);
-          messageCacheRef.current.set(selectedAgent.id, normalized);
+          // Deduplicate by message ID to prevent double-entries from DB + stream
+          const seen = new Set<string>();
+          const deduped = normalized.filter((m: StructuredChatMessage) => {
+            const id = m.id ?? '';
+            if (!id || seen.has(id)) return !id; // keep messages without IDs (no dedup possible)
+            seen.add(id);
+            return true;
+          });
+          setMessages(deduped);
+          messageCacheRef.current.set(selectedAgent.id, deduped);
         }
       } catch (_err) {
         // DB load failed — start with empty messages
