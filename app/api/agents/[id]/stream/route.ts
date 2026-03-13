@@ -618,13 +618,13 @@ export async function POST(
         const sanitizedMessage = `<user_message>\n${message}\n</user_message>`;
 
         // Pipe message to stdin and close it (--print reads plain text from stdin)
-        proc.stdin.write(sanitizedMessage);
-        proc.stdin.end();
+        proc.stdin!.write(sanitizedMessage);
+        proc.stdin!.end();
 
         let buf = '';
         let resultReceived = false;
 
-        proc.stdout.on('data', (data: Buffer) => {
+        proc.stdout!.on('data', (data: Buffer) => {
           buf += data.toString();
           const lines = buf.split('\n');
           buf = lines.pop() ?? '';
@@ -711,7 +711,7 @@ export async function POST(
         });
 
         let stderrBuf = '';
-        proc.stderr.on('data', (data: Buffer) => {
+        proc.stderr!.on('data', (data: Buffer) => {
           const msg = data.toString();
           stderrBuf += msg;
           if (msg.trim()) console.error(`[stream/${id}/stderr]`, msg.trim().slice(0, 500));

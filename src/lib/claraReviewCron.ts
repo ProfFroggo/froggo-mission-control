@@ -157,10 +157,10 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     stdio: 'pipe',
   });
 
-  proc.stdin.write(message);
-  proc.stdin.end();
-  proc.stdout.resume();
-  proc.stderr.resume();
+  proc.stdin!.write(message);
+  proc.stdin!.end();
+  proc.stdout!.resume();
+  proc.stderr!.resume();
 
   const reviewTimeout = setTimeout(() => {
     try { proc.kill(); } catch { /* already exited */ }
@@ -259,10 +259,10 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     stdio: 'pipe',
   });
 
-  proc.stdin.write(message);
-  proc.stdin.end();
-  proc.stdout.resume();
-  proc.stderr.resume();
+  proc.stdin!.write(message);
+  proc.stdin!.end();
+  proc.stdout!.resume();
+  proc.stderr!.resume();
 
   // Kill Clara's process after 3 minutes — prevents zombie reviews
   const reviewTimeout = setTimeout(() => {
