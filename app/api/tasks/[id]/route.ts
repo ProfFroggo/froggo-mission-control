@@ -157,6 +157,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
+    // Soft check: if moving to review, report incomplete subtasks as a warning (not a block)
+    // The agent gets a chance to see what it missed; Clara will catch any remaining gaps.
+    let incompleteSubtaskWarning: string | undefined;
+    if (body.status === 'review') {
+      try {
+        const incompleteSubs = db.prepare(
+          'SELECT id, title FROM subtasks WHERE taskId = ? AND completed = 0'
+        ).all(id) as { id: string; title: string }[];
+        if (incompleteSubs.length > 0) {
+          const titles = incompleteSubs.map(s => `"${s.title}"`).join(', ');
+          incompleteSubtaskWarning = `${incompleteSubs.length} subtask(s) still incomplete: ${titles}. Clara will review these.`;
+        }
+      } catch { /* non-critical */ }
+    }
+
     // Handoff note: write when assignedTo changes (task is handed off to a new agent)
     // The outgoing agent's context is captured so the incoming agent can continue smoothly.
     if ('assignedTo' in body && body.assignedTo) {
@@ -200,6 +215,19 @@ export async function PATCH(
     const isTodoStatus = (updated.status as string) === 'todo';
     if (wasAssigned && isTodoStatus) {
       db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), id);
+      // Notify the assigned agent in their chat room
+      try {
+        const taskTitle = updated.title as string;
+        const priority = (updated.priority as string | null) ?? 'p2';
+        db.prepare(
+          `INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`
+        ).run(
+          body.assignedTo as string,
+          'system',
+          `New task assigned to you: "${taskTitle}" [${priority}]. Task is now in Pre-review — Clara will check the plan and dispatch you when approved.`,
+          Date.now()
+        );
+      } catch { /* non-critical — chat table may not be ready */ }
     }
 
     // 2. Task rejected by Clara (reviewStatus=rejected/needs-changes → status=in-progress)
