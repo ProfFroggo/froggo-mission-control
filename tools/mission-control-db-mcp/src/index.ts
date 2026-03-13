@@ -499,20 +499,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // ── task_list ───────────────────────────────────────────────────────────
       case 'task_list': {
-        const limit = (args?.limit as number) || 50;
+        const rawLimit = Number(args?.limit) || 20;
+        const limit = Math.min(rawLimit, 50);
+
+        // assignedToMe is a convenience shortcut
+        const effectiveAssignedTo = args?.assignedToMe ? (args?.agentId as string | undefined) : (args?.assignedTo as string | undefined);
+
         let query = `SELECT id, title, description, status, reviewStatus, priority, assignedTo,
-          project, progress, lastAgentUpdate, createdAt, updatedAt
+          project, progress, lastAgentUpdate, planningNotes, createdAt, updatedAt
           FROM tasks WHERE 1=1`;
         const params: any[] = [];
-        if (args?.status)     { query += ' AND status = ?';     params.push(args.status); }
-        if (args?.assignedTo) { query += ' AND assignedTo = ?'; params.push(args.assignedTo); }
-        if (args?.project)    { query += ' AND project = ?';    params.push(args.project); }
+        if (args?.status)          { query += ' AND status = ?';     params.push(args.status); }
+        if (effectiveAssignedTo)   { query += ' AND assignedTo = ?'; params.push(effectiveAssignedTo); }
+        if (args?.project)         { query += ' AND project = ?';    params.push(args.project); }
         query += ' ORDER BY createdAt DESC LIMIT ?';
         params.push(limit);
-        const tasks = db.prepare(query).all(...params);
+
+        const rawTasks = db.prepare(query).all(...params) as any[];
+
+        // Enrich each task with subtask count + progress context
+        const tasks = rawTasks.map((t: any) => {
+          const subtaskCounts = db.prepare(
+            'SELECT COUNT(*) as total, SUM(CASE WHEN completed=1 THEN 1 ELSE 0 END) as done FROM subtasks WHERE taskId=?'
+          ).get(t.id) as { total: number; done: number };
+          return {
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            reviewStatus: t.reviewStatus,
+            priority: t.priority,
+            assignedTo: t.assignedTo,
+            project: t.project,
+            progress: t.progress,
+            lastAgentUpdate: t.lastAgentUpdate,
+            planningNotesSummary: t.planningNotes ? (t.planningNotes as string).slice(0, 100) + ((t.planningNotes as string).length > 100 ? '…' : '') : null,
+            subtasks: { total: subtaskCounts?.total ?? 0, done: subtaskCounts?.done ?? 0 },
+            createdAt: t.createdAt,
+            updatedAt: t.updatedAt,
+          };
+        });
+
         return { content: [{ type: 'text', text: JSON.stringify({
           tasks,
-          hint: 'Use task_get(id) for full details including planningNotes and subtasks before starting work on any task.'
+          total: tasks.length,
+          hint: 'Use task_get(id) for full details including planningNotes and subtasks before starting work on any task. Tip: use assignedToMe=true + status filter to find your active work quickly.',
         }, null, 2) }] };
       }
 
@@ -1196,6 +1226,160 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         `).run(id, title, content, category, JSON.stringify(tags), now, now);
 
         return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, hint: 'Knowledge saved. Other agents and future sessions can now find this via knowledge_search.' }) }] };
+      }
+
+      // ── project_context ─────────────────────────────────────────────────────
+      case 'project_context': {
+        if (args?.projectId) {
+          const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(args.projectId) as Record<string, any> | undefined;
+          if (!project) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Project not found', recovery: 'Call project_context with no arguments to list all active projects.' }) }] };
+
+          // Assigned agents via project_members
+          const members = db.prepare(`
+            SELECT pm.agentId, pm.role, a.name, a.status
+            FROM project_members pm
+            LEFT JOIN agents a ON a.id = pm.agentId
+            WHERE pm.projectId = ?
+          `).all(args.projectId) as any[];
+
+          // Open task count
+          const openTasks = db.prepare(
+            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
+          ).get(project.name, args.projectId) as { c: number };
+
+          // Milestone summary — tasks grouped by status
+          const statusBreakdown = db.prepare(`
+            SELECT status, COUNT(*) as count FROM tasks
+            WHERE project = ? OR project_id = ?
+            GROUP BY status
+          `).all(project.name, args.projectId) as any[];
+
+          return { content: [{ type: 'text', text: JSON.stringify({
+            hint: 'This is your project context. Read goal and status before starting work.',
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            goal: project.goal,
+            status: project.status,
+            assignedAgents: members,
+            openTaskCount: openTasks?.c ?? 0,
+            tasksByStatus: statusBreakdown,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+          }, null, 2) }] };
+        }
+
+        // No projectId — list all active projects with key metrics
+        const projects = db.prepare("SELECT * FROM projects WHERE status = 'active' ORDER BY updatedAt DESC").all() as any[];
+        const enriched = projects.map((p: any) => {
+          const open = db.prepare(
+            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
+          ).get(p.name, p.id) as { c: number };
+          const memberCount = db.prepare('SELECT COUNT(*) as c FROM project_members WHERE projectId = ?').get(p.id) as { c: number };
+          return {
+            id: p.id,
+            name: p.name,
+            goal: p.goal,
+            status: p.status,
+            openTaskCount: open?.c ?? 0,
+            assignedAgentCount: memberCount?.c ?? 0,
+            updatedAt: p.updatedAt,
+          };
+        });
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          projects: enriched,
+          hint: 'Call project_context({ projectId }) for full detail on a specific project.',
+        }, null, 2) }] };
+      }
+
+      // ── agent_status_set ─────────────────────────────────────────────────────
+      case 'agent_status_set': {
+        const agentId = String(args?.agentId ?? '').trim();
+        const status = String(args?.status ?? '').trim();
+        const currentTask = args?.currentTask ? String(args.currentTask).trim() : null;
+
+        if (!agentId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'agentId is required' }) }], isError: true };
+        if (!['active', 'idle', 'busy'].includes(status)) {
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'status must be one of: active, idle, busy' }) }], isError: true };
+        }
+
+        const agent = db.prepare('SELECT id, name FROM agents WHERE id = ?').get(agentId) as { id: string; name: string } | undefined;
+        if (!agent) return { content: [{ type: 'text', text: JSON.stringify({ error: `Agent '${agentId}' not found. Check your agent ID.` }) }], isError: true };
+
+        // Update DB directly for reliability
+        db.prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run(status, Date.now(), agentId);
+
+        // Also fire PATCH to the API so server-side listeners (SSE, etc.) are notified
+        const patchBody: Record<string, any> = { status };
+        if (currentTask !== null) patchBody.currentTask = currentTask;
+        awaitPatch(`/api/agents/${encodeURIComponent(agentId)}`, patchBody).catch(() => { /* non-critical */ });
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          success: true,
+          agentId,
+          agentName: agent.name,
+          status,
+          currentTask: currentTask ?? undefined,
+          hint: status === 'busy'
+            ? 'Status set to busy. Remember to call agent_status_set(status="idle") when you finish.'
+            : 'Status updated.',
+        }) }] };
+      }
+
+      // ── campaign_context ─────────────────────────────────────────────────────
+      case 'campaign_context': {
+        // Check if campaigns table exists
+        const hasTable = db.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='campaigns'"
+        ).get();
+
+        if (!hasTable) {
+          return { content: [{ type: 'text', text: JSON.stringify({
+            campaigns: [],
+            hint: 'No campaigns table found in the database yet. Campaigns have not been set up for this workspace.',
+          }) }] };
+        }
+
+        try {
+          let query = 'SELECT * FROM campaigns WHERE 1=1';
+          const params: any[] = [];
+          if (args?.status) { query += ' AND status = ?'; params.push(args.status); }
+          else { query += " AND status != 'archived'"; }
+          query += ' ORDER BY updatedAt DESC LIMIT 20';
+          const campaigns = db.prepare(query).all(...params) as any[];
+
+          if (campaigns.length === 0) {
+            return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], hint: 'No campaigns found matching the filter.' }) }] };
+          }
+
+          // Enrich each campaign with assigned agents if campaign_members table exists
+          const hasMembersTable = db.prepare(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='campaign_members'"
+          ).get();
+
+          const enriched = campaigns.map((c: any) => {
+            const result: Record<string, any> = {
+              id: c.id,
+              name: c.name,
+              goal: c.goal ?? null,
+              status: c.status,
+              channels: (() => { try { return JSON.parse(c.channels ?? '[]'); } catch { return []; } })(),
+              updatedAt: c.updatedAt,
+            };
+            if (hasMembersTable) {
+              result.assignedAgents = db.prepare(`
+                SELECT cm.agentId, a.name, a.status FROM campaign_members cm
+                LEFT JOIN agents a ON a.id = cm.agentId WHERE cm.campaignId = ?
+              `).all(c.id);
+            }
+            return result;
+          });
+
+          return { content: [{ type: 'text', text: JSON.stringify({ campaigns: enriched, total: enriched.length }, null, 2) }] };
+        } catch (err: any) {
+          return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], error: `Could not query campaigns: ${err.message}` }) }] };
+        }
       }
 
       default:
