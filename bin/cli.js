@@ -102,15 +102,24 @@ function findNodeBin() {
 
 function findClaudeBin() {
   if (process.env.CLAUDE_BIN && existsSync(process.env.CLAUDE_BIN)) return process.env.CLAUDE_BIN;
+  // Try which first (respects user's PATH / nvm / custom setups)
   try {
     const found = execSync('which claude 2>/dev/null', { encoding: 'utf-8', timeout: 3000 }).trim();
     if (found && existsSync(found)) return found;
   } catch {}
+  // Try to get npm global prefix dynamically — covers nvm, volta, custom prefixes
+  try {
+    const prefix = execSync('npm config get prefix 2>/dev/null', { encoding: 'utf-8', timeout: 3000 }).trim();
+    const npmCandidate = path.join(prefix, 'bin', 'claude');
+    if (existsSync(npmCandidate)) return npmCandidate;
+  } catch {}
+  // Static fallback candidates (most common install locations)
   const candidates = [
-    '/usr/local/bin/claude',
     path.join(HOME, '.npm-global', 'bin', 'claude'),
     path.join(HOME, '.local', 'bin', 'claude'),
+    '/usr/local/bin/claude',
     '/opt/homebrew/bin/claude',
+    path.join(HOME, 'node_modules', '.bin', 'claude'),
   ];
   return candidates.find(f => existsSync(f)) || 'claude';
 }
@@ -767,7 +776,7 @@ async function cmdSetup(force = false) {
     '',
     '# Claude Code CLI',
     `CLAUDE_BIN=${resolvedClaude}`,
-    ...(claudeScript ? [`CLAUDE_SCRIPT=${claudeScript}`] : []),
+    `CLAUDE_SCRIPT=${claudeScript || resolvedClaude}`,
     'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1',
     'CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING=1',
     '',
@@ -1043,8 +1052,22 @@ async function cmdSetup(force = false) {
     const plist = buildMacPlist(nodeBin, nextScript, port, logPath, envVars, INSTALL_DIR);
     writeFileSync(LAUNCHAGENT, plist);
     try { execSync(`launchctl unload "${LAUNCHAGENT}" 2>/dev/null || true`, { stdio: 'pipe' }); } catch {}
-    execSync(`launchctl load -w "${LAUNCHAGENT}"`, { stdio: 'pipe' });
-    success('LaunchAgent installed — starts automatically at login');
+    try {
+      execSync(`launchctl load -w "${LAUNCHAGENT}"`, { stdio: 'pipe' });
+    } catch (e) {
+      warn(`LaunchAgent load failed: ${e.message}. Try: launchctl load -w "${LAUNCHAGENT}"`);
+    }
+    // Verify it actually loaded
+    try {
+      const list = execSync(`launchctl list com.mission-control.app 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 }).trim();
+      if (list && !list.includes('Could not find service')) {
+        success('LaunchAgent installed and running — starts automatically at login');
+      } else {
+        warn('LaunchAgent registered but may not be running. Check: launchctl list com.mission-control.app');
+      }
+    } catch {
+      success('LaunchAgent installed — starts automatically at login');
+    }
     info(`Logs: ${logPath}`);
 
     // ── Cron daemon LaunchAgent ──────────────────────────────────────────

@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ENV, calcCostUsd } from '@/lib/env';
 import { getDb } from '@/lib/database';
 import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
 
@@ -288,14 +288,11 @@ export async function POST(
         // cwd = agent workspace so Claude can find MCP config
         const dir = join(HOME, 'mission-control', 'agents', agentId);
         try {
-          if (!existsSync(dir)) {
-            mkdirSync(dir, { recursive: true });
-            // Seed .mcp.json so Claude Code finds MCP servers without relying on
-            // parent-directory traversal (which can stop at a .git/.claude boundary).
-            const parentMcp = join(HOME, 'mission-control', '.mcp.json');
-            if (existsSync(parentMcp)) {
-              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
-            }
+          mkdirSync(dir, { recursive: true });
+          // Always sync .mcp.json into agent workspace so MCP servers are always found.
+          const parentMcp = join(HOME, 'mission-control', '.mcp.json');
+          if (existsSync(parentMcp)) {
+            writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
           }
         } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
@@ -348,6 +345,13 @@ export async function POST(
             join(HOME, '.npm-global', 'bin'),
             join(HOME, '.local', 'bin'),
           ].join(':');
+        }
+        // Always ensure node's own dir and claude's dir are on PATH
+        const nodeBinDir = dirname(NODE_BIN);
+        if (!cleanEnv.PATH.includes(nodeBinDir)) cleanEnv.PATH = nodeBinDir + ':' + cleanEnv.PATH;
+        const claudeBinDir = dirname(CLAUDE_SCRIPT);
+        if (claudeBinDir && claudeBinDir !== '.' && !cleanEnv.PATH.includes(claudeBinDir)) {
+          cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
         }
         if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch { /* ignore */ } }
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }

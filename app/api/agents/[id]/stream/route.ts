@@ -15,7 +15,7 @@ import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/database';
 import { calcCostUsd } from '@/lib/env';
 import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
@@ -498,14 +498,13 @@ export async function POST(
         // (Using HOME directly would skip ~/mission-control/ in the search path, causing MCP
         // servers to not be found and all tool calls to silently fail → 120s timeout.)
         try {
-          if (!existsSync(dir)) {
-            mkdirSync(dir, { recursive: true });
-            // Seed .mcp.json so Claude Code finds MCP servers without relying on
-            // parent-directory traversal (which can stop at a .git/.claude boundary).
-            const parentMcp = join(HOME, 'mission-control', '.mcp.json');
-            if (existsSync(parentMcp)) {
-              writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
-            }
+          mkdirSync(dir, { recursive: true });
+          // Always sync .mcp.json into agent workspace — not just on creation.
+          // Ensures MCP servers are found even if workspace existed before .mcp.json
+          // was added, or if the parent .mcp.json was updated after initial hire.
+          const parentMcp = join(HOME, 'mission-control', '.mcp.json');
+          if (existsSync(parentMcp)) {
+            writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
           }
         } catch {}
         const cwd = existsSync(dir) ? dir : HOME;
@@ -573,6 +572,17 @@ export async function POST(
           ANTHROPIC_API_KEY,
           ...cleanEnv
         } = process.env;
+        // Validate Claude binary exists before attempting spawn — gives an immediate
+        // actionable error rather than a 120s silent timeout.
+        if (CLAUDE_SCRIPT !== 'claude' && !existsSync(CLAUDE_SCRIPT)) {
+          enc({ type: 'text', text: `Claude Code not found at ${CLAUDE_SCRIPT}. Run: mission-control setup --force` });
+          enc({ type: 'done', code: 1 });
+          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch {}
+          try { controller.close(); } catch {}
+          agentLocks.delete(id);
+          return;
+        }
+
         // LaunchAgent has a minimal environment (no PATH, USER, LOGNAME, TMPDIR).
         // Ensure these are present so Claude Code can access keychain and system tools.
         if (!cleanEnv.PATH || cleanEnv.PATH.length < 20) {
@@ -582,6 +592,16 @@ export async function POST(
             join(HOME, '.npm-global', 'bin'),
             join(HOME, '.local', 'bin'),
           ].join(':');
+        }
+        // Always ensure node's own directory is on PATH — covers nvm, custom installs.
+        const nodeBinDir = dirname(NODE_BIN);
+        if (!cleanEnv.PATH.includes(nodeBinDir)) {
+          cleanEnv.PATH = nodeBinDir + ':' + cleanEnv.PATH;
+        }
+        // Also ensure the claude binary's directory is on PATH for native binary installs.
+        const claudeBinDir = dirname(CLAUDE_BIN);
+        if (claudeBinDir && claudeBinDir !== '.' && !cleanEnv.PATH.includes(claudeBinDir)) {
+          cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
         }
         if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch { /* ignore */ } }
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
