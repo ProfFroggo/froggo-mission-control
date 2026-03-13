@@ -654,6 +654,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       case 'subtask_deleted': return <X size={14} className="text-error" />;
       case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
       case 'review_status': return <Eye size={14} className="text-review" />;
+      case 'review-approved': return <CheckCircle size={14} className="text-success" />;
+      case 'review-rejected': return <XCircle size={14} className="text-error" />;
+      case 'pre-review-approved': return <CheckCircle size={14} className="text-info" />;
+      case 'pre-review-rejected': return <XCircle size={14} className="text-warning" />;
+      case 'pre-review-timeout': return <Activity size={14} className="text-warning" />;
       case 'agent_message': return <Bot size={14} className="text-mission-control-accent" />;
       case 'progress': return <Activity size={14} className="text-warning" />;
       default: return <MessageSquare size={14} className="text-mission-control-text-dim" />;
@@ -1223,7 +1228,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 {activities.map((act, _idx) => (
                   <div
                     key={act.id}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
+                    className={`flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${
+                      act.action === 'review-rejected' || act.action === 'pre-review-rejected'
+                        ? 'bg-error-subtle border border-error/20'
+                        : act.action === 'review-approved' || act.action === 'pre-review-approved'
+                        ? 'bg-success-subtle border border-success/20'
+                        : ''
+                    }`}
                   >
                     <div className="mt-1 p-1 rounded bg-mission-control-bg">
                       {getActivityIcon(act.action)}

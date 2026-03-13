@@ -204,8 +204,8 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     setTimeout(() => {
       try {
         const db = getDb();
-        const current = db.prepare('SELECT status, assignedTo, reviewStatus FROM tasks WHERE id = ?')
-          .get(task.id as string) as { status: string; assignedTo: string | null; reviewStatus: string | null } | undefined;
+        const current = db.prepare('SELECT status, assignedTo, reviewStatus, reviewNotes FROM tasks WHERE id = ?')
+          .get(task.id as string) as { status: string; assignedTo: string | null; reviewStatus: string | null; reviewNotes: string | null } | undefined;
 
         if (current?.status === 'in-progress' && current?.assignedTo) {
           // Clara approved — dispatch the agent now
@@ -214,8 +214,11 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
             .run(task.id, 'clara', 'pre-review-approved', 'Clara approved — dispatching agent', Date.now());
           dispatchTask(task.id as string);
         } else if (current?.status === 'todo') {
-          // Clara rejected — log it
+          // Clara rejected — log to activity so it shows in the task detail activity tab
           console.log(`[clara-review-cron] Pre-review rejected task ${task.id} — returned to todo`);
+          const rejReason = (current.reviewNotes || 'No reason provided').slice(0, 500);
+          db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+            .run(task.id, 'clara', 'pre-review-rejected', `Clara rejected: ${rejReason}`, Date.now());
         }
       } catch { /* non-critical */ }
     }, 2000);
@@ -346,13 +349,27 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
           .get(task.id as string) as { reviewStatus: string; reviewNotes: string } | undefined;
 
         if (reviewed?.reviewStatus === 'approved' || reviewed?.reviewStatus === 'rejected') {
+          const db2 = getDb();
+          const notes = (reviewed.reviewNotes || '').slice(0, 500);
+          const now2 = Date.now();
+
+          // Write outcome to task_activity so it shows in the task detail activity tab
+          if (reviewed.reviewStatus === 'rejected') {
+            db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'review-rejected', `Clara rejected: ${notes || 'No specific feedback provided.'}`, now2);
+          } else {
+            db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'review-approved', `Clara approved: ${notes || 'Work complete and verified.'}`, now2);
+          }
+
+          // Also log to Clara's pattern memory file for future reviews
           const patternDir = join(HOME, 'mission-control', 'memory', 'agents', 'clara', 'agent-patterns');
           mkdirSync(patternDir, { recursive: true });
 
           const agentId = assignedTo || 'unknown';
           const patternFile = join(patternDir, `${agentId}.md`);
           const date = new Date().toISOString().slice(0, 10);
-          const line = `${date} | ${task.title} | ${reviewed.reviewStatus} | ${(reviewed.reviewNotes || '').slice(0, 200)}\n`;
+          const line = `${date} | ${task.title} | ${reviewed.reviewStatus} | ${notes.slice(0, 200)}\n`;
           appendFileSync(patternFile, line, 'utf-8');
           trackEvent('memory.written', { agentId: 'clara' });
         }
