@@ -162,10 +162,14 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     try {
       const result = await fetch(`/api/library?action=view&id=${encodeURIComponent(file.id)}`).then(r => r.ok ? r.json() : { success: false, error: 'Failed to load file' });
       if (result?.success) {
-        const mime = file.mimeType || '';
-        const viewType = mime.startsWith('image/') ? 'image'
+        const mime = result.mimeType || file.mimeType || '';
+        const viewType = result.isBinary
+          ? (mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : mime.startsWith('audio/') ? 'audio' : 'binary')
+          : (mime.startsWith('image/') ? 'image'
+          : mime.startsWith('video/') ? 'video'
+          : mime.startsWith('audio/') ? 'audio'
           : (mime.startsWith('text/') || mime.includes('json') || mime.includes('javascript') || mime.includes('typescript') || mime.includes('python') || mime.includes('shellscript'))
-          ? 'text' : 'binary';
+          ? 'text' : 'binary');
         setViewerContent({ ...result, viewType });
       } else {
         showToast('error', 'View failed', result?.error || 'Unknown error');
@@ -541,6 +545,23 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     alt={selectedFile.name}
                     className="max-w-full max-h-[60vh] object-contain rounded-lg"
                   />
+                </div>
+              ) : viewerContent?.viewType === 'video' ? (
+                <div className="flex items-center justify-center">
+                  <video
+                    controls
+                    className="max-w-full max-h-[60vh] rounded-lg"
+                  >
+                    <source src={viewerContent.content} />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              ) : viewerContent?.viewType === 'audio' ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                  <audio controls className="w-full max-w-lg">
+                    <source src={viewerContent.content} />
+                    Your browser does not support the audio tag.
+                  </audio>
                 </div>
               ) : viewerContent?.viewType === 'binary' ? (
                 <div className="text-center py-12">
