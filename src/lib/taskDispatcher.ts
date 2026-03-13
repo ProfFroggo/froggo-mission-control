@@ -463,8 +463,8 @@ function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?
 
     if (scored.length === 0) return '';
 
-    // Token budget guard: ~1500 token limit (chars / 4)
-    const TOKEN_BUDGET = 1500 * 4; // chars
+    // Token budget guard: capped at 3000 chars for faster agent processing
+    const TOKEN_BUDGET = 3000; // chars
     let totalChars = 0;
     const capped = scored.filter(f => {
       totalChars += f.content.length;
@@ -534,8 +534,8 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
     const all = [...pinned, ...relevant.filter(r => !pinnedIds.has(r.id))].slice(0, 4);
     if (all.length === 0) return '';
 
-    // Token budget guard: ~1500 token limit (chars / 4)
-    const TOKEN_BUDGET = 1500 * 4;
+    // Token budget guard: capped at 3000 chars for faster agent processing
+    const TOKEN_BUDGET = 3000;
     let totalChars = 0;
     const capped = all.filter(a => {
       totalChars += a.content.length;

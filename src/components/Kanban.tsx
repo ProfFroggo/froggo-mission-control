@@ -374,48 +374,54 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     });
   };
 
-  // Apply per-column filtering and sorting
-  const getColumnTasks = useCallback((columnId: TaskStatus) => {
-    const settings = columnSettings[columnId];
-    let columnTasks = filteredTasks.filter(t => t.status === columnId);
-    
-    // Apply column filters
-    if (settings.filterAgent !== 'all') {
-      if (settings.filterAgent === 'unassigned') {
-        columnTasks = columnTasks.filter(t => !t.assignedTo);
-      } else {
-        columnTasks = columnTasks.filter(t => t.assignedTo === settings.filterAgent);
-      }
-    }
-    
-    if (settings.filterPriority !== 'all') {
-      columnTasks = columnTasks.filter(t => t.priority === settings.filterPriority);
-    }
-    
-    // Apply column sorting
-    return columnTasks.sort((a, b) => {
-      switch (settings.sortBy) {
-        case 'newest':
-          return b.createdAt - a.createdAt;
-        case 'oldest':
-          return a.createdAt - b.createdAt;
-        case 'priority-asc': {
-          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-          return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+  // Pre-compute per-column filtered+sorted task arrays — avoids re-running filter/sort on every render
+  const columnTaskMap = useMemo(() => {
+    const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+    const result: Partial<Record<TaskStatus, Task[]>> = {};
+    for (const column of columns) {
+      const columnId = column.id;
+      const settings = columnSettings[columnId];
+      let col = filteredTasks.filter(t => t.status === columnId);
+
+      // Apply column filters
+      if (settings.filterAgent !== 'all') {
+        if (settings.filterAgent === 'unassigned') {
+          col = col.filter(t => !t.assignedTo);
+        } else {
+          col = col.filter(t => t.assignedTo === settings.filterAgent);
         }
-        case 'priority-desc': {
-          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-          return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
-        }
-        case 'progress-asc':
-          return (a.progress || 0) - (b.progress || 0);
-        case 'progress-desc':
-          return (b.progress || 0) - (a.progress || 0);
-        default:
-          return 0;
       }
-    });
+      if (settings.filterPriority !== 'all') {
+        col = col.filter(t => t.priority === settings.filterPriority);
+      }
+
+      // Apply column sorting
+      col = col.slice().sort((a, b) => {
+        switch (settings.sortBy) {
+          case 'newest':
+            return b.createdAt - a.createdAt;
+          case 'oldest':
+            return a.createdAt - b.createdAt;
+          case 'priority-asc':
+            return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+          case 'priority-desc':
+            return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
+          case 'progress-asc':
+            return (a.progress || 0) - (b.progress || 0);
+          case 'progress-desc':
+            return (b.progress || 0) - (a.progress || 0);
+          default:
+            return 0;
+        }
+      });
+      result[columnId] = col;
+    }
+    return result;
   }, [filteredTasks, columnSettings]);
+
+  const getColumnTasks = useCallback((columnId: TaskStatus): Task[] => {
+    return columnTaskMap[columnId] ?? [];
+  }, [columnTaskMap]);
 
   // Stats
   const stats = useMemo(() => {
