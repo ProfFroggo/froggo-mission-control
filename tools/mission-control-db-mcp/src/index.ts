@@ -365,7 +365,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const now = Date.now();
         const id = `task-${now}-${Math.random().toString(36).slice(2, 8)}`;
-        const initialStatus = (args?.status as string) || 'todo';
+        // Tasks ALWAYS start in todo — no exceptions. Agents cannot create tasks in any other status.
+        const initialStatus = 'todo';
         db.prepare(`
           INSERT INTO tasks (id, title, description, status, priority, project, assignedTo,
             reviewerId, planningNotes, parentTaskId, tags, labels, blockedBy, blocks,
