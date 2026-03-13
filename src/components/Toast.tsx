@@ -43,7 +43,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg animate-slide-in ${colors[toast.type]}`}
+      className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg animate-toast-in ${colors[toast.type]}`}
     >
       <Icon size={20} className="flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
@@ -121,7 +121,12 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm" role="region" aria-label="Notifications">
+    <div
+      className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 w-[calc(100vw-2rem)] max-w-sm"
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={handleDismiss} />
       ))}
