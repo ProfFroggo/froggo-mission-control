@@ -425,11 +425,12 @@ function App() {
 
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
-          <Sidebar 
-            currentView={currentView} 
+          <Sidebar
+            currentView={currentView}
             onNavigate={setCurrentView}
             onOpenHelp={() => setHelpPanelOpen(true)}
             onWidthChange={setSidebarWidth}
+            onOpenSearch={() => setSearchOpen(true)}
           />
         </ErrorBoundary>
         

@@ -5,7 +5,8 @@ import {
   Zap, Shield, AlertTriangle, Inbox,
   ListTodo, Activity, MapPin, Video, ChevronRight,
   Loader2, XCircle, DollarSign,
-  MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon
+  MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
+  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
@@ -79,15 +80,21 @@ interface StatCardProps {
   icon: LucideIcon;
   color: string;
   pulse?: boolean;
+  highlight?: boolean;
   onClick?: () => void;
   sub?: string;
+  agents?: Agent[];
 }
 
-function StatCard({ label, value, icon: Icon, color, pulse, onClick, sub }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, sub, agents }: StatCardProps) {
   return (
     <button
       onClick={onClick}
-      className="flex-1 min-w-0 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border hover:border-mission-control-accent/50 transition-all group text-left"
+      className={`flex-1 min-w-0 p-4 backdrop-blur-xl rounded-xl border transition-all group text-left ${
+        highlight && value > 0
+          ? 'bg-amber-500/10 border-amber-500/40 hover:border-amber-400/70 shadow-lg shadow-amber-500/5'
+          : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
+      }`}
     >
       <div className="flex items-center justify-between mb-2">
         <Icon size={18} className={color} />
@@ -98,57 +105,117 @@ function StatCard({ label, value, icon: Icon, color, pulse, onClick, sub }: Stat
       <div className={`text-3xl font-bold ${color}`}>{value}</div>
       <div className="text-xs text-mission-control-text-dim mt-1 font-medium">{label}</div>
       {sub && <div className="text-xs text-mission-control-text-dim/70 mt-0.5">{sub}</div>}
+      {agents && agents.length > 0 && (
+        <div className="flex -space-x-1.5 mt-2">
+          {agents.slice(0, 4).map(a => (
+            <AgentAvatar key={a.id} agentId={a.id} fallbackEmoji={a.avatar} size="xs" />
+          ))}
+          {agents.length > 4 && (
+            <span className="w-5 h-5 rounded-full bg-mission-control-border text-mission-control-text-dim text-[9px] flex items-center justify-center flex-shrink-0 ring-1 ring-mission-control-bg">
+              +{agents.length - 4}
+            </span>
+          )}
+        </div>
+      )}
     </button>
   );
 }
 
 function StatStrip({
-  pendingApprovals,
   inProgressCount,
-  completedToday,
-  activeAgentCount,
-  totalAgentCount,
+  reviewCount,
+  internalReviewCount,
+  humanReviewCount,
+  inProgressAgents,
   onNavigate,
 }: {
-  pendingApprovals: number;
   inProgressCount: number;
-  completedToday: number;
-  activeAgentCount: number;
-  totalAgentCount: number;
+  reviewCount: number;
+  internalReviewCount: number;
+  humanReviewCount: number;
+  inProgressAgents: Agent[];
   onNavigate?: (view: View) => void;
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-4">
       <StatCard
-        label="Pending Approvals"
-        value={pendingApprovals}
-        icon={Inbox}
-        color={pendingApprovals > 0 ? 'text-orange-400' : 'text-mission-control-text-dim'}
-        pulse={pendingApprovals > 0}
-        onClick={() => onNavigate?.('approvals')}
-      />
-      <StatCard
-        label="In Progress"
+        label="Active Tasks"
         value={inProgressCount}
         icon={Activity}
         color={inProgressCount > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
+        agents={inProgressAgents}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
-        label="Done Today"
-        value={completedToday}
-        icon={CheckCircle}
-        color={completedToday > 0 ? 'text-emerald-400' : 'text-mission-control-text-dim'}
+        label="Awaiting Review"
+        value={reviewCount}
+        icon={Eye}
+        color={reviewCount > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
-        label="Active Agents"
-        value={activeAgentCount}
-        icon={Bot}
-        color={activeAgentCount > 0 ? 'text-green-400' : 'text-mission-control-text-dim'}
-        onClick={() => onNavigate?.('agents')}
-        sub={`${totalAgentCount} total`}
+        label="Pre-Review Queue"
+        value={internalReviewCount}
+        icon={UserCheck}
+        color={internalReviewCount > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
+        onClick={() => onNavigate?.('kanban')}
       />
+      <StatCard
+        label="Human Attention"
+        value={humanReviewCount}
+        icon={AlertTriangle}
+        color={humanReviewCount > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
+        highlight={humanReviewCount > 0}
+        pulse={humanReviewCount > 0}
+        onClick={() => onNavigate?.('kanban')}
+      />
+    </div>
+  );
+}
+
+// ── QuickActions row ────────────────────────────────────────
+
+function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) {
+  return (
+    <div className="px-6 pb-4">
+      <div className="flex items-center gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
+        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1">
+          Quick Actions
+        </span>
+        <button
+          onClick={() => onNavigate?.('kanban')}
+          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+        >
+          <Plus size={14} />
+          New Task
+        </button>
+        <button
+          onClick={() => onNavigate?.('chat')}
+          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+        >
+          <MessageSquare size={14} />
+          Open Chat
+        </button>
+        <button
+          onClick={() => onNavigate?.('kanban')}
+          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+        >
+          <FolderKanban size={14} />
+          View Board
+        </button>
+        <button
+          onClick={() => onNavigate?.('library')}
+          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+        >
+          <BookOpen size={14} />
+          Browse Library
+        </button>
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+          <Search size={12} />
+          <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-[10px]">⌘K</kbd>
+          <span>to search</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -267,6 +334,14 @@ function ApprovalsQueue({
 
 // ── ActivityFeed ───────────────────────────────────────────
 
+const ACTIVITY_VERBS: Record<string, string> = {
+  chat: 'sent a message',
+  task: 'updated task',
+  agent: 'agent status changed',
+  error: 'reported an error',
+  system: 'system event',
+};
+
 function ActivityFeed({
   inProgressTasks,
   agentMap,
@@ -278,12 +353,31 @@ function ActivityFeed({
   activities: { id: string; type: string; message: string; timestamp: number }[];
   onNavigate?: (view: View) => void;
 }) {
+  // Merge in-progress tasks and recent activity into a single feed, last 10 items
+  const feedItems = useMemo(() => {
+    const taskItems = inProgressTasks.map(t => ({
+      id: `task-${t.id}`,
+      kind: 'task' as const,
+      task: t,
+      timestamp: typeof t.updatedAt === 'number' ? t.updatedAt : new Date(t.updatedAt).getTime(),
+    }));
+    const activityItems = activities.slice(0, 10 - Math.min(taskItems.length, 4)).map(a => ({
+      id: `activity-${a.id}`,
+      kind: 'activity' as const,
+      activity: a,
+      timestamp: a.timestamp,
+    }));
+    return [...taskItems, ...activityItems]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10);
+  }, [inProgressTasks, activities]);
+
   return (
     <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden flex flex-col">
       <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity size={16} className="text-blue-400" />
-          <h2 className="font-semibold text-sm">What&apos;s Happening</h2>
+          <h2 className="font-semibold text-sm">Activity Feed</h2>
           {inProgressTasks.length > 0 && (
             <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
               {inProgressTasks.length} active
@@ -299,71 +393,82 @@ function ActivityFeed({
       </div>
 
       <div className="flex-1 overflow-y-auto max-h-[400px]">
-        {/* Active work */}
-        {inProgressTasks.length > 0 && (
-          <div className="divide-y divide-mission-control-border/30">
-            {inProgressTasks.slice(0, 6).map(task => {
-              const agent = agentMap.get(task.assignedTo ?? '');
-              return (
-                <div
-                  key={task.id}
-                  className="p-3 hover:bg-mission-control-bg/30 transition-colors cursor-pointer"
-                  onClick={() => onNavigate?.('kanban')}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-mission-control-text truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {agent && (
-                          <span className="flex items-center gap-1 text-xs text-mission-control-text-dim">
-                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                            {agent.name}
-                          </span>
-                        )}
-                        {task.updatedAt && (
-                          <span className="text-xs text-mission-control-text-dim">{formatTimeAgo(task.updatedAt)}</span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 bg-info-subtle text-info text-xs rounded-full flex-shrink-0">
-                      working
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Recent activity */}
-        {activities.length > 0 && (
-          <div className={inProgressTasks.length > 0 ? 'border-t border-mission-control-border/50' : ''}>
-            <div className="px-4 py-2 bg-mission-control-bg/30">
-              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Recent Activity</span>
-            </div>
-            <div className="divide-y divide-mission-control-border/20">
-              {activities.map(a => (
-                <div key={a.id} className="px-4 py-2.5 flex items-start gap-3">
-                  <span className="flex-shrink-0 mt-0.5 text-mission-control-text-muted">
-                    {a.type === 'chat' ? <MessageSquare size={14} /> : a.type === 'task' ? <Clipboard size={14} /> : a.type === 'agent' ? <Bot size={14} /> : a.type === 'error' ? <AlertTriangle size={14} /> : <Radio size={14} />}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-mission-control-text-dim line-clamp-1">{a.message}</p>
-                  </div>
-                  <span className="text-xs text-mission-control-text-dim/50 flex-shrink-0">
-                    {formatTimeAgo(a.timestamp)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {inProgressTasks.length === 0 && activities.length === 0 && (
+        {feedItems.length === 0 ? (
           <div className="p-8 text-center">
             <Activity size={32} className="mx-auto mb-2 text-mission-control-text-dim/30" />
             <p className="text-sm text-mission-control-text-dim">No active work right now</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-mission-control-border/20">
+            {feedItems.map(item => {
+              if (item.kind === 'task') {
+                const task = item.task;
+                const agent = agentMap.get(task.assignedTo ?? '');
+                return (
+                  <div
+                    key={item.id}
+                    className="px-4 py-3 hover:bg-mission-control-bg/30 transition-colors cursor-pointer"
+                    onClick={() => onNavigate?.('kanban')}
+                    onKeyDown={e => { if (e.key === 'Enter') onNavigate?.('kanban'); }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {agent ? (
+                          <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-mission-control-border flex items-center justify-center">
+                            <Bot size={12} className="text-mission-control-text-dim" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-mission-control-text-dim">
+                          <span className="font-medium text-mission-control-text">{agent?.name ?? 'Agent'}</span>
+                          {' '}is working on{' '}
+                          <span className="font-medium text-mission-control-text truncate">{task.title}</span>
+                        </p>
+                        <p className="text-xs text-mission-control-text-dim/60 mt-0.5">
+                          {formatTimeAgo(item.timestamp)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                        <span className="px-1.5 py-0.5 bg-info-subtle text-info text-[10px] font-medium rounded-full">
+                          in progress
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              } else {
+                const a = item.activity;
+                const ActivityIcon = a.type === 'chat' ? MessageSquare
+                  : a.type === 'task' ? Clipboard
+                  : a.type === 'agent' ? Bot
+                  : a.type === 'error' ? AlertTriangle
+                  : Radio;
+                return (
+                  <div key={item.id} className="px-4 py-3 flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5 p-1 rounded-md bg-mission-control-bg/50">
+                      <ActivityIcon size={12} className="text-mission-control-text-dim" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-mission-control-text-dim line-clamp-2">{a.message}</p>
+                      {ACTIVITY_VERBS[a.type] && (
+                        <p className="text-[10px] text-mission-control-text-dim/50 mt-0.5 uppercase tracking-wide">
+                          {ACTIVITY_VERBS[a.type]}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-mission-control-text-dim/50 flex-shrink-0">
+                      {formatTimeAgo(item.timestamp)}
+                    </span>
+                  </div>
+                );
+              }
+            })}
           </div>
         )}
       </div>
@@ -723,40 +828,44 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   // Computed metrics — consolidated into grouped memos to reduce memo overhead
   const derived = useMemo(() => {
     const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-    const completedToday = tasks.filter(t =>
-      t.status === 'done' &&
-      new Date(t.updatedAt).toDateString() === new Date().toDateString()
-    ).length;
+    const reviewTasks = tasks.filter(t => t.status === 'review');
+    const internalReviewTasks = tasks.filter(t => t.status === 'internal-review');
+    const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
     const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
-    const activeAgentCount = realAgents.filter(a => a.status === 'active').length;
-    return { inProgressTasks, completedToday, realAgents, activeAgentCount };
+    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, realAgents };
   }, [tasks, agents]);
-
-  const activeSubagents = useMemo(() => gatewaySessions.filter(s => s.type === 'subagent' && s.isActive), [gatewaySessions]);
-  const totalActiveAgentCount = derived.activeAgentCount + activeSubagents.length;
 
   const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
 
   // Pre-sliced activities list — avoids re-slicing on every render
-  const recentActivities = useMemo(() => activities.slice(0, 8), [activities]);
+  const recentActivities = useMemo(() => activities.slice(0, 10), [activities]);
 
   // Agent lookup map — O(1) agent resolution instead of O(n) find() in render loops
   const agentMap = useMemo(() => new Map(agents.map(a => [a.id, a])), [agents]);
+
+  // Agents working on in-progress tasks
+  const inProgressAgents = useMemo(() => {
+    const agentIds = new Set(derived.inProgressTasks.map(t => t.assignedTo).filter(Boolean) as string[]);
+    return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
+  }, [derived.inProgressTasks, agentMap]);
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
       <HeaderBar connected={connected} />
 
-      {/* Stat Strip */}
+      {/* Command Centre Stat Strip */}
       <StatStrip
-        pendingApprovals={pendingApprovals.length}
         inProgressCount={derived.inProgressTasks.length}
-        completedToday={derived.completedToday}
-        activeAgentCount={totalActiveAgentCount}
-        totalAgentCount={derived.realAgents.length}
+        reviewCount={derived.reviewTasks.length}
+        internalReviewCount={derived.internalReviewTasks.length}
+        humanReviewCount={derived.humanReviewTasks.length}
+        inProgressAgents={inProgressAgents}
         onNavigate={onNavigate}
       />
+
+      {/* Quick Actions */}
+      <QuickActionsRow onNavigate={onNavigate} />
 
       {/* Main content: Approvals + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-4">

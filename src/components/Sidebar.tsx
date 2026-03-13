@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
-  FolderOpen, FolderKanban, CalendarClock, BookOpen,
+  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -11,6 +11,7 @@ import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 import { useEventBus } from '../lib/useEventBus';
+import AgentActivityBar from './AgentActivityBar';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
 // Must include ALL DEFAULT_PANELS ids so panels appear immediately (before async initAll() runs).
@@ -24,6 +25,7 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   schedule:      CalendarClock,
   library:       FolderOpen,
   knowledge:     BookOpen,
+  campaigns:     Megaphone,
   agents:        Bot,
   notifications: Bell,
   modules:       Puzzle,
@@ -37,11 +39,12 @@ interface SidebarProps {
   onNavigate: (view: View) => void;
   onOpenHelp?: () => void;
   onWidthChange?: (width: number) => void; // Callback for width changes
+  onOpenSearch?: () => void;
 }
 
 // Icons are now provided by ViewRegistry — no hardcoded icon map needed
 
-export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
+export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch }: SidebarProps) {
   // Load persisted sidebar state from localStorage
   const [expanded, setExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
@@ -90,13 +93,28 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   }, [expanded]);
   
   // Load pending inbox item count — used for both approvals and notifications badges
+  // Also counts human-review tasks so the approvals badge reflects "needs your attention" total
   const loadInboxCount = useCallback(async () => {
     try {
-      const res = await fetch('/api/inbox?status=pending');
-      if (res.ok) {
-        const data = await res.json();
-        setInboxCount(Array.isArray(data) ? data.length : (data?.items?.length || 0));
+      const [inboxRes, humanReviewRes, approvalsRes] = await Promise.allSettled([
+        fetch('/api/inbox?status=pending'),
+        fetch('/api/tasks?status=human-review'),
+        fetch('/api/approvals?status=pending'),
+      ]);
+      let count = 0;
+      if (inboxRes.status === 'fulfilled' && inboxRes.value.ok) {
+        const data = await inboxRes.value.json();
+        count += Array.isArray(data) ? data.length : (data?.items?.length || 0);
       }
+      if (humanReviewRes.status === 'fulfilled' && humanReviewRes.value.ok) {
+        const data = await humanReviewRes.value.json();
+        count += Array.isArray(data) ? data.length : 0;
+      }
+      if (approvalsRes.status === 'fulfilled' && approvalsRes.value.ok) {
+        const data = await approvalsRes.value.json();
+        count += Array.isArray(data) ? data.length : 0;
+      }
+      setInboxCount(count);
     } catch {
       // Failed to load inbox count
     }
@@ -131,8 +149,30 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       }`}
       aria-label="Main navigation"
     >
+      {/* Search button */}
+      <div className="px-2 pt-3 pb-1">
+        <button
+          onClick={onOpenSearch}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200 border border-mission-control-border/50 ${
+            expanded ? 'justify-start' : 'justify-center'
+          }`}
+          title={expanded ? undefined : 'Search (⌘K)'}
+          aria-label="Search (⌘K)"
+        >
+          <Search size={16} className="flex-shrink-0" aria-hidden="true" />
+          {expanded && (
+            <span className="flex-1 text-sm text-left truncate">Search...</span>
+          )}
+          {expanded && (
+            <kbd className="text-[10px] px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
+              ⌘K
+            </kbd>
+          )}
+        </button>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto pt-[15px] pb-4 px-2" aria-label="Primary navigation">
+      <nav className="flex-1 overflow-y-auto pt-2 pb-4 px-2" aria-label="Primary navigation">
         <div className="space-y-1">
           {/* Configurable panels - ordered and filtered by panel config */}
           {[...panelConfig]
@@ -201,6 +241,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           })}
         </div>
       </nav>
+
+      {/* Live Agent Activity Bar */}
+      <AgentActivityBar onNavigate={onNavigate} expanded={expanded} />
 
       {/* Bottom section */}
       <div className="p-2 border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">

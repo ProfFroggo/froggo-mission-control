@@ -40,6 +40,7 @@
   "exclude": [
     "node_modules",
     "tools",
+    ".claude",
     "vitest.config.ts",
     "**/*.test.ts",
     "**/*.test.tsx",

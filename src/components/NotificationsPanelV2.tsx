@@ -3,33 +3,61 @@
  * System notification center with desktop notifications, filtering, and actions
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  Bell, Check, X, Clock, MessageSquare, Calendar, AlertCircle, 
-  CheckCircle, RefreshCw, Settings, CheckCheck, 
-  Clock3, AlertTriangle, Bot, Star, XCircle 
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Bell, Check, X, Clock, MessageSquare, Calendar, AlertCircle,
+  CheckCircle, RefreshCw, Settings, CheckCheck,
+  Clock3, AlertTriangle, Bot, Star, XCircle, CheckSquare, Eye, Shield
 } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
-import { 
-  notificationService, 
-  Notification, 
-  NotificationStats, 
-  NotificationPreferences 
+import {
+  notificationService,
+  Notification,
+  NotificationStats,
+  NotificationPreferences
 } from '../lib/notificationService';
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
   task_complete: { icon: CheckCircle, color: 'text-success bg-success-subtle', label: 'Task Complete' },
   task_deadline: { icon: Clock3, color: 'text-warning bg-warning-subtle', label: 'Deadline' },
+  task_assigned: { icon: CheckSquare, color: 'text-info bg-info-subtle', label: 'Task Assigned' },
   agent_update: { icon: Bot, color: 'text-review bg-review-subtle', label: 'Agent Update' },
   message_arrival: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Message' },
-  approval_pending: { icon: AlertCircle, color: 'text-warning bg-warning-subtle', label: 'Approval' },
+  approval_pending: { icon: Eye, color: 'text-warning bg-warning-subtle', label: 'Review Needed' },
+  human_review: { icon: AlertTriangle, color: 'text-amber-400 bg-amber-500/10', label: 'Human Review' },
   calendar_event: { icon: Calendar, color: 'text-pink-400 bg-pink-500/10', label: 'Event' },
   system_alert: { icon: AlertTriangle, color: 'text-error bg-error-subtle', label: 'Alert' },
   skill_learned: { icon: Star, color: 'text-cyan-400 bg-cyan-500/10', label: 'Skill' },
+  approval_needed: { icon: Shield, color: 'text-orange-400 bg-orange-500/10', label: 'Approval Needed' },
   error: { icon: XCircle, color: 'text-error bg-error-subtle', label: 'Error' },
 };
+
+// Helper: group notifications by day
+function groupByDate(notifications: Notification[]): { label: string; items: Notification[] }[] {
+  const now = Date.now();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+
+  const groups: { label: string; items: Notification[] }[] = [];
+  const today: Notification[] = [];
+  const yesterday: Notification[] = [];
+  const older: Notification[] = [];
+
+  for (const n of notifications) {
+    const ts = n.created_at;
+    if (ts >= todayStart.getTime()) today.push(n);
+    else if (ts >= yesterdayStart.getTime()) yesterday.push(n);
+    else older.push(n);
+  }
+
+  if (today.length > 0) groups.push({ label: 'Today', items: today });
+  if (yesterday.length > 0) groups.push({ label: 'Yesterday', items: yesterday });
+  if (older.length > 0) groups.push({ label: 'Older', items: older });
+  return groups;
+}
 
 const priorityBadges: Record<string, { color: string; label: string }> = {
   urgent: { color: 'bg-red-500 text-white', label: 'Urgent' },
@@ -131,12 +159,14 @@ export default function NotificationsPanelV2() {
     }
   };
 
-  const filteredNotifications = notifications.filter(n => {
+  const filteredNotifications = useMemo(() => notifications.filter(n => {
     if (filter === 'unread') return !n.read;
     if (filter === 'urgent') return n.priority === 'urgent';
     if (filter === 'actionable') return n.actionable;
     return true;
-  });
+  }), [notifications, filter]);
+
+  const groupedNotifications = useMemo(() => groupByDate(filteredNotifications), [filteredNotifications]);
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -325,114 +355,183 @@ export default function NotificationsPanelV2() {
       </div>
 
       {/* Notifications List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {filteredNotifications.length === 0 ? (
-          <EmptyState 
-            type="notifications" 
+          <EmptyState
+            type="notifications"
             description={filter !== 'all' ? `No ${filter} notifications` : 'No notifications'}
           />
         ) : (
-          <div className="space-y-3">
-            {filteredNotifications.map((notif) => {
-              const config = typeConfig[notif.type];
-              const Icon = config?.icon || Bell;
-              const priorityBadge = priorityBadges[notif.priority];
-              
-              return (
-                <div
-                  key={notif.id}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                    notif.priority === 'urgent'
-                      ? 'bg-error-subtle border-error-border shadow-lg'
-                      : notif.read
-                      ? 'bg-mission-control-bg border-mission-control-border opacity-60'
-                      : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
-                  }`}
-                  onClick={() => handleNavigate(notif)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleNavigate(notif);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Notification: ${notif.title}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-medium">{notif.title}</span>
-                        {notif.priority !== 'normal' && (
-                          <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 whitespace-nowrap ${priorityBadge.color}`}>
-                            {priorityBadge.label}
-                          </span>
-                        )}
-                        {notif.actionable && (
-                          <span className="px-1.5 py-0.5 bg-info-subtle text-info text-xs rounded flex-shrink-0 whitespace-nowrap">
-                            Action required
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-mission-control-text-dim line-clamp-2">{notif.message}</p>
-
-                      {notif.description && (
-                        <p className="text-xs text-mission-control-text-dim mt-1 opacity-75 line-clamp-2">{notif.description}</p>
-                      )}
-                      
-                      <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">
-                        <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color.replace('text-', 'bg-').replace('/10', '/20') || 'bg-mission-control-bg0/20'}`}>
-                          {config?.label || notif.type}
-                        </span>
-                        <Clock size={10} />
-                        <span>{formatTimeAgo(notif.created_at)}</span>
-                        {notif.channel && (
-                          <>
-                            <span>•</span>
-                            <span className="text-xs opacity-75">{notif.channel}</span>
-                          </>
-                        )}
-                        {notif.source_id && !notif.channel && (
-                          <>
-                            <span>•</span>
-                            <span className="font-mono text-xs opacity-50">{notif.source_id}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-1 flex-shrink-0">
-                      {!notif.read && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkRead(notif.id);
-                          }}
-                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-success-subtle transition-colors"
-                          title="Mark as read"
-                        >
-                          <Check size={16} />
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDismiss(notif.id);
-                        }}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim"
-                        title="Dismiss"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
+          <div className="space-y-5">
+            {groupedNotifications.map(({ label, items }) => (
+              <div key={label}>
+                {/* Date group header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                    {label}
+                  </span>
+                  <div className="flex-1 h-px bg-mission-control-border/50" />
+                  <span className="text-xs text-mission-control-text-dim/60">{items.length}</span>
                 </div>
-              );
-            })}
+
+                <div className="space-y-2">
+                  {items.map((notif) => {
+                    const config = typeConfig[notif.type];
+                    const Icon = config?.icon || Bell;
+                    const priorityBadge = priorityBadges[notif.priority];
+                    const isTask = notif.source === 'task' || notif.type.startsWith('task_');
+                    const isApproval = notif.type === 'approval_pending';
+
+                    return (
+                      <div
+                        key={notif.id}
+                        className={`p-4 rounded-xl border transition-all ${
+                          notif.priority === 'urgent'
+                            ? 'bg-error-subtle border-error-border shadow-lg'
+                            : notif.read
+                            ? 'bg-mission-control-bg border-mission-control-border opacity-60'
+                            : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
+
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="cursor-pointer"
+                              onClick={() => handleNavigate(notif)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleNavigate(notif);
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Notification: ${notif.title}`}
+                            >
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="font-medium">{notif.title}</span>
+                                {notif.priority !== 'normal' && (
+                                  <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 whitespace-nowrap ${priorityBadge.color}`}>
+                                    {priorityBadge.label}
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-sm text-mission-control-text-dim line-clamp-2">{notif.message}</p>
+
+                              {notif.description && (
+                                <p className="text-xs text-mission-control-text-dim mt-1 opacity-75 line-clamp-2">{notif.description}</p>
+                              )}
+
+                              <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color || 'bg-mission-control-bg0/20 text-mission-control-text-dim'}`}>
+                                  {config?.label || notif.type}
+                                </span>
+                                <Clock size={10} />
+                                <span>{formatTimeAgo(notif.created_at)}</span>
+                                {notif.channel && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-xs opacity-75">{notif.channel}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Inline quick actions */}
+                            {(isTask || isApproval) && !notif.read && (
+                              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border/30">
+                                {isTask && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleNavigate(notif);
+                                      handleMarkRead(notif.id);
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-info-subtle text-info text-xs font-medium rounded-lg hover:bg-info-subtle/80 transition-colors"
+                                  >
+                                    <Eye size={12} />
+                                    View Task
+                                  </button>
+                                )}
+                                {isApproval && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (notif.source_id) {
+                                          fetch(`/api/inbox/${notif.source_id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ status: 'approved' }),
+                                          }).catch(() => {});
+                                        }
+                                        handleDismiss(notif.id);
+                                        showToast('success', 'Approved');
+                                      }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-success-subtle text-success text-xs font-medium rounded-lg hover:bg-success-subtle/80 transition-colors"
+                                    >
+                                      <Check size={12} />
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (notif.source_id) {
+                                          fetch(`/api/inbox/${notif.source_id}`, {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ status: 'rejected' }),
+                                          }).catch(() => {});
+                                        }
+                                        handleDismiss(notif.id);
+                                        showToast('info', 'Denied');
+                                      }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error text-xs font-medium rounded-lg hover:bg-error-subtle/80 transition-colors"
+                                    >
+                                      <X size={12} />
+                                      Deny
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-1 flex-shrink-0">
+                            {!notif.read && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkRead(notif.id);
+                                }}
+                                className="p-2 bg-success-subtle text-success rounded-lg hover:bg-success-subtle transition-colors"
+                                title="Mark as read"
+                              >
+                                <Check size={16} />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDismiss(notif.id);
+                              }}
+                              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors text-mission-control-text-dim"
+                              title="Dismiss"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
