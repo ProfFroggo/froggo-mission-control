@@ -138,7 +138,7 @@ function StatStrip({
   onNavigate?: (view: View) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 sm:px-6 py-4">
       <StatCard
         label="Active Tasks"
         value={inProgressCount}
@@ -178,35 +178,35 @@ function StatStrip({
 
 function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) {
   return (
-    <div className="px-6 pb-4">
-      <div className="flex items-center gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
-        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1">
+    <div className="px-4 sm:px-6 pb-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
+        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1 hidden sm:block">
           Quick Actions
         </span>
         <button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
         >
           <Plus size={14} />
           New Task
         </button>
         <button
           onClick={() => onNavigate?.('chat')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <MessageSquare size={14} />
-          Open Chat
+          Chat
         </button>
         <button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <FolderKanban size={14} />
           View Board
         </button>
         <button
           onClick={() => onNavigate?.('library')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="hidden md:flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <BookOpen size={14} />
           Browse Library
@@ -214,7 +214,7 @@ function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) 
         <div className="ml-auto flex items-center gap-1.5 text-xs text-mission-control-text-dim">
           <Search size={12} />
           <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-[10px]">⌘K</kbd>
-          <span>to search</span>
+          <span className="hidden sm:inline">to search</span>
         </div>
       </div>
     </div>
@@ -1026,6 +1026,9 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
   }, [derived.inProgressTasks, agentMap]);
 
+  // Agent detail modal — opened when an agent name is clicked in the activity feed
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
@@ -1058,14 +1061,24 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
           activities={recentActivities}
           allTasks={tasks}
           onNavigate={onNavigate}
+          onAgentClick={setSelectedAgentId}
         />
       </div>
 
-      {/* Bottom row: Schedule + System Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-6">
+      {/* Bottom row: Schedule + System Health + Task Throughput */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-6 pb-6">
         <TodaySchedule onNavigate={onNavigate} />
         <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
+        <TaskThroughputChart tasks={tasks} />
       </div>
+
+      {/* Agent detail modal — opened by clicking agent names in activity feed */}
+      {selectedAgentId && (
+        <AgentDetailModal
+          agentId={selectedAgentId}
+          onClose={() => setSelectedAgentId(null)}
+        />
+      )}
     </div>
   );
 }
