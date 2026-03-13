@@ -1,5 +1,5 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Zap, Clock, Globe, Bot, Plus, Play, Pause, Trash2, Edit2,
   Search, LayoutGrid, List, ChevronRight, AlertCircle, CheckCircle,
@@ -42,7 +42,8 @@ interface Template {
   name: string;
   description: string;
   category: TemplateCategory;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: ComponentType<any>;
   trigger_type: TriggerType;
   trigger_config: Record<string, unknown>;
   steps: Omit<AutomationStep, 'id'>[];
@@ -167,7 +168,8 @@ function StatusBadge({ status }: { status: AutomationStatus }) {
 }
 
 function TriggerIcon({ type }: { type: TriggerType }) {
-  const icons: Record<TriggerType, React.ComponentType<{ size?: number; className?: string }>> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const icons: Record<TriggerType, ComponentType<any>> = {
     schedule: Clock,
     event:    Zap,
     webhook:  Globe,
@@ -217,7 +219,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <TriggerIcon type={automation.trigger_type} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)', truncate: 'true' }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--mission-control-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {automation.name}
             </span>
             <StatusBadge status={automation.status} />
@@ -328,7 +330,7 @@ const CATEGORY_COLORS: Record<TemplateCategory, string> = {
 };
 
 function TemplateCard({ template, onUse }: TemplateCardProps) {
-  const Icon = template.icon;
+  const Icon: ComponentType<any> = template.icon; // eslint-disable-line @typescript-eslint/no-explicit-any
   const color = CATEGORY_COLORS[template.category];
   return (
     <div

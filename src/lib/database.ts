@@ -670,6 +670,25 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_campaigns_type ON campaigns(type);
     CREATE INDEX IF NOT EXISTS idx_campaign_members_agentId ON campaign_members(agentId);
     CREATE INDEX IF NOT EXISTS idx_campaign_assets_campaignId ON campaign_assets(campaignId);
+
+    -- ══════════════════════════════════════════
+    -- AUTOMATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS automations (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      trigger_type TEXT NOT NULL,
+      trigger_config TEXT,
+      steps TEXT NOT NULL,
+      status TEXT DEFAULT 'draft',
+      lastRun INTEGER,
+      nextRun INTEGER,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_automations_status ON automations(status);
   `);
 
   // Add new columns to existing tables — safe to run on every startup

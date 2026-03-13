@@ -25,3 +25,4 @@ import './knowledge';
 import './projects';
 import './campaigns';
 import './schedule';
+import './automations';
