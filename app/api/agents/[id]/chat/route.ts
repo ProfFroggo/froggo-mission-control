@@ -488,12 +488,12 @@ export async function POST(
             if (sp) freshArgs.push('--system-prompt', sp);
 
             const fresh = spawnClaude(freshArgs, { cwd, env: cleanEnv, stdio: 'pipe' });
-            fresh.stdin.write(sanitizedMessage);
-            fresh.stdin.end();
+            fresh.stdin!.write(sanitizedMessage);
+            fresh.stdin!.end();
 
             let freshBuf = '';
             let freshLastLen = 0;
-            fresh.stdout.on('data', (data: Buffer) => {
+            fresh.stdout!.on('data', (data: Buffer) => {
               freshBuf += data.toString();
               const lines = freshBuf.split('\n');
               freshBuf = lines.pop() ?? '';
@@ -521,7 +521,7 @@ export async function POST(
                 } catch { /* skip */ }
               }
             });
-            fresh.stderr.on('data', () => {});
+            fresh.stderr!.on('data', () => {});
             const freshTimeout = setTimeout(() => {
               fresh.kill();
               enc({ type: 'error', error: 'Response timed out' });
