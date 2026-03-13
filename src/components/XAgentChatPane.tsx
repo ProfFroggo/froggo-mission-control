@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, Users, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Users, AlertCircle, Zap } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 import { gateway } from '../lib/gateway';
 import MarkdownMessage from './MarkdownMessage';
@@ -34,6 +34,82 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
   campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
+};
+
+// Quick prompts for each tab — contextual one-click prompts that auto-send
+const QUICK_PROMPTS: Record<XTab, string[]> = {
+  publish: [
+    'Write 3 tweet variations for my latest post',
+    'Suggest the best hashtags for this content',
+    'Rewrite this for maximum engagement',
+    'Create a thread version of this tweet',
+  ],
+  research: [
+    'What are the trending topics in my niche today?',
+    'Find top-performing tweets about this topic this week',
+    'Analyze my competitors\' content strategy',
+    'What content format gets most engagement?',
+  ],
+  plan: [
+    'Generate a 2-week content calendar',
+    'Suggest 10 tweet ideas for this week',
+    'What topics should I cover based on trends?',
+    'Create a thread series plan',
+  ],
+  drafts: [
+    'Review all my drafts and suggest improvements',
+    'Which draft is ready to publish?',
+    'Improve the hooks on my draft tweets',
+    'Rewrite my weakest draft',
+  ],
+  analytics: [
+    'What\'s my best performing content type?',
+    'When should I post for maximum reach?',
+    'What topics should I post more about?',
+    'Summarize my performance this week',
+  ],
+  campaigns: [
+    'Plan a product launch tweet campaign',
+    'Create a 5-day announcement sequence',
+    'Write campaign hooks for A/B testing',
+    'What\'s the ideal campaign structure for my niche?',
+  ],
+  calendar: [
+    'What should I post this week?',
+    'Find gaps in my content schedule',
+    'Optimize my posting times',
+    'Plan content for the next 7 days',
+  ],
+  mentions: [
+    'Summarize recent mentions and sentiment',
+    'Draft replies to my top mentions',
+    'Identify engagement opportunities',
+    'Who should I prioritize responding to?',
+  ],
+  'reply-guy': [
+    'Find tweets I should reply to today',
+    'Write 5 clever reply hooks',
+    'Identify trending conversations to join',
+    'Draft a quote tweet for a trending post',
+  ],
+  'content-mix': [
+    'Analyze my current content distribution',
+    'Suggest a better content mix ratio',
+    'What content type am I underusing?',
+    'Plan a balanced content week',
+  ],
+  automations: [
+    'Suggest automations for my workflow',
+    'What should I automate first?',
+    'Review my existing automation rules',
+    'Create a welcome reply automation',
+  ],
+  reddit: [
+    'Find relevant subreddits for my niche',
+    'Draft an authentic Reddit comment',
+    'Summarize this week\'s Reddit mentions',
+    'Find threads I should engage with',
+  ],
 };
 
 // Set of valid tabs for validation
@@ -337,6 +413,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     }
   };
 
+  const handleQuickPrompt = useCallback((prompt: string) => {
+    if (loading) return;
+    setInput(prompt);
+    setAutoSend(true);
+  }, [loading]);
+
   return (
     <div className="flex flex-col h-full bg-mission-control-surface">
       {/* Header */}
@@ -436,8 +518,29 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         )}
       </div>
 
+      {/* Quick Prompts */}
+      <div className="px-4 pt-3 pb-1 border-t border-mission-control-border bg-mission-control-surface">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Zap className="w-3 h-3 text-mission-control-text-dim flex-shrink-0" />
+          <span className="text-xs text-mission-control-text-dim font-medium">Quick prompts</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {(QUICK_PROMPTS[validTab] || []).slice(0, 4).map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => handleQuickPrompt(prompt)}
+              disabled={loading}
+              title={prompt}
+              className="px-3 py-1.5 text-xs rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap max-w-[180px] overflow-hidden text-ellipsis"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Input */}
-      <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
+      <div className="px-4 pb-4 pt-2 bg-mission-control-surface">
         <div className="flex gap-2">
           <input
             type="text"
