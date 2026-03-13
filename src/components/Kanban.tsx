@@ -1214,7 +1214,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           /* TODO: move to CSS token when design system tokens include status colors */
           : activityIndicator ? activityIndicator.color
           : dueInfo?.isOverdue ? 'border-error-border bg-error-subtle'
-          : task.priority === 'p0' ? 'border-error-border'
+          : task.priority === 'p0' ? 'border-l-4 border-error-border'
+          : task.priority === 'p1' ? 'border-l-4 border-warning-border'
           : 'border-mission-control-border hover:border-mission-control-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
