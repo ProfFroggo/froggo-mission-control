@@ -310,22 +310,26 @@ export async function POST(
         if (resumeId) {
           args.push('--resume', resumeId);
         } else {
-          // Fresh session — inject recent conversation history so agent has context
-          // even when starting a new Claude session (expired, first of day, server restart).
+          // Fresh session — inject recent conversation history as a readable transcript
+          // so the agent has context even when starting a new Claude session.
           let historyContext = '';
           try {
             const rows = getDb()
-              .prepare(`SELECT role, content FROM messages
+              .prepare(`SELECT role, content, timestamp FROM messages
                         WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
-              .all(sessionKey) as { role: string; content: string }[];
+              .all(sessionKey) as { role: string; content: string; timestamp?: number }[];
             if (rows.length > 0) {
               const reversed = rows.reverse();
-              const history = reversed.map((r, i) => {
+              const transcript = reversed.map((r, i) => {
                 const speaker = r.role === 'user' ? 'User' : 'Assistant';
-                const limit = i >= reversed.length - 10 ? 1500 : 600;
-                return `${speaker}: ${r.content.slice(0, limit)}`;
+                const contentLimit = i >= reversed.length - 10 ? 1500 : 600;
+                const timeStr = r.timestamp
+                  ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : '';
+                const label = timeStr ? `${speaker}, ${timeStr}` : speaker;
+                return `[${label}]: ${r.content.slice(0, contentLimit)}`;
               }).join('\n');
-              historyContext = `\n\n---\n## Previous conversation context\n${history}\n---`;
+              historyContext = `\n\n=== PREVIOUS CONVERSATION CONTEXT ===\n${transcript}\n=== END CONTEXT — Continue from here ===`;
             }
           } catch { /* non-critical */ }
           const systemPrompt = (buildSystemPrompt(agentId) ?? '') + historyContext;
@@ -492,21 +496,25 @@ export async function POST(
             sessions.delete(sessionKey);
             try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
 
-            // Inject recent conversation history so agent has context in the fresh session
+            // Inject recent conversation history as a readable transcript for the fresh session
             let historyContext = '';
             try {
               const rows = getDb()
-                .prepare(`SELECT role, content FROM messages
+                .prepare(`SELECT role, content, timestamp FROM messages
                           WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 100`)
-                .all(sessionKey) as { role: string; content: string }[];
+                .all(sessionKey) as { role: string; content: string; timestamp?: number }[];
               if (rows.length > 0) {
                 const reversed = rows.reverse();
-                const history = reversed.map((r, i) => {
+                const transcript = reversed.map((r, i) => {
                   const speaker = r.role === 'user' ? 'User' : 'Assistant';
-                  const limit = i >= reversed.length - 10 ? 1500 : 600;
-                  return `${speaker}: ${r.content.slice(0, limit)}`;
+                  const contentLimit = i >= reversed.length - 10 ? 1500 : 600;
+                  const timeStr = r.timestamp
+                    ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : '';
+                  const label = timeStr ? `${speaker}, ${timeStr}` : speaker;
+                  return `[${label}]: ${r.content.slice(0, contentLimit)}`;
                 }).join('\n');
-                historyContext = `\n\n---\n## Conversation context (session restored after expiry)\n${history}\n---`;
+                historyContext = `\n\n=== PREVIOUS CONVERSATION CONTEXT ===\n${transcript}\n=== END CONTEXT — Continue from here ===`;
               }
             } catch { /* non-critical — proceed without history */ }
 
