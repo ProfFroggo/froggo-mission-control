@@ -50,26 +50,46 @@ const header  = (msg) => {
 // ── Paths ────────────────────────────────────────────────────────────────────
 const INSTALL_DIR  = path.dirname(__dirname);          // where this package lives
 const HOME         = os.homedir();
-const MC_HOME      = path.join(HOME, 'mission-control');
+
+// --dir flag lets users run a second instance (e.g. mission-control setup --dir ~/dev/mission-control)
+// Also honoured by MISSION_CONTROL_HOME env var.
+const _rawArgs     = process.argv.slice(2);
+const _dirIdx      = _rawArgs.indexOf('--dir');
+const _customHome  = (_dirIdx !== -1 && _rawArgs[_dirIdx + 1])
+  ? _rawArgs[_dirIdx + 1].replace(/^~/, HOME)
+  : (process.env.MISSION_CONTROL_HOME || '').replace(/^~/, HOME) || null;
+
+const MC_HOME      = _customHome || path.join(HOME, 'mission-control');
 const MC_DATA      = path.join(MC_HOME, 'data');
 const MC_MEMORY    = path.join(MC_HOME, 'memory');
 const MC_LIBRARY   = path.join(MC_HOME, 'library');
 const MC_AGENTS    = path.join(MC_HOME, 'agents');
 const MC_LOGS      = path.join(MC_HOME, 'logs');
-// .env lives in ~/mission-control/ (user data dir) so it survives npm updates.
+
+// Instance name derived from the data dir — used for LaunchAgent label, portless alias, etc.
+// ~/mission-control       → "mission-control"
+// ~/dev/mission-control   → "dev-mission-control"
+// ~/work/mc               → "mc"  (basename only when no recognized prefix)
+const _homeName    = path.basename(MC_HOME);
+const _parentName  = path.basename(path.dirname(MC_HOME));
+const INSTANCE_ID  = (_customHome && _parentName !== HOME.split(path.sep).pop())
+  ? `${_parentName}-${_homeName}`
+  : _homeName;
+
+// .env lives in MC_HOME so it survives npm updates.
 // Fall back to INSTALL_DIR for legacy installs that still have it there.
 const ENV_FILE     = existsSync(path.join(MC_HOME, '.env'))
   ? path.join(MC_HOME, '.env')
   : existsSync(path.join(INSTALL_DIR, '.env'))
     ? path.join(INSTALL_DIR, '.env')
     : path.join(MC_HOME, '.env');  // new installs write here
-const LOG_FILE     = path.join(HOME, 'Library', 'Logs', 'mission-control-app.plist');
-const LAUNCHAGENT  = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.app.plist');
-const CRON_AGENT   = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.cron.plist');
-const SYSTEMD_SVC  = path.join(HOME, '.config', 'systemd', 'user', 'mission-control.service');
-const SYSTEMD_CRON = path.join(HOME, '.config', 'systemd', 'user', 'mission-control-cron.service');
+const LOG_FILE     = path.join(HOME, 'Library', 'Logs', `${INSTANCE_ID}-app.log`);
+const LAUNCHAGENT  = path.join(HOME, 'Library', 'LaunchAgents', `com.${INSTANCE_ID}.app.plist`);
+const CRON_AGENT   = path.join(HOME, 'Library', 'LaunchAgents', `com.${INSTANCE_ID}.cron.plist`);
+const SYSTEMD_SVC  = path.join(HOME, '.config', 'systemd', 'user', `${INSTANCE_ID}.service`);
+const SYSTEMD_CRON = path.join(HOME, '.config', 'systemd', 'user', `${INSTANCE_ID}-cron.service`);
 const PORTLESS_AGENT = path.join(HOME, 'Library', 'LaunchAgents', 'com.mission-control.portless.plist');
-const PORTLESS_URL   = 'http://mission-control.localhost:1355';
+const PORTLESS_URL   = `http://${INSTANCE_ID}.localhost:1355`;
 const IS_MAC       = os.platform() === 'darwin';
 const IS_LINUX     = os.platform() === 'linux';
 
@@ -159,7 +179,7 @@ function setupPortless(appPort) {
 
   // Register alias
   try {
-    execSync(`"${portlessBin}" alias mission-control ${appPort}`, { stdio: 'pipe', timeout: 5000 });
+    execSync(`"${portlessBin}" alias ${INSTANCE_ID} ${appPort}`, { stdio: 'pipe', timeout: 5000 });
   } catch { return null; }
 
   // Sync /etc/hosts for Safari compat (best-effort, may require sudo)
@@ -256,7 +276,7 @@ async function waitForServer(port, maxSecs = 60) {
   return null;
 }
 
-function buildMacPlist(nodeBin, nextScript, port, logPath, envVars, workingDir) {
+function buildMacPlist(nodeBin, nextScript, port, logPath, envVars, workingDir, label = `com.${INSTANCE_ID}.app`) {
   const envDict = Object.entries(envVars)
     .map(([k, v]) => `    <key>${k}</key>\n    <string>${v}</string>`)
     .join('\n');
@@ -265,7 +285,7 @@ function buildMacPlist(nodeBin, nextScript, port, logPath, envVars, workingDir) 
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.mission-control.app</string>
+  <string>${label}</string>
   <key>ProgramArguments</key>
   <array>
     <string>${nodeBin}</string>
@@ -352,7 +372,7 @@ async function diagnoseAndRecover(port, logPath, envFile, envVars, nodeBin, next
   // Try kicking the service manually
   if (existsSync(launchAgent)) {
     warn('Attempting to kick the LaunchAgent...');
-    try { execSync('launchctl start com.mission-control.app', { stdio: 'pipe' }); } catch {}
+    try { execSync(`launchctl start com.${INSTANCE_ID}.app`, { stdio: 'pipe' }); } catch {}
     const health = await waitForServer(port, 25);
     console.log('');
     if (health) return { health, port };
@@ -1005,7 +1025,7 @@ async function cmdSetup(force = false) {
   // Use the actual Next.js JS entry point — avoids the .bin/next shell wrapper
   // which fails in LaunchAgent/systemd contexts where node isn't in PATH
   const nextScript = path.join(INSTALL_DIR, 'node_modules', 'next', 'dist', 'bin', 'next');
-  const logPath  = path.join(HOME, 'Library', 'Logs', 'mission-control-app.log');
+  const logPath  = path.join(HOME, 'Library', 'Logs', `${INSTANCE_ID}-app.log`);
 
   // Detect custom CA certificate for corporate SSL inspection proxies (e.g. Cloudflare Gateway).
   // Without NODE_EXTRA_CA_CERTS in the LaunchAgent env, Node.js (and Claude CLI) cannot trust
@@ -1059,11 +1079,11 @@ async function cmdSetup(force = false) {
     }
     // Verify it actually loaded
     try {
-      const list = execSync(`launchctl list com.mission-control.app 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 }).trim();
+      const list = execSync(`launchctl list com.${INSTANCE_ID}.app 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 }).trim();
       if (list && !list.includes('Could not find service')) {
         success('LaunchAgent installed and running — starts automatically at login');
       } else {
-        warn('LaunchAgent registered but may not be running. Check: launchctl list com.mission-control.app');
+        warn(`LaunchAgent registered but may not be running. Check: launchctl list com.${INSTANCE_ID}.app`);
       }
     } catch {
       success('LaunchAgent installed — starts automatically at login');
@@ -1079,7 +1099,7 @@ async function cmdSetup(force = false) {
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.mission-control.cron</string>
+  <string>com.${INSTANCE_ID}.cron</string>
   <key>ProgramArguments</key>
   <array>
     <string>${nodeBin}</string>
@@ -1247,9 +1267,9 @@ async function cmdStart() {
   }
   info('Starting Mission Control...');
   if (IS_MAC && existsSync(LAUNCHAGENT)) {
-    execSync(`launchctl load -w "${LAUNCHAGENT}" 2>/dev/null || launchctl start com.mission-control.app`, { stdio: 'pipe' });
+    execSync(`launchctl load -w "${LAUNCHAGENT}" 2>/dev/null || launchctl start com.${INSTANCE_ID}.app`, { stdio: 'pipe' });
     if (existsSync(CRON_AGENT)) {
-      try { execSync(`launchctl load -w "${CRON_AGENT}" 2>/dev/null || launchctl start com.mission-control.cron`, { stdio: 'pipe' }); } catch {}
+      try { execSync(`launchctl load -w "${CRON_AGENT}" 2>/dev/null || launchctl start com.${INSTANCE_ID}.cron`, { stdio: 'pipe' }); } catch {}
     }
   } else if (IS_LINUX && existsSync(SYSTEMD_SVC)) {
     spawnSync('systemctl', ['--user', 'start', 'mission-control.service'], { stdio: 'inherit' });
@@ -1284,9 +1304,9 @@ async function cmdStart() {
 async function cmdStop() {
   info('Stopping Mission Control...');
   if (IS_MAC && existsSync(LAUNCHAGENT)) {
-    try { execSync('launchctl stop com.mission-control.app', { stdio: 'pipe' }); } catch {}
+    try { execSync(`launchctl stop com.${INSTANCE_ID}.app`, { stdio: 'pipe' }); } catch {}
     if (existsSync(CRON_AGENT)) {
-      try { execSync('launchctl stop com.mission-control.cron', { stdio: 'pipe' }); } catch {}
+      try { execSync(`launchctl stop com.${INSTANCE_ID}.cron`, { stdio: 'pipe' }); } catch {}
     }
     success('Stopped (LaunchAgent will restart it — to disable: launchctl unload ' + LAUNCHAGENT + ')');
   } else if (IS_LINUX && existsSync(SYSTEMD_SVC)) {
@@ -1326,7 +1346,7 @@ async function cmdStatus() {
   console.log(`  Data:     ${MC_HOME}`);
   console.log(`  Platform: ${INSTALL_DIR}`);
   if (IS_MAC) {
-    const agentRunning = (() => { try { execSync('launchctl list com.mission-control.app', { stdio: 'pipe' }); return true; } catch { return false; } })();
+    const agentRunning = (() => { try { execSync(`launchctl list com.${INSTANCE_ID}.app`, { stdio: 'pipe' }); return true; } catch { return false; } })();
     console.log(`  Service:  ${agentRunning ? c.green('LaunchAgent active') : c.dim('no LaunchAgent')}`);
   }
   console.log('');
@@ -1338,7 +1358,7 @@ async function cmdStatus() {
 }
 
 function cmdLogs() {
-  const logPath = path.join(HOME, 'Library', 'Logs', 'mission-control-app.log');
+  const logPath = path.join(HOME, 'Library', 'Logs', `${INSTANCE_ID}-app.log`);
   if (IS_MAC && existsSync(logPath)) {
     info(`Tailing ${logPath} (Ctrl+C to exit)`);
     const proc = spawn('tail', ['-f', logPath], { stdio: 'inherit' });
@@ -1410,6 +1430,7 @@ ${c.bold('COMMANDS')}
   (no command)     Setup on first run, or show status
   setup            Run setup (non-interactive) and open browser to /setup
   setup --force    Re-run setup (overwrites existing config)
+  setup --dir <path>  Setup a separate instance (e.g. ~/dev/mission-control)
   start            Start the server
   stop             Stop the server
   restart          Restart the server
