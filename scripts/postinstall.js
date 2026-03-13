@@ -14,8 +14,13 @@ const os = require('os');
 
 // Skip in CI or when explicitly disabled
 if (process.env.CI || process.env.SKIP_MC_POSTINSTALL) process.exit(0);
-// Skip when installed as a dev/peer dependency (not a global install)
-if (process.env.npm_config_global !== 'true' && !process.env.FORCE_MC_BUILD) process.exit(0);
+// Skip when installed as a local dev/peer dependency (not a global install).
+// npm_config_global is unreliable across npm versions — use install path as
+// the authoritative signal: global installs always live under .../lib/node_modules/
+const ROOT_CHECK = path.dirname(__dirname);
+const isGlobalInstall = process.env.npm_config_global === 'true'
+  || ROOT_CHECK.includes(path.join('lib', 'node_modules'));
+if (!isGlobalInstall && !process.env.FORCE_MC_BUILD) process.exit(0);
 
 const ROOT = path.dirname(__dirname); // package root
 const isMac = os.platform() === 'darwin';
