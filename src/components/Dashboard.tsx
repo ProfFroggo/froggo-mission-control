@@ -53,7 +53,7 @@ function HeaderBar({ connected }: { connected: boolean }) {
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border/50">
+    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-mission-control-border/50">
       <div>
         <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
           {greeting}
@@ -137,7 +137,7 @@ function StatStrip({
   onNavigate?: (view: View) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-6 py-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 sm:px-6 py-4">
       <StatCard
         label="Active Tasks"
         value={inProgressCount}
@@ -177,35 +177,36 @@ function StatStrip({
 
 function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) {
   return (
-    <div className="px-6 pb-4">
-      <div className="flex items-center gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
-        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1">
+    <div className="px-4 sm:px-6 pb-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
+        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1 hidden sm:block">
           Quick Actions
         </span>
         <button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
         >
           <Plus size={14} />
           New Task
         </button>
         <button
           onClick={() => onNavigate?.('chat')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <MessageSquare size={14} />
-          Open Chat
+          <span className="hidden xs:inline">Open Chat</span>
+          <span className="xs:hidden">Chat</span>
         </button>
         <button
           onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="hidden sm:flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <FolderKanban size={14} />
           View Board
         </button>
         <button
           onClick={() => onNavigate?.('library')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
+          className="hidden md:flex items-center gap-2 px-3 sm:px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
         >
           <BookOpen size={14} />
           Browse Library
@@ -213,7 +214,7 @@ function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) 
         <div className="ml-auto flex items-center gap-1.5 text-xs text-mission-control-text-dim">
           <Search size={12} />
           <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-[10px]">⌘K</kbd>
-          <span>to search</span>
+          <span className="hidden sm:inline">to search</span>
         </div>
       </div>
     </div>
@@ -868,7 +869,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
       <QuickActionsRow onNavigate={onNavigate} />
 
       {/* Main content: Approvals + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-4">
         <ApprovalsQueue
           approvals={approvals}
           onApprove={approveItem}
@@ -884,7 +885,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
       </div>
 
       {/* Bottom row: Schedule + System Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-6 pb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-6">
         <TodaySchedule onNavigate={onNavigate} />
         <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
       </div>

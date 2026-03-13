@@ -595,6 +595,59 @@ function buildProjectContext(projectId: string): string {
   } catch { return ''; }
 }
 
+// ── Campaign context injection ────────────────────────────────────────────────
+
+function buildCampaignContext(campaignId: string): string {
+  try {
+    const db = getDb();
+    const campaign = db.prepare(
+      `SELECT name, type, goal, channels, targetAudience, briefContent FROM campaigns WHERE id = ?`
+    ).get(campaignId) as {
+      name: string; type: string; goal: string | null;
+      channels: string; targetAudience: string | null; briefContent: string | null;
+    } | undefined;
+
+    if (!campaign) return '';
+
+    let channels: string[] = [];
+    try { channels = JSON.parse(campaign.channels || '[]'); } catch { /* ignore */ }
+
+    const campaignDir = join(HOME, 'mission-control', 'library', 'campaigns', campaignId);
+
+    const lines = [
+      `\n\n## Campaign Context`,
+      `**Campaign**: ${campaign.name}`,
+      `**Type**: ${campaign.type}`,
+    ];
+    if (campaign.goal)           lines.push(`**Goal**: ${campaign.goal}`);
+    if (channels.length > 0)     lines.push(`**Channels**: ${channels.join(', ')}`);
+    if (campaign.targetAudience) lines.push(`**Target Audience**: ${campaign.targetAudience}`);
+    lines.push(`**Campaign directory**: \`${campaignDir}\``);
+    lines.push(`**IMPORTANT**: Save ALL output files (copy, assets, reports, scripts) to this directory.`);
+    lines.push(`Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\``);
+    lines.push(`After saving any file, log it: \`mcp__mission-control_db__task_add_attachment\``);
+    if (campaign.briefContent) {
+      const brief = campaign.briefContent.slice(0, 800);
+      lines.push(`\n### Campaign Brief\n${brief}${campaign.briefContent.length > 800 ? '\n[...truncated]' : ''}`);
+    }
+
+    lines.push(`\n## Campaign Room Updates — MANDATORY`);
+    lines.push(`Post progress updates to the campaign chat room as you work.`);
+    lines.push(`Room ID: \`campaign-${campaignId}\``);
+    lines.push(`Call this at task start, each major milestone, blockers, and completion:`);
+    lines.push('```json');
+    lines.push(`mcp__mission-control_db__chat_post {`);
+    lines.push(`  "roomId": "campaign-${campaignId}",`);
+    lines.push(`  "agentId": "<your-agent-id>",`);
+    lines.push(`  "content": "<your update message>"`);
+    lines.push(`}`);
+    lines.push('```');
+    lines.push(`Keep updates concise: what you just did, what you're doing next, or any blockers.`);
+
+    return lines.join('\n');
+  } catch { return ''; }
+}
+
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
 function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
@@ -644,8 +697,13 @@ function buildTaskSystemPrompt(
     } catch { /* non-critical */ }
   }
 
-  // Inject project context if this task belongs to a project
-  const projectContext = task?.project_id ? buildProjectContext(task.project_id as string) : '';
+  // Inject project or campaign context depending on which this task belongs to
+  const projectId = task?.project_id as string | undefined;
+  const projectContext = projectId
+    ? (projectId.startsWith('cmp-')
+        ? buildCampaignContext(projectId)
+        : buildProjectContext(projectId))
+    : '';
 
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
