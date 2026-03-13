@@ -409,7 +409,9 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
-    return NextResponse.json(parseTask(updated));
+    const finalResponse = parseTask(updated) as Record<string, unknown>;
+    if (incompleteSubtaskWarning) finalResponse.warning = incompleteSubtaskWarning;
+    return NextResponse.json(finalResponse);
   } catch (error) {
     console.error('PATCH /api/tasks/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
