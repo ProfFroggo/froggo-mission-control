@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
       labels = [],
       planningNotes,
       dueDate,
+      scheduledAt,
       estimatedHours,
       blockedBy = [],
       blocks = [],
@@ -123,13 +124,13 @@ export async function POST(request: NextRequest) {
       INSERT INTO tasks (
         id, title, description, status, priority, project, project_id, assignedTo,
         reviewerId, reviewStatus, reviewNotes, tags, labels, planningNotes,
-        dueDate, estimatedHours, blockedBy, blocks, progress, lastAgentUpdate,
+        dueDate, scheduledAt, estimatedHours, blockedBy, blocks, progress, lastAgentUpdate,
         createdAt, updatedAt, projectName, stageNumber, stageName, nextStage, parentTaskId,
         recurrence, recurrenceParentId, moduleId
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?
       )
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       id, title, description ?? null, status, priority, project ?? null, project_id ?? null, assignedTo ?? null,
       reviewerId ?? null, reviewStatus ?? null, reviewNotes ?? null,
       JSON.stringify(tags), JSON.stringify(labels), planningNotes ?? null,
-      dueDate ?? null, estimatedHours ?? null,
+      dueDate ?? null, scheduledAt ?? null, estimatedHours ?? null,
       JSON.stringify(blockedBy), JSON.stringify(blocks), progress, lastAgentUpdate ?? null,
       now, now, projectName ?? null, stageNumber ?? null, stageName ?? null, nextStage ?? null, parentTaskId ?? null,
       recurrence ? JSON.stringify(recurrence) : null, recurrenceParentId ?? null, moduleId ?? null

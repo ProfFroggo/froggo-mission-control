@@ -81,6 +81,7 @@ export interface Task {
   reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected' | 'pre-review' | 'pre-approved' | 'pre-rejected';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
+  scheduledAt?: number; // Unix timestamp — when to start work
   estimatedHours?: number;
   blockedBy?: string[]; // Task IDs this is blocked by
   blocks?: string[]; // Task IDs this blocks
@@ -532,6 +533,7 @@ export const useStore = create<Store>()(
             reviewStatus: t.reviewStatus || undefined,
             planningNotes: t.planningNotes || undefined,
             dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+            scheduledAt: t.scheduledAt ? Number(t.scheduledAt) : undefined,
             lastAgentUpdate: t.lastAgentUpdate || undefined,
             createdAt: t.createdAt || Date.now(),
             updatedAt: t.updatedAt || Date.now(),
