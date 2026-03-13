@@ -45,7 +45,9 @@ interface EmptyStateBaseProps {
   description?: string;
   /** Optional action button configuration or React element */
   action?: EmptyStateAction | ReactNode;
-  /** Optional compact variant for smaller spaces */
+  /** Size variant controlling icon size and padding. Overrides compact. */
+  size?: 'sm' | 'md' | 'lg';
+  /** Optional compact variant for smaller spaces. Prefer size='sm' for new usage. */
   compact?: boolean;
   /** Optional additional CSS classes */
   className?: string;
@@ -112,16 +114,32 @@ const presets: Record<string, { icon: LucideIcon; title: string; description: st
   },
 };
 
+const ICON_SIZES: Record<'sm' | 'md' | 'lg', number> = {
+  sm: 32,
+  md: 48,
+  lg: 64,
+};
+
+const PADDING_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'py-8 px-4',
+  md: 'py-12 px-8',
+  lg: 'py-16 px-8',
+};
+
 export default function EmptyState(props: EmptyStateProps) {
   // Determine if using preset type or custom props
   const isPreset = 'type' in props && props.type !== undefined;
-  
+
   const {
     description,
     action,
+    size,
     compact = false,
     className = '',
   } = props;
+
+  // Resolve effective size: explicit size prop > compact flag > default 'md'
+  const effectiveSize: 'sm' | 'md' | 'lg' = size ?? (compact ? 'sm' : 'md');
 
   // Get icon and title from preset or props
   const Icon = isPreset ? presets[props.type].icon : props.icon;
@@ -129,19 +147,18 @@ export default function EmptyState(props: EmptyStateProps) {
   const desc = description || (isPreset ? presets[props.type].description : undefined);
 
   const baseClasses = 'empty-state';
-  const compactClasses = compact 
-    ? 'py-8 px-4' 
-    : 'py-16 px-8';
+  const paddingClasses = PADDING_CLASSES[effectiveSize];
+  const iconSize = ICON_SIZES[effectiveSize];
 
   // Render action button or element
   const renderAction = (): React.ReactElement | null => {
     if (!action) return null;
-    
+
     // If action is a React element, render it directly
     if (typeof action === 'object' && '$$typeof' in action) {
       return action as React.ReactElement;
     }
-    
+
     // Otherwise, it's an EmptyStateAction config
     const actionConfig = action as EmptyStateAction;
     return (
@@ -159,16 +176,16 @@ export default function EmptyState(props: EmptyStateProps) {
   };
 
   return (
-    <div 
-      className={`${baseClasses} ${compactClasses} ${className}`}
+    <div
+      className={`${baseClasses} ${paddingClasses} ${className}`}
       role="status"
       aria-live="polite"
     >
       {/* Icon Container */}
       <div className="empty-state-icon">
-        <Icon 
-          size={compact ? 24 : 32} 
-          className="text-mission-control-text-dim"
+        <Icon
+          size={iconSize}
+          className="text-mission-control-text-dim/40"
           aria-hidden="true"
         />
       </div>
