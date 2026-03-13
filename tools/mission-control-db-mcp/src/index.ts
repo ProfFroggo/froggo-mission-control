@@ -88,7 +88,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_get',
-      description: 'Get a task by ID including its subtasks, attachments, and recent activity. Use this to look up subtask IDs so you can mark them complete.',
+      description: 'Get a task by ID. Returns planningNotes, acceptanceCriteria, and incompleteSubtasks at the top — read these first before starting any work. Also includes attachments and recent activity.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -99,7 +99,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_create',
-      description: 'Create a new task. MANDATORY RULES — task will be REJECTED if violated: (1) planningNotes is REQUIRED — must contain the full plan, approach, steps, and context (min 20 chars); (2) reviewer is always Clara — do not override; (3) after creating, immediately add at least 2 subtasks via subtask_create before starting work. description must be 1-2 sentences max. Put all detail in planningNotes.',
+      description: 'Create a new task. MANDATORY RULES — task will be REJECTED if violated: (1) planningNotes is REQUIRED — must contain the full plan, approach, steps, and context (min 20 chars); (2) reviewer is always Clara — do not override; (3) after creating, immediately add at least 2 subtasks via subtask_create before starting work. description must be 1-2 sentences max. Put all detail in planningNotes. Structure planningNotes like this: "## Approach\n{how you will do it}\n\n## Acceptance Criteria\n- {specific checkable criterion 1}\n- {criterion 2}"',
       inputSchema: {
         type: 'object',
         properties: {
@@ -109,7 +109,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           priority: { type: 'string', description: 'Priority: p0, p1, p2, p3, p4 (default p2)' },
           project: { type: 'string', description: 'Project name' },
           parentTaskId: { type: 'string', description: 'Parent task ID (for sub-tasks)' },
-          planningNotes: { type: 'string', description: 'Full plan, approach, steps, context, and any relevant file paths or instructions. This is where all detailed planning goes.' },
+          planningNotes: { type: 'string', description: 'Full plan, approach, steps, context, and any relevant file paths or instructions. Structure as: "## Approach\n{steps}\n\n## Acceptance Criteria\n- {criterion 1}\n- {criterion 2}". This is where all detailed planning goes.' },
           reviewerId: { type: 'string', description: 'Agent ID to review this task (default: clara)' },
           status: { type: 'string', description: 'Initial status (default: todo)' },
         },
@@ -216,13 +216,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'chat_post',
-      description: 'Post a message to a chat room',
+      description: 'Post a message to a chat room. Tailor your message based on roomId: roomId="mission-control" → you are messaging the human operator — be clear, concise, and human-friendly; include relevant context for someone who has not read the task. roomId="{agentId}" (e.g. "designer", "coder") → you are messaging a specific agent — be precise and technical; include task IDs and file paths. roomId="room-{name}" → team room — be collaborative; mention what you need.',
       inputSchema: {
         type: 'object',
         properties: {
-          roomId: { type: 'string', description: 'Chat room ID (general, code-review, planning, incidents)' },
+          roomId: { type: 'string', description: 'Chat room ID. Use "mission-control" to reach the human. Use an agent ID (e.g. "designer") for a 1-1 with that agent. Use "general", "code-review", "planning", or "incidents" for team rooms.' },
           agentId: { type: 'string', description: 'Posting agent ID' },
-          content: { type: 'string', description: 'Message content' },
+          content: { type: 'string', description: 'Message content (max 20,000 characters). Split longer content into multiple chat_post calls.' },
         },
         required: ['roomId', 'agentId', 'content'],
       },
@@ -303,7 +303,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'image_generate',
-      description: 'Generate an image using Gemini AI and save it to the library. Returns a markdown string like ![prompt](url) that you can paste directly into chat_post content to display the image inline.',
+      description: 'Generate an image using Gemini AI and save it to the library. Returns markdown you can embed in chat, plus a removeBackgroundPath field ready for immediate use with image_remove_background. To remove the background after generating: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })',
       inputSchema: {
         type: 'object',
         properties: {
@@ -316,11 +316,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'image_remove_background',
-      description: 'Remove the background from an image and save an optimised transparent PNG back to the library. Uses rembg birefnet-hd with alpha matting for maximum edge quality — handles hair, fur, and complex edges. Pass the filePath returned by image_generate, or a path relative to ~/mission-control/library/. Returns markdown you can embed in chat.',
+      description: 'Remove the background from an image and save an optimised transparent PNG back to the library. Uses rembg birefnet-hd with alpha matting for maximum edge quality — handles hair, fur, and complex edges. To remove background from an image you just generated, use the removeBackgroundPath field from the image_generate response directly as inputPath. Returns markdown you can embed in chat.',
       inputSchema: {
         type: 'object',
         properties: {
-          inputPath: { type: 'string', description: 'Path to the source image. Absolute path, path relative to ~/mission-control/library/, or just the filename.' },
+          inputPath: { type: 'string', description: 'Path to the source image. Use removeBackgroundPath from image_generate response for seamless chaining. Also accepts absolute path or path relative to ~/mission-control/library/.' },
           agentId:   { type: 'string', description: 'Your agent ID' },
           model:     { type: 'string', description: 'rembg model to use. Default: birefnet-hd (best quality). Options: birefnet-hd, birefnet-general (faster), u2net.' },
         },
@@ -341,12 +341,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // ── task_get ────────────────────────────────────────────────────────────
       case 'task_get': {
-        const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(args?.id);
-        if (!task) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found' }) }] };
-        const subtasks = db.prepare('SELECT * FROM subtasks WHERE taskId = ? ORDER BY position ASC').all(args?.id);
+        const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(args?.id) as Record<string, any> | undefined;
+        if (!task) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
+        const subtasks = db.prepare('SELECT * FROM subtasks WHERE taskId = ? ORDER BY position ASC').all(args?.id) as any[];
         const attachments = db.prepare('SELECT id, fileName, filePath, category, uploadedBy, createdAt FROM task_attachments WHERE taskId = ? ORDER BY createdAt DESC').all(args?.id);
         const activity = db.prepare('SELECT agentId, action, message, timestamp FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 10').all(args?.id);
-        return { content: [{ type: 'text', text: JSON.stringify({ ...task as object, subtasks, attachments, recentActivity: activity }, null, 2) }] };
+
+        // Extract acceptance criteria from planningNotes if structured
+        let acceptanceCriteria: string[] = [];
+        const planNotes: string = task.planningNotes || '';
+        const acMatch = planNotes.match(/##\s*Acceptance Criteria\s*\n([\s\S]*?)(?:\n##|$)/i);
+        if (acMatch) {
+          acceptanceCriteria = acMatch[1]
+            .split('\n')
+            .map((l: string) => l.replace(/^[-*]\s*/, '').trim())
+            .filter((l: string) => l.length > 0);
+        }
+
+        // Surface critical info first so Claude reads it before anything else
+        const summary = {
+          hint: 'Read planningNotes and incompleteSubtasks carefully before starting. These define what done looks like.',
+          id: task.id,
+          title: task.title,
+          status: task.status,
+          priority: task.priority,
+          assignedTo: task.assignedTo,
+          // CRITICAL — at top level so Claude sees them immediately
+          planningNotes: task.planningNotes,
+          acceptanceCriteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : (task.acceptanceCriteria || 'See planningNotes'),
+          incompleteSubtasks: subtasks.filter((s: any) => !s.completed),
+          completedSubtasks: subtasks.filter((s: any) => s.completed),
+          // Supporting context below
+          description: task.description,
+          project: task.project,
+          progress: task.progress,
+          lastAgentUpdate: task.lastAgentUpdate,
+          reviewStatus: task.reviewStatus,
+          reviewNotes: task.reviewNotes,
+          recentActivity: activity,
+          attachments,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
       }
 
       // ── task_list ───────────────────────────────────────────────────────────
@@ -417,13 +454,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const current = db.prepare('SELECT status, reviewStatus, reviewerId FROM tasks WHERE id = ?').get(taskId) as
           { status: string; reviewStatus: string | null; reviewerId: string | null } | undefined;
 
-        if (!current) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found' }) }] };
+        if (!current) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
 
         // Agents cannot set internal-review — the system manages Pre-review automatically
         if (args?.status === 'internal-review') {
           return { content: [{ type: 'text', text: JSON.stringify({
             error: 'WORKFLOW_VIOLATION: agents cannot set status to internal-review. The Pre-review column is managed by the system — it is set automatically when a task is assigned to an agent. Clara then reviews and dispatches.',
             hint: 'If you finished work, set status="review". If blocked, set status="human-review".',
+            recovery: 'Set status="review" with a summary of completed work in lastAgentUpdate. Clara will verify and approve.',
           })}]};
         }
 
@@ -431,6 +469,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args?.status === 'in-progress' && current.status === 'todo') {
           return { content: [{ type: 'text', text: JSON.stringify({
             error: 'WORKFLOW_VIOLATION: cannot move directly from todo to in-progress. Tasks must pass Clara\'s Pre-review gate first. The system sets internal-review automatically when an agent is assigned — Clara will approve and dispatch the agent.',
+            recovery: 'Check task status with task_get first. Ensure planningNotes and subtasks are set, then wait for Clara\'s pre-review approval before proceeding.',
           }) }] };
         }
 
@@ -442,6 +481,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             return { content: [{ type: 'text', text: JSON.stringify({
               error: 'WORKFLOW_VIOLATION: agents cannot mark tasks done directly. Move to status="review" first — Clara will approve and advance to done.',
               hint: 'Set status="review" with lastAgentUpdate describing what was completed. Clara reviews and moves to done.',
+              recovery: 'Set status="review" with lastAgentUpdate summarising what was built and where outputs are. Clara will approve and close the task.',
             }) }] };
           }
         }
@@ -459,6 +499,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               error: `INCOMPLETE_WORK: ${incomplete} of ${total} subtasks are not yet completed. Complete all subtasks before submitting for review, or mark irrelevant ones complete with a note.`,
               incomplete,
               total,
+              recovery: `Use task_get to see the incompleteSubtasks list with their IDs, then call subtask_update({ id: "<subtask-id>", completed: true }) for each one before retrying.`,
             }) }] };
           }
         }
@@ -600,12 +641,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // ── chat_post ───────────────────────────────────────────────────────────
       case 'chat_post': {
         const content = String(args?.content ?? '').trim();
-        if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required' }) }], isError: true };
-        if (content.length > 20_000) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content too long (max 20,000 chars)' }) }], isError: true };
+        if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required', recovery: 'Provide a non-empty content string to the chat_post call.' }) }], isError: true };
+        if (content.length > 20_000) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content too long (max 20,000 chars)', recovery: 'Split your content into multiple chat_post calls, each under 20,000 characters.' }) }], isError: true };
         db.prepare('INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)').run(
           args?.roomId, args?.agentId, content, Date.now()
         );
-        return { content: [{ type: 'text', text: JSON.stringify({ success: true }) }] };
+
+        // If the roomId matches an agent ID, look up the agent name for a helpful confirmation
+        const roomId = String(args?.roomId ?? '');
+        let deliveryHint: Record<string, string> = { success: 'true' };
+        if (roomId && roomId !== 'mission-control' && !roomId.startsWith('room-') && !['general', 'code-review', 'planning', 'incidents'].includes(roomId)) {
+          try {
+            const targetAgent = db.prepare('SELECT name FROM agents WHERE id = ?').get(roomId) as { name?: string } | undefined;
+            if (targetAgent?.name) {
+              deliveryHint = { success: 'true', deliveredTo: targetAgent.name, hint: `Message delivered to ${targetAgent.name}'s 1-1 chat.` };
+            }
+          } catch { /* non-critical */ }
+        }
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, ...deliveryHint }) }] };
       }
 
       // ── chat_read ───────────────────────────────────────────────────────────
@@ -748,7 +801,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try { parsed = JSON.parse(result); } catch { parsed = { error: result }; }
 
         if (parsed.error) {
-          return { content: [{ type: 'text', text: JSON.stringify(parsed) }], isError: true };
+          return { content: [{ type: 'text', text: JSON.stringify({ ...parsed, recovery: 'Check that the image generation service is running on port 3000. Retry with a shorter, simpler prompt if the error is prompt-related.' }) }], isError: true };
         }
 
         // Auto-post the image to the agent's chat room so it always appears in chat
@@ -760,6 +813,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ).run(roomId, agentId, parsed.markdown, Date.now());
         } catch { /* non-critical — image generation succeeded regardless */ }
 
+        // Compute library-relative path for image_remove_background chaining
+        const HOME_DIR = process.env.HOME || '/tmp';
+        const libraryBase = path.join(HOME_DIR, 'mission-control', 'library');
+        let removeBackgroundPath: string | undefined;
+        if (parsed.filePath) {
+          if (parsed.filePath.startsWith(libraryBase)) {
+            removeBackgroundPath = path.relative(libraryBase, parsed.filePath);
+          } else {
+            removeBackgroundPath = parsed.filePath; // fallback: pass as-is
+          }
+        }
+
         return {
           content: [{
             type: 'text',
@@ -769,7 +834,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               url: parsed.url,
               filePath: parsed.filePath,
               filename: parsed.filename,
-              hint: `Image auto-posted to your chat room. Include the markdown field in your text response too so the user sees your commentary alongside the image.`,
+              removeBackgroundPath,
+              hint: `Image auto-posted to your chat room. Include the markdown field in your text response too. To remove the background: image_remove_background({ inputPath: "${removeBackgroundPath ?? parsed.filePath}", agentId: "<your-id>" })`,
             }),
           }],
         };
@@ -778,7 +844,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // ── image_remove_background ─────────────────────────────────────────────
       case 'image_remove_background': {
         const inputPath = String(args?.inputPath ?? '').trim();
-        if (!inputPath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'inputPath is required' }) }], isError: true };
+        if (!inputPath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'inputPath is required', recovery: 'Use the removeBackgroundPath field from the image_generate response. Example: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })' }) }], isError: true };
 
         const payload = JSON.stringify({
           inputPath,
@@ -815,7 +881,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try { parsed = JSON.parse(result); } catch { parsed = { error: result }; }
 
         if (parsed.error) {
-          return { content: [{ type: 'text', text: JSON.stringify(parsed) }], isError: true };
+          return { content: [{ type: 'text', text: JSON.stringify({ ...parsed, recovery: 'Use the removeBackgroundPath field from image_generate response. Pass the path relative to ~/mission-control/library/ (e.g. "design/images/2026-03-14_name.png"). Do not include the full ~/mission-control/library/ prefix.' }) }], isError: true };
         }
 
         // Auto-post the cutout to the agent's chat room
