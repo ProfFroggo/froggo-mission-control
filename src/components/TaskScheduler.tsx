@@ -18,7 +18,7 @@ const STATUS_CONFIG: Record<string, { label: string; class: string }> = {
   'in-progress':     { label: 'In Progress',     class: 'bg-info/10 text-info' },
   'review':          { label: 'Review',          class: 'bg-warning/10 text-warning' },
   'human-review':    { label: 'Needs Review',    class: 'bg-warning/10 text-warning' },
-  'internal-review': { label: 'Internal Review', class: 'bg-review/10 text-review' },
+  'internal-review': { label: 'Pre-review', class: 'bg-review/10 text-review' },
   'done':            { label: 'Done',            class: 'bg-success/10 text-success' },
 };
 
