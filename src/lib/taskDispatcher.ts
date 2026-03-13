@@ -322,6 +322,7 @@ Before you set status="review", every one of these must be true:
 - progress is 100
 
 ## WORKING PROTOCOL
+0. knowledge_search("{task topic}") — check for relevant brand guidelines, tone of voice, or context before starting
 1. task_get({id}) — read planningNotes and incompleteSubtasks carefully. These define what done looks like.
 2. Check prior context: mcp__memory__memory_recall({ topic: "<task title>" })
 3. Do the work. Save outputs to ~/mission-control/library/.
@@ -349,7 +350,7 @@ Do not loop silently — move to human-review so the human can help.
 After saving any file: task_add_attachment({ taskId, filePath, fileName, category, uploadedBy })
 
 ## TOOLS AVAILABLE
-task_get, task_update, task_add_activity, task_add_attachment, subtask_create, subtask_update, chat_post, image_generate, image_remove_background, approval_create, mcp__memory__memory_write, mcp__memory__memory_recall, mcp__memory__memory_list
+task_get, task_update, task_add_activity, task_add_attachment, subtask_create, subtask_update, chat_post, image_generate, image_remove_background, approval_create, mcp__memory__memory_write, mcp__memory__memory_recall, mcp__memory__memory_list, knowledge_search, knowledge_read, knowledge_write
 
 ## PIPELINE
 todo → pre-review → in-progress → review → done
@@ -502,6 +503,55 @@ function loadHandoffNote(taskId: string, agentId: string): string {
   return '';
 }
 
+// ── Knowledge Base injection ──────────────────────────────────────────────────
+
+/**
+ * Load pinned KB articles (always injected) + keyword-relevant articles.
+ * Returns a formatted section string (empty string if no results or error).
+ */
+function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): string {
+  try {
+    const db = getDb();
+    const query = `${taskTitle} ${taskDesc || ''}`.slice(0, 200);
+
+    // Search pinned articles first (always inject)
+    const pinned = db.prepare(
+      "SELECT id, title, category, content FROM knowledge_base WHERE pinned = 1 AND scope = 'all' ORDER BY updatedAt DESC LIMIT 2"
+    ).all() as Array<{ id: string; title: string; category: string; content: string }>;
+
+    // Then search by relevance using LIKE keyword match
+    const keywords = query.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 5);
+    let relevant: Array<{ id: string; title: string; category: string; content: string }> = [];
+    if (keywords.length > 0) {
+      const conditions = keywords.map(() => '(LOWER(title) LIKE ? OR LOWER(tags) LIKE ?)').join(' OR ');
+      const params = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+      relevant = db.prepare(
+        `SELECT id, title, category, content FROM knowledge_base WHERE (${conditions}) AND pinned = 0 ORDER BY updatedAt DESC LIMIT 3`
+      ).all(...params) as Array<{ id: string; title: string; category: string; content: string }>;
+    }
+
+    const pinnedIds = new Set(pinned.map(p => p.id));
+    const all = [...pinned, ...relevant.filter(r => !pinnedIds.has(r.id))].slice(0, 4);
+    if (all.length === 0) return '';
+
+    // Token budget guard: ~1500 token limit (chars / 4)
+    const TOKEN_BUDGET = 1500 * 4;
+    let totalChars = 0;
+    const capped = all.filter(a => {
+      totalChars += a.content.length;
+      return totalChars <= TOKEN_BUDGET;
+    });
+    if (capped.length === 0) return '';
+
+    const lines = capped.map(a =>
+      `### ${a.title} (${a.category})\n${a.content.slice(0, 600)}${a.content.length > 600 ? `\n[...use knowledge_read(${a.id}) for full content]` : ''}`
+    );
+    return `\n\n## Workspace Knowledge Base\nThe following guidelines from your team's knowledge base are relevant to this task:\n\n${lines.join('\n\n---\n\n')}\n\nFor more KB articles: use knowledge_search(query) to find what you need.\n`;
+  } catch {
+    return ''; // Non-critical — never block dispatch
+  }
+}
+
 // ── Project context injection ─────────────────────────────────────────────────
 
 function buildProjectContext(projectId: string): string {
@@ -576,6 +626,11 @@ function buildTaskSystemPrompt(
     ? loadHandoffNote(task.id as string, agentId)
     : '';
 
+  // Inject relevant Knowledge Base articles
+  const kbContext = task
+    ? loadRelevantKnowledge(task.title as string, task.description as string | null)
+    : '';
+
   if (relevantMemory && task) {
     trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
   }
@@ -596,7 +651,7 @@ function buildTaskSystemPrompt(
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + relevantMemory + handoffNote + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + kbContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -610,6 +665,7 @@ function buildTaskSystemPrompt(
       if (skills) parts.push(skills);
       if (relevantMemory) parts.push(relevantMemory);
       if (handoffNote) parts.push(handoffNote);
+      if (kbContext) parts.push(kbContext);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
