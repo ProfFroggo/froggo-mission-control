@@ -54,7 +54,7 @@ function HeaderBar({ connected }: { connected: boolean }) {
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border/50">
+    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-mission-control-border/50">
       <div>
         <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
           {greeting}
@@ -1056,6 +1056,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
           inProgressTasks={derived.inProgressTasks}
           agentMap={agentMap}
           activities={recentActivities}
+          allTasks={tasks}
           onNavigate={onNavigate}
         />
       </div>
