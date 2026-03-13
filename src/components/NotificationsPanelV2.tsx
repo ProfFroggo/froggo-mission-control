@@ -7,7 +7,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Bell, Check, X, Clock, MessageSquare, Calendar, AlertCircle,
   CheckCircle, RefreshCw, Settings, CheckCheck,
-  Clock3, AlertTriangle, Bot, Star, XCircle, CheckSquare, Eye, Shield
+  Clock3, AlertTriangle, Bot, Star, XCircle, CheckSquare, Eye, Shield,
+  ChevronDown, ChevronRight
 } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
@@ -66,6 +67,24 @@ const priorityBadges: Record<string, { color: string; label: string }> = {
   low: { color: 'bg-mission-control-bg0/20 text-mission-control-text-dim', label: 'Low' },
 };
 
+// Quick preference toggles — stored in localStorage
+const QUICK_PREFS: Array<{ key: string; label: string }> = [
+  { key: 'task_assigned', label: 'Task assigned to me' },
+  { key: 'agent_update', label: 'Clara review complete' },
+  { key: 'human_review', label: 'Human review requested' },
+  { key: 'approval_needed', label: 'Approval needed' },
+];
+
+function loadQuickPrefs(): Record<string, boolean> {
+  const defaults: Record<string, boolean> = {};
+  for (const p of QUICK_PREFS) defaults[p.key] = true;
+  try {
+    const stored = localStorage.getItem('notif.prefs');
+    if (stored) return { ...defaults, ...JSON.parse(stored) };
+  } catch { /* ignore */ }
+  return defaults;
+}
+
 export default function NotificationsPanelV2() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotificationStats>({ total: 0, unread: 0, urgent: 0, actionable: 0 });
@@ -73,6 +92,8 @@ export default function NotificationsPanelV2() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'urgent' | 'actionable'>('all');
   const [showSettings, setShowSettings] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences[]>([]);
+  const [quickPrefs, setQuickPrefs] = useState<Record<string, boolean>>(loadQuickPrefs);
+  const [showQuickPrefs, setShowQuickPrefs] = useState(false);
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -137,6 +158,23 @@ export default function NotificationsPanelV2() {
     await notificationService.markAllRead();
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     showToast('success', 'All marked as read');
+  };
+
+  const handleDismissAll = async () => {
+    // Clear local state immediately
+    setNotifications([]);
+    setStats(prev => ({ ...prev, total: 0, unread: 0 }));
+    // Best-effort server call — ignore if route doesn't exist
+    fetch('/api/notifications/dismiss-all', { method: 'POST' }).catch(() => {});
+    showToast('success', 'All notifications dismissed');
+  };
+
+  const handleToggleQuickPref = (key: string, value: boolean) => {
+    const updated = { ...quickPrefs, [key]: value };
+    setQuickPrefs(updated);
+    try {
+      localStorage.setItem('notif.prefs', JSON.stringify(updated));
+    } catch { /* ignore */ }
   };
 
   const handleTogglePreference = async (type: string, field: keyof NotificationPreferences, value: any) => {
@@ -299,6 +337,17 @@ export default function NotificationsPanelV2() {
           </div>
           
           <div className="flex gap-2">
+            {notifications.length > 0 && (
+              <button
+                onClick={handleDismissAll}
+                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+                title="Dismiss all notifications"
+              >
+                <X size={14} />
+                Dismiss all
+              </button>
+            )}
+
             {stats.unread > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -309,7 +358,7 @@ export default function NotificationsPanelV2() {
                 Mark all read
               </button>
             )}
-            
+
             <button
               onClick={loadNotifications}
               disabled={loading}
@@ -318,7 +367,7 @@ export default function NotificationsPanelV2() {
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
-            
+
             <button
               onClick={() => setShowSettings(true)}
               className="p-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
@@ -531,6 +580,42 @@ export default function NotificationsPanelV2() {
                   })}
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Collapsible notification preferences section */}
+      <div className="border-t border-mission-control-border">
+        <button
+          onClick={() => setShowQuickPrefs(prev => !prev)}
+          className="w-full flex items-center gap-2 px-5 py-3 text-xs font-semibold text-mission-control-text-dim hover:bg-mission-control-border/40 transition-colors"
+        >
+          {showQuickPrefs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          Notification Preferences
+        </button>
+        {showQuickPrefs && (
+          <div className="px-5 pb-4 space-y-3">
+            {QUICK_PREFS.map(pref => (
+              <label key={pref.key} className="flex items-center justify-between gap-3 cursor-pointer">
+                <span className="text-sm text-mission-control-text-dim">{pref.label}</span>
+                <button
+                  role="switch"
+                  aria-checked={quickPrefs[pref.key]}
+                  onClick={() => handleToggleQuickPref(pref.key, !quickPrefs[pref.key])}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors focus:outline-none ${
+                    quickPrefs[pref.key]
+                      ? 'bg-mission-control-accent'
+                      : 'bg-mission-control-border'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow transition-transform ${
+                      quickPrefs[pref.key] ? 'translate-x-4' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </label>
             ))}
           </div>
         )}
