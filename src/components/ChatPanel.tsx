@@ -28,6 +28,28 @@ import ErrorDisplay from './ErrorDisplay';
 
 const logger = createLogger('ChatPanel');
 
+/** Format a Unix timestamp as a human-friendly relative time string */
+function formatMessageTime(timestamp: number | undefined): string {
+  if (!timestamp) return '';
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffHr = Math.floor(diffMs / 3_600_000);
+
+  if (diffMs < 60_000) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 3) return `${diffHr}h ago`;
+
+  const d = new Date(timestamp);
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+  const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (d >= todayStart) return `Today at ${timeStr}`;
+  if (d >= yesterdayStart) return `Yesterday at ${timeStr}`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` at ${timeStr}`;
+}
+
 interface AttachedFile {
   id: string;
   name: string;
@@ -1294,7 +1316,7 @@ export default function ChatPanel() {
             const isUser = msg.role === 'user';
             const showAvatar = idx === 0 || filteredMessages[idx - 1]?.role !== msg.role;
             const isLastInGroup = idx === filteredMessages.length - 1 || filteredMessages[idx + 1]?.role !== msg.role;
-            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const time = formatMessageTime(msg.timestamp);
             const isStarred = starredMessageIds.has(msg.id ?? '');
             
             return (
