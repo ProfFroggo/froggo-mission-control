@@ -88,25 +88,41 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
 
   const assignedTo = (task.assignedTo as string | undefined) || undefined;
 
+  // Fetch subtask count to include in Clara's review context
+  let subtaskCount = 0;
+  try {
+    const row = getDb()
+      .prepare('SELECT COUNT(*) as cnt FROM subtasks WHERE taskId = ?')
+      .get(task.id as string) as { cnt: number } | undefined;
+    subtaskCount = row?.cnt ?? 0;
+  } catch { /* non-critical */ }
+
+  const hasAgent       = !!assignedTo;
+  const hasPlanningNotes = !!(task.planningNotes as string | null)?.trim();
+  const hasSubtasks    = subtaskCount >= 1;
+
   const message = [
     `## Pre-work Review — Task: ${task.id}`,
     `**Title:** ${task.title}`,
-    task.description ? `**Description:** ${task.description}` : null,
+    task.description ? `**Description:** ${task.description}` : '**Description:** MISSING',
     `**Assigned to:** ${assignedTo || 'UNASSIGNED'}`,
-    task.planningNotes ? `**Planning notes:** ${task.planningNotes}` : null,
+    `**Planning notes:** ${hasPlanningNotes ? (task.planningNotes as string).slice(0, 500) : 'MISSING'}`,
+    `**Subtasks:** ${subtaskCount} created`,
     `**Priority:** ${task.priority || 'p2'}`,
     '',
-    'This task is waiting in Internal Review before the agent starts work.',
-    'Your job: verify it is ready to be worked. Check:',
-    '1. Is an agent assigned?',
-    '2. Does the title + description give enough context to work autonomously?',
-    '3. Is this task reasonable in scope (not vague, not blocked by missing info)?',
+    '## Your job: check all 3 gates. ALL must pass before work starts.',
     '',
-    'Make your decision now:',
-    `- Ready → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "pre-approved", "reviewNotes": "<brief reason>" }`,
-    `- Not ready → mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "<what is missing or needs fixing>" }`,
+    `GATE 1 — Agent assigned: ${hasAgent ? '✓ PASS' : '✗ FAIL — no agent assigned'}`,
+    `GATE 2 — Planning notes: ${hasPlanningNotes ? '✓ PASS' : '✗ FAIL — planningNotes is empty'}`,
+    `GATE 3 — Subtasks: ${hasSubtasks ? `✓ PASS (${subtaskCount})` : '✗ FAIL — no subtasks created yet'}`,
     '',
-    'Do not ask clarifying questions. Make the call now.',
+    'If ALL gates pass → approve:',
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "pre-approved", "reviewNotes": "All gates passed." }`,
+    '',
+    'If ANY gate fails → reject back to todo with specific notes listing exactly what is missing:',
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "<list each failing gate and what must be added>" }`,
+    '',
+    'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
 
   trackEvent('clara.pre-review.start', { taskId: task.id });
@@ -296,10 +312,10 @@ export function runReviewCycle(): { queued: number } {
 
   // ── Pre-work pass: tasks in internal-review waiting for Clara's gate ─────────
   try {
+    // Include tasks with no agent too — Clara rejects them with "no agent assigned"
     const preTasks = getDb()
       .prepare(`SELECT id, title, description, assignedTo, priority, planningNotes FROM tasks
                 WHERE status = 'internal-review'
-                  AND assignedTo IS NOT NULL
                   AND (reviewStatus IS NULL OR reviewStatus NOT IN ('pre-review', 'pre-approved'))`)
       .all() as Record<string, unknown>[];
 
