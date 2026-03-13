@@ -26,11 +26,12 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'inbox',         label: 'Inbox',             visible: true,  order: 5  },
   { id: 'schedule',      label: 'Schedule',          visible: true,  order: 6  },
   { id: 'library',       label: 'Library',           visible: true,  order: 7  },
-  { id: 'agents',        label: 'Agents',            visible: true,  order: 8  },
-  { id: 'modules',       label: 'Modules',           visible: true,  order: 9  },
-  { id: 'settings',      label: 'Settings',          visible: true,  order: 10 },
-  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 11 },
-  { id: 'notifications', label: 'Notifications',     visible: false, order: 12 },
+  { id: 'knowledge',     label: 'Knowledge',         visible: true,  order: 8  },
+  { id: 'agents',        label: 'Agents',            visible: true,  order: 9  },
+  { id: 'modules',       label: 'Modules',           visible: true,  order: 10 },
+  { id: 'settings',      label: 'Settings',          visible: true,  order: 11 },
+  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 12 },
+  { id: 'notifications', label: 'Notifications',     visible: false, order: 13 },
 ];
 
 function loadFromStorage(): PanelConfig[] {

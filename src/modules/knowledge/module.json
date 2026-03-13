@@ -1,0 +1,29 @@
+{
+  "id": "knowledge",
+  "name": "Knowledge Base",
+  "version": "1.0.0",
+  "description": "Human-curated workspace knowledge — brand guidelines, tone of voice, company context, and design standards — automatically shared with agents.",
+  "author": "Mission Control Team",
+  "icon": "BookOpen",
+  "category": "productivity",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "knowledge",
+      "label": "Knowledge",
+      "icon": "BookOpen",
+      "entrypoint": "./views/KnowledgeBase.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

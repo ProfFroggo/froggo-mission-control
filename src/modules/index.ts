@@ -21,5 +21,6 @@ import './approvals';
 import './notifications';
 import './agent-mgmt';
 import './library';
+import './knowledge';
 import './projects';
 import './schedule';

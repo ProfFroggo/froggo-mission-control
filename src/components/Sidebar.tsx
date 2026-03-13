@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
-  FolderOpen, FolderKanban, CalendarClock,
+  FolderOpen, FolderKanban, CalendarClock, BookOpen,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -23,6 +23,7 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   approvals:     ShieldAlert,
   schedule:      CalendarClock,
   library:       FolderOpen,
+  knowledge:     BookOpen,
   agents:        Bot,
   notifications: Bell,
   modules:       Puzzle,

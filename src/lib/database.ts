@@ -606,6 +606,56 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_scope ON knowledge_base(scope);
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_links ON knowledge_base_links(knowledgeId);
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_assets ON knowledge_base_assets(knowledgeId);
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGNS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL DEFAULT 'general',
+      goal TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      channels TEXT NOT NULL DEFAULT '[]',
+      budget REAL,
+      budgetSpent REAL DEFAULT 0,
+      currency TEXT DEFAULT 'USD',
+      targetAudience TEXT,
+      kpis TEXT NOT NULL DEFAULT '{}',
+      startDate INTEGER,
+      endDate INTEGER,
+      briefContent TEXT,
+      color TEXT DEFAULT '#6366f1',
+      createdBy TEXT,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS campaign_members (
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      agentId TEXT NOT NULL,
+      role TEXT DEFAULT 'member',
+      addedAt INTEGER NOT NULL,
+      PRIMARY KEY (campaignId, agentId)
+    );
+
+    CREATE TABLE IF NOT EXISTS campaign_assets (
+      id TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      filePath TEXT NOT NULL,
+      fileName TEXT NOT NULL,
+      assetType TEXT DEFAULT 'image',
+      channel TEXT,
+      status TEXT DEFAULT 'draft',
+      createdBy TEXT,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
+    CREATE INDEX IF NOT EXISTS idx_campaigns_type ON campaigns(type);
+    CREATE INDEX IF NOT EXISTS idx_campaign_members_agentId ON campaign_members(agentId);
+    CREATE INDEX IF NOT EXISTS idx_campaign_assets_campaignId ON campaign_assets(campaignId);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
