@@ -75,7 +75,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'task_list',
-      description: 'List tasks, optionally filtered by status, assignee, or project',
+      description: 'List tasks, optionally filtered by status, assignee, or project. Use task_get(id) for full details including planningNotes and subtasks before starting work on any specific task.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -88,7 +88,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_get',
-      description: 'Get a task by ID. Returns planningNotes, acceptanceCriteria, and incompleteSubtasks at the top — read these first before starting any work. Also includes attachments and recent activity.',
+      description: 'Get a task by ID. Always call this before starting work on a task to get the latest planningNotes, subtasks, and acceptance criteria. Returns planningNotes, acceptanceCriteria, and incompleteSubtasks at the top — read these first. Also includes attachments and recent activity.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -137,7 +137,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_add_activity',
-      description: 'Add an activity log entry to a task',
+      description: 'Log a meaningful activity on a task. Call this at: task start, key decisions, tool usage results, blockers encountered, and completion. This is your audit trail — be specific. Minimum: one entry per subtask completed.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -151,7 +151,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_add_attachment',
-      description: 'Attach a file to a task. Call this every time you create or save a file. ALWAYS save files to the correct library path: research/analysis→docs/research/, strategy→docs/stratagies/, presentations→docs/presentations/, platform docs→docs/platform/, code→code/, UI→design/ui/, images→design/images/, media→design/media/. All paths under ~/mission-control/library/. Name files: YYYY-MM-DD_description.ext',
+      description: 'Attach a file to a task. Call this every time you create or save a file. ALWAYS save files to the correct library path: research/analysis→docs/research/, strategy→docs/strategies/, presentations→docs/presentations/, platform docs→docs/platform/, code→code/, UI→design/ui/, images→design/images/, media→design/media/. All paths under ~/mission-control/library/. Name files: YYYY-MM-DD_description.ext',
       inputSchema: {
         type: 'object',
         properties: {
@@ -216,7 +216,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'chat_post',
-      description: 'Post a message to a chat room. Tailor your message based on roomId: roomId="mission-control" → you are messaging the human operator — be clear, concise, and human-friendly; include relevant context for someone who has not read the task. roomId="{agentId}" (e.g. "designer", "coder") → you are messaging a specific agent — be precise and technical; include task IDs and file paths. roomId="room-{name}" → team room — be collaborative; mention what you need.',
+      description: 'Post a message to a chat room. Always include your agentId. Tailor your message based on roomId: roomId="mission-control" → messaging the human operator — be clear, concise, and human-friendly; include relevant context. roomId="{agentId}" (e.g. "designer", "coder") → 1-1 with that agent — be precise and technical; include task IDs and file paths. roomId="general" → team room — be collaborative. For images, include the markdown field verbatim from image_generate so the image renders inline.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -399,7 +399,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         query += ' ORDER BY createdAt DESC LIMIT ?';
         params.push(limit);
         const tasks = db.prepare(query).all(...params);
-        return { content: [{ type: 'text', text: JSON.stringify(tasks, null, 2) }] };
+        return { content: [{ type: 'text', text: JSON.stringify({
+          tasks,
+          hint: 'Use task_get(id) for full details including planningNotes and subtasks before starting work on any task.'
+        }, null, 2) }] };
       }
 
       // ── task_create ─────────────────────────────────────────────────────────
@@ -835,7 +838,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               filePath: parsed.filePath,
               filename: parsed.filename,
               removeBackgroundPath,
-              hint: `Image auto-posted to your chat room. Include the markdown field in your text response too. To remove the background: image_remove_background({ inputPath: "${removeBackgroundPath ?? parsed.filePath}", agentId: "<your-id>" })`,
+              hint: `Image generated. You MUST include the markdown field verbatim in your next chat_post response so the user sees the image inline. To remove background: image_remove_background({ inputPath: "${removeBackgroundPath ?? parsed.filePath}", agentId: "<your-id>" })`,
             }),
           }],
         };
