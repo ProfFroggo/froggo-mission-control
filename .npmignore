@@ -5,9 +5,7 @@
 .mcp.json
 .claude/settings.json
 
-# Build artifacts (rebuilt by postinstall)
-.next/
-**/dist/
+# Build artifacts
 **/node_modules/
 tsconfig.tsbuildinfo
 tsconfig.node.tsbuildinfo
