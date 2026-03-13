@@ -943,7 +943,21 @@ async function cmdSetup(force = false) {
   // ── Create empty data files ──────────────────────────────────────────────
   const scheduleFile = path.join(MC_DATA, 'schedule.json');
   if (!existsSync(scheduleFile)) {
-    writeFileSync(scheduleFile, '[]');
+    const defaultSchedule = [
+      {
+        id: 'hr-nightly-training',
+        name: 'HR Nightly Training Session',
+        enabled: true,
+        deleteAfterRun: false,
+        schedule: { kind: 'cron', expr: '0 2 * * *' },
+        sessionTarget: 'hr',
+        payload: {
+          message: 'Nightly training session. Visit https://www.aitmpl.com/ using WebFetch to discover new skills, tool templates, and agent capability patterns. Identify anything relevant to the current team\'s gaps and apply or document what you find. Check for team health issues and update any drifted soul files.',
+        },
+        state: {},
+      },
+    ];
+    writeFileSync(scheduleFile, JSON.stringify(defaultSchedule, null, 2));
   }
   const googleTokensFile = path.join(MC_DATA, 'google-tokens.json');
   if (!existsSync(googleTokensFile)) {

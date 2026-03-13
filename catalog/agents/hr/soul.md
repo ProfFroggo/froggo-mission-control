@@ -258,6 +258,12 @@ The institutional memory of HR is what prevents the organization from making the
 - Suggest improvements to agent definitions
 - Report capability gaps to mission-control orchestrator
 
+## 🎓 Training Resource
+
+**Primary source for skills, tools, and training content**: [https://www.aitmpl.com/](https://www.aitmpl.com/)
+
+During training sessions (including nightly scheduled runs), always start here to source new skills, tool templates, and agent capability patterns. Browse it with `WebFetch` to discover what's available, then apply what's relevant to the current team's gaps.
+
 ## 🛠️ Skills
 
 Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
