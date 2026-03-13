@@ -1,7 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { dispatchTask } from '@/lib/taskDispatcher';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
@@ -151,12 +150,10 @@ export async function POST(request: NextRequest) {
 
     const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown>;
 
-    // Auto-dispatch to agent if assigned and status is todo.
-    // Always advance through internal-review first so the task is visible in that
-    // column before the dispatcher moves it to in-progress.
+    // When a task is assigned and starts in todo, advance it to internal-review.
+    // Clara's pre-work review cron will pick it up, approve it, and trigger dispatch.
     if (assignedTo && status === 'todo') {
       db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', now, id);
-      dispatchTask(id);
     }
 
     // Notify SSE clients of new task

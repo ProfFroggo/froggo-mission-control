@@ -194,13 +194,12 @@ export async function PATCH(
 
     // Auto-dispatch triggers:
     // 1. assignedTo set on a todo task (initial assignment)
-    // Advance through internal-review first so the task is visible in that column
-    // before the dispatcher moves it to in-progress.
+    // Advance to internal-review — Clara's pre-work review cron picks it up,
+    // approves it, and triggers dispatch. Do not call dispatchTask here.
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
     const isTodoStatus = (updated.status as string) === 'todo';
     if (wasAssigned && isTodoStatus) {
       db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), id);
-      dispatchTask(id);
     }
 
     // 2. Task rejected by Clara (reviewStatus=rejected/needs-changes → status=in-progress)
