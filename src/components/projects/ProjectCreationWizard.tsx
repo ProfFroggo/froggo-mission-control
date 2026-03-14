@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot } from 'lucide-react';
+import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate } from 'lucide-react';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
 import AgentAvatar from '../AgentAvatar';
 import { PROJECT_ICON_OPTIONS, getProjectIcon } from './projectIcons';
+import { PROJECT_TEMPLATES } from '../../lib/projectTemplates';
 
 const MC_SYSTEM = `You are Mission Control, helping set up a new project in the Mission Control platform.
 Keep responses brief and conversational — 1-2 sentences max. Be warm and direct.
@@ -18,7 +19,7 @@ const COLOR_OPTIONS = [
   '#06b6d4', '#3b82f6', '#a855f7', '#f43f5e',
 ];
 
-type Phase = 'name' | 'goal' | 'identity' | 'agents' | 'confirm' | 'creating' | 'done';
+type Phase = 'template' | 'name' | 'goal' | 'identity' | 'agents' | 'confirm' | 'creating' | 'done';
 
 interface ChatMsg {
   id: string;
@@ -50,7 +51,7 @@ function MCAvatar() {
 
 export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
-  const [phase, setPhase] = useState<Phase>('name');
+  const [phase, setPhase] = useState<Phase>('template');
   const [input, setInput] = useState('');
   const [mcTyping, setMcTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,13 +117,16 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, mcTyping]);
 
-  // Kick off conversation — ref guard prevents React Strict Mode double-invoke
+  // Kick off conversation when we enter the 'name' phase (after template selection)
   const initCalledRef = useRef(false);
   useEffect(() => {
+    if (phase !== 'name') return;
     if (initCalledRef.current) return;
     initCalledRef.current = true;
-    mcAsk('', undefined, "Hey, let's set up your new project. What should we call it?");
-  }, []);
+    mcAsk('', undefined, projName
+      ? `Great — using the "${projName}" template. You can keep that name or change it below:`
+      : "Let's set up your new project. What should we call it?");
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load agents when entering agents phase
   useEffect(() => {
@@ -346,6 +350,69 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   }
 
   const showInput = phase === 'name' || phase === 'goal';
+
+  // ── Template picker (shown before chat starts) ────────────────────────────
+  if (phase === 'template') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+            <div className="flex items-center gap-2">
+              <LayoutTemplate size={16} className="text-mission-control-accent" />
+              <span className="text-sm font-semibold text-mission-control-text">New Project</span>
+            </div>
+            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+            <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
+            {/* Blank */}
+            <button
+              onClick={() => setPhase('name')}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+            >
+              <div className="w-9 h-9 rounded-lg bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
+                <Bot size={16} className="text-mission-control-text-dim" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-mission-control-text">Blank project</div>
+                <div className="text-xs text-mission-control-text-dim">Start with a clean slate.</div>
+              </div>
+            </button>
+            {/* Templates */}
+            {PROJECT_TEMPLATES.map(tmpl => {
+              const TmplIcon = getProjectIcon(tmpl.iconId);
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => {
+                    setProjName(tmpl.name);
+                    setProjGoal(tmpl.goal);
+                    setIconId(tmpl.iconId);
+                    setColor(tmpl.color);
+                    setPhase('name');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${tmpl.color}20`, border: `1px solid ${tmpl.color}40` }}
+                  >
+                    <TmplIcon size={16} style={{ color: tmpl.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-mission-control-text">{tmpl.name}</div>
+                    <div className="text-xs text-mission-control-text-dim truncate">{tmpl.description}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

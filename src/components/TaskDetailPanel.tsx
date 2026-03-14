@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
@@ -19,6 +19,26 @@ const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
 import { isProtectedAgent } from '../lib/agentConfig';
+
+function parseAcceptanceCriteria(planningNotes: string): string[] {
+  const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
+  if (!match) return [];
+  return match[1]
+    .split('\n')
+    .filter(l => l.trim().startsWith('-'))
+    .map(l => l.replace(/^-\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 0) return '0m';
+  const totalMinutes = Math.floor(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
 
 interface TaskAttachment {
   id: number;
@@ -48,6 +68,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review' | 'chat'>('subtasks');
+  // Subtask enhancements: selection, bulk actions, due dates
+  const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [editingDueDateId, setEditingDueDateId] = useState<string | null>(null);
+  const newSubtaskInputRef = useRef<HTMLInputElement>(null);
+  const [suggestedCriteria, setSuggestedCriteria] = useState<string[]>([]);
+  const [isCreatingCriteriaSubtasks, setIsCreatingCriteriaSubtasks] = useState(false);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
@@ -251,11 +278,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       if (isCmdOrCtrl && e.key === 'n') {
         e.preventDefault();
         setActiveTab('subtasks');
-        // Focus the subtask input if it exists
-        setTimeout(() => {
-          const input = document.querySelector('[placeholder="Add a new subtask..."]') as HTMLInputElement;
-          input?.focus();
-        }, 100);
+        // Focus the subtask input
+        setTimeout(() => newSubtaskInputRef.current?.focus(), 100);
         return;
       }
 
@@ -461,8 +485,27 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       setSubtasks([...subtasks, result]);
       setNewSubtask('');
       showToast('success', 'Subtask added');
+      // Refocus so the user can press Enter repeatedly to add more subtasks
+      setTimeout(() => newSubtaskInputRef.current?.focus(), 0);
     } else {
       showToast('error', 'Failed to add subtask - check DevTools console for details');
+    }
+  };
+
+  const handleCreateCriteriaSubtasks = async (criteria: string[]) => {
+    if (!task || criteria.length === 0) return;
+    setIsCreatingCriteriaSubtasks(true);
+    try {
+      for (const criterion of criteria) {
+        const result = await addSubtask(task.id, criterion);
+        if (result) {
+          setSubtasks(prev => [...prev, result]);
+        }
+      }
+      setSuggestedCriteria([]);
+      showToast('success', `${criteria.length} subtask${criteria.length !== 1 ? 's' : ''} added from acceptance criteria`);
+    } finally {
+      setIsCreatingCriteriaSubtasks(false);
     }
   };
 
@@ -497,6 +540,73 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     const success = await deleteSubtask(task.id, subtaskId);
     if (success) {
       setSubtasks(subtasks.filter(s => s.id !== subtaskId));
+      setSelectedSubtaskIds(prev => { const n = new Set(prev); n.delete(subtaskId); return n; });
+    }
+  };
+
+  // Move subtask up or down by swapping positions and persisting to API
+  const handleMoveSubtask = async (index: number, direction: 'up' | 'down') => {
+    if (!task) return;
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= subtasks.length) return;
+
+    const newOrder = [...subtasks];
+    [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
+    setSubtasks(newOrder);
+
+    try {
+      await taskApi.reorderSubtasks(task.id, newOrder.map(s => s.id));
+    } catch {
+      setSubtasks(subtasks); // Revert on failure
+      showToast('error', 'Reorder failed');
+    }
+  };
+
+  const handleToggleSubtaskSelect = (subtaskId: string) => {
+    setSelectedSubtaskIds(prev => {
+      const next = new Set(prev);
+      if (next.has(subtaskId)) next.delete(subtaskId);
+      else next.add(subtaskId);
+      return next;
+    });
+  };
+
+  const handleBulkMarkDone = async () => {
+    if (!task || selectedSubtaskIds.size === 0) return;
+    const ids = Array.from(selectedSubtaskIds);
+    const now = Date.now();
+    await Promise.all(ids.map(id => updateSubtask(id, { completed: true })));
+    setSubtasks(prev =>
+      prev.map(s => selectedSubtaskIds.has(s.id) ? { ...s, completed: true, completedAt: now } : s),
+    );
+    setSelectedSubtaskIds(new Set());
+    showToast('success', `${ids.length} subtask${ids.length !== 1 ? 's' : ''} marked done`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!task || selectedSubtaskIds.size === 0) return;
+    const ids = Array.from(selectedSubtaskIds);
+    await Promise.all(ids.map(id => deleteSubtask(task.id, id)));
+    setSubtasks(prev => prev.filter(s => !selectedSubtaskIds.has(s.id)));
+    setSelectedSubtaskIds(new Set());
+    setBulkDeleteConfirm(false);
+    showToast('success', `${ids.length} subtask${ids.length !== 1 ? 's' : ''} deleted`);
+  };
+
+  const handleSetDueDate = async (subtaskId: string, dateStr: string) => {
+    const dueDate = dateStr ? new Date(dateStr + 'T00:00:00').getTime() : null;
+    const success = await updateSubtask(subtaskId, { dueDate });
+    if (success) {
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, dueDate } : s));
+    }
+    setEditingDueDateId(null);
+  };
+
+  const handleSetSubtaskAssignee = async (subtaskId: string, agentId: string) => {
+    const assignedTo = agentId || undefined;
+    const success = await updateSubtask(subtaskId, { assignedTo });
+    if (success) {
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, assignedTo } : s));
     }
   };
 
@@ -600,9 +710,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const reviewer = task?.reviewerId ? agents.find(a => a.id === task.reviewerId) : null;
   const subtaskProgress = subtasks.length > 0
-    ? (subtasks.filter(st => st.completed).length / subtasks.length) * 100 
+    ? (subtasks.filter(st => st.completed).length / subtasks.length) * 100
     : 0;
   const completedSubtasks = subtasks.filter(st => st.completed).length;
+
+  // Due date urgency for panel header
+  const dueDateUrgency = task?.dueDate && task.status !== 'done' ? (() => {
+    const now = Date.now();
+    const diff = task.dueDate - now;
+    if (diff < 0) {
+      const overdueDiff = Math.abs(diff);
+      const text = overdueDiff < 86400000 ? 'Overdue' : `${Math.floor(overdueDiff / 86400000)}d overdue`;
+      return { text, level: 'overdue' as const };
+    }
+    if (diff < 3600000) return { text: `Due in ${Math.floor(diff / 60000)}m`, level: 'soon' as const };
+    if (diff < 86400000) return { text: `Due in ${Math.floor(diff / 3600000)}h`, level: 'soon' as const };
+    if (diff < 604800000) return { text: `Due in ${Math.floor(diff / 86400000)}d`, level: 'week' as const };
+    return null;
+  })() : null;
 
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
@@ -615,6 +740,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       case 'subtask_deleted': return <X size={14} className="text-error" />;
       case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
       case 'review_status': return <Eye size={14} className="text-review" />;
+      case 'review-approved': return <CheckCircle size={14} className="text-success" />;
+      case 'review-rejected': return <XCircle size={14} className="text-error" />;
+      case 'pre-review-approved': return <CheckCircle size={14} className="text-info" />;
+      case 'pre-review-rejected': return <XCircle size={14} className="text-warning" />;
+      case 'pre-review-timeout': return <Activity size={14} className="text-warning" />;
       case 'agent_message': return <Bot size={14} className="text-mission-control-accent" />;
       case 'progress': return <Activity size={14} className="text-warning" />;
       default: return <MessageSquare size={14} className="text-mission-control-text-dim" />;
@@ -622,8 +752,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-    <div className="w-[700px] max-w-[95vw] max-h-[90vh] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
@@ -643,6 +773,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <span className="flex items-center gap-1 text-xs text-mission-control-accent">
               <Activity size={11} />
               {task.projectName}{!!task.stageNumber && ` · Stage ${task.stageNumber}`}
+            </span>
+          )}
+          {dueDateUrgency && (
+            <span className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
+              dueDateUrgency.level === 'overdue' ? 'bg-error-subtle text-error' :
+              dueDateUrgency.level === 'soon' ? 'bg-warning-subtle text-warning' :
+              'bg-warning-subtle/50 text-warning'
+            }`}>
+              {dueDateUrgency.level === 'overdue'
+                ? <AlertTriangle size={11} />
+                : <Clock size={11} />}
+              {dueDateUrgency.text}
             </span>
           )}
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
@@ -680,9 +822,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <p className="text-xs text-mission-control-text-dim line-clamp-1 mb-2" title={task.description}>{task.description}</p>
         )}
 
-        {/* Row 4: progress · tags · dates — all one line */}
+        {/* Row 4: progress · dates — all one line */}
         <div className="flex items-center gap-2 my-[14px]">
-          {subtasks.length > 0 && (
+          {subtasks.length > 0 ? (
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
                 <div
@@ -691,11 +833,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 />
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
-                {completedSubtasks}/{subtasks.length}
+                {completedSubtasks}/{subtasks.length} subtasks done
                 {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
             </>
-          )}
+          ) : typeof task.progress === 'number' && task.progress > 0 ? (
+            <>
+              <div className="h-2 flex-1 bg-mission-control-border rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-mission-control-accent transition-all duration-500 rounded-full"
+                  style={{ width: `${task.progress}%` }}
+                />
+              </div>
+              <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
+                {task.progress}%
+                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
+              </span>
+            </>
+          ) : null}
           {/* dates pushed right */}
           <div className="flex items-center gap-2 text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
@@ -763,6 +918,42 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </select>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Clara review notes callout */}
+      {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected', 'pre-rejected'].includes(task.reviewStatus) && (
+        <div className="mx-4 mt-3 p-3 bg-error-subtle border border-error-border rounded-xl flex items-start gap-2 flex-shrink-0">
+          <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold text-error block mb-0.5">
+              {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s feedback:
+            </span>
+            <p className="text-xs text-error/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+          </div>
+        </div>
+      )}
+      {task.reviewNotes && task.reviewStatus === 'approved' && (
+        <div className="mx-4 mt-3 p-3 bg-success-subtle border border-success-border rounded-xl flex items-start gap-2 flex-shrink-0">
+          <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold text-success block mb-0.5">
+              {task.reviewerId ? (agents.find(a => a.id === task.reviewerId)?.name || 'Reviewer') : 'Reviewer'}&apos;s notes:
+            </span>
+            <p className="text-xs text-success/90 whitespace-pre-wrap">{task.reviewNotes}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Time tracking strip */}
+      <div className="mx-4 mt-2 mb-0 flex items-center gap-4 text-xs text-mission-control-text-dim flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <Timer size={12} className="flex-shrink-0" />
+          <span>Active {formatDuration(task.updatedAt - task.createdAt)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Calendar size={12} className="flex-shrink-0" />
+          <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
         </div>
       </div>
 
@@ -854,14 +1045,53 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 )}
               </div>
             )}
-            {/* Add Subtask */}
+            {/* Acceptance criteria auto-subtask suggestion */}
+            {task.planningNotes && suggestedCriteria.length === 0 && subtasks.length === 0 && (() => {
+              const criteria = parseAcceptanceCriteria(task.planningNotes);
+              if (criteria.length === 0) return null;
+              return (
+                <div className="mb-4 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles size={14} className="text-mission-control-accent flex-shrink-0" />
+                    <span className="text-sm font-medium">Auto-generate from Acceptance Criteria</span>
+                  </div>
+                  <p className="text-xs text-mission-control-text-dim mb-2">
+                    Found {criteria.length} item{criteria.length !== 1 ? 's' : ''} in planning notes. Create them as subtasks?
+                  </p>
+                  <ul className="text-xs space-y-0.5 mb-3 pl-2">
+                    {criteria.map((c, i) => (
+                      <li key={i} className="text-mission-control-text-dim flex items-center gap-1.5">
+                        <Check size={11} className="text-mission-control-accent flex-shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handleCreateCriteriaSubtasks(criteria)}
+                    disabled={isCreatingCriteriaSubtasks}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+                  >
+                    {isCreatingCriteriaSubtasks ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                    Create {criteria.length} subtask{criteria.length !== 1 ? 's' : ''}
+                  </button>
+                </div>
+              );
+            })()}
+
+            {/* Add Subtask — Enter key creates next subtask automatically */}
             <div className="flex gap-2 mb-4">
               <input
+                ref={newSubtaskInputRef}
                 type="text"
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
-                placeholder="Add a subtask..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+                placeholder="Add a subtask... (Enter to add)"
                 className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
               />
               <button
@@ -873,10 +1103,58 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </button>
             </div>
 
+            {/* Bulk action bar — visible when one or more subtasks are selected */}
+            {selectedSubtaskIds.size > 0 && (
+              <div className="flex items-center gap-2 mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                <span className="text-xs text-mission-control-text-dim flex-1">
+                  {selectedSubtaskIds.size} selected
+                </span>
+                <button
+                  onClick={handleBulkMarkDone}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-success text-white rounded-lg hover:brightness-110 transition-colors"
+                >
+                  <Check size={12} />
+                  Mark done
+                </button>
+                {bulkDeleteConfirm ? (
+                  <>
+                    <span className="text-xs text-error">Delete {selectedSubtaskIds.size}?</span>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-error text-white rounded-lg hover:brightness-110 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                      Yes, delete
+                    </button>
+                    <button
+                      onClick={() => setBulkDeleteConfirm(false)}
+                      className="px-2.5 py-1 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setBulkDeleteConfirm(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-error/40 text-error rounded-lg hover:bg-error/10 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedSubtaskIds(new Set()); setBulkDeleteConfirm(false); }}
+                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Subtask List */}
             {loadingSubtasks ? (
               <div className="space-y-2">
-                {[1,2,3,4].map(i => (
+                {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-mission-control-border">
                     <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
                     <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
@@ -891,52 +1169,153 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </div>
             ) : (
               <div className="space-y-2">
-                {subtasks.map((st, _idx) => (
-                  <div
-                    key={st.id}
-                    className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      st.completed
-                        ? 'bg-success-subtle border-success-border'
-                        : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
-                  >
-                    <button
-                      onClick={() => handleToggleSubtask(st.id)}
-                      className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
-                        st.completed
-                          ? 'bg-success text-white'
-                          : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                {subtasks.map((st, idx) => {
+                  const isSelected = selectedSubtaskIds.has(st.id);
+                  const isOverdue = st.dueDate != null && !st.completed && st.dueDate < Date.now();
+                  const dueDateStr = st.dueDate
+                    ? new Date(st.dueDate).toISOString().split('T')[0]
+                    : '';
+                  const dueDateDisplay = st.dueDate
+                    ? new Date(st.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                    : null;
+
+                  return (
+                    <div
+                      key={st.id}
+                      className={`group flex items-start gap-2 p-3 rounded-xl border transition-all ${
+                        isSelected
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent/50'
+                          : st.completed
+                            ? 'bg-success-subtle border-success-border'
+                            : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
                       }`}
                     >
-                      {st.completed && <Check size={14} />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span className={`flex-1 min-w-0 truncate text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-sm'}`}>
-                        {st.title}
-                      </span>
-                      {st.description && (
-                        <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
-                      )}
-                      {st.completedAt && (
-                        <p className="text-xs text-success/60 mt-0.5">
-                          Completed {formatTime(st.completedAt)}
-                          {st.completedBy && ` by ${agents.find(a => a.id === st.completedBy)?.name || st.completedBy}`}
-                        </p>
-                      )}
+                      {/* Selection checkbox — appears on hover or when selected */}
+                      <button
+                        onClick={() => handleToggleSubtaskSelect(st.id)}
+                        className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
+                          isSelected
+                            ? 'bg-mission-control-accent border-mission-control-accent text-white opacity-100'
+                            : 'border-mission-control-border opacity-0 group-hover:opacity-100'
+                        }`}
+                        title="Select subtask"
+                      >
+                        {isSelected && <Check size={10} />}
+                      </button>
+
+                      {/* Completion toggle */}
+                      <button
+                        onClick={() => handleToggleSubtask(st.id)}
+                        className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
+                          st.completed
+                            ? 'bg-success text-white'
+                            : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                        }`}
+                      >
+                        {st.completed && <Check size={13} />}
+                      </button>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}
+                        >
+                          {st.title}
+                        </span>
+                        {st.description && (
+                          <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {/* Assignee selector */}
+                          <div className="flex items-center gap-1">
+                            <User size={11} className="text-mission-control-text-dim flex-shrink-0" />
+                            <select
+                              value={st.assignedTo || ''}
+                              onChange={(e) => handleSetSubtaskAssignee(st.id, e.target.value)}
+                              className="text-xs bg-transparent border-none outline-none text-mission-control-text-dim cursor-pointer hover:text-mission-control-text max-w-[100px] truncate"
+                              title="Assign to agent"
+                            >
+                              <option value="">Unassigned</option>
+                              {agents.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Due date badge / editor */}
+                          {editingDueDateId === st.id ? (
+                            <input
+                              type="date"
+                              autoFocus
+                              defaultValue={dueDateStr}
+                              onBlur={(e) => handleSetDueDate(st.id, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter')
+                                  handleSetDueDate(st.id, (e.target as HTMLInputElement).value);
+                                if (e.key === 'Escape') setEditingDueDateId(null);
+                              }}
+                              className="text-xs bg-mission-control-bg border border-mission-control-accent rounded px-1 py-0 outline-none"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingDueDateId(st.id)}
+                              className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded transition-colors ${
+                                isOverdue
+                                  ? 'text-error bg-error/10 border border-error/30'
+                                  : dueDateDisplay
+                                    ? 'text-mission-control-text-dim bg-mission-control-border'
+                                    : 'text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100'
+                              }`}
+                              title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
+                            >
+                              <Calendar size={10} />
+                              {dueDateDisplay ?? 'Due date'}
+                            </button>
+                          )}
+
+                          {st.completedAt && (
+                            <span className="text-xs text-success/60">
+                              Done {formatTime(st.completedAt)}
+                              {st.completedBy &&
+                                ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reorder buttons */}
+                      <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleMoveSubtask(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+                          title="Move up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleMoveSubtask(idx, 'down')}
+                          disabled={idx === subtasks.length - 1}
+                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+                          title="Move down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteSubtask(st.id)}
+                        className="mt-0.5 p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        title="Delete subtask"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
-                    {st.assignedTo && (
-                      <span className="text-xs bg-mission-control-border px-2 py-0.5 rounded flex-shrink-0">
-                        {agents.find(a => a.id === st.assignedTo)?.name || st.assignedTo}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleDeleteSubtask(st.id)}
-                      className="p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1040,6 +1419,40 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   ))}
               </select>
             </div>
+
+            {/* Related Tasks */}
+            {(() => {
+              const allTasks = useStore.getState().tasks;
+              const related = allTasks
+                .filter(t =>
+                  t.id !== task.id &&
+                  t.status !== 'done' &&
+                  (t.project === task.project || t.assignedTo === task.assignedTo)
+                )
+                .slice(0, 3);
+              if (related.length === 0) return null;
+              return (
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+                    <Link2 size={16} className="text-mission-control-accent" />
+                    Related Tasks
+                  </h3>
+                  <div className="space-y-1.5">
+                    {related.map(rt => (
+                      <div key={rt.id} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          rt.status === 'in-progress' ? 'bg-warning' :
+                          rt.status === 'review' ? 'bg-review' :
+                          'bg-mission-control-border'
+                        }`} />
+                        <span className="flex-1 truncate text-xs">{rt.title}</span>
+                        <span className="text-xs text-mission-control-text-dim flex-shrink-0">{rt.project}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -1081,7 +1494,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 {activities.map((act, _idx) => (
                   <div
                     key={act.id}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
+                    className={`flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${
+                      act.action === 'review-rejected' || act.action === 'pre-review-rejected'
+                        ? 'bg-error-subtle border border-error/20'
+                        : act.action === 'review-approved' || act.action === 'pre-review-approved'
+                        ? 'bg-success-subtle border border-success/20'
+                        : ''
+                    }`}
                   >
                     <div className="mt-1 p-1 rounded bg-mission-control-bg">
                       {getActivityIcon(act.action)}

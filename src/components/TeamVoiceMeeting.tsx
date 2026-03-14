@@ -7,7 +7,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2,
   Download, Square, Users, MessageSquare, Monitor, MonitorOff,
-  SlidersHorizontal, X as XIcon,
+  SlidersHorizontal, X as XIcon, Clock, ChevronDown, ChevronUp,
+  Circle, StopCircle,
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
@@ -69,6 +70,26 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const [showScreenPicker, setShowScreenPicker] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const [canInterrupt, setCanInterrupt] = useState(false);
+
+  // Push-to-talk mode
+  const [pushToTalkMode, setPushToTalkMode] = useState(false);
+  const [pushToTalkActive, setPushToTalkActive] = useState(false);
+  const pushToTalkRef = useRef(false);
+
+  // Participant panel
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [agentsMuted, setAgentsMuted] = useState<Set<string>>(new Set());
+
+  // Recording mode
+  const [isRecording, setIsRecording] = useState(false);
+
+  // End meeting confirmation + summary
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+
+  // Call duration timer
+  const [callDurationSecs, setCallDurationSecs] = useState(0);
+  const callStartRef = useRef<number | null>(null);
+  const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Device selection
   const [showDeviceSettings, setShowDeviceSettings] = useState(false);
@@ -222,14 +243,138 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
       if (geminiLive.connected) {
         geminiLive.disconnect();
       }
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+      }
     };
   }, []);
+
+  // Push-to-talk keyboard handler (Space = hold to unmute)
+  useEffect(() => {
+    if (!pushToTalkMode || !isActive) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      e.preventDefault();
+      if (!pushToTalkRef.current) {
+        pushToTalkRef.current = true;
+        setPushToTalkActive(true);
+        startListening();
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      if (pushToTalkRef.current) {
+        pushToTalkRef.current = false;
+        setPushToTalkActive(false);
+        stopListeningFn();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [pushToTalkMode, isActive]);
+
+  // Call duration timer — starts when meeting becomes active
+  useEffect(() => {
+    if (isActive) {
+      callStartRef.current = Date.now();
+      setCallDurationSecs(0);
+      durationTimerRef.current = setInterval(() => {
+        if (callStartRef.current) {
+          setCallDurationSecs(Math.floor((Date.now() - callStartRef.current) / 1000));
+        }
+      }, 1000);
+    } else {
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+      callStartRef.current = null;
+    }
+    return () => {
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+        durationTimerRef.current = null;
+      }
+    };
+  }, [isActive]);
 
   const clearPending = () => {
     pendingAgentRef.current = null;
     pendingMsgIdRef.current = null;
     pendingContentRef.current = '';
     setProcessingAgent(null);
+  };
+
+  // Format call duration as HH:MM:SS
+  const formatDuration = (secs: number): string => {
+    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+
+  // Build meeting summary from transcript
+  const buildMeetingSummary = (): string => {
+    if (!room) return '';
+    const participants = ['You (Host)', ...room.agents.map(id => agentName(id))];
+    const userLines = transcript.filter(e => e.speaker === 'user').map(e => e.content);
+    const agentLines = transcript.filter(e => e.speaker !== 'user' && e.speaker !== 'system').map(e => e.content);
+    const allText = [...userLines, ...agentLines].join(' ').toLowerCase();
+
+    // Extract rough topics from the first words of each user turn
+    const topics: string[] = [];
+    for (const line of userLines.slice(0, 5)) {
+      const words = line.trim().split(/\s+/).slice(0, 6).join(' ');
+      if (words) topics.push(words);
+    }
+
+    const duration = formatDuration(callDurationSecs);
+    const msgCount = transcript.filter(e => e.speaker !== 'system').length;
+
+    let summary = `Duration: ${duration}\n`;
+    summary += `Participants: ${participants.join(', ')}\n`;
+    summary += `Messages exchanged: ${msgCount}\n`;
+    if (topics.length > 0) summary += `Topics discussed: ${topics.map(t => `"${t}"`).join('; ')}`;
+    if (isRecording) summary += `\nRecording: session was recorded`;
+    void allText; // suppress unused warning
+    return summary;
+  };
+
+  // Mute-all: stop all agent TTS and clear queue
+  const muteAllAgents = () => {
+    ttsAbortRef.current?.abort();
+    ttsAbortRef.current = null;
+    stopSpeaking();
+    if (agentTimeoutRef.current) {
+      clearTimeout(agentTimeoutRef.current);
+      agentTimeoutRef.current = null;
+    }
+    setSpeakingAgent(null);
+    setSpeakLevel(0);
+    agentQueueRef.current = [];
+    setSpeakQueue([]);
+    setProcessingAgent(null);
+    clearPending();
+    // Mark all agents as individually muted
+    if (room) {
+      setAgentsMuted(new Set(room.agents));
+    }
+    setTimeout(() => setAgentsMuted(new Set()), 5000); // auto-unmute after 5s
+  };
+
+  // Toggle individual agent mute
+  const toggleAgentMute = (agentId: string) => {
+    setAgentsMuted(prev => {
+      const next = new Set(prev);
+      if (next.has(agentId)) next.delete(agentId);
+      else next.add(agentId);
+      return next;
+    });
   };
 
   // ── Screen share ──
@@ -763,11 +908,58 @@ Respond as ${agentName(agentId)}:`;
             <div className="flex items-center gap-1.5 ml-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-xs text-error font-medium">LIVE</span>
+              <div className="flex items-center gap-1 ml-1 text-xs text-mission-control-text-dim">
+                <Clock size={11} />
+                <span className="font-mono">{formatDuration(callDurationSecs)}</span>
+              </div>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Push-to-talk toggle */}
+          <button
+            onClick={() => setPushToTalkMode(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              pushToTalkMode
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            title={pushToTalkMode ? 'Push-to-talk ON — hold Space to speak' : 'Enable push-to-talk mode'}
+          >
+            <Mic size={11} />
+            PTT
+          </button>
+
+          {/* Participants panel toggle */}
+          <button
+            onClick={() => setShowParticipants(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              showParticipants
+                ? 'bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/40'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            title="Toggle participant list"
+          >
+            <Users size={11} />
+            {room.agents.length + 1}
+            {showParticipants ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          </button>
+
+          {/* Recording toggle */}
+          <button
+            onClick={() => setIsRecording(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              isRecording
+                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+          >
+            {isRecording ? <StopCircle size={11} /> : <Circle size={11} />}
+            {isRecording ? 'Recording' : 'Record'}
+          </button>
+
           {/* Turn mode */}
           <select
             value={turnMode}
@@ -872,7 +1064,9 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Back to text */}
           <button
-            onClick={() => { if (isActive) endMeeting(); onEndVoice(); }}
+            onClick={() => {
+              if (isActive) { setShowEndConfirm(true); } else { onEndVoice(); }
+            }}
             className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Switch to text"
           >
@@ -880,6 +1074,94 @@ Respond as ${agentName(agentId)}:`;
           </button>
         </div>
       </div>
+
+      {/* Recording banner */}
+      {isRecording && (
+        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-red-500/10 border-b border-red-500/30 text-red-400 text-xs font-medium">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          Meeting is being recorded
+        </div>
+      )}
+
+      {/* Participant list panel */}
+      {showParticipants && (
+        <div className="border-b border-mission-control-border bg-mission-control-surface/60 px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Participants</span>
+            {isActive && (
+              <button
+                onClick={muteAllAgents}
+                className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-error-subtle text-error border border-error-border hover:bg-error/20 transition-colors"
+                title="Stop all agents from speaking"
+              >
+                <MicOff size={11} />
+                Mute all agents
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            {/* Host (user) */}
+            <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-mission-control-bg/40">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                K
+              </div>
+              <span className="text-sm font-medium text-mission-control-text flex-1">You (Host)</span>
+              <div className={`flex items-center gap-1 text-xs ${listening ? 'text-indigo-400' : 'text-mission-control-text-dim'}`}>
+                {listening ? <Mic size={12} /> : <MicOff size={12} />}
+                {listening ? 'Speaking' : 'Muted'}
+              </div>
+            </div>
+            {/* Agents */}
+            {room.agents.map(id => {
+              const agent = agents.find(a => a.id === id);
+              const isSpeaking = speakingAgent === id;
+              const isProcessing = processingAgent === id;
+              const isQueued = speakQueue.includes(id);
+              const isAgentMuted = agentsMuted.has(id);
+              return (
+                <div key={id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-mission-control-bg/40 transition-colors">
+                  <AgentAvatar agentId={id} size="xs" />
+                  <span className="text-sm text-mission-control-text flex-1">{agent?.name || id}</span>
+                  <div className="flex items-center gap-2">
+                    {isSpeaking && (
+                      <span className="text-xs text-success">Speaking</span>
+                    )}
+                    {isProcessing && !isSpeaking && (
+                      <span className="text-xs text-warning">Thinking</span>
+                    )}
+                    {isQueued && !isProcessing && (
+                      <span className="text-xs text-mission-control-text-dim">Queued</span>
+                    )}
+                    {!isSpeaking && !isProcessing && !isQueued && (
+                      <span className="text-xs text-mission-control-text-dim">Listening</span>
+                    )}
+                    <button
+                      onClick={() => toggleAgentMute(id)}
+                      className={`p-1 rounded transition-colors ${
+                        isAgentMuted
+                          ? 'text-error hover:text-error/80'
+                          : 'text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
+                      title={isAgentMuted ? 'Unmute agent' : 'Mute agent'}
+                    >
+                      {isAgentMuted ? <MicOff size={12} /> : <Mic size={12} />}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {pushToTalkMode && (
+            <div className={`mt-2 px-2 py-1.5 rounded-lg text-xs text-center font-medium transition-colors ${
+              pushToTalkActive
+                ? 'bg-indigo-500/30 text-indigo-300'
+                : 'bg-mission-control-border/50 text-mission-control-text-dim'
+            }`}>
+              {pushToTalkActive ? 'Transmitting — release Space to stop' : 'Hold Space to speak (push-to-talk active)'}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Agent bar — shows who's in the meeting */}
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface/50 flex items-center gap-3 overflow-x-auto">
@@ -1133,7 +1415,13 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Start/End meeting */}
           <button
-            onClick={() => isActive ? endMeeting() : startMeeting()}
+            onClick={() => {
+              if (isActive) {
+                setShowEndConfirm(true);
+              } else {
+                startMeeting();
+              }
+            }}
             className={`p-5 rounded-full transition-all ${
               isActive
                 ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'
@@ -1147,6 +1435,13 @@ Respond as ${agentName(agentId)}:`;
         {!isActive && (
           <p className="text-center text-xs text-mission-control-text-dim mt-2">
             Press to start voice meeting
+          </p>
+        )}
+        {isActive && pushToTalkMode && (
+          <p className={`text-center text-xs mt-2 font-medium transition-colors ${
+            pushToTalkActive ? 'text-indigo-400' : 'text-mission-control-text-dim'
+          }`}>
+            {pushToTalkActive ? 'Transmitting...' : 'Hold Space to speak'}
           </p>
         )}
       </div>

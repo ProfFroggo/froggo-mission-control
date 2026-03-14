@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { handleApiError } from '@/lib/apiErrors';
 
 export async function GET() {
   try {
@@ -14,6 +15,6 @@ export async function GET() {
     return NextResponse.json(sessions);
   } catch (error) {
     console.error('GET /api/sessions error:', error);
-    return NextResponse.json([]);
+    return handleApiError(error);
   }
 }

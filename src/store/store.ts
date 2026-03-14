@@ -52,6 +52,7 @@ export interface Subtask {
   completedBy?: string;
   position?: number;
   createdAt?: number;
+  dueDate?: number | null;
 }
 
 export interface TaskActivity {
@@ -81,6 +82,7 @@ export interface Task {
   reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected' | 'pre-review' | 'pre-approved' | 'pre-rejected';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
+  scheduledAt?: number; // Unix timestamp — when to start work
   estimatedHours?: number;
   blockedBy?: string[]; // Task IDs this is blocked by
   blocks?: string[]; // Task IDs this blocks
@@ -236,7 +238,7 @@ interface Store {
   // Subtasks (DB-backed)
   loadSubtasksForTask: (taskId: string) => Promise<Subtask[]>;
   addSubtask: (taskId: string, title: string, description?: string, assignedTo?: string) => Promise<Subtask | null>;
-  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => Promise<boolean>;
+  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => Promise<boolean>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<boolean>;
   
   // Task Activity (DB-backed)
@@ -532,6 +534,7 @@ export const useStore = create<Store>()(
             reviewStatus: t.reviewStatus || undefined,
             planningNotes: t.planningNotes || undefined,
             dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+            scheduledAt: t.scheduledAt ? Number(t.scheduledAt) : undefined,
             lastAgentUpdate: t.lastAgentUpdate || undefined,
             createdAt: t.createdAt || Date.now(),
             updatedAt: t.updatedAt || Date.now(),
@@ -841,7 +844,7 @@ export const useStore = create<Store>()(
         return null;
       },
 
-      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
+      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => {
         try {
           // Find the parent taskId from state
           const parentTask = get().tasks.find((t: Task) => (t.subtasks || []).some((st: Subtask) => st.id === subtaskId));

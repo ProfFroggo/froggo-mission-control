@@ -109,6 +109,7 @@ const MCP_MEMORY = [
   'mcp__memory__memory_recall',
   'mcp__memory__memory_write',
   'mcp__memory__memory_read',
+  'mcp__memory__memory_list',
 ];
 
 const MCP_GOOGLE = [
@@ -463,8 +464,8 @@ function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?
 
     if (scored.length === 0) return '';
 
-    // Token budget guard: ~1500 token limit (chars / 4)
-    const TOKEN_BUDGET = 1500 * 4; // chars
+    // Token budget guard: capped at 3000 chars for faster agent processing
+    const TOKEN_BUDGET = 3000; // chars
     let totalChars = 0;
     const capped = scored.filter(f => {
       totalChars += f.content.length;
@@ -503,6 +504,62 @@ function loadHandoffNote(taskId: string, agentId: string): string {
   return '';
 }
 
+// ── Dispatch context enrichment ───────────────────────────────────────────────
+
+/**
+ * Build a structured context block injected into the agent's system prompt
+ * at dispatch time: project name, parent task title, and blocking task titles.
+ * Returns an empty string if no enrichment is possible (non-critical).
+ */
+function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
+  try {
+    const db = getDb();
+    const lines: string[] = [];
+
+    // Project name (prefer DB lookup so we always get the canonical name)
+    const projectId = task.project_id as string | undefined;
+    if (projectId && !projectId.startsWith('cmp-')) {
+      try {
+        const proj = db.prepare('SELECT name FROM projects WHERE id = ?').get(projectId) as
+          { name: string } | undefined;
+        if (proj?.name) lines.push(`Project: ${proj.name}`);
+      } catch { /* non-critical */ }
+    }
+
+    // Parent task title
+    const parentTaskId = task.parentTaskId as string | undefined;
+    if (parentTaskId) {
+      try {
+        const parent = db.prepare('SELECT title FROM tasks WHERE id = ?').get(parentTaskId) as
+          { title: string } | undefined;
+        if (parent?.title) lines.push(`Parent task: ${parent.title}`);
+      } catch { /* non-critical */ }
+    }
+
+    // Blocking task titles — blockedBy is stored as a JSON array of task IDs
+    const blockedByRaw = task.blockedBy as string | undefined;
+    if (blockedByRaw) {
+      try {
+        const blockedByIds: string[] = JSON.parse(blockedByRaw);
+        if (Array.isArray(blockedByIds) && blockedByIds.length > 0) {
+          const placeholders = blockedByIds.map(() => '?').join(', ');
+          const blockers = db.prepare(
+            `SELECT title FROM tasks WHERE id IN (${placeholders})`
+          ).all(...blockedByIds) as Array<{ title: string }>;
+          if (blockers.length > 0) {
+            lines.push(`Blocked by: ${blockers.map(b => b.title).join(', ')}`);
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
+    if (lines.length === 0) return '';
+    return `\n\n## Task Context\n${lines.join('\n')}`;
+  } catch {
+    return ''; // Never block dispatch
+  }
+}
+
 // ── Knowledge Base injection ──────────────────────────────────────────────────
 
 /**
@@ -534,8 +591,8 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
     const all = [...pinned, ...relevant.filter(r => !pinnedIds.has(r.id))].slice(0, 4);
     if (all.length === 0) return '';
 
-    // Token budget guard: ~1500 token limit (chars / 4)
-    const TOKEN_BUDGET = 1500 * 4;
+    // Token budget guard: capped at 3000 chars for faster agent processing
+    const TOKEN_BUDGET = 3000;
     let totalChars = 0;
     const capped = all.filter(a => {
       totalChars += a.content.length;
@@ -595,6 +652,59 @@ function buildProjectContext(projectId: string): string {
   } catch { return ''; }
 }
 
+// ── Campaign context injection ────────────────────────────────────────────────
+
+function buildCampaignContext(campaignId: string): string {
+  try {
+    const db = getDb();
+    const campaign = db.prepare(
+      `SELECT name, type, goal, channels, targetAudience, briefContent FROM campaigns WHERE id = ?`
+    ).get(campaignId) as {
+      name: string; type: string; goal: string | null;
+      channels: string; targetAudience: string | null; briefContent: string | null;
+    } | undefined;
+
+    if (!campaign) return '';
+
+    let channels: string[] = [];
+    try { channels = JSON.parse(campaign.channels || '[]'); } catch { /* ignore */ }
+
+    const campaignDir = join(HOME, 'mission-control', 'library', 'campaigns', campaignId);
+
+    const lines = [
+      `\n\n## Campaign Context`,
+      `**Campaign**: ${campaign.name}`,
+      `**Type**: ${campaign.type}`,
+    ];
+    if (campaign.goal)           lines.push(`**Goal**: ${campaign.goal}`);
+    if (channels.length > 0)     lines.push(`**Channels**: ${channels.join(', ')}`);
+    if (campaign.targetAudience) lines.push(`**Target Audience**: ${campaign.targetAudience}`);
+    lines.push(`**Campaign directory**: \`${campaignDir}\``);
+    lines.push(`**IMPORTANT**: Save ALL output files (copy, assets, reports, scripts) to this directory.`);
+    lines.push(`Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\``);
+    lines.push(`After saving any file, log it: \`mcp__mission-control_db__task_add_attachment\``);
+    if (campaign.briefContent) {
+      const brief = campaign.briefContent.slice(0, 800);
+      lines.push(`\n### Campaign Brief\n${brief}${campaign.briefContent.length > 800 ? '\n[...truncated]' : ''}`);
+    }
+
+    lines.push(`\n## Campaign Room Updates — MANDATORY`);
+    lines.push(`Post progress updates to the campaign chat room as you work.`);
+    lines.push(`Room ID: \`campaign-${campaignId}\``);
+    lines.push(`Call this at task start, each major milestone, blockers, and completion:`);
+    lines.push('```json');
+    lines.push(`mcp__mission-control_db__chat_post {`);
+    lines.push(`  "roomId": "campaign-${campaignId}",`);
+    lines.push(`  "agentId": "<your-agent-id>",`);
+    lines.push(`  "content": "<your update message>"`);
+    lines.push(`}`);
+    lines.push('```');
+    lines.push(`Keep updates concise: what you just did, what you're doing next, or any blockers.`);
+
+    return lines.join('\n');
+  } catch { return ''; }
+}
+
 // ── Soul file / system prompt ─────────────────────────────────────────────────
 
 function buildApiKeyPrompt(apiKeyEnv: Record<string, string>): string {
@@ -644,14 +754,22 @@ function buildTaskSystemPrompt(
     } catch { /* non-critical */ }
   }
 
-  // Inject project context if this task belongs to a project
-  const projectContext = task?.project_id ? buildProjectContext(task.project_id as string) : '';
+  // Inject project or campaign context depending on which this task belongs to
+  const projectId = task?.project_id as string | undefined;
+  const projectContext = projectId
+    ? (projectId.startsWith('cmp-')
+        ? buildCampaignContext(projectId)
+        : buildProjectContext(projectId))
+    : '';
+
+  // Structured dispatch context: project name, parent task, blockers
+  const dispatchContext = task ? buildDispatchContextEnrichment(task) : '';
 
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + relevantMemory + handoffNote + kbContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + kbContext + dispatchContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -666,6 +784,7 @@ function buildTaskSystemPrompt(
       if (relevantMemory) parts.push(relevantMemory);
       if (handoffNote) parts.push(handoffNote);
       if (kbContext) parts.push(kbContext);
+      if (dispatchContext) parts.push(dispatchContext);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
@@ -886,6 +1005,15 @@ function recordAgentFailure(agentId: string) {
   }
 }
 
+/** Reset all circuit breakers — clears failure counts and lock times for all agents */
+export function resetAllCircuits(): void {
+  const agentIds = [...agentFailureCounts.keys()];
+  agentFailureCounts.clear();
+  for (const agentId of agentIds) {
+    emitSSEEvent('circuit.closed', { agentId });
+  }
+}
+
 /** Export circuit breaker state for API routes / health checks */
 export function getCircuitBreakerState(): Record<string, { open: boolean; failures: number; lockedUntil: number | null }> {
   const result: Record<string, { open: boolean; failures: number; lockedUntil: number | null }> = {};
@@ -1027,6 +1155,26 @@ export function dispatchTask(taskId: string): boolean {
       return false;
     }
 
+    // Agent load balance check — warn if agent has ≥3 in-progress tasks
+    try {
+      const inProgressCount = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
+      ).get(agentId) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (inProgressCount >= 3) {
+        console.warn(`[taskDispatcher] Agent ${agentId} has ${inProgressCount} in-progress tasks — potentially overloaded`);
+        try {
+          db.prepare(
+            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+          ).run(
+            taskId, 'system', 'agent_overload_warning',
+            `Warning: agent ${agentId} already has ${inProgressCount} in-progress task(s). Dispatching anyway.`,
+            Date.now()
+          );
+        } catch { /* non-critical */ }
+      }
+    } catch { /* non-critical — never block dispatch */ }
+
     // Concurrency check — skip if at limit
     if (activeDispatches >= MAX_CONCURRENT_DISPATCHES) {
       console.warn(`[taskDispatcher] Concurrency limit reached (${MAX_CONCURRENT_DISPATCHES}). Task ${taskId} skipped.`);
@@ -1037,158 +1185,186 @@ export function dispatchTask(taskId: string): boolean {
     // Telemetry: dispatch started
     trackEvent('dispatch.start', { taskId, agentId });
 
-    const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
-      cwd,
-      env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId, ...apiKeyEnv } as unknown as NodeJS.ProcessEnv,
-      detached: true,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    // ── Spawn with retry + exponential backoff ────────────────────────────────
+    // Up to 3 total attempts (2 retries). Backoff: 2s then 4s between attempts.
+    // On all retries exhausted, task is moved to human-review.
+    const MAX_DISPATCH_ATTEMPTS = 3;
+    const RETRY_DELAYS_MS = [2000, 4000]; // delay before attempt 2 and 3
 
-    // Capture stderr for error reporting
-    let stderrBuf = '';
-    proc.stderr!.on('data', (chunk: Buffer) => {
-      stderrBuf += chunk.toString();
-    });
+    const spawnAttempt = (attemptNumber: number): void => {
+      const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
+        cwd,
+        env: { ...cleanEnv, CLAUDE_AGENT_ID: agentId, ...apiKeyEnv } as unknown as NodeJS.ProcessEnv,
+        detached: true,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
 
-    // Write message to stdin
-    proc.stdin!.write(message);
-    proc.stdin!.end();
+      // Capture stderr for error reporting
+      let stderrBuf = '';
+      proc.stderr!.on('data', (chunk: Buffer) => {
+        stderrBuf += chunk.toString();
+      });
 
-    // Parse stdout for session_id (from stream-json "result" event)
-    let outBuf = '';
-    proc.stdout!.on('data', (data: Buffer) => {
-      outBuf += data.toString();
-      const lines = outBuf.split('\n');
-      outBuf = lines.pop() ?? '';
-      for (const line of lines) {
-        try {
-          const parsed = JSON.parse(line.trim()) as {
-            type?: string; session_id?: string;
-            input_tokens?: number; output_tokens?: number;
-          };
-          if (parsed.type === 'result') {
-            if (parsed.session_id) {
-              persistTaskSession(taskId, parsed.session_id, model);
-            }
-            // Log token usage
-            const inputT  = parsed.input_tokens  ?? 0;
-            const outputT = parsed.output_tokens ?? 0;
-            if (inputT > 0 || outputT > 0) {
-              try {
-                const costUsd = calcCostUsd(model, inputT, outputT);
-                getDb().prepare(
-                  `INSERT INTO token_usage (agentId, taskId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, 'dispatch', ?)`
-                ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
-              } catch { /* non-critical */ }
-            }
-          }
-        } catch { /* not JSON, ignore */ }
-      }
-    });
+      // Write message to stdin
+      proc.stdin!.write(message);
+      proc.stdin!.end();
 
-    // Log exit code and update task status on failure
-    proc.on('close', (code) => {
-      activeDispatches = Math.max(0, activeDispatches - 1);
-
-      // Circuit breaker tracking
-      if (code === 0) {
-        recordAgentSuccess(agentId);
-        trackEvent('dispatch.complete', { taskId, agentId, exitCode: code });
-      } else {
-        recordAgentFailure(agentId);
-        const stderrSnippet = stderrBuf.slice(0, 200);
-        trackEvent('dispatch.error', { taskId, agentId, exitCode: code, stderr: stderrSnippet }, agentId);
-      }
-
-      // Log stderr on non-zero exit
-      if (code !== 0 && stderrBuf) {
-        const errorSnippet = stderrBuf.slice(0, 500);
-        console.error(`[taskDispatcher] Agent ${agentId} task ${taskId} failed (exit ${code}): ${errorSnippet}`);
-        try {
-          getDb().prepare(
-            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-          ).run(taskId, 'system', 'dispatch_stderr', `Dispatch failed (exit ${code}): ${errorSnippet}`, Date.now());
-        } catch { /* non-critical */ }
-      }
-
-      try {
-        const exitMsg = code === 0
-          ? `Agent ${agentId} completed task dispatch (exit 0)`
-          : `Agent ${agentId} exited with code ${code}`;
-        db.prepare(
-          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-        ).run(taskId, agentId, 'dispatch_exit', exitMsg, Date.now());
-
-        if (code !== 0) {
-          const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(taskId) as { status: string } | undefined;
-          if (current && (current.status === 'todo' || current.status === 'in-progress')) {
-            db.prepare(
-              `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
-            ).run(`Dispatch process exited with code ${code}. Needs human review to unblock.`, taskId);
-          }
-        }
-
-        // If agent exited cleanly but task is still mid-flight, re-dispatch
-        // to complete the handoff (agent's session ended mid-step)
-        if (code === 0) {
-          const current = db.prepare('SELECT status, assignedTo FROM tasks WHERE id = ?')
-            .get(taskId) as { status: string; assignedTo: string | null } | undefined;
-          // Only re-dispatch from in-progress — internal-review is Clara's pre-work gate,
-          // not a state an agent can be stuck in during dispatch.
-          const stuckInFlight = current?.assignedTo && current.status === 'in-progress';
-          if (stuckInFlight) {
-            // Count prior auto-redispatch attempts to prevent infinite loops
-            const redispatchCount = (db.prepare(
-              `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'auto_redispatch'`
-            ).get(taskId) as { cnt: number } | undefined)?.cnt ?? 0;
-
-            if (redispatchCount < 3) {
-              db.prepare(
-                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-              ).run(taskId, 'system', 'auto_redispatch',
-                `Task left in ${current.status} after agent exit — re-dispatching to complete handoff (attempt ${redispatchCount + 1}/3)`,
-                Date.now());
-              if (!_redispatchTimeouts.has(taskId)) {
-                const t = setTimeout(() => {
-                  _redispatchTimeouts.delete(taskId);
-                  dispatchTask(taskId);
-                }, 5000);
-                _redispatchTimeouts.set(taskId, t);
+      // Parse stdout for session_id (from stream-json "result" event)
+      let outBuf = '';
+      proc.stdout!.on('data', (data: Buffer) => {
+        outBuf += data.toString();
+        const lines = outBuf.split('\n');
+        outBuf = lines.pop() ?? '';
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line.trim()) as {
+              type?: string; session_id?: string;
+              input_tokens?: number; output_tokens?: number;
+            };
+            if (parsed.type === 'result') {
+              if (parsed.session_id) {
+                persistTaskSession(taskId, parsed.session_id, model);
               }
-            } else {
-              // Too many retries — escalate to human
-              db.prepare(
-                `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
-              ).run(
-                `Agent exited without completing task after 3 re-dispatch attempts. Needs human review.`,
-                Date.now(), taskId
-              );
-              db.prepare(
-                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-              ).run(taskId, 'system', 'auto_redispatch_failed',
-                'Moved to human-review after 3 failed re-dispatch attempts', Date.now());
+              // Log token usage + check budget alerts
+              const inputT  = parsed.input_tokens  ?? 0;
+              const outputT = parsed.output_tokens ?? 0;
+              if (inputT > 0 || outputT > 0) {
+                try {
+                  const costUsd = calcCostUsd(model, inputT, outputT);
+                  const db = getDb();
+                  db.prepare(
+                    `INSERT INTO token_usage (agentId, taskId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, 'dispatch', ?)`
+                  ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
+                  // Check all budgets that apply to this agent and emit SSE alerts
+                  import('@/lib/budgetAlerts').then(({ checkBudgetAlerts }) => {
+                    checkBudgetAlerts(db, agentId);
+                  }).catch(() => { /* non-critical */ });
+                } catch { /* non-critical */ }
+              }
             }
-          }
+          } catch { /* not JSON, ignore */ }
         }
-      } catch { /* non-critical */ }
-    });
+      });
 
-    // Handle spawn errors (e.g. ENOENT if claude binary not found)
-    proc.on('error', (err) => {
-      activeDispatches = Math.max(0, activeDispatches - 1);
-      console.error(`[taskDispatcher] Spawn error for task ${taskId}:`, err);
-      try {
-        db.prepare(
-          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-        ).run(taskId, agentId, 'dispatch_error', `Spawn failed: ${err.message}`, Date.now());
-        db.prepare(
-          `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
-        ).run(`Could not start agent: ${err.message}. Needs human review to unblock.`, taskId);
-      } catch { /* non-critical */ }
-    });
+      // Shared failure handler — retries on non-zero exit or spawn error
+      const handleFailure = (errorMsg: string): void => {
+        if (attemptNumber < MAX_DISPATCH_ATTEMPTS) {
+          const delay = RETRY_DELAYS_MS[attemptNumber - 1] ?? 4000;
+          console.warn(`[taskDispatcher] Attempt ${attemptNumber}/${MAX_DISPATCH_ATTEMPTS} failed for task ${taskId} — retrying in ${delay}ms: ${errorMsg}`);
+          try {
+            db.prepare(
+              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+            ).run(
+              taskId, 'system', 'dispatch_retry',
+              `Dispatch attempt ${attemptNumber}/${MAX_DISPATCH_ATTEMPTS} failed — retrying in ${delay / 1000}s: ${errorMsg.slice(0, 200)}`,
+              Date.now()
+            );
+          } catch { /* non-critical */ }
+          setTimeout(() => spawnAttempt(attemptNumber + 1), delay);
+        } else {
+          // All attempts exhausted — move to human-review
+          activeDispatches = Math.max(0, activeDispatches - 1);
+          console.error(`[taskDispatcher] Dispatch failed after ${MAX_DISPATCH_ATTEMPTS} attempts for task ${taskId}: ${errorMsg}`);
+          try {
+            db.prepare(
+              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+            ).run(
+              taskId, 'system', 'dispatch_failed',
+              `Dispatch failed after ${MAX_DISPATCH_ATTEMPTS} attempts: ${errorMsg.slice(0, 300)}. Task moved to human-review.`,
+              Date.now()
+            );
+            db.prepare(
+              `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+            ).run(
+              `Dispatch failed after ${MAX_DISPATCH_ATTEMPTS} attempts: ${errorMsg.slice(0, 200)}. Task moved to human-review.`,
+              Date.now(), taskId
+            );
+          } catch { /* non-critical */ }
+          recordAgentFailure(agentId);
+          trackEvent('dispatch.error', { taskId, agentId, attempts: MAX_DISPATCH_ATTEMPTS, error: errorMsg.slice(0, 200) }, agentId);
+        }
+      };
 
-    proc.unref();
+      // Log exit code and update task status on failure
+      proc.on('close', (code) => {
+        if (code === 0) {
+          // Success path — decrement activeDispatches on final resolution
+          activeDispatches = Math.max(0, activeDispatches - 1);
+          recordAgentSuccess(agentId);
+          trackEvent('dispatch.complete', { taskId, agentId, exitCode: code });
+
+          try {
+            db.prepare(
+              `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+            ).run(taskId, agentId, 'dispatch_exit', `Agent ${agentId} completed task dispatch (exit 0)`, Date.now());
+
+            // If agent exited cleanly but task is still mid-flight, re-dispatch
+            // to complete the handoff (agent's session ended mid-step)
+            const current = db.prepare('SELECT status, assignedTo FROM tasks WHERE id = ?')
+              .get(taskId) as { status: string; assignedTo: string | null } | undefined;
+            // Only re-dispatch from in-progress — internal-review is Clara's pre-work gate,
+            // not a state an agent can be stuck in during dispatch.
+            const stuckInFlight = current?.assignedTo && current.status === 'in-progress';
+            if (stuckInFlight) {
+              // Count prior auto-redispatch attempts to prevent infinite loops
+              const redispatchCount = (db.prepare(
+                `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'auto_redispatch'`
+              ).get(taskId) as { cnt: number } | undefined)?.cnt ?? 0;
+
+              if (redispatchCount < 3) {
+                db.prepare(
+                  `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+                ).run(taskId, 'system', 'auto_redispatch',
+                  `Task left in ${current.status} after agent exit — re-dispatching to complete handoff (attempt ${redispatchCount + 1}/3)`,
+                  Date.now());
+                if (!_redispatchTimeouts.has(taskId)) {
+                  const t = setTimeout(() => {
+                    _redispatchTimeouts.delete(taskId);
+                    dispatchTask(taskId);
+                  }, 5000);
+                  _redispatchTimeouts.set(taskId, t);
+                }
+              } else {
+                // Too many retries — escalate to human
+                db.prepare(
+                  `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+                ).run(
+                  `Agent exited without completing task after 3 re-dispatch attempts. Needs human review.`,
+                  Date.now(), taskId
+                );
+                db.prepare(
+                  `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+                ).run(taskId, 'system', 'auto_redispatch_failed',
+                  'Moved to human-review after 3 failed re-dispatch attempts', Date.now());
+              }
+            }
+          } catch { /* non-critical */ }
+        } else {
+          // Non-zero exit — attempt retry
+          const stderrSnippet = stderrBuf.slice(0, 500);
+          if (stderrBuf) {
+            console.error(`[taskDispatcher] Agent ${agentId} task ${taskId} attempt ${attemptNumber} failed (exit ${code}): ${stderrSnippet}`);
+            try {
+              getDb().prepare(
+                `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+              ).run(taskId, 'system', 'dispatch_stderr', `Dispatch attempt ${attemptNumber} failed (exit ${code}): ${stderrSnippet.slice(0, 400)}`, Date.now());
+            } catch { /* non-critical */ }
+          }
+          handleFailure(`exit code ${code}: ${stderrSnippet.slice(0, 200)}`);
+        }
+      });
+
+      // Handle spawn errors (e.g. ENOENT if claude binary not found)
+      proc.on('error', (err) => {
+        console.error(`[taskDispatcher] Spawn error attempt ${attemptNumber} for task ${taskId}:`, err);
+        handleFailure(`spawn error: ${err.message}`);
+      });
+
+      proc.unref();
+    };
+
+    spawnAttempt(1);
 
     // Auto-advance task to in-progress on dispatch — only from internal-review (Clara's gate).
     // Tasks in todo have not passed the quality gate yet; the dispatcher should not skip it.
@@ -1198,15 +1374,36 @@ export function dispatchTask(taskId: string): boolean {
       if (cur?.status === 'internal-review') {
         db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('in-progress', now2, taskId);
       }
+      // Task 1 — Telemetry: rich dispatch activity log including priority and estimatedHours
+      const estimatedHours = task.estimatedHours != null ? `${task.estimatedHours}h` : 'unset';
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(
         taskId,
         agentId,
-        'dispatch',
-        `Task dispatched to ${agentId} (model: ${model}, ${existingSession ? 'resumed session' : 'new session'})`,
+        'dispatched',
+        `Task dispatched to ${agentId} — priority ${taskPriority}, estimated ${estimatedHours}`,
         now2
       );
+    } catch { /* non-critical */ }
+
+    // Task 5 — Post-dispatch agent status confirmation
+    // Check agent status after dispatch; warn if still idle (may not have received signal)
+    try {
+      const agentStatusRow = db.prepare('SELECT status FROM agents WHERE id = ?').get(agentId) as
+        { status: string } | undefined;
+      if (agentStatusRow && agentStatusRow.status === 'idle') {
+        console.warn(`[taskDispatcher] Agent ${agentId} status is still 'idle' after dispatch — may not have received signal`);
+        try {
+          db.prepare(
+            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+          ).run(
+            taskId, 'system', 'agent_status_warning',
+            `Agent ${agentId} may not have received dispatch signal (status is still 'idle').`,
+            Date.now()
+          );
+        } catch { /* non-critical */ }
+      }
     } catch { /* non-critical */ }
 
     console.log(`[taskDispatcher] Dispatched task ${taskId} to agent ${agentId} (model: ${model}, tier: ${trustTier}, cwd: ${cwd})`);

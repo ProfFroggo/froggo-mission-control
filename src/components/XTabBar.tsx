@@ -1,4 +1,4 @@
-import { FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, PieChart, Settings, BarChart2, MessageCircle, Send, Rocket } from 'lucide-react';
+import { FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, PieChart, Settings, BarChart2, MessageCircle, Send, Rocket, Columns, Bot, Target, Hash } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 
 interface XTabBarProps {
@@ -7,6 +7,7 @@ interface XTabBarProps {
 }
 
 const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
+  { id: 'pipeline', label: 'Pipeline', icon: <Columns size={16} /> },
   { id: 'research', label: 'Research', icon: <Zap size={16} /> },
   { id: 'plan', label: 'Content Plan', icon: <FileText size={16} /> },
   { id: 'drafts', label: 'Drafts', icon: <Edit3 size={16} /> },
@@ -19,6 +20,9 @@ const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
   { id: 'automations', label: 'Automations', icon: <Settings size={16} /> },
   { id: 'analytics', label: 'Analytics', icon: <BarChart2 size={16} /> },
   { id: 'reddit', label: 'Reddit', icon: <MessageCircle size={16} /> },
+  { id: 'agent-mode', label: 'Agent Mode', icon: <Bot size={16} /> },
+  { id: 'competitors', label: 'Competitors', icon: <Target size={16} /> },
+  { id: 'hashtags', label: 'Hashtags', icon: <Hash size={16} /> },
 ];
 
 export default function XTabBar({ activeTab, onTabChange }: XTabBarProps) {

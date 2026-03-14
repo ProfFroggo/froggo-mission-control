@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, CheckCheck, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -133,6 +133,27 @@ export default function InboxPanel() {
   // AI Assistance Panel state
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedItemForAI, setSelectedItemForAI] = useState<InboxItem | null>(null);
+
+  // Mark-all-read state
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+
+  const handleMarkAllRead = useCallback(async () => {
+    setMarkingAllRead(true);
+    try {
+      await fetch('/api/inbox', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark-all-read' }),
+      });
+      showToast('success', 'All marked as read');
+      loadInbox();
+    } catch {
+      showToast('error', 'Failed to mark all as read');
+    } finally {
+      setMarkingAllRead(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadInbox = useCallback(async () => {
     if ((window as any).__appVisible === false) return; // Skip when tab hidden
@@ -1063,6 +1084,17 @@ export default function InboxPanel() {
               Shortcuts
             </button>
             <button
+              onClick={handleMarkAllRead}
+              disabled={markingAllRead || pendingItems.length === 0}
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Mark all as read"
+            >
+              {markingAllRead
+                ? <Loader2 size={16} className="flex-shrink-0 animate-spin" />
+                : <CheckCheck size={16} className="flex-shrink-0" />}
+              Mark all read
+            </button>
+            <button
               onClick={loadInbox}
               className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
             >
@@ -1385,6 +1417,17 @@ export default function InboxPanel() {
                         <h3 className="text-sm font-medium truncate">{item.title}</h3>
                         {item.context && (
                           <p className="text-xs text-mission-control-text-dim mt-1">{item.context}</p>
+                        )}
+                        {item.content && !isExpanded && (
+                          <p
+                            className="text-xs text-mission-control-text-dim/70 mt-1 overflow-hidden whitespace-nowrap text-ellipsis"
+                            style={{ maxWidth: '100%' }}
+                            title={typeof item.content === 'string' ? item.content : undefined}
+                          >
+                            {typeof item.content === 'string'
+                              ? item.content.slice(0, 120).replace(/\n/g, ' ')
+                              : null}
+                          </p>
                         )}
                       </div>
                     </div>

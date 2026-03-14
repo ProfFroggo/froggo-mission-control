@@ -149,7 +149,7 @@ export default function BaseModal({
     if (!isOpen) return;
     const timer = setTimeout(() => {
       const focusable = modalRef.current?.querySelector<HTMLElement>(
-        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
+        'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
       );
       focusable?.focus();
     }, 80);
@@ -311,7 +311,7 @@ export function BaseModalHeader({
       {showCloseButton && onClose && (
         <button
           onClick={onClose}
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
+          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           aria-label={closeButtonLabel}
           type="button"
         >

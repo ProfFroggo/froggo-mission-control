@@ -11,7 +11,7 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
@@ -19,7 +19,9 @@ import {
   Reply, Send,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
   Activity as ActivityIcon, FileText, Code,
-  CalendarPlus, ListPlus, Bot
+  CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
+  Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
+  AtSign, ChevronUp, Trash2
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '../lib/gateway';
@@ -174,16 +176,77 @@ function buildAccountsFallback(): Account[] {
 }
 
 const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: () => true },
+  { id: 'inbox', label: 'All', icon: <Inbox size={16} />, filter: () => true },
   { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
-  { id: 'unreplied', label: 'Unreplied', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
   { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
+  { id: 'unreplied', label: 'Needs Reply', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
+  { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} />, filter: (m) => {
+    const kw = ['@you', '@me', 'mentioned you', 'tagged you'];
+    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
+  }},
   { id: 'urgent', label: 'Urgent', icon: <AlertTriangle size={16} />, filter: (m) => {
     const kw = ['urgent', 'asap', 'important', 'emergency', 'critical'];
     return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
   }},
   { id: 'archived', label: 'Archived', icon: <Archive size={16} />, filter: () => false }, // loaded separately
 ];
+
+// ─── Quick Reply Templates ─────────────────────────────────────────────────────
+
+const DEFAULT_TEMPLATES = [
+  "Thanks, I'll look into this.",
+  "On it — will update you shortly.",
+  "Approved. Please proceed.",
+  "This needs more context. Can you clarify?",
+  "Flagged for human review.",
+];
+
+function loadTemplates(): string[] {
+  try {
+    const raw = localStorage.getItem('inbox.reply-templates');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_TEMPLATES;
+}
+
+function saveTemplates(templates: string[]) {
+  try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch { /* ignore */ }
+}
+
+// ─── localStorage helpers for item state ──────────────────────────────────────
+
+function loadItemState(key: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`inbox.${key}`);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch { /* ignore */ }
+  return new Set();
+}
+
+function saveItemState(key: string, set: Set<string>) {
+  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
+}
+
+function loadSnoozeMap(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem('inbox.snoozed');
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveSnoozeMap(map: Record<string, number>) {
+  try { localStorage.setItem('inbox.snoozed', JSON.stringify(map)); } catch { /* ignore */ }
+}
+
+// ─── Filter pill types ────────────────────────────────────────────────────────
+
+type SenderTypeFilter = 'all' | 'agent' | 'human' | 'system';
+type ChannelFilter = 'all' | 'discord' | 'telegram' | 'email' | 'chat';
+type TimeFilter = 'all' | 'today' | 'week';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -501,6 +564,7 @@ function CenterPane({
   onLoadMore,
   onLoadAll,
   aiAnalyses,
+  onMarkAllRead,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
@@ -519,6 +583,7 @@ function CenterPane({
   onLoadMore?: () => void;
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
+  onMarkAllRead?: () => void;
 }) {
   // Platform-specific empty states
   const emptyState = () => {
@@ -528,19 +593,32 @@ function CenterPane({
     return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
   };
 
+  const unreadCount = conversations.filter(c => !c.is_read).length;
+
   return (
     <div className="w-[400px] flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
-          <button
-            onClick={onRefresh}
-            disabled={loading || refreshing}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && onMarkAllRead && (
+              <button
+                onClick={onMarkAllRead}
+                title="Mark all as read"
+                className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs"
+              >
+                <CheckCheck size={14} />
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={loading || refreshing}
+              className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
         {/* Search */}
         <div className="relative">
@@ -559,11 +637,30 @@ function CenterPane({
       {/* Message List */}
       <div className="flex-1 overflow-y-auto">
         {loading && conversations.length === 0 ? (
-          <div className="text-center text-mission-control-text-dim py-12 text-sm">Loading messages...</div>
+          /* Skeleton loading rows */
+          <div className="divide-y divide-mission-control-border/30">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="px-3 py-3 animate-pulse">
+                <div className="flex items-start gap-2">
+                  <div className="mt-2 w-2 h-2 rounded-full bg-mission-control-border flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 bg-mission-control-border rounded w-28" />
+                      <div className="h-2 bg-mission-control-border rounded w-10 ml-auto" />
+                    </div>
+                    <div className="h-3 bg-mission-control-border rounded w-40" />
+                    <div className="h-2 bg-mission-control-border rounded w-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : conversations.length === 0 ? (
-          <div className="text-center text-mission-control-text-dim py-12">
-            {emptyState().icon}
-            <p className="text-sm">{emptyState().msg}</p>
+          /* Proper empty state */
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <CheckCircle size={32} className="text-mission-control-text-dim/30 mb-3" />
+            <p className="text-sm font-medium text-mission-control-text-dim">All caught up</p>
+            <p className="text-xs text-mission-control-text-dim/60 mt-1">No pending messages</p>
           </div>
         ) : (
           <>
@@ -615,8 +712,11 @@ function CenterPane({
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="text-[10px] text-info bg-info-subtle rounded px-1 py-0.5 font-medium" title="Unread messages">
-                          {conv.unread_count} unread
+                        <span
+                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-amber-500 text-white rounded-full flex-shrink-0"
+                          title={`${conv.unread_count} unread`}
+                        >
+                          {conv.unread_count > 99 ? '99+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
@@ -1987,6 +2087,28 @@ export default function CommsInbox3Pane() {
     }
   };
 
+  // Mark all messages as read
+  const handleMarkAllRead = async () => {
+    try {
+      if (googleAuth.authenticated) {
+        // Best-effort: mark all visible messages read via Gmail API
+        await Promise.allSettled(
+          allMessages
+            .filter(m => m.platform === 'email' && !m.is_read)
+            .map(m => fetch(`/api/gmail/messages/${m.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ read: true }),
+            }))
+        );
+      } else {
+        await fetch('/api/inbox/mark-all-read', { method: 'PATCH' }).catch(() => {});
+      }
+      setAllMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+      showToast('success', 'All marked as read');
+    } catch (e) { /* ignore */ }
+  };
+
   // Toggle read/unread
   const handleToggleRead = async (conv: ConversationItem) => {
     const newReadState = !conv.is_read;
@@ -2151,6 +2273,7 @@ export default function CommsInbox3Pane() {
             onLoadMore={handleLoadMore}
             onLoadAll={handleLoadAll}
             aiAnalyses={aiAnalyses}
+            onMarkAllRead={handleMarkAllRead}
           />
           <RightPane
             conversation={selectedConversation}

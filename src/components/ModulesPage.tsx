@@ -14,7 +14,7 @@
  *   Unconfigured  — opacity-60, red dot (integration pending/failed, credentials required)
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Puzzle,
   Settings,
@@ -45,6 +45,11 @@ import {
   Boxes,
   Library,
   FolderKanban,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Package,
+  Key,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -54,6 +59,48 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
+
+// ─── Activity log helpers ──────────────────────────────────────────────────────
+
+const ACTIVITY_KEY = 'module_activity_log';
+
+interface ModuleActivityEntry {
+  id: string;
+  moduleId: string;
+  moduleName: string;
+  action: 'install' | 'uninstall' | 'enable' | 'disable';
+  timestamp: number;
+}
+
+function readActivityLog(): ModuleActivityEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
+  const log = readActivityLog();
+  const next: ModuleActivityEntry = {
+    ...entry,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    timestamp: Date.now(),
+  };
+  const updated = [next, ...log].slice(0, 20);
+  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
+}
+
+function formatRelativeTime(ts: number): string {
+  const diffMs = Date.now() - ts;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
 
 // ─── Icon mapping ─────────────────────────────────────────────────────────────
 
@@ -251,17 +298,19 @@ function ModuleCard({
   data,
   onToggle,
   onConfigure,
+  onSettingsClick,
 }: {
   data: ModuleCardData;
   onToggle: (card: ModuleCardData, newVal: boolean) => void;
   onConfigure: (card: ModuleCardData) => void;
+  onSettingsClick: (moduleId: string) => void;
 }) {
   const { manifest, moduleStatus, credStatus, integration, panelVisible } = data;
 
   const hasCredentials = (manifest.credentials?.length ?? 0) > 0;
 
   // Determine visual state
-  const isActive = moduleStatus === 'active' && panelVisible;
+  const isActive   = moduleStatus === 'active' && panelVisible;
   const isDisabled = moduleStatus === 'disposed';
   const isUnconfigured =
     hasCredentials &&
@@ -273,11 +322,14 @@ function ModuleCard({
     : isActive ? '' : 'opacity-60';
 
   const IconComponent = resolveIcon(manifest.icon);
-  const category = manifest.category ?? 'system';
+  const category      = manifest.category ?? 'system';
+
+  // Module-level dependencies from manifest
+  const moduleDeps: string[] = manifest.dependencies?.modules ?? [];
 
   return (
     <div
-      className={`bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-all hover:border-mission-control-text-dim/30 ${cardClass}`}
+      className={`bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -289,10 +341,16 @@ function ModuleCard({
 
           {/* Name + version */}
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-mission-control-text text-sm truncate">
                 {manifest.name}
               </span>
+              {/* Core badge */}
+              {manifest.core && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/30 flex-shrink-0">
+                  Core
+                </span>
+              )}
               {credStatus && (
                 <CredentialStatusDot
                   status={credStatus.status}
@@ -307,26 +365,42 @@ function ModuleCard({
           </div>
         </div>
 
-        {/* Toggle or Core pill or Re-enable */}
-        {manifest.core ? (
-          <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent font-medium">
-            Core
-          </span>
-        ) : isDisabled ? (
-          <button
-            type="button"
-            onClick={() => onToggle(data, true)}
-            className="text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
-          >
-            Re-enable
-          </button>
-        ) : (
-          <ToggleSwitch
-            checked={panelVisible}
-            onChange={(val) => onToggle(data, val)}
-            disabled={data.viewId == null}
-          />
-        )}
+        {/* Right-side controls */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Settings gear — installed, non-core modules only */}
+          {!manifest.core && moduleStatus !== 'disposed' && (
+            <button
+              type="button"
+              title={`Settings for ${manifest.name}`}
+              aria-label={`Open settings for ${manifest.name}`}
+              onClick={() => onSettingsClick(manifest.id)}
+              className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+            >
+              <Settings size={14} />
+            </button>
+          )}
+
+          {/* Toggle / Core label / Re-enable */}
+          {manifest.core ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent font-medium">
+              Always on
+            </span>
+          ) : isDisabled ? (
+            <button
+              type="button"
+              onClick={() => onToggle(data, true)}
+              className="text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
+            >
+              Re-enable
+            </button>
+          ) : (
+            <ToggleSwitch
+              checked={panelVisible}
+              onChange={(val) => onToggle(data, val)}
+              disabled={data.viewId == null}
+            />
+          )}
+        </div>
       </div>
 
       {/* Description */}
@@ -336,8 +410,27 @@ function ModuleCard({
         </p>
       )}
 
+      {/* Dependency tags */}
+      {moduleDeps.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {moduleDeps.map(dep => (
+            <span
+              key={dep}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-mission-control-border bg-mission-control-bg text-mission-control-text-dim"
+              title={`Requires module: ${dep}`}
+            >
+              <Package size={9} />
+              {dep}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
       {/* Footer row: category badge + configure button */}
-      <div className="flex items-center gap-2 mt-auto">
+      <div className="flex items-center gap-2 mt-auto pt-1">
         <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
           {category}
         </span>
@@ -356,7 +449,7 @@ function ModuleCard({
             onClick={() => onConfigure(data)}
             className="ml-auto flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border hover:border-mission-control-text-dim"
           >
-            <Settings size={12} />
+            <Key size={12} />
             Configure
           </button>
         )}
@@ -374,6 +467,12 @@ export default function ModulesPage() {
   const [cards, setCards] = useState<ModuleCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  // Activity log
+  const [activityLog, setActivityLog] = useState<ModuleActivityEntry[]>([]);
+  const refreshActivity = useCallback(() => {
+    setActivityLog(readActivityLog().slice(0, 5));
+  }, []);
 
   // Wizard state
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -447,10 +546,16 @@ export default function ModulesPage() {
 
   useEffect(() => {
     loadModules();
+    refreshActivity();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Toggle handler ─────────────────────────────────────────────────────────
+
+  function navigateToModuleSettings(moduleId: string) {
+    sessionStorage.setItem('settings-focus-module', moduleId);
+    window.dispatchEvent(new CustomEvent('tour-navigate', { detail: { view: 'settings' } }));
+  }
 
   function toggleModulePanel(viewId: string, visible: boolean) {
     const currentPanels = usePanelConfigStore.getState().panels;
@@ -486,6 +591,8 @@ export default function ModulesPage() {
     if (!newVal) {
       // Toggling OFF: disable immediately
       toggleModulePanel(card.viewId, false);
+      appendActivity({ moduleId: card.moduleId, moduleName: card.manifest.name, action: 'disable' });
+      refreshActivity();
       return;
     }
 
@@ -494,6 +601,8 @@ export default function ModulesPage() {
     if (!hasCredentials) {
       // No credentials: enable freely
       toggleModulePanel(card.viewId, true);
+      appendActivity({ moduleId: card.moduleId, moduleName: card.manifest.name, action: 'enable' });
+      refreshActivity();
       return;
     }
 
@@ -648,6 +757,7 @@ export default function ModulesPage() {
               data={card}
               onToggle={handleToggle}
               onConfigure={handleConfigure}
+              onSettingsClick={navigateToModuleSettings}
             />
           ))}
         </div>

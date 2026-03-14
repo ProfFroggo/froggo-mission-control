@@ -4,7 +4,9 @@ import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
-  CheckCircle, Ban, FileText
+  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, ChevronLeft, Hash,
+  ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock,
+  Square, UserCheck,
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -16,11 +18,13 @@ import { showToast } from './Toast';
 import { taskApi, sessionApi } from '../lib/api';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import TaskQuickEdit from './TaskQuickEdit';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -31,21 +35,21 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
 ];
 
 // Format due date
-function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean } {
+function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean; isDueThisWeek: boolean } {
   const now = Date.now();
   const diff = timestamp - now;
   const isOverdue = diff < 0;
 
   if (isOverdue) {
     const overdueDiff = Math.abs(diff);
-    if (overdueDiff < 86400000) return { text: 'Overdue', isOverdue: true, isDueSoon: false };
-    return { text: `${Math.floor(overdueDiff / 86400000)}d overdue`, isOverdue: true, isDueSoon: false };
+    if (overdueDiff < 86400000) return { text: 'Overdue', isOverdue: true, isDueSoon: false, isDueThisWeek: false };
+    return { text: `${Math.floor(overdueDiff / 86400000)}d overdue`, isOverdue: true, isDueSoon: false, isDueThisWeek: false };
   }
-  
-  if (diff < 3600000) return { text: `${Math.floor(diff / 60000)}m`, isOverdue: false, isDueSoon: true };
-  if (diff < 86400000) return { text: `${Math.floor(diff / 3600000)}h`, isOverdue: false, isDueSoon: true };
-  if (diff < 604800000) return { text: `${Math.floor(diff / 86400000)}d`, isOverdue: false, isDueSoon: false };
-  return { text: new Date(timestamp).toLocaleDateString(), isOverdue: false, isDueSoon: false };
+
+  if (diff < 3600000) return { text: `${Math.floor(diff / 60000)}m`, isOverdue: false, isDueSoon: true, isDueThisWeek: false };
+  if (diff < 86400000) return { text: `${Math.floor(diff / 3600000)}h`, isOverdue: false, isDueSoon: true, isDueThisWeek: false };
+  if (diff < 604800000) return { text: `${Math.floor(diff / 86400000)}d`, isOverdue: false, isDueSoon: false, isDueThisWeek: true };
+  return { text: new Date(timestamp).toLocaleDateString(), isOverdue: false, isDueSoon: false, isDueThisWeek: false };
 }
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
@@ -57,13 +61,25 @@ const columns: { id: TaskStatus; title: string; color: string; iconColor: string
   { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-success', bg: 'bg-success-subtle', icon: <CheckCircle size={14} /> },
 ];
 
+type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-due-date';
+type GlobalSortOption = 'newest' | 'due-asc' | 'priority' | 'title-az' | 'updated';
+
 interface Filters {
   search: string;
   project: string;
   priority: TaskPriority | 'all';
   assignee: string;
   hasDueDate: boolean | null;
+  dueFilter: DueFilter;
+  labels: string[]; // label IDs selected
   showCompleted: boolean;
+}
+
+interface SavedView {
+  name: string;
+  filters: Filters;
+  globalSort: GlobalSortOption;
+  savedAt: number;
 }
 
 interface KanbanProps {
@@ -89,6 +105,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const updateTask = useStore(s => s.updateTask);
+  const addTask = useStore(s => s.addTask);
   
   // Local loading states for operations
   const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
@@ -99,6 +116,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [isArchiving, setIsArchiving] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<string | null>(null);
+
+  // Multi-select / bulk operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
   
   // Active agent sessions (for real-time activity indicators)
   const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
@@ -177,6 +202,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [showFilters, setShowFilters] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showHealthCheck, setShowHealthCheck] = useState(false);
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<TaskStatus>>(new Set());
+  const [jumpToTaskInput, setJumpToTaskInput] = useState('');
+  const [showJumpToTask, setShowJumpToTask] = useState(false);
+  const [inlineAddActive, setInlineAddActive] = useState(false);
+  const [inlineAddTitle, setInlineAddTitle] = useState('');
+
+  // Mobile: breakpoint detection and single-column carousel state
+  const { isMobile } = useBreakpoint();
+  const [mobileColumnIndex, setMobileColumnIndex] = useState(0);
+  const mobileTouchStartX = useRef(0);
+  const mobileTouchStartY = useRef(0);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -184,8 +220,31 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     priority: 'all',
     assignee: 'all',
     hasDueDate: null,
+    dueFilter: 'all',
+    labels: [],
     showCompleted: true,
   });
+
+  // Global sort — persisted to localStorage
+  const [globalSort, setGlobalSort] = useState<GlobalSortOption>(() => {
+    try {
+      const saved = localStorage.getItem('kanban.sort');
+      if (saved) return saved as GlobalSortOption;
+    } catch { /* ignore */ }
+    return 'newest';
+  });
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  // Saved views
+  const [savedViews, setSavedViews] = useState<SavedView[]>(() => {
+    try {
+      const raw = localStorage.getItem('kanban.saved-views');
+      if (raw) return JSON.parse(raw) as SavedView[];
+    } catch { /* ignore */ }
+    return [];
+  });
+  const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
 
   // Per-column filter and sort settings
   type SortOption = 'newest' | 'oldest' | 'priority-asc' | 'priority-desc' | 'progress-asc' | 'progress-desc';
@@ -230,6 +289,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     safeStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
   }, [columnSettings]);
 
+  // Persist global sort to localStorage
+  useEffect(() => {
+    try { localStorage.setItem('kanban.sort', globalSort); } catch { /* ignore */ }
+  }, [globalSort]);
+
   const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
     setColumnSettings(prev => ({
       ...prev,
@@ -268,6 +332,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         setSelectedTask(null);
         setShowFilters(false);
         setShowKeyboardHelp(false);
+        setShowSortMenu(false);
+        setShowSaveViewDialog(false);
+        setSelectedIds(new Set());
+        setLastSelectedId(null);
+        setShowBulkAssign(false);
       }
       if (e.key === 'f' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -284,8 +353,29 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     return ['all', ...Array.from(projectSet)];
   }, [tasks]);
 
+  // Unique labels across all tasks
+  const uniqueLabels = useMemo(() => {
+    const labelSet = new Set<string>();
+    tasks.forEach(t => {
+      if (Array.isArray(t.labels)) t.labels.forEach(l => labelSet.add(l));
+    });
+    return Array.from(labelSet).sort();
+  }, [tasks]);
+
+  // Unique assignees across all tasks
+  const uniqueAssignees = useMemo(() => {
+    const assigneeSet = new Set<string>();
+    tasks.forEach(t => { if (t.assignedTo) assigneeSet.add(t.assignedTo); });
+    return Array.from(assigneeSet);
+  }, [tasks]);
+
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
+    const now = Date.now();
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+    const endOfWeek = new Date(startOfToday); endOfWeek.setDate(endOfWeek.getDate() + 7);
+
     // When scoped to a project, pre-filter before user filters
     let result = projectId
       ? tasks.filter(t => t.project_id === projectId || t.project === projectName)
@@ -294,23 +384,23 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     // Search
     if (filters.search) {
       const search = filters.search.toLowerCase();
-      result = result.filter(t => 
+      result = result.filter(t =>
         t.title.toLowerCase().includes(search) ||
         t.description?.toLowerCase().includes(search) ||
         t.project.toLowerCase().includes(search)
       );
     }
-    
+
     // Project
     if (filters.project !== 'all') {
       result = result.filter(t => t.project === filters.project);
     }
-    
+
     // Priority
     if (filters.priority !== 'all') {
       result = result.filter(t => t.priority === filters.priority);
     }
-    
+
     // Assignee
     if (filters.assignee !== 'all') {
       if (filters.assignee === 'unassigned') {
@@ -319,34 +409,69 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         result = result.filter(t => t.assignedTo === filters.assignee);
       }
     }
-    
-    // Due date
+
+    // Due date (legacy hasDueDate — kept for backward compat)
     if (filters.hasDueDate !== null) {
       result = result.filter(t => filters.hasDueDate ? t.dueDate : !t.dueDate);
     }
-    
+
+    // Due date filter (new)
+    if (filters.dueFilter !== 'all') {
+      switch (filters.dueFilter) {
+        case 'overdue':
+          result = result.filter(t => t.dueDate && t.dueDate < now && t.status !== 'done');
+          break;
+        case 'today':
+          result = result.filter(t => t.dueDate && t.dueDate >= startOfToday.getTime() && t.dueDate <= endOfToday.getTime());
+          break;
+        case 'this-week':
+          result = result.filter(t => t.dueDate && t.dueDate >= startOfToday.getTime() && t.dueDate <= endOfWeek.getTime());
+          break;
+        case 'no-due-date':
+          result = result.filter(t => !t.dueDate);
+          break;
+      }
+    }
+
+    // Labels filter (AND: task must have ALL selected labels)
+    if (filters.labels.length > 0) {
+      result = result.filter(t =>
+        filters.labels.every(l => Array.isArray(t.labels) && t.labels.includes(l))
+      );
+    }
+
     // Hide completed
     if (!filters.showCompleted) {
       result = result.filter(t => t.status !== 'done' && t.status !== 'failed');
     }
-    
-    // Sort by priority, then due date, then created
+
+    // Apply global sort
     return result.sort((a, b) => {
-      // Priority first (p0 > p1 > p2 > p3 > undefined)
-      const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-      const aPriority = priorityOrder[a.priority || 'undefined'];
-      const bPriority = priorityOrder[b.priority || 'undefined'];
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      
-      // Then due date (earliest first)
-      if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate;
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      
-      // Then created (newest first)
-      return b.createdAt - a.createdAt;
+      const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+      switch (globalSort) {
+        case 'newest':
+          return b.createdAt - a.createdAt;
+        case 'due-asc': {
+          if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate;
+          if (a.dueDate) return -1;
+          if (b.dueDate) return 1;
+          return b.createdAt - a.createdAt;
+        }
+        case 'priority': {
+          const ap = priorityOrder[a.priority || 'undefined'];
+          const bp = priorityOrder[b.priority || 'undefined'];
+          if (ap !== bp) return ap - bp;
+          return b.createdAt - a.createdAt;
+        }
+        case 'title-az':
+          return a.title.localeCompare(b.title);
+        case 'updated':
+          return b.updatedAt - a.updatedAt;
+        default:
+          return b.createdAt - a.createdAt;
+      }
     });
-  }, [tasks, filters]);
+  }, [tasks, filters, globalSort]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -355,6 +480,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     if (filters.priority !== 'all') count++;
     if (filters.assignee !== 'all') count++;
     if (filters.hasDueDate !== null) count++;
+    if (filters.dueFilter !== 'all') count++;
+    if (filters.labels.length > 0) count++;
     if (!filters.showCompleted) count++;
     return count;
   }, [filters]);
@@ -366,52 +493,91 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       priority: 'all',
       assignee: 'all',
       hasDueDate: null,
+      dueFilter: 'all',
+      labels: [],
       showCompleted: true,
     });
   };
 
-  // Apply per-column filtering and sorting
-  const getColumnTasks = useCallback((columnId: TaskStatus) => {
-    const settings = columnSettings[columnId];
-    let columnTasks = filteredTasks.filter(t => t.status === columnId);
-    
-    // Apply column filters
-    if (settings.filterAgent !== 'all') {
-      if (settings.filterAgent === 'unassigned') {
-        columnTasks = columnTasks.filter(t => !t.assignedTo);
-      } else {
-        columnTasks = columnTasks.filter(t => t.assignedTo === settings.filterAgent);
-      }
-    }
-    
-    if (settings.filterPriority !== 'all') {
-      columnTasks = columnTasks.filter(t => t.priority === settings.filterPriority);
-    }
-    
-    // Apply column sorting
-    return columnTasks.sort((a, b) => {
-      switch (settings.sortBy) {
-        case 'newest':
-          return b.createdAt - a.createdAt;
-        case 'oldest':
-          return a.createdAt - b.createdAt;
-        case 'priority-asc': {
-          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-          return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+  // Save current filter+sort combination as a named view
+  const saveCurrentView = () => {
+    const name = newViewName.trim();
+    if (!name) return;
+    const view: SavedView = { name, filters, globalSort, savedAt: Date.now() };
+    const updated = [...savedViews.filter(v => v.name !== name), view];
+    setSavedViews(updated);
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+    setNewViewName('');
+    setShowSaveViewDialog(false);
+  };
+
+  const deleteSavedView = (name: string) => {
+    const updated = savedViews.filter(v => v.name !== name);
+    setSavedViews(updated);
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+  };
+
+  const applySavedView = (view: SavedView) => {
+    setFilters(view.filters);
+    setGlobalSort(view.globalSort);
+  };
+
+  const GLOBAL_SORT_LABELS: Record<GlobalSortOption, string> = {
+    'newest': 'Created (newest first)',
+    'due-asc': 'Due date (soonest first)',
+    'priority': 'Priority (P0 first)',
+    'title-az': 'Title (A–Z)',
+    'updated': 'Last updated',
+  };
+
+  // Pre-compute per-column filtered+sorted task arrays — avoids re-running filter/sort on every render
+  const columnTaskMap = useMemo(() => {
+    const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+    const result: Partial<Record<TaskStatus, Task[]>> = {};
+    for (const column of columns) {
+      const columnId = column.id;
+      const settings = columnSettings[columnId];
+      let col = filteredTasks.filter(t => t.status === columnId);
+
+      // Apply column filters
+      if (settings.filterAgent !== 'all') {
+        if (settings.filterAgent === 'unassigned') {
+          col = col.filter(t => !t.assignedTo);
+        } else {
+          col = col.filter(t => t.assignedTo === settings.filterAgent);
         }
-        case 'priority-desc': {
-          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-          return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
-        }
-        case 'progress-asc':
-          return (a.progress || 0) - (b.progress || 0);
-        case 'progress-desc':
-          return (b.progress || 0) - (a.progress || 0);
-        default:
-          return 0;
       }
-    });
+      if (settings.filterPriority !== 'all') {
+        col = col.filter(t => t.priority === settings.filterPriority);
+      }
+
+      // Apply column sorting
+      col = col.slice().sort((a, b) => {
+        switch (settings.sortBy) {
+          case 'newest':
+            return b.createdAt - a.createdAt;
+          case 'oldest':
+            return a.createdAt - b.createdAt;
+          case 'priority-asc':
+            return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+          case 'priority-desc':
+            return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
+          case 'progress-asc':
+            return (a.progress || 0) - (b.progress || 0);
+          case 'progress-desc':
+            return (b.progress || 0) - (a.progress || 0);
+          default:
+            return 0;
+        }
+      });
+      result[columnId] = col;
+    }
+    return result;
   }, [filteredTasks, columnSettings]);
+
+  const getColumnTasks = useCallback((columnId: TaskStatus): Task[] => {
+    return columnTaskMap[columnId] ?? [];
+  }, [columnTaskMap]);
 
   // Stats
   const stats = useMemo(() => {
@@ -462,11 +628,50 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setDragOverColumn(null);
   }, []);
 
+  const toggleColumnCollapse = useCallback((columnId: TaskStatus) => {
+    setCollapsedColumns(prev => {
+      const next = new Set(prev);
+      if (next.has(columnId)) next.delete(columnId);
+      else next.add(columnId);
+      return next;
+    });
+  }, []);
+
+  const handleJumpToTask = useCallback((input: string) => {
+    const searchTerm = input.trim().toLowerCase();
+    if (!searchTerm) return;
+    const found = tasks.find(t =>
+      t.id === searchTerm ||
+      t.id.includes(searchTerm) ||
+      t.title.toLowerCase().includes(searchTerm)
+    );
+    if (found) {
+      setSelectedTask(found);
+      setJumpToTaskInput('');
+      setShowJumpToTask(false);
+    } else {
+      showToast('info', 'Task not found', `No task matching "${input}"`);
+    }
+  }, [tasks]);
+
   const handleAddTask = (status: TaskStatus) => {
     if (onNewTask) { onNewTask(); return; }
     setModalStatus(status);
     setModalOpen(true);
   };
+
+  const handleInlineAddSubmit = useCallback(() => {
+    const title = inlineAddTitle.trim();
+    if (!title) {
+      setInlineAddActive(false);
+      setInlineAddTitle('');
+      return;
+    }
+    addTask({ title, status: 'todo', project: projectName || 'General', project_id: projectId });
+    setInlineAddTitle('');
+    setInlineAddActive(false);
+    showToast('success', 'Task created', title);
+  }, [inlineAddTitle, addTask, projectName, projectId]);
 
   const handleQuickPriority = useCallback((taskId: string, priority: TaskPriority) => {
     updateTask(taskId, { priority });
@@ -548,6 +753,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   }, [spawnAgentForTask]);
 
+  const handleTitleEdit = useCallback(async (taskId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    try {
+      await taskApi.update(taskId, { title: newTitle.trim() });
+      updateTask(taskId, { title: newTitle.trim() });
+    } catch {
+      showToast('error', 'Failed to update title');
+    }
+  }, [updateTask]);
+
   const handleMoveTask = async (taskId: string, status: TaskStatus) => {
     setMovingTasks(prev => new Set(prev).add(taskId));
     try {
@@ -558,6 +773,102 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         next.delete(taskId);
         return next;
       });
+    }
+  };
+
+  // Toggle a task's selection, with shift-click range support
+  const handleToggleSelect = useCallback((taskId: string, shiftKey: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (shiftKey && lastSelectedId) {
+        // Build an ordered flat list of all visible task IDs across columns (in column order)
+        const allVisibleIds: string[] = [];
+        for (const col of columns) {
+          const colTasks = columnTaskMap[col.id] ?? [];
+          for (const t of colTasks) allVisibleIds.push(t.id);
+        }
+        const fromIdx = allVisibleIds.indexOf(lastSelectedId);
+        const toIdx = allVisibleIds.indexOf(taskId);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          const lo = Math.min(fromIdx, toIdx);
+          const hi = Math.max(fromIdx, toIdx);
+          for (let i = lo; i <= hi; i++) next.add(allVisibleIds[i]);
+        } else {
+          next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+        }
+      } else {
+        next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+      }
+      return next;
+    });
+    setLastSelectedId(taskId);
+  }, [lastSelectedId, columnTaskMap]);
+
+  const handleBulkMarkDone = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'status', 'done');
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Marked ${result.updated} task${result.updated !== 1 ? 's' : ''} as done`);
+    } catch {
+      showToast('error', 'Bulk update failed');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
+
+  const handleBulkAssign = useCallback(async (agentId: string) => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    setShowBulkAssign(false);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'assign', agentId);
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Assigned ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
+    } catch {
+      showToast('error', 'Bulk assign failed');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
+
+  const confirmBulkDelete = useCallback(async () => {
+    setShowBulkDeleteConfirm(false);
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'delete');
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Deleted ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
+    } catch {
+      showToast('error', 'Bulk delete failed');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
+
+  // Mobile: swipe-to-navigate columns
+  const handleMobileTouchStart = (e: React.TouchEvent) => {
+    mobileTouchStartX.current = e.changedTouches[0].clientX;
+    mobileTouchStartY.current = e.changedTouches[0].clientY;
+  };
+
+  const handleMobileTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - mobileTouchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - mobileTouchStartY.current;
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) {
+        setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1));
+      } else {
+        setMobileColumnIndex(prev => Math.max(prev - 1, 0));
+      }
     }
   };
 
@@ -639,6 +950,72 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               )}
             </button>
 
+            {/* Global sort dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortMenu(v => !v)}
+                className={`icon-text px-3 py-2 rounded-xl border transition-all ${
+                  globalSort !== 'newest'
+                    ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
+                    : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+                title="Sort tasks"
+              >
+                <SortAsc size={16} className="flex-shrink-0" />
+                Sort
+                <ChevronDown size={14} className="flex-shrink-0" />
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg z-50 min-w-[220px] py-1">
+                  {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => { setGlobalSort(opt); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-mission-control-border/40 ${globalSort === opt ? 'text-mission-control-accent font-medium' : ''}`}
+                    >
+                      {GLOBAL_SORT_LABELS[opt]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Save view button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSaveViewDialog(v => !v)}
+                className="icon-text px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/50 transition-all"
+                title="Save current view"
+              >
+                <Save size={16} className="flex-shrink-0" />
+                Save view
+              </button>
+              {showSaveViewDialog && (
+                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg z-50 w-64 p-3">
+                  <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newViewName}
+                    onChange={e => setNewViewName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveCurrentView();
+                      if (e.key === 'Escape') setShowSaveViewDialog(false);
+                    }}
+                    placeholder="View name..."
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent mb-2"
+                  />
+                  <button
+                    onClick={saveCurrentView}
+                    disabled={!newViewName.trim()}
+                    className="w-full px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Refresh */}
             <button
               onClick={handleRefresh}
@@ -659,6 +1036,35 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               Health Check
             </button>
             
+            {/* Jump to task */}
+            <div className="relative">
+              <button
+                onClick={() => setShowJumpToTask(v => !v)}
+                className="icon-text px-3 py-2 border border-mission-control-border rounded-xl hover:border-mission-control-accent/50 transition-all"
+                title="Jump to task by ID or title"
+              >
+                <Hash size={16} className="flex-shrink-0" />
+                Jump
+              </button>
+              {showJumpToTask && (
+                <div className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg p-2 w-64">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={jumpToTaskInput}
+                    onChange={e => setJumpToTaskInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleJumpToTask(jumpToTaskInput);
+                      if (e.key === 'Escape') setShowJumpToTask(false);
+                    }}
+                    placeholder="Task ID or title..."
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                  />
+                  <p className="text-xs text-mission-control-text-dim mt-1.5 px-1">Press Enter to jump</p>
+                </div>
+              )}
+            </div>
+
             {/* New Task */}
             <button
               onClick={() => handleAddTask('todo')}
@@ -674,108 +1080,301 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="flex items-center gap-4 p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2">
-            {/* Project — hidden when already scoped to a project */}
-            {!projectId && (
+          <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2 space-y-3">
+            {/* Row 1: dropdowns */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Project — hidden when already scoped to a project */}
+              {!projectId && (
+                <div className="icon-text-tight">
+                  <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                  <select
+                    value={filters.project}
+                    onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
+                  >
+                    {projects.map(p => (
+                      <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Assignee dropdown */}
               <div className="icon-text-tight">
-                <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
                 <select
-                  value={filters.project}
-                  onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
+                  value={filters.assignee}
+                  onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
                   className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
                 >
-                  {projects.map(p => (
-                    <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
-                  ))}
+                  <option value="all">All Assignees</option>
+                  <option value="unassigned">Unassigned</option>
+                  {agents
+                    .filter(a => !isProtectedAgent(a.id))
+                    .map(a => (
+                      <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
+                    ))}
+                  {/* Also include assignees from tasks that may not be in agents list */}
+                  {uniqueAssignees
+                    .filter(id => !agents.find(a => a.id === id))
+                    .map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
                 </select>
               </div>
-            )}
 
-            {/* Priority */}
-            <div className="icon-text-tight">
-              <Flag size={16} className="text-mission-control-text-dim flex-shrink-0" />
-              <select
-                value={filters.priority}
-                onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value as TaskPriority | 'all' }))}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-              >
-                <option value="all">All Priorities</option>
-                {PRIORITIES.map(p => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+              {/* Show completed */}
+              <label className="icon-text-tight text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.showCompleted}
+                  onChange={(e) => setFilters(f => ({ ...f, showCompleted: e.target.checked }))}
+                  className="rounded"
+                />
+                Show completed
+              </label>
+
+              {/* Clear filters */}
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="icon-text-tight text-sm text-mission-control-accent hover:underline ml-auto"
+                >
+                  <X size={16} className="flex-shrink-0" /> Clear all
+                </button>
+              )}
             </div>
 
-            {/* Assignee */}
-            <div className="icon-text-tight">
-              <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
-              <select
-                value={filters.assignee}
-                onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-              >
-                <option value="all">All Assignees</option>
-                <option value="unassigned">Unassigned</option>
-                {agents
-                  .filter(a => !isProtectedAgent(a.id))
-                  .map(a => (
-                    <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
-                  ))}
-              </select>
+            {/* Row 2: Priority pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Flag size={14} className="text-mission-control-text-dim flex-shrink-0" />
+              <span className="text-xs text-mission-control-text-dim font-medium mr-1">Priority:</span>
+              {(['all', 'p0', 'p1', 'p2', 'p3'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setFilters(f => ({ ...f, priority: p }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                    filters.priority === p
+                      ? p === 'all'
+                        ? 'bg-mission-control-accent text-white border-mission-control-accent'
+                        : p === 'p0'
+                        ? 'bg-error-subtle text-error border-error-border'
+                        : p === 'p1'
+                        ? 'bg-warning-subtle text-warning border-warning-border'
+                        : p === 'p2'
+                        ? 'bg-info-subtle text-info border-info-border'
+                        : 'bg-mission-control-bg text-mission-control-text border-mission-control-border'
+                      : 'border-mission-control-border hover:border-mission-control-accent/50'
+                  }`}
+                >
+                  {p === 'all' ? 'All' : p.toUpperCase()}
+                </button>
+              ))}
             </div>
 
-            {/* Show completed */}
-            <label className="icon-text-tight text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.showCompleted}
-                onChange={(e) => setFilters(f => ({ ...f, showCompleted: e.target.checked }))}
-                className="rounded"
-              />
-              Show completed
-            </label>
+            {/* Row 3: Due date pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <CalendarClock size={14} className="text-mission-control-text-dim flex-shrink-0" />
+              <span className="text-xs text-mission-control-text-dim font-medium mr-1">Due:</span>
+              {([
+                { id: 'all', label: 'All' },
+                { id: 'overdue', label: 'Overdue' },
+                { id: 'today', label: 'Due today' },
+                { id: 'this-week', label: 'Due this week' },
+                { id: 'no-due-date', label: 'No due date' },
+              ] as { id: DueFilter; label: string }[]).map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setFilters(f => ({ ...f, dueFilter: opt.id }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                    filters.dueFilter === opt.id
+                      ? opt.id === 'overdue'
+                        ? 'bg-error-subtle text-error border-error-border'
+                        : 'bg-mission-control-accent text-white border-mission-control-accent'
+                      : 'border-mission-control-border hover:border-mission-control-accent/50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
 
-            {/* Clear filters */}
-            {activeFiltersCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="icon-text-tight text-sm text-mission-control-accent hover:underline"
-              >
-                <X size={16} className="flex-shrink-0" /> Clear all
-              </button>
+            {/* Row 4: Labels multi-select pills (only shown if any labels exist) */}
+            {uniqueLabels.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag size={14} className="text-mission-control-text-dim flex-shrink-0" />
+                <span className="text-xs text-mission-control-text-dim font-medium mr-1">Labels:</span>
+                {uniqueLabels.map(label => {
+                  const isActive = filters.labels.includes(label);
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => setFilters(f => ({
+                        ...f,
+                        labels: isActive
+                          ? f.labels.filter(l => l !== label)
+                          : [...f.labels, label],
+                      }))}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                        isActive
+                          ? 'bg-mission-control-accent text-white border-mission-control-accent'
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {filters.labels.length > 0 && (
+                  <button
+                    onClick={() => setFilters(f => ({ ...f, labels: [] }))}
+                    className="text-xs text-mission-control-text-dim hover:text-mission-control-text icon-text-tight"
+                  >
+                    <X size={11} />
+                    Clear
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
+
+        {/* Saved views pills */}
+        {savedViews.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-2">
+            <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
+            {savedViews.map(view => (
+              <div key={view.name} className="flex items-center gap-0.5">
+                <button
+                  onClick={() => applySavedView(view)}
+                  className="text-xs px-2.5 py-1 rounded-l-lg border border-mission-control-border hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-all"
+                >
+                  {view.name}
+                </button>
+                <button
+                  onClick={() => deleteSavedView(view.name)}
+                  className="text-xs px-1.5 py-1 rounded-r-lg border border-l-0 border-mission-control-border hover:border-error-border hover:text-error transition-all"
+                  title="Delete saved view"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick filter bar */}
+      <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: 'all' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${filters.priority === 'all' ? 'bg-mission-control-accent text-white border-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/50'}`}
+        >All</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p0' ? 'all' : 'p0' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p0' ? 'bg-error-subtle text-error border-error-border' : 'border-mission-control-border hover:border-error-border hover:text-error'}`}
+        ><AlertTriangle size={11} /> P0 Critical</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p1' ? 'all' : 'p1' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p1' ? 'bg-warning-subtle text-warning border-warning-border' : 'border-mission-control-border hover:border-warning-border hover:text-warning'}`}
+        ><ArrowUp size={11} /> P1 High</button>
+        <button
+          onClick={() => setFilters(f => ({ ...f, priority: f.priority === 'p2' ? 'all' : 'p2' }))}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 ${filters.priority === 'p2' ? 'bg-info-subtle text-info border-info-border' : 'border-mission-control-border hover:border-info-border hover:text-info'}`}
+        ><Circle size={11} /> P2 Normal</button>
+        {agents.filter(a => !isProtectedAgent(a.id)).length > 0 && (
+          <div className="w-px h-4 bg-mission-control-border mx-1" />
+        )}
+        {agents.filter(a => !isProtectedAgent(a.id)).map(a => (
+          <button
+            key={a.id}
+            onClick={() => setFilters(f => ({ ...f, assignee: f.assignee === a.id ? 'all' : a.id }))}
+            className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${filters.assignee === a.id ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/50'}`}
+          >{a.name}</button>
+        ))}
       </div>
 
       {/* Kanban Board */}
       {!loading.tasks && filteredTasks.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
-            type="tasks"
-            description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+            icon={activeFiltersCount > 0 ? Search : Inbox}
+            title={activeFiltersCount > 0 ? 'No tasks match your filters' : 'No tasks yet'}
+            description={activeFiltersCount > 0
               ? 'No tasks match your current filters. Try adjusting your search or filters.'
-              : 'No tasks yet. Create a task to get started.'}
-            action={{ label: 'New Task', onClick: () => handleAddTask('todo') }}
+              : 'Create your first task to get the team working'}
+            action={activeFiltersCount > 0
+              ? undefined
+              : { label: 'Create task', onClick: () => handleAddTask('todo') }}
+            size="md"
           />
         </div>
       )}
-      <div className={`flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
-        {columns.map((column) => {
-          const columnTasks = getColumnTasks(column.id);
+      {/* Mobile column navigator */}
+      {isMobile && !(!loading.tasks && filteredTasks.length === 0) && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
+          <button
+            onClick={() => setMobileColumnIndex(prev => Math.max(prev - 1, 0))}
+            disabled={mobileColumnIndex === 0}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous column"
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </button>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm font-medium text-mission-control-text">
+              {columns[mobileColumnIndex]?.title ?? ''}
+            </span>
+            <div className="flex items-center gap-1">
+              {columns.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setMobileColumnIndex(i)}
+                  className={`h-2 rounded-full transition-all ${
+                    i === mobileColumnIndex
+                      ? 'bg-mission-control-accent w-4'
+                      : 'bg-mission-control-border w-2'
+                  }`}
+                  aria-label={`Go to column ${columns[i].title}`}
+                />
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1))}
+            disabled={mobileColumnIndex === columns.length - 1}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next column"
+          >
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      <div
+        className={`flex-1 min-w-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}
+        onTouchStart={isMobile ? handleMobileTouchStart : undefined}
+        onTouchEnd={isMobile ? handleMobileTouchEnd : undefined}
+      >
+        {columns.map((column, columnIdx) => {
+          if (isMobile && columnIdx !== mobileColumnIndex) return null;          const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];
           const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;
           
-          return (
+          const isCollapsed = collapsedColumns.has(column.id);
+
+        return (
             <div
               key={column.id}
               data-column={column.id}
-              className={`flex-shrink-0 w-96 min-w-[320px] flex flex-col rounded-2xl border transition-all ${
-                isDragOver 
-                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20' 
-                  : draggedTask 
-                  ? 'border-mission-control-border bg-mission-control-surface/50' 
+              className={`flex-shrink-0 flex flex-col rounded-2xl border transition-all ${
+                isCollapsed ? 'w-12 min-w-[48px]' : 'w-96 min-w-[320px]'
+              } ${
+                isDragOver
+                  ? 'border-mission-control-accent border-dashed bg-mission-control-accent/10 scale-[1.01] shadow-lg shadow-mission-control-accent/20'
+                  : draggedTask
+                  ? 'border-mission-control-border bg-mission-control-surface/50'
                   : 'border-mission-control-border bg-mission-control-surface'
               }`}
               onDragOver={(e) => handleDragOver(e, column.id)}
@@ -793,17 +1392,24 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="icon-text">
+                <div className={`flex items-center justify-between ${isCollapsed ? '' : 'mb-2'}`}>
+                  <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
+                    <button
+                      onClick={() => toggleColumnCollapse(column.id)}
+                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
+                      title={isCollapsed ? 'Expand column' : 'Collapse column'}
+                    >
+                      {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
+                    </button>
                     <span className={column.iconColor}>{column.icon}</span>
-                    <h3 className="font-semibold text-sm">{column.title}</h3>
+                    {!isCollapsed && <h3 className="font-semibold text-sm">{column.title}</h3>}
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${column.bg} ${column.iconColor}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
-                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
+                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length
                         ? `${columnTasks.length}/${taskCounts.totalDone}`
                         : columnTasks.length}
                     </span>
                   </div>
-                  {column.id === 'done' ? (
+                  {!isCollapsed && (column.id === 'done' ? (
                     <button
                       onClick={() => setShowArchiveConfirm(true)}
                       disabled={isArchiving || columnTasks.length === 0}
@@ -819,11 +1425,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     >
                       <Plus size={16} className="flex-shrink-0" />
                     </button>
-                  )}
+                  ))}
                 </div>
-                
+
                 {/* Filter and Sort Controls */}
-                <div className="flex items-center gap-1">
+                {!isCollapsed && <div className="flex items-center gap-1">
                   {/* Sort Dropdown */}
                   <div className="relative">
                     <button
@@ -901,11 +1507,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       </div>
                     )}
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Tasks */}
-              <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
+              {!isCollapsed && <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
                 {isDragOver && (
                   <div className="w-full h-0.5 bg-mission-control-accent rounded-full mb-2 animate-pulse" />
                 )}
@@ -931,31 +1537,70 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       onClick={() => setSelectedTask(task)}
                       onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
                       onPoke={() => setPokeTask(task)}
+                      onTitleEdit={handleTitleEdit}
                       isDragging={draggedTask === task.id}
                       isDeleting={deletingTasks.has(task.id)}
                       isSpawning={spawningTasks.has(task.id)}
                       isMoving={movingTasks.has(task.id)}
+                      isSelected={selectedIds.has(task.id)}
+                      isAnySelected={selectedIds.size > 0}
+                      onToggleSelect={handleToggleSelect}
                     />
                   ))
                 )}
                 
-                {columnTasks.length === 0 && !loading.tasks && (
-                  column.id !== 'done' ? (
-                    <button
-                      onClick={() => handleAddTask(column.id)}
-                      className="flex flex-col items-center justify-center py-8 w-full text-mission-control-text-dim hover:text-mission-control-text opacity-50 hover:opacity-80 transition-all group"
-                      title={`Add task to ${column.title}`}
-                    >
-                      <Plus size={20} className="mb-1 group-hover:scale-110 transition-transform" />
-                      <p className="text-xs">Add task</p>
-                    </button>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-mission-control-text-dim opacity-40">
-                      <p className="text-xs">No done tasks</p>
+                {columnTasks.length === 0 && !loading.tasks && (() => {
+                  const columnEmptyStates: Partial<Record<TaskStatus, { icon: typeof ClipboardList; title: string; description: string; showAdd?: boolean }>> = {
+                    'todo':            { icon: ClipboardList, title: 'No open tasks',       description: 'Create a task to get started',          showAdd: true },
+                    'internal-review': { icon: Search,        title: 'Nothing in pre-review', description: 'Tasks awaiting review will appear here' },
+                    'in-progress':     { icon: Zap,           title: 'Nothing in progress', description: 'Assign a task to an agent'              },
+                    'review':          { icon: Eye,           title: 'Nothing to review',   description: 'Completed tasks will appear here'       },
+                    'human-review':    { icon: User,          title: 'No items need review', description: 'Tasks requiring your input appear here' },
+                    'done':            { icon: CheckCircle2,  title: 'No completed tasks yet', description: ''                                    },
+                  };
+                  const cfg = columnEmptyStates[column.id];
+                  if (!cfg) return null;
+                  return (
+                    <EmptyState
+                      icon={cfg.icon}
+                      title={cfg.title}
+                      description={cfg.description}
+                      action={cfg.showAdd ? { label: 'Add task', onClick: () => handleAddTask(column.id) } : undefined}
+                      size="sm"
+                    />
+                  );
+                })()}
+
+                {/* Inline quick-add for Todo column */}
+                {column.id === 'todo' && (
+                  inlineAddActive ? (
+                    <div className="mt-1 p-2 rounded-xl border border-mission-control-accent/50 bg-mission-control-surface">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={inlineAddTitle}
+                        onChange={e => setInlineAddTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); handleInlineAddSubmit(); }
+                          if (e.key === 'Escape') { setInlineAddActive(false); setInlineAddTitle(''); }
+                        }}
+                        onBlur={handleInlineAddSubmit}
+                        placeholder="Task title..."
+                        className="w-full bg-transparent text-sm text-mission-control-text placeholder:text-mission-control-text-dim/60 outline-none"
+                      />
+                      <p className="text-[10px] text-mission-control-text-dim/60 mt-1">Enter to save, Esc to cancel</p>
                     </div>
+                  ) : (
+                    <button
+                      onClick={() => setInlineAddActive(true)}
+                      className="mt-1 flex items-center gap-2 w-full px-2 py-2 rounded-xl text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors text-xs"
+                    >
+                      <Plus size={13} className="flex-shrink-0" />
+                      Add task
+                    </button>
                   )
                 )}
-              </div>
+              </div>}
             </div>
           );
         })}
@@ -1069,6 +1714,101 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         cancelLabel="Cancel"
         type="danger"
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Tasks"
+        message={`Delete ${selectedIds.size} selected task${selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        type="danger"
+        loading={isBulkDeleting}
+      />
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
+          {/* Count badge */}
+          <span className="text-sm font-semibold text-mission-control-text whitespace-nowrap">
+            {selectedIds.size} task{selectedIds.size !== 1 ? 's' : ''} selected
+          </span>
+
+          <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
+
+          {/* Mark Done */}
+          <button
+            onClick={handleBulkMarkDone}
+            disabled={isBulkUpdating || isBulkDeleting}
+            className="icon-text px-3 py-1.5 bg-success-subtle text-success border border-success-border rounded-xl text-sm hover:bg-success hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckCircle size={15} className="flex-shrink-0" />
+            Mark Done
+          </button>
+
+          {/* Assign Agent */}
+          <div className="relative">
+            <button
+              onClick={() => setShowBulkAssign(v => !v)}
+              disabled={isBulkUpdating || isBulkDeleting}
+              className="icon-text px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-xl text-sm hover:border-mission-control-accent/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <UserCheck size={15} className="flex-shrink-0" />
+              Assign Agent
+              <ChevronDown size={13} className="flex-shrink-0" />
+            </button>
+            {showBulkAssign && (
+              <>
+                <div
+                  className="fixed inset-0 z-[60]"
+                  onClick={() => setShowBulkAssign(false)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setShowBulkAssign(false); }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Close assign dropdown"
+                />
+                <div className="absolute bottom-full mb-2 left-0 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl py-1 z-[61] min-w-[180px] max-h-60 overflow-y-auto">
+                  {agents.filter(a => !isProtectedAgent(a.id)).length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-mission-control-text-dim">No agents available</div>
+                  ) : agents.filter(a => !isProtectedAgent(a.id)).map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => handleBulkAssign(a.id)}
+                      className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border transition-colors"
+                    >
+                      <span className="flex-shrink-0">{a.avatar || '🤖'}</span>
+                      {a.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Delete */}
+          <button
+            onClick={() => setShowBulkDeleteConfirm(true)}
+            disabled={isBulkUpdating || isBulkDeleting}
+            className="icon-text px-3 py-1.5 bg-error-subtle text-error border border-error-border rounded-xl text-sm hover:bg-error hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={15} className="flex-shrink-0" />
+            Delete
+          </button>
+
+          <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
+
+          {/* Clear selection */}
+          <button
+            onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }}
+            className="icon-btn text-mission-control-text-dim hover:text-mission-control-text"
+            title="Clear selection (Esc)"
+          >
+            <X size={16} className="flex-shrink-0" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1085,24 +1825,56 @@ interface TaskCardProps {
   onClick: () => void;
   onSetPriority: (priority: TaskPriority) => void;
   onPoke: () => void;
+  onTitleEdit: (taskId: string, newTitle: string) => void;
   isDragging: boolean;
   isDeleting?: boolean;
   isSpawning?: boolean;
   isMoving?: boolean;
+  isSelected?: boolean;
+  isAnySelected?: boolean;
+  onToggleSelect?: (taskId: string, shiftKey: boolean) => void;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, onTitleEdit, isDragging, isDeleting, isSpawning, isMoving, isSelected, isAnySelected, onToggleSelect }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
   const [priorityBtnPos, setPriorityBtnPos] = useState<{top: number, left: number} | null>(null);
   const [assignBtnPos, setAssignBtnPos] = useState<{top: number, left: number} | null>(null);
   const [menuBtnPos, setMenuBtnPos] = useState<{top: number, left: number} | null>(null);
-  
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const editInputRef = useRef<HTMLInputElement>(null);
+  // Quick-edit inline popover
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
+  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
+
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  
+
+  // Focus edit input when entering edit mode
+  useEffect(() => {
+    if (isEditingTitle && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const startEditTitle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditTitle(task.title);
+    setIsEditingTitle(true);
+  };
+
+  const commitEditTitle = () => {
+    setIsEditingTitle(false);
+    if (editTitle.trim() && editTitle.trim() !== task.title) {
+      onTitleEdit(task.id, editTitle.trim());
+    }
+  };
+
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
@@ -1209,7 +1981,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
-        task.status === 'in-progress'
+        isSelected
+          ? 'border-mission-control-accent bg-mission-control-accent/5 shadow-[0_0_0_1px_var(--mc-accent)]'
+          : task.status === 'in-progress'
           ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
           /* TODO: move to CSS token when design system tokens include status colors */
           : activityIndicator ? activityIndicator.color
@@ -1220,8 +1994,22 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
     >
-      {/* Top row: Priority + Title + Menu */}
+      {/* Top row: Checkbox + Priority + Title + Menu */}
       <div className="flex items-start gap-1.5 mb-2">
+        {/* Selection checkbox — visible on hover or when any task is selected */}
+        {onToggleSelect && (
+          <button
+            className={`flex-shrink-0 mt-0.5 transition-opacity ${isAnySelected || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'}`}
+            onClick={(e) => { e.stopPropagation(); onToggleSelect(task.id, e.shiftKey); }}
+            title={isSelected ? 'Deselect task' : 'Select task (Shift+click for range)'}
+            aria-label={isSelected ? 'Deselect task' : 'Select task'}
+          >
+            {isSelected
+              ? <CheckSquare size={15} className="text-mission-control-accent flex-shrink-0" />
+              : <Square size={15} className="text-mission-control-text-dim flex-shrink-0" />
+            }
+          </button>
+        )}
         {/* Priority indicator */}
         {priorityConfig && (
           <div className="relative flex-shrink-0">
@@ -1282,8 +2070,37 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         )}
         
         {/* Title */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 truncate">{task.title}</h4>
+        <div className="flex flex-col flex-1 min-w-0 group/title">
+          {isEditingTitle ? (
+            <input
+              ref={editInputRef}
+              type="text"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEditTitle(); }
+                if (e.key === 'Escape') { setIsEditingTitle(false); setEditTitle(task.title); }
+              }}
+              onBlur={commitEditTitle}
+              onClick={e => e.stopPropagation()}
+              className="font-medium text-sm leading-tight w-full bg-mission-control-bg border border-mission-control-accent rounded px-1.5 py-0.5 focus:outline-none"
+            />
+          ) : (
+            <div className="flex items-center gap-1 min-w-0">
+              <h4
+                className="font-medium text-sm leading-tight flex-1 min-w-0 truncate"
+                onDoubleClick={startEditTitle}
+                title="Double-click to edit"
+              >{task.title}</h4>
+              <button
+                onClick={startEditTitle}
+                className="opacity-0 group-hover/title:opacity-60 hover:!opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-mission-control-border transition-opacity"
+                title="Edit title"
+              >
+                <Pencil size={11} />
+              </button>
+            </div>
+          )}
           {task.updatedAt && (
             <span className="text-[10px] text-mission-control-text-dim mt-0.5">
               {(() => {
@@ -1332,17 +2149,34 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           </div>
         )}
         
+        {/* Quick-edit pencil button — visible on hover */}
+        <button
+          ref={quickEditBtnRef}
+          className="icon-btn-sm text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100 flex-shrink-0 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (quickEditBtnRef.current) {
+              setQuickEditAnchor(quickEditBtnRef.current.getBoundingClientRect());
+            }
+            setShowQuickEdit(true);
+          }}
+          title="Quick edit"
+          aria-label="Quick edit task"
+        >
+          <Pencil size={14} className="flex-shrink-0" />
+        </button>
+
         <div className="relative flex-shrink-0">
-          <button 
+          <button
             ref={menuBtnRef}
             className="icon-btn-sm text-mission-control-text-dim opacity-60 hover:opacity-100"
-            onClick={(e) => { 
-              e.stopPropagation(); 
+            onClick={(e) => {
+              e.stopPropagation();
               if (!showMenu && menuBtnRef.current) {
                 const rect = menuBtnRef.current.getBoundingClientRect();
                 setMenuBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
               }
-              setShowMenu(!showMenu); 
+              setShowMenu(!showMenu);
             }}
           >
             <MoreHorizontal size={16} className="flex-shrink-0" />
@@ -1402,6 +2236,41 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       </div>
       
       {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
+
+      {/* Due date urgency badges — only show for incomplete tasks */}
+      {task.dueDate && task.status !== 'done' && dueInfo && (() => {
+        if (dueInfo.isOverdue) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-error bg-error-subtle border-error-border">
+                <AlertTriangle size={10} />
+                {dueInfo.text}
+              </span>
+            </div>
+          );
+        }
+        if (dueInfo.isDueSoon) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-warning bg-warning-subtle border-warning-border">
+                <Clock size={10} />
+                Due in {dueInfo.text}
+              </span>
+            </div>
+          );
+        }
+        if (dueInfo.isDueThisWeek) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-warning bg-warning-subtle/50 border-warning-border/50">
+                <Calendar size={10} />
+                Due in {dueInfo.text}
+              </span>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Task description */}
       {task.description && (
@@ -1473,6 +2342,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
               dueInfo.isOverdue ? 'bg-error-subtle text-error' :
               dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
+              dueInfo.isDueThisWeek ? 'bg-warning-subtle/50 text-warning' :
               'bg-mission-control-surface text-mission-control-text-dim'
             }`}>
               <Calendar size={14} className="no-shrink" />
@@ -1577,6 +2447,28 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           )}
         </div>
       </div>
+
+      {/* Quick-edit popover */}
+      {showQuickEdit && quickEditAnchor && (
+        <TaskQuickEdit
+          task={task}
+          agents={agents}
+          anchorRect={quickEditAnchor}
+          onClose={() => { setShowQuickEdit(false); setQuickEditAnchor(null); }}
+          onSaved={(patch) => {
+            // Propagate relevant fields back to parent via existing callbacks
+            if (patch.title && patch.title !== task.title) {
+              onTitleEdit(task.id, patch.title);
+            }
+            if (patch.priority && patch.priority !== task.priority) {
+              onSetPriority(patch.priority);
+            }
+            if ('assignedTo' in patch) {
+              onAssign(patch.assignedTo ?? '');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }, (prev, next) => {

@@ -582,7 +582,8 @@ Mission Control runs on Claude Code CLI (not a generic chatbot). Your Claude Cod
 **Approvals**: approval_create (use for any external action — tweets, emails, deploys), approval_check
 **Team communication**: chat_post, chat_read (rooms: general, code-review, planning, incidents)
 **Scheduling**: schedule_create, schedule_list
-**Memory (mcp__memory__)**: memory_search, memory_recall, memory_write
+**Image generation**: image_generate (generates and saves to library), image_remove_background (removes bg from generated image — use removeBackgroundPath from image_generate response)
+**Memory (mcp__memory__)**: memory_search, memory_recall, memory_write, memory_read, memory_list (use memory_list to discover what has been saved; memory_recall at task start)
 
 Your voice tools (create_task, update_task, list_tasks, memory_search, write_memory, update_state, read_state, read_team_state) call the same underlying data as those MCP tools. When you take action via voice, it persists to the same task board and memory that your Claude Code sessions read.
 

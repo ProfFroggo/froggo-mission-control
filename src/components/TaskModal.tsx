@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X } from 'lucide-react';
+import { Bot, Flag, Calendar, Clock, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X, FileText, ChevronDown, Lightbulb } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { taskApi } from '../lib/api';
 import { gateway } from '../lib/gateway';
@@ -18,6 +18,37 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} /> },
   { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={14} /> },
 ];
+
+// Task templates
+const TASK_TEMPLATES: { id: string; label: string; planningNotes: string }[] = [
+  {
+    id: 'bug',
+    label: 'Bug Fix',
+    planningNotes: '## Root Cause\n\n## Fix Approach\n\n## Acceptance Criteria\n- Bug no longer reproduces\n- Tests pass',
+  },
+  {
+    id: 'feature',
+    label: 'Feature',
+    planningNotes: '## What we\'re building\n\n## Approach\n\n## Acceptance Criteria\n- ',
+  },
+  {
+    id: 'research',
+    label: 'Research',
+    planningNotes: '## Question to answer\n\n## Sources to check\n\n## Output format\n',
+  },
+  {
+    id: 'design',
+    label: 'Design',
+    planningNotes: '## Brief\n\n## Deliverables\n\n## Acceptance Criteria\n- Designs match brand guidelines\n- ',
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    planningNotes: '## Topic\n\n## Audience\n\n## Key messages\n\n## Acceptance Criteria\n- ',
+  },
+];
+
+const DEFAULT_PLANNING_NOTES = '## Approach\n\n## Acceptance Criteria\n- ';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -60,13 +91,16 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   // Manual form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [planningNotes, setPlanningNotes] = useState(DEFAULT_PLANNING_NOTES);
   const [project, setProject] = useState('Default');
   const [status, setStatus] = useState<TaskStatus>(initialStatus);
   const [priority, setPriority] = useState<TaskPriority | ''>('p2');
   const [dueDate, setDueDate] = useState('');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [reviewerId, setReviewerId] = useState<string>('clara'); // Default to Clara as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Validation state
   const [titleError, setTitleError] = useState('');
@@ -108,9 +142,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         setMode('manual');
         setTitle(initialData.title || '');
         setDescription(initialData.description || '');
+        setPlanningNotes(DEFAULT_PLANNING_NOTES);
         setProject(initialData.project || 'Default');
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
+        setScheduledAt('');
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
         // Default reviewer to clara
         setReviewerId('clara');
@@ -118,7 +154,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         // Fresh task - default reviewer to clara
         setReviewerId('clara');
         setPriority('p2');
+        setPlanningNotes(DEFAULT_PLANNING_NOTES);
       }
+      setShowTemplates(false);
       
       // Start chat with greeting if in chat mode
       if (mode === 'chat' && !initialData) {
@@ -200,10 +238,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       id: taskId, // Pre-generate ID for file attachment
       title: title.trim(),
       description: description.trim() || undefined,
+      planningNotes: planningNotes.trim() && planningNotes.trim() !== DEFAULT_PLANNING_NOTES.trim() ? planningNotes.trim() : undefined,
       project,
       status,
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
+      scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : undefined,
       assignedTo: assignedTo || undefined,
       reviewerId: reviewerId || 'clara', // Always set reviewer (default: clara)
       reviewStatus: 'pending' as any, // Initialize review status
@@ -403,9 +443,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setTitleError('');
     setTitle('');
     setDescription('');
+    setPlanningNotes(DEFAULT_PLANNING_NOTES);
     setProject('Default');
     setPriority('');
     setDueDate('');
+    setScheduledAt('');
     setAssignedTo('');
     setReviewerId('mission-control'); // Reset to default reviewer
     setSelectedFiles([]); // Clear file selections
@@ -413,6 +455,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setChatInput('');
     setExtractedData({});
     setConversationComplete(false);
+    setShowTemplates(false);
     // Reset multi-stage fields
     setShowMultiStage(false);
     setProjectName('');
@@ -589,13 +632,17 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4">
               {/* Title */}
               <div>
-                <label htmlFor="task-title" className="block text-sm text-mission-control-text-dim mb-1">
-                  Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="task-title" className="text-sm text-mission-control-text-dim">
+                    Title <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                  </label>
+                  <span className={`text-xs ${title.length > 120 ? 'text-warning' : 'text-mission-control-text-dim'}`}>{title.length}/140</span>
+                </div>
                 <input
                   id="task-title"
                   type="text"
                   value={title}
+                  maxLength={140}
                   onChange={e => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
                   placeholder="What needs to be done?"
                   className={`w-full bg-mission-control-bg border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent ${titleError ? 'border-error' : 'border-mission-control-border'}`}
@@ -608,7 +655,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Description */}
               <div>
-                <label htmlFor="task-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="task-description" className="text-sm text-mission-control-text-dim">Description</label>
+                  <span className="text-xs text-mission-control-text-dim">{description.length} chars</span>
+                </div>
                 <textarea
                   id="task-description"
                   value={description}
@@ -617,6 +667,56 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   rows={3}
                   className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
                 />
+              </div>
+
+              {/* Planning Notes */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="task-planning-notes" className="flex items-center gap-1.5 text-sm text-mission-control-text-dim">
+                    <FileText size={14} />
+                    Planning Notes
+                    <span className="text-error text-xs ml-0.5" aria-hidden="true">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-mission-control-text-dim">{planningNotes.length} chars</span>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowTemplates(v => !v)}
+                        className="flex items-center gap-1 text-xs px-2 py-0.5 bg-mission-control-surface border border-mission-control-border rounded hover:border-mission-control-accent/50 transition-colors"
+                      >
+                        <Lightbulb size={12} />
+                        Use template
+                        <ChevronDown size={12} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showTemplates && (
+                        <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[140px]">
+                          {TASK_TEMPLATES.map(t => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={() => { setPlanningNotes(t.planningNotes); setShowTemplates(false); }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <textarea
+                  id="task-planning-notes"
+                  value={planningNotes}
+                  onChange={e => setPlanningNotes(e.target.value)}
+                  rows={6}
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-y font-mono text-sm"
+                />
+                <p className="text-xs text-mission-control-text-dim mt-1 flex items-center gap-1">
+                  <Lightbulb size={11} />
+                  Describe your approach and acceptance criteria. Clara checks this before dispatch.
+                </p>
               </div>
 
               {/* Priority */}
@@ -701,6 +801,21 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     1w
                   </button>
                 </div>
+              </div>
+
+              {/* Schedule for */}
+              <div>
+                <span className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
+                  <Clock size={14} /> Schedule for
+                </span>
+                <input
+                  id="task-scheduled-at"
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={e => setScheduledAt(e.target.value)}
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
+                />
+                <p className="text-xs text-mission-control-text-dim mt-1">When to start working on this task</p>
               </div>
 
               {/* Project & Status Row */}

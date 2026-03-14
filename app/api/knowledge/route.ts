@@ -49,7 +49,13 @@ export async function GET(req: NextRequest) {
       pinned: Boolean(a.pinned),
     }));
 
-    return NextResponse.json({ success: true, articles: parsed });
+    return NextResponse.json({ success: true, articles: parsed }, {
+      headers: {
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        'Content-Type': 'application/json',
+        'Vary': 'Accept-Encoding',
+      },
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ success: false, error: msg }, { status: 500 });

@@ -1,5 +1,6 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { MessageSquare, RefreshCw, MessageCircle, Send, Gamepad2, Globe, Lock, Briefcase, Mic, Clock, Settings, WifiOff, Inbox, Bot } from 'lucide-react';
+import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import type { LucideIcon } from 'lucide-react';
 
@@ -33,6 +34,9 @@ const ActivityFeed = memo(function ActivityFeed() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  // Tick every 60s to keep relative timestamps fresh
+  const [, setTick] = useState(0);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -91,7 +95,13 @@ const ActivityFeed = memo(function ActivityFeed() {
       fetchSessions();
     }
 
-    return () => { unsub(); unsub2(); unsub3(); };
+    // Refresh relative timestamps every 60s
+    tickRef.current = setInterval(() => setTick(t => t + 1), 60000);
+
+    return () => {
+      unsub(); unsub2(); unsub3();
+      if (tickRef.current) clearInterval(tickRef.current);
+    };
   }, []);
 
   const filteredActivities = filter 
@@ -173,12 +183,16 @@ const ActivityFeed = memo(function ActivityFeed() {
             </div>
             <p>Connecting to gateway...</p>
           </div>
+        ) : loading && activities.length === 0 ? (
+          <div className="p-3">
+            <SkeletonList count={4} />
+          </div>
         ) : filteredActivities.length === 0 ? (
           <div className="p-8 text-center text-mission-control-text-dim">
             <div className="flex justify-center mb-2">
               <Inbox size={28} className="text-mission-control-text-dim" />
             </div>
-            <p>No activity yet</p>
+            <p>{filter ? `No ${filter} activity` : 'No activity yet'}</p>
           </div>
         ) : (
           <div className="divide-y divide-mission-control-border">

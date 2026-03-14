@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
+import { PanelSkeleton } from './components/PanelSkeleton';
+import { AsyncBoundary } from './components/AsyncBoundary';
 import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
 import { showToast } from './components/Toast';
@@ -27,8 +29,11 @@ import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
 import OnboardingWizard from './components/OnboardingWizard';
+import OnboardingFlow, { QuickTips, useOnboardingFlow } from './components/OnboardingFlow';
 import NetworkStatus from './components/NetworkStatus';
 import { DependencyGate } from './components/DependencyGate';
+import ShortcutsModal from './components/ShortcutsModal';
+import { useKeyboardShortcuts, useChordShortcuts } from './lib/useKeyboardShortcuts';
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
@@ -59,6 +64,7 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
@@ -66,6 +72,7 @@ function App() {
   const quickActionsRef = useRef<QuickActionsRef>(null);
   const { activeTour, completeTour, skipTour, startTour, startPlatformTour, hasCompletedTour } = useTour();
   const { showOnboardingWizard, completeOnboarding, skipOnboarding } = useFirstTimeUser(startTour, hasCompletedTour);
+  const { showFlow: showOnboardingFlow, showTips, completeFlow, completeTips, restartOnboarding } = useOnboardingFlow();
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
@@ -229,6 +236,15 @@ function App() {
     window.addEventListener('restart-platform-tour', handleRestartTour);
     return () => window.removeEventListener('restart-platform-tour', handleRestartTour);
   }, [startPlatformTour]);
+
+  // Listen for restart-onboarding event dispatched from SettingsPanel
+  useEffect(() => {
+    const handleRestartOnboarding = () => {
+      restartOnboarding();
+    };
+    window.addEventListener('restart-onboarding', handleRestartOnboarding);
+    return () => window.removeEventListener('restart-onboarding', handleRestartOnboarding);
+  }, [restartOnboarding]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -396,15 +412,72 @@ function App() {
         }
       }
 
-      // Escape to close command palette
-      if (e.key === 'Escape' && commandPaletteOpen) {
-        setCommandPaletteOpen(false);
+      // Bare-key shortcuts — only when not in a text input
+      const inInput = (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement)?.contentEditable === 'true');
+      if (!inInput && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // ? → keyboard shortcuts modal
+        if (e.key === '?') {
+          e.preventDefault();
+          setShortcutsOpen(prev => !prev);
+          return;
+        }
+        // N → new task (navigate to kanban + dispatch a create-task event)
+        if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          setCurrentView('kanban');
+          setTimeout(() => window.dispatchEvent(new CustomEvent('kanban:new-task')), 100);
+          return;
+        }
+      }
+
+      // Escape to close any open overlay
+      if (e.key === 'Escape') {
+        if (commandPaletteOpen) { setCommandPaletteOpen(false); return; }
+        if (searchOpen) { setSearchOpen(false); return; }
+        if (shortcutsOpen) { setShortcutsOpen(false); return; }
+        if (shortcutsModalOpen) { setShortcutsModalOpen(false); return; }
+        if (helpPanelOpen) { setHelpPanelOpen(false); return; }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandPaletteOpen, toggleMuted]);
+  }, [commandPaletteOpen, searchOpen, shortcutsOpen, shortcutsModalOpen, helpPanelOpen, toggleMuted]);
+
+  // ---------------------------------------------------------------------------
+  // Map-based global shortcuts via useKeyboardShortcuts
+  // useCallback keeps references stable so the effect dependency is stable.
+  // ---------------------------------------------------------------------------
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const openNewTask = useCallback(() => {
+    setCurrentView('kanban');
+    setTimeout(() => window.dispatchEvent(new CustomEvent('kanban:new-task')), 100);
+  }, []);
+  const openShortcutsModal = useCallback(() => setShortcutsModalOpen(prev => !prev), []);
+
+  useKeyboardShortcuts({
+    // Global search — slash (bare key) mirrors ⌘K
+    '/': openSearch,
+    // New task via ⌘N
+    'cmd+n': openNewTask,
+    // Shortcuts help modal via ? (bare key only — the existing handler covers ⌘?)
+    '?': openShortcutsModal,
+  });
+
+  // g-chord navigation shortcuts
+  const navDashboard  = useCallback(() => setCurrentView('dashboard'), []);
+  const navKanban     = useCallback(() => setCurrentView('kanban'), []);
+  const navProjects   = useCallback(() => setCurrentView('projects'), []);
+  const navAgents     = useCallback(() => setCurrentView('agents'), []);
+  const navChat       = useCallback(() => setCurrentView('chat'), []);
+
+  useChordShortcuts({
+    d: navDashboard,
+    t: navKanban,
+    p: navProjects,
+    a: navAgents,
+    c: navChat,
+  });
 
   return (
     <DependencyGate>
@@ -425,11 +498,13 @@ function App() {
 
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
-          <Sidebar 
-            currentView={currentView} 
+          <Sidebar
+            currentView={currentView}
             onNavigate={setCurrentView}
             onOpenHelp={() => setHelpPanelOpen(true)}
             onWidthChange={setSidebarWidth}
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenShortcuts={() => setShortcutsModalOpen(true)}
           />
         </ErrorBoundary>
         
@@ -442,23 +517,21 @@ function App() {
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >
           <PerformanceProfiler id={`${currentView}-panel`}>
-            <ErrorBoundary panelName={currentView} key={currentView}>
-              <Suspense fallback={<LoadingPanel />}>
-                {/* Dynamic view rendering — driven by ViewRegistry */}
-                {currentView === 'contacts'
-                  ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
-                  : (() => {
-                      const reg = ViewRegistry.get(currentView);
-                      if (!reg) return null;
-                      const Comp = reg.component;
-                      if (currentView === 'dashboard') {
-                        return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
-                      }
-                      return <Comp />;
-                    })()
-                }
-              </Suspense>
-            </ErrorBoundary>
+            <AsyncBoundary componentName={currentView} key={currentView}>
+              {/* Dynamic view rendering — driven by ViewRegistry */}
+              {currentView === 'contacts'
+                ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+                : (() => {
+                    const reg = ViewRegistry.get(currentView);
+                    if (!reg) return null;
+                    const Comp = reg.component;
+                    if (currentView === 'dashboard') {
+                      return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
+                    }
+                    return <Comp />;
+                  })()
+              }
+            </AsyncBoundary>
           </PerformanceProfiler>
         </main>
 
@@ -491,9 +564,14 @@ function App() {
           />
         </ErrorBoundary>
 
-        {/* Keyboard Shortcuts Help */}
+        {/* Keyboard Shortcuts Help (full reference — ⌘?) */}
         <ErrorBoundary panelName="Keyboard Shortcuts">
           <KeyboardShortcuts isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        </ErrorBoundary>
+
+        {/* Shortcuts Modal — compact quick-reference (? bare key or sidebar keyboard button) */}
+        <ErrorBoundary panelName="Shortcuts Modal">
+          <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
         </ErrorBoundary>
 
         {/* Help Panel */}
@@ -512,6 +590,23 @@ function App() {
               onComplete={(startTour) => completeOnboarding(startTour)}
               onSkip={() => skipOnboarding()}
             />
+          </ErrorBoundary>
+        )}
+
+        {/* Onboarding Flow (first-run simplified welcome) */}
+        {showOnboardingFlow && (
+          <ErrorBoundary panelName="Onboarding Flow">
+            <OnboardingFlow
+              onComplete={completeFlow}
+              onNavigate={(view) => setCurrentView(view as View)}
+            />
+          </ErrorBoundary>
+        )}
+
+        {/* Quick Tips (post-onboarding tooltip sequence) */}
+        {showTips && (
+          <ErrorBoundary panelName="Quick Tips">
+            <QuickTips onDone={completeTips} />
           </ErrorBoundary>
         )}
 

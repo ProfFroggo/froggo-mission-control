@@ -13,6 +13,10 @@ import { keychainSet } from './keychain';
 // Database location — single source of truth via ENV wrapper
 const DB_PATH = ENV.DB_PATH;
 
+// Note: better-sqlite3 caches prepared statements internally per Database instance.
+// Calling db.prepare() inside request handlers is safe and efficient — the library
+// deduplicates statement compilation automatically. No manual statement caching is needed.
+
 // Ensure directory exists
 const dbDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dbDir)) {
@@ -301,8 +305,22 @@ function initSchema(db: Database.Database) {
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
+      value TEXT NOT NULL,
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
+
+    -- ══════════════════════════════════════════
+    -- SETTINGS AUDIT LOG
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS settings_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL,
+      oldValue TEXT,
+      newValue TEXT NOT NULL,
+      changedBy TEXT NOT NULL DEFAULT 'system',
+      timestamp INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_settings_audit_key ON settings_audit(key, timestamp DESC);
 
     -- ══════════════════════════════════════════
     -- TOKEN USAGE
@@ -431,13 +449,57 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- TASK TEMPLATES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS task_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      priority TEXT DEFAULT 'medium',
+      tags TEXT,
+      subtasks TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+
+    -- ══════════════════════════════════════════
+    -- TASK DEPENDENCIES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS task_dependencies (
+      id TEXT PRIMARY KEY,
+      taskId TEXT NOT NULL,
+      dependsOnId TEXT NOT NULL,
+      createdAt TEXT DEFAULT (datetime('now')),
+      UNIQUE(taskId, dependsOnId)
+    );
+
+    -- ══════════════════════════════════════════
+    -- TIME ENTRIES (per-task time tracking)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id TEXT PRIMARY KEY,
+      taskId TEXT NOT NULL,
+      startedAt TEXT,
+      stoppedAt TEXT,
+      duration INTEGER,
+      note TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo ON tasks(assignedTo);
     CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);
+    CREATE INDEX IF NOT EXISTS idx_tasks_projectId ON tasks(project_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_updatedAt ON tasks(updatedAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_tasks_dueDate ON tasks(dueDate) WHERE dueDate IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_task_activity_taskId ON task_activity(taskId);
-    CREATE INDEX IF NOT EXISTS idx_task_activity_timestamp ON task_activity(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_timestamp ON task_activity(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_task_activity_agentId ON task_activity(agentId);
+    CREATE INDEX IF NOT EXISTS idx_subtasks_taskId ON subtasks(taskId);
+    CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status);
     CREATE INDEX IF NOT EXISTS idx_messages_sessionKey ON messages(sessionKey);
     CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
     CREATE INDEX IF NOT EXISTS idx_inbox_status ON inbox(status);
@@ -487,6 +549,35 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_task_activity_task_created ON task_activity(taskId, timestamp DESC);
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
+    -- ══════════════════════════════════════════
+    -- NOTIFICATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT,
+      userId TEXT,
+      metadata TEXT,
+      readAt TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+    CREATE INDEX IF NOT EXISTS idx_notifications_readAt ON notifications(readAt);
+    CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+
+    -- ══════════════════════════════════════════
+    -- NOTIFICATION PREFERENCES
+    CREATE TABLE IF NOT EXISTS notification_preferences (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      type TEXT NOT NULL UNIQUE,
+      email INTEGER NOT NULL DEFAULT 1,
+      inApp INTEGER NOT NULL DEFAULT 1,
+      updatedAt TEXT DEFAULT (datetime('now'))
+    );
+
+        -- ══════════════════════════════════════════
     -- ══════════════════════════════════════════
     -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
     -- ══════════════════════════════════════════
@@ -606,6 +697,149 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_scope ON knowledge_base(scope);
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_links ON knowledge_base_links(knowledgeId);
     CREATE INDEX IF NOT EXISTS idx_knowledge_base_assets ON knowledge_base_assets(knowledgeId);
+
+    -- ══════════════════════════════════════════
+    -- PROJECT MILESTONES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS project_milestones (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      dueDate INTEGER,
+      completed INTEGER DEFAULT 0,
+      completedAt INTEGER,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_project_milestones_projectId ON project_milestones(projectId, createdAt);
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGNS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS campaigns (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      type TEXT NOT NULL DEFAULT 'general',
+      goal TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      channels TEXT NOT NULL DEFAULT '[]',
+      budget REAL,
+      budgetSpent REAL DEFAULT 0,
+      currency TEXT DEFAULT 'USD',
+      targetAudience TEXT,
+      kpis TEXT NOT NULL DEFAULT '{}',
+      startDate INTEGER,
+      endDate INTEGER,
+      briefContent TEXT,
+      color TEXT DEFAULT '#6366f1',
+      createdBy TEXT,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS campaign_members (
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      agentId TEXT NOT NULL,
+      role TEXT DEFAULT 'member',
+      addedAt INTEGER NOT NULL,
+      PRIMARY KEY (campaignId, agentId)
+    );
+
+    CREATE TABLE IF NOT EXISTS campaign_assets (
+      id TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      filePath TEXT NOT NULL,
+      fileName TEXT NOT NULL,
+      assetType TEXT DEFAULT 'image',
+      channel TEXT,
+      status TEXT DEFAULT 'draft',
+      createdBy TEXT,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
+    CREATE INDEX IF NOT EXISTS idx_campaigns_type ON campaigns(type);
+    CREATE INDEX IF NOT EXISTS idx_campaign_members_agentId ON campaign_members(agentId);
+    CREATE INDEX IF NOT EXISTS idx_campaign_assets_campaignId ON campaign_assets(campaignId);
+
+    -- ══════════════════════════════════════════
+    -- AUTOMATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS automations (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft',
+      trigger_type TEXT NOT NULL DEFAULT 'manual',
+      trigger_config TEXT NOT NULL DEFAULT '{}',
+      steps TEXT NOT NULL DEFAULT '[]',
+      last_run INTEGER,
+      next_run INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_automations_status ON automations(status);
+    CREATE INDEX IF NOT EXISTS idx_automations_updated_at ON automations(updated_at DESC);
+
+    -- ══════════════════════════════════════════
+    -- AUTOMATION RUNS (execution history)
+    CREATE TABLE IF NOT EXISTS automation_runs (
+      id TEXT PRIMARY KEY,
+      automationId TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      message TEXT,
+      stepsRun INTEGER DEFAULT 0,
+      startedAt INTEGER NOT NULL,
+      completedAt INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
+    -- TOKEN BUDGETS
+    CREATE TABLE IF NOT EXISTS budgets (
+      name TEXT NOT NULL,
+      agentId TEXT,
+      period TEXT NOT NULL DEFAULT 'monthly',
+      limitUsd REAL NOT NULL,
+      alertAt REAL NOT NULL DEFAULT 80,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
+    -- CHAT ROOM MESSAGE REACTIONS (v2)
+
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      messageId TEXT NOT NULL,
+      userId TEXT NOT NULL DEFAULT 'user',
+      reaction TEXT NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      UNIQUE(messageId, userId, reaction)
+    CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
+    -- MODULE REVIEWS & RATINGS
+    CREATE TABLE IF NOT EXISTS module_reviews (
+      moduleId TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+      review TEXT,
+      reviewedBy TEXT DEFAULT 'user',
+    CREATE INDEX IF NOT EXISTS idx_module_reviews_moduleId ON module_reviews(moduleId, createdAt DESC);
+    );
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
+    CREATE TABLE IF NOT EXISTS campaign_automations (
+      linkId TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      automationId TEXT NOT NULL REFERENCES automations(id) ON DELETE CASCADE,
+      campaignTriggerType TEXT NOT NULL DEFAULT 'campaign-started',
+      linkedAt INTEGER NOT NULL,
+      UNIQUE(campaignId, automationId)
+    CREATE INDEX IF NOT EXISTS idx_campaign_automations_campaignId ON campaign_automations(campaignId);
+    CREATE INDEX IF NOT EXISTS idx_campaign_automations_automationId ON campaign_automations(automationId);
+
+    -- Indexes for task management v2 tables
+    CREATE INDEX IF NOT EXISTS idx_task_templates_createdAt ON task_templates(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_taskId ON task_dependencies(taskId);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_dependsOnId ON task_dependencies(dependsOnId);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_taskId ON time_entries(taskId, createdAt DESC);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
@@ -640,10 +874,81 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE tasks ADD COLUMN moduleId TEXT`,
     `ALTER TABLE modules_builder ADD COLUMN wireframeHtml TEXT`,
     `ALTER TABLE modules_builder ADD COLUMN taskIds TEXT DEFAULT '[]'`,
+    // Task scheduling: scheduledAt timestamp for when to start work
+    `ALTER TABLE tasks ADD COLUMN scheduledAt INTEGER`,
+    // Clara review tracking: cooldown timestamp and bounce count
+    `ALTER TABLE tasks ADD COLUMN lastClaraReviewAt INTEGER`,
+    `ALTER TABLE tasks ADD COLUMN claraReviewCount INTEGER DEFAULT 0`,
+    // Subtask enhancements: due dates
+    `ALTER TABLE subtasks ADD COLUMN dueDate INTEGER`,
+    // Library file metadata: authorship and task linkage
+    `ALTER TABLE library_files ADD COLUMN tags TEXT DEFAULT '[]'`,
+    `ALTER TABLE library_files ADD COLUMN createdBy TEXT`,
+    `ALTER TABLE library_files ADD COLUMN linkedTasks TEXT DEFAULT '[]'`,
+    // Projects: explicit archived boolean (mirrors status = 'archived')
+    `ALTER TABLE projects ADD COLUMN archived INTEGER NOT NULL DEFAULT 0`,
+    // Chat rooms v2: thread reply support on room messages
+    `ALTER TABLE chat_room_messages ADD COLUMN parentId TEXT`,
+    // Chat rooms v2: pinned message per room
+    `ALTER TABLE chat_rooms ADD COLUMN pinnedMessageId TEXT`,
+    // Chat rooms v2: room description
+    `ALTER TABLE chat_rooms ADD COLUMN description TEXT`,
+    // Module configuration: per-module JSON config object
+    `ALTER TABLE catalog_modules ADD COLUMN configuration TEXT DEFAULT '{}'`,
+    // Module health: last activity and error tracking
+    `ALTER TABLE catalog_modules ADD COLUMN lastActivityAt INTEGER`,
+    `ALTER TABLE catalog_modules ADD COLUMN errorCount INTEGER DEFAULT 0`,
+    // Schedule: recurrence support
+    `ALTER TABLE scheduled_items ADD COLUMN recurrence TEXT DEFAULT 'none'`,
+    // Campaigns v2: metrics JSON blob + saved brief text
+    `ALTER TABLE campaigns ADD COLUMN metrics TEXT`,
+    `ALTER TABLE campaigns ADD COLUMN brief TEXT`,
+    // Agent soul v2: personality traits, tone preset, memory scope
+    `ALTER TABLE agents ADD COLUMN traits TEXT DEFAULT '[]'`,
+    `ALTER TABLE agents ADD COLUMN tonePreset TEXT DEFAULT 'professional'`,
+    `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
+    // Clara review SLA: timestamp when task entered internal-review status
+    `ALTER TABLE tasks ADD COLUMN reviewEnteredAt INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Clara review log table — tracks approve/reject decisions with SLA timing
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS clara_review_log (
+        id TEXT PRIMARY KEY,
+        taskId TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT,
+        reviewedAt TEXT DEFAULT (datetime('now')),
+        timeInReviewMinutes INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_clara_review_log_taskId ON clara_review_log(taskId);
+      CREATE INDEX IF NOT EXISTS idx_clara_review_log_reviewedAt ON clara_review_log(reviewedAt);
+    `);
+  } catch { /* already exists */ }
+
+  // Agent soul v2: status history + availability schedules
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS agent_status_history (
+        id TEXT PRIMARY KEY,
+        agentId TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reason TEXT,
+        changedAt TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_agent_status_history_agentId ON agent_status_history(agentId, changedAt);
+
+      CREATE TABLE IF NOT EXISTS agent_schedules (
+        agentId TEXT PRIMARY KEY,
+        schedule TEXT NOT NULL DEFAULT '{}',
+        updatedAt TEXT DEFAULT (datetime('now'))
+      );
+    `);
+  } catch { /* tables already exist */ }
 
   // Module Builder: index for task-by-module queries
   try {
@@ -668,6 +973,60 @@ function initSchema(db: Database.Database) {
       END;
     `);
   } catch { /* FTS not available or already created */ }
+
+  // Knowledge Base v3: versions, templates, analytics
+  // Knowledge Base v3: versions, templates, analytics tables
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        editedBy TEXT NOT NULL DEFAULT 'human',
+        editedAt INTEGER NOT NULL,
+        versionNote TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_versions_article ON knowledge_versions(articleId, editedAt DESC);
+      CREATE TABLE IF NOT EXISTS knowledge_templates (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS knowledge_analytics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        event TEXT NOT NULL DEFAULT 'view',
+        recordedAt INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_analytics_article ON knowledge_analytics(articleId, recordedAt DESC);
+    `);
+  } catch { /* tables already exist */ }
+
+  // Seed default knowledge templates if empty
+  try {
+    const tmplCount = db.prepare('SELECT COUNT(*) as c FROM knowledge_templates').get() as { c: number };
+    if (tmplCount.c === 0) {
+      const tnow = Date.now();
+      const defaultTemplates = [
+        { id: 'tmpl-how-to', label: 'How-to Guide', category: 'reference', content: '# How-to Guide: [Title]\n\n## Overview\nBriefly describe what this guide helps the reader accomplish.\n\n## Prerequisites\n- Requirement one\n\n## Steps\n1. First step\n2. Second step\n\n## Troubleshooting\n**Problem**: Describe a common issue.\n**Solution**: How to fix it.' },
+        { id: 'tmpl-decision-log', label: 'Decision Log', category: 'reference', content: '# Decision Log: [Topic]\n\n## Context\nDescribe the situation.\n\n## Options Considered\n1. Option A\n2. Option B\n\n## Decision\nState what was decided.\n\n## Rationale\nExplain why.\n\n## Follow-up\n- [ ] Action item' },
+        { id: 'tmpl-meeting-notes', label: 'Meeting Notes', category: 'reference', content: '# Meeting Notes\n\n## Attendees\n- Name / Role\n\n## Agenda\n1. Topic one\n\n## Discussion\nSummarize key points.\n\n## Action Items\n- [ ] Task \u2014 owner \u2014 due date' },
+        { id: 'tmpl-incident-report', label: 'Incident Report', category: 'technical', content: '# Incident Report: [Title]\n\n## Summary\nBrief description.\n\n## Timeline\n- HH:MM \u2014 event\n\n## Root Cause\nUnderlying cause.\n\n## Impact\nWho/what affected.\n\n## Resolution\nHow it was resolved.\n\n## Prevention\n- [ ] Action to prevent recurrence' },
+        { id: 'tmpl-how-to', label: 'How-to Guide', category: 'reference', content: '# How-to Guide: [Title]\n\n## Overview\nBriefly describe what this guide helps the reader accomplish.\n\n## Prerequisites\n- Requirement one\n- Requirement two\n\n## Steps\n1. First step\n2. Second step\n3. Third step\n\n## Troubleshooting\n**Problem**: Describe a common issue.\n**Solution**: How to fix it.' },
+        { id: 'tmpl-decision-log', label: 'Decision Log', category: 'reference', content: '# Decision Log: [Topic]\n\n## Context\nDescribe the situation that required a decision.\n\n## Options Considered\n1. Option A\n2. Option B\n\n## Decision\nState what was decided.\n\n## Rationale\nExplain why this option was chosen.\n\n## Follow-up\n- [ ] Action item' },
+        { id: 'tmpl-meeting-notes', label: 'Meeting Notes', category: 'reference', content: '# Meeting Notes \u2014 [Date]\n\n## Attendees\n- Name / Role\n\n## Agenda\n1. Topic one\n\n## Discussion\nSummarize key points discussed.\n\n## Action Items\n- [ ] Task \u2014 owner \u2014 due date' },
+        { id: 'tmpl-incident-report', label: 'Incident Report', category: 'technical', content: '# Incident Report: [Title]\n\n## Summary\nBrief description of the incident.\n\n## Timeline\n- HH:MM \u2014 event\n\n## Root Cause\nDescribe the underlying cause.\n\n## Impact\nWho/what was affected and for how long.\n\n## Resolution\nWhat was done to resolve it.\n\n## Prevention\n- [ ] Action to prevent recurrence' },
+      ];
+      const ins = db.prepare(`INSERT OR IGNORE INTO knowledge_templates (id, label, content, category, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+      for (const t of defaultTemplates) {
+        ins.run(t.id, t.label, t.content, t.category, tnow, tnow);
+      }
+    }
+  } catch { /* non-critical */ }
+
 
   // Seed example knowledge base articles if empty
   try {
@@ -707,6 +1066,30 @@ function initSchema(db: Database.Database) {
     }
   } catch { /* non-critical */ }
 
+  // Brand Assets table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS brand_assets (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL DEFAULT 'general',
+        fileType TEXT NOT NULL DEFAULT 'image',
+        fileName TEXT,
+        filePath TEXT,
+        url TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        scope TEXT NOT NULL DEFAULT 'all',
+        createdBy TEXT DEFAULT 'human',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_category ON brand_assets(category);
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_scope ON brand_assets(scope);
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_createdAt ON brand_assets(createdAt DESC);
+    `);
+  } catch { /* already exists */ }
+
   // Phase 79: WAL performance tuning
   try {
     db.pragma('wal_autocheckpoint = 400');
@@ -717,6 +1100,11 @@ function initSchema(db: Database.Database) {
   try {
     db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
   } catch { /* non-critical */ }
+
+  // Phase 80: campaigns.types column (multi-type support)
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN types TEXT`);
+  } catch { /* column already exists */ }
 
   syncCatalogAgents(db);
   syncCatalogModules(db);

@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
+import { createNotification } from '@/lib/notificationWriter';
+
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
 
@@ -58,13 +60,35 @@ export async function GET(request: NextRequest) {
       values.push(priority);
     }
 
+    // ?overdue=true — tasks with a past due date that aren't done
+    const overdue = searchParams.get('overdue');
+    if (overdue === 'true') {
+      conditions.push(`dueDate IS NOT NULL AND dueDate < ? AND status NOT IN ('done')`);
+      values.push(Date.now());
+    }
+
+    // ?dueBefore=timestamp — tasks due before given timestamp
+    const dueBefore = searchParams.get('dueBefore');
+    if (dueBefore) {
+      conditions.push('dueDate IS NOT NULL AND dueDate < ?');
+      values.push(parseInt(dueBefore, 10));
+    }
+
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
+    // idx_tasks_priority_status and idx_tasks_status_updated cover the ORDER BY priority ASC, createdAt DESC
+    // idx_tasks_assignedTo_status covers ?assignedTo= filter; idx_tasks_status covers ?status= filter
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(tasks, {
+      headers: {
+        'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
+        'Content-Type': 'application/json',
+        'Vary': 'Accept-Encoding',
+      },
+    });
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -104,6 +128,7 @@ export async function POST(request: NextRequest) {
       labels = [],
       planningNotes,
       dueDate,
+      scheduledAt,
       estimatedHours,
       blockedBy = [],
       blocks = [],
@@ -123,13 +148,13 @@ export async function POST(request: NextRequest) {
       INSERT INTO tasks (
         id, title, description, status, priority, project, project_id, assignedTo,
         reviewerId, reviewStatus, reviewNotes, tags, labels, planningNotes,
-        dueDate, estimatedHours, blockedBy, blocks, progress, lastAgentUpdate,
+        dueDate, scheduledAt, estimatedHours, blockedBy, blocks, progress, lastAgentUpdate,
         createdAt, updatedAt, projectName, stageNumber, stageName, nextStage, parentTaskId,
         recurrence, recurrenceParentId, moduleId
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?
       )
@@ -137,7 +162,7 @@ export async function POST(request: NextRequest) {
       id, title, description ?? null, status, priority, project ?? null, project_id ?? null, assignedTo ?? null,
       reviewerId ?? null, reviewStatus ?? null, reviewNotes ?? null,
       JSON.stringify(tags), JSON.stringify(labels), planningNotes ?? null,
-      dueDate ?? null, estimatedHours ?? null,
+      dueDate ?? null, scheduledAt ?? null, estimatedHours ?? null,
       JSON.stringify(blockedBy), JSON.stringify(blocks), progress, lastAgentUpdate ?? null,
       now, now, projectName ?? null, stageNumber ?? null, stageName ?? null, nextStage ?? null, parentTaskId ?? null,
       recurrence ? JSON.stringify(recurrence) : null, recurrenceParentId ?? null, moduleId ?? null
@@ -158,6 +183,17 @@ export async function POST(request: NextRequest) {
 
     // Notify SSE clients of new task
     emitSSEEvent('task.created', { id, status, assignedTo: assignedTo ?? null });
+
+    // Emit notification when task is assigned on creation
+    if (assignedTo) {
+      createNotification({
+        type: 'task_assigned',
+        title: `Task assigned: ${title}`,
+        body: description ? String(description).slice(0, 120) : undefined,
+        userId: String(assignedTo),
+        metadata: { taskId: id, assignedTo },
+      }).catch(() => {});
+    }
 
     return NextResponse.json(parseTask(task), { status: 201 });
   } catch (error) {

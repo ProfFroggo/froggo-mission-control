@@ -687,16 +687,23 @@ export async function POST(
                   });
                   persistSessionToDb(sessionKey, parsed.session_id, chatModel);
                 }
-                // Log token usage
+                // Log token usage + check budget alerts
                 const inputT  = parsed.input_tokens  ?? 0;
                 const outputT = parsed.output_tokens ?? 0;
                 if (inputT > 0 || outputT > 0) {
                   try {
                     const costUsd = calcCostUsd(chatModel, inputT, outputT);
-                    getDb().prepare(
+                    const db = getDb();
+                    db.prepare(
                       `INSERT INTO token_usage (agentId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
                        VALUES (?, ?, ?, ?, ?, ?, 'stream', ?)`
                     ).run(id, parsed.session_id ?? null, chatModel, inputT, outputT, costUsd, Date.now());
+                    // Check all budgets that apply to this agent and emit SSE alerts
+                    try {
+                      // eslint-disable-next-line @typescript-eslint/no-require-imports
+                      const { checkBudgetAlerts: _cba } = require('@/lib/budgetAlerts');
+                      _cba(db, id);
+                    } catch { /* non-critical */ }
                   } catch { /* non-critical */ }
                 }
               }
