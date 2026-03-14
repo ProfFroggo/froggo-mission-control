@@ -7,12 +7,16 @@ import {
   Loader2, XCircle, DollarSign,
   MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
   Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy,
-  RefreshCw, TrendingUp, TrendingDown, Minus, Users
+  RefreshCw, TrendingUp, TrendingDown, Minus, Users,
+  Pencil, GripVertical, X, LayoutGrid, Check
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
 import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
+import { useDashboardStore } from '../store/dashboardStore';
+import type { WidgetSize, DashboardWidgetSlot } from '../store/dashboardStore';
+import { DASHBOARD_WIDGETS, getWidgetDefinition } from '../lib/dashboardWidgets';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
 
@@ -52,10 +56,14 @@ function HeaderBar({
   connected,
   onRefresh,
   refreshing,
+  editMode,
+  onToggleEdit,
 }: {
   connected: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
+  editMode: boolean;
+  onToggleEdit: () => void;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -71,7 +79,7 @@ function HeaderBar({
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
       <div className="flex items-center gap-2">
-        {onRefresh && (
+        {onRefresh && !editMode && (
           <button
             onClick={onRefresh}
             disabled={refreshing}
@@ -82,6 +90,18 @@ function HeaderBar({
             <span className="hidden sm:inline">Refresh</span>
           </button>
         )}
+        <button
+          onClick={onToggleEdit}
+          title={editMode ? 'Done editing' : 'Customize dashboard'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            editMode
+              ? 'bg-mission-control-accent text-white border-mission-control-accent hover:bg-mission-control-accent-dim'
+              : 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
+          }`}
+        >
+          {editMode ? <Check size={12} /> : <Pencil size={12} />}
+          <span className="hidden sm:inline">{editMode ? 'Done Editing' : 'Edit Dashboard'}</span>
+        </button>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
           connected
             ? 'bg-success-subtle text-success border border-success-border'
@@ -90,6 +110,187 @@ function HeaderBar({
           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
           {connected ? 'Online' : 'Connecting...'}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Widget size label map ───────────────────────────────────
+
+const SIZE_LABELS: Record<WidgetSize, string> = {
+  sm: 'Small',
+  md: 'Medium',
+  lg: 'Large',
+  xl: 'Full Width',
+};
+
+// ── AddWidgetModal ─────────────────────────────────────────
+
+function AddWidgetModal({
+  existingWidgetIds,
+  onAdd,
+  onClose,
+}: {
+  existingWidgetIds: Set<string>;
+  onAdd: (widgetId: string) => void;
+  onClose: () => void;
+}) {
+  const available = DASHBOARD_WIDGETS.filter(w => !existingWidgetIds.has(w.id));
+
+  const categoryOrder: string[] = ['tasks', 'agents', 'metrics', 'system', 'social'];
+  const grouped = categoryOrder.reduce<Record<string, typeof DASHBOARD_WIDGETS>>((acc, cat) => {
+    const items = available.filter(w => w.category === cat);
+    if (items.length > 0) acc[cat] = items;
+    return acc;
+  }, {});
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg mx-4 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={16} className="text-mission-control-accent" />
+            <h2 className="font-semibold text-sm">Add Widget</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-all"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[60vh] p-4 space-y-5">
+          {available.length === 0 ? (
+            <div className="py-8 text-center">
+              <Check size={32} className="mx-auto mb-2 text-mission-control-accent/50" />
+              <p className="text-sm text-mission-control-text-dim font-medium">All widgets are on your dashboard</p>
+            </div>
+          ) : (
+            Object.entries(grouped).map(([category, widgets]) => (
+              <div key={category}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2">
+                  {category}
+                </p>
+                <div className="space-y-2">
+                  {widgets.map(widget => (
+                    <div
+                      key={widget.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-mission-control-bg/50 border border-mission-control-border hover:border-mission-control-accent/40 transition-all"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-mission-control-text">{widget.title}</p>
+                        <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-1">{widget.description}</p>
+                        <span className="text-[10px] text-mission-control-text-dim/60 mt-1 block">
+                          Default: {SIZE_LABELS[widget.defaultSize]}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => { onAdd(widget.id); }}
+                        className="ml-3 flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                      >
+                        <Plus size={12} />
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── WidgetCard wrapper (edit mode) ─────────────────────────
+
+function WidgetCard({
+  slot,
+  editMode,
+  isDragging,
+  isDropTarget,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+  onRemove,
+  onResize,
+  children,
+}: {
+  slot: DashboardWidgetSlot;
+  editMode: boolean;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onDragStart: (slotId: string) => void;
+  onDragEnter: (slotId: string) => void;
+  onDragEnd: () => void;
+  onRemove: (slotId: string) => void;
+  onResize: (slotId: string, size: WidgetSize) => void;
+  children: React.ReactNode;
+}) {
+  const colSpan =
+    slot.size === 'xl' ? 'col-span-1 sm:col-span-4' :
+    slot.size === 'lg' ? 'col-span-1 sm:col-span-3' :
+    slot.size === 'md' ? 'col-span-1 sm:col-span-2' :
+    'col-span-1';
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!editMode) return;
+    e.preventDefault();
+    onDragStart(slot.id);
+  };
+
+  return (
+    <div
+      className={`${colSpan} relative transition-all duration-150 ${
+        isDragging ? 'opacity-40 scale-95' : ''
+      } ${
+        isDropTarget && !isDragging ? 'ring-2 ring-mission-control-accent/60 rounded-xl' : ''
+      }`}
+      onMouseEnter={() => { if (editMode) onDragEnter(slot.id); }}
+      onMouseUp={onDragEnd}
+    >
+      {editMode && (
+        <div className="absolute inset-0 z-10 rounded-xl ring-2 ring-mission-control-accent/30 pointer-events-none" />
+      )}
+      {editMode && (
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+          <select
+            value={slot.size}
+            onChange={e => onResize(slot.id, e.target.value as WidgetSize)}
+            className="text-[10px] px-1.5 py-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text cursor-pointer focus:outline-none focus:border-mission-control-accent/50"
+          >
+            {(Object.entries(SIZE_LABELS) as [WidgetSize, string][]).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => onRemove(slot.id)}
+            title="Remove widget"
+            className="p-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-red-400 hover:border-red-400/50 transition-colors"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+      {editMode && (
+        <div
+          className="absolute top-2 left-2 z-20 cursor-grab active:cursor-grabbing p-1 rounded-md bg-mission-control-surface/90 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          onMouseDown={handleMouseDown}
+          title="Drag to reorder"
+        >
+          <GripVertical size={14} />
+        </div>
+      )}
+      <div className={editMode ? 'pointer-events-none select-none' : ''}>
+        {children}
       </div>
     </div>
   );
@@ -1374,8 +1575,8 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     };
   }, []);
 
-  // Analytics data (sparkline, velocity, agent productivity) driven by refreshKey
-  const { sparkline, agentProductivity, velocity, loading: analyticsLoading } =
+  // Analytics data (velocity, agent productivity) driven by refreshKey
+  const { agentProductivity, velocity, loading: analyticsLoading } =
     useAnalyticsData(refreshKey);
 
   // Load data on mount
@@ -1401,17 +1602,14 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     const reviewTasks = tasks.filter(t => t.status === 'review');
     const internalReviewTasks = tasks.filter(t => t.status === 'internal-review');
     const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
-    const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
     const doneTodayCount = tasks.filter(t => {
       if (t.status !== 'done') return false;
       const ts = t.completedAt ?? t.updatedAt;
       const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
       return tsNum >= todayTs;
     }).length;
-    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, realAgents, doneTodayCount };
-  }, [tasks, agents]);
-
-  const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
+    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, doneTodayCount };
+  }, [tasks]);
 
   // Pre-sliced activities list — avoids re-slicing on every render
   const recentActivities = useMemo(() => activities.slice(0, 10), [activities]);
@@ -1425,65 +1623,222 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
   }, [derived.inProgressTasks, agentMap]);
 
-  // Agent detail modal — opened when an agent name is clicked in the activity feed
+  // Agent detail modal
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
+  // Dashboard customization state
+  const [editMode, setEditMode] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
+  const [dropSlotId, setDropSlotId] = useState<string | null>(null);
+
+  const { layout, addWidget, removeWidget, resizeWidget, reorderWidgets } = useDashboardStore();
+
+  const sortedSlots = useMemo(
+    () => [...layout.widgets].filter(w => w.visible).sort((a, b) => a.position - b.position),
+    [layout.widgets],
+  );
+
+  const existingWidgetIds = useMemo(
+    () => new Set(layout.widgets.map(w => w.widgetId)),
+    [layout.widgets],
+  );
+
+  // Drag reorder handlers
+  const handleDragStart = useCallback((slotId: string) => {
+    setDragSlotId(slotId);
+    setDropSlotId(slotId);
+  }, []);
+
+  const handleDragEnter = useCallback((slotId: string) => {
+    if (dragSlotId && slotId !== dragSlotId) {
+      setDropSlotId(slotId);
+    }
+  }, [dragSlotId]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragSlotId && dropSlotId && dragSlotId !== dropSlotId) {
+      const fromIndex = sortedSlots.findIndex(s => s.id === dragSlotId);
+      const toIndex = sortedSlots.findIndex(s => s.id === dropSlotId);
+      if (fromIndex !== -1 && toIndex !== -1) {
+        reorderWidgets(fromIndex, toIndex);
+      }
+    }
+    setDragSlotId(null);
+    setDropSlotId(null);
+  }, [dragSlotId, dropSlotId, sortedSlots, reorderWidgets]);
+
+  // Mouseup on window ends drag even if cursor leaves a card
+  const handleWindowMouseUp = useCallback(() => {
+    if (dragSlotId) handleDragEnd();
+  }, [dragSlotId, handleDragEnd]);
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => window.removeEventListener('mouseup', handleWindowMouseUp);
+  }, [handleWindowMouseUp]);
+
+  // Render widget content by widgetId
+  const renderWidgetContent = useCallback((slot: DashboardWidgetSlot) => {
+    switch (slot.widgetId) {
+      case 'task-stats':
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
+            <StatCard label="Active Tasks" value={derived.inProgressTasks.length} icon={Activity}
+              color={derived.inProgressTasks.length > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
+              agents={inProgressAgents} sub={derived.doneTodayCount > 0 ? `${derived.doneTodayCount} done today` : undefined}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Awaiting Review" value={derived.reviewTasks.length} icon={Eye}
+              color={derived.reviewTasks.length > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Pre-Review Queue" value={derived.internalReviewTasks.length} icon={UserCheck}
+              color={derived.internalReviewTasks.length > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Human Attention" value={derived.humanReviewTasks.length} icon={AlertTriangle}
+              color={derived.humanReviewTasks.length > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
+              highlight={derived.humanReviewTasks.length > 0} pulse={derived.humanReviewTasks.length > 0}
+              onClick={() => onNavigate?.('kanban')} />
+          </div>
+        );
+      case 'agent-activity':
+      case 'recent-activity':
+        return (
+          <ActivityFeed
+            inProgressTasks={derived.inProgressTasks}
+            agentMap={agentMap}
+            activities={recentActivities}
+            allTasks={tasks}
+            onNavigate={onNavigate}
+            onAgentClick={setSelectedAgentId}
+          />
+        );
+      case 'approval-queue':
+        return (
+          <ApprovalsQueue
+            approvals={approvals}
+            onApprove={approveItem}
+            onReject={rejectItem}
+            onNavigate={onNavigate}
+          />
+        );
+      case 'token-usage':
+      case 'system-health':
+        return <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />;
+      case 'kanban-mini':
+        return <TaskThroughputChart tasks={tasks} />;
+      case 'schedule-upcoming':
+        return <TodaySchedule onNavigate={onNavigate} />;
+      case 'inbox-count':
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <Inbox size={24} className="text-mission-control-text-dim" />
+            <button
+              onClick={() => onNavigate?.('inbox')}
+              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
+            >
+              Open Inbox
+            </button>
+          </div>
+        );
+      case 'campaign-status':
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <BarChart2 size={24} className="text-mission-control-text-dim" />
+            <button
+              onClick={() => onNavigate?.('analytics')}
+              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
+            >
+              View Campaigns
+            </button>
+          </div>
+        );
+      case 'velocity':
+        return <VelocityMetric velocity={velocity} loading={analyticsLoading} />;
+      case 'agent-productivity':
+        return (
+          <AgentProductivitySummary
+            agentProductivity={agentProductivity}
+            agentMap={agentMap}
+            loading={analyticsLoading}
+          />
+        );
+      default: {
+        const def = getWidgetDefinition(slot.widgetId);
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <LayoutGrid size={24} className="text-mission-control-text-dim" />
+            <p className="text-xs text-mission-control-text-dim">{def?.title ?? slot.widgetId}</p>
+          </div>
+        );
+      }
+    }
+  }, [
+    derived, inProgressAgents, agentMap, recentActivities, tasks, approvals,
+    gatewaySessions, connected, velocity, analyticsLoading, agentProductivity,
+    approveItem, rejectItem, onNavigate,
+  ]);
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
-      <HeaderBar connected={connected} onRefresh={handleRefresh} refreshing={refreshing} />
-
-      {/* Command Centre Stat Strip */}
-      <StatStrip
-        inProgressCount={derived.inProgressTasks.length}
-        reviewCount={derived.reviewTasks.length}
-        internalReviewCount={derived.internalReviewTasks.length}
-        humanReviewCount={derived.humanReviewTasks.length}
-        doneTodayCount={derived.doneTodayCount}
-        inProgressAgents={inProgressAgents}
-        onNavigate={onNavigate}
+      <HeaderBar
+        connected={connected}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        editMode={editMode}
+        onToggleEdit={() => setEditMode(e => !e)}
       />
 
-      {/* Quick Actions */}
+      {/* Quick Actions (always visible) */}
       <QuickActionsRow onNavigate={onNavigate} />
 
-      {/* Analytics row: Sparkline + Velocity + Agent Productivity */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-4">
-        <TaskCompletionSparkline sparkline={sparkline} loading={analyticsLoading} />
-        <VelocityMetric velocity={velocity} loading={analyticsLoading} />
-        <AgentProductivitySummary
-          agentProductivity={agentProductivity}
-          agentMap={agentMap}
-          loading={analyticsLoading}
-        />
+      {/* Customizable widget grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 px-4 sm:px-6 pb-6">
+        {sortedSlots.map(slot => (
+          <WidgetCard
+            key={slot.id}
+            slot={slot}
+            editMode={editMode}
+            isDragging={dragSlotId === slot.id}
+            isDropTarget={dropSlotId === slot.id && dragSlotId !== null && dragSlotId !== slot.id}
+            onDragStart={handleDragStart}
+            onDragEnter={handleDragEnter}
+            onDragEnd={handleDragEnd}
+            onRemove={removeWidget}
+            onResize={resizeWidget}
+          >
+            {renderWidgetContent(slot)}
+          </WidgetCard>
+        ))}
+
+        {/* Add widget button — visible in edit mode */}
+        {editMode && (
+          <div className="col-span-1 sm:col-span-4 flex justify-center pt-2 pb-4">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-mission-control-surface border border-dashed border-mission-control-accent/40 text-mission-control-accent text-sm font-medium hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-all"
+            >
+              <Plus size={16} />
+              Add Widget
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main content: Approvals + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-4">
-        <ApprovalsQueue
-          approvals={approvals}
-          onApprove={approveItem}
-          onReject={rejectItem}
-          onNavigate={onNavigate}
+      {/* Add widget modal */}
+      {showAddModal && (
+        <AddWidgetModal
+          existingWidgetIds={existingWidgetIds}
+          onAdd={(widgetId) => {
+            const def = getWidgetDefinition(widgetId);
+            addWidget(widgetId, def?.defaultSize ?? 'md');
+            setShowAddModal(false);
+          }}
+          onClose={() => setShowAddModal(false)}
         />
-        <ActivityFeed
-          inProgressTasks={derived.inProgressTasks}
-          agentMap={agentMap}
-          activities={recentActivities}
-          allTasks={tasks}
-          onNavigate={onNavigate}
-          onAgentClick={setSelectedAgentId}
-        />
-      </div>
+      )}
 
-      {/* Bottom row: Schedule + System Health + Task Throughput */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-6">
-        <TodaySchedule onNavigate={onNavigate} />
-        <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
-        <TaskThroughputChart tasks={tasks} />
-      </div>
-
-      {/* Agent detail modal — opened by clicking agent names in activity feed */}
+      {/* Agent detail modal */}
       {selectedAgentId && (
         <AgentDetailModal
           agentId={selectedAgentId}
