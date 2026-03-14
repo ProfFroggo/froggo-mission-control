@@ -52,6 +52,7 @@ export interface Subtask {
   completedBy?: string;
   position?: number;
   createdAt?: number;
+  dueDate?: number | null;
 }
 
 export interface TaskActivity {
@@ -237,7 +238,7 @@ interface Store {
   // Subtasks (DB-backed)
   loadSubtasksForTask: (taskId: string) => Promise<Subtask[]>;
   addSubtask: (taskId: string, title: string, description?: string, assignedTo?: string) => Promise<Subtask | null>;
-  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => Promise<boolean>;
+  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => Promise<boolean>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<boolean>;
   
   // Task Activity (DB-backed)
@@ -843,7 +844,7 @@ export const useStore = create<Store>()(
         return null;
       },
 
-      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
+      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => {
         try {
           // Find the parent taskId from state
           const parentTask = get().tasks.find((t: Task) => (t.subtasks || []).some((st: Subtask) => st.id === subtaskId));

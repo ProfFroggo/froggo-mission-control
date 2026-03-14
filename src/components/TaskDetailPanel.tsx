@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
@@ -68,6 +68,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review' | 'chat'>('subtasks');
+  // Subtask enhancements: selection, bulk actions, due dates
+  const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [editingDueDateId, setEditingDueDateId] = useState<string | null>(null);
+  const newSubtaskInputRef = useRef<HTMLInputElement>(null);
   const [suggestedCriteria, setSuggestedCriteria] = useState<string[]>([]);
   const [isCreatingCriteriaSubtasks, setIsCreatingCriteriaSubtasks] = useState(false);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -273,11 +278,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       if (isCmdOrCtrl && e.key === 'n') {
         e.preventDefault();
         setActiveTab('subtasks');
-        // Focus the subtask input if it exists
-        setTimeout(() => {
-          const input = document.querySelector('[placeholder="Add a new subtask..."]') as HTMLInputElement;
-          input?.focus();
-        }, 100);
+        // Focus the subtask input
+        setTimeout(() => newSubtaskInputRef.current?.focus(), 100);
         return;
       }
 
@@ -483,6 +485,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       setSubtasks([...subtasks, result]);
       setNewSubtask('');
       showToast('success', 'Subtask added');
+      // Refocus so the user can press Enter repeatedly to add more subtasks
+      setTimeout(() => newSubtaskInputRef.current?.focus(), 0);
     } else {
       showToast('error', 'Failed to add subtask - check DevTools console for details');
     }
@@ -536,6 +540,73 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     const success = await deleteSubtask(task.id, subtaskId);
     if (success) {
       setSubtasks(subtasks.filter(s => s.id !== subtaskId));
+      setSelectedSubtaskIds(prev => { const n = new Set(prev); n.delete(subtaskId); return n; });
+    }
+  };
+
+  // Move subtask up or down by swapping positions and persisting to API
+  const handleMoveSubtask = async (index: number, direction: 'up' | 'down') => {
+    if (!task) return;
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= subtasks.length) return;
+
+    const newOrder = [...subtasks];
+    [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
+    setSubtasks(newOrder);
+
+    try {
+      await taskApi.reorderSubtasks(task.id, newOrder.map(s => s.id));
+    } catch {
+      setSubtasks(subtasks); // Revert on failure
+      showToast('error', 'Reorder failed');
+    }
+  };
+
+  const handleToggleSubtaskSelect = (subtaskId: string) => {
+    setSelectedSubtaskIds(prev => {
+      const next = new Set(prev);
+      if (next.has(subtaskId)) next.delete(subtaskId);
+      else next.add(subtaskId);
+      return next;
+    });
+  };
+
+  const handleBulkMarkDone = async () => {
+    if (!task || selectedSubtaskIds.size === 0) return;
+    const ids = Array.from(selectedSubtaskIds);
+    const now = Date.now();
+    await Promise.all(ids.map(id => updateSubtask(id, { completed: true })));
+    setSubtasks(prev =>
+      prev.map(s => selectedSubtaskIds.has(s.id) ? { ...s, completed: true, completedAt: now } : s),
+    );
+    setSelectedSubtaskIds(new Set());
+    showToast('success', `${ids.length} subtask${ids.length !== 1 ? 's' : ''} marked done`);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!task || selectedSubtaskIds.size === 0) return;
+    const ids = Array.from(selectedSubtaskIds);
+    await Promise.all(ids.map(id => deleteSubtask(task.id, id)));
+    setSubtasks(prev => prev.filter(s => !selectedSubtaskIds.has(s.id)));
+    setSelectedSubtaskIds(new Set());
+    setBulkDeleteConfirm(false);
+    showToast('success', `${ids.length} subtask${ids.length !== 1 ? 's' : ''} deleted`);
+  };
+
+  const handleSetDueDate = async (subtaskId: string, dateStr: string) => {
+    const dueDate = dateStr ? new Date(dateStr + 'T00:00:00').getTime() : null;
+    const success = await updateSubtask(subtaskId, { dueDate });
+    if (success) {
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, dueDate } : s));
+    }
+    setEditingDueDateId(null);
+  };
+
+  const handleSetSubtaskAssignee = async (subtaskId: string, agentId: string) => {
+    const assignedTo = agentId || undefined;
+    const success = await updateSubtask(subtaskId, { assignedTo });
+    if (success) {
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, assignedTo } : s));
     }
   };
 
@@ -762,7 +833,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 />
               </div>
               <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
-                {completedSubtasks}/{subtasks.length}
+                {completedSubtasks}/{subtasks.length} subtasks done
                 {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
             </>
@@ -1007,14 +1078,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               );
             })()}
 
-            {/* Add Subtask */}
+            {/* Add Subtask — Enter key creates next subtask automatically */}
             <div className="flex gap-2 mb-4">
               <input
+                ref={newSubtaskInputRef}
                 type="text"
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
-                placeholder="Add a subtask..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+                placeholder="Add a subtask... (Enter to add)"
                 className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
               />
               <button
@@ -1026,10 +1103,58 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </button>
             </div>
 
+            {/* Bulk action bar — visible when one or more subtasks are selected */}
+            {selectedSubtaskIds.size > 0 && (
+              <div className="flex items-center gap-2 mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                <span className="text-xs text-mission-control-text-dim flex-1">
+                  {selectedSubtaskIds.size} selected
+                </span>
+                <button
+                  onClick={handleBulkMarkDone}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-success text-white rounded-lg hover:brightness-110 transition-colors"
+                >
+                  <Check size={12} />
+                  Mark done
+                </button>
+                {bulkDeleteConfirm ? (
+                  <>
+                    <span className="text-xs text-error">Delete {selectedSubtaskIds.size}?</span>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-error text-white rounded-lg hover:brightness-110 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                      Yes, delete
+                    </button>
+                    <button
+                      onClick={() => setBulkDeleteConfirm(false)}
+                      className="px-2.5 py-1 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setBulkDeleteConfirm(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-error/40 text-error rounded-lg hover:bg-error/10 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
+                )}
+                <button
+                  onClick={() => { setSelectedSubtaskIds(new Set()); setBulkDeleteConfirm(false); }}
+                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Subtask List */}
             {loadingSubtasks ? (
               <div className="space-y-2">
-                {[1,2,3,4].map(i => (
+                {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-mission-control-border">
                     <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
                     <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
@@ -1044,52 +1169,153 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               </div>
             ) : (
               <div className="space-y-2">
-                {subtasks.map((st, _idx) => (
-                  <div
-                    key={st.id}
-                    className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      st.completed
-                        ? 'bg-success-subtle border-success-border'
-                        : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
-                  >
-                    <button
-                      onClick={() => handleToggleSubtask(st.id)}
-                      className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
-                        st.completed
-                          ? 'bg-success text-white'
-                          : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                {subtasks.map((st, idx) => {
+                  const isSelected = selectedSubtaskIds.has(st.id);
+                  const isOverdue = st.dueDate != null && !st.completed && st.dueDate < Date.now();
+                  const dueDateStr = st.dueDate
+                    ? new Date(st.dueDate).toISOString().split('T')[0]
+                    : '';
+                  const dueDateDisplay = st.dueDate
+                    ? new Date(st.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                    : null;
+
+                  return (
+                    <div
+                      key={st.id}
+                      className={`group flex items-start gap-2 p-3 rounded-xl border transition-all ${
+                        isSelected
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent/50'
+                          : st.completed
+                            ? 'bg-success-subtle border-success-border'
+                            : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
                       }`}
                     >
-                      {st.completed && <Check size={14} />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span className={`flex-1 min-w-0 truncate text-sm ${st.completed ? 'line-through text-mission-control-text-dim' : 'text-sm'}`}>
-                        {st.title}
-                      </span>
-                      {st.description && (
-                        <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
-                      )}
-                      {st.completedAt && (
-                        <p className="text-xs text-success/60 mt-0.5">
-                          Completed {formatTime(st.completedAt)}
-                          {st.completedBy && ` by ${agents.find(a => a.id === st.completedBy)?.name || st.completedBy}`}
-                        </p>
-                      )}
+                      {/* Selection checkbox — appears on hover or when selected */}
+                      <button
+                        onClick={() => handleToggleSubtaskSelect(st.id)}
+                        className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
+                          isSelected
+                            ? 'bg-mission-control-accent border-mission-control-accent text-white opacity-100'
+                            : 'border-mission-control-border opacity-0 group-hover:opacity-100'
+                        }`}
+                        title="Select subtask"
+                      >
+                        {isSelected && <Check size={10} />}
+                      </button>
+
+                      {/* Completion toggle */}
+                      <button
+                        onClick={() => handleToggleSubtask(st.id)}
+                        className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
+                          st.completed
+                            ? 'bg-success text-white'
+                            : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                        }`}
+                      >
+                        {st.completed && <Check size={13} />}
+                      </button>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}
+                        >
+                          {st.title}
+                        </span>
+                        {st.description && (
+                          <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {/* Assignee selector */}
+                          <div className="flex items-center gap-1">
+                            <User size={11} className="text-mission-control-text-dim flex-shrink-0" />
+                            <select
+                              value={st.assignedTo || ''}
+                              onChange={(e) => handleSetSubtaskAssignee(st.id, e.target.value)}
+                              className="text-xs bg-transparent border-none outline-none text-mission-control-text-dim cursor-pointer hover:text-mission-control-text max-w-[100px] truncate"
+                              title="Assign to agent"
+                            >
+                              <option value="">Unassigned</option>
+                              {agents.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Due date badge / editor */}
+                          {editingDueDateId === st.id ? (
+                            <input
+                              type="date"
+                              autoFocus
+                              defaultValue={dueDateStr}
+                              onBlur={(e) => handleSetDueDate(st.id, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter')
+                                  handleSetDueDate(st.id, (e.target as HTMLInputElement).value);
+                                if (e.key === 'Escape') setEditingDueDateId(null);
+                              }}
+                              className="text-xs bg-mission-control-bg border border-mission-control-accent rounded px-1 py-0 outline-none"
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingDueDateId(st.id)}
+                              className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded transition-colors ${
+                                isOverdue
+                                  ? 'text-error bg-error/10 border border-error/30'
+                                  : dueDateDisplay
+                                    ? 'text-mission-control-text-dim bg-mission-control-border'
+                                    : 'text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100'
+                              }`}
+                              title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
+                            >
+                              <Calendar size={10} />
+                              {dueDateDisplay ?? 'Due date'}
+                            </button>
+                          )}
+
+                          {st.completedAt && (
+                            <span className="text-xs text-success/60">
+                              Done {formatTime(st.completedAt)}
+                              {st.completedBy &&
+                                ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reorder buttons */}
+                      <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleMoveSubtask(idx, 'up')}
+                          disabled={idx === 0}
+                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+                          title="Move up"
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleMoveSubtask(idx, 'down')}
+                          disabled={idx === subtasks.length - 1}
+                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
+                          title="Move down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+
+                      {/* Delete */}
+                      <button
+                        onClick={() => handleDeleteSubtask(st.id)}
+                        className="mt-0.5 p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        title="Delete subtask"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
-                    {st.assignedTo && (
-                      <span className="text-xs bg-mission-control-border px-2 py-0.5 rounded flex-shrink-0">
-                        {agents.find(a => a.id === st.assignedTo)?.name || st.assignedTo}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => handleDeleteSubtask(st.id)}
-                      className="p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
