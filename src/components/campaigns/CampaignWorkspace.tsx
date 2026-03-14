@@ -6,6 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
+  CalendarDays, CheckCircle2, CircleDot,
 } from 'lucide-react';
 import { Megaphone } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
@@ -494,8 +495,90 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
   const sc = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft;
   const tc = TYPE_COLORS[campaign.type] ?? TYPE_COLORS.general;
 
+  // Quick-stats computed values
+  const totalTasks = campaign.totalTasks ?? 0;
+  const doneTasks = campaign.doneTasks ?? 0;
+  const inProgressTasks = campaign.inProgressTasks ?? 0;
+  const taskProgress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const memberCount = (campaign.members ?? []).length;
+  const now = Date.now();
+  const timelineStart = campaign.startDate;
+  const timelineEnd = campaign.endDate;
+  const timelinePct = timelineStart && timelineEnd && timelineEnd > timelineStart
+    ? Math.min(100, Math.max(0, Math.round(((now - timelineStart) / (timelineEnd - timelineStart)) * 100)))
+    : null;
+  const daysRemaining = timelineEnd ? Math.max(0, Math.ceil((timelineEnd - now) / (1000 * 60 * 60 * 24))) : null;
+  const isOverdue = timelineEnd != null && now > timelineEnd && campaign.status !== 'completed' && campaign.status !== 'archived';
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+      {/* Quick-stats strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Tasks */}
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+            <CheckCircle2 size={12} /> Tasks
+          </div>
+          <div className="text-lg font-semibold text-mission-control-text-primary leading-none">
+            {totalTasks > 0 ? `${doneTasks}/${totalTasks}` : '—'}
+          </div>
+          {totalTasks > 0 && (
+            <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+              <div className="h-full rounded-full" style={{ width: `${taskProgress}%`, backgroundColor: 'var(--color-success)' }} />
+            </div>
+          )}
+        </div>
+
+        {/* In progress */}
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+            <CircleDot size={12} /> In Progress
+          </div>
+          <div className={`text-lg font-semibold leading-none ${inProgressTasks > 0 ? 'text-warning' : 'text-mission-control-text-primary'}`}>
+            {inProgressTasks > 0 ? inProgressTasks : '—'}
+          </div>
+        </div>
+
+        {/* Members */}
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+            <Users size={12} /> Agents
+          </div>
+          <div className="text-lg font-semibold text-mission-control-text-primary leading-none">
+            {memberCount > 0 ? memberCount : '—'}
+          </div>
+          {memberCount === 0 && (
+            <p className="text-xs text-mission-control-text-dim">None assigned</p>
+          )}
+        </div>
+
+        {/* Timeline */}
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+            <CalendarDays size={12} /> Timeline
+          </div>
+          {timelinePct !== null ? (
+            <>
+              <div className={`text-lg font-semibold leading-none ${isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : 'text-mission-control-text-primary'}`}>
+                {isOverdue ? 'Overdue' : daysRemaining === 0 ? 'Today' : daysRemaining !== null ? `${daysRemaining}d` : `${timelinePct}%`}
+              </div>
+              <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${timelinePct}%`,
+                    backgroundColor: isOverdue ? 'var(--color-error)' : daysRemaining !== null && daysRemaining <= 7 ? 'var(--color-warning)' : 'var(--color-info, #6366f1)',
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="text-lg font-semibold text-mission-control-text-primary leading-none">—</div>
+          )}
+        </div>
+      </div>
+
       <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-mission-control-text">Campaign Details</h3>

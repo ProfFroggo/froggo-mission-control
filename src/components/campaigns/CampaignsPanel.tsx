@@ -250,6 +250,7 @@ export default function CampaignsPanel() {
                 key={c.id}
                 campaign={c}
                 onClick={() => setSelectedCampaign(c)}
+                viewMode={viewMode}
               />
             ))}
           </div>
