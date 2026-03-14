@@ -90,6 +90,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const updateTask = useStore(s => s.updateTask);
+  const addTask = useStore(s => s.addTask);
   
   // Local loading states for operations
   const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
@@ -181,6 +182,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [collapsedColumns, setCollapsedColumns] = useState<Set<TaskStatus>>(new Set());
   const [jumpToTaskInput, setJumpToTaskInput] = useState('');
   const [showJumpToTask, setShowJumpToTask] = useState(false);
+  const [inlineAddActive, setInlineAddActive] = useState(false);
+  const [inlineAddTitle, setInlineAddTitle] = useState('');
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -503,6 +506,19 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     setModalStatus(status);
     setModalOpen(true);
   };
+
+  const handleInlineAddSubmit = useCallback(() => {
+    const title = inlineAddTitle.trim();
+    if (!title) {
+      setInlineAddActive(false);
+      setInlineAddTitle('');
+      return;
+    }
+    addTask({ title, status: 'todo', project: projectName || 'General', project_id: projectId });
+    setInlineAddTitle('');
+    setInlineAddActive(false);
+    showToast('success', 'Task created', title);
+  }, [inlineAddTitle, addTask, projectName, projectId]);
 
   const handleQuickPriority = useCallback((taskId: string, priority: TaskPriority) => {
     updateTask(taskId, { priority });
@@ -1081,6 +1097,36 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     />
                   );
                 })()}
+
+                {/* Inline quick-add for Todo column */}
+                {column.id === 'todo' && (
+                  inlineAddActive ? (
+                    <div className="mt-1 p-2 rounded-xl border border-mission-control-accent/50 bg-mission-control-surface">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={inlineAddTitle}
+                        onChange={e => setInlineAddTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); handleInlineAddSubmit(); }
+                          if (e.key === 'Escape') { setInlineAddActive(false); setInlineAddTitle(''); }
+                        }}
+                        onBlur={handleInlineAddSubmit}
+                        placeholder="Task title..."
+                        className="w-full bg-transparent text-sm text-mission-control-text placeholder:text-mission-control-text-dim/60 outline-none"
+                      />
+                      <p className="text-[10px] text-mission-control-text-dim/60 mt-1">Enter to save, Esc to cancel</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setInlineAddActive(true)}
+                      className="mt-1 flex items-center gap-2 w-full px-2 py-2 rounded-xl text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors text-xs"
+                    >
+                      <Plus size={13} className="flex-shrink-0" />
+                      Add task
+                    </button>
+                  )
+                )}
               </div>}
             </div>
           );

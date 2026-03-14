@@ -127,6 +127,7 @@ function StatStrip({
   reviewCount,
   internalReviewCount,
   humanReviewCount,
+  doneTodayCount,
   inProgressAgents,
   onNavigate,
 }: {
@@ -134,6 +135,7 @@ function StatStrip({
   reviewCount: number;
   internalReviewCount: number;
   humanReviewCount: number;
+  doneTodayCount: number;
   inProgressAgents: Agent[];
   onNavigate?: (view: View) => void;
 }) {
@@ -145,6 +147,7 @@ function StatStrip({
         icon={Activity}
         color={inProgressCount > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
         agents={inProgressAgents}
+        sub={doneTodayCount > 0 ? `${doneTodayCount} completed today` : undefined}
         onClick={() => onNavigate?.('kanban')}
       />
       <StatCard
@@ -1004,12 +1007,21 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
 
   // Computed metrics — consolidated into grouped memos to reduce memo overhead
   const derived = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayTs = todayStart.getTime();
     const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
     const reviewTasks = tasks.filter(t => t.status === 'review');
     const internalReviewTasks = tasks.filter(t => t.status === 'internal-review');
     const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
     const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
-    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, realAgents };
+    const doneTodayCount = tasks.filter(t => {
+      if (t.status !== 'done') return false;
+      const ts = t.completedAt ?? t.updatedAt;
+      const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
+      return tsNum >= todayTs;
+    }).length;
+    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, realAgents, doneTodayCount };
   }, [tasks, agents]);
 
   const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
@@ -1037,6 +1049,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
         reviewCount={derived.reviewTasks.length}
         internalReviewCount={derived.internalReviewTasks.length}
         humanReviewCount={derived.humanReviewTasks.length}
+        doneTodayCount={derived.doneTodayCount}
         inProgressAgents={inProgressAgents}
         onNavigate={onNavigate}
       />
