@@ -717,7 +717,6 @@ function initSchema(db: Database.Database) {
 
     -- ══════════════════════════════════════════
     -- AUTOMATION RUNS (execution history)
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS automation_runs (
       id TEXT PRIMARY KEY,
       automationId TEXT NOT NULL,
@@ -728,24 +727,16 @@ function initSchema(db: Database.Database) {
       completedAt INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
-
-    -- ══════════════════════════════════════════
     -- TOKEN BUDGETS
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS budgets (
-      id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       agentId TEXT,
       period TEXT NOT NULL DEFAULT 'monthly',
       limitUsd REAL NOT NULL,
       alertAt REAL NOT NULL DEFAULT 80,
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
-    );
     CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
-
-    -- ══════════════════════════════════════════
     -- CHAT ROOM MESSAGE REACTIONS (v2)
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS message_reactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       messageId TEXT NOT NULL,
@@ -753,25 +744,15 @@ function initSchema(db: Database.Database) {
       reaction TEXT NOT NULL,
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
       UNIQUE(messageId, userId, reaction)
-    );
     CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
-
-    -- ══════════════════════════════════════════
     -- MODULE REVIEWS & RATINGS
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS module_reviews (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
       moduleId TEXT NOT NULL,
       rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
       review TEXT,
       reviewedBy TEXT DEFAULT 'user',
-      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
-    );
     CREATE INDEX IF NOT EXISTS idx_module_reviews_moduleId ON module_reviews(moduleId, createdAt DESC);
-
-    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaign_automations (
       linkId TEXT PRIMARY KEY,
       campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
@@ -779,7 +760,6 @@ function initSchema(db: Database.Database) {
       campaignTriggerType TEXT NOT NULL DEFAULT 'campaign-started',
       linkedAt INTEGER NOT NULL,
       UNIQUE(campaignId, automationId)
-    );
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_campaignId ON campaign_automations(campaignId);
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_automationId ON campaign_automations(automationId);
   `);
