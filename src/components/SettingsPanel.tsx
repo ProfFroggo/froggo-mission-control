@@ -392,7 +392,7 @@ function SettingsAuditLog() {
                 <span className="font-mono text-xs text-mission-control-text truncate block">{e.key}</span>
                 <span className="text-xs text-mission-control-text-dim">
                   {e.oldValue != null ? (
-                    <><span className="line-through opacity-60">{e.oldValue}</span> → </>
+                    <><span className="line-through opacity-60">{e.oldValue}</span>{' → '}</>
                   ) : null}
                   <span className="text-mission-control-accent">{e.newValue}</span>
                 </span>
@@ -862,7 +862,7 @@ export default function SettingsPanel() {
               </div>
             </section>
 
-            {/* Notifications Sound (persisted) */}
+            {/* Notification Sound */}
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Bell size={16} /> Notification Sound
@@ -884,7 +884,7 @@ export default function SettingsPanel() {
               </div>
             </section>
 
-            {/* Audit log */}
+            {/* Recent Changes audit log */}
             <SettingsAuditLog />
           </div>
         )}

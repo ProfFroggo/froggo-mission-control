@@ -18,9 +18,8 @@ export interface AppSettings {
 }
 
 // ─── Module-level namespace cache ────────────────────────────────────────────
-// Map from namespace prefix (or '' for full) to { [key]: value } map
+// Map from namespace prefix (or '' for full fetch) to { [key]: value }
 const nsCache = new Map<string, Record<string, unknown>>();
-// Listeners per namespace
 const nsListeners = new Map<string, Set<() => void>>();
 
 function getOrCreateListeners(ns: string): Set<() => void> {
@@ -28,7 +27,7 @@ function getOrCreateListeners(ns: string): Set<() => void> {
   return nsListeners.get(ns)!;
 }
 
-function notifyNs(ns: string) {
+function notifyNs(ns: string): void {
   nsListeners.get(ns)?.forEach((fn) => fn());
 }
 
@@ -55,7 +54,7 @@ async function patchSetting(key: string, value: unknown): Promise<void> {
 
 // ─── Primary generic hook ─────────────────────────────────────────────────────
 // Returns [value, setter, loading]
-// Fetches all keys in the namespace of `key` on mount (cached).
+// Fetches all keys in the namespace of `key` on mount (cached per namespace).
 // Setter performs an optimistic update then PATCHes the server.
 export function useSettings<T = unknown>(
   key: string,
@@ -66,7 +65,6 @@ export function useSettings<T = unknown>(
   const getValueFromCache = useCallback((): T => {
     const cached = nsCache.get(ns);
     if (cached && key in cached) return cached[key] as T;
-    if (cached) return defaultValue as T;
     return defaultValue as T;
   }, [ns, key, defaultValue]);
 
@@ -75,10 +73,7 @@ export function useSettings<T = unknown>(
 
   useEffect(() => {
     const listeners = getOrCreateListeners(ns);
-
-    const update = () => {
-      setValue(getValueFromCache());
-    };
+    const update = () => setValue(getValueFromCache());
     listeners.add(update);
 
     if (!nsCache.has(ns)) {
@@ -108,7 +103,7 @@ export function useSettings<T = unknown>(
       // Persist to server
       patchSetting(key, val).catch((err) => {
         console.error('[useSettings] patch failed:', err);
-        // Revert optimistic update on failure
+        // Revert on failure
         nsCache.set(ns, current);
         notifyNs(ns);
       });
@@ -123,7 +118,7 @@ export function useSettings<T = unknown>(
 let cachedSettings: AppSettings | null = null;
 const legacyListeners: Set<() => void> = new Set();
 
-function notifyLegacyListeners() {
+function notifyLegacyListeners(): void {
   legacyListeners.forEach((fn) => fn());
 }
 
@@ -133,7 +128,6 @@ export async function loadSettings(): Promise<AppSettings> {
     if (res.ok) {
       const data = (await res.json()) as AppSettings;
       cachedSettings = data;
-      // Populate ns cache with the full result
       nsCache.set('', data as Record<string, unknown>);
       notifyLegacyListeners();
       return cachedSettings;
