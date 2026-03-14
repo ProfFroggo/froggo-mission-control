@@ -3,10 +3,12 @@
  * A reusable badge component for displaying icons with consistent styling and alignment
  */
 
+import type React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface IconBadgeProps {
-  icon: LucideIcon;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: LucideIcon | React.ComponentType<any>;
   size?: number;
   color?: string;
   rounded?: 'sm' | 'md' | 'lg' | 'full';

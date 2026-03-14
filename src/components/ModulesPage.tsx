@@ -47,11 +47,9 @@ import {
   FolderKanban,
   CheckCircle,
   XCircle,
-  Loader2,
   Trash2,
   Package,
   Key,
-  Bot,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';

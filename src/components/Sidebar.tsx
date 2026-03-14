@@ -3,6 +3,7 @@ import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
   FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap,
+  Keyboard,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -41,11 +42,12 @@ interface SidebarProps {
   onOpenHelp?: () => void;
   onWidthChange?: (width: number) => void; // Callback for width changes
   onOpenSearch?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
 // Icons are now provided by ViewRegistry — no hardcoded icon map needed
 
-export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch }: SidebarProps) {
+export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch, onOpenShortcuts }: SidebarProps) {
   // Load persisted sidebar state from localStorage
   const [expanded, setExpanded] = useState(() => {
     const saved = localStorage.getItem('sidebarExpanded');
@@ -313,6 +315,17 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               aria-label="Help"
             >
               <HelpCircle size={16} aria-hidden="true" />
+            </button>
+          )}
+          {/* Keyboard shortcuts — always visible */}
+          {onOpenShortcuts && (
+            <button
+              onClick={onOpenShortcuts}
+              className="no-drag p-1.5 rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              title="Keyboard shortcuts (?)"
+              aria-label="Keyboard shortcuts"
+            >
+              <Keyboard size={16} aria-hidden="true" />
             </button>
           )}
           {/* Settings - always visible */}
