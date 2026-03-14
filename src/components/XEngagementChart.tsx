@@ -31,7 +31,7 @@ interface MetricConfig {
   key: MetricKey;
   label: string;
   color: string;
-  Icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  Icon: React.ElementType;
 }
 
 const METRICS: MetricConfig[] = [

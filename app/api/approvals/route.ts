@@ -4,7 +4,6 @@ import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
 import { createNotification } from '@/lib/notificationWriter';
 
-import { createNotification } from '@/lib/notificationWriter';
 
 function parseApproval(row: Record<string, unknown>) {
   if (!row) return row;

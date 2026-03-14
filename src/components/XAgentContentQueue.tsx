@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // XAgentContentQueue — "Let agents run your social" panel with agent mode toggle,
-// content brief, draft queue, and activity log.
+// content brief, draft queue, approval workflow, batch approve, and activity log.
 
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -13,6 +13,10 @@ import {
   X,
   Clock,
   RefreshCw,
+  MessageSquare,
+  CheckSquare,
+  Square,
+  Eye,
 } from 'lucide-react';
 import { showToast } from './Toast';
 
@@ -32,7 +36,12 @@ interface AgentDraft {
   scheduledAt: string;
   topic: string;
   status: DraftStatus;
+  feedback?: string;
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const X_CHAR_LIMIT = 280;
 
 interface ActivityEntry {
   id: string;
@@ -116,15 +125,262 @@ function actionColor(action: ActivityEntry['action']): string {
   }
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Post Preview ─────────────────────────────────────────────────────────────
+
+interface PostPreviewProps {
+  content: string;
+}
+
+function PostPreview({ content }: PostPreviewProps) {
+  const overLimit = content.length > X_CHAR_LIMIT;
+  const remaining = X_CHAR_LIMIT - content.length;
+
+  return (
+    <div
+      className="p-3 rounded-lg border text-sm leading-relaxed"
+      style={{
+        background: 'var(--color-mission-control-bg)',
+        borderColor: overLimit ? 'var(--color-error)' : 'var(--color-mission-control-border)',
+        color: 'var(--color-mission-control-text)',
+        fontFamily: 'system-ui, sans-serif',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+      }}
+    >
+      {content || (
+        <span style={{ color: 'var(--color-mission-control-text-dim)', fontStyle: 'italic' }}>
+          Post content will appear here...
+        </span>
+      )}
+      <div
+        className="text-xs mt-2 text-right"
+        style={{ color: overLimit ? 'var(--color-error)' : 'var(--color-mission-control-text-dim)' }}
+      >
+        {overLimit ? `${Math.abs(remaining)} over limit` : `${remaining} remaining`}
+      </div>
+    </div>
+  );
+}
+
+// ─── Draft Card ───────────────────────────────────────────────────────────────
+
+interface DraftCardProps {
+  draft: AgentDraft;
+  selected: boolean;
+  autoApprove: boolean;
+  onToggleSelect: () => void;
+  onApprove: (id: string) => void;
+  onRequestChanges: (id: string, feedback: string) => void;
+  onReject: (id: string, feedback: string) => void;
+  onSchedule: (id: string) => Promise<void>;
+}
+
+function DraftCard({
+  draft,
+  selected,
+  autoApprove,
+  onToggleSelect,
+  onApprove,
+  onRequestChanges,
+  onReject,
+  onSchedule,
+}: DraftCardProps) {
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackMode, setFeedbackMode] = useState<'changes' | 'reject'>('changes');
+  const [showPreview, setShowPreview] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+
+  const handleFeedbackSubmit = () => {
+    if (!feedbackText.trim()) return;
+    if (feedbackMode === 'changes') {
+      onRequestChanges(draft.id, feedbackText.trim());
+    } else {
+      onReject(draft.id, feedbackText.trim());
+    }
+    setShowFeedback(false);
+    setFeedbackText('');
+  };
+
+  const handleApproveAndSchedule = async () => {
+    onApprove(draft.id);
+    setScheduling(true);
+    try {
+      await onSchedule(draft.id);
+    } finally {
+      setScheduling(false);
+    }
+  };
+
+  return (
+    <div
+      className="p-3 rounded-lg border"
+      style={{
+        borderColor: selected ? 'var(--color-info)' : 'var(--color-mission-control-border)',
+        background: 'var(--color-mission-control-surface)',
+      }}
+    >
+      {/* Top row */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          {!autoApprove && (
+            <button
+              onClick={onToggleSelect}
+              className="flex-shrink-0"
+              aria-label={selected ? 'Deselect draft' : 'Select draft'}
+            >
+              {selected ? (
+                <CheckSquare size={16} style={{ color: 'var(--color-info)' }} />
+              ) : (
+                <Square size={16} style={{ color: 'var(--color-mission-control-text-dim)' }} />
+              )}
+            </button>
+          )}
+          <span
+            className="px-2 py-0.5 text-xs rounded"
+            style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
+          >
+            {draft.topic}
+          </span>
+          <span className="text-xs" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+            {formatScheduledTime(draft.scheduledAt)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="p-1 rounded hover:opacity-70"
+            style={{ color: showPreview ? 'var(--color-info)' : 'var(--color-mission-control-text-dim)' }}
+            title="Toggle preview"
+          >
+            <Eye size={13} />
+          </button>
+          <Bot size={14} style={{ color: 'var(--color-mission-control-text-dim)', flexShrink: 0 }} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <p
+        className="text-sm leading-relaxed mb-3"
+        style={{ color: 'var(--color-mission-control-text)' }}
+      >
+        {draft.content}
+      </p>
+
+      {/* Preview */}
+      {showPreview && (
+        <div className="mb-3">
+          <div
+            className="text-xs font-medium mb-1"
+            style={{ color: 'var(--color-mission-control-text-dim)' }}
+          >
+            Post preview
+          </div>
+          <PostPreview content={draft.content} />
+        </div>
+      )}
+
+      {/* Actions */}
+      {autoApprove ? (
+        <span
+          className="text-xs flex items-center gap-1"
+          style={{ color: 'var(--color-mission-control-text-dim)' }}
+        >
+          <Zap size={11} style={{ color: 'var(--color-warning)' }} />
+          Will auto-approve
+        </span>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleApproveAndSchedule}
+            disabled={scheduling}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-opacity disabled:opacity-50"
+            style={{ background: 'var(--color-success-subtle)', color: 'var(--color-success)' }}
+          >
+            <Check size={12} />
+            {scheduling ? 'Scheduling...' : 'Approve'}
+          </button>
+          <button
+            onClick={() => { setFeedbackMode('changes'); setShowFeedback(!showFeedback); }}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg border transition-opacity hover:opacity-70"
+            style={{
+              borderColor: 'var(--color-warning)',
+              color: 'var(--color-warning)',
+              background: 'var(--color-warning-subtle)',
+            }}
+          >
+            <MessageSquare size={12} />
+            Request Changes
+          </button>
+          <button
+            onClick={() => { setFeedbackMode('reject'); setShowFeedback(!showFeedback); }}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-opacity hover:opacity-70"
+            style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+          >
+            <X size={12} />
+            Reject
+          </button>
+        </div>
+      )}
+
+      {/* Feedback field */}
+      {showFeedback && (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={feedbackText}
+            onChange={(e) => setFeedbackText(e.target.value)}
+            rows={2}
+            placeholder={
+              feedbackMode === 'changes'
+                ? 'Describe what changes you want...'
+                : 'Reason for rejection (optional)...'
+            }
+            className="w-full px-3 py-2 text-xs border rounded resize-none focus:outline-none"
+            style={{
+              background: 'var(--color-mission-control-bg)',
+              borderColor: 'var(--color-mission-control-border)',
+              color: 'var(--color-mission-control-text)',
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleFeedbackSubmit}
+              className="px-3 py-1.5 text-xs rounded-lg"
+              style={{
+                background: feedbackMode === 'changes' ? 'var(--color-warning-subtle)' : 'var(--color-error-subtle)',
+                color: feedbackMode === 'changes' ? 'var(--color-warning)' : 'var(--color-error)',
+              }}
+            >
+              {feedbackMode === 'changes' ? 'Send Feedback' : 'Reject Draft'}
+            </button>
+            <button
+              onClick={() => { setShowFeedback(false); setFeedbackText(''); }}
+              className="px-3 py-1.5 text-xs rounded-lg"
+              style={{
+                background: 'var(--color-mission-control-surface)',
+                color: 'var(--color-mission-control-text-dim)',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function XAgentContentQueue() {
   const [settings, setSettings] = useState<AgentModeSettings>({ enabled: false, brief: '', autoApprove: false });
   const [drafts, setDrafts] = useState<AgentDraft[]>(MOCK_DRAFTS);
   const [activity] = useState<ActivityEntry[]>(MOCK_ACTIVITY);
   const [briefText, setBriefText] = useState('');
+  const [briefContext, setBriefContext] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const loadSettings = useCallback(async () => {
     try {
@@ -173,26 +429,78 @@ export function XAgentContentQueue() {
   };
 
   const handleSaveBrief = () => {
-    patchSettings({ ...settings, brief: briefText });
+    const combined = briefContext.trim()
+      ? `${briefText}\n\n[Additional context]: ${briefContext.trim()}`
+      : briefText;
+    patchSettings({ ...settings, brief: combined });
   };
 
-  const handleDraftAction = (id: string, action: 'approve' | 'reject') => {
-    setDrafts(prev =>
-      prev.map(d => {
-        if (d.id !== id) return d;
-        const newStatus: DraftStatus = action === 'approve' ? 'approved' : 'rejected';
-        return { ...d, status: newStatus };
-      })
-    );
-    showToast(
-      action === 'approve' ? 'success' : 'info',
-      action === 'approve' ? 'Approved' : 'Rejected',
-      action === 'approve' ? 'Draft moved to Scheduled' : 'Draft rejected and removed from queue'
-    );
+  // Schedule an approved draft to the social schedule API
+  const scheduleApprovedDraft = async (draftId: string) => {
+    const draft = drafts.find((d) => d.id === draftId);
+    if (!draft) return;
+    try {
+      await fetch('/api/social/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: draft.content,
+          scheduledAt: draft.scheduledAt,
+          platform: 'x',
+          status: 'scheduled',
+        }),
+      });
+    } catch {
+      // non-fatal — draft is already approved locally
+    }
   };
 
-  const pendingDrafts = drafts.filter(d => d.status === 'pending');
-  const approvedDrafts = drafts.filter(d => d.status === 'approved');
+  const handleApprove = (id: string) => {
+    setDrafts((prev) =>
+      prev.map((d) => d.id === id ? { ...d, status: 'approved' } : d)
+    );
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    showToast('success', 'Approved', 'Draft moved to Scheduled');
+  };
+
+  const handleRequestChanges = (id: string, feedback: string) => {
+    setDrafts((prev) =>
+      prev.map((d) => d.id === id ? { ...d, status: 'pending', feedback } : d)
+    );
+    showToast('info', 'Feedback Sent', 'Changes requested for this draft');
+  };
+
+  const handleReject = (id: string, feedback: string) => {
+    setDrafts((prev) =>
+      prev.map((d) => d.id === id ? { ...d, status: 'rejected', feedback } : d)
+    );
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    showToast('info', 'Rejected', 'Draft has been rejected');
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleBatchApprove = async () => {
+    const ids = Array.from(selectedIds);
+    setDrafts((prev) =>
+      prev.map((d) => ids.includes(d.id) && d.status === 'pending' ? { ...d, status: 'approved' } : d)
+    );
+    setSelectedIds(new Set());
+    await Promise.allSettled(ids.map(scheduleApprovedDraft));
+    showToast('success', 'Batch Approved', `${ids.length} draft${ids.length !== 1 ? 's' : ''} approved and scheduled`);
+  };
+
+  const pendingDrafts = drafts.filter((d) => d.status === 'pending');
+  const approvedDrafts = drafts.filter((d) => d.status === 'approved');
+  const pendingSelectedCount = Array.from(selectedIds).filter((id) =>
+    drafts.find((d) => d.id === id && d.status === 'pending')
+  ).length;
 
   if (loading) {
     return (
@@ -254,19 +562,33 @@ export function XAgentContentQueue() {
           </label>
           <textarea
             value={briefText}
-            onChange={e => setBriefText(e.target.value)}
-            rows={5}
+            onChange={(e) => setBriefText(e.target.value)}
+            rows={4}
             placeholder="Describe your brand voice, key topics, posting frequency, and any restrictions the agent should follow..."
             className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none focus:ring-2 bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
             style={{ '--tw-ring-color': 'var(--color-info)' } as React.CSSProperties}
           />
+          {/* Additional context / constraints */}
+          <div className="mt-2">
+            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+              Additional context / constraints (added to next generation)
+            </label>
+            <textarea
+              value={briefContext}
+              onChange={(e) => setBriefContext(e.target.value)}
+              rows={2}
+              placeholder="e.g. Focus on product launch this week. Avoid any competitor mentions. Use a conversational tone."
+              className="w-full px-3 py-2 text-sm border rounded-lg resize-none focus:outline-none bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
+              style={{ borderColor: 'var(--color-mission-control-border)' }}
+            />
+          </div>
           <div className="flex items-center justify-between mt-2">
             <p className="text-xs text-mission-control-text-dim">
               Agents reference this brief when generating content.
             </p>
             <button
               onClick={handleSaveBrief}
-              disabled={saving || briefText === settings.brief}
+              disabled={saving || (briefText === settings.brief && !briefContext.trim())}
               className="px-3 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50"
               style={{ background: 'var(--color-info)', color: '#fff' }}
             >
@@ -328,13 +650,25 @@ export function XAgentContentQueue() {
                 </span>
               )}
             </div>
-            <button
-              onClick={() => setDrafts(MOCK_DRAFTS)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
-            >
-              <RefreshCw size={12} />
-              Refresh
-            </button>
+            <div className="flex items-center gap-2">
+              {pendingSelectedCount > 0 && (
+                <button
+                  onClick={handleBatchApprove}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium"
+                  style={{ background: 'var(--color-success-subtle)', color: 'var(--color-success)' }}
+                >
+                  <CheckSquare size={12} />
+                  Approve selected ({pendingSelectedCount})
+                </button>
+              )}
+              <button
+                onClick={() => setDrafts(MOCK_DRAFTS)}
+                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+              >
+                <RefreshCw size={12} />
+                Refresh
+              </button>
+            </div>
           </div>
 
           {pendingDrafts.length === 0 ? (
@@ -347,65 +681,18 @@ export function XAgentContentQueue() {
             </div>
           ) : (
             <div className="space-y-2">
-              {pendingDrafts.map(draft => (
-                <div
+              {pendingDrafts.map((draft) => (
+                <DraftCard
                   key={draft.id}
-                  className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface"
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="px-2 py-0.5 text-xs rounded"
-                        style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
-                      >
-                        {draft.topic}
-                      </span>
-                      <span className="text-xs text-mission-control-text-dim">
-                        {formatScheduledTime(draft.scheduledAt)}
-                      </span>
-                    </div>
-                    <Bot size={14} className="flex-shrink-0 text-mission-control-text-dim" />
-                  </div>
-                  <p className="text-sm text-mission-control-text mb-3 leading-relaxed">
-                    {draft.content}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {settings.autoApprove ? (
-                      <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
-                        <Zap size={11} style={{ color: 'var(--color-warning)' }} />
-                        Will auto-approve
-                      </span>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleDraftAction(draft.id, 'approve')}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-colors"
-                          style={{ background: 'var(--color-success-subtle)', color: 'var(--color-success)' }}
-                        >
-                          <Check size={12} />
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleDraftAction(draft.id, 'reject')}
-                          className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-colors"
-                          style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
-                        >
-                          <X size={12} />
-                          Reject
-                        </button>
-                        <button
-                          onClick={() => {
-                            const msg = `Review this agent-generated draft and suggest improvements:\n\n"${draft.content}"\n\nScheduled for: ${formatScheduledTime(draft.scheduledAt)}\nTopic: ${draft.topic}`;
-                            window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: msg } }));
-                          }}
-                          className="px-3 py-1.5 text-xs rounded-lg border border-mission-control-border hover:bg-mission-control-bg-alt transition-colors text-mission-control-text-dim"
-                        >
-                          Review
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                  draft={draft}
+                  selected={selectedIds.has(draft.id)}
+                  autoApprove={settings.autoApprove}
+                  onToggleSelect={() => handleToggleSelect(draft.id)}
+                  onApprove={handleApprove}
+                  onRequestChanges={handleRequestChanges}
+                  onReject={handleReject}
+                  onSchedule={scheduleApprovedDraft}
+                />
               ))}
             </div>
           )}
@@ -418,7 +705,7 @@ export function XAgentContentQueue() {
               Scheduled by Agents ({approvedDrafts.length})
             </div>
             <div className="space-y-2">
-              {approvedDrafts.map(draft => (
+              {approvedDrafts.map((draft) => (
                 <div
                   key={draft.id}
                   className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg-alt opacity-75"
@@ -438,7 +725,7 @@ export function XAgentContentQueue() {
         <div>
           <div className="text-sm font-medium text-mission-control-text mb-3">Activity Log</div>
           <div className="space-y-1">
-            {activity.map(entry => (
+            {activity.map((entry) => (
               <div key={entry.id} className="flex items-start gap-3 py-1.5 text-sm">
                 <span
                   className="text-xs font-medium flex-shrink-0 w-16 text-right"
