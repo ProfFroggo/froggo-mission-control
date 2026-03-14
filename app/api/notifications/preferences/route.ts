@@ -28,7 +28,6 @@ export async function GET() {
 
     const byType = Object.fromEntries(rows.map(r => [r.type, { email: r.email === 1, inApp: r.inApp === 1 }]));
 
-    // Fill defaults for types not yet in the DB
     const preferences: Record<string, { email: boolean; inApp: boolean }> = {};
     for (const t of NOTIFICATION_TYPES) {
       preferences[t] = byType[t] ?? { email: true, inApp: true };

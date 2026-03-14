@@ -512,6 +512,35 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
     -- ══════════════════════════════════════════
+    -- NOTIFICATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT,
+      userId TEXT,
+      metadata TEXT,
+      readAt TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+    CREATE INDEX IF NOT EXISTS idx_notifications_readAt ON notifications(readAt);
+    CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+
+    -- ══════════════════════════════════════════
+    -- NOTIFICATION PREFERENCES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notification_preferences (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      type TEXT NOT NULL UNIQUE,
+      email INTEGER NOT NULL DEFAULT 1,
+      inApp INTEGER NOT NULL DEFAULT 1,
+      updatedAt TEXT DEFAULT (datetime('now'))
+    );
+
+        -- ══════════════════════════════════════════
     -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS chat_messages (
@@ -825,10 +854,34 @@ function initSchema(db: Database.Database) {
     // Campaigns v2: metrics JSON blob + saved brief text
     `ALTER TABLE campaigns ADD COLUMN metrics TEXT`,
     `ALTER TABLE campaigns ADD COLUMN brief TEXT`,
+    // Agent soul v2: personality traits, tone preset, memory scope
+    `ALTER TABLE agents ADD COLUMN traits TEXT DEFAULT '[]'`,
+    `ALTER TABLE agents ADD COLUMN tonePreset TEXT DEFAULT 'professional'`,
+    `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Agent soul v2: status history + availability schedules
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS agent_status_history (
+        id TEXT PRIMARY KEY,
+        agentId TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reason TEXT,
+        changedAt TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_agent_status_history_agentId ON agent_status_history(agentId, changedAt);
+
+      CREATE TABLE IF NOT EXISTS agent_schedules (
+        agentId TEXT PRIMARY KEY,
+        schedule TEXT NOT NULL DEFAULT '{}',
+        updatedAt TEXT DEFAULT (datetime('now'))
+      );
+    `);
+  } catch { /* tables already exist */ }
 
   // Module Builder: index for task-by-module queries
   try {

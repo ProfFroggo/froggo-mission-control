@@ -9,8 +9,6 @@ import { createNotification } from '@/lib/notificationWriter';
 
 export const dynamic = 'force-dynamic';
 
-// ── GET ──────────────────────────────────────────────────────────────────────
-
 export async function GET(request: NextRequest) {
   try {
     const db = getDb();
@@ -24,13 +22,8 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = [];
     const values: unknown[] = [];
 
-    if (unreadOnly) {
-      conditions.push('readAt IS NULL');
-    }
-    if (type) {
-      conditions.push('type = ?');
-      values.push(type);
-    }
+    if (unreadOnly) conditions.push('readAt IS NULL');
+    if (type) { conditions.push('type = ?'); values.push(type); }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = db.prepare(
@@ -58,8 +51,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// ── POST ─────────────────────────────────────────────────────────────────────
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -83,8 +74,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ── PATCH ────────────────────────────────────────────────────────────────────
-
 export async function PATCH(request: NextRequest) {
   try {
     const db = getDb();
@@ -99,7 +88,7 @@ export async function PATCH(request: NextRequest) {
 
     if (ids === 'all') {
       const result = db.prepare(
-        `UPDATE notifications SET readAt = ? WHERE readAt IS NULL`
+        'UPDATE notifications SET readAt = ? WHERE readAt IS NULL'
       ).run(now);
       return NextResponse.json({ updated: result.changes });
     }
