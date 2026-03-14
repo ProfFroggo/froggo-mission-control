@@ -531,7 +531,6 @@ function initSchema(db: Database.Database) {
 
     -- ══════════════════════════════════════════
     -- NOTIFICATION PREFERENCES
-    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS notification_preferences (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
       type TEXT NOT NULL UNIQUE,
@@ -541,6 +540,7 @@ function initSchema(db: Database.Database) {
     );
 
         -- ══════════════════════════════════════════
+    -- ══════════════════════════════════════════
     -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS chat_messages (

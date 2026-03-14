@@ -1,48 +1,51 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// GET /api/notifications  — list notifications with filters
-// POST /api/notifications — create a notification
-// PATCH /api/notifications — mark read
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { createNotification } from '@/lib/notificationWriter';
 
 export const dynamic = 'force-dynamic';
 
+function parseNotification(row: Record<string, unknown>) {
+  if (!row) return row;
+  const parsed = { ...row };
+  if (typeof parsed.metadata === 'string') {
+    try { parsed.metadata = JSON.parse(parsed.metadata as string); } catch { parsed.metadata = {}; }
+  }
+  return parsed;
+}
+
+// GET /api/notifications
+// Query params: unreadOnly=true, type=<type>, limit=<n>
 export async function GET(request: NextRequest) {
   try {
     const db = getDb();
     const { searchParams } = new URL(request.url);
-
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
     const type = searchParams.get('type');
     const rawLimit = searchParams.get('limit');
-    const limit = rawLimit ? Math.min(parseInt(rawLimit, 10), 200) : 50;
+    const limit = rawLimit ? Math.min(parseInt(rawLimit, 10) || 50, 200) : 50;
 
     const conditions: string[] = [];
     const values: unknown[] = [];
 
-    if (unreadOnly) conditions.push('readAt IS NULL');
-    if (type) { conditions.push('type = ?'); values.push(type); }
+    if (unreadOnly) {
+      conditions.push('readAt IS NULL');
+    }
+    if (type) {
+      conditions.push('type = ?');
+      values.push(type);
+    }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = db.prepare(
       `SELECT * FROM notifications ${where} ORDER BY createdAt DESC LIMIT ?`
     ).all(...values, limit) as Record<string, unknown>[];
 
-    const unreadCount = (db.prepare(
-      'SELECT COUNT(*) as c FROM notifications WHERE readAt IS NULL'
-    ).get() as { c: number }).c;
-
-    const parsed = rows.map(r => ({
-      ...r,
-      metadata: r.metadata
-        ? (() => { try { return JSON.parse(r.metadata as string); } catch { return {}; } })()
-        : null,
-    }));
+    const total = (db.prepare(`SELECT COUNT(*) as count FROM notifications ${where}`).get(...values) as { count: number }).count;
+    const unreadCount = (db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE readAt IS NULL`).get() as { count: number }).count;
 
     return NextResponse.json(
-      { notifications: parsed, total: parsed.length, unreadCount },
+      { notifications: rows.map(parseNotification), total, unreadCount },
       { headers: { 'X-Unread-Count': String(unreadCount) } }
     );
   } catch (error) {
@@ -51,16 +54,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST /api/notifications — create a notification manually
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, title, body: notifBody, userId, metadata } = body as {
-      type: string;
-      title: string;
-      body?: string;
-      userId?: string;
-      metadata?: Record<string, unknown>;
-    };
+    const { type, title, body: notifBody, userId, metadata } = body;
 
     if (!type || !title) {
       return NextResponse.json({ error: 'type and title are required' }, { status: 400 });
@@ -74,27 +72,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PATCH /api/notifications — mark read
+// Body: { action: 'mark_read', ids: string[] | 'all' }
 export async function PATCH(request: NextRequest) {
   try {
     const db = getDb();
     const body = await request.json();
-    const { action, ids } = body as { action: 'mark_read'; ids: string[] | 'all' };
+    const { action, ids } = body as { action: string; ids?: string[] | 'all' };
 
     if (action !== 'mark_read') {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      return NextResponse.json({ error: 'action must be mark_read' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
 
     if (ids === 'all') {
-      const result = db.prepare(
-        'UPDATE notifications SET readAt = ? WHERE readAt IS NULL'
-      ).run(now);
+      const result = db.prepare(`UPDATE notifications SET readAt = ? WHERE readAt IS NULL`).run(now);
       return NextResponse.json({ updated: result.changes });
     }
 
     if (!Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'ids must be an array or "all"' }, { status: 400 });
+      return NextResponse.json({ error: 'ids must be a non-empty array or "all"' }, { status: 400 });
     }
 
     const placeholders = ids.map(() => '?').join(',');

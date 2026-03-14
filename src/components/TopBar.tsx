@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Inbox, Loader, Wifi, WifiOff, Activity, Menu, Search, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Inbox, Loader, Wifi, WifiOff, Activity, Bell } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';
 import PlatformHealthDashboard from './PlatformHealthDashboard';
+import NotificationCenter from './NotificationCenter';
+import { useEventBus } from '../lib/useEventBus';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -17,11 +19,9 @@ type PlatformStatus = 'ok' | 'degraded' | 'error';
 interface TopBarProps {
   onNavigate?: (view: any) => void;
   sidebarWidth?: number;
-  onOpenMobileNav?: () => void;
-  onOpenSearch?: () => void;
 }
 
-export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSearch }: TopBarProps) {
+export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   const [status, setStatus] = useState<SystemStatus>({
     watcherRunning: false,
     killSwitchOn: true,
@@ -35,14 +35,8 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>('ok');
   const [healthDashboardOpen, setHealthDashboardOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const mobileSearchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (mobileSearchOpen) {
-      mobileSearchRef.current?.focus();
-    }
-  }, [mobileSearchOpen]);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state, attempts }: { state: ConnectionState; attempts?: number }) => {
@@ -54,6 +48,7 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
     return () => { unsub(); };
   }, []);
 
+  // Show toast on connection lost
   useEffect(() => {
     const unsubLost = gateway.on('connectionLost', ({ code, attempts }: { code: number; attempts: number }) => {
       showToast('error', 'Connection lost', `Gateway disconnected (code: ${code}). Retrying... (${attempts})`);
@@ -102,10 +97,11 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
       }
     };
     checkStatus();
-    const interval = setInterval(checkStatus, 60000);
+    const interval = setInterval(checkStatus, 60000); // Poll every 60s (was 10s)
     return () => clearInterval(interval);
   }, []);
 
+  // Platform health status indicator — polls /api/health/metrics every 60s
   useEffect(() => {
     const fetchHealth = async () => {
       try {
@@ -132,79 +128,62 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch initial unread count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadNotifCount(data.unreadCount ?? 0);
+      }
+    } catch { /* non-critical */ }
+  }, []);
+
+  useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+
+  // Increment badge on new notification SSE event
+  useEventBus('notification.new', useCallback(() => {
+    setUnreadNotifCount(prev => prev + 1);
+  }, []));
+
   return (
     <>
-      <header
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200"
+      <header 
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200" 
         style={{ left: `${sidebarWidth}px` }}
       >
-        <div className="no-drag flex items-center gap-2 flex-1 min-w-0">
-          {onOpenMobileNav && (
-            <button
-              type="button"
-              onClick={onOpenMobileNav}
-              className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all flex-shrink-0"
-              aria-label="Open navigation menu"
-            >
-              <Menu size={20} aria-hidden="true" />
-            </button>
-          )}
-
-          {mobileSearchOpen ? (
-            <div className="md:hidden flex items-center gap-2 flex-1 min-w-0">
-              <input
-                ref={mobileSearchRef}
-                type="search"
-                placeholder="Search..."
-                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent min-h-[44px]"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setMobileSearchOpen(false);
-                  if (e.key === 'Enter') {
-                    setMobileSearchOpen(false);
-                    onOpenSearch?.();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setMobileSearchOpen(false)}
-                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all flex-shrink-0"
-                aria-label="Close search"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-          ) : (
-            focusMode && (
-              <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
-            )
+        {/* Left: Focus mode */}
+        <div className="no-drag flex items-center gap-2">
+          {focusMode && (
+            <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
           )}
         </div>
 
-        <div className="no-drag flex items-center gap-3 flex-shrink-0">
-          {!mobileSearchOpen && (
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  setMobileSearchOpen(true);
-                } else {
-                  onOpenSearch?.();
-                }
-              }}
-              className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
-              aria-label="Search"
-            >
-              <Search size={18} aria-hidden="true" />
-            </button>
-          )}
+        {/* Right: Connection status + Counters */}
+        <div className="no-drag flex items-center gap-3">
+          {/* Notification Bell */}
+          <button
+            type="button"
+            onClick={() => setNotifCenterOpen(prev => !prev)}
+            title="Notifications"
+            aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
+            className="relative inline-flex items-center justify-center p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors min-h-[44px] min-w-[44px]"
+          >
+            <Bell size={16} aria-hidden="true" />
+            {unreadNotifCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-error text-white rounded-full leading-none tabular-nums">
+                {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+              </span>
+            )}
+          </button>
 
+          {/* Platform Health Indicator */}
           <button
             type="button"
             onClick={() => setHealthDashboardOpen(true)}
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
             aria-label={`Platform health: ${platformStatus}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px] justify-center"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -227,16 +206,16 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
               aria-hidden="true"
             />
           </button>
-
+          {/* Connection Status Indicator */}
           {connectionState !== 'connected' && (
-            <span
+            <span 
               className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
-                connectionState === 'disconnected'
-                  ? 'bg-error-subtle text-error'
+                connectionState === 'disconnected' 
+                  ? 'bg-error-subtle text-error' 
                   : 'bg-warning-subtle text-warning'
               }`}
-              title={connectionState === 'disconnected'
-                ? `Disconnected. Reconnecting... (${reconnectAttempts})`
+              title={connectionState === 'disconnected' 
+                ? `Disconnected. Reconnecting... (${reconnectAttempts})` 
                 : `Connecting to gateway... (${reconnectAttempts})`}
             >
               {connectionState === 'disconnected' ? (
@@ -244,15 +223,16 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
               ) : (
                 <Wifi size={12} className="animate-pulse" aria-hidden="true" />
               )}
-              <span className="hidden sm:inline">
+              <span>
                 {connectionState === 'disconnected' ? 'Offline' : 'Connecting'}
                 {reconnectAttempts > 0 && ` (${reconnectAttempts})`}
               </span>
             </span>
           )}
 
+          {/* Offline Queue Indicator */}
           {offlineQueueSize > 0 && (
-            <span
+            <span 
               className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
               title={`${offlineQueueSize} actions queued for sync`}
             >
@@ -262,20 +242,14 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
           )}
 
           {status.pendingInbox > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
-              title={`${status.pendingInbox} pending inbox items`}
-            >
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning" title={`${status.pendingInbox} pending inbox items`}>
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-info"
-              title={`${status.inProgressTasks} tasks in progress`}
-            >
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-info" title={`${status.inProgressTasks} tasks in progress`}>
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>
@@ -283,6 +257,7 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
         </div>
       </header>
 
+      {/* Focus Mode Selector */}
       <FocusModeSelector
         isOpen={focusSelectorOpen}
         onClose={() => setFocusSelectorOpen(false)}
@@ -290,9 +265,17 @@ export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSear
         onSelectMode={setFocusMode}
       />
 
+      {/* Platform Health Dashboard */}
       <PlatformHealthDashboard
         isOpen={healthDashboardOpen}
         onClose={() => setHealthDashboardOpen(false)}
+      />
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        onUnreadCountChange={setUnreadNotifCount}
       />
     </>
   );

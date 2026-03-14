@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// Server-side notification writer — DB write + SSE emit
-// Import this only in API routes (server-side).
+// Server-side notification writer — writes to DB and emits SSE.
+// Import this only from API routes (server context), never from client components.
 
 import { getDb } from './database';
 import { emitSSEEvent } from './sseEmitter';
@@ -18,11 +18,10 @@ export async function createNotification(data: CreateNotificationInput): Promise
     const db = getDb();
     const id = `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const now = new Date().toISOString();
-
-    db.prepare(`
-      INSERT INTO notifications (id, type, title, body, userId, metadata, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    db.prepare(
+      `INSERT INTO notifications (id, type, title, body, userId, metadata, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(
       id,
       data.type,
       data.title,
@@ -31,7 +30,6 @@ export async function createNotification(data: CreateNotificationInput): Promise
       data.metadata ? JSON.stringify(data.metadata) : null,
       now
     );
-
     emitSSEEvent('notification.new', {
       id,
       type: data.type,
@@ -41,7 +39,6 @@ export async function createNotification(data: CreateNotificationInput): Promise
       createdAt: now,
     });
   } catch (err) {
-    // Non-fatal — notifications should never break the calling route
     console.error('[notifications] createNotification error:', err);
   }
 }

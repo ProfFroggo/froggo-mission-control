@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
+import { createNotification } from '@/lib/notificationWriter';
 
 import { createNotification } from '@/lib/notificationWriter';
 
