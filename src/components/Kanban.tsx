@@ -5,7 +5,7 @@ import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
   CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash,
-  ClipboardList, Eye, Inbox
+  ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -58,13 +58,25 @@ const columns: { id: TaskStatus; title: string; color: string; iconColor: string
   { id: 'done',            title: 'Done',             color: 'border-t-success', iconColor: 'text-success', bg: 'bg-success-subtle', icon: <CheckCircle size={14} /> },
 ];
 
+type DueFilter = 'all' | 'overdue' | 'today' | 'this-week' | 'no-due-date';
+type GlobalSortOption = 'newest' | 'due-asc' | 'priority' | 'title-az' | 'updated';
+
 interface Filters {
   search: string;
   project: string;
   priority: TaskPriority | 'all';
   assignee: string;
   hasDueDate: boolean | null;
+  dueFilter: DueFilter;
+  labels: string[]; // label IDs selected
   showCompleted: boolean;
+}
+
+interface SavedView {
+  name: string;
+  filters: Filters;
+  globalSort: GlobalSortOption;
+  savedAt: number;
 }
 
 interface KanbanProps {
@@ -191,8 +203,31 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     priority: 'all',
     assignee: 'all',
     hasDueDate: null,
+    dueFilter: 'all',
+    labels: [],
     showCompleted: true,
   });
+
+  // Global sort — persisted to localStorage
+  const [globalSort, setGlobalSort] = useState<GlobalSortOption>(() => {
+    try {
+      const saved = localStorage.getItem('kanban.sort');
+      if (saved) return saved as GlobalSortOption;
+    } catch { /* ignore */ }
+    return 'newest';
+  });
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  // Saved views
+  const [savedViews, setSavedViews] = useState<SavedView[]>(() => {
+    try {
+      const raw = localStorage.getItem('kanban.saved-views');
+      if (raw) return JSON.parse(raw) as SavedView[];
+    } catch { /* ignore */ }
+    return [];
+  });
+  const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
 
   // Per-column filter and sort settings
   type SortOption = 'newest' | 'oldest' | 'priority-asc' | 'priority-desc' | 'progress-asc' | 'progress-desc';
@@ -237,6 +272,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     safeStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
   }, [columnSettings]);
 
+  // Persist global sort to localStorage
+  useEffect(() => {
+    try { localStorage.setItem('kanban.sort', globalSort); } catch { /* ignore */ }
+  }, [globalSort]);
+
   const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
     setColumnSettings(prev => ({
       ...prev,
@@ -275,6 +315,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         setSelectedTask(null);
         setShowFilters(false);
         setShowKeyboardHelp(false);
+        setShowSortMenu(false);
+        setShowSaveViewDialog(false);
       }
       if (e.key === 'f' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -291,8 +333,29 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     return ['all', ...Array.from(projectSet)];
   }, [tasks]);
 
+  // Unique labels across all tasks
+  const uniqueLabels = useMemo(() => {
+    const labelSet = new Set<string>();
+    tasks.forEach(t => {
+      if (Array.isArray(t.labels)) t.labels.forEach(l => labelSet.add(l));
+    });
+    return Array.from(labelSet).sort();
+  }, [tasks]);
+
+  // Unique assignees across all tasks
+  const uniqueAssignees = useMemo(() => {
+    const assigneeSet = new Set<string>();
+    tasks.forEach(t => { if (t.assignedTo) assigneeSet.add(t.assignedTo); });
+    return Array.from(assigneeSet);
+  }, [tasks]);
+
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
+    const now = Date.now();
+    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+    const endOfWeek = new Date(startOfToday); endOfWeek.setDate(endOfWeek.getDate() + 7);
+
     // When scoped to a project, pre-filter before user filters
     let result = projectId
       ? tasks.filter(t => t.project_id === projectId || t.project === projectName)
@@ -301,23 +364,23 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     // Search
     if (filters.search) {
       const search = filters.search.toLowerCase();
-      result = result.filter(t => 
+      result = result.filter(t =>
         t.title.toLowerCase().includes(search) ||
         t.description?.toLowerCase().includes(search) ||
         t.project.toLowerCase().includes(search)
       );
     }
-    
+
     // Project
     if (filters.project !== 'all') {
       result = result.filter(t => t.project === filters.project);
     }
-    
+
     // Priority
     if (filters.priority !== 'all') {
       result = result.filter(t => t.priority === filters.priority);
     }
-    
+
     // Assignee
     if (filters.assignee !== 'all') {
       if (filters.assignee === 'unassigned') {
@@ -326,34 +389,69 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         result = result.filter(t => t.assignedTo === filters.assignee);
       }
     }
-    
-    // Due date
+
+    // Due date (legacy hasDueDate — kept for backward compat)
     if (filters.hasDueDate !== null) {
       result = result.filter(t => filters.hasDueDate ? t.dueDate : !t.dueDate);
     }
-    
+
+    // Due date filter (new)
+    if (filters.dueFilter !== 'all') {
+      switch (filters.dueFilter) {
+        case 'overdue':
+          result = result.filter(t => t.dueDate && t.dueDate < now && t.status !== 'done');
+          break;
+        case 'today':
+          result = result.filter(t => t.dueDate && t.dueDate >= startOfToday.getTime() && t.dueDate <= endOfToday.getTime());
+          break;
+        case 'this-week':
+          result = result.filter(t => t.dueDate && t.dueDate >= startOfToday.getTime() && t.dueDate <= endOfWeek.getTime());
+          break;
+        case 'no-due-date':
+          result = result.filter(t => !t.dueDate);
+          break;
+      }
+    }
+
+    // Labels filter (AND: task must have ALL selected labels)
+    if (filters.labels.length > 0) {
+      result = result.filter(t =>
+        filters.labels.every(l => Array.isArray(t.labels) && t.labels.includes(l))
+      );
+    }
+
     // Hide completed
     if (!filters.showCompleted) {
       result = result.filter(t => t.status !== 'done' && t.status !== 'failed');
     }
-    
-    // Sort by priority, then due date, then created
+
+    // Apply global sort
     return result.sort((a, b) => {
-      // Priority first (p0 > p1 > p2 > p3 > undefined)
-      const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
-      const aPriority = priorityOrder[a.priority || 'undefined'];
-      const bPriority = priorityOrder[b.priority || 'undefined'];
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      
-      // Then due date (earliest first)
-      if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate;
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      
-      // Then created (newest first)
-      return b.createdAt - a.createdAt;
+      const priorityOrder: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+      switch (globalSort) {
+        case 'newest':
+          return b.createdAt - a.createdAt;
+        case 'due-asc': {
+          if (a.dueDate && b.dueDate) return a.dueDate - b.dueDate;
+          if (a.dueDate) return -1;
+          if (b.dueDate) return 1;
+          return b.createdAt - a.createdAt;
+        }
+        case 'priority': {
+          const ap = priorityOrder[a.priority || 'undefined'];
+          const bp = priorityOrder[b.priority || 'undefined'];
+          if (ap !== bp) return ap - bp;
+          return b.createdAt - a.createdAt;
+        }
+        case 'title-az':
+          return a.title.localeCompare(b.title);
+        case 'updated':
+          return b.updatedAt - a.updatedAt;
+        default:
+          return b.createdAt - a.createdAt;
+      }
     });
-  }, [tasks, filters]);
+  }, [tasks, filters, globalSort]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -362,6 +460,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     if (filters.priority !== 'all') count++;
     if (filters.assignee !== 'all') count++;
     if (filters.hasDueDate !== null) count++;
+    if (filters.dueFilter !== 'all') count++;
+    if (filters.labels.length > 0) count++;
     if (!filters.showCompleted) count++;
     return count;
   }, [filters]);
@@ -373,8 +473,41 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       priority: 'all',
       assignee: 'all',
       hasDueDate: null,
+      dueFilter: 'all',
+      labels: [],
       showCompleted: true,
     });
+  };
+
+  // Save current filter+sort combination as a named view
+  const saveCurrentView = () => {
+    const name = newViewName.trim();
+    if (!name) return;
+    const view: SavedView = { name, filters, globalSort, savedAt: Date.now() };
+    const updated = [...savedViews.filter(v => v.name !== name), view];
+    setSavedViews(updated);
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+    setNewViewName('');
+    setShowSaveViewDialog(false);
+  };
+
+  const deleteSavedView = (name: string) => {
+    const updated = savedViews.filter(v => v.name !== name);
+    setSavedViews(updated);
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+  };
+
+  const applySavedView = (view: SavedView) => {
+    setFilters(view.filters);
+    setGlobalSort(view.globalSort);
+  };
+
+  const GLOBAL_SORT_LABELS: Record<GlobalSortOption, string> = {
+    'newest': 'Created (newest first)',
+    'due-asc': 'Due date (soonest first)',
+    'priority': 'Priority (P0 first)',
+    'title-az': 'Title (A–Z)',
+    'updated': 'Last updated',
   };
 
   // Pre-compute per-column filtered+sorted task arrays — avoids re-running filter/sort on every render
@@ -701,6 +834,72 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               )}
             </button>
 
+            {/* Global sort dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSortMenu(v => !v)}
+                className={`icon-text px-3 py-2 rounded-xl border transition-all ${
+                  globalSort !== 'newest'
+                    ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
+                    : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+                title="Sort tasks"
+              >
+                <SortAsc size={16} className="flex-shrink-0" />
+                Sort
+                <ChevronDown size={14} className="flex-shrink-0" />
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg z-50 min-w-[220px] py-1">
+                  {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => { setGlobalSort(opt); setShowSortMenu(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-mission-control-border/40 ${globalSort === opt ? 'text-mission-control-accent font-medium' : ''}`}
+                    >
+                      {GLOBAL_SORT_LABELS[opt]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Save view button */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSaveViewDialog(v => !v)}
+                className="icon-text px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/50 transition-all"
+                title="Save current view"
+              >
+                <Save size={16} className="flex-shrink-0" />
+                Save view
+              </button>
+              {showSaveViewDialog && (
+                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg z-50 w-64 p-3">
+                  <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newViewName}
+                    onChange={e => setNewViewName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveCurrentView();
+                      if (e.key === 'Escape') setShowSaveViewDialog(false);
+                    }}
+                    placeholder="View name..."
+                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent mb-2"
+                  />
+                  <button
+                    onClick={saveCurrentView}
+                    disabled={!newViewName.trim()}
+                    className="w-full px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Refresh */}
             <button
               onClick={handleRefresh}
@@ -765,76 +964,186 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="flex items-center gap-4 p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2">
-            {/* Project — hidden when already scoped to a project */}
-            {!projectId && (
+          <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border animate-in slide-in-from-top-2 space-y-3">
+            {/* Row 1: dropdowns */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Project — hidden when already scoped to a project */}
+              {!projectId && (
+                <div className="icon-text-tight">
+                  <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                  <select
+                    value={filters.project}
+                    onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
+                  >
+                    {projects.map(p => (
+                      <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Assignee dropdown */}
               <div className="icon-text-tight">
-                <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
                 <select
-                  value={filters.project}
-                  onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
+                  value={filters.assignee}
+                  onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
                   className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
                 >
-                  {projects.map(p => (
-                    <option key={p} value={p}>{p === 'all' ? 'All Projects' : p}</option>
-                  ))}
+                  <option value="all">All Assignees</option>
+                  <option value="unassigned">Unassigned</option>
+                  {agents
+                    .filter(a => !isProtectedAgent(a.id))
+                    .map(a => (
+                      <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
+                    ))}
+                  {/* Also include assignees from tasks that may not be in agents list */}
+                  {uniqueAssignees
+                    .filter(id => !agents.find(a => a.id === id))
+                    .map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
                 </select>
               </div>
-            )}
 
-            {/* Priority */}
-            <div className="icon-text-tight">
-              <Flag size={16} className="text-mission-control-text-dim flex-shrink-0" />
-              <select
-                value={filters.priority}
-                onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value as TaskPriority | 'all' }))}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-              >
-                <option value="all">All Priorities</option>
-                {PRIORITIES.map(p => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
-                ))}
-              </select>
+              {/* Show completed */}
+              <label className="icon-text-tight text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.showCompleted}
+                  onChange={(e) => setFilters(f => ({ ...f, showCompleted: e.target.checked }))}
+                  className="rounded"
+                />
+                Show completed
+              </label>
+
+              {/* Clear filters */}
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="icon-text-tight text-sm text-mission-control-accent hover:underline ml-auto"
+                >
+                  <X size={16} className="flex-shrink-0" /> Clear all
+                </button>
+              )}
             </div>
 
-            {/* Assignee */}
-            <div className="icon-text-tight">
-              <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
-              <select
-                value={filters.assignee}
-                onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
-              >
-                <option value="all">All Assignees</option>
-                <option value="unassigned">Unassigned</option>
-                {agents
-                  .filter(a => !isProtectedAgent(a.id))
-                  .map(a => (
-                    <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
-                  ))}
-              </select>
+            {/* Row 2: Priority pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Flag size={14} className="text-mission-control-text-dim flex-shrink-0" />
+              <span className="text-xs text-mission-control-text-dim font-medium mr-1">Priority:</span>
+              {(['all', 'p0', 'p1', 'p2', 'p3'] as const).map(p => (
+                <button
+                  key={p}
+                  onClick={() => setFilters(f => ({ ...f, priority: p }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                    filters.priority === p
+                      ? p === 'all'
+                        ? 'bg-mission-control-accent text-white border-mission-control-accent'
+                        : p === 'p0'
+                        ? 'bg-error-subtle text-error border-error-border'
+                        : p === 'p1'
+                        ? 'bg-warning-subtle text-warning border-warning-border'
+                        : p === 'p2'
+                        ? 'bg-info-subtle text-info border-info-border'
+                        : 'bg-mission-control-bg text-mission-control-text border-mission-control-border'
+                      : 'border-mission-control-border hover:border-mission-control-accent/50'
+                  }`}
+                >
+                  {p === 'all' ? 'All' : p.toUpperCase()}
+                </button>
+              ))}
             </div>
 
-            {/* Show completed */}
-            <label className="icon-text-tight text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.showCompleted}
-                onChange={(e) => setFilters(f => ({ ...f, showCompleted: e.target.checked }))}
-                className="rounded"
-              />
-              Show completed
-            </label>
+            {/* Row 3: Due date pills */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <CalendarClock size={14} className="text-mission-control-text-dim flex-shrink-0" />
+              <span className="text-xs text-mission-control-text-dim font-medium mr-1">Due:</span>
+              {([
+                { id: 'all', label: 'All' },
+                { id: 'overdue', label: 'Overdue' },
+                { id: 'today', label: 'Due today' },
+                { id: 'this-week', label: 'Due this week' },
+                { id: 'no-due-date', label: 'No due date' },
+              ] as { id: DueFilter; label: string }[]).map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setFilters(f => ({ ...f, dueFilter: opt.id }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                    filters.dueFilter === opt.id
+                      ? opt.id === 'overdue'
+                        ? 'bg-error-subtle text-error border-error-border'
+                        : 'bg-mission-control-accent text-white border-mission-control-accent'
+                      : 'border-mission-control-border hover:border-mission-control-accent/50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
 
-            {/* Clear filters */}
-            {activeFiltersCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="icon-text-tight text-sm text-mission-control-accent hover:underline"
-              >
-                <X size={16} className="flex-shrink-0" /> Clear all
-              </button>
+            {/* Row 4: Labels multi-select pills (only shown if any labels exist) */}
+            {uniqueLabels.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tag size={14} className="text-mission-control-text-dim flex-shrink-0" />
+                <span className="text-xs text-mission-control-text-dim font-medium mr-1">Labels:</span>
+                {uniqueLabels.map(label => {
+                  const isActive = filters.labels.includes(label);
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => setFilters(f => ({
+                        ...f,
+                        labels: isActive
+                          ? f.labels.filter(l => l !== label)
+                          : [...f.labels, label],
+                      }))}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                        isActive
+                          ? 'bg-mission-control-accent text-white border-mission-control-accent'
+                          : 'border-mission-control-border hover:border-mission-control-accent/50'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                {filters.labels.length > 0 && (
+                  <button
+                    onClick={() => setFilters(f => ({ ...f, labels: [] }))}
+                    className="text-xs text-mission-control-text-dim hover:text-mission-control-text icon-text-tight"
+                  >
+                    <X size={11} />
+                    Clear
+                  </button>
+                )}
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Saved views pills */}
+        {savedViews.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-2">
+            <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
+            {savedViews.map(view => (
+              <div key={view.name} className="flex items-center gap-0.5">
+                <button
+                  onClick={() => applySavedView(view)}
+                  className="text-xs px-2.5 py-1 rounded-l-lg border border-mission-control-border hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-all"
+                >
+                  {view.name}
+                </button>
+                <button
+                  onClick={() => deleteSavedView(view.name)}
+                  className="text-xs px-1.5 py-1 rounded-r-lg border border-l-0 border-mission-control-border hover:border-error-border hover:text-error transition-all"
+                  title="Delete saved view"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -873,12 +1182,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       {!loading.tasks && filteredTasks.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
-            icon={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' ? Search : Inbox}
-            title={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all' ? 'No tasks match your filters' : 'No tasks yet'}
-            description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+            icon={activeFiltersCount > 0 ? Search : Inbox}
+            title={activeFiltersCount > 0 ? 'No tasks match your filters' : 'No tasks yet'}
+            description={activeFiltersCount > 0
               ? 'No tasks match your current filters. Try adjusting your search or filters.'
               : 'Create your first task to get the team working'}
-            action={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+            action={activeFiltersCount > 0
               ? undefined
               : { label: 'Create task', onClick: () => handleAddTask('todo') }}
             size="md"
