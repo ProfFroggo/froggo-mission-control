@@ -12,6 +12,9 @@ import { XContentMixTracker } from './XContentMixTracker';
 import XAutomationsTab from './XAutomationsTab';
 import { XRedditView } from './XRedditView';
 import XCampaignView from './XCampaignView';
+import XAgentContentQueue from './XAgentContentQueue';
+import XCompetitorTracker from './XCompetitorTracker';
+import XHashtagIntelligence from './XHashtagIntelligence';
 
 interface XContentEditorPaneProps {
   tab: XTab;
@@ -68,6 +71,18 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
 
   if (tab === 'campaigns') {
     return <XCampaignView />;
+  }
+
+  if (tab === 'agent-mode') {
+    return <XAgentContentQueue />;
+  }
+
+  if (tab === 'competitors') {
+    return <XCompetitorTracker />;
+  }
+
+  if (tab === 'hashtags') {
+    return <XHashtagIntelligence />;
   }
 
   return null;
