@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ShieldAlert, ShieldCheck, ShieldX, Clock, RefreshCw,
   Check, X, ChevronDown, ChevronUp, User, MessageSquare,
@@ -485,9 +485,6 @@ export default function ApprovalQueuePanel() {
     await load(true);
     setBatchWorking(false);
   };
-
-  // ── Keyboard shortcut: focused card A/D ──────────────────────────────────────
-  const focusedApprovalId = useRef<string | null>(null);
 
   const pendingCounts = statusTab === 'pending' ? {
     all: approvals.length,
