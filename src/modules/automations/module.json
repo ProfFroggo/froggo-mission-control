@@ -2,13 +2,12 @@
   "id": "automations",
   "name": "Automations",
   "version": "1.0.0",
-  "description": "Smart workflow automations",
+  "description": "Agentic automation builder — describe what you want in plain English and the agent builds it.",
   "author": "Mission Control Team",
   "icon": "Zap",
   "category": "productivity",
   "core": true,
-  "defaultDisabled": false,
-
+  "credentials": [],
   "views": [
     {
       "id": "automations",
@@ -17,14 +16,10 @@
       "entrypoint": "./views/AutomationsPanel.tsx"
     }
   ],
-
-  "credentials": [],
-
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-
   "permissions": {
     "ipc": [],
     "filesystem": [],
