@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Puzzle,
   CheckCircle,
@@ -32,6 +33,12 @@ import {
   XCircle,
   Loader2,
   Filter,
+  Star,
+  Activity,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../store/store';
@@ -68,6 +75,7 @@ import { usePanelConfigStore } from '../store/panelConfig';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
+import ModuleDependencyGraph from './ModuleDependencyGraph';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -83,6 +91,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const FILTER_CATEGORIES = ['All', 'Productivity', 'Social', 'Analytics', 'Custom'] as const;
 type FilterCategory = (typeof FILTER_CATEGORIES)[number];
+
+// Hardcoded featured module IDs (can be replaced with a DB flag)
+const FEATURED_IDS = ['analytics', 'inbox', 'finance', 'voice', 'library'];
 
 // ─── Activity log helpers ────────────────────────────────────────────────────
 
@@ -111,7 +122,6 @@ function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: Date.now(),
   };
-  // Keep last 20 entries in storage, display last 5
   const updated = [next, ...log].slice(0, 20);
   localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
 }
@@ -133,12 +143,498 @@ function categoryColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.system;
 }
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type InstallPhase = 'idle' | 'installing' | 'installed' | 'error';
 
+export type ModuleHealthStatus = 'healthy' | 'warning' | 'error';
+
+interface ModuleHealthData {
+  moduleId: string;
+  status: ModuleHealthStatus;
+  lastActivityAt: number | null;
+  errorCount24h: number;
+}
+
+interface ReviewData {
+  id: number;
+  moduleId: string;
+  rating: number;
+  review: string | null;
+  reviewedBy: string;
+  createdAt: number;
+}
+
+interface ReviewsState {
+  reviews: ReviewData[];
+  averageRating: number | null;
+  reviewCount: number;
+}
+
 interface ModuleLibraryPanelProps {
   onInstall?: (module: CatalogModule) => void;
+}
+
+// ─── StarRating ───────────────────────────────────────────────────────────────
+
+function StarRating({ rating, max = 5, size = 12 }: { rating: number; max?: number; size?: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      {Array.from({ length: max }, (_, i) => (
+        <Star
+          key={i}
+          size={size}
+          className={i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border'}
+        />
+      ))}
+    </span>
+  );
+}
+
+function InteractiveStarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <span className="inline-flex items-center gap-1">
+      {Array.from({ length: 5 }, (_, i) => {
+        const v = i + 1;
+        const filled = v <= (hover || value);
+        return (
+          <button
+            key={i}
+            type="button"
+            onMouseEnter={() => setHover(v)}
+            onMouseLeave={() => setHover(0)}
+            onClick={() => onChange(v)}
+            aria-label={`Rate ${v} star${v > 1 ? 's' : ''}`}
+            className="focus:outline-none"
+          >
+            <Star
+              size={20}
+              className={filled ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border hover:text-amber-300 transition-colors'}
+            />
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
+// ─── Health dot ───────────────────────────────────────────────────────────────
+
+function HealthDot({ status }: { status: ModuleHealthStatus }) {
+  const cls =
+    status === 'healthy' ? 'bg-success' :
+    status === 'warning' ? 'bg-amber-400' :
+    'bg-error';
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cls}`}
+      title={`Health: ${status}`}
+    />
+  );
+}
+
+// ─── ReviewModal ──────────────────────────────────────────────────────────────
+
+function ReviewModal({
+  module,
+  existingReviews,
+  onClose,
+  onSubmit,
+}: {
+  module: CatalogModule;
+  existingReviews: ReviewsState | null;
+  onClose: () => void;
+  onSubmit: (rating: number, review: string) => Promise<void>;
+}) {
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (rating === 0) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(rating, reviewText);
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-mission-control-border bg-mission-control-bg p-6 shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="font-semibold text-base">Write a Review</h3>
+          <button type="button" onClick={onClose} className="icon-btn">
+            <X size={16} />
+          </button>
+        </div>
+
+        <p className="text-sm text-mission-control-text-dim mb-4">
+          Reviewing: <span className="text-mission-control-text font-medium">{module.name}</span>
+        </p>
+
+        {/* Existing reviews summary */}
+        {existingReviews && existingReviews.reviewCount > 0 && (
+          <div className="mb-4 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <StarRating rating={existingReviews.averageRating ?? 0} size={14} />
+              <span className="font-medium">{existingReviews.averageRating?.toFixed(1)}</span>
+              <span className="text-mission-control-text-dim">
+                ({existingReviews.reviewCount} review{existingReviews.reviewCount !== 1 ? 's' : ''})
+              </span>
+            </div>
+            <div className="space-y-1.5 max-h-28 overflow-y-auto">
+              {existingReviews.reviews.slice(0, 3).map(r => (
+                <div key={r.id} className="text-xs text-mission-control-text-dim border-t border-mission-control-border pt-1.5">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <StarRating rating={r.rating} size={10} />
+                    <span className="opacity-60">{formatRelativeTime(r.createdAt)}</span>
+                  </div>
+                  {r.review && <p className="line-clamp-2">{r.review}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
+              Your rating <span className="text-error">*</span>
+            </label>
+            <InteractiveStarRating value={rating} onChange={setRating} />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
+              Review (optional)
+            </label>
+            <textarea
+              value={reviewText}
+              onChange={e => setReviewText(e.target.value)}
+              rows={3}
+              placeholder="Share your experience with this module…"
+              className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+            />
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={rating === 0 || submitting}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+            >
+              {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+              Submit Review
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── ConfigurePanel ───────────────────────────────────────────────────────────
+
+function ConfigurePanel({
+  module,
+  onClose,
+  onSave,
+}: {
+  module: CatalogModule;
+  onClose: () => void;
+  onSave: (config: Record<string, unknown>) => Promise<void>;
+}) {
+  const [config, setConfig] = useState<Record<string, unknown>>(
+    Object.keys(module.configuration ?? {}).length > 0
+      ? { ...module.configuration }
+      : { enabled: true, debugMode: false, maxRetries: 3 }
+  );
+  const [saving, setSaving] = useState(false);
+
+  const defaults = useRef<Record<string, unknown>>({ ...config });
+
+  function setValue(key: string, value: unknown) {
+    setConfig(prev => ({ ...prev, [key]: value }));
+  }
+
+  function resetToDefaults() {
+    setConfig({ ...defaults.current });
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(config);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderField(key: string, value: unknown) {
+    if (typeof value === 'boolean') {
+      return (
+        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+          <label className="text-sm font-medium">{key}</label>
+          <button
+            type="button"
+            onClick={() => setValue(key, !value)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+              value ? 'bg-mission-control-accent' : 'bg-mission-control-border'
+            }`}
+            role="switch"
+            aria-checked={value}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                value ? 'translate-x-4' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      );
+    }
+    if (typeof value === 'number') {
+      return (
+        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+          <label className="text-sm font-medium">{key}</label>
+          <input
+            type="number"
+            value={String(value)}
+            onChange={e => setValue(key, Number(e.target.value))}
+            className="w-24 px-2 py-1 text-sm text-right bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+          />
+        </div>
+      );
+    }
+    if (Array.isArray(value)) {
+      return (
+        <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
+          <label className="text-sm font-medium block mb-1">{key}</label>
+          <input
+            type="text"
+            value={(value as unknown[]).join(', ')}
+            onChange={e => setValue(key, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+            placeholder="comma-separated values"
+            className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+          />
+        </div>
+      );
+    }
+    // string / fallback
+    return (
+      <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
+        <label className="text-sm font-medium block mb-1">{key}</label>
+        <input
+          type="text"
+          value={String(value ?? '')}
+          onChange={e => setValue(key, e.target.value)}
+          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end p-0 sm:p-4 bg-black/50" onClick={onClose}>
+      <div
+        className="w-full sm:w-96 max-h-screen sm:max-h-[80vh] rounded-t-xl sm:rounded-xl border border-mission-control-border bg-mission-control-bg shadow-xl flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Settings size={16} className="text-mission-control-text-dim" />
+            <h3 className="font-semibold text-sm">Configure {module.name}</h3>
+          </div>
+          <button type="button" onClick={onClose} className="icon-btn">
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-5 py-3">
+            {Object.keys(config).length === 0 ? (
+              <p className="text-sm text-mission-control-text-dim py-4 text-center">
+                No configurable options for this module.
+              </p>
+            ) : (
+              <div className="divide-y divide-mission-control-border">
+                {Object.entries(config).map(([k, v]) => renderField(k, v))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border flex-shrink-0">
+            <button
+              type="button"
+              onClick={resetToDefaults}
+              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            >
+              Reset to defaults
+            </button>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+              Save Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── FeaturedCarousel ─────────────────────────────────────────────────────────
+
+function FeaturedCarousel({
+  modules,
+  onInstall,
+  reviewsMap,
+}: {
+  modules: CatalogModule[];
+  onInstall: (m: CatalogModule) => void;
+  reviewsMap: Map<string, ReviewsState>;
+}) {
+  const featured = modules.filter(m => FEATURED_IDS.includes(m.id));
+  const [offset, setOffset] = useState(0);
+  const CARD_W = 220;
+  const VISIBLE = Math.min(featured.length, 3);
+  const maxOffset = Math.max(0, featured.length - VISIBLE);
+  const now = Date.now();
+
+  if (featured.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-mission-control-text-dim">
+          Featured Modules
+        </h3>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            disabled={offset === 0}
+            onClick={() => setOffset(o => Math.max(0, o - 1))}
+            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            aria-label="Previous featured modules"
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <button
+            type="button"
+            disabled={offset >= maxOffset}
+            onClick={() => setOffset(o => Math.min(maxOffset, o + 1))}
+            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            aria-label="Next featured modules"
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ overflow: 'hidden' }}>
+        <div
+          className="flex gap-3 transition-transform duration-300"
+          style={{ transform: `translateX(-${offset * (CARD_W + 12)}px)` }}
+        >
+          {featured.map(mod => {
+            const Icon = MODULE_ICONS[mod.id] ?? Package;
+            const reviewData = reviewsMap.get(mod.id);
+            const isNew = now - mod.createdAt < ONE_WEEK_MS;
+
+            return (
+              <div
+                key={mod.id}
+                style={{ minWidth: CARD_W, maxWidth: CARD_W }}
+                className="rounded-xl border-2 border-mission-control-border p-4 flex flex-col gap-2 bg-mission-control-surface flex-shrink-0 hover:border-mission-control-accent/40 transition-colors"
+              >
+                {/* Icon + badges */}
+                <div className="flex items-start justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
+                    <Icon size={18} />
+                  </div>
+                  {isNew && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/30 font-medium">
+                      New
+                    </span>
+                  )}
+                </div>
+
+                {/* Name + description */}
+                <div>
+                  <p className="font-semibold text-sm leading-tight mb-0.5">{mod.name}</p>
+                  <p className="text-xs text-mission-control-text-dim line-clamp-2">{mod.description || '—'}</p>
+                </div>
+
+                {/* Rating */}
+                {reviewData && reviewData.reviewCount > 0 ? (
+                  <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+                    <StarRating rating={reviewData.averageRating ?? 0} size={11} />
+                    <span>{reviewData.averageRating?.toFixed(1)}</span>
+                    <span>({reviewData.reviewCount})</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-xs text-mission-control-text-dim">
+                    <Star size={11} className="text-mission-control-border" />
+                    <span>No reviews yet</span>
+                  </div>
+                )}
+
+                {/* CTA */}
+                {mod.installed ? (
+                  <div className="flex items-center gap-1 text-xs text-success mt-auto">
+                    <CheckCircle2 size={12} />
+                    Installed
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onInstall(mod)}
+                    className="mt-auto w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                  >
+                    <Download size={11} />
+                    Install
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -160,11 +656,52 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
   const [installErrors, setInstallErrors] = useState<Record<string, string>>({});
   const [activityLog, setActivityLog]   = useState<ModuleActivityEntry[]>([]);
 
+  // Reviews
+  const [reviewsMap, setReviewsMap]     = useState<Map<string, ReviewsState>>(new Map());
+  const [reviewTarget, setReviewTarget] = useState<CatalogModule | null>(null);
+
+  // Health
+  const [healthMap, setHealthMap]       = useState<Map<string, ModuleHealthData>>(new Map());
+  const [healthSummary, setHealthSummary] = useState<{ healthy: number; warning: number; error: number; total: number } | null>(null);
+
+  // Configure
+  const [configTarget, setConfigTarget] = useState<CatalogModule | null>(null);
+
+  // Dependency graph
+  const [showDepGraph, setShowDepGraph] = useState(false);
+
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
 
   const refreshActivity = useCallback(() => {
     setActivityLog(readActivityLog().slice(0, 5));
   }, []);
+
+  const loadReviews = useCallback(async (moduleIds: string[]) => {
+    const results = await Promise.allSettled(
+      moduleIds.map(id => catalogApi.getModuleReviews(id).then(data => ({ id, data })))
+    );
+    setReviewsMap(prev => {
+      const next = new Map(prev);
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          next.set(r.value.id, r.value.data as ReviewsState);
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const loadHealth = useCallback(async () => {
+    try {
+      const data = await catalogApi.getModulesHealth() as { health: ModuleHealthData[]; summary: typeof healthSummary };
+      const map = new Map<string, ModuleHealthData>();
+      for (const h of data.health) map.set(h.moduleId, h);
+      setHealthMap(map);
+      setHealthSummary(data.summary);
+    } catch {
+      // Non-critical — health is best-effort
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -173,6 +710,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
     try {
       const data = await catalogApi.listModules();
       setModules(data);
+      // Load reviews for installed modules in background
+      const installed = data.filter((m: CatalogModule) => m.installed).map((m: CatalogModule) => m.id);
+      if (installed.length > 0) loadReviews(installed);
+      loadHealth();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load module catalog');
     } finally {
@@ -228,9 +769,27 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
   // ─── Settings navigation ────────────────────────────────────────────────────
 
   function navigateToModuleSettings(moduleId: string) {
-    // Store the target module so SettingsPanel can scroll/focus to it
     sessionStorage.setItem('settings-focus-module', moduleId);
     window.dispatchEvent(new CustomEvent('tour-navigate', { detail: { view: 'settings' } }));
+  }
+
+  // ─── Review submit ───────────────────────────────────────────────────────────
+
+  async function handleReviewSubmit(rating: number, review: string) {
+    if (!reviewTarget) return;
+    await catalogApi.submitModuleReview(reviewTarget.id, { rating, review });
+    showToast('success', 'Review submitted', `Your review for ${reviewTarget.name} has been saved.`);
+    await loadReviews([reviewTarget.id]);
+  }
+
+  // ─── Configure save ──────────────────────────────────────────────────────────
+
+  async function handleConfigSave(config: Record<string, unknown>) {
+    if (!configTarget) return;
+    await catalogApi.updateModuleConfiguration(configTarget.id, config);
+    showToast('success', 'Configuration saved', `${configTarget.name} configuration updated.`);
+    // Refresh module data to get updated config
+    await load(false);
   }
 
   // ─── Loading / Error states ─────────────────────────────────────────────────
@@ -262,6 +821,13 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
   return (
     <div>
+      {/* Featured carousel */}
+      <FeaturedCarousel
+        modules={modules}
+        onInstall={handleInstallClick}
+        reviewsMap={reviewsMap}
+      />
+
       {/* Stats bar */}
       <div className="flex items-center gap-4 mb-4 text-sm flex-wrap">
         <span className="icon-text text-success">
@@ -276,7 +842,33 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
           <Shield size={14} className="flex-shrink-0" />
           {coreCount} core
         </span>
+
+        {/* Health summary */}
+        {healthSummary && healthSummary.total > 0 && (
+          <span className="icon-text text-mission-control-text-dim">
+            <Activity size={14} className="flex-shrink-0" />
+            <span className="text-success">{healthSummary.healthy}</span>
+            {' '}healthy
+            {healthSummary.warning > 0 && (
+              <span>, <span className="text-amber-400">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
+            )}
+            {healthSummary.error > 0 && (
+              <span>, <span className="text-error">{healthSummary.error}</span> error{healthSummary.error > 1 ? 's' : ''}</span>
+            )}
+          </span>
+        )}
+
         <div className="flex-1" />
+
+        <button
+          type="button"
+          onClick={() => setShowDepGraph(v => !v)}
+          className={`icon-btn border border-mission-control-border text-xs px-2 gap-1 ${showDepGraph ? 'bg-mission-control-surface' : ''}`}
+          title="Toggle dependency graph"
+        >
+          <Package size={13} />
+          <span className="hidden sm:inline">Dependencies</span>
+        </button>
         <button
           type="button"
           onClick={() => load(false)}
@@ -288,6 +880,13 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {/* Dependency graph (collapsible) */}
+      {showDepGraph && (
+        <div className="mb-5">
+          <ModuleDependencyGraph modules={modules.filter(m => m.installed)} />
+        </div>
+      )}
 
       {/* Search + installed/available toggle */}
       <div className="flex items-center gap-2 mb-3">
@@ -352,10 +951,10 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             const catCls      = categoryColor(module.category);
             const phase       = installState[module.id] ?? 'idle';
             const installErr  = installErrors[module.id];
+            const reviewData  = reviewsMap.get(module.id);
+            const health      = healthMap.get(module.id);
+            const isNew       = Date.now() - module.createdAt < ONE_WEEK_MS;
 
-            // Module-level dependencies from manifest (modules field)
-            // CatalogModule doesn't expose dependencies.modules directly,
-            // but requiredAgents and requiredNpm serve this purpose.
             const deps = [
               ...module.requiredAgents,
               ...module.requiredNpm,
@@ -374,8 +973,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
               >
                 {/* Header */}
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
-                    {(() => { const Icon = MODULE_ICONS[module.id] ?? Package; return <Icon size={20} />; })()}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
+                      {(() => { const Icon = MODULE_ICONS[module.id] ?? Package; return <Icon size={20} />; })()}
+                    </div>
+                    {/* Health dot */}
+                    {health && (
+                      <span className="absolute -bottom-0.5 -right-0.5">
+                        <HealthDot status={health.status} />
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
@@ -386,6 +993,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                           Core
                         </span>
                       )}
+                      {/* New badge */}
+                      {isNew && !module.core && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-mission-control-accent border border-mission-control-accent/30 bg-mission-control-accent/10">
+                          New
+                        </span>
+                      )}
                       {module.installed && !module.core && (
                         <CheckCircle size={12} className="text-success flex-shrink-0" />
                       )}
@@ -393,20 +1006,44 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     <p className="text-xs text-mission-control-text-dim line-clamp-2">
                       {module.description || '—'}
                     </p>
+                    {/* Star rating */}
+                    {reviewData && reviewData.reviewCount > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <StarRating rating={reviewData.averageRating ?? 0} size={11} />
+                        <span className="text-[11px] text-mission-control-text-dim">
+                          {reviewData.averageRating?.toFixed(1)} ({reviewData.reviewCount})
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Settings gear for installed non-core modules */}
-                  {module.installed && !module.core && (
-                    <button
-                      type="button"
-                      title={`Open settings for ${module.name}`}
-                      aria-label={`Open settings for ${module.name}`}
-                      onClick={() => navigateToModuleSettings(module.id)}
-                      className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
-                    >
-                      <Settings size={14} />
-                    </button>
-                  )}
+                  {/* Action buttons top-right */}
+                  <div className="flex flex-col gap-1">
+                    {/* Configure gear for installed non-core modules */}
+                    {module.installed && !module.core && (
+                      <button
+                        type="button"
+                        title={`Configure ${module.name}`}
+                        aria-label={`Configure ${module.name}`}
+                        onClick={() => setConfigTarget(module)}
+                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                      >
+                        <Settings size={14} />
+                      </button>
+                    )}
+                    {/* Settings nav for installed non-core modules */}
+                    {module.installed && !module.core && (
+                      <button
+                        type="button"
+                        title={`Open settings for ${module.name}`}
+                        aria-label={`Open settings for ${module.name}`}
+                        onClick={() => navigateToModuleSettings(module.id)}
+                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                      >
+                        <Activity size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Category badge + agent badge */}
@@ -480,13 +1117,11 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                 {/* Action area */}
                 <div className="pt-2 border-t border-mission-control-border">
                   {module.core ? (
-                    /* Core module — always active, no toggle */
                     <div className="flex items-center gap-1.5 text-xs text-review">
                       <Shield size={12} className="flex-shrink-0" />
                       <span>Core module — always active</span>
                     </div>
                   ) : module.installed ? (
-                    /* Installed non-core — show state + uninstall */
                     <div className="flex items-center gap-2">
                       {phase === 'installing' ? (
                         <div className="flex items-center gap-1.5 text-xs text-info flex-1">
@@ -499,6 +1134,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                           <span>Installed{module.enabled ? ' & enabled' : ' (disabled)'}</span>
                         </div>
                       )}
+                      {/* Write a review */}
+                      <button
+                        type="button"
+                        onClick={() => setReviewTarget(module)}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10 transition-colors"
+                        title="Write a review"
+                      >
+                        <Star size={10} />
+                        Review
+                      </button>
                       <button
                         type="button"
                         disabled={uninstalling === module.id}
@@ -530,19 +1175,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                       </button>
                     </div>
                   ) : phase === 'installing' ? (
-                    /* In-flight install indicator on the card */
                     <div className="flex items-center gap-1.5 text-xs text-info">
                       <Loader2 size={12} className="animate-spin flex-shrink-0" />
                       <span>Installing…</span>
                     </div>
                   ) : phase === 'error' ? (
-                    /* Error state */
                     <div className="flex items-center gap-1.5 text-xs text-error">
                       <XCircle size={12} className="flex-shrink-0" />
                       <span className="line-clamp-1">{installErr ?? 'Installation failed'}</span>
                     </div>
                   ) : (
-                    /* Default: install button */
                     <button
                       type="button"
                       onClick={() => handleInstallClick(module)}
@@ -564,7 +1206,6 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
         <ModuleInstallModal
           module={installTarget}
           onClose={() => {
-            // If modal closed without completion, revert to idle
             setInstallState(prev => {
               if (prev[installTarget.id] === 'installing') {
                 return { ...prev, [installTarget.id]: 'idle' };
@@ -600,6 +1241,25 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
         cancelLabel={confirmConfig.cancelLabel}
         type={confirmConfig.type}
       />
+
+      {/* Review modal */}
+      {reviewTarget && (
+        <ReviewModal
+          module={reviewTarget}
+          existingReviews={reviewsMap.get(reviewTarget.id) ?? null}
+          onClose={() => setReviewTarget(null)}
+          onSubmit={handleReviewSubmit}
+        />
+      )}
+
+      {/* Configure panel */}
+      {configTarget && (
+        <ConfigurePanel
+          module={configTarget}
+          onClose={() => setConfigTarget(null)}
+          onSave={handleConfigSave}
+        />
+      )}
 
       {/* Recent activity log */}
       {activityLog.length > 0 && (

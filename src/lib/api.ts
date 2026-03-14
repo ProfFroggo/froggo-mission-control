@@ -306,6 +306,12 @@ export const catalogApi = {
     apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { enabled } }),
   uninstallModule: (id: string) =>
     apiCall(`/catalog/modules/${id}`, { method: 'DELETE' }),
+  updateModuleConfiguration: (id: string, configuration: Record<string, unknown>) =>
+    apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { configuration } }),
+  getModuleReviews: (id: string) => apiCall(`/catalog/modules/${id}/reviews`),
+  submitModuleReview: (id: string, data: { rating: number; review?: string; reviewedBy?: string }) =>
+    apiCall(`/catalog/modules/${id}/reviews`, { method: 'POST', body: data }),
+  getModulesHealth: () => apiCall('/modules/health'),
 };
 
 // ──────────────────────────────────────────────────
