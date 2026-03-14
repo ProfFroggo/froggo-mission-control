@@ -1357,8 +1357,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         onTouchEnd={isMobile ? handleMobileTouchEnd : undefined}
       >
         {columns.map((column, columnIdx) => {
-          if (isMobile && columnIdx !== mobileColumnIndex) return null;
-          const columnTasks = getColumnTasks(column.id);
+          if (isMobile && columnIdx !== mobileColumnIndex) return null;          const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];
           const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;
