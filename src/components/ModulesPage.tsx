@@ -14,7 +14,7 @@
  *   Unconfigured  — opacity-60, red dot (integration pending/failed, credentials required)
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Puzzle,
   Settings,
@@ -45,6 +45,13 @@ import {
   Boxes,
   Library,
   FolderKanban,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Trash2,
+  Package,
+  Key,
+  Bot,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -54,6 +61,48 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
+
+// ─── Activity log helpers ──────────────────────────────────────────────────────
+
+const ACTIVITY_KEY = 'module_activity_log';
+
+interface ModuleActivityEntry {
+  id: string;
+  moduleId: string;
+  moduleName: string;
+  action: 'install' | 'uninstall' | 'enable' | 'disable';
+  timestamp: number;
+}
+
+function readActivityLog(): ModuleActivityEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
+  const log = readActivityLog();
+  const next: ModuleActivityEntry = {
+    ...entry,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    timestamp: Date.now(),
+  };
+  const updated = [next, ...log].slice(0, 20);
+  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
+}
+
+function formatRelativeTime(ts: number): string {
+  const diffMs = Date.now() - ts;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
 
 // ─── Icon mapping ─────────────────────────────────────────────────────────────
 
