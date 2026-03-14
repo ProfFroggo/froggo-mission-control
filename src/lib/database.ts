@@ -593,6 +593,16 @@ function initSchema(db: Database.Database) {
     -- ══════════════════════════════════════════
     -- KNOWLEDGE BASE
     -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS knowledge_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      articleId TEXT NOT NULL,
+      content TEXT NOT NULL,
+      editedBy TEXT DEFAULT 'human',
+      editedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      versionNote TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_knowledge_versions_articleId ON knowledge_versions(articleId, editedAt DESC);
+
     CREATE TABLE IF NOT EXISTS knowledge_base (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,

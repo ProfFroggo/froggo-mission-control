@@ -28,8 +28,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const db = getDb();
   const body = await req.json().catch(() => ({}));
-  const article = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(params.id);
+  const article = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(params.id) as Record<string, unknown> | undefined;
   if (!article) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+
+  // Save current content to version history before updating (only if content is changing)
+  if (body.content !== undefined && body.content !== article.content) {
+    db.prepare(
+      `INSERT INTO knowledge_versions (articleId, content, editedBy, editedAt, versionNote) VALUES (?, ?, ?, ?, ?)`
+    ).run(params.id, article.content as string, body.editedBy ?? 'human', Date.now(), body.versionNote ?? null);
+  }
 
   const sets: string[] = ['updatedAt = ?', 'version = version + 1'];
   const vals: unknown[] = [Date.now()];
