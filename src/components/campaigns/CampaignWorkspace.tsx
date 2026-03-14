@@ -8,7 +8,7 @@ import {
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
   CalendarDays, CheckCircle2, CircleDot,
 } from 'lucide-react';
-import { Megaphone, Calendar, DollarSign } from 'lucide-react';
+import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign, CampaignMember, CampaignAsset } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
@@ -21,12 +21,13 @@ import CampaignDispatchModal from './CampaignDispatchModal';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'assets' | 'channels' | 'performance';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
   { id: 'chat',        label: 'Chat',        icon: MessageSquare },
   { id: 'tasks',       label: 'Tasks',       icon: LayoutGrid },
+  { id: 'timeline',    label: 'Timeline',    icon: Calendar },
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
   { id: 'performance', label: 'Performance', icon: BarChart2 },
@@ -937,8 +938,8 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
 
 // ── Campaign Settings Popover ──────────────────────────────────────────────────
 function CampaignSettings({
-  campaign, onUpdated, onArchived,
-}: { campaign: Campaign; onUpdated: () => void; onArchived: () => void }) {
+  campaign, onUpdated, onArchived, onDuplicate,
+}: { campaign: Campaign; onUpdated: () => void; onArchived: () => void; onDuplicate: () => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(campaign.name);
   const [saving, setSaving] = useState(false);
@@ -964,11 +965,15 @@ function CampaignSettings({
 
   if (!editing) {
     return (
-      <div className="absolute right-0 top-full mt-1 w-48 bg-mission-control-bg border border-mission-control-border rounded-xl shadow-xl z-20 py-1 overflow-hidden">
+      <div className="absolute right-0 top-full mt-1 w-52 bg-mission-control-bg border border-mission-control-border rounded-xl shadow-xl z-20 py-1 overflow-hidden">
         <button onClick={() => setEditing(true)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text-primary hover:bg-mission-control-surface transition-colors">
           <Edit3 size={14} /> Rename
         </button>
-        <button onClick={handleArchive} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-error-subtle transition-colors">
+        <button onClick={onDuplicate} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text-primary hover:bg-mission-control-surface transition-colors">
+          <Copy size={14} /> Duplicate
+        </button>
+        <div className="my-1 border-t border-mission-control-border" />
+        <button onClick={handleArchive} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-mission-control-surface transition-colors">
           <Trash2 size={14} /> Archive
         </button>
       </div>
@@ -1008,10 +1013,12 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [showSettings, setShowSettings] = useState(false);
   const [showDispatch, setShowDispatch] = useState(false);
+  const [showLinkAutomation, setShowLinkAutomation] = useState(false);
   const [members, setMembers] = useState<CampaignMember[]>(initialCampaign.members ?? []);
   const [agents, setAgents] = useState<any[]>([]);
   const [showMemberPanel, setShowMemberPanel] = useState(false);
   const [addingAgent, setAddingAgent] = useState<string | null>(null);
+  const [generatingTasks, setGeneratingTasks] = useState(false);
   const { updateRoomAgents } = useChatRoomStore();
   const campaignRoomId = `campaign-${campaign.id}`;
 
@@ -1051,6 +1058,33 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
     } catch { showToast('Failed to remove agent', 'error'); }
   };
 
+  const handleGenerateTasks = async () => {
+    setGeneratingTasks(true);
+    try {
+      const result = await campaignsApi.generateTasks(campaign.id) as { success: boolean; tasksCreated: number };
+      if (result.success) {
+        showToast(`${result.tasksCreated} tasks generated`, 'success');
+        setActiveTab('tasks');
+        reload();
+      } else {
+        showToast('Task generation failed', 'error');
+      }
+    } catch { showToast('Task generation failed', 'error'); }
+    finally { setGeneratingTasks(false); }
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const result = await campaignsApi.duplicate(campaign.id) as { success: boolean; id: string; campaign: Campaign };
+      showToast(`Duplicated as "Copy of ${campaign.name}"`, 'success');
+      onUpdated();
+      // Navigate to new campaign
+      if (result.success && result.campaign) {
+        setCampaign(result.campaign);
+      }
+    } catch { showToast('Duplication failed', 'error'); }
+  };
+
   const memberAgentIds = new Set(members.map(m => m.agentId));
   const availableAgents = agents.filter(a => !memberAgentIds.has(a.id) && a.status !== 'archived');
   const sc = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft;
@@ -1084,6 +1118,22 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
               <Users size={12} /> {members.length} <ChevronDown size={10} />
             </button>
             <div className="w-px h-4 bg-mission-control-border" />
+            <button
+              onClick={handleGenerateTasks}
+              disabled={generatingTasks}
+              title="Generate standard tasks from campaign type"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs disabled:opacity-40"
+            >
+              {generatingTasks ? <Spinner size={12} /> : <ListTodo size={13} />}
+              Tasks
+            </button>
+            <button
+              onClick={() => setShowLinkAutomation(true)}
+              title="Link an automation to this campaign"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs"
+            >
+              <Zap size={13} /> Automation
+            </button>
             <button onClick={() => setShowDispatch(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium">
               <Bot size={13} /> Dispatch Agent
@@ -1100,6 +1150,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
                     campaign={campaign}
                     onUpdated={() => { setShowSettings(false); reload(); onUpdated(); }}
                     onArchived={() => { setShowSettings(false); onBack(); }}
+                    onDuplicate={() => { setShowSettings(false); handleDuplicate(); }}
                   />
                 </>
               )}
@@ -1152,6 +1203,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
+        {activeTab === 'timeline'    && <TimelineTab campaign={campaign} />}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'performance' && <PerformanceTab campaign={campaign} onUpdate={reload} />}
@@ -1163,6 +1215,13 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
           members={members}
           onClose={() => setShowDispatch(false)}
           onDispatched={() => setShowDispatch(false)}
+        />
+      )}
+
+      {showLinkAutomation && (
+        <LinkAutomationModal
+          campaignId={campaign.id}
+          onClose={() => setShowLinkAutomation(false)}
         />
       )}
     </div>

@@ -8,6 +8,8 @@ const FREQUENCY_MS: Record<string, number> = {
   weekly: 604_800_000,
 };
 
+const AUTOMATION_CRON_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
 export async function runScheduledAutomations(): Promise<void> {
   const db = getDb();
   const now = Date.now();
@@ -31,4 +33,23 @@ export async function runScheduledAutomations(): Promise<void> {
       console.error(`[AutomationCron] Failed to run automation ${automation.id}:`, err);
     }
   }
+}
+
+// ── Cron timer ────────────────────────────────────────────────────────────────
+type G = typeof globalThis & { _automationCron?: ReturnType<typeof setInterval> | true };
+
+export function startAutomationCron(): void {
+  const g = globalThis as G;
+  if (g._automationCron) return;
+  // Set sentinel immediately to prevent concurrent callers from racing in
+  g._automationCron = true;
+
+  const interval = setInterval(() => {
+    runScheduledAutomations().catch(err => {
+      console.error('[AutomationCron] Unhandled error in runScheduledAutomations:', err);
+    });
+  }, AUTOMATION_CRON_INTERVAL_MS);
+  interval.unref?.();
+  g._automationCron = interval;
+  console.log('[AutomationCron] Started — runs every 5 minutes');
 }
