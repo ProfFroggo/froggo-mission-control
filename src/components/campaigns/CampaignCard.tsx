@@ -1,7 +1,7 @@
 'use client';
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { ChevronRight, Clock, Users, Zap } from 'lucide-react';
+import { ChevronRight, Clock, Users, Zap, CalendarDays } from 'lucide-react';
 import { formatTimeAgo } from '../../utils/formatting';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
@@ -53,16 +53,17 @@ function formatBudget(val: number): string {
 interface CampaignCardProps {
   campaign: Campaign;
   onClick: () => void;
+  viewMode?: 'grid' | 'list';
 }
 
-export default function CampaignCard({ campaign, onClick }: CampaignCardProps) {
+export default function CampaignCard({ campaign, onClick, viewMode = 'grid' }: CampaignCardProps) {
   const sc = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft;
   const tc = TYPE_COLORS[campaign.type] ?? TYPE_COLORS.general;
   const typeLabel = TYPE_LABELS[campaign.type] ?? campaign.type;
 
-  const totalTasks = (campaign as any).totalTasks ?? 0;
-  const doneTasks = (campaign as any).doneTasks ?? 0;
-  const inProgressTasks = (campaign as any).inProgressTasks ?? 0;
+  const totalTasks = campaign.totalTasks ?? 0;
+  const doneTasks = campaign.doneTasks ?? 0;
+  const inProgressTasks = campaign.inProgressTasks ?? 0;
   const progress = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
   const members = campaign.members ?? [];
@@ -71,8 +72,108 @@ export default function CampaignCard({ campaign, onClick }: CampaignCardProps) {
   const budgetSpent = campaign.budgetSpent ?? 0;
   const spendPct = budget && budget > 0 ? Math.min(100, Math.round((budgetSpent / budget) * 100)) : 0;
 
-  const lastActivity = Number((campaign as any).lastTaskActivity) || campaign.updatedAt;
+  const lastActivity = campaign.lastTaskActivity || campaign.updatedAt;
 
+  const now = Date.now();
+  const start = campaign.startDate;
+  const end = campaign.endDate;
+  const timelineProgress = start && end && end > start
+    ? Math.min(100, Math.max(0, Math.round(((now - start) / (end - start)) * 100)))
+    : null;
+  const daysRemaining = end ? Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24))) : null;
+  const isOverdue = end != null && now > end && campaign.status !== 'completed' && campaign.status !== 'archived';
+
+  // ── List view layout ────────────────────────────────────────────────────────
+  if (viewMode === 'list') {
+    return (
+      <button
+        onClick={onClick}
+        className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 hover:border-mission-control-accent/50 hover:bg-mission-control-surface/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-mission-control-accent/30"
+      >
+        <div className="flex items-center gap-4">
+          {/* Color dot */}
+          <div
+            className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: `${campaign.color}20`, border: `1px solid ${campaign.color}40` }}
+          >
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: campaign.color }} />
+          </div>
+
+          {/* Name + description */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm text-mission-control-text-primary truncate group-hover:text-mission-control-accent transition-colors">
+                {campaign.name}
+              </span>
+              <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${tc}`}>
+                {typeLabel}
+              </span>
+              <span className={`flex-shrink-0 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
+                {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />}
+                {sc.label}
+              </span>
+            </div>
+            {campaign.description && (
+              <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{campaign.description}</p>
+            )}
+          </div>
+
+          {/* Task progress pill */}
+          <div className="flex-shrink-0 w-28 hidden sm:block">
+            {totalTasks > 0 ? (
+              <div>
+                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-0.5">
+                  <span>{doneTasks}/{totalTasks}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%`, backgroundColor: campaign.color }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <span className="text-xs text-mission-control-text-dim">No tasks</span>
+            )}
+          </div>
+
+          {/* Members */}
+          <div className="flex-shrink-0 flex items-center -space-x-1.5">
+            {members.slice(0, 3).map((m: any) => (
+              <AgentAvatar key={m.agentId} agentId={m.agentId} fallbackEmoji={m.agentEmoji} size="xs" className="ring-1 ring-mission-control-bg0" />
+            ))}
+            {members.length > 3 && (
+              <div className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
+                +{members.length - 3}
+              </div>
+            )}
+            {members.length === 0 && (
+              <span className="text-xs text-mission-control-text-dim flex items-center gap-1"><Users size={11} /> 0</span>
+            )}
+          </div>
+
+          {/* Date / time info */}
+          <div className="flex-shrink-0 flex items-center gap-3 text-xs text-mission-control-text-dim">
+            {daysRemaining !== null && campaign.status !== 'completed' && campaign.status !== 'archived' && (
+              <span className={`flex items-center gap-1 ${isOverdue ? 'text-error' : daysRemaining <= 7 ? 'text-warning' : ''}`}>
+                <CalendarDays size={11} />
+                {isOverdue ? 'Overdue' : daysRemaining === 0 ? 'Today' : `${daysRemaining}d`}
+              </span>
+            )}
+            {inProgressTasks > 0 && (
+              <span className="flex items-center gap-1 text-warning"><Zap size={11} /> {inProgressTasks}</span>
+            )}
+            <span className="flex items-center gap-1"><Clock size={11} /> {formatTimeAgo(lastActivity)}</span>
+          </div>
+
+          <ChevronRight size={14} className="flex-shrink-0 text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
+        </div>
+      </button>
+    );
+  }
+
+  // ── Grid view layout ────────────────────────────────────────────────────────
   return (
     <button
       onClick={onClick}
@@ -137,6 +238,40 @@ export default function CampaignCard({ campaign, onClick }: CampaignCardProps) {
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress}%`, backgroundColor: campaign.color }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Timeline progress — shown when campaign has start/end dates */}
+      {timelineProgress !== null && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+            <span className="flex items-center gap-1">
+              <CalendarDays size={10} />
+              {start ? new Date(start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+            </span>
+            <span className={isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : ''}>
+              {isOverdue
+                ? 'Overdue'
+                : daysRemaining === 0
+                  ? 'Ends today'
+                  : daysRemaining !== null
+                    ? `${daysRemaining}d left`
+                    : `${timelineProgress}%`}
+            </span>
+          </div>
+          <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${timelineProgress}%`,
+                backgroundColor: isOverdue
+                  ? 'var(--color-error)'
+                  : daysRemaining !== null && daysRemaining <= 7
+                    ? 'var(--color-warning)'
+                    : 'var(--color-info, #6366f1)',
+              }}
             />
           </div>
         </div>
