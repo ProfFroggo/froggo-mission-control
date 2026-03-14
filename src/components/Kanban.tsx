@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
-  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash,
+  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, ChevronLeft, Hash,
   ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock,
   Square, UserCheck,
 } from 'lucide-react';
@@ -24,6 +24,7 @@ import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -206,6 +207,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [showJumpToTask, setShowJumpToTask] = useState(false);
   const [inlineAddActive, setInlineAddActive] = useState(false);
   const [inlineAddTitle, setInlineAddTitle] = useState('');
+
+  // Mobile: breakpoint detection and single-column carousel state
+  const { isMobile } = useBreakpoint();
+  const [mobileColumnIndex, setMobileColumnIndex] = useState(0);
+  const mobileTouchStartX = useRef(0);
+  const mobileTouchStartY = useRef(0);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -847,6 +854,24 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     }
   }, [selectedIds, loadTasksFromDB]);
 
+  // Mobile: swipe-to-navigate columns
+  const handleMobileTouchStart = (e: React.TouchEvent) => {
+    mobileTouchStartX.current = e.changedTouches[0].clientX;
+    mobileTouchStartY.current = e.changedTouches[0].clientY;
+  };
+
+  const handleMobileTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - mobileTouchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - mobileTouchStartY.current;
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) {
+        setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1));
+      } else {
+        setMobileColumnIndex(prev => Math.max(prev - 1, 0));
+      }
+    }
+  };
+
   if (taskLoadError) {
     return (
       <ErrorDisplay
@@ -1285,9 +1310,54 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           />
         </div>
       )}
-      <div className={`flex-1 min-w-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
-        {columns.map((column) => {
-          const columnTasks = getColumnTasks(column.id);
+      {/* Mobile column navigator */}
+      {isMobile && !(!loading.tasks && filteredTasks.length === 0) && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
+          <button
+            onClick={() => setMobileColumnIndex(prev => Math.max(prev - 1, 0))}
+            disabled={mobileColumnIndex === 0}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Previous column"
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </button>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-sm font-medium text-mission-control-text">
+              {columns[mobileColumnIndex]?.title ?? ''}
+            </span>
+            <div className="flex items-center gap-1">
+              {columns.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setMobileColumnIndex(i)}
+                  className={`h-2 rounded-full transition-all ${
+                    i === mobileColumnIndex
+                      ? 'bg-mission-control-accent w-4'
+                      : 'bg-mission-control-border w-2'
+                  }`}
+                  aria-label={`Go to column ${columns[i].title}`}
+                />
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1))}
+            disabled={mobileColumnIndex === columns.length - 1}
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Next column"
+          >
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
+      <div
+        className={`flex-1 min-w-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}
+        onTouchStart={isMobile ? handleMobileTouchStart : undefined}
+        onTouchEnd={isMobile ? handleMobileTouchEnd : undefined}
+      >
+        {columns.map((column, columnIdx) => {
+          if (isMobile && columnIdx !== mobileColumnIndex) return null;          const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];
           const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;

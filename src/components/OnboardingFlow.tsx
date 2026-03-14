@@ -106,10 +106,14 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       {/* Animated gradient hero */}
       <div
         className="relative -mx-6 -mt-2 h-36 rounded-t-xl overflow-hidden flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 50%, #a855f7 100%)', backgroundSize: '200% 200%', animation: 'ob-gradient-shift 6s ease infinite' }}
+        style={{
+          background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 50%, #a855f7 100%)',
+          backgroundSize: '200% 200%',
+          animation: 'ob-gradient-shift 6s ease infinite',
+        }}
       >
         <div className="text-center z-10 px-4">
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="flex items-center justify-center mb-1">
             <Rocket size={22} className="text-white/90" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Mission Control</h1>
@@ -505,14 +509,14 @@ function StepReady({
       >
         <div className="text-center z-10 px-4">
           <Rocket size={28} className="text-white mx-auto mb-1" />
-          <p className="text-white font-semibold text-base">You're all set!</p>
+          <p className="text-white font-semibold text-base">{"You're all set!"}</p>
         </div>
         <div className="absolute inset-0 bg-black/10" />
       </div>
 
       <div className="space-y-1.5 px-1">
         <h2 className="text-xl font-semibold text-mission-control-text">Ready to launch</h2>
-        <p className="text-sm text-mission-control-text-dim">Here's what we set up for you:</p>
+        <p className="text-sm text-mission-control-text-dim">{"Here's what we set up for you:"}</p>
       </div>
 
       <div className="space-y-2 px-1">
@@ -550,8 +554,7 @@ function StepReady({
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const TOTAL_STEPS = 5;
 
-  // Restore step from localStorage
-  const getInitialStep = () => {
+  const getInitialStep = (): number => {
     try {
       const saved = localStorage.getItem(STEP_KEY);
       if (saved) {
@@ -564,18 +567,17 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     return 0;
   };
 
-  const [step, setStep] = useState(getInitialStep);
-  const [direction, setDirection] = useState<Direction>('forward');
+  const [step, setStep] = useState<number>(getInitialStep);
   const [animating, setAnimating] = useState(false);
   const [enterClass, setEnterClass] = useState('');
   const [exitClass, setExitClass] = useState('');
-  const [renderStep, setRenderStep] = useState(getInitialStep);
+  const [renderStep, setRenderStep] = useState<number>(getInitialStep);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Platform setup state
   const [platformData, setPlatformData] = useState<PlatformData>({ platformName: '', industry: '', teamSize: 'solo' });
 
-  // Agent selection state (Clara pre-selected)
+  // Agent selection (Clara pre-selected)
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set(['clara']));
   const [creatingAgents, setCreatingAgents] = useState(false);
   const [agentsCreated, setAgentsCreated] = useState(0);
@@ -601,10 +603,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     if (animating) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    setDirection(dir);
     setAnimating(true);
-
-    // Exit animation
     setExitClass(dir === 'forward' ? 'ob-slide-exit-left' : 'ob-slide-exit-right');
     setEnterClass('');
 
@@ -639,7 +638,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   }, []);
 
   const handlePlatformNext = useCallback(() => {
-    // Save platform name to settings API
     if (platformData.platformName.trim()) {
       fetch('/api/settings', {
         method: 'PATCH',
@@ -687,7 +685,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       });
       setTaskCreated(true);
     } catch {
-      // Non-blocking
       setTaskCreated(true);
     } finally {
       setCreatingTask(false);
@@ -760,11 +757,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           opacity: 0;
           transition: transform 220ms ease-out, opacity 220ms ease-out;
         }
-        .ob-slide-enter-right.ob-active,
-        .ob-slide-enter-left.ob-active {
-          transform: translateX(0);
-          opacity: 1;
-        }
       `}</style>
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -781,7 +773,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <StepDots total={TOTAL_STEPS} current={step} />
             <button
               onClick={handleSkipAll}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg hover:bg-mission-control-border"
+              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors p-1.5 rounded-lg hover:bg-mission-control-border"
               aria-label="Skip onboarding"
             >
               <X size={14} />
@@ -793,9 +785,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             className={`px-6 pb-6 pt-4 ${slideClass}`}
             key={renderStep}
           >
-            {renderStep === 0 && (
-              <StepWelcome onNext={advance} />
-            )}
+            {renderStep === 0 && <StepWelcome onNext={advance} />}
             {renderStep === 1 && (
               <StepPlatformSetup
                 data={platformData}
