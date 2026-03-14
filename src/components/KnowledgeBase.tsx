@@ -8,6 +8,7 @@ import {
 import EmptyState from './EmptyState';
 import ArticleRevisionHistory from './ArticleRevisionHistory';
 import KnowledgeGraphPanel from './KnowledgeGraphPanel';
+import BrandAssetsPanel from './BrandAssetsPanel';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -559,6 +560,7 @@ export default function KnowledgeBase() {
   useEffect(() => { setSearchCursor(-1); }, [debouncedSearch]);
 
   const load = useCallback(async () => {
+    if (category === 'brand-assets') return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -982,6 +984,24 @@ export default function KnowledgeBase() {
 
   // ── Main list view ────────────────────────────────────────────────────────
 
+  // When Brand Assets category is selected, render the dedicated panel
+  if (category === 'brand-assets') {
+    return (
+      <div className="flex h-full">
+        <CategorySidebar
+          categories={allCategories}
+          counts={categoryCounts}
+          selected={category}
+          total={articles.length}
+          onSelect={setCategory}
+        />
+        <div className="flex flex-col flex-1 min-w-0 h-full">
+          <BrandAssetsPanel />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full">
       {/* Category sidebar */}
@@ -1236,6 +1256,19 @@ function CategorySidebar({ categories, counts, selected, total, onSelect }: Cate
           )}
         </button>
       ))}
+      {/* Brand Assets section — separator */}
+      <div className="border-t border-mission-control-border my-1.5 pt-1.5">
+        <button
+          onClick={() => onSelect('brand-assets')}
+          className={`w-full text-left flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors ${
+            selected === 'brand-assets'
+              ? 'bg-blue-600/20 text-blue-400 font-medium'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+          }`}
+        >
+          <span className="truncate">Brand Assets</span>
+        </button>
+      </div>
     </nav>
   );
 }

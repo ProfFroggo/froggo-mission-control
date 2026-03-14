@@ -1066,6 +1066,30 @@ function initSchema(db: Database.Database) {
     }
   } catch { /* non-critical */ }
 
+  // Brand Assets table
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS brand_assets (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT NOT NULL DEFAULT 'general',
+        fileType TEXT NOT NULL DEFAULT 'image',
+        fileName TEXT,
+        filePath TEXT,
+        url TEXT,
+        tags TEXT NOT NULL DEFAULT '[]',
+        scope TEXT NOT NULL DEFAULT 'all',
+        createdBy TEXT DEFAULT 'human',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_category ON brand_assets(category);
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_scope ON brand_assets(scope);
+      CREATE INDEX IF NOT EXISTS idx_brand_assets_createdAt ON brand_assets(createdAt DESC);
+    `);
+  } catch { /* already exists */ }
+
   // Phase 79: WAL performance tuning
   try {
     db.pragma('wal_autocheckpoint = 400');
