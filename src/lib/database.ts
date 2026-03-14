@@ -730,6 +730,19 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
 
     -- ══════════════════════════════════════════
+    -- CHAT ROOM MESSAGE REACTIONS (v2)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      messageId TEXT NOT NULL,
+      userId TEXT NOT NULL DEFAULT 'user',
+      reaction TEXT NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      UNIQUE(messageId, userId, reaction)
+    );
+    CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
+
+    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaign_automations (
@@ -787,6 +800,12 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE library_files ADD COLUMN tags TEXT DEFAULT '[]'`,
     `ALTER TABLE library_files ADD COLUMN createdBy TEXT`,
     `ALTER TABLE library_files ADD COLUMN linkedTasks TEXT DEFAULT '[]'`,
+    // Chat rooms v2: thread reply support on room messages
+    `ALTER TABLE chat_room_messages ADD COLUMN parentId TEXT`,
+    // Chat rooms v2: pinned message per room
+    `ALTER TABLE chat_rooms ADD COLUMN pinnedMessageId TEXT`,
+    // Chat rooms v2: room description
+    `ALTER TABLE chat_rooms ADD COLUMN description TEXT`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
