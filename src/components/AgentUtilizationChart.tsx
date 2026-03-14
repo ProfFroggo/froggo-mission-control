@@ -185,6 +185,7 @@ export default function AgentUtilizationChart() {
 
       {/* Agent Details Table */}
       <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-mission-control-bg border-b border-mission-control-border">
             <tr>
@@ -233,6 +234,7 @@ export default function AgentUtilizationChart() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

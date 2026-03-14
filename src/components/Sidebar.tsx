@@ -157,8 +157,8 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     {/* Mobile hamburger button — only visible on small screens when sidebar is closed */}
     <button
       onClick={() => setMobileOpen(true)}
-      className={`fixed top-3 left-3 z-40 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all duration-200 sm:hidden ${
-        mobileOpen ? 'hidden' : 'flex'
+      className={`fixed top-3 left-3 z-40 p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all duration-200 md:hidden ${
+        mobileOpen ? 'hidden' : 'flex items-center justify-center'
       }`}
       aria-label="Open navigation"
     >
@@ -168,7 +168,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     {/* Mobile backdrop — closes sidebar when tapped outside */}
     {mobileOpen && (
       <div
-        className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm sm:hidden"
+        className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
         onClick={() => setMobileOpen(false)}
         aria-hidden="true"
       />
@@ -177,8 +177,8 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     <aside
       className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40
-        sm:relative sm:translate-x-0 sm:z-0
-        ${mobileOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
+        md:relative md:translate-x-0 md:z-0
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${expanded ? 'w-52' : 'w-16'}
       `}
       aria-label="Main navigation"
@@ -186,7 +186,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       {/* Mobile close button inside the sidebar */}
       <button
         onClick={() => setMobileOpen(false)}
-        className="absolute top-3 right-3 p-1.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all sm:hidden"
+        className="absolute top-3 right-3 p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all md:hidden"
         aria-label="Close navigation"
       >
         <X size={16} aria-hidden="true" />
