@@ -2,9 +2,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo, KeyboardEvent } from 'react';
 import {
   BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronLeft,
-  Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link,
+  Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link, AlignLeft, Eye,
+  Network, ChevronDown,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
+import ArticleRevisionHistory from './ArticleRevisionHistory';
+import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -142,6 +145,13 @@ Explain how to interact with this agent, what inputs it expects, and what output
 ];
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
+
+interface KBTemplate {
+  id: string;
+  label: string;
+  content: string;
+  category: string;
+}
 
 interface KBLink {
   title: string;
@@ -504,6 +514,17 @@ export default function KnowledgeBase() {
   const [qcSaving, setQcSaving] = useState(false);
   const [qcGenerating, setQcGenerating] = useState(false);
 
+  // Graph view
+  const [showGraph, setShowGraph] = useState(false);
+
+  // Template dropdown
+  const [apiTemplates, setApiTemplates] = useState<KBTemplate[]>([]);
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
+
+  // View counts from analytics
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
+
   // Debounce search input
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -543,6 +564,44 @@ export default function KnowledgeBase() {
       .then(d => { if (d.success) setVersions(d.versions); })
       .finally(() => setVersionsLoading(false));
   }, [versionsArticleId]);
+
+  // Fetch API templates on mount
+  useEffect(() => {
+    fetch('/api/knowledge/templates')
+      .then(r => r.json())
+      .then(d => { if (d.success) setApiTemplates(d.templates); })
+      .catch(() => {});
+  }, []);
+
+  // Fetch view counts when articles change
+  useEffect(() => {
+    if (articles.length === 0) return;
+    Promise.all(
+      articles.map(a =>
+        fetch(`/api/knowledge/${a.id}/analytics`)
+          .then(r => r.json())
+          .then(d => d.success ? { id: a.id, views: d.views as number } : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const counts: Record<string, number> = {};
+      for (const r of results) {
+        if (r) counts[r.id] = r.views;
+      }
+      setViewCounts(counts);
+    });
+  }, [articles]);
+
+  // Close template dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target as Node)) {
+        setShowTemplateDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // ── Derived categories (from loaded articles + statics) ───────────────────
   const allCategories = useMemo<string[]>(() => {
@@ -678,6 +737,37 @@ export default function KnowledgeBase() {
       if (data.success) setQcContent(data.content);
     } finally {
       setQcGenerating(false);
+    }
+  };
+
+  const logView = useCallback(async (articleId: string) => {
+    setViewCounts(prev => ({ ...prev, [articleId]: (prev[articleId] ?? 0) + 1 }));
+    try {
+      await fetch(`/api/knowledge/${articleId}/analytics`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'view' }),
+      });
+    } catch {
+      // non-critical
+    }
+  }, []);
+
+  const createFromTemplate = async (templateId: string) => {
+    setShowTemplateDropdown(false);
+    try {
+      const res = await fetch('/api/knowledge/from-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      if (data.success && data.article) {
+        load();
+        setEditing({ ...data.article, tags: (data.article.tags ?? []).join(', ') });
+      }
+    } catch {
+      // non-critical
     }
   };
 
@@ -831,16 +921,23 @@ export default function KnowledgeBase() {
           </div>
         </div>
 
-        {/* Version history drawer */}
         {versionsArticleId && (
-          <VersionDrawer
-            versions={versions}
-            loading={versionsLoading}
-            previewVersion={previewVersion}
+          <ArticleRevisionHistory
+            articleId={versionsArticleId}
             currentContent={viewing.content}
-            onPreview={setPreviewVersion}
-            onRestore={restoreVersion}
-            onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
+            onRestore={async (content) => {
+              await fetch(`/api/knowledge/${versionsArticleId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, versionNote: 'Restored from version history' }),
+              });
+              const res = await fetch(`/api/knowledge/${versionsArticleId}`);
+              const data = await res.json();
+              if (data.success) setViewing(data.article);
+              setVersionsArticleId(null);
+              load();
+            }}
+            onClose={() => setVersionsArticleId(null)}
           />
         )}
       </div>
@@ -945,18 +1042,57 @@ export default function KnowledgeBase() {
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 h-full">
         <div className="p-4 border-b border-mission-control-border space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <BookOpen size={16} className="text-mission-control-text-dim" />
               <span className="font-semibold text-mission-control-text text-sm">Knowledge Base</span>
             </div>
-            <button
-              onClick={() => setQuickCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
-            >
-              <Plus size={12} />
-              New Article
-            </button>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <button
+                onClick={() => setShowGraph(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                title="Graph view"
+              >
+                <Network size={12} />
+                Graph
+              </button>
+              <div className="relative" ref={templateDropdownRef}>
+                <button
+                  onClick={() => setShowTemplateDropdown(v => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                  title="New from template"
+                >
+                  <FileText size={12} />
+                  Template
+                  <ChevronDown size={10} />
+                </button>
+                {showTemplateDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-20 overflow-hidden">
+                    {apiTemplates.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-mission-control-text-dim">No templates</p>
+                    ) : (
+                      apiTemplates.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => createFromTemplate(t.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                        >
+                          <FileText size={11} className="text-mission-control-text-dim shrink-0" />
+                          {t.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setQuickCreate(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+              >
+                <Plus size={12} />
+                New Article
+              </button>
+            </div>
           </div>
 
           <div className="relative">
@@ -1044,12 +1180,13 @@ export default function KnowledgeBase() {
                 searchTerm={debouncedSearch}
                 isStarred={starred.has(article.id)}
                 isKeyboardFocused={searchFocused && searchCursor === idx}
-                onView={() => { setViewing(article); setSearchCursor(-1); }}
+                onView={() => { setViewing(article); logView(article.id); setSearchCursor(-1); }}
                 onEdit={() => setEditing({ ...article, tags: article.tags.join(', ') })}
                 onDelete={() => del(article.id)}
                 onTogglePin={() => togglePin(article)}
                 onToggleStar={() => toggleStar(article.id)}
                 onVersionHistory={() => setVersionsArticleId(article.id)}
+                viewCount={viewCounts[article.id] ?? 0}
               />
             ))
           )}
@@ -1091,6 +1228,14 @@ export default function KnowledgeBase() {
           onPreview={setPreviewVersion}
           onRestore={restoreVersion}
           onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
+        />
+      )}
+
+      {showGraph && (
+        <KnowledgeGraphPanel
+          articles={articles}
+          onNavigate={article => { setViewing(article); setShowGraph(false); }}
+          onClose={() => setShowGraph(false)}
         />
       )}
     </div>
@@ -1146,6 +1291,7 @@ interface ArticleCardProps {
   searchTerm: string;
   isStarred: boolean;
   isKeyboardFocused: boolean;
+  viewCount: number;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1155,9 +1301,10 @@ interface ArticleCardProps {
 }
 
 function ArticleCard({
-  article, searchTerm, isStarred, isKeyboardFocused, onView, onEdit, onDelete, onTogglePin, onToggleStar, onVersionHistory,
+  article, searchTerm, isStarred, isKeyboardFocused, viewCount, onView, onEdit, onDelete, onTogglePin, onToggleStar, onVersionHistory,
 }: ArticleCardProps) {
   const excerpt = getExcerpt(article.content, searchTerm);
+  const wc = article.content.trim() ? article.content.trim().split(/\s+/).length : 0;
 
   return (
     <div
@@ -1234,6 +1381,18 @@ function ArticleCard({
             {t}
           </span>
         ))}
+        <span className="ml-auto flex items-center gap-2 text-xs text-mission-control-text-dim">
+          <span className="flex items-center gap-0.5">
+            <AlignLeft size={9} />
+            {wc}w
+          </span>
+          {viewCount > 0 && (
+            <span className="flex items-center gap-0.5">
+              <Eye size={9} />
+              {viewCount}
+            </span>
+          )}
+        </span>
       </div>
     </div>
   );
