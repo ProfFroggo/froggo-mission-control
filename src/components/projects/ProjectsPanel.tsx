@@ -287,6 +287,7 @@ export default function ProjectsPanel() {
             disabled={refreshing}
             className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors"
             title="Refresh"
+            aria-label="Refresh projects"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           </button>
@@ -321,6 +322,7 @@ export default function ProjectsPanel() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
           <input
             type="text"
+            aria-label="Search projects"
             placeholder="Search projects..."
             value={search}
             onChange={e => setSearch(e.target.value)}

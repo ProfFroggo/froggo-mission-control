@@ -1,5 +1,5 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronRight } from 'lucide-react';
 import EmptyState from './EmptyState';
 
@@ -38,16 +38,25 @@ type EditState = Omit<Partial<KBArticle>, 'tags'> & { tags?: string[] | string }
 export default function KnowledgeBase() {
   const [articles, setArticles] = useState<KBArticle[]>([]);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [editing, setEditing] = useState<EditState | null>(null);
   const [viewing, setViewing] = useState<KBArticle | null>(null);
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce search input — wait 350ms after the user stops typing before querying
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       if (category !== 'all') params.set('category', category);
       const res = await fetch(`/api/knowledge?${params}`);
       const data = await res.json();
@@ -55,7 +64,7 @@ export default function KnowledgeBase() {
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, [debouncedSearch, category]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -253,6 +262,7 @@ export default function KnowledgeBase() {
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
           <input
+            aria-label="Search knowledge base"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search guidelines, brand voice, context..."
