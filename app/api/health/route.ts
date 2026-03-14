@@ -8,6 +8,7 @@ import { startDispatcherCron } from '@/lib/taskDispatcherCron';
 import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
+import { startAutomationCron } from '@/lib/automationCron';
 import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
 
@@ -18,6 +19,7 @@ if (!(globalThis as any).__healthInitialized) {
   startClaraReviewCron();
   startSessionKeepalive();
   startMemoryDecayCron();
+  startAutomationCron();
 }
 
 function checkClaudeCli(): { found: boolean; authenticated: boolean; path: string } {

@@ -1,5 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { getDb } from './database';
+import { emitSSEEvent } from './sseEmitter';
 
 interface AutomationStep {
   type: 'run-agent-task' | 'post-to-chat' | 'save-to-library' | 'send-for-approval' | 'delay' | 'webhook';
@@ -38,12 +39,21 @@ export async function executeAutomation(
   const success = stepsRun === steps.length;
   const message = log.join('; ') || 'Completed successfully';
   const now = Date.now();
+  const durationMs = now - startedAt;
+  const automationName = (automation.name as string) || automationId;
 
   db.prepare('UPDATE automations SET last_run = ?, updated_at = ? WHERE id = ?').run(now, now, automationId);
   try {
     db.prepare('UPDATE automation_runs SET status = ?, message = ?, stepsRun = ?, completedAt = ? WHERE id = ?')
       .run(success ? 'success' : 'failed', message, stepsRun, now, runId);
   } catch { /* ignore */ }
+
+  // Emit SSE event so connected clients are notified immediately
+  if (success) {
+    emitSSEEvent('automation.completed', { automationId, name: automationName, success: true, stepsRun, durationMs });
+  } else {
+    emitSSEEvent('automation.failed', { automationId, name: automationName, error: message });
+  }
 
   return { success, message, stepsRun };
 }
@@ -77,8 +87,13 @@ async function executeStep(
       const approvalId = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       // approvals schema: id, type, title, content, context, metadata, status, requester, tier, createdAt
       db.prepare(`INSERT INTO approvals (id, type, title, content, status, requester, category, createdAt) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`)
-        .run(approvalId, cfg.category || 'agent_approval', cfg.title || 'Approval required', cfg.description || '', 'automation', cfg.category || 'agent_approval', Date.now());
+        .run(approvalId, cfg.category || 'agent_approval', cfg.title || 'Approval required', JSON.stringify(cfg), 'automation', cfg.category || 'agent_approval', Date.now());
       log.push(`Created approval "${cfg.title}"`);
+      // Emit inbox.count SSE so sidebar badge updates immediately
+      try {
+        const pendingCount = (db.prepare("SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'").get() as { c: number }).c;
+        emitSSEEvent('inbox.count', { count: pendingCount });
+      } catch { /* non-critical */ }
       break;
     }
     case 'webhook': {
