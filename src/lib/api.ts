@@ -250,10 +250,22 @@ export const moduleApi = {
 // Settings
 // ──────────────────────────────────────────────────
 export const settingsApi = {
-  getAll: () => apiCall('/settings'),
-  get: (key: string) => apiCall(`/settings/${key}`),
+  /** Returns all settings as { [key]: value } */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAll: () => apiCall<any>('/settings'),
+  /** Returns { key, value } for a single setting key */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get: (key: string) => apiCall<any>(`/settings/${key}`),
+  /** Returns all settings whose key starts with `namespace.` */
+  getByNamespace: (namespace: string) =>
+    apiCall<Record<string, unknown>>('/settings', { params: { namespace } }),
+  /** Single-key upsert via PUT /api/settings/[key] */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set: (key: string, value: any) =>
     apiCall(`/settings/${key}`, { method: 'PUT', body: { value } }),
+  /** Bulk upsert via PATCH /api/settings */
+  patch: (updates: Record<string, unknown>) =>
+    apiCall<{ success: boolean; updated: number }>('/settings', { method: 'PATCH', body: updates }),
 };
 
 // ──────────────────────────────────────────────────

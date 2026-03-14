@@ -305,8 +305,22 @@ function initSchema(db: Database.Database) {
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
+      value TEXT NOT NULL,
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
+
+    -- ══════════════════════════════════════════
+    -- SETTINGS AUDIT LOG
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS settings_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL,
+      oldValue TEXT,
+      newValue TEXT NOT NULL,
+      changedBy TEXT NOT NULL DEFAULT 'system',
+      timestamp INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_settings_audit_key ON settings_audit(key, timestamp DESC);
 
     -- ══════════════════════════════════════════
     -- TOKEN USAGE
@@ -829,6 +843,35 @@ function initSchema(db: Database.Database) {
   // Clean up sessions older than 7 days
   try {
     db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  } catch { /* non-critical */ }
+
+  // Settings: add updatedAt column if missing (existing DBs pre-schema-update)
+  try {
+    const cols = (db.prepare(`PRAGMA table_info(settings)`).all() as { name: string }[]).map(c => c.name);
+    if (!cols.includes('updatedAt')) {
+      db.exec(`ALTER TABLE settings ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)`);
+    }
+  } catch { /* non-critical */ }
+
+  // Settings: seed defaults on first run (INSERT OR IGNORE — never overwrite user values)
+  try {
+    const DEFAULTS: Record<string, unknown> = {
+      'automation.enabled': true,
+      'automation.maxConcurrent': 3,
+      'clara.reviewStrictness': 'standard',
+      'clara.autoDispatch': true,
+      'platform.theme': 'dark',
+      'platform.notifications': true,
+      'platform.soundEnabled': false,
+      'token.monthlyBudget': 0,
+    };
+    const seedStmt = db.prepare(
+      `INSERT OR IGNORE INTO settings (key, value, updatedAt) VALUES (?, ?, ?)`
+    );
+    const now = Date.now();
+    for (const [key, val] of Object.entries(DEFAULTS)) {
+      seedStmt.run(key, JSON.stringify(val), now);
+    }
   } catch { /* non-critical */ }
 
   syncCatalogAgents(db);
