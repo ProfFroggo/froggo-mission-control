@@ -20,7 +20,8 @@ import {
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
   Activity as ActivityIcon, FileText, Code,
   CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
-  Clock, Tag, CheckSquare, Square, AtSign, ChevronUp, Trash2
+  Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
+  AtSign, ChevronUp, Trash2
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '../lib/gateway';
@@ -215,12 +216,24 @@ function saveTemplates(templates: string[]) {
   try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch { /* ignore */ }
 }
 
-// ─── Snooze helpers ───────────────────────────────────────────────────────────
+// ─── localStorage helpers for item state ──────────────────────────────────────
+
+function loadItemState(key: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`inbox.${key}`);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch { /* ignore */ }
+  return new Set();
+}
+
+function saveItemState(key: string, set: Set<string>) {
+  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
+}
 
 function loadSnoozeMap(): Record<string, number> {
   try {
     const raw = localStorage.getItem('inbox.snoozed');
-    if (raw) return JSON.parse(raw) as Record<string, number>;
+    if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
   return {};
 }
@@ -540,7 +553,6 @@ function CenterPane({
   onToggleStar,
   onArchive,
   onToggleRead,
-  onSnooze,
   loading,
   searchQuery,
   onSearchChange,
@@ -553,10 +565,6 @@ function CenterPane({
   onLoadAll,
   aiAnalyses,
   onMarkAllRead,
-  snoozedIds,
-  onBulkArchive,
-  onBulkMarkRead,
-  onBulkDelete,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
@@ -564,7 +572,6 @@ function CenterPane({
   onToggleStar: (id: string) => void;
   onArchive: (c: ConversationItem) => void;
   onToggleRead: (c: ConversationItem) => void;
-  onSnooze: (id: string, until: number) => void;
   loading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -577,162 +584,70 @@ function CenterPane({
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
   onMarkAllRead?: () => void;
-  snoozedIds: Set<string>;
-  onBulkArchive: (ids: string[]) => void;
-  onBulkMarkRead: (ids: string[]) => void;
-  onBulkDelete: (ids: string[]) => void;
 }) {
-  // unused var guard
-  void selectedPlatform;
+  // Platform-specific empty states
+  const emptyState = () => {
+    const p = selectedPlatform;
+    if (p === 'system') return { icon: <ActivityIcon size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No system activity' };
+    if (p === 'twitter') return { icon: <XIcon size={32} />, msg: 'No X DMs' };
+    return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
+  };
 
   const unreadCount = conversations.filter(c => !c.is_read).length;
 
-  const searchRef = (useRef as typeof useRef)<HTMLInputElement>(null);
-  const [senderFilter, setSenderFilter] = (useState as typeof useState)<SenderTypeFilter>('all');
-  const [channelFilter, setChannelFilter] = (useState as typeof useState)<ChannelFilter>('all');
-  const [timeFilter, setTimeFilter] = (useState as typeof useState)<TimeFilter>('all');
-  const [snoozeOpenId, setSnoozeOpenId] = (useState as typeof useState)<string | null>(null);
-  const [selectedIds, setSelectedIds] = (useState as typeof useState)<Set<string>>(new Set());
-
-  (useEffect as typeof useEffect)(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  const filteredConversations = (useMemo as typeof useMemo)(() => {
-    let result = conversations.filter(c => !snoozedIds.has(c.id));
-    if (senderFilter === 'agent') {
-      result = result.filter(c => { const n = (c.name || c.from || '').toLowerCase(); return n.includes('agent') || n.includes('bot') || c.platform === 'system'; });
-    } else if (senderFilter === 'human') {
-      result = result.filter(c => { const n = (c.name || c.from || '').toLowerCase(); return !n.includes('agent') && !n.includes('bot') && c.platform !== 'system'; });
-    } else if (senderFilter === 'system') {
-      result = result.filter(c => c.platform === 'system');
-    }
-    if (channelFilter !== 'all') {
-      result = result.filter(c => {
-        if (channelFilter === 'email') return c.platform === 'email';
-        if (channelFilter === 'discord') return c.platform === 'discord';
-        if (channelFilter === 'telegram') return c.platform === 'telegram';
-        if (channelFilter === 'chat') return c.platform === 'chat' || c.platform === 'twitter';
-        return true;
-      });
-    }
-    if (timeFilter !== 'all') {
-      const now = Date.now(); const dayMs = 86400000;
-      result = result.filter(c => {
-        if (!c.timestamp) return true;
-        const ts = new Date(c.timestamp).getTime();
-        if (timeFilter === 'today') return now - ts < dayMs;
-        if (timeFilter === 'week') return now - ts < 7 * dayMs;
-        return true;
-      });
-    }
-    return result;
-  }, [conversations, snoozedIds, senderFilter, channelFilter, timeFilter]);
-
-  const hasActiveFilters = senderFilter !== 'all' || channelFilter !== 'all' || timeFilter !== 'all';
-  const allPageSelected = filteredConversations.length > 0 && filteredConversations.every(c => selectedIds.has(c.id));
-  const toggleSelectAll = () => { if (allPageSelected) setSelectedIds(new Set()); else setSelectedIds(new Set(filteredConversations.map(c => c.id))); };
-  const toggleSelectOne = (id: string, e: React.MouseEvent) => { e.stopPropagation(); setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }); };
-  const clearSelection = () => setSelectedIds(new Set());
-
   return (
     <div className="w-[400px] flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
+      {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
           <div className="flex items-center gap-1">
             {unreadCount > 0 && onMarkAllRead && (
-              <button onClick={onMarkAllRead} title="Mark all as read" className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs">
+              <button
+                onClick={onMarkAllRead}
+                title="Mark all as read"
+                className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs"
+              >
                 <CheckCheck size={14} />
               </button>
             )}
-            <button onClick={onRefresh} disabled={loading || refreshing} className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50">
+            <button
+              onClick={onRefresh}
+              disabled={loading || refreshing}
+              className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
+            >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </button>
           </div>
         </div>
+        {/* Search */}
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
           <input
-            ref={searchRef}
             type="text"
             aria-label="Search messages input"
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            placeholder="Search... (press / to focus)"
-            className="w-full pl-9 pr-8 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
+            placeholder="Search messages..."
+            className="w-full pl-9 pr-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
           />
-          {searchQuery && (
-            <button onClick={() => onSearchChange('')} title="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text transition-colors">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        {/* Filter pills */}
-        <div className="flex flex-wrap gap-1 mt-2">
-          {(['agent', 'human', 'system'] as SenderTypeFilter[]).map(f => (
-            <button key={"s-" + f} onClick={() => setSenderFilter(f === senderFilter ? 'all' : f)}
-              className={"text-[11px] px-2 py-0.5 rounded-full border transition-colors " + (senderFilter === f ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent/40' : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/40')}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-          {(['discord', 'telegram', 'email', 'chat'] as ChannelFilter[]).map(f => (
-            <button key={"c-" + f} onClick={() => setChannelFilter(f === channelFilter ? 'all' : f)}
-              className={"text-[11px] px-2 py-0.5 rounded-full border transition-colors " + (channelFilter === f ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent/40' : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/40')}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-          {(['today', 'week'] as TimeFilter[]).map(f => (
-            <button key={"t-" + f} onClick={() => setTimeFilter(f === timeFilter ? 'all' : f)}
-              className={"text-[11px] px-2 py-0.5 rounded-full border transition-colors " + (timeFilter === f ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent/40' : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/40')}>
-              {f === 'today' ? 'Today' : 'This week'}
-            </button>
-          ))}
-          {hasActiveFilters && (
-            <button onClick={() => { setSenderFilter('all'); setChannelFilter('all'); setTimeFilter('all'); }}
-              className="text-[11px] px-2 py-0.5 rounded-full border border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40 transition-colors flex items-center gap-0.5">
-              <X size={10} />Clear
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
-        <div className="px-3 py-2 bg-mission-control-accent/10 border-b border-mission-control-accent/30 flex items-center gap-2">
-          <button onClick={clearSelection} className="p-0.5 rounded hover:bg-mission-control-border" title="Clear selection"><X size={14} className="text-mission-control-text-dim" /></button>
-          <span className="text-xs font-medium text-mission-control-accent flex-1">{selectedIds.size} thread{selectedIds.size !== 1 ? 's' : ''} selected</span>
-          <button onClick={() => { onBulkMarkRead(Array.from(selectedIds)); clearSelection(); }} className="text-xs px-2 py-1 rounded bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/40 transition-colors"><Check size={12} className="inline mr-0.5" />Read</button>
-          <button onClick={() => { onBulkArchive(Array.from(selectedIds)); clearSelection(); }} className="text-xs px-2 py-1 rounded bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent/40 transition-colors"><Archive size={12} className="inline mr-0.5" />Archive</button>
-          <button onClick={() => { onBulkDelete(Array.from(selectedIds)); clearSelection(); }} className="text-xs px-2 py-1 rounded bg-mission-control-surface border border-error/30 text-error hover:bg-error/10 transition-colors"><Trash2 size={12} className="inline mr-0.5" />Delete</button>
-        </div>
-      )}
-
-      {/* Select-all row */}
-      {filteredConversations.length > 0 && (
-        <div className="px-3 py-1.5 border-b border-mission-control-border/30 flex items-center gap-2">
-          <button onClick={toggleSelectAll} title={allPageSelected ? 'Deselect all' : 'Select all on page'} className="p-0.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim">
-            {allPageSelected ? <CheckSquare size={14} className="text-mission-control-accent" /> : <Square size={14} />}
-          </button>
-          <span className="text-[11px] text-mission-control-text-dim">Select all on page</span>
-        </div>
-      )}
-
+      {/* Message List */}
       <div className="flex-1 overflow-y-auto">
-        {loading && filteredConversations.length === 0 ? (
+        {loading && conversations.length === 0 ? (
+          /* Skeleton loading rows */
           <div className="divide-y divide-mission-control-border/30">
             {[0, 1, 2].map(i => (
               <div key={i} className="px-3 py-3 animate-pulse">
                 <div className="flex items-start gap-2">
                   <div className="mt-2 w-2 h-2 rounded-full bg-mission-control-border flex-shrink-0" />
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2"><div className="h-3 bg-mission-control-border rounded w-28" /><div className="h-2 bg-mission-control-border rounded w-10 ml-auto" /></div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 bg-mission-control-border rounded w-28" />
+                      <div className="h-2 bg-mission-control-border rounded w-10 ml-auto" />
+                    </div>
                     <div className="h-3 bg-mission-control-border rounded w-40" />
                     <div className="h-2 bg-mission-control-border rounded w-full" />
                   </div>
@@ -740,7 +655,8 @@ function CenterPane({
               </div>
             ))}
           </div>
-        ) : filteredConversations.length === 0 ? (
+        ) : conversations.length === 0 ? (
+          /* Proper empty state */
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <CheckCircle size={32} className="text-mission-control-text-dim/30 mb-3" />
             <p className="text-sm font-medium text-mission-control-text-dim">All caught up</p>
@@ -748,93 +664,99 @@ function CenterPane({
           </div>
         ) : (
           <>
-            {filteredConversations.map(conv => (
+            {conversations.map(conv => (
               <div
                 key={conv.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => onSelect(conv)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv); } }}
-                className={"group w-full text-left px-3 py-2.5 border-b border-mission-control-border/30 border-l-2 transition-colors cursor-pointer relative " + (
-                  selectedId === conv.id ? 'bg-mission-control-accent/10 border-l-mission-control-accent'
-                  : selectedIds.has(conv.id) ? 'bg-mission-control-accent/5 border-l-mission-control-accent/50'
-                  : 'border-l-transparent hover:bg-mission-control-surface/50'
-                ) + (!conv.is_read && selectedId !== conv.id ? ' bg-mission-control-surface/30' : '')}
+                className={`group w-full text-left px-3 py-2.5 border-b border-mission-control-border/30 border-l-2 transition-colors cursor-pointer ${
+                  selectedId === conv.id
+                    ? 'bg-mission-control-accent/10 border-l-mission-control-accent'
+                    : 'border-l-transparent hover:bg-mission-control-surface/50'
+                } ${!conv.is_read ? 'bg-mission-control-surface/30' : ''}`}
               >
-                {/* Snooze picker */}
-                {snoozeOpenId === conv.id && (
-                  <div className="absolute right-0 top-0 z-20 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 min-w-[150px]" onClick={e => e.stopPropagation()}>
-                    <p className="text-[11px] font-semibold text-mission-control-text-dim mb-1.5 px-1">Snooze until...</p>
-                    {[
-                      { label: '1 hour', ms: 3600000 },
-                      { label: '4 hours', ms: 14400000 },
-                      { label: 'Tomorrow 9am', ms: (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.getTime() - Date.now(); })() },
-                    ].map(opt => (
-                      <button key={opt.label} onClick={() => { onSnooze(conv.id, Date.now() + opt.ms); setSnoozeOpenId(null); }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-mission-control-accent/10 hover:text-mission-control-accent transition-colors">
-                        {opt.label}
-                      </button>
-                    ))}
-                    <button onClick={() => setSnoozeOpenId(null)} className="w-full text-left text-xs px-2 py-1 rounded text-mission-control-text-dim hover:bg-mission-control-border transition-colors mt-1">Cancel</button>
-                  </div>
-                )}
                 <div className="flex items-start gap-2 overflow-hidden w-full">
-                  {/* Checkbox / unread dot */}
-                  <div className="mt-1.5 flex-shrink-0 w-3.5 h-3.5 relative cursor-pointer" onClick={e => toggleSelectOne(conv.id, e)} title={selectedIds.has(conv.id) ? 'Deselect' : 'Select'}>
-                    {selectedIds.has(conv.id) ? (
-                      <CheckSquare size={14} className="text-mission-control-accent" />
-                    ) : (
-                      <>
-                        <Square size={14} className="absolute inset-0 text-mission-control-text-dim opacity-0 group-hover:opacity-50 transition-opacity" />
-                        {!conv.is_read && <div className="w-2 h-2 bg-mission-control-accent rounded-full mt-1 ml-0.5 group-hover:opacity-0 transition-opacity" />}
-                      </>
-                    )}
+                  {/* Unread dot */}
+                  <div className="mt-2 flex-shrink-0 w-2">
+                    {!conv.is_read && <div className="w-2 h-2 bg-mission-control-accent rounded-full" />}
                   </div>
+
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className={"text-sm truncate flex-1 min-w-0 " + (!conv.is_read ? 'font-bold' : 'font-medium')}>{conv.name || conv.from || 'Unknown'}</span>
+                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
+                        {conv.name || conv.from || 'Unknown'}
+                      </span>
                       <span className="text-[11px] text-mission-control-text-dim flex-shrink-0">{conv.relativeTime}</span>
                     </div>
-                    {conv.subject && <div className={"text-sm truncate " + (!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80')}>{conv.subject}</div>}
+                    {conv.subject && (
+                      <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
+                        {conv.subject}
+                      </div>
+                    )}
                     <p className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">{conv.preview}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      <span className={"flex-shrink-0 " + platformColor(conv.platform)}>{platformIcon(conv.platform, 10)}</span>
+                      <span className={`flex-shrink-0 ${platformColor(conv.platform)}`}>
+                        {platformIcon(conv.platform, 10)}
+                      </span>
                       {aiAnalyses?.get(conv.id) && (
-                        <span className={"w-2 h-2 rounded-full flex-shrink-0 " + (TRIAGE_COLORS[aiAnalyses.get(conv.id)!.triage] || 'bg-mission-control-bg')} title={TRIAGE_LABELS[aiAnalyses.get(conv.id)!.triage] || ''} />
+                        <span
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${TRIAGE_COLORS[aiAnalyses.get(conv.id)!.triage] || 'bg-mission-control-bg'}`}
+                          title={TRIAGE_LABELS[aiAnalyses.get(conv.id)!.triage] || ''}
+                        />
                       )}
                       {conv.message_count && conv.message_count > 1 && (
-                        <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">{conv.message_count}</span>
+                        <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
+                          {conv.message_count}
+                        </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-amber-500 text-white rounded-full flex-shrink-0" title={conv.unread_count + " unread"}>
+                        <span
+                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-amber-500 text-white rounded-full flex-shrink-0"
+                          title={`${conv.unread_count} unread`}
+                        >
                           {conv.unread_count > 99 ? '99+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply"><Reply size={8} />reply</span>
+                        <span className="text-[10px] text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                          <Reply size={8} />
+                          reply
+                        </span>
                       )}
                       {conv.has_attachment && <Paperclip size={10} className="text-mission-control-text-dim flex-shrink-0" />}
-                      {conv.is_starred && <Star size={10} className="text-warning flex-shrink-0" fill="currentColor" />}
+                      {conv.is_starred && (
+                        <Star size={10} className="text-warning flex-shrink-0" fill="currentColor" />
+                      )}
                     </div>
                   </div>
-                  {/* Hover actions: Star, Archive, Read, Snooze */}
+
+                  {/* Action buttons */}
                   {conv.platform !== 'system' && (
                     <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
-                      <button onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                        className={"p-1 rounded hover:bg-mission-control-border transition-opacity " + (conv.is_starred ? 'text-warning opacity-100' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100')}
-                        title={conv.is_starred ? 'Unstar' : 'Star'}>
+                      <button
+                        onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
+                        className={`p-1 rounded hover:bg-mission-control-border transition-opacity ${
+                          conv.is_starred ? 'text-warning' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={conv.is_starred ? 'Unstar' : 'Star'}
+                      >
                         <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
                       </button>
-                      <button onClick={e => { e.stopPropagation(); onArchive(conv); }} className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity" title="Archive">
+                      <button
+                        onClick={e => { e.stopPropagation(); onArchive(conv); }}
+                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Archive"
+                      >
                         <Archive size={14} />
                       </button>
-                      <button onClick={e => { e.stopPropagation(); onToggleRead(conv); }} className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity" title={conv.is_read ? 'Mark unread' : 'Mark read'}>
+                      <button
+                        onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
+                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={conv.is_read ? 'Mark unread' : 'Mark read'}
+                      >
                         {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
-                      </button>
-                      <button onClick={e => { e.stopPropagation(); setSnoozeOpenId(snoozeOpenId === conv.id ? null : conv.id); }}
-                        className={"p-1 rounded hover:bg-mission-control-border transition-opacity " + (snoozeOpenId === conv.id ? 'text-mission-control-accent opacity-100' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100')}
-                        title="Snooze">
-                        <Clock size={14} />
                       </button>
                     </div>
                   )}
@@ -843,11 +765,18 @@ function CenterPane({
             ))}
             {hasMore && onLoadMore && (
               <div className="flex gap-2 px-2 py-2">
-                <button onClick={onLoadMore} className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded">
-                  <ChevronDown size={14} />Load more (+50)
+                <button
+                  onClick={onLoadMore}
+                  className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                >
+                  <ChevronDown size={14} />
+                  Load more (+50)
                 </button>
                 {onLoadAll && (
-                  <button onClick={onLoadAll} className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded">
+                  <button
+                    onClick={onLoadAll}
+                    className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                  >
                     Load All
                   </button>
                 )}
@@ -1086,8 +1015,6 @@ function RightPane({
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [aiIntent, setAiIntent] = useState('');
   const [generatingFromIntent, setGeneratingFromIntent] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [templates, setTemplates] = useState<string[]>(() => loadTemplates());
   const threadEndRef = useRef<HTMLDivElement>(null);
   const replyRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1595,41 +1522,6 @@ function RightPane({
               }}
             />
           </div>
-
-          {/* Quick Reply Templates */}
-          <div className="mt-2 relative">
-            <button
-              onClick={() => setShowTemplates(!showTemplates)}
-              className={"flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors " + (showTemplates ? 'bg-mission-control-accent/10 text-mission-control-accent border-mission-control-accent/30' : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/40')}
-            >
-              <Tag size={12} />Templates
-              {showTemplates ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </button>
-            {showTemplates && (
-              <div className="absolute bottom-full left-0 mb-1 z-20 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 min-w-[280px] max-w-[380px]">
-                <p className="text-[11px] font-semibold text-mission-control-text-dim mb-1.5 px-1">Quick replies</p>
-                <div className="space-y-0.5 max-h-48 overflow-y-auto">
-                  {templates.map((tpl, i) => (
-                    <button key={i} onClick={() => { setReplyText(tpl); setShowTemplates(false); }}
-                      className="w-full text-left text-xs px-2 py-1.5 rounded hover:bg-mission-control-accent/10 hover:text-mission-control-accent transition-colors truncate" title={tpl}>
-                      {tpl}
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t border-mission-control-border mt-2 pt-2">
-                  <form onSubmit={e => {
-                    e.preventDefault();
-                    const inp = (e.currentTarget.elements.namedItem('newTpl') as HTMLInputElement);
-                    if (inp.value.trim()) { const u = [...templates, inp.value.trim()]; setTemplates(u); saveTemplates(u); inp.value = ''; }
-                  }} className="flex gap-1">
-                    <input name="newTpl" type="text" placeholder="Add custom template..." className="flex-1 text-xs bg-mission-control-bg border border-mission-control-border rounded px-2 py-1 focus:outline-none focus:border-mission-control-accent" />
-                    <button type="submit" className="text-xs px-2 py-1 rounded bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 hover:bg-mission-control-accent/20 transition-colors">Add</button>
-                  </form>
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="flex items-center justify-between mt-2">
             <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
             <div className="flex gap-2">
@@ -1740,21 +1632,6 @@ export default function CommsInbox3Pane() {
   const [aiAnalyses, setAiAnalyses] = useState<Map<string, AIAnalysis>>(new Map());
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const analysisBatchRef = useRef<Set<string>>(new Set());
-
-  // Snooze: map itemId -> wakeUpTimestamp, persisted in localStorage
-  const [snoozeMap, setSnoozeMap] = useState<Record<string, number>>(() => loadSnoozeMap());
-  const snoozedIds = useMemo(() => {
-    const now = Date.now();
-    return new Set(Object.entries(snoozeMap).filter(([, ts]) => ts > now).map(([id]) => id));
-  }, [snoozeMap]);
-
-  const handleSnooze = (id: string, until: number) => {
-    const updated = { ...snoozeMap, [id]: until };
-    setSnoozeMap(updated);
-    saveSnoozeMap(updated);
-    const t = new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    showToast('info', 'Snoozed', 'Hidden until ' + t);
-  };
 
   // Convert activities to ConversationItems for system channel
   const systemMessages: ConversationItem[] = activities.map((a: Activity) => {
@@ -2262,22 +2139,6 @@ export default function CommsInbox3Pane() {
     } catch (e) { /* ignore */ }
   };
 
-  // Bulk actions
-  const handleBulkArchive = (ids: string[]) => {
-    ids.forEach(id => { const conv = allMessages.find(m => m.id === id); if (conv) handleArchive(conv); });
-  };
-
-  const handleBulkMarkRead = (ids: string[]) => {
-    ids.forEach(id => { const conv = allMessages.find(m => m.id === id); if (conv && !conv.is_read) handleToggleRead(conv); });
-  };
-
-  const handleBulkDelete = (ids: string[]) => {
-    setAllMessages(prev => prev.filter(m => !ids.includes(m.id)));
-    if (selectedConversation && ids.includes(selectedConversation.id)) setSelectedConversation(null);
-    ids.forEach(id => fetch('/api/inbox/' + id, { method: 'DELETE' }).catch(() => {}));
-    showToast('success', 'Deleted', ids.length + ' thread' + (ids.length !== 1 ? 's' : '') + ' deleted');
-  };
-
   // Send reply
   const handleSendReply = async (text: string) => {
     if (!selectedConversation) return;
@@ -2413,11 +2274,6 @@ export default function CommsInbox3Pane() {
             onLoadAll={handleLoadAll}
             aiAnalyses={aiAnalyses}
             onMarkAllRead={handleMarkAllRead}
-            onSnooze={handleSnooze}
-            snoozedIds={snoozedIds}
-            onBulkArchive={handleBulkArchive}
-            onBulkMarkRead={handleBulkMarkRead}
-            onBulkDelete={handleBulkDelete}
           />
           <RightPane
             conversation={selectedConversation}
