@@ -226,6 +226,12 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         currentMode={focusMode}
         onSelectMode={setFocusMode}
       />
+
+      {/* Platform Health Dashboard */}
+      <PlatformHealthDashboard
+        isOpen={healthDashboardOpen}
+        onClose={() => setHealthDashboardOpen(false)}
+      />
     </>
   );
 }
