@@ -700,6 +700,20 @@ function initSchema(db: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS idx_automations_status ON automations(status);
     CREATE INDEX IF NOT EXISTS idx_automations_updated_at ON automations(updated_at DESC);
+
+    -- ══════════════════════════════════════════
+    -- AUTOMATION RUNS (execution history)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS automation_runs (
+      id TEXT PRIMARY KEY,
+      automationId TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'running',
+      message TEXT,
+      stepsRun INTEGER DEFAULT 0,
+      startedAt INTEGER NOT NULL,
+      completedAt INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
