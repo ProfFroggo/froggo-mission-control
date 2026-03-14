@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock } from 'lucide-react';
+import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock, DollarSign } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi, updateApi } from '../lib/api';
 import { useSettings } from '../hooks/useSettings';
@@ -10,6 +10,7 @@ import ExportBackupTab from './ExportBackupTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
 import AccessibilitySettings from './AccessibilitySettings';
 import { Toggle } from './Toggle';
+import BudgetDashboard from './BudgetDashboard';
 
 interface NotificationPreferences {
   enabled: boolean;
@@ -115,7 +116,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup' | 'platform';
+type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'exportBackup' | 'platform' | 'budgets';
 
 interface SystemHealth { cli: boolean; claudeFound: boolean; claudeAuthenticated: boolean; claudePath: string; database: boolean; backend: string; }
 
@@ -641,6 +642,17 @@ export default function SettingsPanel() {
             <Package size={16} />
             Platform
           </button>
+          <button
+            onClick={() => setActiveTab('budgets')}
+            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'budgets'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <DollarSign size={16} />
+            Budgets
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -649,6 +661,7 @@ export default function SettingsPanel() {
         {activeTab === 'accessibility' && <AccessibilitySettings />}
         {activeTab === 'exportBackup' && <ExportBackupTab />}
         {activeTab === 'platform' && <PlatformUpdateTab />}
+        {activeTab === 'budgets' && <BudgetDashboard />}
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
@@ -1074,7 +1087,7 @@ export default function SettingsPanel() {
         )}
 
         {/* Actions (shown for most tabs except special ones) */}
-        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform'].includes(activeTab) && (
+        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'budgets'].includes(activeTab) && (
           <div className="flex gap-3 mt-8">
             <button
               onClick={handleSave}

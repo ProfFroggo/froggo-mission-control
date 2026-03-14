@@ -1225,16 +1225,21 @@ export function dispatchTask(taskId: string): boolean {
               if (parsed.session_id) {
                 persistTaskSession(taskId, parsed.session_id, model);
               }
-              // Log token usage
+              // Log token usage + check budget alerts
               const inputT  = parsed.input_tokens  ?? 0;
               const outputT = parsed.output_tokens ?? 0;
               if (inputT > 0 || outputT > 0) {
                 try {
                   const costUsd = calcCostUsd(model, inputT, outputT);
-                  getDb().prepare(
+                  const db = getDb();
+                  db.prepare(
                     `INSERT INTO token_usage (agentId, taskId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
                      VALUES (?, ?, ?, ?, ?, ?, ?, 'dispatch', ?)`
                   ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
+                  // Check all budgets that apply to this agent and emit SSE alerts
+                  import('@/lib/budgetAlerts').then(({ checkBudgetAlerts }) => {
+                    checkBudgetAlerts(db, agentId);
+                  }).catch(() => { /* non-critical */ });
                 } catch { /* non-critical */ }
               }
             }
