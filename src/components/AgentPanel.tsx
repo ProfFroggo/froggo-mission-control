@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity, Search } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -56,6 +56,7 @@ export default function AgentPanel() {
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
+  const [agentSearch, setAgentSearch] = useState('');
 
   // Subscribe to circuit.open SSE events
   useEventBus('circuit.open', (data) => {
@@ -187,14 +188,17 @@ export default function AgentPanel() {
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
-    active:     { color: 'bg-success',  label: 'Active', pulse: true },
-    busy:       { color: 'bg-mission-control-accent', label: 'Working…', pulse: true },
-    idle:       { color: 'bg-warning', label: 'Idle' },
-    offline:    { color: 'bg-mission-control-bg0',   label: 'Offline', hideDot: true },
-    suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
-    archived:   { color: 'bg-mission-control-bg0',   label: 'Archived', hideDot: true },
-    draft:      { color: 'bg-warning', label: 'Draft', hideDot: true },
-    disabled:   { color: 'bg-error',    label: 'Stopped', hideDot: true },
+    // online / active → green with pulse
+    active:     { color: 'bg-success',               label: 'Active',    pulse: true },
+    // busy / working / in-progress → amber, solid (no pulse)
+    busy:       { color: 'bg-warning',               label: 'Working…' },
+    // idle / offline → gray, no pulse
+    idle:       { color: 'bg-mission-control-border', label: 'Idle' },
+    offline:    { color: 'bg-mission-control-bg0',   label: 'Offline',   hideDot: true },
+    suspended:  { color: 'bg-error',                 label: 'Suspended', hideDot: true },
+    archived:   { color: 'bg-mission-control-bg0',   label: 'Archived',  hideDot: true },
+    draft:      { color: 'bg-mission-control-border', label: 'Draft',    hideDot: true },
+    disabled:   { color: 'bg-error',                 label: 'Stopped',   hideDot: true },
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
@@ -216,6 +220,16 @@ export default function AgentPanel() {
   // Split into main agents and workers
   const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
+
+  // Client-side search filter — applied to core agents list
+  const searchQuery = agentSearch.trim().toLowerCase();
+  const filteredMainAgents = searchQuery
+    ? mainAgents.filter(a =>
+        a.name.toLowerCase().includes(searchQuery) ||
+        (a.description || '').toLowerCase().includes(searchQuery) ||
+        (a.capabilities || []).some(c => c.toLowerCase().includes(searchQuery))
+      )
+    : mainAgents;
 
   if (initialLoading) {
     return (
@@ -354,6 +368,19 @@ export default function AgentPanel() {
             <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest">Core Agents</h2>
           </div>
 
+          {/* Search / filter bar */}
+          <div className="relative mb-4">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
+            <input
+              type="search"
+              value={agentSearch}
+              onChange={e => setAgentSearch(e.target.value)}
+              placeholder="Search agents by name, role, or capability…"
+              className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
+              aria-label="Search agents"
+            />
+          </div>
+
           {mainAgents.length === 0 ? (
             <EmptyState
               icon={Bot}
@@ -362,9 +389,13 @@ export default function AgentPanel() {
               action={{ label: 'New Agent', onClick: () => setShowCreateModal(true) }}
               size="md"
             />
+          ) : filteredMainAgents.length === 0 ? (
+            <div className="py-10 text-center text-sm text-mission-control-text-dim">
+              No agents match &ldquo;{agentSearch}&rdquo;
+            </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {mainAgents.map((agent) => {
+            {filteredMainAgents.map((agent) => {
               const theme = getTheme(agent.id);
               const agentTasks = getAgentTasks(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
