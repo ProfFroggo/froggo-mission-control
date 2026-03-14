@@ -46,6 +46,8 @@ export const taskApi = {
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'PATCH', body: updates }),
   deleteSubtask: (taskId: string, subtaskId: string) =>
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'DELETE' }),
+  reorderSubtasks: (taskId: string, orderedIds: string[]) =>
+    apiCall(`/tasks/${taskId}/subtasks/reorder`, { method: 'POST', body: { orderedIds } }),
   getSubtasks: (taskId: string) =>
     apiCall(`/tasks/${taskId}/subtasks`),
   getActivity: (taskId: string) =>

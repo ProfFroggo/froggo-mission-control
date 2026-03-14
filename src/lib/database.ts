@@ -753,6 +753,8 @@ function initSchema(db: Database.Database) {
     // Clara review tracking: cooldown timestamp and bounce count
     `ALTER TABLE tasks ADD COLUMN lastClaraReviewAt INTEGER`,
     `ALTER TABLE tasks ADD COLUMN claraReviewCount INTEGER DEFAULT 0`,
+    // Subtask enhancements: due dates
+    `ALTER TABLE subtasks ADD COLUMN dueDate INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
