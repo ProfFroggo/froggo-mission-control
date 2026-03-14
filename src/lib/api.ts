@@ -364,6 +364,23 @@ export const libraryApi = {
   getSkills: () => apiCall('/library/skills') as Promise<{ skills: any[] }>,
   createSkill: (data: { name: string; slug?: string; content?: string; url?: string }) =>
     apiCall('/library/skills', { method: 'POST', body: data }),
+  // Folders
+  getFolders: () => apiCall('/library/folders') as Promise<{ success: boolean; folders: any[] }>,
+  createFolder: (data: { name: string; parentId?: string | null; color?: string }) =>
+    apiCall('/library/folders', { method: 'POST', body: data }),
+  updateFolder: (id: string, data: { name?: string; color?: string; sortOrder?: number }) =>
+    apiCall(`/library/folders/${id}`, { method: 'PATCH', body: data }),
+  deleteFolder: (id: string) =>
+    apiCall(`/library/folders/${id}`, { method: 'DELETE' }),
+  // Tags
+  getTags: (category?: string) =>
+    apiCall('/library/tags', { params: category ? { category } : undefined }) as Promise<{ success: boolean; tags: string[] }>,
+  // Ask agent about a file
+  askFile: (id: string, question: string) =>
+    apiCall(`/library/${id}/ask`, { method: 'POST', body: { question } }) as Promise<{ success: boolean; answer: string }>,
+  // File metadata
+  updateFileMeta: (id: string, data: { tags?: string[]; folderId?: string | null; starred?: boolean; description?: string }) =>
+    apiCall(`/files/${id}`, { method: 'PATCH', body: data }),
 };
 
 // ──────────────────────────────────────────────────

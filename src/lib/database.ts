@@ -797,6 +797,11 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE library_files ADD COLUMN tags TEXT DEFAULT '[]'`,
     `ALTER TABLE library_files ADD COLUMN createdBy TEXT`,
     `ALTER TABLE library_files ADD COLUMN linkedTasks TEXT DEFAULT '[]'`,
+    // Library file extended metadata: description, starred, folderId
+    `ALTER TABLE library_files ADD COLUMN description TEXT`,
+    `ALTER TABLE library_files ADD COLUMN starred INTEGER DEFAULT 0`,
+    // Library folders: parentId for nested folder tree
+    `ALTER TABLE library_folders ADD COLUMN parentId TEXT REFERENCES library_folders(id) ON DELETE SET NULL`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
