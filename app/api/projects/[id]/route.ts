@@ -50,7 +50,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+<<<<<<< HEAD
     // { archived: true/false } is a convenience alias for status
+=======
+    // Convenience alias: { archived: true/false } → sets status
+>>>>>>> origin/feat/projects-panel-v3
     if ('archived' in body) {
       body.status = body.archived ? 'archived' : 'active';
       delete body.archived;

@@ -21,7 +21,7 @@ import ProjectDispatchModal from './ProjectDispatchModal';
 import Kanban from '../Kanban';
 import ProjectGanttView from '../ProjectGanttView';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'automations' | 'approvals' | 'files';
+type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: LayoutGrid },
@@ -1165,32 +1165,9 @@ function KanbanWithAdvance({ project, onDispatch }: { project: Project; onDispat
 // ─── Timeline Tab ──────────────────────────────────────────────────────────────
 
 function TimelineTab({ project }: { project: Project }) {
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/tasks?project_id=${project.id}&limit=200`)
-      .then(r => r.json())
-      .then(data => setTasks(Array.isArray(data) ? data : []))
-      .catch(() => setTasks([]))
-      .finally(() => setLoading(false));
-  }, [project.id]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center flex-1 py-16">
-        <Spinner size={20} />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 overflow-hidden flex flex-col">
-      <ProjectGanttView
-        projectId={project.id}
-        tasks={tasks}
-      />
+    <div className="flex flex-col h-full overflow-hidden">
+      <ProjectGanttView projectId={project.id} projectName={project.name} />
     </div>
   );
 }

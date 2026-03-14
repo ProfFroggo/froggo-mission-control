@@ -149,7 +149,7 @@ export default function BaseModal({
     if (!isOpen) return;
     const timer = setTimeout(() => {
       const focusable = modalRef.current?.querySelector<HTMLElement>(
-        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
+        'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
       );
       focusable?.focus();
     }, 80);
