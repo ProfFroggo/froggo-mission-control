@@ -24,4 +24,5 @@ import './library';
 import './knowledge';
 import './projects';
 import './campaigns';
+import './automations';
 import './schedule';

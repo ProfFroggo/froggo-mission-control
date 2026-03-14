@@ -6,6 +6,8 @@ import {
   RefreshCw, Calendar, FileText, MessageSquare, Archive,
 } from 'lucide-react';
 import AutomationBuilderModal from './AutomationBuilderModal';
+import { automationsApi } from '../lib/api';
+import { showToast } from './Toast';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -464,13 +466,10 @@ export default function AutomationsPanel() {
   const fetchAutomations = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/automations');
-      if (res.ok) {
-        const data = await res.json();
-        setAutomations(Array.isArray(data) ? data : []);
-      }
-    } catch {
-      // silently fail — show empty state
+      const data = await automationsApi.getAll();
+      setAutomations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      showToast('error', 'Failed to load automations', err instanceof Error ? err.message : undefined);
     } finally {
       setLoading(false);
     }
@@ -481,35 +480,31 @@ export default function AutomationsPanel() {
   const handleToggle = async (id: string, currentStatus: AutomationStatus) => {
     const newStatus: AutomationStatus = currentStatus === 'active' ? 'paused' : 'active';
     try {
-      await fetch(`/api/automations?id=${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await automationsApi.update(id, { status: newStatus });
       setAutomations(prev =>
         prev.map(a => a.id === id ? { ...a, status: newStatus } : a)
       );
-    } catch {
-      // silent fail
+    } catch (err) {
+      showToast('error', 'Failed to update automation', err instanceof Error ? err.message : undefined);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this automation?')) return;
     try {
-      await fetch(`/api/automations?id=${id}`, { method: 'DELETE' });
+      await automationsApi.delete(id);
       setAutomations(prev => prev.filter(a => a.id !== id));
-    } catch {
-      // silent fail
+    } catch (err) {
+      showToast('error', 'Failed to delete automation', err instanceof Error ? err.message : undefined);
     }
   };
 
   const handleRunNow = async (id: string) => {
-    // Stub — would POST to a run endpoint in production
     try {
-      await fetch(`/api/automations?id=${id}&action=run`, { method: 'POST' });
-    } catch {
-      // silent fail
+      await automationsApi.run(id);
+      showToast('success', 'Automation triggered', 'Manual run has been queued.');
+    } catch (err) {
+      showToast('error', 'Failed to trigger automation', err instanceof Error ? err.message : undefined);
     }
   };
 
@@ -535,28 +530,16 @@ export default function AutomationsPanel() {
   const handleSaveAutomation = async (automation: Omit<Automation, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       if (editTarget) {
-        const res = await fetch(`/api/automations?id=${editTarget.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(automation),
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          setAutomations(prev => prev.map(a => a.id === editTarget.id ? updated : a));
-        }
+        const updated = await automationsApi.update(editTarget.id, automation as Record<string, unknown>);
+        setAutomations(prev => prev.map(a => a.id === editTarget.id ? (updated as Automation) : a));
+        showToast('success', 'Automation updated');
       } else {
-        const res = await fetch('/api/automations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(automation),
-        });
-        if (res.ok) {
-          const created = await res.json();
-          setAutomations(prev => [created, ...prev]);
-        }
+        const created = await automationsApi.create(automation as Record<string, unknown>);
+        setAutomations(prev => [created as Automation, ...prev]);
+        showToast('success', 'Automation created');
       }
-    } catch {
-      // silent fail
+    } catch (err) {
+      showToast('error', 'Failed to save automation', err instanceof Error ? err.message : undefined);
     }
     setBuilderOpen(false);
     setEditTarget(null);

@@ -1,0 +1,34 @@
+{
+  "id": "automations",
+  "name": "Automations",
+  "version": "1.0.0",
+  "description": "Smart workflow automations",
+  "author": "Mission Control Team",
+  "icon": "Zap",
+  "category": "productivity",
+  "core": true,
+  "defaultDisabled": false,
+
+  "views": [
+    {
+      "id": "automations",
+      "label": "Automations",
+      "icon": "Zap",
+      "entrypoint": "./views/AutomationsPanel.tsx"
+    }
+  ],
+
+  "credentials": [],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

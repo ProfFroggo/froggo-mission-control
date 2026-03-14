@@ -389,6 +389,21 @@ export const updateApi = {
 };
 
 // ──────────────────────────────────────────────────
+// Automations
+// ──────────────────────────────────────────────────
+export const automationsApi = {
+  getAll: () => apiCall('/automations'),
+  create: (data: Record<string, unknown>) =>
+    apiCall('/automations', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiCall('/automations', { method: 'PATCH', params: { id }, body: data }),
+  delete: (id: string) =>
+    apiCall('/automations', { method: 'DELETE', params: { id } }),
+  run: (id: string) =>
+    apiCall(`/automations/${id}/run`, { method: 'POST' }),
+};
+
+// ──────────────────────────────────────────────────
 // Campaigns
 // ──────────────────────────────────────────────────
 export const campaignsApi = {
