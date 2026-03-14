@@ -311,7 +311,7 @@ export function BaseModalHeader({
       {showCloseButton && onClose && (
         <button
           onClick={onClose}
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
+          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           aria-label={closeButtonLabel}
           type="button"
         >

@@ -8,6 +8,7 @@ import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2,
   Download, Square, Users, MessageSquare, Monitor, MonitorOff,
   SlidersHorizontal, X as XIcon, Clock, ChevronDown, ChevronUp,
+  Circle, StopCircle,
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
@@ -78,6 +79,12 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   // Participant panel
   const [showParticipants, setShowParticipants] = useState(false);
   const [agentsMuted, setAgentsMuted] = useState<Set<string>>(new Set());
+
+  // Recording mode
+  const [isRecording, setIsRecording] = useState(false);
+
+  // End meeting confirmation + summary
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   // Call duration timer
   const [callDurationSecs, setCallDurationSecs] = useState(0);
@@ -303,11 +310,39 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     setProcessingAgent(null);
   };
 
-  // Format call duration as MM:SS
+  // Format call duration as HH:MM:SS
   const formatDuration = (secs: number): string => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    return `${h}:${m}:${s}`;
+  };
+
+  // Build meeting summary from transcript
+  const buildMeetingSummary = (): string => {
+    if (!room) return '';
+    const participants = ['You (Host)', ...room.agents.map(id => agentName(id))];
+    const userLines = transcript.filter(e => e.speaker === 'user').map(e => e.content);
+    const agentLines = transcript.filter(e => e.speaker !== 'user' && e.speaker !== 'system').map(e => e.content);
+    const allText = [...userLines, ...agentLines].join(' ').toLowerCase();
+
+    // Extract rough topics from the first words of each user turn
+    const topics: string[] = [];
+    for (const line of userLines.slice(0, 5)) {
+      const words = line.trim().split(/\s+/).slice(0, 6).join(' ');
+      if (words) topics.push(words);
+    }
+
+    const duration = formatDuration(callDurationSecs);
+    const msgCount = transcript.filter(e => e.speaker !== 'system').length;
+
+    let summary = `Duration: ${duration}\n`;
+    summary += `Participants: ${participants.join(', ')}\n`;
+    summary += `Messages exchanged: ${msgCount}\n`;
+    if (topics.length > 0) summary += `Topics discussed: ${topics.map(t => `"${t}"`).join('; ')}`;
+    if (isRecording) summary += `\nRecording: session was recorded`;
+    void allText; // suppress unused warning
+    return summary;
   };
 
   // Mute-all: stop all agent TTS and clear queue
@@ -911,6 +946,20 @@ Respond as ${agentName(agentId)}:`;
             {showParticipants ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
 
+          {/* Recording toggle */}
+          <button
+            onClick={() => setIsRecording(v => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              isRecording
+                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+            title={isRecording ? 'Stop recording' : 'Start recording'}
+          >
+            {isRecording ? <StopCircle size={11} /> : <Circle size={11} />}
+            {isRecording ? 'Recording' : 'Record'}
+          </button>
+
           {/* Turn mode */}
           <select
             value={turnMode}
@@ -1023,6 +1072,14 @@ Respond as ${agentName(agentId)}:`;
           </button>
         </div>
       </div>
+
+      {/* Recording banner */}
+      {isRecording && (
+        <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-red-500/10 border-b border-red-500/30 text-red-400 text-xs font-medium">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          Meeting is being recorded
+        </div>
+      )}
 
       {/* Participant list panel */}
       {showParticipants && (
@@ -1356,7 +1413,13 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Start/End meeting */}
           <button
-            onClick={() => isActive ? endMeeting() : startMeeting()}
+            onClick={() => {
+              if (isActive) {
+                setShowEndConfirm(true);
+              } else {
+                startMeeting();
+              }
+            }}
             className={`p-5 rounded-full transition-all ${
               isActive
                 ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30'

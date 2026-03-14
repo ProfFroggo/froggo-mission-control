@@ -49,6 +49,13 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    category: 'Kanban',
+    items: [
+      { keys: ['Shift', 'Click'], description: 'Range-select cards' },
+      { keys: ['Esc'], description: 'Clear card selection' },
+    ],
+  },
+  {
     category: 'Search',
     items: [
       { keys: ['⌘', 'K'], description: 'Open global search' },
@@ -56,6 +63,29 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ['⌘', 'F'], description: 'Open global search (alt)' },
       { keys: ['↑ ↓'], description: 'Navigate search results' },
       { keys: ['Esc'], description: 'Close search' },
+    ],
+  },
+  {
+    category: 'Knowledge Base',
+    items: [
+      { keys: ['↑ ↓'], description: 'Navigate search results' },
+      { keys: ['Enter'], description: 'Open selected result' },
+      { keys: ['Esc'], description: 'Clear search' },
+    ],
+  },
+  {
+    category: 'Schedule',
+    items: [
+      { keys: ['M'], description: 'Switch to month view' },
+      { keys: ['W'], description: 'Switch to week view' },
+      { keys: ['A'], description: 'Switch to agenda view' },
+    ],
+  },
+  {
+    category: 'Chat Rooms',
+    items: [
+      { keys: ['⌘', 'F'], description: 'Search messages' },
+      { keys: ['Esc'], description: 'Close message search' },
     ],
   },
   {
@@ -67,6 +97,14 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: ['⌘', 'H'], description: 'Help & documentation' },
       { keys: ['⌘', '⇧', 'D'], description: 'Toggle dark / light mode' },
       { keys: ['⌘', 'M'], description: 'Toggle mute' },
+    ],
+  },
+  {
+    category: 'Accessibility',
+    items: [
+      { keys: ['Tab'], description: 'Skip to main content (focus sidebar first)' },
+      { keys: ['Tab / Shift+Tab'], description: 'Cycle focus within open modals' },
+      { keys: ['Esc'], description: 'Close modal and return focus to trigger' },
     ],
   },
 ];
@@ -130,7 +168,7 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-xl transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-xl transition-colors text-mission-control-text-dim hover:text-mission-control-text"
             aria-label="Close shortcuts"
           >
             <X size={18} aria-hidden="true" />
@@ -160,7 +198,7 @@ export default function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps)
             <kbd className="inline-flex items-center px-1.5 py-0.5 text-xs font-mono bg-mission-control-border rounded border border-mission-control-border/50 text-mission-control-text">
               Esc
             </kbd>{' '}
-            to close &nbsp;&bull;&nbsp; ⌘ = Cmd (macOS) / Ctrl (Windows/Linux)
+            to close &nbsp;&bull;&nbsp; ⌘ = Cmd (macOS) / Ctrl (Windows/Linux) &nbsp;&bull;&nbsp; Tab past sidebar to activate the skip-to-content link
           </p>
         </div>
       </div>

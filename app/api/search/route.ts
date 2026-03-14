@@ -1,91 +1,198 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// GET /api/search?q=query
-// Returns { tasks: [...], agents: [...], files: [...], knowledge: [...], automations: [...] }
-// Max 5 results per category. Searches title/name/description fields via LIKE.
+// GET /api/search?q=query&types=tasks,agents&limit=5&offset=0
+// Returns grouped results: { tasks, agents, knowledge, library, campaigns, automations }
+// Each group: { items: [...], total: number }
+// Rank tasks: incomplete first, then by updated_at desc
+// Rank knowledge: title match first, then content match
+// Support ?types=tasks,agents to filter result groups
+// Support ?limit=5&offset=0 per group
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
+interface GroupedResult<T> {
+  items: T[];
+  total: number;
+}
+
+interface SearchResponse {
+  tasks: GroupedResult<unknown>;
+  agents: GroupedResult<unknown>;
+  knowledge: GroupedResult<unknown>;
+  library: GroupedResult<unknown>;
+  campaigns: GroupedResult<unknown>;
+  automations: GroupedResult<unknown>;
+}
+
+const INCOMPLETE_STATUSES = ['todo', 'internal-review', 'in-progress', 'review', 'human-review'];
+
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get('q')?.trim();
+  const { searchParams } = request.nextUrl;
+  const q = searchParams.get('q')?.trim();
+
   if (!q || q.length < 2) {
-    return NextResponse.json({ tasks: [], agents: [], files: [], knowledge: [] });
+    const empty: GroupedResult<unknown> = { items: [], total: 0 };
+    return NextResponse.json({
+      tasks: empty,
+      agents: empty,
+      knowledge: empty,
+      library: empty,
+      campaigns: empty,
+      automations: empty,
+    });
   }
 
   const db = getDb();
   const like = `%${q}%`;
 
+  // Parse requested types (default: all)
+  const typesParam = searchParams.get('types');
+  const requestedTypes = typesParam
+    ? new Set(typesParam.split(',').map(t => t.trim().toLowerCase()))
+    : null; // null = all types
+
+  const wantType = (type: string) => !requestedTypes || requestedTypes.has(type);
+
+  // Pagination per group
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '5', 10), 1), 50);
+  const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0);
+
+  const empty: GroupedResult<unknown> = { items: [], total: 0 };
+  const result: SearchResponse = {
+    tasks: empty,
+    agents: empty,
+    knowledge: empty,
+    library: empty,
+    campaigns: empty,
+    automations: empty,
+  };
+
   try {
-    // Tasks — search title and description
-    const tasks = db.prepare(`
-      SELECT id, title, description, status, assignedTo, updatedAt
-      FROM tasks
-      WHERE title LIKE ? OR description LIKE ?
-      ORDER BY updatedAt DESC
-      LIMIT 5
-    `).all(like, like);
+    // ── Tasks ────────────────────────────────────────────────────────────────
+    // Rank: incomplete first (CASE), then by updatedAt desc within each group
+    if (wantType('tasks')) {
+      try {
+        const incompleteList = INCOMPLETE_STATUSES.map(() => '?').join(', ');
+        const taskParams = [like, like, ...INCOMPLETE_STATUSES, ...INCOMPLETE_STATUSES, like, like];
+        const allTasks = db.prepare(`
+          SELECT id, title, description, status, assignedTo, updatedAt,
+            CASE WHEN status IN (${incompleteList}) THEN 0 ELSE 1 END AS rank_group
+          FROM tasks
+          WHERE title LIKE ? OR description LIKE ?
+          ORDER BY rank_group ASC, updatedAt DESC
+        `).all(like, like, ...INCOMPLETE_STATUSES) as Array<Record<string, unknown>>;
 
-    // Agents — search name, role, id
-    let agents: unknown[] = [];
-    try {
-      agents = db.prepare(`
-        SELECT id, name, role, status, description
-        FROM agents
-        WHERE name LIKE ? OR role LIKE ? OR id LIKE ?
-        ORDER BY name ASC
-        LIMIT 5
-      `).all(like, like, like);
-    } catch {
-      // agents table may not exist in all deployments
+        result.tasks = {
+          items: allTasks.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
+          total: allTasks.length,
+        };
+      } catch {
+        // tasks table may vary
+      }
     }
 
-    // Library files — search name and path
-    let files: unknown[] = [];
-    try {
-      files = db.prepare(`
-        SELECT id, name, path, category, createdAt
-        FROM library_files
-        WHERE name LIKE ? OR path LIKE ?
-        ORDER BY createdAt DESC
-        LIMIT 5
-      `).all(like, like);
-    } catch {
-      // library_files table may not exist in all deployments
+    // ── Agents ───────────────────────────────────────────────────────────────
+    if (wantType('agents')) {
+      try {
+        const allAgents = db.prepare(`
+          SELECT id, name, role, status, description
+          FROM agents
+          WHERE name LIKE ? OR role LIKE ? OR id LIKE ?
+          ORDER BY name ASC
+        `).all(like, like, like) as Array<Record<string, unknown>>;
+
+        result.agents = {
+          items: allAgents.slice(offset, offset + limit),
+          total: allAgents.length,
+        };
+      } catch {
+        // agents table may not exist
+      }
     }
 
-    // Knowledge base articles — search title and content
-    let knowledge: unknown[] = [];
-    try {
-      knowledge = db.prepare(`
-        SELECT id, title, category, scope, updatedAt
-        FROM knowledge_base
-        WHERE title LIKE ? OR content LIKE ?
-        ORDER BY updatedAt DESC
-        LIMIT 5
-      `).all(like, like);
-    } catch {
-      // knowledge_base table may not exist in all deployments
+    // ── Knowledge base ───────────────────────────────────────────────────────
+    // Rank: title match first, then content-only match
+    if (wantType('knowledge')) {
+      try {
+        const allKnowledge = db.prepare(`
+          SELECT id, title, category, scope, updatedAt,
+            CASE WHEN title LIKE ? THEN 0 ELSE 1 END AS rank_group
+          FROM knowledge_base
+          WHERE title LIKE ? OR content LIKE ?
+          ORDER BY rank_group ASC, updatedAt DESC
+        `).all(like, like, like) as Array<Record<string, unknown>>;
+
+        result.knowledge = {
+          items: allKnowledge.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
+          total: allKnowledge.length,
+        };
+      } catch {
+        // knowledge_base table may not exist
+      }
     }
 
-    // Automations — search name and description
-    let automations: unknown[] = [];
-    try {
-      automations = db.prepare(`
-        SELECT id, name, description, status, trigger_type, updated_at
-        FROM automations
-        WHERE name LIKE ? OR description LIKE ?
-        ORDER BY updated_at DESC
-        LIMIT 5
-      `).all(like, like);
-    } catch {
-      // automations table may not exist in all deployments
+    // ── Library files ────────────────────────────────────────────────────────
+    if (wantType('library')) {
+      try {
+        const allFiles = db.prepare(`
+          SELECT id, name, path, category, createdAt
+          FROM library_files
+          WHERE name LIKE ? OR path LIKE ?
+          ORDER BY createdAt DESC
+        `).all(like, like) as Array<Record<string, unknown>>;
+
+        result.library = {
+          items: allFiles.slice(offset, offset + limit),
+          total: allFiles.length,
+        };
+      } catch {
+        // library_files table may not exist
+      }
     }
 
-    return NextResponse.json({ tasks, agents, files, knowledge, automations });
+    // ── Campaigns ────────────────────────────────────────────────────────────
+    if (wantType('campaigns')) {
+      try {
+        const allCampaigns = db.prepare(`
+          SELECT id, name, description, status, updatedAt
+          FROM campaigns
+          WHERE name LIKE ? OR description LIKE ?
+          ORDER BY updatedAt DESC
+        `).all(like, like) as Array<Record<string, unknown>>;
+
+        result.campaigns = {
+          items: allCampaigns.slice(offset, offset + limit),
+          total: allCampaigns.length,
+        };
+      } catch {
+        // campaigns table may not exist
+      }
+    }
+
+    // ── Automations ──────────────────────────────────────────────────────────
+    if (wantType('automations')) {
+      try {
+        const allAutomations = db.prepare(`
+          SELECT id, name, description, status, trigger_type, updated_at
+          FROM automations
+          WHERE name LIKE ? OR description LIKE ?
+          ORDER BY updated_at DESC
+        `).all(like, like) as Array<Record<string, unknown>>;
+
+        result.automations = {
+          items: allAutomations.slice(offset, offset + limit),
+          total: allAutomations.length,
+        };
+      } catch {
+        // automations table may not exist
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (err) {
     console.error('[/api/search] Error:', err);
-    return NextResponse.json({ tasks: [], agents: [], files: [], knowledge: [] }, { status: 500 });
+    return NextResponse.json(result, { status: 500 });
   }
 }
