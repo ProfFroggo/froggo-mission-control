@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
-  CalendarDays, CheckCircle2, CircleDot,
+  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList,
 } from 'lucide-react';
 import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
@@ -20,8 +20,10 @@ import Kanban from '../Kanban';
 import CampaignDispatchModal from './CampaignDispatchModal';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
+import CampaignROIDashboard from '../CampaignROIDashboard';
+import CampaignCommentsPanel from '../CampaignCommentsPanel';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -31,6 +33,9 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
   { id: 'performance', label: 'Performance', icon: BarChart2 },
+  { id: 'roi',         label: 'ROI',         icon: TrendingUp },
+  { id: 'comments',    label: 'Comments',    icon: MessageSquare },
+  { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
 ];
 
 const KPI_LABELS: Record<string, string> = {

@@ -17,8 +17,6 @@ import {
 } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
 type Tab = 'all' | 'unread' | 'mentions' | 'system';
 
 interface Notification {
@@ -37,8 +35,6 @@ interface NotificationCenterProps {
   onClose: () => void;
   onUnreadCountChange?: (count: number) => void;
 }
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -64,8 +60,6 @@ function TypeIcon({ type }: { type: string }) {
     default:                  return <Info className={cls} style={{ color: 'var(--color-text-muted)' }} />;
   }
 }
-
-// ── Component ────────────────────────────────────────────────────────────────
 
 export default function NotificationCenter({ isOpen, onClose, onUnreadCountChange }: NotificationCenterProps) {
   const [tab, setTab] = useState<Tab>('all');
@@ -97,10 +91,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
     if (isOpen) fetchNotifications();
   }, [isOpen, fetchNotifications]);
 
-  // Live updates via SSE
-  useEventBus('notification.new', () => {
-    fetchNotifications();
-  });
+  useEventBus('notification.new', () => { fetchNotifications(); });
 
   const markRead = async (id: string) => {
     await fetch('/api/notifications', {
@@ -141,14 +132,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
 
   return (
     <>
-      {/* Backdrop — closes panel */}
-      <div
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Slide-in Panel */}
+      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
       <aside
         className="fixed top-12 right-0 bottom-0 z-50 flex flex-col"
         style={{
@@ -205,10 +189,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
         </div>
 
         {/* Tabs */}
-        <div
-          className="flex flex-shrink-0"
-          style={{ borderBottom: '1px solid var(--color-border)' }}
-        >
+        <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--color-border)' }}>
           {TABS.map(t => (
             <button
               key={t.id}
@@ -229,35 +210,30 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
           ))}
         </div>
 
-        {/* Notification List */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading && (
             <div className="flex items-center justify-center py-8">
               <Loader size={20} className="animate-spin" style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
             </div>
           )}
-
           {!loading && notifications.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Bell size={32} style={{ color: 'var(--color-border)' }} aria-hidden="true" />
-              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                No notifications
-              </p>
+              <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>No notifications</p>
             </div>
           )}
-
           {!loading && notifications.map(n => (
             <div
               key={n.id}
               role="listitem"
-              className="group flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors"
+              className="group flex items-start gap-3 px-4 py-3 cursor-pointer"
               style={{
                 background: n.readAt ? 'transparent' : 'color-mix(in srgb, var(--color-accent) 6%, transparent)',
                 borderBottom: '1px solid var(--color-border)',
               }}
               onClick={() => { if (!n.readAt) markRead(n.id); }}
             >
-              {/* Unread dot */}
               <div className="flex-shrink-0 mt-1" style={{ width: 8 }}>
                 {!n.readAt && (
                   <span
@@ -267,25 +243,15 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
                   />
                 )}
               </div>
-
-              {/* Type Icon */}
               <div className="flex-shrink-0 mt-0.5">
                 <TypeIcon type={n.type} />
               </div>
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
-                <p
-                  className="text-[13px] font-medium leading-snug truncate"
-                  style={{ color: 'var(--color-text)' }}
-                >
+                <p className="text-[13px] font-medium leading-snug truncate" style={{ color: 'var(--color-text)' }}>
                   {n.title}
                 </p>
                 {n.body && (
-                  <p
-                    className="text-[11px] mt-0.5 line-clamp-2"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
+                  <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
                     {n.body}
                   </p>
                 )}
@@ -293,8 +259,6 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
                   {relativeTime(n.createdAt)}
                 </p>
               </div>
-
-              {/* Dismiss button */}
               <button
                 type="button"
                 onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}

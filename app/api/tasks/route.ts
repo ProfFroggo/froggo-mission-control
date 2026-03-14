@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 
+import { createNotification } from '@/lib/notificationWriter';
+
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
 
 function parseTask(row: Record<string, unknown>) {
@@ -181,6 +183,17 @@ export async function POST(request: NextRequest) {
 
     // Notify SSE clients of new task
     emitSSEEvent('task.created', { id, status, assignedTo: assignedTo ?? null });
+
+    // Emit notification when task is assigned on creation
+    if (assignedTo) {
+      createNotification({
+        type: 'task_assigned',
+        title: `Task assigned: ${title}`,
+        body: description ? String(description).slice(0, 120) : undefined,
+        userId: String(assignedTo),
+        metadata: { taskId: id, assignedTo },
+      }).catch(() => {});
+    }
 
     return NextResponse.json(parseTask(task), { status: 201 });
   } catch (error) {

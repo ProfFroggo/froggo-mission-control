@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
 
+import { createNotification } from '@/lib/notificationWriter';
+
 function parseApproval(row: Record<string, unknown>) {
   if (!row) return row;
   const parsed = { ...row };
@@ -71,6 +73,21 @@ export async function PATCH(request: NextRequest) {
     db.prepare(
       `UPDATE approvals SET status = ?, respondedAt = ?, notes = ? WHERE id IN (${updatePlaceholders})`
     ).run(status, respondedAt, notes, ...validIds);
+
+    // Emit approval_resolved notifications
+    try {
+      const resolvedRows = db.prepare(
+        `SELECT id, title, requester FROM approvals WHERE id IN (${updatePlaceholders})`
+      ).all(...validIds) as Array<{ id: string; title: string; requester: string | null }>;
+      for (const row of resolvedRows) {
+        createNotification({
+          type: 'approval_resolved',
+          title: `Approval ${status}: ${row.title}`,
+          userId: row.requester ?? undefined,
+          metadata: { approvalId: row.id, action, status },
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ }
 
     return NextResponse.json({ updated: validIds.length });
   } catch (error) {

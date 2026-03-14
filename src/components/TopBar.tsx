@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'; // TEST
-import { Inbox, Loader, Wifi, WifiOff, Activity } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Inbox, Loader, Wifi, WifiOff, Activity, Menu, Search, X } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';
@@ -17,9 +17,11 @@ type PlatformStatus = 'ok' | 'degraded' | 'error';
 interface TopBarProps {
   onNavigate?: (view: any) => void;
   sidebarWidth?: number;
+  onOpenMobileNav?: () => void;
+  onOpenSearch?: () => void;
 }
 
-export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
+export default function TopBar({ sidebarWidth = 208, onOpenMobileNav, onOpenSearch }: TopBarProps) {
   const [status, setStatus] = useState<SystemStatus>({
     watcherRunning: false,
     killSwitchOn: true,
@@ -33,6 +35,14 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>('ok');
   const [healthDashboardOpen, setHealthDashboardOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      mobileSearchRef.current?.focus();
+    }
+  }, [mobileSearchOpen]);
 
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state, attempts }: { state: ConnectionState; attempts?: number }) => {
@@ -44,7 +54,6 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
     return () => { unsub(); };
   }, []);
 
-  // Show toast on connection lost
   useEffect(() => {
     const unsubLost = gateway.on('connectionLost', ({ code, attempts }: { code: number; attempts: number }) => {
       showToast('error', 'Connection lost', `Gateway disconnected (code: ${code}). Retrying... (${attempts})`);
@@ -93,11 +102,10 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
       }
     };
     checkStatus();
-    const interval = setInterval(checkStatus, 60000); // Poll every 60s (was 10s)
+    const interval = setInterval(checkStatus, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Platform health status indicator — polls /api/health/metrics every 60s
   useEffect(() => {
     const fetchHealth = async () => {
       try {
@@ -126,26 +134,77 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
 
   return (
     <>
-      <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200" 
+      <header
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200"
         style={{ left: `${sidebarWidth}px` }}
       >
-        {/* Left: Focus mode */}
-        <div className="no-drag flex items-center gap-2">
-          {focusMode && (
-            <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
+        <div className="no-drag flex items-center gap-2 flex-1 min-w-0">
+          {onOpenMobileNav && (
+            <button
+              type="button"
+              onClick={onOpenMobileNav}
+              className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all flex-shrink-0"
+              aria-label="Open navigation menu"
+            >
+              <Menu size={20} aria-hidden="true" />
+            </button>
+          )}
+
+          {mobileSearchOpen ? (
+            <div className="md:hidden flex items-center gap-2 flex-1 min-w-0">
+              <input
+                ref={mobileSearchRef}
+                type="search"
+                placeholder="Search..."
+                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent min-h-[44px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setMobileSearchOpen(false);
+                  if (e.key === 'Enter') {
+                    setMobileSearchOpen(false);
+                    onOpenSearch?.();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setMobileSearchOpen(false)}
+                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all flex-shrink-0"
+                aria-label="Close search"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            focusMode && (
+              <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
+            )
           )}
         </div>
 
-        {/* Right: Connection status + Counters */}
-        <div className="no-drag flex items-center gap-3">
-          {/* Platform Health Indicator */}
+        <div className="no-drag flex items-center gap-3 flex-shrink-0">
+          {!mobileSearchOpen && (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  setMobileSearchOpen(true);
+                } else {
+                  onOpenSearch?.();
+                }
+              }}
+              className="md:hidden p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
+              aria-label="Search"
+            >
+              <Search size={18} aria-hidden="true" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setHealthDashboardOpen(true)}
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
             aria-label={`Platform health: ${platformStatus}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px] justify-center"
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -168,16 +227,16 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-hidden="true"
             />
           </button>
-          {/* Connection Status Indicator */}
+
           {connectionState !== 'connected' && (
-            <span 
+            <span
               className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
-                connectionState === 'disconnected' 
-                  ? 'bg-error-subtle text-error' 
+                connectionState === 'disconnected'
+                  ? 'bg-error-subtle text-error'
                   : 'bg-warning-subtle text-warning'
               }`}
-              title={connectionState === 'disconnected' 
-                ? `Disconnected. Reconnecting... (${reconnectAttempts})` 
+              title={connectionState === 'disconnected'
+                ? `Disconnected. Reconnecting... (${reconnectAttempts})`
                 : `Connecting to gateway... (${reconnectAttempts})`}
             >
               {connectionState === 'disconnected' ? (
@@ -185,16 +244,15 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               ) : (
                 <Wifi size={12} className="animate-pulse" aria-hidden="true" />
               )}
-              <span>
+              <span className="hidden sm:inline">
                 {connectionState === 'disconnected' ? 'Offline' : 'Connecting'}
                 {reconnectAttempts > 0 && ` (${reconnectAttempts})`}
               </span>
             </span>
           )}
 
-          {/* Offline Queue Indicator */}
           {offlineQueueSize > 0 && (
-            <span 
+            <span
               className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
               title={`${offlineQueueSize} actions queued for sync`}
             >
@@ -204,14 +262,20 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
           )}
 
           {status.pendingInbox > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning" title={`${status.pendingInbox} pending inbox items`}>
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
+              title={`${status.pendingInbox} pending inbox items`}
+            >
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-info" title={`${status.inProgressTasks} tasks in progress`}>
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-info"
+              title={`${status.inProgressTasks} tasks in progress`}
+            >
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>
@@ -219,7 +283,6 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         </div>
       </header>
 
-      {/* Focus Mode Selector */}
       <FocusModeSelector
         isOpen={focusSelectorOpen}
         onClose={() => setFocusSelectorOpen(false)}
@@ -227,7 +290,6 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         onSelectMode={setFocusMode}
       />
 
-      {/* Platform Health Dashboard */}
       <PlatformHealthDashboard
         isOpen={healthDashboardOpen}
         onClose={() => setHealthDashboardOpen(false)}

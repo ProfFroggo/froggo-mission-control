@@ -24,6 +24,7 @@ const EVENT_TYPES = [
   'agent.hired',
   'automation.completed',
   'automation.failed',
+  'notification.new',
 ];
 
 function dispatchEvent(type: string, data: unknown) {
