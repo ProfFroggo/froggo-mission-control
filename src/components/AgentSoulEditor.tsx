@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, FileText, Send, Info } from 'lucide-react';
+import { Save, RefreshCw, FileText, Send, Info, Tag, X, Plus, Brain, MessageSquare, Star, ToggleLeft, ToggleRight } from 'lucide-react';
+// SOUL V2 MARKER
 import { showToast } from './Toast';
 import { agentApi } from '../lib/api';
 

@@ -851,6 +851,55 @@ function initSchema(db: Database.Database) {
     `);
   } catch { /* FTS not available or already created */ }
 
+  // Knowledge Base v3: versions, templates, analytics
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        editedBy TEXT NOT NULL DEFAULT 'human',
+        editedAt INTEGER NOT NULL,
+        versionNote TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_versions_article ON knowledge_versions(articleId, editedAt DESC);
+      CREATE TABLE IF NOT EXISTS knowledge_templates (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS knowledge_analytics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        event TEXT NOT NULL DEFAULT 'view',
+        recordedAt INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_analytics_article ON knowledge_analytics(articleId, recordedAt DESC);
+    `);
+  } catch { /* tables already exist */ }
+
+  // Seed default knowledge templates if empty
+  try {
+    const tmplCount = db.prepare('SELECT COUNT(*) as c FROM knowledge_templates').get() as { c: number };
+    if (tmplCount.c === 0) {
+      const tnow = Date.now();
+      const defaultTemplates = [
+        { id: 'tmpl-how-to', label: 'How-to Guide', category: 'reference', content: '# How-to Guide: [Title]\n\n## Overview\nBriefly describe what this guide helps the reader accomplish.\n\n## Prerequisites\n- Requirement one\n\n## Steps\n1. First step\n2. Second step\n\n## Troubleshooting\n**Problem**: Describe a common issue.\n**Solution**: How to fix it.' },
+        { id: 'tmpl-decision-log', label: 'Decision Log', category: 'reference', content: '# Decision Log: [Topic]\n\n## Context\nDescribe the situation.\n\n## Options Considered\n1. Option A\n2. Option B\n\n## Decision\nState what was decided.\n\n## Rationale\nExplain why.\n\n## Follow-up\n- [ ] Action item' },
+        { id: 'tmpl-meeting-notes', label: 'Meeting Notes', category: 'reference', content: '# Meeting Notes\n\n## Attendees\n- Name / Role\n\n## Agenda\n1. Topic one\n\n## Discussion\nSummarize key points.\n\n## Action Items\n- [ ] Task \u2014 owner \u2014 due date' },
+        { id: 'tmpl-incident-report', label: 'Incident Report', category: 'technical', content: '# Incident Report: [Title]\n\n## Summary\nBrief description.\n\n## Timeline\n- HH:MM \u2014 event\n\n## Root Cause\nUnderlying cause.\n\n## Impact\nWho/what affected.\n\n## Resolution\nHow it was resolved.\n\n## Prevention\n- [ ] Action to prevent recurrence' },
+      ];
+      const ins = db.prepare(`INSERT OR IGNORE INTO knowledge_templates (id, label, content, category, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+      for (const t of defaultTemplates) {
+        ins.run(t.id, t.label, t.content, t.category, tnow, tnow);
+      }
+    }
+  } catch { /* non-critical */ }
+
+
   // Seed example knowledge base articles if empty
   try {
     const kbCount = db.prepare('SELECT COUNT(*) as c FROM knowledge_base').get() as { c: number };
