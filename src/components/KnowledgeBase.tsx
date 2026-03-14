@@ -955,18 +955,57 @@ export default function KnowledgeBase() {
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 h-full">
         <div className="p-4 border-b border-mission-control-border space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <BookOpen size={16} className="text-mission-control-text-dim" />
               <span className="font-semibold text-mission-control-text text-sm">Knowledge Base</span>
             </div>
-            <button
-              onClick={() => setQuickCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
-            >
-              <Plus size={12} />
-              New Article
-            </button>
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+              <button
+                onClick={() => setShowGraph(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                title="Graph view"
+              >
+                <Network size={12} />
+                Graph
+              </button>
+              <div className="relative" ref={templateDropdownRef}>
+                <button
+                  onClick={() => setShowTemplateDropdown(v => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                  title="New from template"
+                >
+                  <FileText size={12} />
+                  Template
+                  <ChevronDown size={10} />
+                </button>
+                {showTemplateDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-20 overflow-hidden">
+                    {apiTemplates.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-mission-control-text-dim">No templates available</p>
+                    ) : (
+                      apiTemplates.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => createFromTemplate(t.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                        >
+                          <FileText size={11} className="text-mission-control-text-dim shrink-0" />
+                          {t.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setQuickCreate(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+              >
+                <Plus size={12} />
+                New Article
+              </button>
+            </div>
           </div>
 
           <div className="relative">
