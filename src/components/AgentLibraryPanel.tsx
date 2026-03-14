@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Bot, CheckCircle, Search, RefreshCw, Cpu, Star, Trash2,
-  ArrowUpDown, Zap, BarChart2, Clock, SortAsc, GitCompare, X,
+  ArrowUpDown, Zap, BarChart2, Clock, SortAsc, GitCompare, X, Table2,
 } from 'lucide-react';
 import { catalogApi } from '../lib/api';
 import type { CatalogAgent } from '../types/catalog';
@@ -10,6 +10,7 @@ import { useStore } from '../store/store';
 import AgentHireWizard from './AgentHireWizard';
 import AgentCompareModal from './AgentCompareModal';
 import EmptyState from './EmptyState';
+import AgentCapabilityMatrix from './AgentCapabilityMatrix';
 
 const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 
@@ -70,8 +71,11 @@ interface AgentLibraryPanelProps {
   onHire?: (agent: CatalogAgent) => void;
 }
 
+type LibraryTab = 'catalog' | 'capabilities';
+
 export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   const fetchAgents = useStore(s => s.fetchAgents);
+  const [activeTab, setActiveTab]     = useState<LibraryTab>('catalog');
   const [agents, setAgents]           = useState<CatalogAgent[]>([]);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
@@ -199,7 +203,36 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
   return (
     <>
-      <div className="flex gap-4">
+      {/* Library tabs */}
+      <div className="flex items-center gap-1 mb-4 border-b border-mission-control-border">
+        <button
+          type="button"
+          onClick={() => setActiveTab('catalog')}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+            activeTab === 'catalog'
+              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
+        >
+          <Bot size={14} />
+          Catalog
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('capabilities')}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+            activeTab === 'capabilities'
+              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
+        >
+          <Table2 size={14} />
+          Capabilities
+        </button>
+      </div>
+
+      {activeTab === 'capabilities' && <AgentCapabilityMatrix />}
+      {activeTab === 'catalog' && <div className="flex gap-4">
         {/* ── Category sidebar ── */}
         <aside className="flex-shrink-0 w-44">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
@@ -539,7 +572,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Hire wizard */}
       {hiringAgent && (

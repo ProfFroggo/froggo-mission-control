@@ -6,6 +6,7 @@ import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { trackEvent } from '@/lib/telemetry';
 import { createNotification } from '@/lib/notificationWriter';
+import { createNotification } from '@/lib/notificationWriter';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
