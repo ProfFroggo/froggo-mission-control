@@ -504,6 +504,62 @@ function loadHandoffNote(taskId: string, agentId: string): string {
   return '';
 }
 
+// ── Dispatch context enrichment ───────────────────────────────────────────────
+
+/**
+ * Build a structured context block injected into the agent's system prompt
+ * at dispatch time: project name, parent task title, and blocking task titles.
+ * Returns an empty string if no enrichment is possible (non-critical).
+ */
+function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
+  try {
+    const db = getDb();
+    const lines: string[] = [];
+
+    // Project name (prefer DB lookup so we always get the canonical name)
+    const projectId = task.project_id as string | undefined;
+    if (projectId && !projectId.startsWith('cmp-')) {
+      try {
+        const proj = db.prepare('SELECT name FROM projects WHERE id = ?').get(projectId) as
+          { name: string } | undefined;
+        if (proj?.name) lines.push(`Project: ${proj.name}`);
+      } catch { /* non-critical */ }
+    }
+
+    // Parent task title
+    const parentTaskId = task.parentTaskId as string | undefined;
+    if (parentTaskId) {
+      try {
+        const parent = db.prepare('SELECT title FROM tasks WHERE id = ?').get(parentTaskId) as
+          { title: string } | undefined;
+        if (parent?.title) lines.push(`Parent task: ${parent.title}`);
+      } catch { /* non-critical */ }
+    }
+
+    // Blocking task titles — blockedBy is stored as a JSON array of task IDs
+    const blockedByRaw = task.blockedBy as string | undefined;
+    if (blockedByRaw) {
+      try {
+        const blockedByIds: string[] = JSON.parse(blockedByRaw);
+        if (Array.isArray(blockedByIds) && blockedByIds.length > 0) {
+          const placeholders = blockedByIds.map(() => '?').join(', ');
+          const blockers = db.prepare(
+            `SELECT title FROM tasks WHERE id IN (${placeholders})`
+          ).all(...blockedByIds) as Array<{ title: string }>;
+          if (blockers.length > 0) {
+            lines.push(`Blocked by: ${blockers.map(b => b.title).join(', ')}`);
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
+    if (lines.length === 0) return '';
+    return `\n\n## Task Context\n${lines.join('\n')}`;
+  } catch {
+    return ''; // Never block dispatch
+  }
+}
+
 // ── Knowledge Base injection ──────────────────────────────────────────────────
 
 /**
@@ -706,11 +762,14 @@ function buildTaskSystemPrompt(
         : buildProjectContext(projectId))
     : '';
 
+  // Structured dispatch context: project name, parent task, blockers
+  const dispatchContext = task ? buildDispatchContextEnrichment(task) : '';
+
   const dir = join(HOME, 'mission-control', 'agents', agentId);
   const soulPath = join(dir, 'SOUL.md');
   if (existsSync(soulPath)) {
     const soul = readFileSync(soulPath, 'utf-8').trim();
-    return soul + skills + relevantMemory + handoffNote + kbContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
+    return soul + skills + relevantMemory + handoffNote + kbContext + dispatchContext + projectContext + apiKeyPrompt + permPrompt + TASK_SUFFIX;
   }
   // Fall back to DB personality
   try {
@@ -725,6 +784,7 @@ function buildTaskSystemPrompt(
       if (relevantMemory) parts.push(relevantMemory);
       if (handoffNote) parts.push(handoffNote);
       if (kbContext) parts.push(kbContext);
+      if (dispatchContext) parts.push(dispatchContext);
       if (apiKeyPrompt) parts.push(apiKeyPrompt);
       if (permPrompt) parts.push(permPrompt);
       parts.push(TASK_SUFFIX.trim());
@@ -1094,6 +1154,26 @@ export function dispatchTask(taskId: string): boolean {
       }
       return false;
     }
+
+    // Agent load balance check — warn if agent has ≥3 in-progress tasks
+    try {
+      const inProgressCount = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
+      ).get(agentId) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (inProgressCount >= 3) {
+        console.warn(`[taskDispatcher] Agent ${agentId} has ${inProgressCount} in-progress tasks — potentially overloaded`);
+        try {
+          db.prepare(
+            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+          ).run(
+            taskId, 'system', 'agent_overload_warning',
+            `Warning: agent ${agentId} already has ${inProgressCount} in-progress task(s). Dispatching anyway.`,
+            Date.now()
+          );
+        } catch { /* non-critical */ }
+      }
+    } catch { /* non-critical — never block dispatch */ }
 
     // Concurrency check — skip if at limit
     if (activeDispatches >= MAX_CONCURRENT_DISPATCHES) {

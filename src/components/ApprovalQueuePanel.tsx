@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ShieldAlert, ShieldCheck, ShieldX, Clock, RefreshCw,
   Check, X, ChevronDown, ChevronUp, User, MessageSquare,
   Mail, Zap, ListTodo, Send, Bot, ExternalLink, Trash2,
   GitBranch, CalendarClock, AlertTriangle, Edit2, CheckCircle,
-  CheckSquare, Filter,
+  CheckSquare, Filter, ChevronRight, XCircle, Square,
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -32,6 +32,7 @@ interface Approval {
   status: ApprovalStatus;
   requester?: string;
   tier: number;
+  priority?: number;
   category?: ApprovalCategory;
   actionRef?: string;
   createdAt: number;
@@ -43,16 +44,16 @@ interface Approval {
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; label: string; color: string; bg: string; border: string }> = {
-  task:        { icon: ListTodo,    label: 'Task',        color: 'text-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/30' },
-  tweet:       { icon: Send,        label: 'X Post',      color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
-  post_x:      { icon: Send,        label: 'X Post',      color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
-  reply:       { icon: MessageSquare, label: 'Reply',     color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
-  email:       { icon: Mail,        label: 'Email',       color: 'text-green-400',  bg: 'bg-green-400/10',  border: 'border-green-400/30' },
-  send_email:  { icon: Mail,        label: 'Email',       color: 'text-green-400',  bg: 'bg-green-400/10',  border: 'border-green-400/30' },
-  message:     { icon: MessageSquare, label: 'Message',   color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/30' },
-  action:      { icon: Zap,         label: 'Action',      color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
-  delete_file: { icon: Trash2,      label: 'Delete File', color: 'text-red-400',    bg: 'bg-red-400/10',    border: 'border-red-400/30' },
-  git_push:    { icon: GitBranch,   label: 'Git Push',    color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
+  task:        { icon: ListTodo,      label: 'Task',        color: 'text-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/30' },
+  tweet:       { icon: Send,          label: 'X Post',      color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
+  post_x:      { icon: Send,          label: 'X Post',      color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
+  reply:       { icon: MessageSquare, label: 'Reply',       color: 'text-sky-400',    bg: 'bg-sky-400/10',    border: 'border-sky-400/30' },
+  email:       { icon: Mail,          label: 'Email',       color: 'text-green-400',  bg: 'bg-green-400/10',  border: 'border-green-400/30' },
+  send_email:  { icon: Mail,          label: 'Email',       color: 'text-green-400',  bg: 'bg-green-400/10',  border: 'border-green-400/30' },
+  message:     { icon: MessageSquare, label: 'Message',     color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/30' },
+  action:      { icon: Zap,           label: 'Action',      color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
+  delete_file: { icon: Trash2,        label: 'Delete File', color: 'text-red-400',    bg: 'bg-red-400/10',    border: 'border-red-400/30' },
+  git_push:    { icon: GitBranch,     label: 'Git Push',    color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/30' },
 };
 
 const FILTER_TABS: { id: FilterTab; label: string }[] = [
@@ -77,6 +78,69 @@ function matchesFilter(a: Approval, filter: FilterTab): boolean {
   if (filter === 'posts') return a.type === 'tweet' || a.type === 'reply' || a.type === 'post_x';
   if (filter === 'actions') return ['action', 'email', 'message', 'send_email', 'delete_file', 'git_push'].includes(a.type);
   return true;
+}
+
+function getUrgencyTier(a: Approval): number {
+  return a.priority ?? a.tier ?? 3;
+}
+
+// Sort: lower tier = more urgent (P0 first). Within same tier, oldest first.
+function sortByUrgency(approvals: Approval[]): Approval[] {
+  return [...approvals].sort((a, b) => {
+    const pa = getUrgencyTier(a);
+    const pb = getUrgencyTier(b);
+    if (pa !== pb) return pa - pb;
+    return a.createdAt - b.createdAt;
+  });
+}
+
+// ─── Stats Header ─────────────────────────────────────────────────────────────
+
+function ApprovalStatsStrip({ approvals, allApprovals }: { approvals: Approval[]; allApprovals: Approval[] }) {
+  const pendingCount = approvals.filter(a => a.status === 'pending').length;
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const approvedToday = allApprovals.filter(
+    a => a.status === 'approved' && a.respondedAt && a.respondedAt >= todayStart.getTime()
+  ).length;
+
+  const responded = allApprovals.filter(a => a.respondedAt && a.createdAt && a.status !== 'pending');
+  let avgResponseMin: number | null = null;
+  if (responded.length > 0) {
+    const totalMs = responded.reduce((sum, a) => sum + ((a.respondedAt ?? 0) - a.createdAt), 0);
+    avgResponseMin = Math.round(totalMs / responded.length / 60_000);
+  }
+
+  return (
+    <div className="flex items-center gap-4 px-6 py-2.5 border-b border-mission-control-border bg-mission-control-surface/60 text-xs">
+      <div className="flex items-center gap-1.5">
+        <Clock className="w-3.5 h-3.5 text-warning" />
+        <span className="text-mission-control-text-dim">Pending</span>
+        <span className="px-1.5 py-0.5 rounded-full bg-warning/20 text-warning font-semibold min-w-[20px] text-center">
+          {pendingCount}
+        </span>
+      </div>
+      <div className="w-px h-4 bg-mission-control-border" />
+      <div className="flex items-center gap-1.5">
+        <ShieldCheck className="w-3.5 h-3.5 text-success" />
+        <span className="text-mission-control-text-dim">Approved today</span>
+        <span className="font-semibold text-mission-control-text">{approvedToday}</span>
+      </div>
+      {avgResponseMin !== null && (
+        <>
+          <div className="w-px h-4 bg-mission-control-border" />
+          <div className="flex items-center gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5 text-info" />
+            <span className="text-mission-control-text-dim">Avg response</span>
+            <span className="font-semibold text-mission-control-text">
+              {avgResponseMin < 60 ? `${avgResponseMin}m` : `${Math.round(avgResponseMin / 60)}h`}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ─── Rich Previews ────────────────────────────────────────────────────────────
@@ -184,7 +248,7 @@ function GitPushPreview({ repoPatt, branch, remote, force, commitMsg }: {
         <div className="flex items-center gap-2">
           <span className="text-mission-control-text-dim w-16">Branch</span>
           <code className="font-mono text-orange-300 bg-orange-400/10 rounded px-1.5 py-0.5">{branch || 'main'}</code>
-          <span className="text-mission-control-text-dim">→</span>
+          <span className="text-mission-control-text-dim">{'→'}</span>
           <code className="font-mono text-mission-control-text-dim">{remote || 'origin'}</code>
         </div>
         {commitMsg && (
@@ -271,8 +335,8 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
         body: JSON.stringify({ status: 'in-progress' }),
       });
       setFeedback(prev => { const n = { ...prev }; delete n[taskId]; return n; });
-      showToast('success', 'Task resumed');
-    } catch { showToast('error', 'Failed to resume'); }
+      showToast('Task resumed', 'success');
+    } catch { showToast('Failed to resume', 'error'); }
     finally { setSubmitting(prev => { const n = new Set(prev); n.delete(taskId); return n; }); }
   };
 
@@ -284,8 +348,8 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled' }),
       });
-      showToast('success', 'Task cancelled');
-    } catch { showToast('error', 'Failed to cancel'); }
+      showToast('Task cancelled', 'success');
+    } catch { showToast('Failed to cancel', 'error'); }
     finally { setSubmitting(prev => { const n = new Set(prev); n.delete(taskId); return n; }); }
   };
 
@@ -305,7 +369,6 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
 
           return (
             <div key={task.id} className="bg-mission-control-surface/40">
-              {/* Header row */}
               <button
                 onClick={() => toggle(task.id)}
                 className="w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-mission-control-surface/60 transition-colors"
@@ -321,13 +384,13 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                     <div className="mt-1 text-xs text-warning/80 truncate">{reason}</div>
                   )}
                 </div>
-                {isOpen ? <ChevronUp size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" /> : <ChevronDown size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" />}
+                {isOpen
+                  ? <ChevronUp size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" />
+                  : <ChevronDown size={14} className="text-mission-control-text-dim mt-1 flex-shrink-0" />}
               </button>
 
-              {/* Expanded body */}
               {isOpen && (
                 <div className="px-5 pb-4 space-y-3">
-                  {/* Blocked reason */}
                   {reason && (
                     <div className="flex gap-2 p-3 rounded-lg bg-warning-subtle/30 border border-warning-border/40">
                       <AlertTriangle size={13} className="text-warning flex-shrink-0 mt-0.5" />
@@ -337,15 +400,11 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                       </div>
                     </div>
                   )}
-
-                  {/* Task description if no reason */}
                   {!reason && task.description && (
                     <div className="text-xs text-mission-control-text-dim p-3 rounded-lg bg-mission-control-border/20">
                       {task.description}
                     </div>
                   )}
-
-                  {/* Feedback input */}
                   <div>
                     <label className="text-xs font-medium text-mission-control-text-dim block mb-1.5">
                       Your feedback or instructions to the agent
@@ -358,8 +417,6 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                       className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
                     />
                   </div>
-
-                  {/* Actions */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => resume(task.id, feedback[task.id])}
@@ -387,14 +444,235 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
   );
 }
 
+// ─── Detail Pane ──────────────────────────────────────────────────────────────
+
+interface DetailPaneProps {
+  approval: Approval;
+  isResponding: boolean;
+  showActions: boolean;
+  linkedTask?: { id: string; title: string; status: string; project?: string };
+  onApprove: () => void;
+  onReject: () => void;
+  onClose: () => void;
+}
+
+function ApprovalDetailPane({
+  approval, isResponding, showActions, linkedTask,
+  onApprove, onReject, onClose,
+}: DetailPaneProps) {
+  const [approveConfirm, setApproveConfirm] = useState(false);
+  const [rejectConfirm, setRejectConfirm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const rejectReasonRef = useRef<HTMLTextAreaElement>(null);
+  const setActiveRoom = useChatRoomStore(s => s.setActiveRoom);
+
+  const tier = getUrgencyTier(approval);
+  const isExecutable = EXECUTABLE_TYPES.has(approval.type) || approval.category === 'executable_action' || approval.category === 'scheduled_action';
+
+  const timeAgo = (() => {
+    const diff = Date.now() - approval.createdAt;
+    if (diff < 60_000) return 'just now';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+    return new Date(approval.createdAt).toLocaleDateString();
+  })();
+
+  const urgencyBorderClass = tier === 0
+    ? 'border-l-4 border-error'
+    : tier === 1
+    ? 'border-l-4 border-warning'
+    : '';
+
+  const urgencyLabel = tier === 0
+    ? <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-error/20 text-error">P0</span>
+    : tier === 1
+    ? <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-warning/20 text-warning">P1</span>
+    : null;
+
+  const handleApproveClick = () => {
+    if (!approveConfirm) {
+      setApproveConfirm(true);
+      setRejectConfirm(false);
+      return;
+    }
+    setApproveConfirm(false);
+    onApprove();
+  };
+
+  const handleRejectClick = () => {
+    if (!rejectConfirm) {
+      setRejectConfirm(true);
+      setApproveConfirm(false);
+      setTimeout(() => rejectReasonRef.current?.focus(), 50);
+      return;
+    }
+    setRejectConfirm(false);
+    onReject();
+  };
+
+  const handleDiscuss = () => {
+    const agentId = (approval.metadata?.agentId ?? approval.requester) as string | undefined;
+    if (agentId) {
+      setActiveRoom(`agent-${agentId}`);
+      window.location.hash = 'chat';
+    }
+  };
+
+  let payloadDisplay: string | null = null;
+  if (approval.metadata && Object.keys(approval.metadata).length > 0) {
+    try { payloadDisplay = JSON.stringify(approval.metadata, null, 2); } catch { payloadDisplay = null; }
+  }
+
+  return (
+    <div className={`flex flex-col h-full bg-mission-control-surface border-l border-mission-control-border ${urgencyBorderClass}`}>
+      {/* Pane header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+        <div className="flex items-center gap-2 min-w-0">
+          {urgencyLabel}
+          <span className="text-sm font-semibold text-mission-control-text truncate">{approval.title}</span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Pane body */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-mission-control-text-dim">
+          <span className={`px-1.5 py-0.5 rounded-full font-medium ${getApprovalTypeConfig(approval.type).className}`}>
+            {getApprovalTypeConfig(approval.type).label}
+          </span>
+          {approval.requester && (
+            <span className="flex items-center gap-1"><User className="w-3 h-3" />{approval.requester}</span>
+          )}
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo}</span>
+          <span>{new Date(approval.createdAt).toLocaleString()}</span>
+        </div>
+
+        {isExecutable && <ActionPreview approval={approval} />}
+
+        {approval.content && (
+          <div>
+            <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-1.5">Content</div>
+            <div className="text-sm text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
+              {approval.content}
+            </div>
+          </div>
+        )}
+
+        {approval.context && (
+          <div>
+            <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-1.5">Context</div>
+            <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2 leading-relaxed">
+              {approval.context}
+            </div>
+          </div>
+        )}
+
+        {payloadDisplay && (
+          <div>
+            <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-1.5">Payload</div>
+            <pre className="text-xs text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 overflow-x-auto leading-relaxed font-mono whitespace-pre-wrap">
+              {payloadDisplay}
+            </pre>
+          </div>
+        )}
+
+        {linkedTask && (
+          <div className="flex items-center gap-2 text-xs bg-mission-control-border/20 rounded-lg px-3 py-2">
+            <ListTodo className="w-3.5 h-3.5 text-mission-control-accent shrink-0" />
+            <span className="font-medium">{linkedTask.title}</span>
+            {linkedTask.project && <span className="text-mission-control-text-dim">· {linkedTask.project}</span>}
+          </div>
+        )}
+
+        {approval.notes && (
+          <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2">
+            <span className="font-medium text-mission-control-text">Notes: </span>{approval.notes}
+          </div>
+        )}
+        {approval.adjustedContent && (
+          <div className="text-xs text-mission-control-text-dim">
+            <span className="font-medium text-mission-control-text">Adjusted: </span>
+            <span className="font-mono">{approval.adjustedContent}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Pane footer — actions */}
+      {showActions && (
+        <div className="px-4 py-3 border-t border-mission-control-border space-y-3">
+          {rejectConfirm && (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-error block">Rejection reason (required)</label>
+              <textarea
+                ref={rejectReasonRef}
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                placeholder="Explain why this is being rejected…"
+                rows={2}
+                className="w-full text-sm bg-mission-control-bg border border-error-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-error resize-none"
+              />
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={handleApproveClick}
+              disabled={isResponding}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-50 shadow-sm ${
+                approveConfirm ? 'bg-success/80 animate-pulse' : 'bg-success hover:brightness-110'
+              }`}
+            >
+              {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              {approveConfirm ? 'Confirm Approve?' : 'Approve'}
+            </button>
+            <button
+              onClick={handleRejectClick}
+              disabled={isResponding || (rejectConfirm && rejectReason.trim().length === 0)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all disabled:opacity-50 ${
+                rejectConfirm ? 'bg-error text-white border-error animate-pulse' : 'bg-error-subtle text-error border-error-border hover:bg-error/20'
+              }`}
+            >
+              {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+              {rejectConfirm ? 'Confirm Reject?' : 'Reject'}
+            </button>
+            {approval.requester && (
+              <button
+                onClick={handleDiscuss}
+                title="Open chat with this agent"
+                className="flex items-center justify-center px-3 py-2.5 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {(rejectConfirm || approveConfirm) && (
+            <button
+              onClick={() => { setRejectConfirm(false); setApproveConfirm(false); setRejectReason(''); }}
+              className="w-full text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ApprovalQueuePanel() {
   const tasks = useStore(s => s.tasks);
 
   const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [allApprovals, setAllApprovals] = useState<Approval[]>([]);
   const [statusTab, setStatusTab] = useState<StatusTab>('pending');
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
+  const [requesterFilter, setRequesterFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -403,18 +681,31 @@ export default function ApprovalQueuePanel() {
   const [editing, setEditing] = useState<Set<string>>(new Set());
   const [responding, setResponding] = useState<Set<string>>(new Set());
 
+  // Detail pane
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Batch selection
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [batchWorking, setBatchWorking] = useState(false);
+  const [batchRejectReason, setBatchRejectReason] = useState('');
+  const [showBatchRejectInput, setShowBatchRejectInput] = useState(false);
+
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
       let data: Approval[];
       if (statusTab === 'scheduled') {
-        // Scheduled tab: approved actions with a scheduledFor time
         data = await approvalApi.getAll('approved', 'scheduled_action');
       } else {
         data = await approvalApi.getAll(statusTab);
       }
       setApprovals(Array.isArray(data) ? data : []);
+
+      if (!silent) {
+        const all = await approvalApi.getAll();
+        setAllApprovals(Array.isArray(all) ? all : []);
+      }
     } catch {
       if (!silent) showToast('Failed to load approvals', 'error');
     } finally {
@@ -441,9 +732,7 @@ export default function ApprovalQueuePanel() {
         n.delete(id);
       } else {
         n.add(id);
-        if (!editedContent[id]) {
-          setEditedContent(p => ({ ...p, [id]: initialContent }));
-        }
+        if (!editedContent[id]) setEditedContent(p => ({ ...p, [id]: initialContent }));
       }
       return n;
     });
@@ -456,12 +745,13 @@ export default function ApprovalQueuePanel() {
       await approvalApi.respond(id, action, notes[id], adjusted);
 
       const label = action === 'approved' ? 'Approved' : action === 'cancelled' ? 'Cancelled' : 'Rejected';
-      const variant = action === 'approved' ? 'success' : 'info';
-      showToast(`${label} ✓`, variant);
+      showToast(label, action === 'approved' ? 'success' : 'info');
       setApprovals(prev => prev.filter(a => a.id !== id));
       setNotes(prev => { const n = { ...prev }; delete n[id]; return n; });
       setEditedContent(prev => { const n = { ...prev }; delete n[id]; return n; });
       setEditing(prev => { const n = new Set(prev); n.delete(id); return n; });
+      if (selectedId === id) setSelectedId(null);
+      setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
     } catch {
       showToast('Failed to respond', 'error');
     } finally {
@@ -469,21 +759,76 @@ export default function ApprovalQueuePanel() {
     }
   };
 
-  const filtered = approvals.filter(a => matchesFilter(a, filterTab));
+  // Derive unique requesters from loaded approvals
+  const uniqueRequesters = Array.from(
+    new Set(approvals.map(a => a.requester).filter(Boolean) as string[])
+  ).sort();
+
+  // Apply filters then urgency sort
+  const filtered = sortByUrgency(
+    approvals
+      .filter(a => matchesFilter(a, filterTab))
+      .filter(a => requesterFilter === 'all' || a.requester === requesterFilter)
+  );
 
   // ── Batch approve-all ────────────────────────────────────────────────────────
   const [batchConfirm, setBatchConfirm] = useState(false);
-  const [batchWorking, setBatchWorking] = useState(false);
+  const [batchWorking2, setBatchWorking2] = useState(false);
 
   const approveAll = async () => {
     if (!batchConfirm) { setBatchConfirm(true); setTimeout(() => setBatchConfirm(false), 4000); return; }
     setBatchConfirm(false);
-    setBatchWorking(true);
+    setBatchWorking2(true);
     const targets = filtered.filter(a => a.status === 'pending');
     await Promise.allSettled(targets.map(a => approvalApi.respond(a.id, 'approved', undefined, undefined)));
     showToast(`${targets.length} approvals approved`, 'success');
     await load(true);
-    setBatchWorking(false);
+    setBatchWorking2(false);
+  };
+
+  // ── Batch selected ───────────────────────────────────────────────────────────
+  const toggleSelect = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelected(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
+  const batchApproveSelected = async () => {
+    if (selected.size === 0) return;
+    setBatchWorking(true);
+    try {
+      await approvalApi.batchRespond(Array.from(selected), 'approve');
+      showToast(`${selected.size} approvals approved`, 'success');
+      setApprovals(prev => prev.filter(a => !selected.has(a.id)));
+      if (selectedId && selected.has(selectedId)) setSelectedId(null);
+      setSelected(new Set());
+    } catch {
+      showToast('Batch approve failed', 'error');
+    } finally {
+      setBatchWorking(false);
+    }
+  };
+
+  const batchRejectSelected = async () => {
+    if (!showBatchRejectInput) { setShowBatchRejectInput(true); return; }
+    if (selected.size === 0) return;
+    setBatchWorking(true);
+    try {
+      await approvalApi.batchRespond(Array.from(selected), 'reject', batchRejectReason || undefined);
+      showToast(`${selected.size} approvals rejected`, 'success');
+      setApprovals(prev => prev.filter(a => !selected.has(a.id)));
+      if (selectedId && selected.has(selectedId)) setSelectedId(null);
+      setSelected(new Set());
+      setShowBatchRejectInput(false);
+      setBatchRejectReason('');
+    } catch {
+      showToast('Batch reject failed', 'error');
+    } finally {
+      setBatchWorking(false);
+    }
   };
 
   const pendingCounts = statusTab === 'pending' ? {
@@ -492,6 +837,8 @@ export default function ApprovalQueuePanel() {
     posts: approvals.filter(a => ['tweet', 'reply', 'post_x'].includes(a.type)).length,
     actions: approvals.filter(a => ['action', 'email', 'message', 'send_email', 'delete_file', 'git_push'].includes(a.type)).length,
   } : null;
+
+  const selectedApproval = selectedId ? approvals.find(a => a.id === selectedId) : null;
 
   return (
     <div className="flex flex-col h-full bg-mission-control-bg text-mission-control-text">
@@ -524,6 +871,9 @@ export default function ApprovalQueuePanel() {
         </button>
       </div>
 
+      {/* Stats strip */}
+      <ApprovalStatsStrip approvals={approvals} allApprovals={allApprovals} />
+
       {/* Status tabs */}
       <div className="flex border-b border-mission-control-border bg-mission-control-surface">
         {STATUS_TABS.map(tab => {
@@ -531,7 +881,7 @@ export default function ApprovalQueuePanel() {
           return (
             <button
               key={tab.id}
-              onClick={() => setStatusTab(tab.id)}
+              onClick={() => { setStatusTab(tab.id); setSelectedId(null); setSelected(new Set()); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${
                 statusTab === tab.id
                   ? 'text-mission-control-text border-b-2 border-mission-control-accent'
@@ -545,7 +895,7 @@ export default function ApprovalQueuePanel() {
         })}
       </div>
 
-      {/* Filter tabs + batch actions (hide on scheduled) */}
+      {/* Filter tabs + requester filter + batch approve-all */}
       {statusTab !== 'scheduled' && (
         <div className="flex items-center gap-1 px-3 py-2 border-b border-mission-control-border/50 bg-mission-control-surface/50">
           <Filter className="w-3 h-3 text-mission-control-text-dim shrink-0 mr-0.5" />
@@ -569,18 +919,36 @@ export default function ApprovalQueuePanel() {
               )}
             </button>
           ))}
-          {/* Batch approve-all — only show in pending tab with multiple items */}
+
+          {/* Requester / assignee filter */}
+          {uniqueRequesters.length > 0 && (
+            <div className="flex items-center gap-1 ml-1">
+              <User className="w-3 h-3 text-mission-control-text-dim" />
+              <select
+                value={requesterFilter}
+                onChange={e => setRequesterFilter(e.target.value)}
+                className="text-xs bg-mission-control-bg border border-mission-control-border rounded-md px-1.5 py-0.5 text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              >
+                <option value="all">All agents</option>
+                {uniqueRequesters.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Batch approve-all */}
           {statusTab === 'pending' && filtered.length > 1 && (
             <button
               onClick={approveAll}
-              disabled={batchWorking}
+              disabled={batchWorking2}
               className={`ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                 batchConfirm
                   ? 'bg-success text-white animate-pulse'
                   : 'bg-success-subtle text-success border border-success-border hover:bg-success/20'
               }`}
             >
-              {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
+              {batchWorking2 ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
               {batchConfirm ? `Confirm — approve all ${filtered.length}` : `Approve all ${filtered.length}`}
             </button>
           )}
@@ -590,62 +958,138 @@ export default function ApprovalQueuePanel() {
       {/* Human-review tasks section (pending tab only) */}
       {statusTab === 'pending' && <HumanReviewSection tasks={tasks} />}
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-32 text-mission-control-text-dim gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Loading…</span>
-          </div>
-        ) : approvals.length === 0 ? (
-          <EmptyState
-            icon={statusTab === 'pending' ? ShieldCheck : statusTab === 'scheduled' ? CalendarClock : ShieldX}
-            title={
-              statusTab === 'pending' ? 'No pending approvals'
-              : statusTab === 'scheduled' ? 'No scheduled actions'
-              : `No ${statusTab} approvals`
-            }
-            description={
-              statusTab === 'pending'
-                ? 'Agents are working autonomously — all clear. Items requiring human review will appear here.'
-                : statusTab === 'scheduled'
-                ? 'Approved actions with a future run time will appear here. You can cancel them before they fire.'
-                : undefined
-            }
-          />
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-mission-control-text-muted">
-            <CheckCircle size={36} className="mb-3 opacity-30" />
-            <p className="text-sm font-medium">No approvals</p>
-            <p className="text-xs mt-1 opacity-70">
-              {filterTab !== 'all' ? 'Try a different filter' : 'Nothing pending review'}
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y divide-mission-control-border/40">
-            {filtered.map(approval => (
-              <ApprovalCard
-                key={approval.id}
-                approval={approval}
-                isExpanded={expanded.has(approval.id)}
-                isResponding={responding.has(approval.id)}
-                isEditing={editing.has(approval.id)}
-                editedContent={editedContent[approval.id]}
-                note={notes[approval.id] || ''}
-                showActions={statusTab === 'pending'}
-                isScheduledView={statusTab === 'scheduled'}
-                linkedTask={approval.type === 'task' && approval.metadata?.taskId
-                  ? tasks.find(t => t.id === approval.metadata!.taskId as string)
-                  : undefined}
-                onToggle={() => toggleExpand(approval.id)}
-                onNoteChange={v => setNotes(prev => ({ ...prev, [approval.id]: v }))}
-                onEditToggle={() => toggleEditing(approval.id, approval.metadata?.text as string || approval.content)}
-                onEditContentChange={v => setEditedContent(prev => ({ ...prev, [approval.id]: v }))}
-                onApprove={() => respond(approval.id, 'approved')}
-                onReject={() => respond(approval.id, 'rejected')}
-                onCancel={() => respond(approval.id, 'cancelled')}
-              />
-            ))}
+      {/* Main content: list + optional detail pane */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* List */}
+        <div className={`flex flex-col overflow-y-auto relative ${selectedApproval ? 'w-2/5 border-r border-mission-control-border' : 'w-full'}`}>
+          {loading ? (
+            <div className="flex items-center justify-center h-32 text-mission-control-text-dim gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Loading…</span>
+            </div>
+          ) : approvals.length === 0 ? (
+            <EmptyState
+              icon={statusTab === 'pending' ? ShieldCheck : statusTab === 'scheduled' ? CalendarClock : ShieldX}
+              title={
+                statusTab === 'pending' ? 'No pending approvals'
+                : statusTab === 'scheduled' ? 'No scheduled actions'
+                : `No ${statusTab} approvals`
+              }
+              description={
+                statusTab === 'pending'
+                  ? 'Agents are working autonomously — all clear. Items requiring human review will appear here.'
+                  : statusTab === 'scheduled'
+                  ? 'Approved actions with a future run time will appear here. You can cancel them before they fire.'
+                  : undefined
+              }
+            />
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-mission-control-text-dim">
+              <CheckCircle size={36} className="mb-3 opacity-30" />
+              <p className="text-sm font-medium">No approvals</p>
+              <p className="text-xs mt-1 opacity-70">
+                {filterTab !== 'all' || requesterFilter !== 'all' ? 'Try a different filter' : 'Nothing pending review'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-mission-control-border/40 pb-20">
+              {filtered.map(approval => (
+                <ApprovalListRow
+                  key={approval.id}
+                  approval={approval}
+                  isExpanded={expanded.has(approval.id)}
+                  isResponding={responding.has(approval.id)}
+                  isEditing={editing.has(approval.id)}
+                  editedContent={editedContent[approval.id]}
+                  note={notes[approval.id] || ''}
+                  showActions={statusTab === 'pending'}
+                  isScheduledView={statusTab === 'scheduled'}
+                  isSelected={selected.has(approval.id)}
+                  isDetailOpen={selectedId === approval.id}
+                  linkedTask={approval.type === 'task' && approval.metadata?.taskId
+                    ? tasks.find(t => t.id === approval.metadata!.taskId as string)
+                    : undefined}
+                  onToggle={() => toggleExpand(approval.id)}
+                  onNoteChange={v => setNotes(prev => ({ ...prev, [approval.id]: v }))}
+                  onEditToggle={() => toggleEditing(approval.id, approval.metadata?.text as string || approval.content)}
+                  onEditContentChange={v => setEditedContent(prev => ({ ...prev, [approval.id]: v }))}
+                  onApprove={() => respond(approval.id, 'approved')}
+                  onReject={() => respond(approval.id, 'rejected')}
+                  onCancel={() => respond(approval.id, 'cancelled')}
+                  onSelect={e => toggleSelect(approval.id, e)}
+                  onOpenDetail={() => setSelectedId(selectedId === approval.id ? null : approval.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Batch action floating bar */}
+          {selected.size > 0 && statusTab === 'pending' && (
+            <div className="absolute bottom-0 left-0 right-0 bg-mission-control-surface border-t border-mission-control-border p-3 shadow-lg space-y-2">
+              {showBatchRejectInput && (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={batchRejectReason}
+                    onChange={e => setBatchRejectReason(e.target.value)}
+                    placeholder="Rejection reason (optional)…"
+                    className="flex-1 text-xs bg-mission-control-bg border border-error-border rounded-lg px-3 py-1.5 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-error"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => { setShowBatchRejectInput(false); setBatchRejectReason(''); }}
+                    className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim"
+                  title="Clear selection"
+                >
+                  <Square className="w-4 h-4" />
+                </button>
+                <span className="text-xs text-mission-control-text-dim flex-1">
+                  {selected.size} selected
+                </span>
+                <button
+                  onClick={batchApproveSelected}
+                  disabled={batchWorking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
+                >
+                  {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                  Approve selected ({selected.size})
+                </button>
+                <button
+                  onClick={batchRejectSelected}
+                  disabled={batchWorking}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-subtle text-error border border-error-border text-xs font-semibold hover:bg-error/20 disabled:opacity-50 transition-all"
+                >
+                  {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                  {showBatchRejectInput ? 'Confirm Reject' : `Reject selected (${selected.size})`}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Detail pane */}
+        {selectedApproval && (
+          <div className="flex-1 min-w-0">
+            <ApprovalDetailPane
+              approval={selectedApproval}
+              isResponding={responding.has(selectedApproval.id)}
+              showActions={statusTab === 'pending'}
+              linkedTask={selectedApproval.type === 'task' && selectedApproval.metadata?.taskId
+                ? tasks.find(t => t.id === selectedApproval.metadata!.taskId as string)
+                : undefined}
+              onApprove={() => respond(selectedApproval.id, 'approved')}
+              onReject={() => respond(selectedApproval.id, 'rejected')}
+              onClose={() => setSelectedId(null)}
+            />
           </div>
         )}
       </div>
@@ -653,9 +1097,9 @@ export default function ApprovalQueuePanel() {
   );
 }
 
-// ─── Approval Card ─────────────────────────────────────────────────────────────
+// ─── Approval List Row ────────────────────────────────────────────────────────
 
-interface CardProps {
+interface RowProps {
   approval: Approval;
   isExpanded: boolean;
   isResponding: boolean;
@@ -664,6 +1108,8 @@ interface CardProps {
   note: string;
   showActions: boolean;
   isScheduledView: boolean;
+  isSelected: boolean;
+  isDetailOpen: boolean;
   linkedTask?: { id: string; title: string; status: string; project?: string } | undefined;
   onToggle: () => void;
   onNoteChange: (v: string) => void;
@@ -672,6 +1118,8 @@ interface CardProps {
   onApprove: () => void;
   onReject: () => void;
   onCancel: () => void;
+  onSelect: (e: React.MouseEvent) => void;
+  onOpenDetail: () => void;
 }
 
 function AgentActionCard({
@@ -704,7 +1152,6 @@ function AgentActionCard({
 
   return (
     <div className="border-l-2 border-orange-400/50 bg-mission-control-surface/30 px-5 py-4 space-y-3">
-      {/* Header */}
       <div className="flex items-start gap-3">
         <div className="mt-0.5 p-1.5 rounded-md bg-orange-400/10 shrink-0">
           <Zap className="w-3.5 h-3.5 text-orange-400" />
@@ -727,7 +1174,6 @@ function AgentActionCard({
         </div>
       </div>
 
-      {/* What the agent wants to do */}
       <div className="space-y-1">
         <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Agent is asking to</div>
         <div className="text-sm text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
@@ -735,7 +1181,6 @@ function AgentActionCard({
         </div>
       </div>
 
-      {/* Context */}
       {approval.context && (
         <div className="space-y-1">
           <div className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Context</div>
@@ -745,7 +1190,6 @@ function AgentActionCard({
         </div>
       )}
 
-      {/* Linked task */}
       {linkedTask && (
         <div className="flex items-center gap-2 text-xs bg-mission-control-border/20 rounded-lg px-3 py-2">
           <ListTodo className="w-3.5 h-3.5 text-mission-control-accent shrink-0" />
@@ -754,14 +1198,12 @@ function AgentActionCard({
         </div>
       )}
 
-      {/* Review notes (after decision) */}
       {!showActions && approval.notes && (
         <div className="text-xs text-mission-control-text-dim bg-mission-control-border/20 rounded-lg px-3 py-2">
           <span className="font-medium text-mission-control-text">Notes: </span>{approval.notes}
         </div>
       )}
 
-      {/* Actions */}
       {showActions && (
         <div className="space-y-2 pt-1">
           <textarea
@@ -802,17 +1244,27 @@ function AgentActionCard({
   );
 }
 
-function ApprovalCard({
+function ApprovalListRow({
   approval, isExpanded, isResponding, isEditing, editedContent, note,
-  showActions, isScheduledView, linkedTask,
+  showActions, isScheduledView, isSelected, isDetailOpen, linkedTask,
   onToggle, onNoteChange, onEditToggle, onEditContentChange, onApprove, onReject, onCancel,
-}: CardProps) {
+  onSelect, onOpenDetail,
+}: RowProps) {
+  const [hovered, setHovered] = useState(false);
   const cfg = TYPE_CONFIG[approval.type] || TYPE_CONFIG.action;
   const Icon = cfg.icon;
   const isExecutable = EXECUTABLE_TYPES.has(approval.type) || approval.category === 'executable_action' || approval.category === 'scheduled_action';
   const isAgentAction = approval.type === 'action' && !!(approval.metadata?.taskId);
 
-  // Keyboard shortcut: A = approve, D = deny when card is focused
+  const tier = getUrgencyTier(approval);
+  const urgencyBorderClass = tier === 0
+    ? 'border-l-4 border-error'
+    : tier === 1
+    ? 'border-l-4 border-warning'
+    : isExecutable
+    ? `border-l-2 ${cfg.border}`
+    : '';
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showActions || isResponding) return;
     const inInput = (e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA';
@@ -821,7 +1273,6 @@ function ApprovalCard({
     if (e.key === 'd' || e.key === 'D') { e.preventDefault(); onReject(); }
   };
 
-  // Agent-action (HIL) approvals get a dedicated rich card
   if (isAgentAction) {
     return (
       <AgentActionCard
@@ -853,15 +1304,32 @@ function ApprovalCard({
     <div
       tabIndex={showActions ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`p-4 hover:bg-mission-control-surface/40 transition-colors focus:outline-none focus:ring-1 focus:ring-mission-control-accent/40 ${
-        isExecutable ? 'border-l-2 ' + cfg.border : ''
-      }`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onOpenDetail}
+      className={`p-4 hover:bg-mission-control-surface/40 transition-colors focus:outline-none focus:ring-1 focus:ring-mission-control-accent/40 cursor-pointer ${urgencyBorderClass} ${
+        isDetailOpen ? 'bg-mission-control-surface/50' : ''
+      } ${isSelected ? 'bg-mission-control-accent/5' : ''}`}
     >
       {/* Top row */}
       <div className="flex items-start gap-3">
-        <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
-          <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
-        </div>
+        {/* Checkbox on hover / when selected */}
+        {showActions && (hovered || isSelected) ? (
+          <button
+            onClick={onSelect}
+            className="mt-0.5 p-0.5 shrink-0 text-mission-control-text-dim hover:text-mission-control-accent"
+            title="Select for batch action"
+          >
+            {isSelected
+              ? <CheckSquare className="w-4 h-4 text-mission-control-accent" />
+              : <Square className="w-4 h-4" />
+            }
+          </button>
+        ) : (
+          <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}>
+            <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -869,6 +1337,13 @@ function ApprovalCard({
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${getApprovalTypeConfig(approval.type).className}`}>
               {getApprovalTypeConfig(approval.type).label}
             </span>
+            {tier <= 1 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                tier === 0 ? 'bg-error/20 text-error' : 'bg-warning/20 text-warning'
+              }`}>
+                P{tier}
+              </span>
+            )}
             {isExecutable && (
               <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-mission-control-border/40 text-mission-control-text-dim">
                 {approval.category === 'scheduled_action' ? 'Scheduled' : 'Executor'}
@@ -909,8 +1384,9 @@ function ApprovalCard({
           ) : (
             <Clock className="w-4 h-4 text-amber-400" />
           )}
+          <ChevronRight className={`w-4 h-4 text-mission-control-text-dim transition-transform ${isDetailOpen ? 'rotate-90' : ''}`} />
           <button
-            onClick={onToggle}
+            onClick={e => { e.stopPropagation(); onToggle(); }}
             className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim"
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -927,11 +1403,9 @@ function ApprovalCard({
 
       {/* Expanded */}
       {isExpanded && (
-        <div className="mt-3 ml-9 space-y-3">
-          {/* Rich preview for executable types */}
+        <div className="mt-3 ml-9 space-y-3" onClick={e => e.stopPropagation()}>
           {isExecutable && !isEditing && <ActionPreview approval={approval} />}
 
-          {/* Editable content for tweet/email */}
           {isEditing && (approval.type === 'post_x' || approval.type === 'tweet') && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -948,7 +1422,6 @@ function ApprovalCard({
             </div>
           )}
 
-          {/* Raw content for non-executable types */}
           {!isExecutable && (
             <div className="text-xs text-mission-control-text bg-mission-control-border/20 rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed">
               {approval.content}
@@ -988,10 +1461,9 @@ function ApprovalCard({
       )}
 
       {/* Actions */}
-      {showActions && (
-        <div className="mt-3 ml-9 space-y-2">
-          {/* Edit toggle for X posts */}
-          {(approval.type === 'post_x' || approval.type === 'tweet') && isExpanded && (
+      {showActions && isExpanded && (
+        <div className="mt-3 ml-9 space-y-2" onClick={e => e.stopPropagation()}>
+          {(approval.type === 'post_x' || approval.type === 'tweet') && (
             <button
               onClick={onEditToggle}
               className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
@@ -1035,7 +1507,7 @@ function ApprovalCard({
 
       {/* Scheduled view: cancel only */}
       {isScheduledView && (
-        <div className="mt-3 ml-9">
+        <div className="mt-3 ml-9" onClick={e => e.stopPropagation()}>
           <button
             onClick={onCancel}
             disabled={isResponding}
