@@ -6,24 +6,93 @@ type ApiOptions = {
   method?: string;
   body?: any;
   params?: Record<string, string>;
+  /** Optional AbortSignal to cancel in-flight requests */
+  signal?: AbortSignal;
 };
 
+/** Pause for `ms` milliseconds, respecting an optional abort signal */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(id);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
+  });
+}
+
+/**
+ * Core fetch wrapper with resilience:
+ * - 429 rate-limit: respect Retry-After header or 2s backoff, up to 3 retries
+ * - 503 service unavailable: exponential backoff (1s, 2s, 4s), up to 3 retries
+ * - Network error (fetch throws): single retry after 1s
+ * - AbortSignal support for cancellation
+ */
 async function apiCall<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = 'GET', body, params } = options;
+  const { method = 'GET', body, params, signal } = options;
   const url = new URL(`/api${path}`, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   }
-  const res = await fetch(url.toString(), {
-    method,
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
-  return res.json();
+
+  const fetchOnce = () =>
+    fetch(url.toString(), {
+      method,
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(process.env.NEXT_PUBLIC_API_TOKEN
+          ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` }
+          : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal,
+    });
+
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    let res: Response;
+    try {
+      res = await fetchOnce();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err;
+      // Network error — single retry after 1s
+      if (attempt === 0) {
+        await delay(1000, signal);
+        continue;
+      }
+      throw err;
+    }
+
+    // Rate limited — respect Retry-After header or default 2s
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get('Retry-After');
+      const waitMs = retryAfter ? parseFloat(retryAfter) * 1000 : 2000;
+      await delay(waitMs, signal);
+      continue;
+    }
+
+    // Service unavailable — exponential backoff: 1s, 2s, 4s
+    if (res.status === 503 && attempt < MAX_RETRIES) {
+      await delay(1000 * Math.pow(2, attempt), signal);
+      continue;
+    }
+
+    if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
+    return res.json();
+  }
+
+  throw new Error(`API request failed after ${MAX_RETRIES} retries`);
 }
 
 // ──────────────────────────────────────────────────
