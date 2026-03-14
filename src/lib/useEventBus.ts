@@ -25,6 +25,7 @@ const EVENT_TYPES = [
   'automation.completed',
   'automation.failed',
   'notification.new',
+  'clara.review_needed',
 ];
 
 function dispatchEvent(type: string, data: unknown) {
