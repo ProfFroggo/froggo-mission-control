@@ -1064,7 +1064,9 @@ Respond as ${agentName(agentId)}:`;
 
           {/* Back to text */}
           <button
-            onClick={() => { if (isActive) endMeeting(); onEndVoice(); }}
+            onClick={() => {
+              if (isActive) { setShowEndConfirm(true); } else { onEndVoice(); }
+            }}
             className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Switch to text"
           >
