@@ -299,7 +299,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {expanded && (
             <button
               onClick={openEditModal}
-              className="no-drag p-1.5 rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title="Edit Panels (⌘⇧E)"
               aria-label="Edit Panels"
             >
@@ -310,7 +310,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {expanded && onOpenHelp && (
             <button
               onClick={onOpenHelp}
-              className="no-drag p-1.5 rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title="Help (⌘H)"
               aria-label="Help"
             >
@@ -321,7 +321,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {onOpenShortcuts && (
             <button
               onClick={onOpenShortcuts}
-              className="no-drag p-1.5 rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title="Keyboard shortcuts (?)"
               aria-label="Keyboard shortcuts"
             >
@@ -331,7 +331,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {/* Settings - always visible */}
           <button
             onClick={() => handleNavigate('settings')}
-            className={`no-drag p-1.5 rounded-lg transition-all duration-200 ${
+            className={`no-drag p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-all duration-200 ${
               currentView === 'settings'
                 ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
                 : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
@@ -345,7 +345,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {/* Expand/Collapse - always visible */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className="no-drag p-1.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200"
+            className="no-drag p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-expanded={expanded}

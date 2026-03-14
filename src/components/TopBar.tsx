@@ -145,7 +145,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             onClick={() => setHealthDashboardOpen(true)}
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
             aria-label={`Platform health: ${platformStatus}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
