@@ -769,6 +769,10 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE tasks ADD COLUMN claraReviewCount INTEGER DEFAULT 0`,
     // Subtask enhancements: due dates
     `ALTER TABLE subtasks ADD COLUMN dueDate INTEGER`,
+    // Library file metadata: authorship and task linkage
+    `ALTER TABLE library_files ADD COLUMN tags TEXT DEFAULT '[]'`,
+    `ALTER TABLE library_files ADD COLUMN createdBy TEXT`,
+    `ALTER TABLE library_files ADD COLUMN linkedTasks TEXT DEFAULT '[]'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

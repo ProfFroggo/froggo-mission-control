@@ -28,8 +28,33 @@ export async function GET(request: NextRequest) {
 
   try {
     if (action === 'folders') {
-      const folders = db.prepare('SELECT * FROM library_folders ORDER BY sort_order ASC').all();
-      return NextResponse.json({ success: true, folders });
+      // Return real library_folders rows. Also append category-derived virtual folders
+      // for any category values not already represented as a named folder.
+      const folders = db.prepare('SELECT * FROM library_folders ORDER BY sort_order ASC').all() as Array<{
+        id: string; name: string; color: string; icon: string; sort_order: number; createdAt: number;
+      }>;
+
+      // Derive category-based folder summaries
+      const categoryRows = db.prepare(
+        `SELECT category as id, category as name, COUNT(*) as fileCount FROM library_files WHERE category IS NOT NULL GROUP BY category`
+      ).all() as Array<{ id: string; name: string; fileCount: number }>;
+
+      const folderNames = new Set(folders.map(f => f.name.toLowerCase()));
+      const derived = categoryRows.filter(r => !folderNames.has(r.name.toLowerCase()));
+
+      return NextResponse.json({ success: true, folders, derived });
+    }
+
+    if (action === 'starred') {
+      const idsParam = searchParams.get('ids');
+      if (!idsParam) return NextResponse.json({ success: true, files: [] });
+      const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+      if (ids.length === 0) return NextResponse.json({ success: true, files: [] });
+      const placeholders = ids.map(() => '?').join(', ');
+      const files = db.prepare(
+        `SELECT * FROM library_files WHERE id IN (${placeholders}) ORDER BY createdAt DESC`
+      ).all(...ids);
+      return NextResponse.json({ success: true, files });
     }
 
     if (action === 'skills') {
@@ -109,11 +134,91 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, folders: assignments });
     }
 
-    // Default: list all files
-    const files = db.prepare('SELECT * FROM library_files ORDER BY createdAt DESC').all();
+    // Default: list files with optional filters
+    const category = searchParams.get('category');
+    const tagsParam = searchParams.get('tags');
+    const recentParam = searchParams.get('recent');
+    const searchQuery = searchParams.get('q');
+
+    const conditions: string[] = [];
+    const bindings: (string | number)[] = [];
+
+    if (category) {
+      conditions.push('category = ?');
+      bindings.push(category);
+    }
+
+    if (searchQuery) {
+      conditions.push('(name LIKE ? OR category LIKE ?)');
+      bindings.push(`%${searchQuery}%`, `%${searchQuery}%`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limit = recentParam ? `LIMIT ${Math.min(Math.max(1, parseInt(recentParam, 10) || 20), 500)}` : '';
+
+    let files = db.prepare(
+      `SELECT * FROM library_files ${whereClause} ORDER BY createdAt DESC ${limit}`
+    ).all(...bindings) as Array<Record<string, unknown>>;
+
+    // Filter by tags (JSON array contains any of the requested tags)
+    if (tagsParam) {
+      const filterTags = tagsParam.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      if (filterTags.length > 0) {
+        files = files.filter(file => {
+          let fileTags: string[] = [];
+          try {
+            const raw = file.tags as string | undefined;
+            if (raw) fileTags = (JSON.parse(raw) as string[]).map(t => t.toLowerCase());
+          } catch { /* malformed tags — skip */ }
+          return filterTags.some(ft => fileTags.includes(ft));
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, files });
   } catch (error) {
     console.error('GET /api/library error:', error);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PATCH /api/library — update mutable fields on a library file (tags, category, name, linkedTasks)
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json() as Record<string, unknown>;
+    const { id } = body;
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    }
+
+    const db = getDb();
+    const allowed = ['tags', 'category', 'name', 'linkedTasks', 'createdBy'] as const;
+    const updates = (Object.entries(body) as [string, unknown][]).filter(([k]) => allowed.includes(k as typeof allowed[number]));
+
+    if (updates.length === 0) {
+      return NextResponse.json({ success: false, error: 'No patchable fields provided' }, { status: 400 });
+    }
+
+    // Validate name length
+    const nameEntry = updates.find(([k]) => k === 'name');
+    if (nameEntry && typeof nameEntry[1] === 'string' && nameEntry[1].length > 255) {
+      return NextResponse.json({ success: false, error: 'name must be 255 characters or fewer' }, { status: 400 });
+    }
+
+    const setClauses = updates.map(([k]) => `${k} = ?`).join(', ');
+    const values = [
+      ...updates.map(([, v]) => (Array.isArray(v) || (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v as string | number | null)),
+      id,
+    ];
+
+    db.prepare(`UPDATE library_files SET ${setClauses} WHERE id = ?`).run(...values);
+
+    const updated = db.prepare('SELECT * FROM library_files WHERE id = ?').get(id);
+    if (!updated) return NextResponse.json({ success: false, error: 'File not found' }, { status: 404 });
+
+    return NextResponse.json({ success: true, file: updated });
+  } catch (error) {
+    console.error('PATCH /api/library error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
