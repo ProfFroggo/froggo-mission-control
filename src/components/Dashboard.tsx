@@ -7,12 +7,16 @@ import {
   Loader2, XCircle, DollarSign,
   MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
   Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy,
-  RefreshCw, TrendingUp, TrendingDown, Minus, Users
+  RefreshCw, TrendingUp, TrendingDown, Minus, Users,
+  Pencil, GripVertical, X, LayoutGrid, Check
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
 import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
+import { useDashboardStore } from '../store/dashboardStore';
+import type { WidgetSize, DashboardWidgetSlot } from '../store/dashboardStore';
+import { DASHBOARD_WIDGETS, getWidgetDefinition } from '../lib/dashboardWidgets';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
 
@@ -52,10 +56,14 @@ function HeaderBar({
   connected,
   onRefresh,
   refreshing,
+  editMode,
+  onToggleEdit,
 }: {
   connected: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
+  editMode: boolean;
+  onToggleEdit: () => void;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -71,7 +79,7 @@ function HeaderBar({
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
       <div className="flex items-center gap-2">
-        {onRefresh && (
+        {onRefresh && !editMode && (
           <button
             onClick={onRefresh}
             disabled={refreshing}
@@ -82,6 +90,18 @@ function HeaderBar({
             <span className="hidden sm:inline">Refresh</span>
           </button>
         )}
+        <button
+          onClick={onToggleEdit}
+          title={editMode ? 'Done editing' : 'Customize dashboard'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            editMode
+              ? 'bg-mission-control-accent text-white border-mission-control-accent hover:bg-mission-control-accent-dim'
+              : 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
+          }`}
+        >
+          {editMode ? <Check size={12} /> : <Pencil size={12} />}
+          <span className="hidden sm:inline">{editMode ? 'Done Editing' : 'Edit Dashboard'}</span>
+        </button>
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
           connected
             ? 'bg-success-subtle text-success border border-success-border'
@@ -90,6 +110,187 @@ function HeaderBar({
           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
           {connected ? 'Online' : 'Connecting...'}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Widget size label map ───────────────────────────────────
+
+const SIZE_LABELS: Record<WidgetSize, string> = {
+  sm: 'Small',
+  md: 'Medium',
+  lg: 'Large',
+  xl: 'Full Width',
+};
+
+// ── AddWidgetModal ─────────────────────────────────────────
+
+function AddWidgetModal({
+  existingWidgetIds,
+  onAdd,
+  onClose,
+}: {
+  existingWidgetIds: Set<string>;
+  onAdd: (widgetId: string) => void;
+  onClose: () => void;
+}) {
+  const available = DASHBOARD_WIDGETS.filter(w => !existingWidgetIds.has(w.id));
+
+  const categoryOrder: string[] = ['tasks', 'agents', 'metrics', 'system', 'social'];
+  const grouped = categoryOrder.reduce<Record<string, typeof DASHBOARD_WIDGETS>>((acc, cat) => {
+    const items = available.filter(w => w.category === cat);
+    if (items.length > 0) acc[cat] = items;
+    return acc;
+  }, {});
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg mx-4 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
+          <div className="flex items-center gap-2">
+            <LayoutGrid size={16} className="text-mission-control-accent" />
+            <h2 className="font-semibold text-sm">Add Widget</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-all"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[60vh] p-4 space-y-5">
+          {available.length === 0 ? (
+            <div className="py-8 text-center">
+              <Check size={32} className="mx-auto mb-2 text-mission-control-accent/50" />
+              <p className="text-sm text-mission-control-text-dim font-medium">All widgets are on your dashboard</p>
+            </div>
+          ) : (
+            Object.entries(grouped).map(([category, widgets]) => (
+              <div key={category}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2">
+                  {category}
+                </p>
+                <div className="space-y-2">
+                  {widgets.map(widget => (
+                    <div
+                      key={widget.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-mission-control-bg/50 border border-mission-control-border hover:border-mission-control-accent/40 transition-all group"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-mission-control-text">{widget.title}</p>
+                        <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-1">{widget.description}</p>
+                        <span className="text-[10px] text-mission-control-text-dim/60 mt-1 block">
+                          Default: {SIZE_LABELS[widget.defaultSize]}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => { onAdd(widget.id); }}
+                        className="ml-3 flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                      >
+                        <Plus size={12} />
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── WidgetCard wrapper (edit mode) ─────────────────────────
+
+function WidgetCard({
+  slot,
+  editMode,
+  isDragging,
+  isDropTarget,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+  onRemove,
+  onResize,
+  children,
+}: {
+  slot: DashboardWidgetSlot;
+  editMode: boolean;
+  isDragging: boolean;
+  isDropTarget: boolean;
+  onDragStart: (slotId: string) => void;
+  onDragEnter: (slotId: string) => void;
+  onDragEnd: () => void;
+  onRemove: (slotId: string) => void;
+  onResize: (slotId: string, size: WidgetSize) => void;
+  children: React.ReactNode;
+}) {
+  const colSpan =
+    slot.size === 'xl' ? 'col-span-1 sm:col-span-4' :
+    slot.size === 'lg' ? 'col-span-1 sm:col-span-3' :
+    slot.size === 'md' ? 'col-span-1 sm:col-span-2' :
+    'col-span-1';
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!editMode) return;
+    e.preventDefault();
+    onDragStart(slot.id);
+  };
+
+  return (
+    <div
+      className={`${colSpan} relative transition-all duration-150 ${
+        isDragging ? 'opacity-40 scale-95' : ''
+      } ${
+        isDropTarget && !isDragging ? 'ring-2 ring-mission-control-accent/60 rounded-xl' : ''
+      }`}
+      onMouseEnter={() => { if (editMode) onDragEnter(slot.id); }}
+      onMouseUp={onDragEnd}
+    >
+      {editMode && (
+        <div className="absolute inset-0 z-10 rounded-xl ring-2 ring-mission-control-accent/30 pointer-events-none" />
+      )}
+      {editMode && (
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+          <select
+            value={slot.size}
+            onChange={e => onResize(slot.id, e.target.value as WidgetSize)}
+            className="text-[10px] px-1.5 py-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text cursor-pointer focus:outline-none focus:border-mission-control-accent/50"
+          >
+            {(Object.entries(SIZE_LABELS) as [WidgetSize, string][]).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => onRemove(slot.id)}
+            title="Remove widget"
+            className="p-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-red-400 hover:border-red-400/50 transition-colors"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+      {editMode && (
+        <div
+          className="absolute top-2 left-2 z-20 cursor-grab active:cursor-grabbing p-1 rounded-md bg-mission-control-surface/90 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          onMouseDown={handleMouseDown}
+          title="Drag to reorder"
+        >
+          <GripVertical size={14} />
+        </div>
+      )}
+      <div className={editMode ? 'pointer-events-none select-none' : ''}>
+        {children}
       </div>
     </div>
   );

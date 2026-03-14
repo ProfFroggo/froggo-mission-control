@@ -740,6 +740,33 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
 
     -- ══════════════════════════════════════════
+    -- TOKEN BUDGETS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      agentId TEXT,
+      period TEXT NOT NULL DEFAULT 'monthly',
+      limitUsd REAL NOT NULL,
+      alertAt REAL NOT NULL DEFAULT 80,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
+
+    -- ══════════════════════════════════════════
+    -- CHAT ROOM MESSAGE REACTIONS (v2)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      messageId TEXT NOT NULL,
+      userId TEXT NOT NULL DEFAULT 'user',
+      reaction TEXT NOT NULL,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      UNIQUE(messageId, userId, reaction)
+    );
+    CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
+
+    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaign_automations (
@@ -802,6 +829,14 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE library_files ADD COLUMN starred INTEGER DEFAULT 0`,
     // Library folders: parentId for nested folder tree
     `ALTER TABLE library_folders ADD COLUMN parentId TEXT REFERENCES library_folders(id) ON DELETE SET NULL`,
+    // Projects: explicit archived boolean flag (mirrors status = 'archived')
+    `ALTER TABLE projects ADD COLUMN archived INTEGER NOT NULL DEFAULT 0`,
+    // Chat rooms v2: thread reply support on room messages
+    `ALTER TABLE chat_room_messages ADD COLUMN parentId TEXT`,
+    // Chat rooms v2: pinned message per room
+    `ALTER TABLE chat_rooms ADD COLUMN pinnedMessageId TEXT`,
+    // Chat rooms v2: room description
+    `ALTER TABLE chat_rooms ADD COLUMN description TEXT`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

@@ -2284,6 +2284,11 @@ export default function CommsInbox3Pane() {
             onLoadAll={handleLoadAll}
             aiAnalyses={aiAnalyses}
             onMarkAllRead={handleMarkAllRead}
+            onSnooze={() => {}}
+            snoozedIds={new Set()}
+            onBulkArchive={() => {}}
+            onBulkMarkRead={() => {}}
+            onBulkDelete={() => {}}
           />
           <RightPane
             conversation={selectedConversation}
