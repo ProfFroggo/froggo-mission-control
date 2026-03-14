@@ -1,11 +1,14 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback, type ComponentType } from 'react';
 import {
-  Zap, Clock, Globe, Bot, Plus, Play, Pause, Trash2, Edit2,
-  Search, LayoutGrid, List, ChevronRight, AlertCircle, CheckCircle,
-  RefreshCw, Calendar, FileText, MessageSquare, Archive,
+  Zap, Clock, Globe, Bot, Plus, Play, Trash2, Edit2,
+  Search, LayoutGrid, ChevronRight, AlertCircle, CheckCircle,
+  RefreshCw, FileText, MessageSquare, Archive, Layers, List, History,
 } from 'lucide-react';
 import AutomationBuilderModal from './AutomationBuilderModal';
+import AutomationStepBuilder, { type AutomationStepDef } from './AutomationStepBuilder';
+import AutomationRunLog from './AutomationRunLog';
+import AutomationTemplatesGallery, { type AutomationTemplate } from './AutomationTemplatesGallery';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -197,9 +200,11 @@ interface AutomationCardProps {
   onDelete: (id: string) => void;
   onEdit: (automation: Automation) => void;
   onRunNow: (id: string) => void;
+  onOpenStepBuilder: (automation: Automation) => void;
+  onOpenRunLog: (automation: Automation) => void;
 }
 
-function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: AutomationCardProps) {
+function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow, onOpenStepBuilder, onOpenRunLog }: AutomationCardProps) {
   const isActive = automation.status === 'active';
 
   return (
@@ -275,7 +280,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
       </div>
 
       {/* Action row */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button
           onClick={() => onRunNow(automation.id)}
           style={{
@@ -296,6 +301,28 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
           }}
         >
           <Edit2 size={12} /> Edit
+        </button>
+        <button
+          onClick={() => onOpenStepBuilder(automation)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+            background: 'transparent', color: 'var(--mission-control-text-dim)',
+            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
+          }}
+        >
+          <List size={12} /> Steps
+        </button>
+        <button
+          onClick={() => onOpenRunLog(automation)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+            background: 'transparent', color: 'var(--mission-control-text-dim)',
+            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
+          }}
+        >
+          <History size={12} /> History
         </button>
         <button
           onClick={() => onDelete(automation.id)}
@@ -462,6 +489,10 @@ export default function AutomationsPanel() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Automation | null>(null);
   const [prefillTemplate, setPrefillTemplate] = useState<Template | null>(null);
+  // New v2 drawers
+  const [stepBuilderTarget, setStepBuilderTarget] = useState<Automation | null>(null);
+  const [runLogTarget, setRunLogTarget] = useState<Automation | null>(null);
+  const [templatesGalleryOpen, setTemplatesGalleryOpen] = useState(false);
 
   const fetchAutomations = useCallback(async () => {
     try {
@@ -534,6 +565,30 @@ export default function AutomationsPanel() {
     setBuilderOpen(true);
   };
 
+  const handleUseGalleryTemplate = async (template: AutomationTemplate) => {
+    try {
+      const res = await fetch('/api/automations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description,
+          trigger_type: template.trigger_type,
+          trigger_config: template.trigger_config,
+          steps: template.steps.map((s, i) => ({ ...s, id: `step-${i + 1}` })),
+          status: 'draft',
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setAutomations(prev => [created, ...prev]);
+        setActiveTab('my-automations');
+      }
+    } catch {
+      // silent fail
+    }
+  };
+
   const handleSaveAutomation = async (automation: Omit<Automation, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       if (editTarget) {
@@ -592,17 +647,30 @@ export default function AutomationsPanel() {
             Describe what you want in plain English — the agent builds it for you.
           </p>
         </div>
-        <button
-          onClick={handleNewAutomation}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-            background: 'var(--mission-control-accent)', color: '#fff', border: 'none',
-            cursor: 'pointer', boxShadow: '0 2px 8px color-mix(in srgb, var(--mission-control-accent) 40%, transparent)',
-          }}
-        >
-          <Plus size={16} /> New Automation
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setTemplatesGalleryOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: 'var(--mission-control-surface)', color: 'var(--mission-control-text)',
+              border: '1px solid var(--mission-control-border)', cursor: 'pointer',
+            }}
+          >
+            <Layers size={16} /> From Template
+          </button>
+          <button
+            onClick={handleNewAutomation}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: 'var(--mission-control-accent)', color: '#fff', border: 'none',
+              cursor: 'pointer', boxShadow: '0 2px 8px color-mix(in srgb, var(--mission-control-accent) 40%, transparent)',
+            }}
+          >
+            <Plus size={16} /> New Automation
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -690,6 +758,8 @@ export default function AutomationsPanel() {
                   onDelete={handleDelete}
                   onEdit={handleEdit}
                   onRunNow={handleRunNow}
+                  onOpenStepBuilder={a => setStepBuilderTarget(a)}
+                  onOpenRunLog={a => setRunLogTarget(a)}
                 />
               ))}
             </div>
@@ -733,6 +803,33 @@ export default function AutomationsPanel() {
             trigger_config: prefillTemplate.trigger_config,
             steps: prefillTemplate.steps.map((s, i) => ({ ...s, id: `step-${i + 1}` })),
           } : null}
+        />
+      )}
+
+      {/* Step Builder drawer */}
+      {stepBuilderTarget && (
+        <AutomationStepBuilder
+          automationId={stepBuilderTarget.id}
+          initialSteps={(stepBuilderTarget.steps ?? []) as unknown as AutomationStepDef[]}
+          onClose={() => setStepBuilderTarget(null)}
+          onSaved={fetchAutomations}
+        />
+      )}
+
+      {/* Run Log drawer */}
+      {runLogTarget && (
+        <AutomationRunLog
+          automationId={runLogTarget.id}
+          automationName={runLogTarget.name}
+          onClose={() => setRunLogTarget(null)}
+        />
+      )}
+
+      {/* Templates Gallery modal */}
+      {templatesGalleryOpen && (
+        <AutomationTemplatesGallery
+          onClose={() => setTemplatesGalleryOpen(false)}
+          onUseTemplate={handleUseGalleryTemplate}
         />
       )}
 
