@@ -67,6 +67,7 @@ import { ModuleLoader } from '../core/ModuleLoader';
 import { usePanelConfigStore } from '../store/panelConfig';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { showToast } from './Toast';
+import EmptyState from './EmptyState';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -339,10 +340,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
       {/* Module grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-mission-control-text-dim">
-          <Puzzle size={32} className="mx-auto mb-2 opacity-40" />
-          <p>No modules match your search</p>
-        </div>
+        <EmptyState
+          icon={Puzzle}
+          title="No modules found"
+          description="No modules match your current search or filters."
+          size="sm"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(module => {
