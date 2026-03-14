@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
@@ -485,6 +485,80 @@ function PlatformUpdateTab() {
   );
 }
 
+// ─── Platform Info Section ─────────────────────────────────────────────────────
+
+function PlatformInfoSection() {
+  const [info, setInfo] = useState<{
+    gitBranch: string | null;
+    gitCommit: string | null;
+    agentsTotal: number;
+    modulesTotal: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          setInfo({
+            gitBranch: data.gitBranch ?? null,
+            gitCommit: data.gitCommit ?? null,
+            agentsTotal: data.agentsTotal ?? 0,
+            modulesTotal: data.modulesTotal ?? 0,
+          });
+        }
+      } catch { /* silent */ }
+      setLoading(false);
+    })();
+  }, []);
+
+  const rows: { label: string; value: ReactNode }[] = [
+    {
+      label: 'Branch',
+      value: info?.gitBranch
+        ? <span className="font-mono text-mission-control-text">{info.gitBranch}</span>
+        : <span className="text-mission-control-text-dim">—</span>,
+    },
+    {
+      label: 'Commit',
+      value: info?.gitCommit
+        ? <span className="font-mono text-mission-control-text">{info.gitCommit}</span>
+        : <span className="text-mission-control-text-dim">—</span>,
+    },
+    {
+      label: 'Registered agents',
+      value: <span className="font-semibold text-mission-control-text">{info?.agentsTotal ?? '—'}</span>,
+    },
+    {
+      label: 'Registered modules',
+      value: <span className="font-semibold text-mission-control-text">{info?.modulesTotal ?? '—'}</span>,
+    },
+  ];
+
+  return (
+    <div className="p-5 bg-mission-control-surface rounded-xl border border-mission-control-border">
+      <div className="flex items-center gap-2 mb-4">
+        <Info size={16} className="text-mission-control-text-dim" />
+        <span className="text-sm font-semibold text-mission-control-text">System Information</span>
+      </div>
+      {loading ? (
+        <div className="text-sm text-mission-control-text-dim">Loading...</div>
+      ) : (
+        <div className="space-y-2">
+          {rows.map(row => (
+            <div key={row.label} className="flex items-center justify-between text-sm">
+              <span className="text-mission-control-text-dim">{row.label}</span>
+              {row.value}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Agent Platform Section ────────────────────────────────────────────────────
 
 function AgentPlatformSection() {
@@ -494,6 +568,8 @@ function AgentPlatformSection() {
   const [autoDispatch, setAutoDispatch] = useState(true);
   const [preReview, setPreReview] = useState(true);
   const [maxConcurrent, setMaxConcurrent] = useState(3);
+  const [claraStrictness, setClaraStrictness] = useState<'lenient' | 'standard' | 'strict'>('standard');
+  const [claraAutoDispatch, setClaraAutoDispatch] = useState(true);
   const [platformSaving, setPlatformSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -511,6 +587,8 @@ function AgentPlatformSection() {
           if (data['agent.autoDispatch'] !== undefined) setAutoDispatch(data['agent.autoDispatch'] !== 'false');
           if (data['agent.preReview'] !== undefined) setPreReview(data['agent.preReview'] !== 'false');
           if (data['agent.maxConcurrent']) setMaxConcurrent(parseInt(data['agent.maxConcurrent']) || 3);
+          if (data['clara.reviewStrictness']) setClaraStrictness(data['clara.reviewStrictness'] as 'lenient' | 'standard' | 'strict');
+          if (data['clara.autoDispatch'] !== undefined) setClaraAutoDispatch(data['clara.autoDispatch'] !== 'false');
         }
       } catch { /* silent */ }
       setLoaded(true);
@@ -527,9 +605,11 @@ function AgentPlatformSection() {
           'agent.model.lead':    modelDefaults.lead,
           'agent.model.worker':  modelDefaults.worker,
           'agent.model.trivial': modelDefaults.trivial,
-          'agent.autoDispatch':  String(autoDispatch),
-          'agent.preReview':     String(preReview),
-          'agent.maxConcurrent': String(maxConcurrent),
+          'agent.autoDispatch':       String(autoDispatch),
+          'agent.preReview':          String(preReview),
+          'agent.maxConcurrent':      String(maxConcurrent),
+          'clara.reviewStrictness':   claraStrictness,
+          'clara.autoDispatch':       String(claraAutoDispatch),
         }),
       });
       showToast('success', 'Platform settings saved');
@@ -582,6 +662,29 @@ function AgentPlatformSection() {
             </div>
             <Toggle checked={preReview} onChange={setPreReview} />
           </div>
+          {preReview && (
+            <>
+              <div className="flex items-center gap-3 pl-4 border-l-2 border-mission-control-border">
+                <label className="text-sm text-mission-control-text-dim w-28 shrink-0">Review strictness</label>
+                <select
+                  value={claraStrictness}
+                  onChange={e => setClaraStrictness(e.target.value as 'lenient' | 'standard' | 'strict')}
+                  className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                >
+                  <option value="lenient">Lenient — approve if basic gates pass</option>
+                  <option value="standard">Standard — balanced review (default)</option>
+                  <option value="strict">Strict — require detailed planning notes</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between pl-4 border-l-2 border-mission-control-border">
+                <div>
+                  <div className="font-medium text-sm">Auto-dispatch after pre-review approval</div>
+                  <div className="text-xs text-mission-control-text-dim">Immediately dispatch agent when Clara approves</div>
+                </div>
+                <Toggle checked={claraAutoDispatch} onChange={setClaraAutoDispatch} />
+              </div>
+            </>
+          )}
           <div>
             <label className="block text-sm text-mission-control-text-dim mb-2">
               Max concurrent tasks per agent: <span className="font-semibold text-mission-control-text">{maxConcurrent}</span>
@@ -831,6 +934,85 @@ function DangerZoneSection() {
             Export JSON
           </button>
         </div>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+// ─── Automation Execution Section ─────────────────────────────────────────────
+
+function AutomationExecutionSection() {
+  const [automationEnabled, setAutomationEnabled] = useState(true);
+  const [maxConcurrentAutomations, setMaxConcurrentAutomations] = useState(3);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data['automation.enabled'] !== undefined) setAutomationEnabled(data['automation.enabled'] !== 'false');
+          if (data['automation.maxConcurrent']) setMaxConcurrentAutomations(parseInt(data['automation.maxConcurrent']) || 3);
+        }
+      } catch { /* silent */ }
+      setLoaded(true);
+    })();
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          'automation.enabled': String(automationEnabled),
+          'automation.maxConcurrent': String(maxConcurrentAutomations),
+        }),
+      });
+      showToast('success', 'Automation settings saved');
+    } catch {
+      showToast('error', 'Failed to save automation settings');
+    }
+    setSaving(false);
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <CollapsibleSection title="Automation Execution" icon={<Zap size={16} />} description="Global automation execution controls">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-medium text-sm">Enable automation execution</div>
+            <div className="text-xs text-mission-control-text-dim">Allow n8n automations and scheduled tasks to run</div>
+          </div>
+          <Toggle checked={automationEnabled} onChange={setAutomationEnabled} />
+        </div>
+        <div>
+          <label className="block text-sm text-mission-control-text-dim mb-2">
+            Max concurrent automations: <span className="font-semibold text-mission-control-text">{maxConcurrentAutomations}</span>
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={maxConcurrentAutomations}
+            onChange={e => setMaxConcurrentAutomations(Math.min(10, Math.max(1, parseInt(e.target.value) || 1)))}
+            className="w-32 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+          />
+          <div className="text-xs text-mission-control-text-dim mt-1">Allowed range: 1–10</div>
+        </div>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60"
+        >
+          {saving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
+          Save automation settings
+        </button>
       </div>
     </CollapsibleSection>
   );
@@ -1139,12 +1321,12 @@ export default function EnhancedSettingsPanel() {
                 description="Claude Code system overview"
               >
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-300">Claude Code System</h3>
-                  <div className="text-sm text-gray-400 space-y-1">
-                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-emerald-400">mission-control-db &middot; memory &middot; cron</span></div>
-                    <div className="flex justify-between"><span>Agents</span><span className="text-emerald-400">13 defined</span></div>
-                    <div className="flex justify-between"><span>Hooks</span><span className="text-emerald-400">approval &middot; review-gate &middot; session-sync</span></div>
-                    <div className="flex justify-between"><span>Vault</span><span className="text-gray-500">~/mission-control/memory/</span></div>
+                  <h3 className="text-sm font-semibold text-mission-control-text">Claude Code System</h3>
+                  <div className="text-sm text-mission-control-text-dim space-y-1">
+                    <div className="flex justify-between"><span>MCP Servers</span><span className="text-mission-control-text">mission-control-db &middot; memory &middot; cron</span></div>
+                    <div className="flex justify-between"><span>Agents</span><span className="text-mission-control-text">13 defined</span></div>
+                    <div className="flex justify-between"><span>Hooks</span><span className="text-mission-control-text">approval &middot; review-gate &middot; session-sync</span></div>
+                    <div className="flex justify-between"><span>Vault</span><span className="text-mission-control-text-dim">~/mission-control/memory/</span></div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
                     <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
@@ -1874,6 +2056,9 @@ export default function EnhancedSettingsPanel() {
         {/* AUTOMATION TAB */}
         {(activeTab === 'automation' || searchQuery) && (
           <div className="space-y-6">
+            {settingsMatch('automation execution global enable disable concurrent') && (
+              <AutomationExecutionSection />
+            )}
             {settingsMatch('automation external actions tweets emails rate limit') && (
               <CollapsibleSection 
                 title="Automation & External Actions" 
@@ -1976,7 +2161,12 @@ export default function EnhancedSettingsPanel() {
         )}
 
         {/* PLATFORM TAB */}
-        {activeTab === 'platform' && <PlatformUpdateTab />}
+        {activeTab === 'platform' && (
+          <div className="space-y-6">
+            <PlatformInfoSection />
+            <PlatformUpdateTab />
+          </div>
+        )}
 
         {/* Actions */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform'].includes(activeTab) && (

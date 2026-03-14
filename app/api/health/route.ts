@@ -60,6 +60,8 @@ export async function GET() {
   let tasksInReview = 0;
   let tasksPreReview = 0;
   let agentsActive = 0;
+  let agentsTotal = 0;
+  let modulesTotal = 0;
   try {
     const db = getDb();
     const inProgress = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'in-progress'").get() as { cnt: number };
@@ -69,11 +71,26 @@ export async function GET() {
     const active = db.prepare(
       "SELECT COUNT(*) as cnt FROM agents WHERE lastSeen > ?"
     ).get(activeThreshold) as { cnt: number } | undefined;
+    const totalAgents = db.prepare("SELECT COUNT(*) as cnt FROM agents").get() as { cnt: number } | undefined;
     tasksInProgress = inProgress?.cnt ?? 0;
     tasksInReview = inReview?.cnt ?? 0;
     tasksPreReview = preReview?.cnt ?? 0;
     agentsActive = active?.cnt ?? 0;
+    agentsTotal = totalAgents?.cnt ?? 0;
+    // modules table may not exist in all deployments — fail silently
+    try {
+      const totalModules = db.prepare("SELECT COUNT(*) as cnt FROM modules").get() as { cnt: number } | undefined;
+      modulesTotal = totalModules?.cnt ?? 0;
+    } catch { /* modules table not present */ }
   } catch { /* DB may not be ready — non-critical */ }
+
+  // Git info — non-critical, fail silently
+  let gitBranch: string | null = null;
+  let gitCommit: string | null = null;
+  try {
+    gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
+    gitCommit = execSync('git rev-parse --short HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
+  } catch { /* not a git repo or git not available */ }
 
   return NextResponse.json({
     cli: claudeStatus.found && claudeStatus.authenticated,
@@ -90,5 +107,9 @@ export async function GET() {
     tasksInReview,
     tasksPreReview,
     agentsActive,
+    agentsTotal,
+    modulesTotal,
+    gitBranch,
+    gitCommit,
   });
 }
