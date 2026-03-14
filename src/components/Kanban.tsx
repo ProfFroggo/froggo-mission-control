@@ -32,21 +32,21 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
 ];
 
 // Format due date
-function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean } {
+function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean; isDueThisWeek: boolean } {
   const now = Date.now();
   const diff = timestamp - now;
   const isOverdue = diff < 0;
 
   if (isOverdue) {
     const overdueDiff = Math.abs(diff);
-    if (overdueDiff < 86400000) return { text: 'Overdue', isOverdue: true, isDueSoon: false };
-    return { text: `${Math.floor(overdueDiff / 86400000)}d overdue`, isOverdue: true, isDueSoon: false };
+    if (overdueDiff < 86400000) return { text: 'Overdue', isOverdue: true, isDueSoon: false, isDueThisWeek: false };
+    return { text: `${Math.floor(overdueDiff / 86400000)}d overdue`, isOverdue: true, isDueSoon: false, isDueThisWeek: false };
   }
-  
-  if (diff < 3600000) return { text: `${Math.floor(diff / 60000)}m`, isOverdue: false, isDueSoon: true };
-  if (diff < 86400000) return { text: `${Math.floor(diff / 3600000)}h`, isOverdue: false, isDueSoon: true };
-  if (diff < 604800000) return { text: `${Math.floor(diff / 86400000)}d`, isOverdue: false, isDueSoon: false };
-  return { text: new Date(timestamp).toLocaleDateString(), isOverdue: false, isDueSoon: false };
+
+  if (diff < 3600000) return { text: `${Math.floor(diff / 60000)}m`, isOverdue: false, isDueSoon: true, isDueThisWeek: false };
+  if (diff < 86400000) return { text: `${Math.floor(diff / 3600000)}h`, isOverdue: false, isDueSoon: true, isDueThisWeek: false };
+  if (diff < 604800000) return { text: `${Math.floor(diff / 86400000)}d`, isOverdue: false, isDueSoon: false, isDueThisWeek: true };
+  return { text: new Date(timestamp).toLocaleDateString(), isOverdue: false, isDueSoon: false, isDueThisWeek: false };
 }
 
 const columns: { id: TaskStatus; title: string; color: string; iconColor: string; bg: string; icon: React.ReactNode }[] = [
@@ -1629,31 +1629,34 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       
       {/* Agent status updates are shown in the Activities tab of the task detail panel, not here */}
 
-      {/* Due today / Overdue badges — only show for incomplete tasks */}
-      {task.dueDate && task.status !== 'done' && (() => {
-        const now = new Date();
-        const due = new Date(task.dueDate);
-        const isOverdue = task.dueDate < Date.now();
-        const isDueToday = !isOverdue &&
-          due.getFullYear() === now.getFullYear() &&
-          due.getMonth() === now.getMonth() &&
-          due.getDate() === now.getDate();
-        if (isOverdue) {
+      {/* Due date urgency badges — only show for incomplete tasks */}
+      {task.dueDate && task.status !== 'done' && dueInfo && (() => {
+        if (dueInfo.isOverdue) {
           return (
             <div className="flex items-center gap-1 mb-1.5">
-              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-red-400 bg-red-400/10 border-red-400/20">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-error bg-error-subtle border-error-border">
                 <AlertTriangle size={10} />
-                Overdue
+                {dueInfo.text}
               </span>
             </div>
           );
         }
-        if (isDueToday) {
+        if (dueInfo.isDueSoon) {
           return (
             <div className="flex items-center gap-1 mb-1.5">
-              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-amber-400 bg-amber-400/10 border-amber-400/20">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-warning bg-warning-subtle border-warning-border">
+                <Clock size={10} />
+                Due in {dueInfo.text}
+              </span>
+            </div>
+          );
+        }
+        if (dueInfo.isDueThisWeek) {
+          return (
+            <div className="flex items-center gap-1 mb-1.5">
+              <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border text-warning bg-warning-subtle/50 border-warning-border/50">
                 <Calendar size={10} />
-                Due today
+                Due in {dueInfo.text}
               </span>
             </div>
           );
@@ -1731,6 +1734,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
               dueInfo.isOverdue ? 'bg-error-subtle text-error' :
               dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
+              dueInfo.isDueThisWeek ? 'bg-warning-subtle/50 text-warning' :
               'bg-mission-control-surface text-mission-control-text-dim'
             }`}>
               <Calendar size={14} className="no-shrink" />

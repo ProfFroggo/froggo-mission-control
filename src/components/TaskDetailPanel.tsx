@@ -639,9 +639,24 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const reviewer = task?.reviewerId ? agents.find(a => a.id === task.reviewerId) : null;
   const subtaskProgress = subtasks.length > 0
-    ? (subtasks.filter(st => st.completed).length / subtasks.length) * 100 
+    ? (subtasks.filter(st => st.completed).length / subtasks.length) * 100
     : 0;
   const completedSubtasks = subtasks.filter(st => st.completed).length;
+
+  // Due date urgency for panel header
+  const dueDateUrgency = task?.dueDate && task.status !== 'done' ? (() => {
+    const now = Date.now();
+    const diff = task.dueDate - now;
+    if (diff < 0) {
+      const overdueDiff = Math.abs(diff);
+      const text = overdueDiff < 86400000 ? 'Overdue' : `${Math.floor(overdueDiff / 86400000)}d overdue`;
+      return { text, level: 'overdue' as const };
+    }
+    if (diff < 3600000) return { text: `Due in ${Math.floor(diff / 60000)}m`, level: 'soon' as const };
+    if (diff < 86400000) return { text: `Due in ${Math.floor(diff / 3600000)}h`, level: 'soon' as const };
+    if (diff < 604800000) return { text: `Due in ${Math.floor(diff / 86400000)}d`, level: 'week' as const };
+    return null;
+  })() : null;
 
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
@@ -689,6 +704,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               {task.projectName}{!!task.stageNumber && ` · Stage ${task.stageNumber}`}
             </span>
           )}
+          {dueDateUrgency && (
+            <span className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
+              dueDateUrgency.level === 'overdue' ? 'bg-error-subtle text-error' :
+              dueDateUrgency.level === 'soon' ? 'bg-warning-subtle text-warning' :
+              'bg-warning-subtle/50 text-warning'
+            }`}>
+              {dueDateUrgency.level === 'overdue'
+                ? <AlertTriangle size={11} />
+                : <Clock size={11} />}
+              {dueDateUrgency.text}
+            </span>
+          )}
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
@@ -724,9 +751,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <p className="text-xs text-mission-control-text-dim line-clamp-1 mb-2" title={task.description}>{task.description}</p>
         )}
 
-        {/* Row 4: progress · tags · dates — all one line */}
+        {/* Row 4: progress · dates — all one line */}
         <div className="flex items-center gap-2 my-[14px]">
-          {subtasks.length > 0 && (
+          {subtasks.length > 0 ? (
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
                 <div
@@ -739,7 +766,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
               </span>
             </>
-          )}
+          ) : typeof task.progress === 'number' && task.progress > 0 ? (
+            <>
+              <div className="h-2 flex-1 bg-mission-control-border rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-mission-control-accent transition-all duration-500 rounded-full"
+                  style={{ width: `${task.progress}%` }}
+                />
+              </div>
+              <span className="text-xs text-mission-control-text-dim whitespace-nowrap flex-shrink-0">
+                {task.progress}%
+                {isWorking && <span className="text-warning animate-pulse ml-1">· working</span>}
+              </span>
+            </>
+          ) : null}
           {/* dates pushed right */}
           <div className="flex items-center gap-2 text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
