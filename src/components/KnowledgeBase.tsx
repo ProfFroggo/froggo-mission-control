@@ -544,6 +544,57 @@ export default function KnowledgeBase() {
       .finally(() => setVersionsLoading(false));
   }, [versionsArticleId]);
 
+  // Fetch API templates once on mount
+  useEffect(() => {
+    fetch('/api/knowledge/templates')
+      .then(r => r.json())
+      .then(d => { if (d.success) setApiTemplates(d.templates); })
+      .catch(() => {/* non-critical */});
+  }, []);
+
+  // Fetch view counts when articles load
+  useEffect(() => {
+    if (articles.length === 0) return;
+    const ids = articles.map(a => a.id);
+    // Batch fetch using a lightweight Promise.all — fire-and-forget
+    Promise.all(
+      ids.map(id =>
+        fetch(`/api/knowledge/${id}/analytics`)
+          .then(r => r.json())
+          .then(d => d.success ? { id, views: d.views as number } : null)
+          .catch(() => null)
+      )
+    ).then(results => {
+      const counts: Record<string, number> = {};
+      for (const r of results) {
+        if (r) counts[r.id] = r.views;
+      }
+      setViewCounts(counts);
+    });
+  }, [articles]);
+
+  // Close template dropdown on outside click
+  useEffect(() => {
+    if (!showTemplateDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target as Node)) {
+        setShowTemplateDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showTemplateDropdown]);
+
+  // Log view when article is opened
+  const logView = useCallback((articleId: string) => {
+    fetch(`/api/knowledge/${articleId}/analytics`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'view' }),
+    }).catch(() => {/* non-critical */});
+    setViewCounts(prev => ({ ...prev, [articleId]: (prev[articleId] ?? 0) + 1 }));
+  }, []);
+
   // ── Derived categories (from loaded articles + statics) ───────────────────
   const allCategories = useMemo<string[]>(() => {
     const fromArticles = articles.map(a => a.category).filter(Boolean);

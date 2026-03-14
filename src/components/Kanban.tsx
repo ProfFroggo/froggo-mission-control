@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
-  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash,
+  CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, ChevronLeft, Hash,
   ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock,
   Square, UserCheck,
 } from 'lucide-react';
@@ -23,6 +23,7 @@ import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -205,6 +206,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [showJumpToTask, setShowJumpToTask] = useState(false);
   const [inlineAddActive, setInlineAddActive] = useState(false);
   const [inlineAddTitle, setInlineAddTitle] = useState('');
+
+  // Mobile: breakpoint detection and single-column carousel state
+  const { isMobile } = useBreakpoint();
+  const [mobileColumnIndex, setMobileColumnIndex] = useState(0);
+  const mobileTouchStartX = useRef(0);
+  const mobileTouchStartY = useRef(0);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -1774,7 +1781,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const editInputRef = useRef<HTMLInputElement>(null);
-  
+  // Quick-edit inline popover
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
+  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
+
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);

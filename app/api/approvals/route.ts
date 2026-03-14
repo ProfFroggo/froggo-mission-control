@@ -1,7 +1,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { emitSSEEvent } from '@/lib/sseEmitter';
 import { randomUUID } from 'crypto';
+import { createNotification } from '@/lib/notificationWriter';
 
 function parseApproval(row: Record<string, unknown>) {
   if (!row) return row;
@@ -37,7 +39,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-
 // PATCH /api/approvals — batch approve or reject
 // Body: { ids: string[], action: 'approve' | 'reject', reason?: string }
 export async function PATCH(request: NextRequest) {
@@ -71,6 +72,29 @@ export async function PATCH(request: NextRequest) {
     db.prepare(
       `UPDATE approvals SET status = ?, respondedAt = ?, notes = ? WHERE id IN (${updatePlaceholders})`
     ).run(status, respondedAt, notes, ...validIds);
+
+    // Update inbox count badge
+    try {
+      const pendingCount = (db.prepare(
+        "SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'"
+      ).get() as { c: number }).c;
+      emitSSEEvent('inbox.count', { count: pendingCount });
+    } catch { /* non-critical */ }
+
+    // Emit approval_resolved notifications
+    try {
+      const resolvedRows = db.prepare(
+        `SELECT id, title, requester FROM approvals WHERE id IN (${updatePlaceholders})`
+      ).all(...validIds) as Array<{ id: string; title: string; requester: string | null }>;
+      for (const row of resolvedRows) {
+        createNotification({
+          type: 'approval_resolved',
+          title: `Approval ${status}: ${row.title}`,
+          userId: row.requester ?? undefined,
+          metadata: { approvalId: row.id, action, status },
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ }
 
     return NextResponse.json({ updated: validIds.length });
   } catch (error) {
