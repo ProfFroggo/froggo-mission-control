@@ -885,7 +885,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           />
         </div>
       )}
-      <div className={`flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
+      <div className={`flex-1 min-w-0 flex flex-nowrap gap-4 p-4 overflow-x-auto [overflow-scrolling:touch] [-webkit-overflow-scrolling:touch] ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
         {columns.map((column) => {
           const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];

@@ -162,7 +162,7 @@ function StatStrip({
   onNavigate?: (view: View) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 sm:px-6 py-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 px-4 sm:px-6 py-4">
       <StatCard
         label="Active Tasks"
         value={inProgressCount}
