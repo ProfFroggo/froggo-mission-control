@@ -1,17 +1,18 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
-import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus } from 'lucide-react';
+import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
 import AgentActivityTimeline from './AgentActivityTimeline';
 import AgentSoulEditor from './AgentSoulEditor';
+import AgentCoachingCard from './AgentCoachingCard';
 import { agentApi } from '../lib/api';
 import { showToast } from './Toast';
 
 interface AgentDetailModalProps {
   agentId: string;
   onClose: () => void;
-  initialTab?: 'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul';
+  initialTab?: 'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul' | 'coaching';
 }
 
 interface AgentDetails {
@@ -80,7 +81,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
   const fetchAgents = useStore(s => s.fetchAgents);
   const updateAgentStatus = useStore(s => s.updateAgentStatus);
   const [isClosing, setIsClosing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul'>(initialTab ?? 'performance');
+  const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'sessions' | 'rules' | 'soul' | 'coaching'>(initialTab ?? 'performance');
   const [details, setDetails] = useState<AgentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
@@ -294,7 +295,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
       if (isCmdOrCtrl && e.key === 'r') { e.preventDefault(); buildDetailsFromRealData(); return; }
       if (isCmdOrCtrl && /^[1-6]$/.test(e.key)) {
         e.preventDefault();
-        const tabMap: Record<string, typeof activeTab> = { '1': 'performance', '2': 'skills', '3': 'tasks', '4': 'sessions', '5': 'rules', '6': 'soul' };
+        const tabMap: Record<string, typeof activeTab> = { '1': 'performance', '2': 'skills', '3': 'tasks', '4': 'sessions', '5': 'rules', '6': 'soul', '7': 'coaching' };
         if (e.key in tabMap) setActiveTab(tabMap[e.key]);
       }
     };
@@ -527,6 +528,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             { key: 'sessions' as const, icon: Wifi, label: `Sessions${details ? ` (${details.activeSessions.length})` : ''}` },
             { key: 'rules' as const, icon: FileText, label: 'Rules' },
             { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
+            { key: 'coaching' as const, icon: Star, label: 'Performance Review' },
           ]).map((tab) => (
             <button
               key={tab.key}
@@ -1084,6 +1086,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   </div>
                   <AgentSoulEditor agentId={agent.id} agentName={agent.name} />
                 </div>
+              )}
+
+              {/* ── Performance Review / Coaching Tab ── */}
+              {activeTab === 'coaching' && (
+                <AgentCoachingCard agentId={agentId} agentName={agent.name} />
               )}
             </>
           ) : (

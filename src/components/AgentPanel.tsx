@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity, Search } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity, Search, Trophy } from 'lucide-react';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -14,6 +14,7 @@ import AgentHealthDashboard from './AgentHealthDashboard';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import AgentLibraryPanel from './AgentLibraryPanel';
+import AgentLeaderboard from './AgentLeaderboard';
 import { InlineLoader, Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
@@ -51,7 +52,7 @@ export default function AgentPanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
   const [soulEditAgent, setSoulEditAgent] = useState<{ id: string; name: string } | null>(null);
-  const [view, setView] = useState<'active' | 'health' | 'library'>('active');
+  const [view, setView] = useState<'active' | 'health' | 'library' | 'leaderboard'>('active');
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
   const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
@@ -304,9 +305,10 @@ export default function AgentPanel() {
         {/* View tabs */}
         <div className="flex border-b border-mission-control-border mb-5">
           {([
-            { key: 'active' as const,  icon: Bot,      label: 'Active' },
-            { key: 'health' as const,  icon: Activity, label: 'Health' },
-            { key: 'library' as const, icon: Library,  label: 'Library' },
+            { key: 'active'      as const, icon: Bot,     label: 'Active'      },
+            { key: 'health'      as const, icon: Activity, label: 'Health'     },
+            { key: 'library'     as const, icon: Library,  label: 'Library'    },
+            { key: 'leaderboard' as const, icon: Trophy,   label: 'Leaderboard'},
           ]).map(tab => (
             <button
               key={tab.key}
@@ -337,6 +339,11 @@ export default function AgentPanel() {
               setView('active');
             }}
           />
+        )}
+
+        {/* Leaderboard view */}
+        {view === 'leaderboard' && (
+          <AgentLeaderboard />
         )}
 
         {/* Active view content */}
