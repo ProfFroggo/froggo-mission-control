@@ -741,6 +741,25 @@ export default function SettingsPanel() {
                 </button>
               </div>
             </section>
+
+            {/* Onboarding */}
+            <section>
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <RefreshCw size={16} /> Onboarding
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4 space-y-3">
+                <p className="text-sm text-mission-control-text-dim">
+                  Re-run the welcome onboarding flow — feature highlights, task creation, and panel tour.
+                </p>
+                <button
+                  onClick={() => window.dispatchEvent(new Event('restart-onboarding'))}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:border-mission-control-accent/60 hover:text-mission-control-accent transition-colors"
+                >
+                  <RefreshCw size={14} />
+                  Restart onboarding tour
+                </button>
+              </div>
+            </section>
           </div>
         )}
 
