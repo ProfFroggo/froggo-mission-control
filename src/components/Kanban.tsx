@@ -1853,9 +1853,6 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
-  const [showQuickEdit, setShowQuickEdit] = useState(false);
-  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
 
   // Focus edit input when entering edit mode
   useEffect(() => {

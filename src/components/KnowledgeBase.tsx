@@ -507,6 +507,47 @@ export default function KnowledgeBase() {
   const [qcSaving, setQcSaving] = useState(false);
   const [qcGenerating, setQcGenerating] = useState(false);
 
+  // Graph view + template dropdown
+  const [showGraph, setShowGraph] = useState(false);
+  const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
+  const [apiTemplates, setApiTemplates] = useState<Array<{ id: string; label: string }>>([]);
+
+  // Load knowledge templates
+  useEffect(() => {
+    fetch('/api/knowledge/templates')
+      .then(r => r.ok ? r.json() : { templates: [] })
+      .then(d => setApiTemplates((d.templates ?? []).map((t: Record<string, unknown>) => ({ id: t.id as string, label: t.title as string }))))
+      .catch(() => {});
+  }, []);
+
+  // Close template dropdown on outside click
+  useEffect(() => {
+    const handle = (e: MouseEvent) => {
+      if (templateDropdownRef.current && !templateDropdownRef.current.contains(e.target as Node)) {
+        setShowTemplateDropdown(false);
+      }
+    };
+    if (showTemplateDropdown) document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [showTemplateDropdown]);
+
+  const createFromTemplate = async (templateId: string) => {
+    setShowTemplateDropdown(false);
+    try {
+      const res = await fetch('/api/knowledge/from-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      if (data.success && data.article) {
+        setArticles(prev => [data.article, ...prev]);
+        setViewing(data.article);
+      }
+    } catch { /* non-critical */ }
+  };
+
   // Debounce search input
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -1141,6 +1182,14 @@ export default function KnowledgeBase() {
           onPreview={setPreviewVersion}
           onRestore={restoreVersion}
           onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
+        />
+      )}
+
+      {showGraph && (
+        <KnowledgeGraphPanel
+          articles={articles}
+          onNavigate={article => { setViewing(article as unknown as KBArticle); setShowGraph(false); }}
+          onClose={() => setShowGraph(false)}
         />
       )}
     </div>
