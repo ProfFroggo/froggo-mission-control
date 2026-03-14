@@ -1,3 +1,4 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import {
   BarChart2,
@@ -240,13 +241,54 @@ export default function AnalyticsDashboard() {
               <RefreshCw size={16} />
             </button>
 
-            <button
-              onClick={() => handleExport('tasks', 'csv')}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
-            >
-              <Download size={16} />
-              <span className="text-sm">Export</span>
-            </button>
+            {/* Export dropdown */}
+            <div className="relative" ref={exportMenuRef}>
+              <button
+                onClick={() => setShowExportMenu((v) => !v)}
+                disabled={exportBusy}
+                className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-60"
+              >
+                <Download size={16} />
+                <span className="text-sm">{exportBusy ? 'Exporting…' : 'Export'}</span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-52 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg overflow-hidden">
+                  <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider border-b border-mission-control-border">
+                    Export as CSV
+                  </div>
+                  {(['tasks', 'agents', 'approvals', 'token-usage'] as ExportReportType[]).map(
+                    (t) => (
+                      <button
+                        key={`csv-${t}`}
+                        onClick={() => handleExport(t, 'csv')}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors capitalize"
+                      >
+                        {t.replace('-', ' ')} CSV
+                      </button>
+                    )
+                  )}
+                  <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider border-b border-mission-control-border border-t">
+                    Export as JSON
+                  </div>
+                  {(['tasks', 'agents', 'approvals', 'token-usage'] as ExportReportType[]).map(
+                    (t) => (
+                      <button
+                        key={`json-${t}`}
+                        onClick={() => handleExport(t, 'json')}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors capitalize"
+                      >
+                        {t.replace('-', ' ')} JSON
+                      </button>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
