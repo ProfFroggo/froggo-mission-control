@@ -439,5 +439,15 @@ export const campaignsApi = {
     apiCall(`/campaigns/${id}/members`, { method: 'POST', body: { agentId, action: 'remove' } }),
   dispatch: (id: string, data: any) =>
     apiCall(`/campaigns/${id}/dispatch`, { method: 'POST', body: data }),
+  generateTasks: (id: string) =>
+    apiCall(`/campaigns/${id}/generate-tasks`, { method: 'POST' }),
+  duplicate: (id: string) =>
+    apiCall(`/campaigns/${id}/duplicate`, { method: 'POST' }),
+  listAutomations: (id: string) =>
+    apiCall(`/campaigns/${id}/automations`),
+  linkAutomation: (id: string, automationId: string, triggerType: string) =>
+    apiCall(`/campaigns/${id}/automations`, { method: 'POST', body: { automationId, triggerType } }),
+  unlinkAutomation: (id: string, automationId: string) =>
+    apiCall(`/campaigns/${id}/automations?automationId=${encodeURIComponent(automationId)}`, { method: 'DELETE' }),
 };
 
