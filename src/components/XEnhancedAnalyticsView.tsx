@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   BarChart2, TrendingUp, Eye, Activity, Users, RefreshCw,
   MessageCircle, Repeat, Heart, MousePointer, Calendar, Clock, Lightbulb,
-  ArrowUp, ArrowDown, Minus, Zap, Download, Rocket, Link
+  ArrowUp, ArrowDown, Minus, Zap, Download
 } from 'lucide-react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -10,10 +10,6 @@ import {
 } from 'recharts';
 import { Spinner } from './LoadingStates';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface PostMetrics {
   id: string;
@@ -23,7 +19,7 @@ interface PostMetrics {
   likes: number;
   retweets: number;
   replies: number;
-  clicks: number; // Always 0 — X API free tier doesn't expose click data
+  clicks: number;  // Always 0 — X API free tier doesn't expose click data
   type: 'single' | 'thread' | 'reply' | 'quote';
 }
 
@@ -31,7 +27,7 @@ interface AnalyticsSummary {
   totalPosts: number;
   totalImpressions: number;
   engagementRate: number;
-  followerCount: number; // Real current count
+  followerCount: number;  // Real current count
   avgLikesPerTweet: number;
   avgRetweetsPerTweet: number;
 }
@@ -44,8 +40,8 @@ interface AnalyticsData {
   postMetrics: PostMetrics[];
   summary: AnalyticsSummary;
   suggestions: Suggestion[];
-  engagementTrend: { date: string; rate: number }[];
 }
+
 
 interface Suggestion {
   id: string;
@@ -56,30 +52,9 @@ interface Suggestion {
   icon: string;
 }
 
-// ---------------------------------------------------------------------------
-// Static / mock data
-// ---------------------------------------------------------------------------
-
-// 30-day follower growth trend (mock — X API free tier has no historical followers endpoint)
-const MOCK_FOLLOWER_SPARKLINE = [
-  820, 835, 841, 850, 862, 858, 870, 881, 876, 890,
-  905, 912, 908, 920, 935, 944, 938, 952, 965, 970,
-  982, 990, 987, 1002, 1018, 1025, 1031, 1040, 1048, 1055,
-];
+const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-// Time buckets for the simplified heatmap (6 rows)
-const TIME_BUCKETS = [
-  { label: 'Night', hours: [0, 1, 2, 3, 4] },
-  { label: 'Morning', hours: [5, 6, 7, 8, 9] },
-  { label: 'Midday', hours: [10, 11, 12, 13] },
-  { label: 'Afternoon', hours: [14, 15, 16, 17] },
-  { label: 'Evening', hours: [18, 19, 20, 21] },
-  { label: 'Late', hours: [22, 23] },
-];
-
-const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
 // ---------------------------------------------------------------------------
 // Mock data for new analytics sections (labeled clearly — no live API for these)
@@ -125,53 +100,6 @@ const MOCK_RECENT_POSTS: MockPost[] = [
   { content: 'The underrated growth lever nobody talks about: improving your existing users experience first.', date: '2026-03-04', likes: 163, replies: 22, impressions: 5500 },
 ];
 
-type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
-
-// ---------------------------------------------------------------------------
-// Sub-components: pure SVG sparklines
-// ---------------------------------------------------------------------------
-
-interface SparklineProps {
-  values: number[];
-  width?: number;
-  height?: number;
-  color?: string;
-  strokeWidth?: number;
-}
-
-function Sparkline({ values, width = 120, height = 36, color = CHART_COLORS.blue, strokeWidth = 1.5 }: SparklineProps) {
-  if (values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const pad = 2;
-  const w = width - pad * 2;
-  const h = height - pad * 2;
-  const points = values
-    .map((v, i) => {
-      const x = pad + (i / (values.length - 1)) * w;
-      const y = pad + h - ((v - min) / range) * h;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// CSV export helper
-// ---------------------------------------------------------------------------
-
 function exportMockPostsCSV(posts: MockPost[]) {
   const header = ['Content', 'Date', 'Likes', 'Replies', 'Impressions', 'Engagement %'];
   const rows = posts.map((p) => {
@@ -191,52 +119,26 @@ function exportMockPostsCSV(posts: MockPost[]) {
   URL.revokeObjectURL(url);
 }
 
-function exportPostsCSV(posts: PostMetrics[]) {
-  const header = ['Content', 'Published', 'Impressions', 'Likes', 'Replies', 'Engagement %'];
-  const rows = posts.map((p) => {
-    const preview = p.content.slice(0, 60).replace(/"/g, '""') + (p.content.length > 60 ? '...' : '');
-    const date = new Date(p.created_at).toLocaleDateString();
-    const engPct =
-      p.impressions > 0
-        ? (((p.likes + p.replies + p.retweets) / p.impressions) * 100).toFixed(2)
-        : '0.00';
-    return [`"${preview}"`, date, p.impressions, p.likes, p.replies, engPct].join(',');
-  });
-  const csv = [header.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `x-post-performance-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
 
 export function XEnhancedAnalyticsView() {
   const [view, setView] = useState<AnalyticsView>('overview');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
-  const [postSort, setPostSort] = useState<'engagement' | 'impressions' | 'likes'>('engagement');
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/x/analytics');
-      const apiData = res.ok ? await res.json() : {};
-      const profile = apiData.profile?.public_metrics ?? {};
-      const rawTweets: any[] = apiData.tweets ?? [];
+      const data = res.ok ? await res.json() : {};
+      const profile = data.profile?.public_metrics ?? {};
+      const rawTweets: any[] = data.tweets ?? [];
 
       // Filter tweets by selected time range
       const rangeDays = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
       const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
-      const filteredRawTweets = rawTweets.filter(
-        (t: any) => new Date(t.created_at).getTime() >= cutoff
-      );
+      const filteredRawTweets = rawTweets.filter((t: any) => new Date(t.created_at).getTime() >= cutoff);
 
       // Map real tweets to PostMetrics
       const postMetrics: PostMetrics[] = filteredRawTweets.map((t: any) => ({
@@ -247,43 +149,28 @@ export function XEnhancedAnalyticsView() {
         likes: t.public_metrics?.like_count || 0,
         retweets: t.public_metrics?.retweet_count || 0,
         replies: t.public_metrics?.reply_count || 0,
-        clicks: 0, // Not available on free tier
+        clicks: 0,  // Not available on free tier
         type: 'single' as const,
       }));
 
-      // Build impressions over time and engagement rate per day
-      const dateMap: Record<string, { impressions: number; engagement: number; count: number }> = {};
+      // Build impressions over time from real tweet dates
+      const dateMap: Record<string, { impressions: number; engagement: number }> = {};
       for (const t of postMetrics) {
-        const dateKey = new Date(t.created_at).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
-        if (!dateMap[dateKey]) dateMap[dateKey] = { impressions: 0, engagement: 0, count: 0 };
+        const dateKey = new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (!dateMap[dateKey]) dateMap[dateKey] = { impressions: 0, engagement: 0 };
         dateMap[dateKey].impressions += t.impressions;
         dateMap[dateKey].engagement += t.likes + t.retweets + t.replies;
-        dateMap[dateKey].count += 1;
       }
-      const impressionsOverTime = Object.entries(dateMap)
-        .map(([date, v]) => ({ date, impressions: v.impressions, engagement: v.engagement }))
-        .slice(-30);
-
-      // Engagement rate trend: daily (likes+replies+retweets) / impressions * 100
-      const engagementTrend = Object.entries(dateMap)
-        .map(([date, v]) => ({
-          date,
-          rate: v.impressions > 0 ? (v.engagement / v.impressions) * 100 : 0,
-        }))
-        .slice(-7);
+      const impressionsOverTime = Object.entries(dateMap).map(([date, v]) => ({ date, ...v })).slice(-30);
 
       const totalLikes = postMetrics.reduce((s, t) => s + t.likes, 0);
       const totalRetweets = postMetrics.reduce((s, t) => s + t.retweets, 0);
       const totalReplies = postMetrics.reduce((s, t) => s + t.replies, 0);
       const totalEngagements = totalLikes + totalRetweets + totalReplies;
       const followers = profile.followers_count || 0;
-      const engagementRate =
-        followers > 0 && postMetrics.length > 0
-          ? ((totalEngagements / postMetrics.length) / followers) * 100
-          : 0;
+      const engagementRate = followers > 0 && postMetrics.length > 0
+        ? ((totalEngagements / postMetrics.length) / followers * 100)
+        : 0;
 
       const summary: AnalyticsSummary = {
         totalPosts: postMetrics.length,
@@ -296,11 +183,12 @@ export function XEnhancedAnalyticsView() {
 
       // Content type breakdown
       const contentTypes = [
-        { name: 'Single Tweets', value: postMetrics.filter((t) => t.type === 'single').length, engagement: 0 },
+        { name: 'Single Tweets', value: postMetrics.filter(t => t.type === 'single').length, engagement: 0 },
       ];
 
       // Heatmap from real tweet timestamps
       const heatmapData: { day: string; hour: number; value: number }[] = [];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const heatmapMap: Record<string, number> = {};
       for (const t of postMetrics) {
         const d = new Date(t.created_at);
@@ -309,7 +197,7 @@ export function XEnhancedAnalyticsView() {
       }
       for (let day = 0; day < 7; day++) {
         for (let hour = 0; hour < 24; hour++) {
-          heatmapData.push({ day: DAYS_SHORT[day], hour, value: heatmapMap[`${day}-${hour}`] || 0 });
+          heatmapData.push({ day: days[day], hour, value: heatmapMap[`${day}-${hour}`] || 0 });
         }
       }
 
@@ -319,15 +207,13 @@ export function XEnhancedAnalyticsView() {
       // Suggestions based on real data
       const suggestions: Suggestion[] = [];
       if (postMetrics.length > 0) {
-        const best = [...postMetrics].sort(
-          (a, b) => b.likes + b.retweets - (a.likes + a.retweets)
-        )[0];
+        const best = [...postMetrics].sort((a, b) => (b.likes + b.retweets) - (a.likes + a.retweets))[0];
         if (best) {
           const bestDate = new Date(best.created_at);
           suggestions.push({
             id: '1',
             type: 'timing',
-            title: `${DAYS_SHORT[bestDate.getDay()]}s at ${bestDate.getHours()}:00 perform best`,
+            title: `${days[bestDate.getDay()]}s at ${bestDate.getHours()}:00 perform best`,
             description: `Your top tweet (${best.likes} likes, ${best.retweets} RTs) was posted at this time. Schedule your best content here.`,
             impact: 'high',
             icon: '🕐',
@@ -353,10 +239,11 @@ export function XEnhancedAnalyticsView() {
         postMetrics,
         summary,
         suggestions,
-        engagementTrend,
       });
+
     } catch (error) {
       console.error('[XAnalytics] Failed to load analytics:', error);
+      // On error, show empty state (not mock data)
       setData(null);
     } finally {
       setLoading(false);
@@ -367,17 +254,15 @@ export function XEnhancedAnalyticsView() {
     loadData();
   }, [loadData]);
 
-  // ---------------------------------------------------------------------------
-  // Derived / memoised values
-  // ---------------------------------------------------------------------------
-
   const formatNumber = (num: number) => {
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
-    if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
   };
 
-  const formatFullNumber = (num: number) => num.toLocaleString();
+  const formatFullNumber = (num: number) => {
+    return num.toLocaleString();
+  };
 
   const avgMetrics = useMemo(() => {
     if (!data?.postMetrics.length) return { impressions: 0, likes: 0, retweets: 0, replies: 0, clicks: 0 };
@@ -391,62 +276,27 @@ export function XEnhancedAnalyticsView() {
     };
   }, [data]);
 
-  // Sorted posts for the content performance table
-  const sortedPosts = useMemo(() => {
-    if (!data?.postMetrics) return [];
-    return [...data.postMetrics].sort((a, b) => {
-      if (postSort === 'engagement') {
-        const engA = a.impressions > 0 ? ((a.likes + a.replies + a.retweets) / a.impressions) * 100 : 0;
-        const engB = b.impressions > 0 ? ((b.likes + b.replies + b.retweets) / b.impressions) * 100 : 0;
-        return engB - engA;
-      }
-      if (postSort === 'impressions') return b.impressions - a.impressions;
-      return b.likes - a.likes;
-    });
-  }, [data, postSort]);
-
-  // Best posting times from heatmap data
+  // Calculate best posting times from real heatmap data
   const bestTimes = useMemo(() => {
     if (!data?.heatmapData?.length) return { day: 'N/A', hour: 'N/A', combined: 'N/A' };
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayTotals: Record<string, number> = {};
     const hourTotals: Record<number, number> = {};
     for (const h of data.heatmapData) {
       dayTotals[h.day] = (dayTotals[h.day] || 0) + h.value;
       hourTotals[h.hour] = (hourTotals[h.hour] || 0) + h.value;
     }
-    const bestDay = DAYS_SHORT.reduce((a, b) => ((dayTotals[a] || 0) >= (dayTotals[b] || 0) ? a : b));
+    const bestDay = DAYS.reduce((a, b) => (dayTotals[a] || 0) >= (dayTotals[b] || 0) ? a : b);
     const bestHourNum = Object.entries(hourTotals).sort(([, a], [, b]) => b - a)[0]?.[0] ?? '14';
     const h = Number(bestHourNum);
     const bestHourLabel = `${h % 12 || 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
     const bestCell = [...data.heatmapData].sort((a, b) => b.value - a.value)[0];
-    const bestCombined = bestCell
-      ? `${bestCell.day} ${bestCell.hour % 12 || 12}${bestCell.hour < 12 ? 'AM' : 'PM'}`
-      : 'N/A';
+    const bestCombined = bestCell ? `${bestCell.day} ${bestCell.hour % 12 || 12}${bestCell.hour < 12 ? 'AM' : 'PM'}` : 'N/A';
     return { day: bestDay, hour: bestHourLabel, combined: bestCombined };
   }, [data]);
 
-  // Time-bucket heatmap: 7 days × 6 buckets
-  const bucketHeatmap = useMemo(() => {
-    if (!data?.heatmapData?.length) return [];
-    return TIME_BUCKETS.map((bucket) => ({
-      label: bucket.label,
-      days: DAYS_SHORT.map((day) => {
-        const total = bucket.hours.reduce((sum, hour) => {
-          const cell = data.heatmapData.find((h) => h.day === day && h.hour === hour);
-          return sum + (cell?.value ?? 0);
-        }, 0);
-        return { day, value: total };
-      }),
-    }));
-  }, [data]);
-
-  const bucketMax = useMemo(
-    () => Math.max(1, ...bucketHeatmap.flatMap((row) => row.days.map((d) => d.value))),
-    [bucketHeatmap]
-  );
-
   const getPerformanceClass = (value: number, avg: number) => {
-    const ratio = avg > 0 ? value / avg : 0;
+    const ratio = value / avg;
     if (ratio >= 1.5) return 'text-success';
     if (ratio >= 1.0) return 'text-info';
     if (ratio >= 0.5) return 'text-warning';
@@ -454,32 +304,12 @@ export function XEnhancedAnalyticsView() {
   };
 
   const getPerformanceIcon = (value: number, avg: number) => {
-    const ratio = avg > 0 ? value / avg : 0;
+    const ratio = value / avg;
     if (ratio >= 1.5) return <ArrowUp size={14} className="text-success" />;
     if (ratio >= 1.0) return <ArrowUp size={14} className="text-info" />;
     if (ratio >= 0.5) return <Minus size={14} className="text-warning" />;
     return <ArrowDown size={14} className="text-review" />;
   };
-
-  // ---------------------------------------------------------------------------
-  // Engagement rate trend sparkline values (7-day)
-  // ---------------------------------------------------------------------------
-
-  const engagementTrendValues = useMemo(
-    () => (data?.engagementTrend ?? []).map((d) => d.rate),
-    [data]
-  );
-
-  // Follower growth change (mock — last vs first in sparkline)
-  const followerGrowthPct = useMemo(() => {
-    const first = MOCK_FOLLOWER_SPARKLINE[0];
-    const last = MOCK_FOLLOWER_SPARKLINE[MOCK_FOLLOWER_SPARKLINE.length - 1];
-    return (((last - first) / first) * 100).toFixed(1);
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Loading / error states
-  // ---------------------------------------------------------------------------
 
   if (loading) {
     return (
@@ -507,10 +337,6 @@ export function XEnhancedAnalyticsView() {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
   return (
     <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
       {/* Header */}
@@ -522,9 +348,7 @@ export function XEnhancedAnalyticsView() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-mission-control-text">Enhanced Analytics</h1>
-              <p className="text-sm text-mission-control-text-dim">
-                Deep insights for your social media performance
-              </p>
+              <p className="text-sm text-mission-control-text-dim">Deep insights for your social media performance</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -557,8 +381,8 @@ export function XEnhancedAnalyticsView() {
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart2 },
-            { id: 'posts', label: 'Post Performance', icon: MessageCircle },
-            { id: 'heatmap', label: 'Best Posting Times', icon: Calendar },
+            { id: 'posts', label: 'Post Metrics', icon: MessageCircle },
+            { id: 'heatmap', label: 'Posting Heatmap', icon: Calendar },
             { id: 'insights', label: 'Suggestions', icon: Lightbulb },
           ].map(({ id, label, icon: Icon }) => (
             <button
@@ -579,10 +403,6 @@ export function XEnhancedAnalyticsView() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-
-        {/* ================================================================
-            OVERVIEW VIEW
-        ================================================================ */}
         {view === 'overview' && (
           <div className="space-y-6">
             {/* Summary Cards */}
@@ -599,219 +419,32 @@ export function XEnhancedAnalyticsView() {
                   <Eye size={16} className="text-mission-control-accent" />
                   <span className="text-sm text-mission-control-text-dim">Impressions</span>
                 </div>
-                <div className="text-2xl font-bold text-mission-control-text">
-                  {formatNumber(data.summary.totalImpressions)}
-                </div>
+                <div className="text-2xl font-bold text-mission-control-text">{formatNumber(data.summary.totalImpressions)}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Engagement Rate</span>
                 </div>
-                <div className="text-2xl font-bold text-success">
-                  {data.summary.engagementRate.toFixed(2)}%
-                </div>
+                <div className="text-2xl font-bold text-success">{data.summary.engagementRate.toFixed(2)}%</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Users size={16} className="text-mission-control-accent" />
                   <span className="text-sm text-mission-control-text-dim">Followers</span>
                 </div>
-                <div className="text-2xl font-bold text-mission-control-accent">
-                  {formatNumber(data.summary.followerCount)}
-                </div>
+                <div className="text-2xl font-bold text-mission-control-accent">{formatNumber(data.summary.followerCount)}</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Avg Likes/Tweet</span>
                 </div>
-                <div className="text-2xl font-bold text-warning">
-                  {data.summary.avgLikesPerTweet.toFixed(1)}
-                </div>
+                <div className="text-2xl font-bold text-warning">{data.summary.avgLikesPerTweet.toFixed(1)}</div>
               </div>
             </div>
 
-            {/* === NEW: Engagement Rate Trend + Audience Growth row === */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Engagement Rate Trend — 7-day SVG sparkline */}
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-                    <TrendingUp size={16} className="text-success" />
-                    Engagement Rate Trend
-                    <span className="text-xs font-normal text-mission-control-text-dim">(7-day)</span>
-                  </h3>
-                  {engagementTrendValues.length > 1 && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      engagementTrendValues[engagementTrendValues.length - 1] >=
-                      engagementTrendValues[0]
-                        ? 'bg-success-subtle text-success'
-                        : 'bg-review-subtle text-review'
-                    }`}>
-                      {engagementTrendValues[engagementTrendValues.length - 1] >= engagementTrendValues[0]
-                        ? '+'
-                        : ''}
-                      {(
-                        engagementTrendValues[engagementTrendValues.length - 1] -
-                        engagementTrendValues[0]
-                      ).toFixed(2)}
-                      %
-                    </span>
-                  )}
-                </div>
-                {engagementTrendValues.length >= 2 ? (
-                  <>
-                    <div className="w-full" style={{ height: 80 }}>
-                      <svg
-                        viewBox={`0 0 280 80`}
-                        width="100%"
-                        height="80"
-                        preserveAspectRatio="none"
-                        aria-hidden="true"
-                      >
-                        {/* Grid lines */}
-                        {[0.25, 0.5, 0.75].map((t) => (
-                          <line
-                            key={t}
-                            x1={0}
-                            x2={280}
-                            y1={t * 80}
-                            y2={t * 80}
-                            stroke="currentColor"
-                            strokeOpacity={0.08}
-                            strokeWidth={1}
-                          />
-                        ))}
-                        {/* Sparkline */}
-                        {(() => {
-                          const vals = engagementTrendValues;
-                          const min = Math.min(...vals);
-                          const max = Math.max(...vals);
-                          const range = max - min || 0.01;
-                          const pad = 4;
-                          const points = vals
-                            .map((v, i) => {
-                              const x = pad + (i / (vals.length - 1)) * (280 - pad * 2);
-                              const y = pad + (1 - (v - min) / range) * (80 - pad * 2);
-                              return `${x.toFixed(1)},${y.toFixed(1)}`;
-                            })
-                            .join(' ');
-                          return (
-                            <polyline
-                              points={points}
-                              fill="none"
-                              stroke={CHART_COLORS.green}
-                              strokeWidth={2}
-                              strokeLinejoin="round"
-                              strokeLinecap="round"
-                            />
-                          );
-                        })()}
-                      </svg>
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      {data.engagementTrend.map((d, i) => (
-                        <span key={i} className="text-xs text-mission-control-text-dim">
-                          {d.date}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex justify-between mt-2">
-                      {engagementTrendValues.map((v, i) => (
-                        <span key={i} className="text-xs font-medium text-success">
-                          {v.toFixed(1)}%
-                        </span>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
-                    Not enough data for trend. Post more content to see this chart.
-                  </div>
-                )}
-              </div>
-
-              {/* === NEW: Audience Growth Card === */}
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
-                    <Users size={16} className="text-mission-control-accent" />
-                    Audience Growth
-                  </h3>
-                  <span className="text-xs text-mission-control-text-dim italic">
-                    Historical data (estimated)
-                  </span>
-                </div>
-                <div className="flex items-end gap-4 mb-3">
-                  <div>
-                    <div className="text-3xl font-bold text-mission-control-text">
-                      {data.summary.followerCount > 0
-                        ? formatNumber(data.summary.followerCount)
-                        : '—'}
-                    </div>
-                    <div className="text-sm text-mission-control-text-dim">followers</div>
-                  </div>
-                  <div className="mb-1">
-                    <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-success-subtle text-success">
-                      +{followerGrowthPct}% this month
-                    </span>
-                  </div>
-                </div>
-                {/* 30-day sparkline */}
-                <div className="w-full" style={{ height: 48 }}>
-                  <svg
-                    viewBox="0 0 280 48"
-                    width="100%"
-                    height="48"
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                  >
-                    {(() => {
-                      const vals = MOCK_FOLLOWER_SPARKLINE;
-                      const min = Math.min(...vals);
-                      const max = Math.max(...vals);
-                      const range = max - min || 1;
-                      const pad = 3;
-                      const points = vals
-                        .map((v, i) => {
-                          const x = pad + (i / (vals.length - 1)) * (280 - pad * 2);
-                          const y = pad + (1 - (v - min) / range) * (48 - pad * 2);
-                          return `${x.toFixed(1)},${y.toFixed(1)}`;
-                        })
-                        .join(' ');
-                      // Fill path
-                      const firstX = pad;
-                      const lastX = 280 - pad;
-                      const bottomY = 48 - pad;
-                      const firstPoint = `${firstX.toFixed(1)},${(pad + (1 - (vals[0] - min) / range) * (48 - pad * 2)).toFixed(1)}`;
-                      return (
-                        <>
-                          <path
-                            d={`M${firstPoint} L${points.split(' ').slice(1).join(' L')} L${lastX},${bottomY} L${firstX},${bottomY} Z`}
-                            fill={CHART_COLORS.purple}
-                            fillOpacity={0.12}
-                          />
-                          <polyline
-                            points={points}
-                            fill="none"
-                            stroke={CHART_COLORS.purple}
-                            strokeWidth={2}
-                            strokeLinejoin="round"
-                            strokeLinecap="round"
-                          />
-                        </>
-                      );
-                    })()}
-                  </svg>
-                </div>
-                <p className="text-xs text-mission-control-text-dim mt-2">
-                  30-day follower trend. Connect X Premium API for live historical data.
-                </p>
-              </div>
-            </div>
-
-            {/* Charts Row — Impressions over time */}
+            {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Impressions Over Time */}
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
@@ -829,37 +462,43 @@ export function XEnhancedAnalyticsView() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }}
-                        tickLine={false}
-                        tickFormatter={formatNumber}
-                      />
+                      <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
+                      <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} tickFormatter={formatNumber} />
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: CHART_TOOLTIP.backgroundColor,
-                          border: CHART_TOOLTIP.border,
-                          borderRadius: CHART_TOOLTIP.borderRadius,
-                        }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                         labelStyle={{ color: CHART_TOOLTIP.color }}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey="impressions"
-                        stroke={CHART_COLORS.blue}
-                        fillOpacity={1}
-                        fill="url(#colorImpressions)"
-                      />
+                      <Area type="monotone" dataKey="impressions" stroke={CHART_COLORS.blue} fillOpacity={1} fill="url(#colorImpressions)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              {/* Content Type Distribution */}
+              {/* Follower Growth */}
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
+                  <Users size={16} className="text-mission-control-accent" />
+                  Follower Growth
+                </h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data.followerGrowth}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
+                      <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} domain={['dataMin - 100', 'dataMax + 100']} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
+                        labelStyle={{ color: CHART_TOOLTIP.color }}
+                      />
+                      <Line type="monotone" dataKey="followers" stroke={CHART_COLORS.purple} strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Type Performance */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
                 <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
                   <BarChart2 size={16} className="text-info" />
@@ -884,44 +523,32 @@ export function XEnhancedAnalyticsView() {
                         ))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: CHART_TOOLTIP.backgroundColor,
-                          border: CHART_TOOLTIP.border,
-                          borderRadius: CHART_TOOLTIP.borderRadius,
-                        }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-            </div>
 
-            {/* === NEW: Campaign Performance Summary === */}
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <Rocket size={16} className="text-mission-control-accent" />
-                <h3 className="font-semibold text-mission-control-text">Campaign Performance</h3>
-              </div>
-              {/* No campaign-tweet attribution data available on free tier — show CTA */}
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="p-3 bg-mission-control-accent/10 rounded-xl mb-3">
-                  <Link size={24} className="text-mission-control-accent" />
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+                <h3 className="font-semibold text-mission-control-text mb-4 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-success" />
+                  Engagement by Content Type
+                </h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data.contentTypes} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <XAxis type="number" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} width={80} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
+                        formatter={((value: number) => [`${value}%`, 'Engagement']) as any}
+                      />
+                      <Bar dataKey="engagement" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-                <p className="text-sm font-medium text-mission-control-text mb-1">
-                  Connect campaigns to track performance
-                </p>
-                <p className="text-xs text-mission-control-text-dim max-w-sm">
-                  Tag tweets with a campaign in the Campaigns tab. Once linked, this section
-                  will show which campaign drove the most engagement, impressions, and follower growth.
-                </p>
-                <button
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('x-tab-change', { detail: 'campaigns' }));
-                  }}
-                  className="mt-4 px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-                >
-                  Go to Campaigns
-                </button>
               </div>
             </div>
 
@@ -932,7 +559,10 @@ export function XEnhancedAnalyticsView() {
                   <Lightbulb size={16} className="text-warning" />
                   Top Insights
                 </h3>
-                <button onClick={() => setView('insights')} className="text-sm text-info hover:underline">
+                <button
+                  onClick={() => setView('insights')}
+                  className="text-sm text-info hover:underline"
+                >
                   View all →
                 </button>
               </div>
@@ -940,32 +570,288 @@ export function XEnhancedAnalyticsView() {
                 {data.suggestions.slice(0, 3).map((suggestion) => (
                   <div key={suggestion.id} className="p-4 bg-mission-control-bg rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          suggestion.impact === 'high'
-                            ? 'bg-success-subtle text-success'
-                            : suggestion.impact === 'medium'
-                            ? 'bg-warning-subtle text-warning'
-                            : 'bg-mission-control-border text-mission-control-text-dim'
-                        }`}
-                      >
+                      <span className="text-xl">{suggestion.icon}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
+                        suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
+                        'bg-mission-control-border text-mission-control-text-dim'
+                      }`}>
                         {suggestion.impact} impact
                       </span>
                     </div>
                     <div className="font-medium text-mission-control-text text-sm">{suggestion.title}</div>
-                    <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">
-                      {suggestion.description}
-                    </div>
+                    <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{suggestion.description}</div>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* ============================================================
+                NEW: Engagement Rate Trend Sparkline (7-day, mock data)
+            ============================================================ */}
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
+                  <TrendingUp size={16} className="text-success" />
+                  Engagement Rate Trend
+                </h3>
+                <span className="text-xs text-mission-control-text-dim italic">Mock data — historical averages</span>
+              </div>
+              <p className="text-xs text-mission-control-text-dim mb-4">Last 7 days</p>
+
+              {/* SVG sparkline */}
+              <div className="w-full" style={{ height: 80 }}>
+                <svg
+                  viewBox="0 0 420 80"
+                  width="100%"
+                  height="80"
+                  preserveAspectRatio="none"
+                  aria-label="7-day engagement rate trend"
+                >
+                  {/* Horizontal grid lines */}
+                  {[0.25, 0.5, 0.75].map((t) => (
+                    <line
+                      key={t}
+                      x1={0}
+                      x2={420}
+                      y1={t * 80}
+                      y2={t * 80}
+                      stroke="currentColor"
+                      strokeOpacity={0.08}
+                      strokeWidth={1}
+                    />
+                  ))}
+                  {(() => {
+                    const vals = MOCK_ENGAGEMENT_TREND_7D;
+                    const min = Math.min(...vals);
+                    const max = Math.max(...vals);
+                    const range = max - min || 0.01;
+                    const pad = 6;
+                    const W = 420;
+                    const H = 80;
+                    const pts = vals.map((v, i) => {
+                      const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+                      const y = pad + (1 - (v - min) / range) * (H - pad * 2);
+                      return [x, y] as [number, number];
+                    });
+                    const polyPoints = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+                    // Fill area under line
+                    const fillPath =
+                      `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} ` +
+                      pts.slice(1).map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ') +
+                      ` L${pts[pts.length - 1][0].toFixed(1)},${H - pad} L${pts[0][0].toFixed(1)},${H - pad} Z`;
+                    return (
+                      <>
+                        <path d={fillPath} fill={CHART_COLORS.green} fillOpacity={0.12} />
+                        <polyline
+                          points={polyPoints}
+                          fill="none"
+                          stroke={CHART_COLORS.green}
+                          strokeWidth={2.5}
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {pts.map(([x, y], i) => (
+                          <circle
+                            key={i}
+                            cx={x.toFixed(1)}
+                            cy={y.toFixed(1)}
+                            r={3}
+                            fill={CHART_COLORS.green}
+                          />
+                        ))}
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+
+              {/* Day labels + values */}
+              <div className="flex justify-between mt-2 px-1">
+                {MOCK_ENGAGEMENT_TREND_LABELS.map((label, i) => (
+                  <div key={label} className="flex flex-col items-center gap-0.5">
+                    <span className="text-xs font-semibold text-success">
+                      {MOCK_ENGAGEMENT_TREND_7D[i].toFixed(1)}%
+                    </span>
+                    <span className="text-xs text-mission-control-text-dim">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ============================================================
+                NEW: Best Posting Times Heatmap (mock data)
+            ============================================================ */}
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
+                  <Clock size={16} className="text-info" />
+                  Best Posting Times
+                </h3>
+                <span className="text-xs text-mission-control-text-dim italic">Mock data — historical averages</span>
+              </div>
+              <p className="text-xs text-mission-control-text-dim mb-4">
+                Based on historical engagement data. Darker cells = higher engagement.
+              </p>
+
+              <div className="overflow-x-auto">
+                <div className="min-w-[360px]">
+                  {/* Day headers */}
+                  <div className="flex ml-24 mb-1.5 gap-1">
+                    {DAYS_SHORT.map((d) => (
+                      <div
+                        key={d}
+                        className="flex-1 text-center text-xs font-medium text-mission-control-text-dim"
+                      >
+                        {d}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Time slot rows */}
+                  {MOCK_HEATMAP_TIME_SLOTS.map((slot) => (
+                    <div key={slot} className="flex items-center gap-1 mb-1">
+                      <div className="w-24 shrink-0 text-right pr-3 text-xs text-mission-control-text-dim font-medium">
+                        {MOCK_HEATMAP_SLOT_LABELS[slot]}
+                      </div>
+                      {DAYS_SHORT.map((_, dayIdx) => {
+                        const score = MOCK_POSTING_HEATMAP[dayIdx][slot];
+                        const cellClass =
+                          score < 30
+                            ? 'bg-info/10'
+                            : score < 60
+                            ? 'bg-info/40'
+                            : 'bg-info/70';
+                        return (
+                          <div
+                            key={dayIdx}
+                            className={`flex-1 h-9 rounded-md transition-colors ${cellClass}`}
+                            title={`${DAYS_SHORT[dayIdx]} ${MOCK_HEATMAP_SLOT_LABELS[slot]} — score: ${score}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+
+                  {/* Legend */}
+                  <div className="flex items-center justify-end gap-2 mt-3">
+                    <span className="text-xs text-mission-control-text-dim">Low</span>
+                    <div className="flex gap-1">
+                      <div className="w-5 h-4 rounded-sm bg-info/10" />
+                      <div className="w-5 h-4 rounded-sm bg-info/40" />
+                      <div className="w-5 h-4 rounded-sm bg-info/70" />
+                    </div>
+                    <span className="text-xs text-mission-control-text-dim">High</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ============================================================
+                NEW: Content Performance Mini-Table (top 5 posts, mock data)
+            ============================================================ */}
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
+                    <BarChart2 size={15} className="text-mission-control-accent" />
+                    Content Performance
+                  </h3>
+                  <p className="text-xs text-mission-control-text-dim mt-0.5 italic">
+                    Recent 5 posts — mock data (no live post metrics on free tier)
+                  </p>
+                </div>
+                <button
+                  onClick={() => exportMockPostsCSV(MOCK_RECENT_POSTS)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                  title="Export CSV"
+                >
+                  <Download size={13} />
+                  Export CSV
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-mission-control-border bg-mission-control-bg/50">
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        Content
+                      </th>
+                      <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                        Date
+                      </th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        Likes
+                      </th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        Replies
+                      </th>
+                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                        Eng %
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-mission-control-border">
+                    {MOCK_RECENT_POSTS.map((post, i) => {
+                      const engPct = post.impressions > 0
+                        ? (((post.likes + post.replies) / post.impressions) * 100).toFixed(2)
+                        : '0.00';
+                      const preview = post.content.length > 50
+                        ? post.content.slice(0, 50) + '…'
+                        : post.content;
+                      return (
+                        <tr
+                          key={i}
+                          className="hover:bg-mission-control-bg/50 transition-colors"
+                        >
+                          <td className="p-3 max-w-xs">
+                            <span
+                              className="text-mission-control-text text-xs leading-relaxed block truncate"
+                              title={post.content}
+                            >
+                              {preview}
+                            </span>
+                          </td>
+                          <td className="p-3 text-xs text-mission-control-text-dim whitespace-nowrap">
+                            {new Date(post.date).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td className="p-3 text-right text-xs text-mission-control-text font-medium">
+                            {post.likes}
+                          </td>
+                          <td className="p-3 text-right text-xs text-mission-control-text font-medium">
+                            {post.replies}
+                          </td>
+                          <td className="p-3 text-right">
+                            <span
+                              className={`text-xs font-semibold ${
+                                Number(engPct) >= 5
+                                  ? 'text-success'
+                                  : Number(engPct) >= 2
+                                  ? 'text-info'
+                                  : Number(engPct) >= 0.5
+                                  ? 'text-warning'
+                                  : 'text-mission-control-text-dim'
+                              }`}
+                            >
+                              {engPct}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
         )}
 
-        {/* ================================================================
-            POSTS / CONTENT PERFORMANCE VIEW
-        ================================================================ */}
         {view === 'posts' && (
           <div className="space-y-4">
             {/* Average Metrics Bar */}
@@ -1000,248 +886,108 @@ export function XEnhancedAnalyticsView() {
               </div>
             </div>
 
-            {/* === NEW: Content Performance Table === */}
+            {/* Post List */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-mission-control-text">Content Performance</h3>
-                  <p className="text-xs text-mission-control-text-dim mt-0.5">
-                    Sorted by {postSort === 'engagement' ? 'engagement rate' : postSort}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Sort selector */}
-                  <div className="flex bg-mission-control-bg rounded-lg p-1 border border-mission-control-border">
-                    {([
-                      { key: 'engagement', label: 'Eng %' },
-                      { key: 'impressions', label: 'Impr.' },
-                      { key: 'likes', label: 'Likes' },
-                    ] as const).map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setPostSort(key)}
-                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                          postSort === key
-                            ? 'bg-mission-control-accent text-white'
-                            : 'text-mission-control-text-dim hover:text-mission-control-text'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* CSV Export */}
-                  <button
-                    onClick={() => exportPostsCSV(sortedPosts)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
-                    title="Export CSV"
-                  >
-                    <Download size={13} />
-                    Export CSV
-                  </button>
-                </div>
+              <div className="p-4 border-b border-mission-control-border">
+                <h3 className="text-sm font-semibold text-mission-control-text">Individual Post Performance</h3>
               </div>
-
-              {sortedPosts.length === 0 ? (
-                <div className="p-8 text-center text-mission-control-text-dim">
-                  <BarChart2 size={32} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No post data available</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-mission-control-border bg-mission-control-bg/50">
-                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                          Content
-                        </th>
-                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
-                          Published
-                        </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                          Impr.
-                        </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                          Likes
-                        </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                          Replies
-                        </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
-                          Eng %
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-mission-control-border">
-                      {sortedPosts.map((post) => {
-                        const engPct =
-                          post.impressions > 0
-                            ? (((post.likes + post.replies + post.retweets) / post.impressions) * 100).toFixed(2)
-                            : '0.00';
-                        const preview =
-                          post.content.length > 60
-                            ? post.content.slice(0, 60) + '…'
-                            : post.content;
-                        return (
-                          <tr
-                            key={post.id}
-                            className="hover:bg-mission-control-bg/50 transition-colors"
-                          >
-                            <td className="p-3 max-w-xs">
-                              <span
-                                className="text-mission-control-text text-xs leading-relaxed block truncate"
-                                title={post.content}
-                              >
-                                {preview}
-                              </span>
-                            </td>
-                            <td className="p-3 text-xs text-mission-control-text-dim whitespace-nowrap">
-                              {new Date(post.created_at).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </td>
-                            <td className="p-3 text-right text-xs text-mission-control-text font-medium">
-                              {formatNumber(post.impressions)}
-                            </td>
-                            <td className="p-3 text-right text-xs text-mission-control-text font-medium">
-                              {post.likes}
-                            </td>
-                            <td className="p-3 text-right text-xs text-mission-control-text font-medium">
-                              {post.replies}
-                            </td>
-                            <td className="p-3 text-right">
-                              <span
-                                className={`text-xs font-semibold ${
-                                  Number(engPct) >= 5
-                                    ? 'text-success'
-                                    : Number(engPct) >= 2
-                                    ? 'text-info'
-                                    : Number(engPct) >= 0.5
-                                    ? 'text-warning'
-                                    : 'text-mission-control-text-dim'
-                                }`}
-                              >
-                                {engPct}%
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="divide-y divide-mission-control-border">
+                {data.postMetrics.map((post) => (
+                  <div key={post.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            post.type === 'thread' ? 'bg-success-subtle text-success' :
+                            post.type === 'reply' ? 'bg-info-subtle text-info' :
+                            post.type === 'quote' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
+                            'bg-mission-control-accent/20 text-mission-control-accent'
+                          }`}>
+                            {post.type}
+                          </span>
+                          <span className="text-xs text-mission-control-text-dim">
+                            {new Date(post.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-mission-control-text line-clamp-2">{post.content}</p>
+                      </div>
+                      <div className="shrink-0 flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-mission-control-text">{formatNumber(post.impressions)}</div>
+                          <div className="text-xs text-mission-control-text-dim">impr</div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`text-lg font-semibold flex items-center justify-end gap-1 ${getPerformanceClass(post.impressions, avgMetrics.impressions)}`}>
+                            {getPerformanceIcon(post.impressions, avgMetrics.impressions)}
+                            {formatNumber(post.impressions)}
+                          </div>
+                          <div className="text-xs text-mission-control-text-dim">vs avg</div>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                          <div>
+                            <div className="flex items-center justify-center gap-1 text-review">
+                              <Heart size={12} />
+                            </div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.likes}</div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-center gap-1 text-success">
+                              <Repeat size={12} />
+                            </div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.retweets}</div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-center gap-1 text-info">
+                              <MessageCircle size={12} />
+                            </div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-center gap-1 text-mission-control-accent">
+                              <MousePointer size={12} />
+                            </div>
+                            <div className="text-xs font-medium text-mission-control-text">{post.clicks}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ================================================================
-            HEATMAP VIEW
-        ================================================================ */}
         {view === 'heatmap' && (
           <div className="space-y-6">
-            {/* === NEW: Simplified 7×6 time-bucket heatmap === */}
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar size={16} className="text-mission-control-accent" />
-                <h3 className="font-semibold text-mission-control-text">Best Posting Time Heatmap</h3>
-              </div>
-              <p className="text-xs text-mission-control-text-dim mb-4 italic">
-                Based on historical data. Darker cells = higher engagement.
-              </p>
-
-              <div className="overflow-x-auto">
-                <div className="min-w-[400px]">
-                  {/* Day headers */}
-                  <div className="flex ml-24 mb-1 gap-1">
-                    {DAYS_SHORT.map((d) => (
-                      <div
-                        key={d}
-                        className="flex-1 text-center text-xs font-medium text-mission-control-text-dim"
-                      >
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Rows: time buckets */}
-                  {bucketHeatmap.map((bucket) => (
-                    <div key={bucket.label} className="flex items-center gap-1 mb-1">
-                      <div className="w-24 shrink-0 text-xs text-mission-control-text-dim text-right pr-3 font-medium">
-                        {bucket.label}
-                      </div>
-                      {bucket.days.map(({ day, value }) => {
-                        const intensity = bucketMax > 0 ? value / bucketMax : 0;
-                        const cellClass =
-                          intensity === 0
-                            ? 'bg-mission-control-border'
-                            : intensity < 0.2
-                            ? 'bg-info/10'
-                            : intensity < 0.5
-                            ? 'bg-info/40'
-                            : 'bg-info/80';
-                        return (
-                          <div
-                            key={day}
-                            className={`flex-1 h-9 rounded-md transition-colors ${cellClass}`}
-                            title={`${day} ${bucket.label} — engagement score: ${value}`}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
-
-                  {/* Legend */}
-                  <div className="flex items-center justify-end gap-2 mt-3">
-                    <span className="text-xs text-mission-control-text-dim">Low</span>
-                    <div className="flex gap-1">
-                      <div className="w-5 h-4 rounded-sm bg-info/10" />
-                      <div className="w-5 h-4 rounded-sm bg-info/40" />
-                      <div className="w-5 h-4 rounded-sm bg-info/80" />
-                    </div>
-                    <span className="text-xs text-mission-control-text-dim">High</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed 24-hour heatmap */}
+            {/* Posting Frequency Heatmap */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
               <h3 className="font-semibold text-mission-control-text mb-2 flex items-center gap-2">
-                <Clock size={16} className="text-info" />
-                Hourly Engagement Detail
+                <Calendar size={16} className="text-mission-control-accent" />
+                Optimal Posting Times
               </h3>
               <p className="text-sm text-mission-control-text-dim mb-4">
-                24-hour breakdown of engagement by day
+                Engagement heatmap showing when your audience is most active
               </p>
-
+              
               <div className="overflow-x-auto">
                 <div className="min-w-[800px]">
                   {/* Hour labels */}
                   <div className="flex ml-12 mb-2">
                     {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
-                      <div
-                        key={hour}
-                        className="flex-1 text-xs text-mission-control-text-dim text-center"
-                      >
+                      <div key={hour} className="flex-1 text-xs text-mission-control-text-dim text-center">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
                     ))}
                   </div>
-
+                  
                   {/* Heatmap grid */}
-                  {DAYS_SHORT.map((day) => (
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
                     <div key={day} className="flex items-center mb-1">
-                      <div className="w-10 text-xs text-mission-control-text-dim text-right pr-2">
-                        {day}
-                      </div>
+                      <div className="w-10 text-xs text-mission-control-text-dim text-right pr-2">{day}</div>
                       <div className="flex-1 flex gap-0.5">
                         {Array.from({ length: 24 }, (_, hour) => {
-                          const cellData = data.heatmapData.find(
-                            (h) => h.day === day && h.hour === hour
-                          );
+                          const cellData = data.heatmapData.find(h => h.day === day && h.hour === hour);
                           const value = cellData?.value || 0;
                           const intensity = Math.min(value / 80, 1);
                           return (
@@ -1249,21 +995,16 @@ export function XEnhancedAnalyticsView() {
                               key={hour}
                               className="flex-1 h-8 rounded-sm transition-colors"
                               style={{
-                                backgroundColor:
-                                  value === 0
-                                    ? CHART_TOOLTIP.backgroundColor
-                                    : `${CHART_COLORS.blue}${Math.round(intensity * 255)
-                                        .toString(16)
-                                        .padStart(2, '0')}`,
+                                backgroundColor: value === 0 ? CHART_TOOLTIP.backgroundColor : `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}`,
                               }}
-                              title={`${day} ${hour}:00 — Engagement: ${value}`}
+                              title={`${day} ${hour}:00 - Engagement: ${value}`}
                             />
                           );
                         })}
                       </div>
                     </div>
                   ))}
-
+                  
                   {/* Legend */}
                   <div className="flex items-center justify-end gap-2 mt-4">
                     <span className="text-xs text-mission-control-text-dim">Low</span>
@@ -1272,11 +1013,7 @@ export function XEnhancedAnalyticsView() {
                         <div
                           key={intensity}
                           className="w-6 h-4 rounded-sm"
-                          style={{
-                            backgroundColor: `${CHART_COLORS.blue}${Math.round(intensity * 255)
-                              .toString(16)
-                              .padStart(2, '0')}`,
-                          }}
+                          style={{ backgroundColor: `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}` }}
                         />
                       ))}
                     </div>
@@ -1316,63 +1053,36 @@ export function XEnhancedAnalyticsView() {
           </div>
         )}
 
-        {/* ================================================================
-            INSIGHTS VIEW
-        ================================================================ */}
         {view === 'insights' && (
           <div className="space-y-4">
             <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
               <Lightbulb size={16} className="text-warning" />
-              Insights &amp; Suggestions
+              AI-Powered Suggestions
             </h3>
             <div className="grid gap-4">
-              {data.suggestions.length === 0 ? (
-                <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-8 text-center">
-                  <Lightbulb size={32} className="mx-auto mb-3 text-mission-control-text-dim opacity-30" />
-                  <p className="text-sm text-mission-control-text-dim">
-                    No suggestions yet. Post more content to generate insights.
-                  </p>
-                </div>
-              ) : (
-                data.suggestions.map((suggestion) => (
-                  <div
-                    key={suggestion.id}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-mission-control-bg rounded-lg shrink-0">
-                        <Lightbulb
-                          size={18}
-                          className={
-                            suggestion.impact === 'high'
-                              ? 'text-success'
-                              : suggestion.impact === 'medium'
-                              ? 'text-warning'
-                              : 'text-mission-control-text-dim'
-                          }
-                        />
+              {data.suggestions.map((suggestion) => (
+                <div
+                  key={suggestion.id}
+                  className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-3xl">{suggestion.icon}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
+                          suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
+                          'bg-mission-control-border text-mission-control-text-dim'
+                        }`}>
+                          {suggestion.impact} impact
+                        </span>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              suggestion.impact === 'high'
-                                ? 'bg-success-subtle text-success'
-                                : suggestion.impact === 'medium'
-                                ? 'bg-warning-subtle text-warning'
-                                : 'bg-mission-control-border text-mission-control-text-dim'
-                            }`}
-                          >
-                            {suggestion.impact} impact
-                          </span>
-                        </div>
-                        <p className="text-sm text-mission-control-text-dim">{suggestion.description}</p>
-                      </div>
+                      <p className="text-sm text-mission-control-text-dim">{suggestion.description}</p>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
         )}
