@@ -659,6 +659,18 @@ mark {
   animation: slide-down 0.3s ease-out;
 }
 
+/* Typing indicator — 3 bouncing dots used in ChatPanel */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
 /* react-grid-layout dark mode overrides */
 .react-grid-item.react-grid-placeholder {
   background: rgba(34, 197, 94, 0.1) !important;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -1345,6 +1345,31 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing indicator — shown while agent is generating a response (before first token) */}
+      {loading && (
+        <div
+          className={`px-4 py-2 flex items-center gap-2 text-xs text-mission-control-text-dim select-none ${isVoiceMode ? 'hidden' : ''}`}
+          aria-live="polite"
+          aria-label="Agent is typing"
+        >
+          <div className="flex gap-1">
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '0ms' }}
+            />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '200ms' }}
+            />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '400ms' }}
+            />
+          </div>
+          <span>{selectedAgent?.name ?? 'Agent'} is typing...</span>
+        </div>
+      )}
+
       {/* Connection banner removed — chat uses REST API, gateway is optional */}
 
       {/* Input — sticky bottom on mobile so it's always accessible */}
@@ -1561,6 +1586,46 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
   );
 }
 
+// ──────────────────────────────────────────
+// Message reactions — persisted to localStorage
+// ──────────────────────────────────────────
+type ReactionType = 'up' | 'down';
+interface MessageReaction { up: number; down: number; mine: ReactionType | null }
+
+const REACTIONS_KEY = 'chat-message-reactions';
+
+function loadReactions(): Record<string, MessageReaction> {
+  try {
+    const raw = localStorage.getItem(REACTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReactions(data: Record<string, MessageReaction>) {
+  try {
+    localStorage.setItem(REACTIONS_KEY, JSON.stringify(data));
+  } catch { /* quota exceeded */ }
+}
+
+function toggleReaction(msgId: string, reaction: ReactionType): MessageReaction {
+  const all = loadReactions();
+  const current: MessageReaction = all[msgId] ?? { up: 0, down: 0, mine: null };
+  if (current.mine === reaction) {
+    all[msgId] = { ...current, [reaction]: Math.max(0, current[reaction] - 1), mine: null };
+  } else {
+    const prev = current.mine;
+    all[msgId] = {
+      up: reaction === 'up' ? current.up + 1 : prev === 'up' ? Math.max(0, current.up - 1) : current.up,
+      down: reaction === 'down' ? current.down + 1 : prev === 'down' ? Math.max(0, current.down - 1) : current.down,
+      mine: reaction,
+    };
+  }
+  saveReactions(all);
+  return all[msgId];
+}
+
 // ============================================
 // Memoized ChatMessage Item Component
 // ============================================
@@ -1590,6 +1655,18 @@ const MessageItem = memo(function MessageItem({
   onArtifactOpen,
   onImageClick,
 }: MessageItemProps) {
+  const msgId = msg.id ?? '';
+  const [reaction, setReaction] = useState<MessageReaction>(() => {
+    if (!msgId) return { up: 0, down: 0, mine: null };
+    return loadReactions()[msgId] ?? { up: 0, down: 0, mine: null };
+  });
+
+  const handleReaction = (type: ReactionType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!msgId) return;
+    setReaction(toggleReaction(msgId, type));
+  };
+
   return (
     <div
       className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${
@@ -1622,7 +1699,39 @@ const MessageItem = memo(function MessageItem({
         <div className="relative group w-full">
           {/* ChatMessage actions bar (appears on hover) */}
           {!msg.streaming && (
-            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+              {/* Thumbs up */}
+              <button
+                onClick={(e) => handleReaction('up', e)}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
+                  reaction.mine === 'up'
+                    ? 'bg-success/10 text-success shadow-sm border border-success/30'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-success hover:bg-success/10 border border-mission-control-border'
+                }`}
+                title="Helpful"
+                aria-label="Mark as helpful"
+              >
+                <ThumbsUp size={13} className={reaction.mine === 'up' ? 'fill-current' : ''} />
+                {reaction.up > 0 && (
+                  <span className="text-[10px] font-medium leading-none">{reaction.up}</span>
+                )}
+              </button>
+              {/* Thumbs down */}
+              <button
+                onClick={(e) => handleReaction('down', e)}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
+                  reaction.mine === 'down'
+                    ? 'bg-error/10 text-error shadow-sm border border-error/30'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-error hover:bg-error/10 border border-mission-control-border'
+                }`}
+                title="Not helpful"
+                aria-label="Mark as not helpful"
+              >
+                <ThumbsDown size={13} className={reaction.mine === 'down' ? 'fill-current' : ''} />
+                {reaction.down > 0 && (
+                  <span className="text-[10px] font-medium leading-none">{reaction.down}</span>
+                )}
+              </button>
               <button
                 onClick={(e) => onToggleStar(msg, e)}
                 className={`p-1.5 rounded-lg transition-all duration-100 ${
@@ -1632,8 +1741,8 @@ const MessageItem = memo(function MessageItem({
                 }`}
                 title={isStarred ? 'Unstar message' : 'Star message'}
               >
-                <Star 
-                  size={14} 
+                <Star
+                  size={14}
                   className={isStarred ? 'fill-yellow-500' : ''}
                 />
               </button>
@@ -1645,7 +1754,7 @@ const MessageItem = memo(function MessageItem({
                         .map((b: any) => b.text)
                         .join('')
                     : msg.content;
-                  
+
                   const success = await copyToClipboard(textToCopy);
                   if (success) {
                     showToast('success', 'Copied', 'Message copied to clipboard');
