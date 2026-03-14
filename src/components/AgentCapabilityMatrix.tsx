@@ -32,6 +32,7 @@ function scoreAgentForCategory(agent: Agent, category: CapabilityCategory): numb
   ]
     .join(' ')
     .toLowerCase();
+
   const matchCount = keywords.filter(kw => searchText.includes(kw)).length;
   let score = Math.min(2, matchCount);
   if (agent.successRate && agent.successRate > 0.8 && matchCount > 0) {
