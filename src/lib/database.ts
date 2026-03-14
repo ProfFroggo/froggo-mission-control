@@ -305,8 +305,22 @@ function initSchema(db: Database.Database) {
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
+      value TEXT NOT NULL,
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
+
+    -- ══════════════════════════════════════════
+    -- SETTINGS AUDIT LOG
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS settings_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT NOT NULL,
+      oldValue TEXT,
+      newValue TEXT NOT NULL,
+      changedBy TEXT NOT NULL DEFAULT 'system',
+      timestamp INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_settings_audit_key ON settings_audit(key, timestamp DESC);
 
     -- ══════════════════════════════════════════
     -- TOKEN USAGE
