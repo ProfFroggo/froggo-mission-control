@@ -438,6 +438,210 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
   );
 }
 
+// ── Timeline Tab ───────────────────────────────────────────────────────────────
+interface TimelineMilestone {
+  label: string;
+  date: number;
+  type: 'start' | 'task' | 'end';
+}
+
+function TimelineTab({ campaign }: { campaign: Campaign }) {
+  const [tasks, setTasks] = useState<{ id: string; title: string; dueDate?: number | null; status: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    import('../../lib/api').then(({ taskApi }) =>
+      taskApi.getAll({ project: campaign.id })
+        .then((d: { tasks?: typeof tasks }) => setTasks(d.tasks ?? []))
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    );
+  }, [campaign.id]);
+
+  const now = Date.now();
+  const start = campaign.startDate ?? null;
+  const end = campaign.endDate ?? null;
+
+  const milestones: TimelineMilestone[] = [];
+  if (start) milestones.push({ label: 'Campaign start', date: start, type: 'start' });
+  for (const t of tasks) {
+    if (t.dueDate) milestones.push({ label: t.title, date: t.dueDate as number, type: 'task' });
+  }
+  if (end) milestones.push({ label: 'Campaign end', date: end, type: 'end' });
+  milestones.sort((a, b) => a.date - b.date);
+
+  if (loading) return <div className="flex items-center justify-center h-full"><Spinner size={24} /></div>;
+
+  if (milestones.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center py-16 gap-3">
+        <Calendar size={28} className="text-mission-control-text-dim" />
+        <p className="text-sm text-mission-control-text-dim">No timeline data yet.</p>
+        <p className="text-xs text-mission-control-text-dim">Set start/end dates and add due dates to tasks.</p>
+      </div>
+    );
+  }
+
+  const rangeStart = milestones[0].date;
+  const rangeEnd = milestones[milestones.length - 1].date;
+  const span = Math.max(rangeEnd - rangeStart, 1);
+  const pct = (date: number) => Math.min(100, Math.max(0, ((date - rangeStart) / span) * 100));
+  const nowPct = pct(now);
+
+  function dotColor(m: TimelineMilestone) {
+    if (m.type === 'start') return 'var(--color-success, #22c55e)';
+    if (m.type === 'end') return m.date < now ? 'var(--color-error, #ef4444)' : 'var(--color-info, #6366f1)';
+    return m.date < now ? 'var(--mission-control-text-dim, #888)' : 'var(--color-info, #6366f1)';
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-y-auto p-6 gap-8">
+      <div className="relative" style={{ minHeight: '90px' }}>
+        <div className="absolute left-0 right-0 h-1 bg-mission-control-border rounded-full" style={{ top: '20px' }} />
+        {nowPct >= 0 && nowPct <= 100 && (
+          <div
+            className="absolute flex flex-col items-center pointer-events-none"
+            style={{ left: `${nowPct}%`, top: 0, transform: 'translateX(-50%)', zIndex: 2 }}
+          >
+            <div className="w-0.5 h-5 bg-mission-control-accent" />
+            <span className="text-[10px] text-mission-control-accent font-semibold mt-0.5 whitespace-nowrap">Today</span>
+          </div>
+        )}
+        {milestones.map((m, i) => {
+          const p = pct(m.date);
+          const isPast = m.date < now;
+          return (
+            <div
+              key={i}
+              className="absolute flex flex-col items-center"
+              style={{ left: `${p}%`, top: '12px', transform: 'translateX(-50%)' }}
+            >
+              <div
+                className="w-4 h-4 rounded-full border-2 flex-shrink-0"
+                style={{
+                  backgroundColor: isPast ? dotColor(m) : 'var(--mission-control-bg0, #111)',
+                  borderColor: dotColor(m),
+                }}
+              />
+              <span
+                className="text-[10px] mt-4 whitespace-nowrap max-w-[72px] overflow-hidden text-ellipsis text-center leading-tight"
+                style={{ color: isPast ? 'var(--mission-control-text-dim)' : 'var(--mission-control-text-primary)' }}
+                title={m.label}
+              >
+                {m.label}
+              </span>
+              <span className="text-[9px] text-mission-control-text-dim">
+                {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="space-y-2 mt-4">
+        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-3">All milestones</h3>
+        {milestones.map((m, i) => {
+          const isPast = m.date < now;
+          const isSoon = !isPast && m.date <= now + 7 * 24 * 60 * 60 * 1000;
+          return (
+            <div
+              key={i}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors ${
+                isPast
+                  ? 'bg-mission-control-surface border-mission-control-border opacity-60'
+                  : isSoon
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/40'
+                    : 'bg-mission-control-surface border-mission-control-border'
+              }`}
+            >
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor(m) }} />
+              <span className={`text-sm flex-1 ${isPast ? 'text-mission-control-text-dim line-through' : 'text-mission-control-text-primary'}`}>
+                {m.label}
+              </span>
+              <span className="text-xs text-mission-control-text-dim flex-shrink-0">
+                {new Date(m.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
+              {isPast && <CheckCircle2 size={13} className="text-mission-control-text-dim flex-shrink-0" />}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Budget Tracker ─────────────────────────────────────────────────────────────
+function BudgetTracker({ campaign }: { campaign: Campaign }) {
+  const [tasks, setTasks] = useState<{ id: string; estimatedHours?: number | null }[]>([]);
+
+  useEffect(() => {
+    import('../../lib/api').then(({ taskApi }) =>
+      taskApi.getAll({ project: campaign.id })
+        .then((d: { tasks?: typeof tasks }) => setTasks(d.tasks ?? []))
+        .catch(() => {})
+    );
+  }, [campaign.id]);
+
+  const budget = campaign.budget ?? 0;
+  if (budget <= 0) return null;
+
+  const HOURLY_RATE = 50;
+  const estimatedSpend = tasks.reduce((acc, t) => acc + ((t.estimatedHours ?? 0) as number) * HOURLY_RATE, 0);
+  const actualSpend = campaign.budgetSpent ?? 0;
+  const displaySpend = actualSpend > 0 ? actualSpend : estimatedSpend;
+  const remaining = Math.max(0, budget - displaySpend);
+  const consumedPct = budget > 0 ? Math.min(100, Math.round((displaySpend / budget) * 100)) : 0;
+  const isEstimated = actualSpend === 0 && estimatedSpend > 0;
+
+  return (
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-1.5">
+          <DollarSign size={14} className="text-mission-control-text-dim" />
+          Budget Tracker
+        </h3>
+        {isEstimated && (
+          <span className="text-xs text-mission-control-text-dim italic">est. from task hours</span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <div>
+          <div className="text-base font-semibold text-mission-control-text-primary">${budget.toLocaleString()}</div>
+          <div className="text-xs text-mission-control-text-dim">Total Budget</div>
+        </div>
+        <div>
+          <div className={`text-base font-semibold ${consumedPct > 90 ? 'text-error' : consumedPct > 70 ? 'text-warning' : 'text-mission-control-text-primary'}`}>
+            ${Math.round(displaySpend).toLocaleString()}
+          </div>
+          <div className="text-xs text-mission-control-text-dim">{isEstimated ? 'Est. Spend' : 'Spent'}</div>
+        </div>
+        <div>
+          <div className="text-base font-semibold text-success">${Math.round(remaining).toLocaleString()}</div>
+          <div className="text-xs text-mission-control-text-dim">Remaining</div>
+        </div>
+      </div>
+      <div>
+        <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1.5">
+          <span>{consumedPct}% consumed</span>
+          <span>{campaign.currency ?? 'USD'}</span>
+        </div>
+        <div className="h-2.5 bg-mission-control-border rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${consumedPct}%`,
+              backgroundColor:
+                consumedPct > 90 ? 'var(--color-error)' :
+                consumedPct > 70 ? 'var(--color-warning)' :
+                'var(--color-success)',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Overview Tab ───────────────────────────────────────────────────────────────
 function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () => void }) {
   const [editingBrief, setEditingBrief] = useState(false);
