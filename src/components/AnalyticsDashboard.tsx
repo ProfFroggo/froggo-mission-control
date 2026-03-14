@@ -1,5 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useRef, useEffect, Suspense, lazy } from 'react';
+import { useState, useRef, useEffect, lazy } from 'react';
+import { AsyncBoundary } from './AsyncBoundary';
 import {
   BarChart2,
   Activity,
@@ -317,7 +318,7 @@ export default function AnalyticsDashboard() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden p-6" key={refreshKey}>
-        <Suspense fallback={<ChartSkeleton />}>
+        <AsyncBoundary fallback={<ChartSkeleton />} componentName="AnalyticsDashboard">
           {activeTab === 'overview' && <AnalyticsOverview />}
           {activeTab === 'realtime' && <RealTimeAnalytics />}
           {activeTab === 'tokens' && <TokenUsageWidget />}
@@ -328,7 +329,7 @@ export default function AnalyticsDashboard() {
           {activeTab === 'time' && <TimeTrackingPanel />}
           {activeTab === 'heatmap' && <ProductivityHeatmap />}
           {activeTab === 'reports' && <ReportsPanel />}
-        </Suspense>
+        </AsyncBoundary>
       </div>
 
       {/* Agent Comparison Modal */}
