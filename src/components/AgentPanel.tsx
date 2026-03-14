@@ -57,6 +57,8 @@ export default function AgentPanel() {
   const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
   const [agentSearch, setAgentSearch] = useState('');
+  // Per-agent token stats (last 7 days) — { agentId -> { tokens, cost } }
+  const [agentTokenStats, setAgentTokenStats] = useState<Record<string, { tokens: number; cost: number }>>({});
 
   // Subscribe to circuit.open SSE events
   useEventBus('circuit.open', (data) => {
@@ -75,6 +77,20 @@ export default function AgentPanel() {
   useEventBus('agent.hired', () => {
     fetchAgents();
   });
+
+  // Fetch per-agent token stats (last 7 days) once on mount
+  useEffect(() => {
+    fetch('/api/token-usage?days=7')
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { byAgent?: Array<{ agentId: string; tokens: number; cost: number }> } | null) => {
+        if (d?.byAgent) {
+          const map: Record<string, { tokens: number; cost: number }> = {};
+          for (const row of d.byAgent) map[row.agentId] = { tokens: row.tokens, cost: row.cost };
+          setAgentTokenStats(map);
+        }
+      })
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   useEffect(() => {
     Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
@@ -484,6 +500,23 @@ export default function AgentPanel() {
                     <div className="border-t border-mission-control-border/40 pt-3 mb-3">
                       <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={{ ...metrics, _role: AGENT_ROLES[agent.id] }} compact={true} />
                     </div>
+
+                    {/* Per-agent token stat (last 7 days) */}
+                    {agentTokenStats[agent.id] && (
+                      <div className="flex items-center gap-1.5 text-[10px] text-mission-control-text-dim mb-2">
+                        <Zap size={9} className="text-warning shrink-0" />
+                        <span>
+                          {agentTokenStats[agent.id].tokens >= 1_000_000
+                            ? `${(agentTokenStats[agent.id].tokens / 1_000_000).toFixed(1)}M`
+                            : agentTokenStats[agent.id].tokens >= 1_000
+                            ? `${(agentTokenStats[agent.id].tokens / 1_000).toFixed(0)}K`
+                            : agentTokenStats[agent.id].tokens} tokens
+                        </span>
+                        <span className="text-mission-control-border">/</span>
+                        <span className="text-warning">${agentTokenStats[agent.id].cost.toFixed(4)}</span>
+                        <span className="text-mission-control-text-dim/60">7d</span>
+                      </div>
+                    )}
 
                     {/* Last active timestamp */}
                     {agent.lastActivity && (

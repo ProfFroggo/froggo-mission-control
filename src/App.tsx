@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
@@ -30,6 +30,8 @@ import { useFirstTimeUser } from './hooks/useFirstTimeUser';
 import OnboardingWizard from './components/OnboardingWizard';
 import NetworkStatus from './components/NetworkStatus';
 import { DependencyGate } from './components/DependencyGate';
+import ShortcutsModal from './components/ShortcutsModal';
+import { useKeyboardShortcuts, useChordShortcuts } from './lib/useKeyboardShortcuts';
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
@@ -60,6 +62,7 @@ function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
@@ -420,13 +423,49 @@ function App() {
         if (commandPaletteOpen) { setCommandPaletteOpen(false); return; }
         if (searchOpen) { setSearchOpen(false); return; }
         if (shortcutsOpen) { setShortcutsOpen(false); return; }
+        if (shortcutsModalOpen) { setShortcutsModalOpen(false); return; }
         if (helpPanelOpen) { setHelpPanelOpen(false); return; }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandPaletteOpen, searchOpen, shortcutsOpen, helpPanelOpen, toggleMuted]);
+  }, [commandPaletteOpen, searchOpen, shortcutsOpen, shortcutsModalOpen, helpPanelOpen, toggleMuted]);
+
+  // ---------------------------------------------------------------------------
+  // Map-based global shortcuts via useKeyboardShortcuts
+  // useCallback keeps references stable so the effect dependency is stable.
+  // ---------------------------------------------------------------------------
+  const openSearch = useCallback(() => setSearchOpen(true), []);
+  const openNewTask = useCallback(() => {
+    setCurrentView('kanban');
+    setTimeout(() => window.dispatchEvent(new CustomEvent('kanban:new-task')), 100);
+  }, []);
+  const openShortcutsModal = useCallback(() => setShortcutsModalOpen(prev => !prev), []);
+
+  useKeyboardShortcuts({
+    // Global search — slash (bare key) mirrors ⌘K
+    '/': openSearch,
+    // New task via ⌘N
+    'cmd+n': openNewTask,
+    // Shortcuts help modal via ? (bare key only — the existing handler covers ⌘?)
+    '?': openShortcutsModal,
+  });
+
+  // g-chord navigation shortcuts
+  const navDashboard  = useCallback(() => setCurrentView('dashboard'), []);
+  const navKanban     = useCallback(() => setCurrentView('kanban'), []);
+  const navProjects   = useCallback(() => setCurrentView('projects'), []);
+  const navAgents     = useCallback(() => setCurrentView('agents'), []);
+  const navChat       = useCallback(() => setCurrentView('chat'), []);
+
+  useChordShortcuts({
+    d: navDashboard,
+    t: navKanban,
+    p: navProjects,
+    a: navAgents,
+    c: navChat,
+  });
 
   return (
     <DependencyGate>
@@ -453,6 +492,7 @@ function App() {
             onOpenHelp={() => setHelpPanelOpen(true)}
             onWidthChange={setSidebarWidth}
             onOpenSearch={() => setSearchOpen(true)}
+            onOpenShortcuts={() => setShortcutsModalOpen(true)}
           />
         </ErrorBoundary>
         
@@ -514,9 +554,14 @@ function App() {
           />
         </ErrorBoundary>
 
-        {/* Keyboard Shortcuts Help */}
+        {/* Keyboard Shortcuts Help (full reference — ⌘?) */}
         <ErrorBoundary panelName="Keyboard Shortcuts">
           <KeyboardShortcuts isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        </ErrorBoundary>
+
+        {/* Shortcuts Modal — compact quick-reference (? bare key or sidebar keyboard button) */}
+        <ErrorBoundary panelName="Shortcuts Modal">
+          <ShortcutsModal isOpen={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
         </ErrorBoundary>
 
         {/* Help Panel */}
