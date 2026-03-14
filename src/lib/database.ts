@@ -449,6 +449,44 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- TASK TEMPLATES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS task_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      priority TEXT DEFAULT 'medium',
+      tags TEXT,
+      subtasks TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+
+    -- ══════════════════════════════════════════
+    -- TASK DEPENDENCIES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS task_dependencies (
+      id TEXT PRIMARY KEY,
+      taskId TEXT NOT NULL,
+      dependsOnId TEXT NOT NULL,
+      createdAt TEXT DEFAULT (datetime('now')),
+      UNIQUE(taskId, dependsOnId)
+    );
+
+    -- ══════════════════════════════════════════
+    -- TIME ENTRIES (per-task time tracking)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id TEXT PRIMARY KEY,
+      taskId TEXT NOT NULL,
+      startedAt TEXT,
+      stoppedAt TEXT,
+      duration INTEGER,
+      note TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -791,6 +829,12 @@ function initSchema(db: Database.Database) {
       UNIQUE(campaignId, automationId)
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_campaignId ON campaign_automations(campaignId);
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_automationId ON campaign_automations(automationId);
+
+    -- Indexes for task management v2 tables
+    CREATE INDEX IF NOT EXISTS idx_task_templates_createdAt ON task_templates(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_taskId ON task_dependencies(taskId);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_dependsOnId ON task_dependencies(dependsOnId);
+    CREATE INDEX IF NOT EXISTS idx_time_entries_taskId ON time_entries(taskId, createdAt DESC);
   `);
 
   // Add new columns to existing tables — safe to run on every startup
