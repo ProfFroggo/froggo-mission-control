@@ -19,8 +19,14 @@ interface DiffLine {
 function computeDiff(a: string, b: string): DiffLine[] {
   const aLines = a.split('\n');
   const bLines = b.split('\n');
-  const maxA = Math.min(aLines.length, 200);
-  const maxB = Math.min(bLines.length, 200);
+  const result: DiffLine[] = [];
+
+  // Simple line-level LCS diff
+  const m = aLines.length;
+  const n = bLines.length;
+  // Limit to first 200 lines each for performance
+  const maxA = Math.min(m, 200);
+  const maxB = Math.min(n, 200);
 
   const dp: number[][] = Array.from({ length: maxA + 1 }, () => new Array(maxB + 1).fill(0));
   for (let i = maxA - 1; i >= 0; i--) {
@@ -33,7 +39,6 @@ function computeDiff(a: string, b: string): DiffLine[] {
     }
   }
 
-  const result: DiffLine[] = [];
   let i = 0, j = 0;
   while (i < maxA || j < maxB) {
     if (i < maxA && j < maxB && aLines[i] === bLines[j]) {
@@ -47,6 +52,7 @@ function computeDiff(a: string, b: string): DiffLine[] {
       i++;
     }
   }
+
   return result;
 }
 
@@ -79,7 +85,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
 
   const handleRestore = async () => {
     if (!selected) return;
-    if (!confirm(`Restore version from ${new Date(selected.editedAt).toLocaleString()}?`)) return;
+    if (!confirm(`Restore this version from ${new Date(selected.editedAt).toLocaleString()}?`)) return;
     setRestoring(true);
     try {
       await fetch(`/api/knowledge/${articleId}`, {
@@ -103,15 +109,21 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
         style={{ maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border shrink-0">
           <History size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">Revision History</span>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim" aria-label="Close">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            aria-label="Close"
+          >
             <X size={14} />
           </button>
         </div>
 
         <div className="flex flex-1 min-h-0">
+          {/* Version list */}
           <div className="w-60 shrink-0 border-r border-mission-control-border flex flex-col">
             <div className="px-3 py-2 border-b border-mission-control-border">
               <p className="text-xs text-mission-control-text-dim">
@@ -145,7 +157,9 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-medium text-mission-control-text">v{versions.length - idx}</span>
+                          <span className="text-xs font-medium text-mission-control-text">
+                            v{versions.length - idx}
+                          </span>
                           <span className={`text-xs font-mono ${diff > 0 ? 'text-green-400' : diff < 0 ? 'text-red-400' : 'text-mission-control-text-dim'}`}>
                             {diff > 0 ? `+${diff}` : diff === 0 ? '±0' : String(diff)}w
                           </span>
@@ -156,7 +170,8 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                           {new Date(v.editedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         <div className="text-xs text-mission-control-text-dim capitalize truncate opacity-70">
-                          {v.editedBy}{v.versionNote ? ` · ${v.versionNote}` : ''}
+                          {v.editedBy}
+                          {v.versionNote ? ` · ${v.versionNote}` : ''}
                         </div>
                       </button>
                     );
@@ -166,6 +181,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
             </div>
           </div>
 
+          {/* Diff / preview pane */}
           <div className="flex-1 flex flex-col min-w-0">
             {selected === null ? (
               <div className="flex-1 flex items-center justify-center">
@@ -196,14 +212,14 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
-                  <div className="flex gap-3 mb-3 text-xs text-mission-control-text-dim">
+                  <div className="flex gap-2 mb-3 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-green-500/20 border border-green-500/40 inline-block" />
-                      Added in current
+                      Added
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-red-500/40 inline-block" />
-                      Removed in current
+                      Removed
                     </span>
                   </div>
                   <div className="font-mono text-xs rounded border border-mission-control-border overflow-hidden">

@@ -1,104 +1,126 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
-import { Spinner } from './LoadingStates';
+import { RefreshCw, Circle } from 'lucide-react';
 
 interface Agent {
   id: string;
   name: string;
   role?: string;
   capabilities?: string[];
+  successRate?: number;
   status?: string;
 }
 
-const CAPABILITY_CATEGORIES = [
-  { id: 'research',      label: 'Research',  keywords: ['research', 'search', 'web', 'browse', 'scrape', 'crawl', 'gather'] },
-  { id: 'writing',       label: 'Writing',   keywords: ['write', 'content', 'copy', 'draft', 'blog', 'email', 'social', 'post'] },
-  { id: 'code',          label: 'Code',      keywords: ['code', 'dev', 'develop', 'engineer', 'script', 'debug', 'program', 'software'] },
-  { id: 'analysis',      label: 'Analysis',  keywords: ['analyt', 'data', 'report', 'insight', 'chart', 'metric', 'stat', 'measure'] },
-  { id: 'communication', label: 'Comms',     keywords: ['inbox', 'email', 'slack', 'notify', 'message', 'alert', 'chat', 'respond'] },
-  { id: 'social',        label: 'Social',    keywords: ['social', 'twitter', 'x.com', 'instagram', 'linkedin', 'post', 'campaign', 'media'] },
-] as const;
+type CapabilityCategory = 'Research' | 'Writing' | 'Code' | 'Analysis' | 'Communication' | 'Social';
 
-type CategoryId = typeof CAPABILITY_CATEGORIES[number]['id'];
+const CATEGORIES: CapabilityCategory[] = ['Research', 'Writing', 'Code', 'Analysis', 'Communication', 'Social'];
 
-function scoreAgentForCategory(agent: Agent, category: typeof CAPABILITY_CATEGORIES[number]): number {
-  const haystack = [
+// Keyword patterns that map capabilities/roles to categories
+const CATEGORY_KEYWORDS: Record<CapabilityCategory, string[]> = {
+  Research:      ['research', 'search', 'web', 'data', 'fact', 'investigate', 'scrape', 'crawl'],
+  Writing:       ['write', 'writing', 'content', 'copy', 'blog', 'email', 'draft', 'creative', 'article', 'document'],
+  Code:          ['code', 'coding', 'engineer', 'dev', 'developer', 'script', 'program', 'build', 'debug', 'test'],
+  Analysis:      ['analyt', 'analy', 'report', 'insight', 'metrics', 'data', 'dashboard', 'finance', 'budget'],
+  Communication: ['comm', 'chat', 'message', 'inbox', 'slack', 'notif', 'reply', 'outreach', 'crm'],
+  Social:        ['social', 'twitter', 'x ', 'linkedin', 'instagram', 'post', 'campaign', 'market', 'brand'],
+};
+
+function scoreAgentForCategory(agent: Agent, category: CapabilityCategory): number {
+  const keywords = CATEGORY_KEYWORDS[category];
+  const searchText = [
     agent.role ?? '',
     ...(agent.capabilities ?? []),
-  ].join(' ').toLowerCase();
+  ]
+    .join(' ')
+    .toLowerCase();
 
-  const matches = category.keywords.filter(kw => haystack.includes(kw)).length;
-  if (matches === 0) return 0;
-  if (matches === 1) return 1;
-  if (matches === 2) return 2;
-  return 3;
+  const matchCount = keywords.filter(kw => searchText.includes(kw)).length;
+
+  // Base score from keyword matches (0-2)
+  let score = Math.min(2, matchCount);
+
+  // Boost by success rate if available
+  if (agent.successRate && agent.successRate > 0.8 && matchCount > 0) {
+    score = Math.min(3, score + 1);
+  }
+
+  return score;
 }
 
 function CapabilityDots({ score }: { score: number }) {
   return (
     <div className="flex items-center justify-center gap-0.5">
-      {[1, 2, 3].map(i => (
-        <span
-          key={i}
-          className={`inline-block w-2 h-2 rounded-full ${
-            i <= score
-              ? 'bg-mission-control-accent'
-              : 'bg-mission-control-border'
-          }`}
+      {[1, 2, 3].map(level => (
+        <Circle
+          key={level}
+          size={6}
+          className={
+            level <= score
+              ? 'fill-mission-control-accent text-mission-control-accent'
+              : 'fill-mission-control-border text-mission-control-border'
+          }
         />
       ))}
     </div>
   );
 }
 
-const EXCLUDED_STATUSES = ['archived', 'disabled', 'draft'];
-
 export default function AgentCapabilityMatrix() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hoveredCategory, setHoveredCategory] = useState<CategoryId | null>(null);
-  const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch('/api/agents');
-        if (!res.ok) throw new Error('Failed to load agents');
-        const data: Agent[] = await res.json();
-        if (!cancelled) {
-          setAgents(data.filter(a => !EXCLUDED_STATUSES.includes(a.status ?? '')));
-        }
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load agents');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/agents');
+      if (!res.ok) throw new Error(`Failed to load agents: ${res.status}`);
+      const data = await res.json();
+      const list: Agent[] = Array.isArray(data) ? data : (data.agents ?? []);
+      // Only show agents that are active/busy/idle (not archived/disabled/draft)
+      const visible = list.filter(a =>
+        !['archived', 'disabled', 'draft'].includes(a.status ?? '')
+      );
+      setAgents(visible);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load agents');
+    } finally {
+      setLoading(false);
     }
-    load();
-    return () => { cancelled = true; };
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40">
-        <Spinner size={24} />
+      <div className="flex items-center justify-center gap-2 py-10 text-mission-control-text-dim">
+        <RefreshCw size={16} className="animate-spin" />
+        <span className="text-sm">Loading matrix...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-center text-error text-sm">{error}</div>
+      <div className="p-4 text-center">
+        <p className="text-error text-sm mb-3">{error}</p>
+        <button
+          type="button"
+          onClick={load}
+          className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 
   if (agents.length === 0) {
     return (
-      <div className="p-4 text-center text-mission-control-text-dim text-sm">No agents found.</div>
+      <div className="py-8 text-center text-mission-control-text-dim text-sm">
+        No agents to display
+      </div>
     );
   }
 
@@ -107,58 +129,37 @@ export default function AgentCapabilityMatrix() {
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr>
-            <th className="text-left py-2 px-3 font-medium text-mission-control-text-dim bg-mission-control-surface border-b border-mission-control-border sticky left-0 z-10 min-w-[140px]">
+            <th className="text-left px-3 py-2 text-mission-control-text-dim font-medium border-b border-mission-control-border sticky left-0 bg-mission-control-surface z-10 min-w-[140px]">
               Agent
             </th>
-            {CAPABILITY_CATEGORIES.map(cat => (
+            {CATEGORIES.map(cat => (
               <th
-                key={cat.id}
-                className={`py-2 px-3 font-medium text-center border-b border-mission-control-border transition-colors cursor-default ${
-                  hoveredCategory === cat.id
-                    ? 'text-mission-control-accent bg-mission-control-accent/5'
-                    : 'text-mission-control-text-dim bg-mission-control-surface'
-                }`}
-                onMouseEnter={() => setHoveredCategory(cat.id)}
-                onMouseLeave={() => setHoveredCategory(null)}
+                key={cat}
+                className="px-3 py-2 text-mission-control-text-dim font-medium border-b border-mission-control-border text-center whitespace-nowrap"
               >
-                {cat.label}
+                {cat}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {agents.map((agent, idx) => (
+          {agents.map((agent, rowIdx) => (
             <tr
               key={agent.id}
-              className={`transition-colors ${
-                hoveredAgent === agent.id
-                  ? 'bg-mission-control-accent/5'
-                  : idx % 2 === 0
-                  ? 'bg-transparent'
-                  : 'bg-mission-control-surface/40'
+              className={`transition-colors hover:bg-mission-control-surface ${
+                rowIdx % 2 === 0 ? '' : 'bg-mission-control-bg/40'
               }`}
-              onMouseEnter={() => setHoveredAgent(agent.id)}
-              onMouseLeave={() => setHoveredAgent(null)}
             >
-              <td className="py-2 px-3 sticky left-0 z-10 bg-inherit border-b border-mission-control-border/40">
-                <div className="font-medium text-mission-control-text truncate max-w-[130px]" title={agent.name}>
-                  {agent.name}
-                </div>
+              <td className="px-3 py-2.5 border-b border-mission-control-border sticky left-0 bg-inherit z-10">
+                <div className="font-medium text-mission-control-text truncate max-w-[130px]">{agent.name}</div>
                 {agent.role && (
-                  <div className="text-[10px] text-mission-control-text-dim truncate max-w-[130px]" title={agent.role}>
-                    {agent.role}
-                  </div>
+                  <div className="text-[10px] text-mission-control-text-dim truncate max-w-[130px]">{agent.role}</div>
                 )}
               </td>
-              {CAPABILITY_CATEGORIES.map(cat => {
+              {CATEGORIES.map(cat => {
                 const score = scoreAgentForCategory(agent, cat);
                 return (
-                  <td
-                    key={cat.id}
-                    className={`py-2 px-3 text-center border-b border-mission-control-border/40 transition-colors ${
-                      hoveredCategory === cat.id ? 'bg-mission-control-accent/5' : ''
-                    }`}
-                  >
+                  <td key={cat} className="px-3 py-2.5 border-b border-mission-control-border text-center">
                     <CapabilityDots score={score} />
                   </td>
                 );
@@ -167,9 +168,22 @@ export default function AgentCapabilityMatrix() {
           ))}
         </tbody>
       </table>
-      <p className="mt-3 text-[10px] text-mission-control-text-dim px-1">
-        Scores derived from agent role and capability keywords. 3 dots = strong match, 0 = not applicable.
-      </p>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 px-3 pt-3 pb-1 text-[11px] text-mission-control-text-dim">
+        <span className="font-medium">Legend:</span>
+        {[
+          { score: 0, label: 'None' },
+          { score: 1, label: 'Basic' },
+          { score: 2, label: 'Capable' },
+          { score: 3, label: 'Expert' },
+        ].map(({ score, label }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <CapabilityDots score={score} />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

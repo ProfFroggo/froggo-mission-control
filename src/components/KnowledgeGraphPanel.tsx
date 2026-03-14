@@ -57,10 +57,10 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
   const nodesRef = useRef<Node[]>([]);
   const [, forceRender] = useState(0);
 
+  // Build graph
   useEffect(() => {
-    const el = svgRef.current?.parentElement;
-    const w = el?.clientWidth ?? 600;
-    const h = el?.clientHeight ?? 400;
+    const w = svgRef.current?.parentElement?.clientWidth ?? 600;
+    const h = svgRef.current?.parentElement?.clientHeight ?? 400;
     setSize({ w, h });
 
     const initialNodes: Node[] = articles.map((a, i) => ({
@@ -79,7 +79,8 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
     const edgeSet = new Set<string>();
     const newEdges: Edge[] = [];
     for (const a of articles) {
-      for (const link of parseWikilinks(a.content)) {
+      const links = parseWikilinks(a.content);
+      for (const link of links) {
         const targetId = titleToId[link];
         if (targetId && targetId !== a.id) {
           const key = [a.id, targetId].sort().join('|');
@@ -96,6 +97,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
     nodesRef.current = initialNodes;
   }, [articles]);
 
+  // Force simulation
   const tick = useCallback(() => {
     const ns = nodesRef.current;
     if (ns.length === 0) return;
@@ -107,6 +109,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
 
     const next = ns.map(n => ({ ...n }));
 
+    // Repulsion
     for (let i = 0; i < next.length; i++) {
       for (let j = i + 1; j < next.length; j++) {
         const dx = next[i].x - next[j].x;
@@ -116,31 +119,40 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
           const force = REPEL / (dist * dist);
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
-          next[i].vx += fx; next[i].vy += fy;
-          next[j].vx -= fx; next[j].vy -= fy;
+          next[i].vx += fx;
+          next[i].vy += fy;
+          next[j].vx -= fx;
+          next[j].vy -= fy;
         }
       }
     }
 
+    // Attraction along edges
     const nodeIdx: Record<string, number> = {};
     for (let i = 0; i < next.length; i++) nodeIdx[next[i].id] = i;
-
     for (const edge of edges) {
       const si = nodeIdx[edge.source];
       const ti = nodeIdx[edge.target];
       if (si === undefined || ti === undefined) continue;
       const dx = next[ti].x - next[si].x;
       const dy = next[ti].y - next[si].y;
-      next[si].vx += dx * ATTRACT; next[si].vy += dy * ATTRACT;
-      next[ti].vx -= dx * ATTRACT; next[ti].vy -= dy * ATTRACT;
+      next[si].vx += dx * ATTRACT;
+      next[si].vy += dy * ATTRACT;
+      next[ti].vx -= dx * ATTRACT;
+      next[ti].vy -= dy * ATTRACT;
     }
 
-    const cx = size.w / 2, cy = size.h / 2;
+    // Center gravity
+    const cx = size.w / 2;
+    const cy = size.h / 2;
     for (const n of next) {
       n.vx += (cx - n.x) * 0.004;
       n.vy += (cy - n.y) * 0.004;
-      n.vx *= DAMPING; n.vy *= DAMPING;
-      n.x += n.vx; n.y += n.vy;
+      n.vx *= DAMPING;
+      n.vy *= DAMPING;
+      n.x += n.vx;
+      n.y += n.vy;
+      // Clamp to bounds
       n.x = Math.max(60, Math.min(size.w - 60, n.x));
       n.y = Math.max(40, Math.min(size.h - 40, n.y));
     }
@@ -168,6 +180,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
         style={{ height: '80vh' }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border shrink-0">
           <Network size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">Knowledge Graph</span>
@@ -184,6 +197,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
           </button>
         </div>
 
+        {/* Graph */}
         <div className="flex-1 relative overflow-hidden">
           {articles.length === 0 ? (
             <div className="flex items-center justify-center h-full">
@@ -193,28 +207,45 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
               </div>
             </div>
           ) : (
-            <svg ref={svgRef} className="w-full h-full">
+            <svg ref={svgRef} className="w-full h-full" style={{ cursor: 'default' }}>
+              {/* Edges */}
               {edges.map((e, i) => {
                 const s = nodeMap[e.source];
                 const t = nodeMap[e.target];
                 if (!s || !t) return null;
                 return (
-                  <line key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                    stroke="var(--color-border, #333)" strokeWidth={1.5} strokeOpacity={0.5} />
+                  <line
+                    key={i}
+                    x1={s.x} y1={s.y}
+                    x2={t.x} y2={t.y}
+                    stroke="var(--color-border, #333)"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.5}
+                  />
                 );
               })}
+              {/* Nodes */}
               {displayNodes.map(n => {
                 const color = getCategoryColor(n.category);
-                const label = n.title.length > 16 ? n.title.slice(0, 14) + '\u2026' : n.title;
+                const label = n.title.length > 16 ? n.title.slice(0, 14) + '…' : n.title;
                 return (
-                  <g key={n.id} transform={`translate(${n.x},${n.y})`} style={{ cursor: 'pointer' }}
+                  <g
+                    key={n.id}
+                    transform={`translate(${n.x},${n.y})`}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => {
                       const article = articles.find(a => a.id === n.id);
                       if (article) { onNavigate(article); onClose(); }
                     }}
                   >
                     <circle r={20} fill={color} fillOpacity={0.15} stroke={color} strokeWidth={1.5} />
-                    <text textAnchor="middle" dominantBaseline="middle" fontSize={9} fill={color} fontWeight="500">
+                    <text
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={9}
+                      fill={color}
+                      fontWeight="500"
+                    >
                       {label}
                     </text>
                   </g>
@@ -226,7 +257,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
 
         <div className="px-4 py-2 border-t border-mission-control-border shrink-0">
           <p className="text-xs text-mission-control-text-dim">
-            {articles.length} articles &middot; {edges.length} connections via {'[[wikilinks]]'} &middot; click a node to open
+            {articles.length} articles · {edges.length} connections via {`[[wikilinks]]`} · click a node to open
           </p>
         </div>
       </div>

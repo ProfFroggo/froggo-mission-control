@@ -8,6 +8,23 @@ import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
+function ensureTemplateTable() {
+  const db = getDb();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_templates (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      priority TEXT DEFAULT 'medium',
+      tags TEXT,
+      subtasks TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  return db;
+}
+
 interface TemplateRow {
   id: string;
   name: string;
@@ -29,7 +46,7 @@ function parseTemplate(row: TemplateRow) {
 
 export async function GET() {
   try {
-    const db = getDb();
+    const db = ensureTemplateTable();
     const rows = db.prepare('SELECT * FROM task_templates ORDER BY createdAt DESC').all() as TemplateRow[];
     return NextResponse.json(rows.map(parseTemplate));
   } catch (error) {
@@ -40,7 +57,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb();
+    const db = ensureTemplateTable();
     const body = await request.json();
 
     const { name, title, description, priority, tags, subtasks, taskId } = body;

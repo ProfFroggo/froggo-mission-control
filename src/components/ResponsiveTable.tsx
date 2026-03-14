@@ -44,6 +44,7 @@ export default function ResponsiveTable<T extends Record<string, any>>({
               const rawValue = row[col.key];
               const displayValue = col.render ? col.render(rawValue, row) : rawValue;
 
+              // Skip columns where the value is null/undefined and there's no render fn
               if (rawValue == null && !col.render) return null;
 
               return (

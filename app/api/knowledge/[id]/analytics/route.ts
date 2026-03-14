@@ -20,6 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
      FROM knowledge_analytics WHERE articleId = ? AND event = 'view'`
   ).get(params.id) as { views: number; lastViewedAt: number | null };
 
+  // Related = same category, ordered by view count desc, limit 5 (excluding current)
   const related = db.prepare(`
     SELECT kb.id, kb.title, kb.category, kb.tags, kb.updatedAt, kb.pinned,
            COUNT(ka.id) as viewCount

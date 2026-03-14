@@ -38,6 +38,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'templateId is required' }, { status: 400 });
     }
 
+    // Ensure the templates table exists
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS task_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        priority TEXT DEFAULT 'medium',
+        tags TEXT,
+        subtasks TEXT,
+        createdAt TEXT DEFAULT (datetime('now'))
+      )
+    `);
+
     const template = db.prepare('SELECT * FROM task_templates WHERE id = ?').get(templateId) as TemplateRow | undefined;
     if (!template) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });

@@ -1,5 +1,5 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// POST /api/knowledge/from-template
+// POST /api/knowledge/from-template — create an article from a template
 // body: { templateId: string, overrides?: { title?: string, category?: string } }
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
 
     const title = overrides.title?.trim() || template.label;
     const category = overrides.category?.trim() || template.category;
+    // Replace placeholder heading with actual title
     const content = template.content.replace(/^# .*$/m, `# ${title}`);
 
     const now = Date.now();
