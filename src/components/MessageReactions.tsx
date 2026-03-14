@@ -84,7 +84,6 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
           key={r.reaction}
           onClick={() => toggleReaction(r.reaction)}
           title={`${r.label ?? r.reaction}: ${r.count}`}
-          title={`${r.reaction}: ${r.count}`}
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
             myReactions.has(r.reaction)
               ? 'bg-mission-control-accent/20 border-mission-control-accent/60 text-mission-control-accent'

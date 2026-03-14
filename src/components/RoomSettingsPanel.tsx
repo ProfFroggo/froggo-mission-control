@@ -1,18 +1,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
-import { X, Bell, BellOff, BellRing, Pin, PinOff } from 'lucide-react';
 import { X, Bell, BellOff, BellRing, Pin } from 'lucide-react';
 import { type ChatRoom } from '../store/chatRoomStore';
 
 export type NotificationSetting = 'all' | 'mentions' | 'muted';
-
-interface RoomSettingsPanelProps {
-  room: ChatRoom & { description?: string; pinnedMessageId?: string };
-  onClose: () => void;
-  onLeave: () => void;
-  onSave: (updates: { name?: string; description?: string }) => Promise<void>;
-  onUnpin: () => void;
-}
 
 const NOTIF_OPTIONS: { value: NotificationSetting; label: string; icon: React.ReactNode }[] = [
   { value: 'all', label: 'All messages', icon: <Bell size={14} /> },
@@ -52,7 +43,6 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
   const [saving, setSaving] = useState(false);
   const [notif, setNotif] = useState<NotificationSetting>(() => getStoredNotif(room.id));
 
-  // Sync if room changes
   useEffect(() => {
     setName(room.name);
     setDescription(room.description ?? '');
@@ -112,13 +102,11 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
             />
           </div>
 
-          {/* Save name/description */}
           <button
             onClick={handleSave}
             disabled={saving}
             className="w-full py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {saving ? 'Saving…' : 'Save Changes'}
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
 
@@ -144,7 +132,6 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
           </div>
 
           {/* Pinned message */}
-          {room.pinnedMessageId && (
           {room.pinnedMessageId ? (
             <div>
               <p className="text-xs font-medium text-mission-control-text-dim mb-2">Pinned Message</p>
@@ -152,18 +139,14 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
                 onClick={onUnpin}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
               >
-                <PinOff size={14} />
+                <Pin size={14} />
                 Unpin current message
               </button>
             </div>
-          )}
-          {!room.pinnedMessageId && (
+          ) : (
             <div>
               <p className="text-xs font-medium text-mission-control-text-dim mb-1">Pinned Message</p>
               <p className="text-xs text-mission-control-text-dim">
-                Hover a message and click the <Pin size={10} className="inline" /> pin icon to pin it here.
-                <Pin size={14} />
-          ) : (
                 Hover a message and click the pin icon to pin it here.
               </p>
             </div>
