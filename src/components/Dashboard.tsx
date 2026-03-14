@@ -1425,6 +1425,9 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
   }, [derived.inProgressTasks, agentMap]);
 
+  // Agent detail modal — opened when an agent name is clicked in the activity feed
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
@@ -1469,14 +1472,24 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
           activities={recentActivities}
           allTasks={tasks}
           onNavigate={onNavigate}
+          onAgentClick={setSelectedAgentId}
         />
       </div>
 
-      {/* Bottom row: Schedule + System Health */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-6">
+      {/* Bottom row: Schedule + System Health + Task Throughput */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-6">
         <TodaySchedule onNavigate={onNavigate} />
         <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
+        <TaskThroughputChart tasks={tasks} />
       </div>
+
+      {/* Agent detail modal — opened by clicking agent names in activity feed */}
+      {selectedAgentId && (
+        <AgentDetailModal
+          agentId={selectedAgentId}
+          onClose={() => setSelectedAgentId(null)}
+        />
+      )}
     </div>
   );
 }
