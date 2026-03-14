@@ -713,6 +713,129 @@ function AgentPlatformSection() {
   );
 }
 
+// ─── Token Budget Section ──────────────────────────────────────────────────────
+
+function TokenBudgetSection() {
+  const [budgetUsd, setBudgetUsd] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [currentCost, setCurrentCost] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [settingsRes, usageRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/token-usage?days=30'),
+        ]);
+        if (settingsRes.ok) {
+          const data = await settingsRes.json() as Record<string, string>;
+          if (data['token_budget_usd']) setBudgetUsd(data['token_budget_usd']);
+        }
+        if (usageRes.ok) {
+          const usage = await usageRes.json() as { totalCost?: number };
+          if (typeof usage.totalCost === 'number') setCurrentCost(usage.totalCost);
+        }
+      } catch { /* silent */ }
+      setLoaded(true);
+    })();
+  }, []);
+
+  const saveBudget = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token_budget_usd: budgetUsd }),
+      });
+      if (res.ok) showToast('success', 'Token budget saved');
+      else showToast('error', 'Failed to save budget');
+    } catch {
+      showToast('error', 'Failed to save budget');
+    }
+    setSaving(false);
+  };
+
+  const budget = parseFloat(budgetUsd) || 0;
+  const pct = budget > 0 && currentCost !== null ? (currentCost / budget) * 100 : 0;
+  const isOver = pct >= 100;
+  const isWarn = pct >= 80 && !isOver;
+
+  if (!loaded) return null;
+
+  return (
+    <CollapsibleSection
+      title="Token Budget"
+      icon={<Coins size={16} />}
+      description="Set a monthly spend limit and track current usage"
+      defaultOpen={false}
+    >
+      <div className="space-y-4">
+        {currentCost !== null && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-mission-control-text-dim">This month (30d)</span>
+              <span className={isOver ? 'text-error font-semibold' : isWarn ? 'text-warning font-semibold' : 'text-mission-control-text'}>
+                ${currentCost.toFixed(4)}{budget > 0 ? ` / $${budget.toFixed(2)}` : ''}
+              </span>
+            </div>
+            {budget > 0 && (
+              <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(pct, 100)}%`,
+                    backgroundColor: isOver ? 'var(--color-error, #ef4444)' : isWarn ? 'var(--color-warning, #f59e0b)' : 'var(--color-accent)',
+                  }}
+                />
+              </div>
+            )}
+            {(isWarn || isOver) && (
+              <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${isOver ? 'bg-error-subtle text-error border border-error-border' : 'bg-warning-subtle text-warning border border-warning-border'}`}>
+                <AlertTriangle size={13} />
+                {isOver
+                  ? `Budget exceeded (${pct.toFixed(0)}% used)`
+                  : `Approaching budget limit (${pct.toFixed(0)}% used)`}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <label htmlFor="token-budget-input" className="text-sm text-mission-control-text-dim shrink-0 w-40">
+            Monthly budget (USD)
+          </label>
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-mission-control-text-dim text-sm">$</span>
+            <input
+              id="token-budget-input"
+              type="number"
+              min="0"
+              step="1"
+              value={budgetUsd}
+              onChange={e => setBudgetUsd(e.target.value)}
+              placeholder="e.g. 50"
+              className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+            />
+            <button
+              type="button"
+              onClick={saveBudget}
+              disabled={saving}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent/80 disabled:opacity-50 transition-colors"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-mission-control-text-dim">
+          Set to 0 to disable. A warning appears at 80% and an alert at 100% of budget.
+        </p>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
 // ─── API Keys Section ──────────────────────────────────────────────────────────
 
 function ApiKeysSection() {

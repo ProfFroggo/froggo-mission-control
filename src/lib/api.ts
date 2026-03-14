@@ -169,7 +169,7 @@ export const approvalApi = {
     apiCall('/approvals', { method: 'POST', body: approval }),
   respond: (id: string, action: string, notes?: string, adjustedContent?: string) =>
     apiCall(`/approvals/${id}`, { method: 'PATCH', body: { action, notes, adjustedContent } }),
-  batchRespond: (ids: string[], action: string, reason?: string) =>
+  batchRespond: (ids: string[], action: 'approve' | 'reject', reason?: string) =>
     apiCall('/approvals', { method: 'PATCH', body: { ids, action, reason } }),
 };
 
