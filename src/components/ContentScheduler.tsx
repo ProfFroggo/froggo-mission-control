@@ -22,27 +22,33 @@ import {
   Repeat,
   Grid,
 } from 'lucide-react';
+import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video, CalendarClock, LayoutGrid, List } from 'lucide-react';
 
-// X logo component
-const XIcon = ({ size = 16 }: { size?: number }) => (
+// X logo SVG (not a LucideIcon — kept as a plain component)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const XIcon = ({ size = 16 }: any) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
+
 import { showToast } from './Toast';
-import IconBadge from './IconBadge';
 import { scheduleApi } from '../lib/api';
 
 type ScheduledItemType = 'tweet' | 'post' | 'email' | 'message' | 'task' | 'meeting' | 'event' | 'idea';
 type ScheduledItemStatus = 'pending' | 'sent' | 'cancelled' | 'failed';
 type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
 type ViewMode = 'list' | 'week' | 'month' | 'agenda';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyIcon = React.ComponentType<any>;
+
+type ViewMode = 'list' | 'week';
 
 interface ScheduledItem {
   id: string;
   type: ScheduledItemType;
   content: string;
-  scheduledFor: string; // ISO date
+  scheduledFor: string;
   status: ScheduledItemStatus;
   createdAt: string;
   sentAt?: string;
@@ -55,6 +61,7 @@ interface ScheduledItem {
     mediaPath?: string;
     mediaType?: string;
     mediaFileName?: string;
+    mediaSize?: number;
   };
 }
 
@@ -62,6 +69,7 @@ interface ScheduledItem {
 type AnyIcon = React.ComponentType<any>;
 
 // ─── Color coding per type ──────────────────────────────────────────────────
+// ── Color coding per item type ───────────────────────────────────────────────
 const typeStyles: Record<string, { border: string; badge: string; label: string }> = {
   post:    { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
   tweet:   { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
@@ -78,6 +86,7 @@ function getTypeStyle(type: string) {
 }
 
 // ─── Type → icon ────────────────────────────────────────────────────────────
+// Icon per type
 const typeIconMap: Record<string, AnyIcon> = {
   tweet:   XIcon,
   post:    XIcon,
@@ -94,6 +103,19 @@ function getWeekStart(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
+// Icon badge color class
+const typeIconColor: Record<string, string> = {
+  tweet:   'text-mission-control-text bg-mission-control-text/10',
+  post:    'text-mission-control-text bg-mission-control-text/10',
+  email:   'text-success bg-success-subtle',
+  message: 'text-review bg-review-subtle',
+};
+function getTypeIconColor(type: string) {
+  return typeIconColor[type] ?? 'text-mission-control-text-dim bg-mission-control-border/30';
+}
+
+// ── Date arithmetic (no external library) ────────────────────────────────────
+  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -117,10 +139,13 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
-}
-
 function isSameMonth(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth()    === b.getMonth()    &&
+    a.getDate()     === b.getDate()
+  );
 }
 
 function isInWeek(date: Date, weekStart: Date): boolean {
@@ -141,12 +166,10 @@ function getLastFridayOfMonth(year: number, month: number): Date {
 function expandRecurring(item: ScheduledItem): ScheduledItem[] {
   const rec = item.recurrence ?? 'none';
   if (rec === 'none') return [item];
-
   const results: ScheduledItem[] = [item];
   const origin = new Date(item.scheduledFor);
   const horizon = addDays(new Date(), 90);
   let cursor = new Date(origin);
-
   for (let i = 0; i < 365; i++) {
     if (rec === 'daily') {
       cursor = addDays(cursor, 1);
@@ -163,21 +186,17 @@ function expandRecurring(item: ScheduledItem): ScheduledItem[] {
     });
   }
   return results;
-}
-
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const FULL_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8–19
-
 const typeConfig: Record<string, { icon: AnyIcon; color: string; label: string }> = {
   tweet:   { icon: XIcon,    color: 'text-mission-control-text bg-mission-control-text/10', label: 'Post' },
   post:    { icon: XIcon,    color: 'text-mission-control-text bg-mission-control-text/10', label: 'Post' },
   email:   { icon: Mail,     color: 'text-success bg-success-subtle',                       label: 'Email' },
   message: { icon: Mail,     color: 'text-review bg-review-subtle',                         label: 'Message' },
 };
-
 // ─── Schedule Templates ───────────────────────────────────────────────────
 interface ScheduleTemplate {
   label: string;
@@ -188,8 +207,6 @@ interface ScheduleTemplate {
   recurrence: RecurrenceType;
   /** day of week for weekly (0=Mon…6=Sun) */
   weekday?: number;
-}
-
 const SCHEDULE_TEMPLATES: ScheduleTemplate[] = [
   {
     label: 'Daily standup',
@@ -199,39 +216,23 @@ const SCHEDULE_TEMPLATES: ScheduleTemplate[] = [
     minute: 0,
     recurrence: 'daily',
   },
-  {
     label: 'Weekly planning',
-    type: 'tweet',
     content: 'Weekly planning session',
     hour: 10,
-    minute: 0,
     recurrence: 'weekly',
     weekday: 0, // Monday
-  },
-  {
     label: 'Content review',
-    type: 'tweet',
     content: 'Weekly content review',
     hour: 14,
-    minute: 0,
-    recurrence: 'weekly',
     weekday: 4, // Friday
-  },
-  {
     label: 'Monthly retrospective',
-    type: 'tweet',
     content: 'Monthly retrospective — last Friday',
-    hour: 14,
-    minute: 0,
     recurrence: 'monthly',
-  },
 ];
-
 function getNextOccurrence(template: ScheduleTemplate): { date: string; time: string } {
   const now = new Date();
   let target = new Date(now);
   target.setHours(template.hour, template.minute, 0, 0);
-
   if (template.recurrence === 'weekly' && template.weekday !== undefined) {
     // Find next occurrence of the target weekday (Mon=0)
     const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
@@ -244,16 +245,14 @@ function getNextOccurrence(template: ScheduleTemplate): { date: string; time: st
     const lf = getLastFridayOfMonth(now.getFullYear(), now.getMonth());
     lf.setHours(template.hour, template.minute, 0, 0);
     target = lf <= now ? getLastFridayOfMonth(now.getFullYear(), now.getMonth() + 1) : lf;
-    target.setHours(template.hour, template.minute, 0, 0);
   } else if (template.recurrence === 'daily') {
     if (target <= now) target = addDays(target, 1);
-  }
-
   return {
     date: target.toISOString().split('T')[0],
     time: `${String(template.hour).padStart(2, '0')}:${String(template.minute).padStart(2, '0')}`,
   };
-}
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8am–7pm
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ContentScheduler() {
   const [items, setItems] = useState<ScheduledItem[]>([]);
@@ -265,24 +264,23 @@ export default function ContentScheduler() {
 
   // Week view state
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
-
   // Month view state
   const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart(new Date()));
   // Day overflow popover
   const [overflowDay, setOverflowDay] = useState<Date | null>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
-
   // Reschedule popover state
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleValue, setRescheduleValue] = useState<string>('');
   const rescheduleRef = useRef<HTMLDivElement>(null);
-
   // Drag-and-drop state
   const dragItemIdRef = useRef<string | null>(null);
   const dragOffsetMinRef = useRef<number>(0);
   const [dropTarget, setDropTarget] = useState<{ dayIdx: number; hourIdx: number } | null>(null);
-
   // Form state
+  // Reschedule popover
+  const [rescheduleValue, setRescheduleValue] = useState('');
+  // Form
   const [formType, setFormType] = useState<'tweet' | 'email'>('tweet');
   const [formContent, setFormContent] = useState('');
   const [formDate, setFormDate] = useState('');
@@ -292,12 +290,14 @@ export default function ContentScheduler() {
   const [formRecurrence, setFormRecurrence] = useState<RecurrenceType>('none');
 
   // Media upload state
+  // Media
   const [mediaFile, setMediaFile] = useState<{ path: string; fileName: string; size: number; type: string } | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Data loading ──────────────────────────────────────────────────────────
   const loadSchedule = useCallback(async () => {
     setLoading(true);
     try {
@@ -307,6 +307,7 @@ export default function ContentScheduler() {
       }
     } catch {
       // Schedule load error
+      // ignore
     } finally {
       setLoading(false);
     }
@@ -345,13 +346,13 @@ export default function ContentScheduler() {
   // ── Derived values ───────────────────────────────────────────────────────
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   const currentWeekStart = getWeekStart(today);
-
   // Expand recurring items for display
   const allDisplayItems: ScheduledItem[] = items.flatMap(expandRecurring);
-
   const thisWeekItems = allDisplayItems.filter((item) => {
+  // ── Derived values ────────────────────────────────────────────────────────
+  const currentWeekStart = getWeekStart(new Date());
+  const thisWeekItems = items.filter((item) => {
     const d = new Date(item.scheduledFor);
     return isInWeek(d, currentWeekStart) && item.status === 'pending';
   });
@@ -360,6 +361,8 @@ export default function ContentScheduler() {
     if (filter === 'all') return true;
     if (filter === 'pending') return item.status === 'pending';
     if (filter === 'sent') return item.status === 'sent';
+    if (filter === 'all')     return true;
+    if (filter === 'sent')    return item.status === 'sent';
     return true;
   });
 
@@ -368,6 +371,9 @@ export default function ContentScheduler() {
 
   // ── File handlers ────────────────────────────────────────────────────────
   const handleFileSelect = async (file: File) => {
+  const sentCount    = items.filter((i) => i.status === 'sent').length;
+  // ── Media handlers ────────────────────────────────────────────────────────
+  const handleFileSelect = (file: File) => {
     setUploadError(null);
     const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const validVideoTypes = ['video/mp4', 'video/quicktime'];
@@ -423,6 +429,7 @@ export default function ContentScheduler() {
   };
 
   // ── CRUD ─────────────────────────────────────────────────────────────────
+  // ── CRUD ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!formContent.trim() || !formDate || !formTime) {
       showToast('error', 'Missing fields', 'Please fill in all required fields');
@@ -443,6 +450,22 @@ export default function ContentScheduler() {
       const result = editingId
         ? await fetch(`/api/schedule/${editingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
         : await scheduleApi.create(item as Record<string, unknown>).catch(() => null);
+    const payload = {
+      type: formType,
+      content: formContent,
+      scheduledFor,
+      metadata: {
+        ...(formType === 'email' ? { recipient: formRecipient, subject: formSubject } : {}),
+        ...(mediaFile ? { mediaPath: mediaFile.path, mediaFileName: mediaFile.fileName, mediaType: mediaFile.type, mediaSize: mediaFile.size } : {}),
+      },
+    };
+        ? await fetch(`/api/schedule/${editingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+        : await scheduleApi.create(payload as Record<string, unknown>).catch(() => null);
+
       if (result) {
         showToast('success', editingId ? 'Updated' : 'Scheduled', `Scheduled for ${new Date(scheduledFor).toLocaleString()}`);
         resetForm();
@@ -457,6 +480,10 @@ export default function ContentScheduler() {
 
   const handleCancel = async (id: string) => {
     const result = await fetch(`/api/schedule/${id}`, { method: 'DELETE' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const handleCancelItem = async (id: string) => {
+    const result = await fetch(`/api/schedule/${id}`, { method: 'DELETE' })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
     if (result) {
       showToast('success', 'Cancelled', 'Scheduled item cancelled');
       loadSchedule();
@@ -465,6 +492,9 @@ export default function ContentScheduler() {
 
   const handleSendNow = async (id: string) => {
     const result = await fetch(`/api/schedule/${id}/send`, { method: 'POST' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const result = await fetch(`/api/schedule/${id}/send`, { method: 'POST' })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
     if (result) {
       showToast('success', 'Sent', 'Item sent immediately');
       loadSchedule();
@@ -487,6 +517,11 @@ export default function ContentScheduler() {
       setFormRecipient(item.metadata.recipient || '');
       setFormSubject(item.metadata.subject || '');
     }
+    const d = new Date(item.scheduledFor);
+    setFormDate(d.toISOString().split('T')[0]);
+    setFormTime(d.toTimeString().slice(0, 5));
+    setFormRecipient(item.metadata?.recipient ?? '');
+    setFormSubject(item.metadata?.subject ?? '');
     setShowForm(true);
   };
 
@@ -530,9 +565,35 @@ export default function ContentScheduler() {
     setUploadError(null);
   };
 
+  // ── Reschedule ────────────────────────────────────────────────────────────
+  const openReschedule = (item: ScheduledItem) => {
+    const d = new Date(item.scheduledFor);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setRescheduleValue(local);
+    setRescheduleId(item.id);
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleId || !rescheduleValue) return;
+    const scheduledFor = new Date(rescheduleValue).toISOString();
+    const result = await fetch(`/api/schedule/${rescheduleId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduledFor }),
+    }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+    if (result) {
+      showToast('success', 'Rescheduled', `Moved to ${new Date(scheduledFor).toLocaleString()}`);
+      setRescheduleId(null);
+      loadSchedule();
+    } else {
+      showToast('error', 'Failed', 'Could not reschedule');
+    }
+  };
+
   const formatScheduledTime = (isoDate: string) => {
     const date = new Date(isoDate);
-    const now = new Date();
+    const now  = new Date();
     const diff = date.getTime() - now.getTime();
     if (diff < 0) return 'Overdue';
     if (diff < 3600000) return `in ${Math.floor(diff / 60000)}m`;
@@ -544,6 +605,14 @@ export default function ContentScheduler() {
   const goToPrevWeek = () => setWeekStart((d) => addDays(d, -7));
   const goToNextWeek = () => setWeekStart((d) => addDays(d, 7));
   const goToThisWeek = () => setWeekStart(getWeekStart(new Date()));
+    if (diff < 0)         return 'Overdue';
+    if (diff < 3_600_000) return `in ${Math.floor(diff / 60_000)}m`;
+    if (diff < 86_400_000) return `in ${Math.floor(diff / 3_600_000)}h`;
+  // ── Week navigation ───────────────────────────────────────────────────────
+  const goToPrevWeek  = () => setWeekStart((d) => addDays(d, -7));
+  const goToNextWeek  = () => setWeekStart((d) => addDays(d, 7));
+  const goToThisWeek  = () => setWeekStart(getWeekStart(new Date()));
+  const isCurrentWeek = isSameDay(weekStart, getWeekStart(new Date()));
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -563,6 +632,11 @@ export default function ContentScheduler() {
     const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const hour = d.getHours();
     const hourIdx = hour - 8;
+  // Build week grid: [dayIdx 0=Mon…6=Sun][hourIdx 0=8am…11=7pm]
+  for (const item of items) {
+    const dow     = d.getDay();
+    const dayIdx  = dow === 0 ? 6 : dow - 1; // Mon=0…Sun=6
+    const hourIdx = d.getHours() - 8;
     if (hourIdx >= 0 && hourIdx < HOURS.length) {
       weekGrid[dayIdx][hourIdx].push(item);
     }
@@ -574,7 +648,6 @@ export default function ContentScheduler() {
   const goToThisMonth = () => setMonthStart(getMonthStart(new Date()));
 
   const monthLabel = `${MONTH_NAMES[monthStart.getMonth()]} ${monthStart.getFullYear()}`;
-
   // Build month grid: 6 rows x 7 cols (Mon-Sun)
   const buildMonthGrid = (): Date[] => {
     const firstDay = monthStart;
@@ -583,12 +656,9 @@ export default function ContentScheduler() {
     const gridStart = addDays(firstDay, -startOffset);
     return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   };
-
   const monthGrid = buildMonthGrid();
-
   const itemsForDay = (day: Date): ScheduledItem[] =>
     allDisplayItems.filter((item) => isSameDay(new Date(item.scheduledFor), day));
-
   // ── Drag-and-drop handlers ────────────────────────────────────────────────
   const handleDragStart = (e: React.DragEvent, item: ScheduledItem) => {
     // Don't drag virtual recurrence instances
@@ -601,46 +671,33 @@ export default function ContentScheduler() {
     const d = new Date(item.scheduledFor);
     dragOffsetMinRef.current = d.getMinutes();
     e.dataTransfer.effectAllowed = 'move';
-  };
-
   const handleSlotDragOver = (e: React.DragEvent, dayIdx: number, hourIdx: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDropTarget({ dayIdx, hourIdx });
-  };
-
   const handleSlotDragLeave = () => {
     setDropTarget(null);
-  };
-
   const handleSlotDrop = async (e: React.DragEvent, dayIdx: number, hourIdx: number) => {
-    e.preventDefault();
-    setDropTarget(null);
     const itemId = dragItemIdRef.current;
     if (!itemId) return;
     dragItemIdRef.current = null;
-
     // Reconstruct target date from weekStart + dayIdx + hourIdx
     const targetDay = addDays(weekStart, dayIdx);
     const targetHour = HOURS[hourIdx];
     targetDay.setHours(targetHour, dragOffsetMinRef.current, 0, 0);
     const scheduledFor = targetDay.toISOString();
-
     const result = await fetch(`/api/schedule/${itemId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scheduledFor }),
     }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-
     if (result) {
       showToast('success', 'Rescheduled', `Moved to ${targetDay.toLocaleString()}`);
       loadSchedule();
     } else {
       showToast('error', 'Failed', 'Could not reschedule');
-    }
-  };
-
   // ── Render helpers ────────────────────────────────────────────────────────
+  // ── Render: reschedule popover ────────────────────────────────────────────
   const renderReschedulePopover = (item: ScheduledItem) => {
     if (rescheduleId !== item.id) return null;
     return (
@@ -698,6 +755,12 @@ export default function ContentScheduler() {
         </div>
       );
     }
+  // ── Render: list item card ────────────────────────────────────────────────
+  const renderItemCard = (item: ScheduledItem) => {
+    const isPending  = item.status === 'pending';
+    const style      = getTypeStyle(item.type);
+    const Icon       = getTypeIcon(item.type);
+    const iconColor  = getTypeIconColor(item.type);
 
     return (
       <div
@@ -718,12 +781,21 @@ export default function ContentScheduler() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className={`text-xs px-2 py-0.5 rounded ${style.badge}`}>
+        <div className="flex items-start gap-3">
+          {/* Type icon badge */}
+          <div className={`p-2 rounded-lg shrink-0 ${iconColor}`}>
+            <Icon size={14} />
+          </div>
+          {/* Content */}
+              <span className={`text-xs px-2 py-0.5 rounded font-medium ${style.badge}`}>
                 {style.label}
               </span>
               <span className={`text-xs px-2 py-0.5 rounded ${
                 item.status === 'pending' ? 'bg-warning-subtle text-warning' :
                 item.status === 'sent' ? 'bg-success-subtle text-success' :
                 item.status === 'failed' ? 'bg-error-subtle text-error' :
+                item.status === 'sent'    ? 'bg-success-subtle text-success' :
+                item.status === 'failed'  ? 'bg-error-subtle text-error'     :
                 'bg-muted-subtle text-muted'
               }`}>
                 {item.status}
@@ -736,11 +808,13 @@ export default function ContentScheduler() {
               )}
               <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                 <Clock size={12} />
+                <Clock size={10} />
                 {formatScheduledTime(item.scheduledFor)}
               </span>
             </div>
 
             <p className="text-sm mb-2 line-clamp-2">{item.content}</p>
+            <p className="text-sm line-clamp-2 mb-1">{item.content}</p>
 
             {item.metadata?.recipient && (
               <p className="text-xs text-mission-control-text-dim">
@@ -752,6 +826,7 @@ export default function ContentScheduler() {
             {item.metadata?.mediaPath && (
               <div className="flex items-center gap-1 text-xs text-mission-control-accent mt-1">
                 {item.metadata.mediaType === 'image' ? <ImageIcon size={12} /> : <Video size={12} />}
+                {item.metadata.mediaType === 'image' ? <ImageIcon size={10} /> : <Video size={10} />}
                 <span>{item.metadata.mediaFileName}</span>
               </div>
             )}
@@ -766,12 +841,16 @@ export default function ContentScheduler() {
               >
                 <Play size={16} className="text-success" />
               </button>
-              <button
                 onClick={() => handleEdit(item)}
                 className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 title="Edit"
-              >
                 <Edit2 size={16} className="text-mission-control-text-dim" />
+          {/* Actions */}
+            <div className="flex gap-1 relative shrink-0">
+                className="p-1.5 hover:bg-success-subtle rounded-lg transition-colors"
+                <Play size={14} className="text-success" />
+                className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+                <Edit2 size={14} className="text-mission-control-text-dim" />
               </button>
               <div className="relative">
                 <button
@@ -780,6 +859,8 @@ export default function ContentScheduler() {
                   title="Reschedule"
                 >
                   <CalendarClock size={16} className="text-info" />
+                  className="p-1.5 hover:bg-info-subtle rounded-lg transition-colors"
+                  <CalendarClock size={14} className="text-info" />
                 </button>
                 {renderReschedulePopover(item)}
               </div>
@@ -789,6 +870,9 @@ export default function ContentScheduler() {
                 title="Cancel"
               >
                 <Trash2 size={16} className="text-error" />
+                onClick={() => handleCancelItem(item.id)}
+                className="p-1.5 hover:bg-error-subtle rounded-lg transition-colors"
+                <Trash2 size={14} className="text-error" />
               </button>
             </div>
           )}
@@ -822,15 +906,10 @@ export default function ContentScheduler() {
               </button>
             )}
           </div>
-          <button
             onClick={goToNextWeek}
-            className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
             aria-label="Next week"
-          >
             <ChevronRight size={16} />
-          </button>
         </div>
-
         <div className="flex-1 overflow-auto">
           <div className="min-w-[700px]">
             <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
@@ -849,7 +928,6 @@ export default function ContentScheduler() {
                     </div>
                     <div className={`text-sm font-semibold mt-0.5 ${isToday ? 'text-info' : 'text-mission-control-text'}`}>
                       {isToday ? <span className="inline-block px-1.5 py-0.5 bg-info text-white rounded-full text-xs">{day.getDate()}</span> : day.getDate()}
-                    </div>
                     {isToday && (
                       <div className="text-xs text-info font-medium mt-0.5">Today</div>
                     )}
@@ -857,12 +935,10 @@ export default function ContentScheduler() {
                 );
               })}
             </div>
-
             {HOURS.map((hour, hourIdx) => (
               <div
                 key={hour}
                 className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-mission-control-border/50 min-h-[56px]"
-              >
                 <div className="py-1 pr-2 text-right text-xs text-mission-control-text-dim shrink-0 pt-1.5">
                   {hour === 12 ? '12pm' : hour < 12 ? `${hour}am` : `${hour - 12}pm`}
                 </div>
@@ -888,15 +964,20 @@ export default function ContentScheduler() {
                       {cellItems.map((item) => (
                         <div key={item.id} className="mb-0.5">
                           {renderItemCard(item, true)}
-                        </div>
                       ))}
-                    </div>
                   );
                 })}
               </div>
             ))}
-          </div>
-        </div>
+  // ── Render: week grid chip ────────────────────────────────────────────────
+  const renderWeekChip = (item: ScheduledItem) => {
+    const style = getTypeStyle(item.type);
+      <div
+        key={item.id}
+        title={item.content}
+        className={`text-xs px-1.5 py-0.5 rounded border-l-2 ${style.border} bg-mission-control-surface truncate cursor-default`}
+      >
+        <span className="truncate block leading-4">{item.content}</span>
       </div>
     );
   };
@@ -927,15 +1008,10 @@ export default function ContentScheduler() {
               </button>
             )}
           </div>
-          <button
             onClick={goToNextMonth}
-            className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
             aria-label="Next month"
-          >
             <ChevronRight size={16} />
-          </button>
         </div>
-
         <div className="flex-1 overflow-auto">
           {/* Day-of-week header */}
           <div className="grid grid-cols-7 border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
@@ -944,8 +1020,6 @@ export default function ContentScheduler() {
                 {name}
               </div>
             ))}
-          </div>
-
           {/* 6-row grid */}
           <div className="grid grid-cols-7" style={{ gridTemplateRows: 'repeat(6, minmax(80px, 1fr))' }}>
             {monthGrid.map((day, idx) => {
@@ -954,7 +1028,6 @@ export default function ContentScheduler() {
               const dayItems = itemsForDay(day);
               const visibleItems = dayItems.slice(0, 3);
               const overflowCount = dayItems.length - visibleItems.length;
-
               return (
                 <div
                   key={idx}
@@ -976,7 +1049,6 @@ export default function ContentScheduler() {
                       {day.getDate()}
                     </span>
                   </div>
-
                   {/* Event dots / chips */}
                   <div className="space-y-0.5">
                     {visibleItems.map((item) => {
@@ -1002,7 +1074,57 @@ export default function ContentScheduler() {
                         +{overflowCount} more
                       </button>
                     )}
-                  </div>
+  // ── Render: week view ─────────────────────────────────────────────────────
+  const renderWeekView = () => (
+    <div className="flex flex-col h-full">
+      {/* Week nav */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface shrink-0">
+        <button
+          onClick={goToPrevWeek}
+          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+          aria-label="Previous week"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">{weekRangeLabel}</span>
+          {!isCurrentWeek && (
+            <button
+              onClick={goToThisWeek}
+              className="text-xs px-2 py-1 bg-mission-control-border rounded hover:bg-mission-control-border/80 transition-colors"
+            >
+              This week
+            </button>
+          )}
+          onClick={goToNextWeek}
+          aria-label="Next week"
+            <polyline points="9 18 15 12 9 6" />
+      </div>
+      {/* Grid */}
+      <div className="flex-1 overflow-auto">
+        <div className="min-w-[640px]">
+          {/* Day headers */}
+          <div className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
+            <div />
+            {weekDays.map((day, i) => {
+                  key={i}
+                  className={`py-2 px-1 text-center border-l border-mission-control-border ${
+                    isToday ? 'bg-info/5 border-t-2 border-t-info' : ''
+                  }`}
+                  <div className={`text-xs font-medium ${isToday ? 'text-info' : 'text-mission-control-text-dim'}`}>
+                    {DAY_NAMES[i]}
+                  <div className="mt-0.5">
+                    {isToday ? (
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-info text-white text-xs font-semibold">
+                        {day.getDate()}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-mission-control-text">{day.getDate()}</span>
+                  {isToday && (
+                    <div className="text-xs text-info font-medium mt-0.5">Today</div>
+                  )}
                 </div>
               );
             })}
@@ -1036,7 +1158,6 @@ export default function ContentScheduler() {
                     </div>
                   );
                 })}
-              </div>
               <button
                 className="mt-3 w-full text-xs text-center py-1.5 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
                 onClick={() => {
@@ -1054,19 +1175,16 @@ export default function ContentScheduler() {
       </div>
     );
   };
-
   // ── Agenda View ───────────────────────────────────────────────────────────
   const renderAgendaView = () => {
     const now = new Date();
     const horizon = addDays(now, 30);
-
     const agendaItems = allDisplayItems
       .filter((item) => {
         const d = new Date(item.scheduledFor);
         return d >= now && d <= horizon;
       })
       .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
-
     // Group by day label
     const grouped: { label: string; date: Date; items: ScheduledItem[] }[] = [];
     for (const item of agendaItems) {
@@ -1087,19 +1205,14 @@ export default function ContentScheduler() {
         grouped.push({ label, date: d, items: [item] });
       }
     }
-
     if (grouped.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim py-16">
           <div className="w-16 h-16 rounded-2xl bg-mission-control-border/30 flex items-center justify-center mb-4">
             <List size={32} className="opacity-40" />
-          </div>
           <p className="text-base font-medium text-mission-control-text mb-1">Nothing in the next 30 days</p>
           <p className="text-sm text-center max-w-xs">Schedule something to see it here.</p>
-        </div>
       );
-    }
-
     return (
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {grouped.map(({ label, date, items: groupItems }) => {
@@ -1115,21 +1228,14 @@ export default function ContentScheduler() {
                 {groupItems.length === 0 && (
                   <span className="text-xs text-mission-control-text-dim">No events today</span>
                 )}
-              </div>
-
               {groupItems.length === 0 && isToday && (
                 <p className="text-sm text-mission-control-text-dim px-1">No events today</p>
               )}
-
               <div className="space-y-2">
                 {groupItems.map((item) => {
-                  const style = getTypeStyle(item.type);
-                  const time = new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   const Icon = getTypeIcon(item.type);
                   const isRecurring = (item.recurrence ?? 'none') !== 'none';
                   const isVirtual = item.id.includes('__virtual_');
-
-                  return (
                     <div
                       key={item.id}
                       className={`flex items-center gap-3 p-3 bg-mission-control-surface border border-mission-control-border border-l-4 ${style.border} rounded-xl`}
@@ -1138,11 +1244,8 @@ export default function ContentScheduler() {
                         <Clock size={11} />
                         <span>{time}</span>
                       </div>
-
                       <div className="p-1.5 bg-mission-control-border/30 rounded-lg shrink-0">
                         <Icon size={14} className="text-mission-control-text-dim" />
-                      </div>
-
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{item.content}</p>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -1154,8 +1257,6 @@ export default function ContentScheduler() {
                             </span>
                           )}
                         </div>
-                      </div>
-
                       {!isVirtual && (
                         <div className="flex gap-1 shrink-0">
                           <button
@@ -1165,27 +1266,39 @@ export default function ContentScheduler() {
                           >
                             <Edit2 size={13} className="text-mission-control-text-dim" />
                           </button>
-                          <button
                             onClick={() => handleCancel(item.id)}
                             className="p-1.5 hover:bg-error-subtle rounded-lg transition-colors"
                             title="Delete"
-                          >
                             <Trash2 size={13} className="text-error" />
-                          </button>
-                        </div>
                       )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           );
         })}
-      </div>
-    );
-  };
-
   // ── Empty state ───────────────────────────────────────────────────────────
+          {/* Hour rows */}
+          {HOURS.map((hour, hourIdx) => (
+              key={hour}
+              className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-mission-control-border/40"
+              <div className="py-1 pr-2 text-right text-xs text-mission-control-text-dim pt-1.5 select-none">
+                {hour === 12 ? '12pm' : hour < 12 ? `${hour}am` : `${hour - 12}pm`}
+              {weekDays.map((day, dayIdx) => {
+                const isToday    = isSameDay(day, new Date());
+                const cellItems  = weekGrid[dayIdx][hourIdx];
+                return (
+                  <div
+                    key={dayIdx}
+                    className={`border-l border-mission-control-border/40 p-0.5 min-h-[52px] ${
+                      isToday ? 'bg-info/5' : ''
+                    }`}
+                  >
+                    <div className="space-y-0.5">
+                      {cellItems.map((item) => renderWeekChip(item))}
+                  </div>
+                );
+              })}
+          ))}
+    </div>
+  );
+  // ── Render: empty state ───────────────────────────────────────────────────
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim py-16">
       <div className="w-16 h-16 rounded-2xl bg-mission-control-border/30 flex items-center justify-center mb-4">
@@ -1196,12 +1309,14 @@ export default function ContentScheduler() {
         {filter !== 'all'
           ? `No ${filter} items. Switch to "All" or add something new.`
           : 'Schedule tweets, emails, and tasks to keep things moving.'}
+          : 'Schedule posts, emails, and tasks to keep things moving.'}
       </p>
       <button
         onClick={() => setShowForm(true)}
         className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
       >
         <Plus size={16} />
+        <Plus size={15} />
         Schedule something
       </button>
     </div>
@@ -1212,6 +1327,9 @@ export default function ContentScheduler() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
+
+      {/* ── Header ── */}
+      <div className="p-4 border-b border-mission-control-border bg-mission-control-surface shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-mission-control-accent/20 rounded-xl">
@@ -1220,6 +1338,7 @@ export default function ContentScheduler() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold">Schedule Queue</h1>
+                {/* Items-this-week badge */}
                 {thisWeekItems.length > 0 && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-info-subtle text-info border border-info-border font-medium">
                     {thisWeekItems.length} this week
@@ -1234,6 +1353,8 @@ export default function ContentScheduler() {
 
           <div className="flex gap-2">
             {/* View toggle */}
+          <div className="flex gap-2 items-center">
+            {/* List / Week toggle */}
             <div className="flex rounded-lg border border-mission-control-border overflow-hidden">
               <button
                 onClick={() => setViewMode('list')}
@@ -1246,6 +1367,7 @@ export default function ContentScheduler() {
                 aria-label="List view"
               >
                 <List size={15} />
+                <List size={14} />
               </button>
               <button
                 onClick={() => setViewMode('week')}
@@ -1270,27 +1392,22 @@ export default function ContentScheduler() {
                 aria-label="Month view"
               >
                 <Grid size={15} />
-              </button>
-              <button
                 onClick={() => setViewMode('agenda')}
-                className={`p-2 transition-colors ${
                   viewMode === 'agenda'
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
                 title="Agenda view"
                 aria-label="Agenda view"
-              >
                 <Clock size={15} />
+                <LayoutGrid size={14} />
               </button>
             </div>
 
             <button
               onClick={loadSchedule}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors text-sm"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
             <button
@@ -1298,12 +1415,15 @@ export default function ContentScheduler() {
               className="flex items-center gap-2 px-3 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors"
             >
               <Plus size={15} />
+              className="flex items-center gap-1.5 px-3 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors text-sm"
+              <Plus size={14} />
               Schedule New
             </button>
           </div>
         </div>
 
         {/* Filters (only shown in list view) */}
+        {/* Filter pills — only in list view */}
         {viewMode === 'list' && (
           <div className="flex gap-2">
             {(['pending', 'sent', 'all'] as const).map((f) => (
@@ -1319,19 +1439,25 @@ export default function ContentScheduler() {
                 {f === 'pending' && `Pending (${pendingCount})`}
                 {f === 'sent' && `Sent (${sentCount})`}
                 {f === 'all' && `All (${items.length})`}
+                {f === 'sent'    && `Sent (${sentCount})`}
+                {f === 'all'     && `All (${items.length})`}
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Schedule Form */}
+      {/* ── Create / Edit form ── */}
       {showForm && (
         <div className="p-4 border-b border-mission-control-border bg-mission-control-bg shrink-0">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</h3>
             <button onClick={resetForm} className="p-1 hover:bg-mission-control-border rounded">
               <X size={16} />
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-sm">{editingId ? 'Edit Scheduled Item' : 'Schedule New Item'}</h3>
+            <button onClick={resetForm} className="p-1 hover:bg-mission-control-border rounded transition-colors">
+              <X size={14} />
             </button>
           </div>
 
@@ -1359,20 +1485,20 @@ export default function ContentScheduler() {
             {/* Type selector */}
             <div className="flex gap-2">
               {(['tweet', 'email'] as const).map((t) => {
-                const config = typeConfig[t];
-                const Icon = config.icon;
+                const Icon  = getTypeIcon(t);
+                const label = t === 'tweet' ? 'Post' : 'Email';
                 return (
                   <button
                     key={t}
                     onClick={() => setFormType(t)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
                       formType === t
                         ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
                         : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
-                    <Icon size={16} />
-                    {config.label}
+                    <Icon size={14} />
+                    {label}
                   </button>
                 );
               })}
@@ -1411,16 +1537,18 @@ export default function ContentScheduler() {
               <div className="text-xs text-mission-control-text-dim text-right">{formContent.length}/280</div>
             )}
 
-            {/* Media Upload */}
+            {/* Media */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-mission-control-text-dim">Media (optional)</span>
+                <span className="text-xs text-mission-control-text-dim">Media (optional)</span>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
                 >
                   <Paperclip size={12} />
+                  <Paperclip size={10} />
                   {mediaFile ? 'Change' : 'Attach'}
                 </button>
               </div>
@@ -1441,6 +1569,7 @@ export default function ContentScheduler() {
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.preventDefault(); }}
                   aria-label="Drag and drop zone for media files"
                   className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors ${
+                  className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors cursor-pointer ${
                     isDragging
                       ? 'border-mission-control-accent bg-mission-control-accent/10'
                       : 'border-mission-control-border hover:border-mission-control-border/60'
@@ -1457,12 +1586,19 @@ export default function ContentScheduler() {
                     ) : (
                       <div className="w-12 h-12 bg-mission-control-border rounded flex items-center justify-center">
                         {mediaFile.type === 'image' ? <ImageIcon size={20} className="text-mission-control-text-dim" /> : <Video size={20} className="text-mission-control-text-dim" />}
+                  <div className="shrink-0">
+                      <img src={mediaPreview} alt="Preview" className="w-10 h-10 object-cover rounded" />
+                      <div className="w-10 h-10 bg-mission-control-border rounded flex items-center justify-center">
+                        {mediaFile.type === 'image'
+                          ? <ImageIcon size={16} className="text-mission-control-text-dim" />
+                          : <Video     size={16} className="text-mission-control-text-dim" />}
                       </div>
                     )}
                   </div>
                   <span className="text-xs flex-1 truncate">{mediaFile.fileName}</span>
                   <button type="button" onClick={handleRemoveMedia} className="p-1 hover:bg-error-subtle rounded transition-colors" title="Remove">
                     <X size={14} className="text-error" />
+                    <X size={12} className="text-error" />
                   </button>
                 </div>
               )}
@@ -1516,6 +1652,10 @@ export default function ContentScheduler() {
 
             <div className="flex justify-end gap-2">
               <button onClick={resetForm} className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm">
+              <button
+                onClick={resetForm}
+                className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
+              >
                 Cancel
               </button>
               <button
@@ -1524,6 +1664,7 @@ export default function ContentScheduler() {
                 className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 text-sm"
               >
                 <Check size={15} />
+                <Check size={14} />
                 {editingId ? 'Update' : 'Schedule'}
               </button>
             </div>
@@ -1541,6 +1682,9 @@ export default function ContentScheduler() {
           renderAgendaView()
         ) : (
           <div className="flex-1 overflow-y-auto p-4">
+      {/* ── Content area ── */}
+      <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto p-4">
             {filteredItems.length === 0 ? (
               renderEmptyState()
             ) : (
@@ -1552,6 +1696,10 @@ export default function ContentScheduler() {
                     <>
                       {todayItems.length > 0 && (
                         <div className="mb-4">
+                  const todayItems    = filteredItems.filter((i) => isSameDay(new Date(i.scheduledFor), new Date()));
+                  const upcomingItems = filteredItems.filter((i) => !isSameDay(new Date(i.scheduledFor), new Date()));
+                      {/* Today section — highlighted */}
+                        <section className="mb-4">
                           <div className="flex items-center gap-2 mb-2 px-1">
                             <span className="text-xs font-semibold text-info uppercase tracking-wide">Today</span>
                             <span className="flex-1 h-px bg-info/20" />
@@ -1563,6 +1711,11 @@ export default function ContentScheduler() {
                       )}
                       {otherItems.length > 0 && (
                         <div className="space-y-2">
+                        </section>
+
+                      {/* Upcoming section */}
+                      {upcomingItems.length > 0 && (
+                        <section className="space-y-2">
                           {todayItems.length > 0 && (
                             <div className="flex items-center gap-2 mb-2 px-1">
                               <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide">Upcoming</span>
@@ -1571,6 +1724,8 @@ export default function ContentScheduler() {
                           )}
                           {otherItems.map((item) => renderItemCard(item))}
                         </div>
+                          {upcomingItems.map((item) => renderItemCard(item))}
+                        </section>
                       )}
                     </>
                   );
