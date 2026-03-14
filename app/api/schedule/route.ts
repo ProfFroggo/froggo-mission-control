@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const now = Date.now();
   try {
     db.prepare(
-      'INSERT INTO scheduled_items (id, type, content, scheduledFor, metadata, status, platform) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO scheduled_items (id, type, content, scheduledFor, metadata, status, platform, recurrence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(
       id,
       body.type || 'task',
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       body.scheduledFor || String(now),
       JSON.stringify(body.metadata || {}),
       'pending',
-      body.platform || null
+      body.platform || null,
+      body.recurrence || 'none'
     );
     return NextResponse.json({ success: true, id });
   } catch (e: unknown) {

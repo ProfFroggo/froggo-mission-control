@@ -840,6 +840,8 @@ function initSchema(db: Database.Database) {
     // Module health: last activity and error tracking
     `ALTER TABLE catalog_modules ADD COLUMN lastActivityAt INTEGER`,
     `ALTER TABLE catalog_modules ADD COLUMN errorCount INTEGER DEFAULT 0`,
+    // Schedule: recurrence support
+    `ALTER TABLE scheduled_items ADD COLUMN recurrence TEXT DEFAULT 'none'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
