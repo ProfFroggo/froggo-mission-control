@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   BarChart2, TrendingUp, Eye, Activity, Users, RefreshCw,
   MessageCircle, Repeat, Heart, MousePointer, Calendar, Clock, Lightbulb,
-  ArrowUp, ArrowDown, Minus, Zap, Download
+  ArrowUp, ArrowDown, Minus, Zap, Download, Sparkles, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -119,13 +119,37 @@ function exportMockPostsCSV(posts: MockPost[]) {
   URL.revokeObjectURL(url);
 }
 
-type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
+type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights' | 'predictor';
+
+// ─── Content Predictor types ──────────────────────────────────────────────────
+
+interface PredictionContentSignal {
+  label: string;
+  score: number;
+  verdict: 'good' | 'neutral' | 'improve';
+}
+
+interface PredictionResult {
+  estimatedReach: number;
+  estimatedEngagement: number;
+  engagementRate: string;
+  optimalPostTime: string;
+  confidenceScore: number;
+  improvements: string[];
+  contentSignals: PredictionContentSignal[];
+}
 
 export function XEnhancedAnalyticsView() {
   const [view, setView] = useState<AnalyticsView>('overview');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+
+  // ─── Predictor state ──────────────────────────────────────────────────────
+  const [predictorDraft, setPredictorDraft] = useState('');
+  const [predicting, setPredicting] = useState(false);
+  const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -384,6 +408,7 @@ export function XEnhancedAnalyticsView() {
             { id: 'posts', label: 'Post Metrics', icon: MessageCircle },
             { id: 'heatmap', label: 'Posting Heatmap', icon: Calendar },
             { id: 'insights', label: 'Suggestions', icon: Lightbulb },
+            { id: 'predictor', label: 'Before You Post', icon: Sparkles },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -1084,6 +1109,162 @@ export function XEnhancedAnalyticsView() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ============================================================
+            Content Performance Predictor — "Before You Post"
+        ============================================================ */}
+        {view === 'predictor' && (
+          <div className="space-y-6 max-w-2xl mx-auto">
+            <div>
+              <h3 className="font-semibold text-mission-control-text flex items-center gap-2 mb-1">
+                <Sparkles size={16} style={{ color: 'var(--color-info)' }} />
+                Before You Post
+              </h3>
+              <p className="text-sm text-mission-control-text-dim">
+                Paste a draft to get a mock performance prediction before publishing.
+              </p>
+            </div>
+
+            {/* Input */}
+            <div>
+              <textarea
+                value={predictorDraft}
+                onChange={e => { setPredictorDraft(e.target.value); setPrediction(null); setPredictionError(null); }}
+                rows={5}
+                maxLength={280}
+                placeholder="Paste your draft tweet here..."
+                className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-mission-control-text-dim">{predictorDraft.length}/280</span>
+                <button
+                  onClick={async () => {
+                    if (!predictorDraft.trim()) return;
+                    setPredicting(true);
+                    setPrediction(null);
+                    setPredictionError(null);
+                    try {
+                      const res = await fetch('/api/x/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: predictorDraft }),
+                      });
+                      if (!res.ok) throw new Error('Prediction failed');
+                      const json = await res.json();
+                      setPrediction(json.prediction as PredictionResult);
+                    } catch (e) {
+                      setPredictionError(e instanceof Error ? e.message : 'Unknown error');
+                    } finally {
+                      setPredicting(false);
+                    }
+                  }}
+                  disabled={!predictorDraft.trim() || predicting}
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50"
+                  style={{ background: 'var(--color-info)', color: '#fff' }}
+                >
+                  <Sparkles size={14} />
+                  {predicting ? 'Predicting...' : 'Predict Performance'}
+                </button>
+              </div>
+            </div>
+
+            {/* Error */}
+            {predictionError && (
+              <div
+                className="flex items-center gap-2 p-3 rounded-lg text-sm"
+                style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+              >
+                <AlertCircle size={16} />
+                {predictionError}
+              </div>
+            )}
+
+            {/* Prediction results */}
+            {prediction && (
+              <div className="space-y-4">
+                {/* Metric cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Est. Reach', value: prediction.estimatedReach.toLocaleString(), icon: Eye, color: 'var(--color-info)' },
+                    { label: 'Est. Engagements', value: prediction.estimatedEngagement.toLocaleString(), icon: Heart, color: 'var(--color-success)' },
+                    { label: 'Engagement Rate', value: prediction.engagementRate, icon: TrendingUp, color: 'var(--color-warning)' },
+                    { label: 'Confidence', value: `${prediction.confidenceScore}%`, icon: Activity, color: 'var(--color-mission-control-accent)' },
+                  ].map(({ label, value, icon: Icon, color }) => (
+                    <div
+                      key={label}
+                      className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Icon size={14} style={{ color }} />
+                        <span className="text-xs text-mission-control-text-dim">{label}</span>
+                      </div>
+                      <div className="text-xl font-bold text-mission-control-text">{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Optimal post time */}
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
+                  <Clock size={16} style={{ color: 'var(--color-info)' }} />
+                  <div>
+                    <div className="text-xs text-mission-control-text-dim">Optimal post time</div>
+                    <div className="text-sm font-semibold text-mission-control-text">{prediction.optimalPostTime}</div>
+                  </div>
+                </div>
+
+                {/* Content signals */}
+                <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+                  <div className="text-sm font-medium text-mission-control-text mb-3">Content signals</div>
+                  <div className="space-y-2">
+                    {prediction.contentSignals.map(signal => (
+                      <div key={signal.label} className="flex items-center gap-3">
+                        {signal.verdict === 'good' ? (
+                          <CheckCircle2 size={14} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                        ) : signal.verdict === 'improve' ? (
+                          <AlertCircle size={14} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+                        ) : (
+                          <Minus size={14} className="text-mission-control-text-dim flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-mission-control-text w-32">{signal.label}</span>
+                        <div className="flex-1 h-1.5 rounded-full bg-mission-control-border overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${signal.score}%`,
+                              background: signal.verdict === 'good'
+                                ? 'var(--color-success)'
+                                : signal.verdict === 'improve'
+                                ? 'var(--color-warning)'
+                                : 'var(--color-info)',
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-mission-control-text-dim w-6 text-right">{signal.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Improvements */}
+                <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+                  <div className="text-sm font-medium text-mission-control-text mb-3">Suggested improvements</div>
+                  <ul className="space-y-2">
+                    {prediction.improvements.map((tip, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
+                        <Lightbulb size={13} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: 2 }} />
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <p className="text-xs text-mission-control-text-dim italic">
+                  Predictions are mock estimates based on content heuristics — not real X API data.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

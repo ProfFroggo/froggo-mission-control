@@ -7,7 +7,7 @@ import XContentEditorPane from './XContentEditorPane';
 import XApprovalQueuePane from './XApprovalQueuePane';
 import { scheduleApi, approvalApi } from '../lib/api';
 
-export type XTab = 'pipeline' | 'publish' | 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit' | 'campaigns';
+export type XTab = 'pipeline' | 'publish' | 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit' | 'campaigns' | 'agent-mode' | 'competitors' | 'hashtags';
 
 export default function XTwitterPage() {
   const [activeTab, setActiveTab] = useState<XTab>('publish');
