@@ -85,6 +85,16 @@ function loadQuickPrefs(): Record<string, boolean> {
   return defaults;
 }
 
+// Stable module-level helper — not recreated on every render
+function formatTimeAgo(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  const days = Math.floor(diff / 86400000);
+  return days === 1 ? 'Yesterday' : `${days}d ago`;
+}
+
 export default function NotificationsPanelV2() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<NotificationStats>({ total: 0, unread: 0, urgent: 0, actionable: 0 });
@@ -144,58 +154,58 @@ export default function NotificationsPanelV2() {
     };
   }, [loadNotifications, loadPreferences]);
 
-  const handleMarkRead = async (id: string) => {
+  const handleMarkRead = useCallback(async (id: string) => {
     await notificationService.markRead(id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
+  }, []);
 
-  const handleDismiss = async (id: string) => {
+  const handleDismiss = useCallback(async (id: string) => {
     await notificationService.dismiss(id);
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  }, []);
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = useCallback(async () => {
     await notificationService.markAllRead();
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     showToast('success', 'All marked as read');
-  };
+  }, []);
 
-  const handleDismissAll = async () => {
+  const handleDismissAll = useCallback(async () => {
     // Clear local state immediately
     setNotifications([]);
     setStats(prev => ({ ...prev, total: 0, unread: 0 }));
     // Best-effort server call — ignore if route doesn't exist
     fetch('/api/notifications/dismiss-all', { method: 'POST' }).catch(() => {});
     showToast('success', 'All notifications dismissed');
-  };
+  }, []);
 
-  const handleToggleQuickPref = (key: string, value: boolean) => {
+  const handleToggleQuickPref = useCallback((key: string, value: boolean) => {
     const updated = { ...quickPrefs, [key]: value };
     setQuickPrefs(updated);
     try {
       localStorage.setItem('notif.prefs', JSON.stringify(updated));
     } catch { /* ignore */ }
-  };
+  }, [quickPrefs]);
 
-  const handleTogglePreference = async (type: string, field: keyof NotificationPreferences, value: any) => {
+  const handleTogglePreference = useCallback(async (type: string, field: keyof NotificationPreferences, value: any) => {
     try {
       await notificationService.updatePreferences(type, { [field]: value });
-      setPreferences(prev => prev.map(p => 
+      setPreferences(prev => prev.map(p =>
         p.type === type ? { ...p, [field]: value } : p
       ));
       showToast('success', 'Preferences updated');
     } catch (_e) {
       showToast('error', 'Failed to update preferences');
     }
-  };
+  }, []);
 
-  const handleNavigate = (notification: Notification) => {
+  const handleNavigate = useCallback((notification: Notification) => {
     if (notification.action_url) {
       // Emit navigation event
       window.dispatchEvent(new CustomEvent('navigate', { detail: notification.action_url }));
       handleMarkRead(notification.id);
     }
-  };
+  }, [handleMarkRead]);
 
   const filteredNotifications = useMemo(() => notifications.filter(n => {
     if (filter === 'unread') return !n.read;
@@ -205,15 +215,6 @@ export default function NotificationsPanelV2() {
   }), [notifications, filter]);
 
   const groupedNotifications = useMemo(() => groupByDate(filteredNotifications), [filteredNotifications]);
-
-  const formatTimeAgo = (timestamp: number) => {
-    const diff = Date.now() - timestamp;
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    const days = Math.floor(diff / 86400000);
-    return days === 1 ? 'Yesterday' : `${days}d ago`;
-  };
 
   if (showSettings) {
     return (
