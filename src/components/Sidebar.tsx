@@ -234,6 +234,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             .map(({ id, icon: Icon, label, shortcut }: any) => {
             const isActive = currentView === id;
             let badge = 0;
+            if (id === 'inbox') badge = inboxCount;
             if (id === 'approvals') badge = inboxCount;
             if (id === 'notifications') badge = inboxCount;
             if (id === 'kanban') badge = activeTasks;
