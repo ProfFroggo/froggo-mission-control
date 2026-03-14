@@ -13,7 +13,9 @@ import {
   Bot,
   Workflow,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
+import AgentAvatar from './AgentAvatar';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -227,6 +229,59 @@ function StepCreateTask({ onNext }: { onNext: () => void }) {
 }
 
 // ─────────────────────────────────────────────
+// Step 2.5 — Meet your first agent (Clara)
+// ─────────────────────────────────────────────
+function StepMeetClara({ onNext }: { onNext: () => void }) {
+  const highlights = [
+    'Reviews and approves tasks before agents start work',
+    'Monitors task progress and catches blockers early',
+    'Coordinates between your team of specialized agents',
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h2 className="text-xl font-semibold text-mission-control-text">Meet Clara, your chief of staff</h2>
+        <p className="text-sm text-mission-control-text-dim">
+          Clara is your core agent — she orchestrates everything.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4 p-4 rounded-xl bg-mission-control-bg border border-mission-control-border">
+        <AgentAvatar agentId="clara" size="xl" ring />
+        <div>
+          <p className="font-semibold">Clara</p>
+          <p className="text-xs text-mission-control-text-dim mt-0.5">Chief of Staff · Core Agent</p>
+          <div className="flex items-center gap-1 mt-1.5">
+            <Sparkles size={11} className="text-mission-control-accent" />
+            <span className="text-[11px] text-mission-control-accent">Always active</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {highlights.map((text, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-mission-control-accent/10 flex items-center justify-center mt-0.5">
+              <Check size={11} className="text-mission-control-accent" />
+            </div>
+            <p className="text-sm text-mission-control-text-dim">{text}</p>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onNext}
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+      >
+        Continue
+        <ArrowRight size={16} />
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Step 3 — Explore the platform
 // ─────────────────────────────────────────────
 const PANELS = [
@@ -283,11 +338,18 @@ function StepExplore({
 // ─────────────────────────────────────────────
 export default function OnboardingFlow({ onComplete, onNavigate }: OnboardingFlowProps) {
   const [step, setStep] = useState(0);
-  const TOTAL_STEPS = 3;
+  const [transitioning, setTransitioning] = useState(false);
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const TOTAL_STEPS = 4; // 0: Welcome, 1: CreateTask, 2: MeetClara, 3: Explore
 
   const advance = useCallback(() => {
-    setStep(s => Math.min(s + 1, TOTAL_STEPS - 1));
-  }, []);
+    setDirection('forward');
+    setTransitioning(true);
+    setTimeout(() => {
+      setStep(s => Math.min(s + 1, TOTAL_STEPS - 1));
+      setTransitioning(false);
+    }, 180);
+  }, [TOTAL_STEPS]);
 
   const handleComplete = useCallback(() => {
     try {
@@ -298,37 +360,46 @@ export default function OnboardingFlow({ onComplete, onNavigate }: OnboardingFlo
     onComplete();
   }, [onComplete]);
 
+  const transitionClass = transitioning
+    ? direction === 'forward'
+      ? 'opacity-0 translate-x-3'
+      : 'opacity-0 -translate-x-3'
+    : 'opacity-100 translate-x-0';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Onboarding">
       <div
         className="relative w-full max-w-md mx-4 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl p-6 space-y-6"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header row: step dots + close */}
+        {/* Header row: step dots + skip */}
         <div className="flex items-center justify-between">
           <StepDots total={TOTAL_STEPS} current={step} />
           <button
             onClick={handleComplete}
-            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
-            aria-label="Close onboarding"
+            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg hover:bg-mission-control-border"
+            aria-label="Skip tour"
           >
-            <X size={16} />
+            Skip tour
           </button>
         </div>
 
-        {/* Step content */}
-        {step === 0 && <StepWelcome onNext={advance} />}
-        {step === 1 && <StepCreateTask onNext={advance} />}
-        {step === 2 && (
-          <StepExplore
-            onReady={handleComplete}
-            onNavigate={(view) => {
-              onNavigate?.(view);
-              // Small delay so the panel is visible before closing modal
-              setTimeout(handleComplete, 150);
-            }}
-          />
-        )}
+        {/* Step content — animated */}
+        <div className={`transition-all duration-150 ease-in-out ${transitionClass}`}>
+          {step === 0 && <StepWelcome onNext={advance} />}
+          {step === 1 && <StepCreateTask onNext={advance} />}
+          {step === 2 && <StepMeetClara onNext={advance} />}
+          {step === 3 && (
+            <StepExplore
+              onReady={handleComplete}
+              onNavigate={(view) => {
+                onNavigate?.(view);
+                // Small delay so the panel is visible before closing modal
+                setTimeout(handleComplete, 150);
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
