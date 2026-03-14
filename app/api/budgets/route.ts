@@ -28,17 +28,14 @@ function periodStartMs(period: Period): number {
   const now = new Date();
   switch (period) {
     case 'daily': {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      return d.getTime();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     }
     case 'weekly': {
-      const day = now.getDay(); // 0=Sunday
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
-      return d.getTime();
+      const day = now.getDay();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).getTime();
     }
     case 'monthly': {
-      const d = new Date(now.getFullYear(), now.getMonth(), 1);
-      return d.getTime();
+      return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     }
   }
 }
@@ -49,11 +46,11 @@ export function calculatePeriodSpend(
 ): number {
   const since = periodStartMs(budget.period as Period);
   const agentFilter = budget.agentId ? 'AND agentId = ?' : '';
-  const args = budget.agentId ? [since, budget.agentId] : [since];
+  const args: unknown[] = budget.agentId ? [since, budget.agentId] : [since];
 
   const row = db.prepare(
     `SELECT COALESCE(SUM(costUsd), 0) AS spend FROM token_usage WHERE timestamp >= ? ${agentFilter}`
-  ).get(...args) as { spend: number };
+  ).get(...(args as Parameters<typeof db.prepare>['arguments'])) as { spend: number };
 
   return row?.spend ?? 0;
 }

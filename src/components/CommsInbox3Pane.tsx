@@ -20,8 +20,7 @@ import {
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
   Activity as ActivityIcon, FileText, Code,
   CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
-  Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
-  AtSign, ChevronUp, Trash2
+  Clock, Tag, CheckSquare, Square, AtSign, ChevronUp, Trash2
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '../lib/gateway';
@@ -176,77 +175,16 @@ function buildAccountsFallback(): Account[] {
 }
 
 const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'All', icon: <Inbox size={16} />, filter: () => true },
+  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: () => true },
   { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
+  { id: 'unreplied', label: 'Unreplied', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
   { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
-  { id: 'unreplied', label: 'Needs Reply', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
-  { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} />, filter: (m) => {
-    const kw = ['@you', '@me', 'mentioned you', 'tagged you'];
-    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
-  }},
   { id: 'urgent', label: 'Urgent', icon: <AlertTriangle size={16} />, filter: (m) => {
     const kw = ['urgent', 'asap', 'important', 'emergency', 'critical'];
     return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
   }},
   { id: 'archived', label: 'Archived', icon: <Archive size={16} />, filter: () => false }, // loaded separately
 ];
-
-// ─── Quick Reply Templates ─────────────────────────────────────────────────────
-
-const DEFAULT_TEMPLATES = [
-  "Thanks, I'll look into this.",
-  "On it — will update you shortly.",
-  "Approved. Please proceed.",
-  "This needs more context. Can you clarify?",
-  "Flagged for human review.",
-];
-
-function loadTemplates(): string[] {
-  try {
-    const raw = localStorage.getItem('inbox.reply-templates');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch { /* ignore */ }
-  return DEFAULT_TEMPLATES;
-}
-
-function saveTemplates(templates: string[]) {
-  try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch { /* ignore */ }
-}
-
-// ─── localStorage helpers for item state ──────────────────────────────────────
-
-function loadItemState(key: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(`inbox.${key}`);
-    if (raw) return new Set(JSON.parse(raw));
-  } catch { /* ignore */ }
-  return new Set();
-}
-
-function saveItemState(key: string, set: Set<string>) {
-  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
-}
-
-function loadSnoozeMap(): Record<string, number> {
-  try {
-    const raw = localStorage.getItem('inbox.snoozed');
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return {};
-}
-
-function saveSnoozeMap(map: Record<string, number>) {
-  try { localStorage.setItem('inbox.snoozed', JSON.stringify(map)); } catch { /* ignore */ }
-}
-
-// ─── Filter pill types ────────────────────────────────────────────────────────
-
-type SenderTypeFilter = 'all' | 'agent' | 'human' | 'system';
-type ChannelFilter = 'all' | 'discord' | 'telegram' | 'email' | 'chat';
-type TimeFilter = 'all' | 'today' | 'week';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -553,7 +491,6 @@ function CenterPane({
   onToggleStar,
   onArchive,
   onToggleRead,
-  onSnooze,
   loading,
   searchQuery,
   onSearchChange,
@@ -566,10 +503,6 @@ function CenterPane({
   onLoadAll,
   aiAnalyses,
   onMarkAllRead,
-  snoozedIds,
-  onBulkArchive,
-  onBulkMarkRead,
-  onBulkDelete,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
@@ -577,7 +510,6 @@ function CenterPane({
   onToggleStar: (id: string) => void;
   onArchive: (c: ConversationItem) => void;
   onToggleRead: (c: ConversationItem) => void;
-  onSnooze: (id: string, until: number) => void;
   loading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -590,10 +522,6 @@ function CenterPane({
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
   onMarkAllRead?: () => void;
-  snoozedIds: Set<string>;
-  onBulkArchive: (ids: string[]) => void;
-  onBulkMarkRead: (ids: string[]) => void;
-  onBulkDelete: (ids: string[]) => void;
 }) {
   // Platform-specific empty states
   const emptyState = () => {
@@ -2284,11 +2212,6 @@ export default function CommsInbox3Pane() {
             onLoadAll={handleLoadAll}
             aiAnalyses={aiAnalyses}
             onMarkAllRead={handleMarkAllRead}
-            onSnooze={() => {}}
-            snoozedIds={new Set()}
-            onBulkArchive={() => {}}
-            onBulkMarkRead={() => {}}
-            onBulkDelete={() => {}}
           />
           <RightPane
             conversation={selectedConversation}

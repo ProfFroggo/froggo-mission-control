@@ -182,7 +182,7 @@ function AddWidgetModal({
                   {widgets.map(widget => (
                     <div
                       key={widget.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-mission-control-bg/50 border border-mission-control-border hover:border-mission-control-accent/40 transition-all group"
+                      className="flex items-center justify-between p-3 rounded-xl bg-mission-control-bg/50 border border-mission-control-border hover:border-mission-control-accent/40 transition-all"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-mission-control-text">{widget.title}</p>
@@ -1575,8 +1575,8 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     };
   }, []);
 
-  // Analytics data (sparkline, velocity, agent productivity) driven by refreshKey
-  const { sparkline, agentProductivity, velocity, loading: analyticsLoading } =
+  // Analytics data (velocity, agent productivity) driven by refreshKey
+  const { agentProductivity, velocity, loading: analyticsLoading } =
     useAnalyticsData(refreshKey);
 
   // Load data on mount
@@ -1602,17 +1602,14 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     const reviewTasks = tasks.filter(t => t.status === 'review');
     const internalReviewTasks = tasks.filter(t => t.status === 'internal-review');
     const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
-    const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
     const doneTodayCount = tasks.filter(t => {
       if (t.status !== 'done') return false;
       const ts = t.completedAt ?? t.updatedAt;
       const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
       return tsNum >= todayTs;
     }).length;
-    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, realAgents, doneTodayCount };
-  }, [tasks, agents]);
-
-  const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
+    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, doneTodayCount };
+  }, [tasks]);
 
   // Pre-sliced activities list — avoids re-slicing on every render
   const recentActivities = useMemo(() => activities.slice(0, 10), [activities]);
@@ -1629,62 +1626,219 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   // Agent detail modal — opened when an agent name is clicked in the activity feed
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
+  // Dashboard customization state
+  const [editMode, setEditMode] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
+  const [dropSlotId, setDropSlotId] = useState<string | null>(null);
+
+  const { layout, addWidget, removeWidget, resizeWidget, reorderWidgets } = useDashboardStore();
+
+  const sortedSlots = useMemo(
+    () => [...layout.widgets].filter(w => w.visible).sort((a, b) => a.position - b.position),
+    [layout.widgets],
+  );
+
+  const existingWidgetIds = useMemo(
+    () => new Set(layout.widgets.map(w => w.widgetId)),
+    [layout.widgets],
+  );
+
+  // Drag reorder handlers
+  const handleDragStart = useCallback((slotId: string) => {
+    setDragSlotId(slotId);
+    setDropSlotId(slotId);
+  }, []);
+
+  const handleDragEnter = useCallback((slotId: string) => {
+    if (dragSlotId && slotId !== dragSlotId) {
+      setDropSlotId(slotId);
+    }
+  }, [dragSlotId]);
+
+  const handleDragEnd = useCallback(() => {
+    if (dragSlotId && dropSlotId && dragSlotId !== dropSlotId) {
+      const fromIndex = sortedSlots.findIndex(s => s.id === dragSlotId);
+      const toIndex = sortedSlots.findIndex(s => s.id === dropSlotId);
+      if (fromIndex !== -1 && toIndex !== -1) {
+        reorderWidgets(fromIndex, toIndex);
+      }
+    }
+    setDragSlotId(null);
+    setDropSlotId(null);
+  }, [dragSlotId, dropSlotId, sortedSlots, reorderWidgets]);
+
+  // Mouseup on window ends drag even if cursor leaves a card
+  const handleWindowMouseUp = useCallback(() => {
+    if (dragSlotId) handleDragEnd();
+  }, [dragSlotId, handleDragEnd]);
+
+  useEffect(() => {
+    window.addEventListener('mouseup', handleWindowMouseUp);
+    return () => window.removeEventListener('mouseup', handleWindowMouseUp);
+  }, [handleWindowMouseUp]);
+
+  // Render widget content by widgetId
+  const renderWidgetContent = useCallback((slot: DashboardWidgetSlot) => {
+    switch (slot.widgetId) {
+      case 'task-stats':
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border">
+            <StatCard label="Active Tasks" value={derived.inProgressTasks.length} icon={Activity}
+              color={derived.inProgressTasks.length > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
+              agents={inProgressAgents} sub={derived.doneTodayCount > 0 ? `${derived.doneTodayCount} done today` : undefined}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Awaiting Review" value={derived.reviewTasks.length} icon={Eye}
+              color={derived.reviewTasks.length > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Pre-Review Queue" value={derived.internalReviewTasks.length} icon={UserCheck}
+              color={derived.internalReviewTasks.length > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
+              onClick={() => onNavigate?.('kanban')} />
+            <StatCard label="Human Attention" value={derived.humanReviewTasks.length} icon={AlertTriangle}
+              color={derived.humanReviewTasks.length > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
+              highlight={derived.humanReviewTasks.length > 0} pulse={derived.humanReviewTasks.length > 0}
+              onClick={() => onNavigate?.('kanban')} />
+          </div>
+        );
+      case 'agent-activity':
+      case 'recent-activity':
+        return (
+          <ActivityFeed
+            inProgressTasks={derived.inProgressTasks}
+            agentMap={agentMap}
+            activities={recentActivities}
+            allTasks={tasks}
+            onNavigate={onNavigate}
+            onAgentClick={setSelectedAgentId}
+          />
+        );
+      case 'approval-queue':
+        return (
+          <ApprovalsQueue
+            approvals={approvals}
+            onApprove={approveItem}
+            onReject={rejectItem}
+            onNavigate={onNavigate}
+          />
+        );
+      case 'token-usage':
+      case 'system-health':
+        return <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />;
+      case 'kanban-mini':
+        return <TaskThroughputChart tasks={tasks} />;
+      case 'schedule-upcoming':
+        return <TodaySchedule onNavigate={onNavigate} />;
+      case 'inbox-count':
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <Inbox size={24} className="text-mission-control-text-dim" />
+            <button
+              onClick={() => onNavigate?.('inbox')}
+              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
+            >
+              Open Inbox
+            </button>
+          </div>
+        );
+      case 'campaign-status':
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <BarChart2 size={24} className="text-mission-control-text-dim" />
+            <button
+              onClick={() => onNavigate?.('analytics')}
+              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
+            >
+              View Campaigns
+            </button>
+          </div>
+        );
+      case 'velocity':
+        return <VelocityMetric velocity={velocity} loading={analyticsLoading} />;
+      case 'agent-productivity':
+        return (
+          <AgentProductivitySummary
+            agentProductivity={agentProductivity}
+            agentMap={agentMap}
+            loading={analyticsLoading}
+          />
+        );
+      default: {
+        const def = getWidgetDefinition(slot.widgetId);
+        return (
+          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[100px] gap-2">
+            <LayoutGrid size={24} className="text-mission-control-text-dim" />
+            <p className="text-xs text-mission-control-text-dim">{def?.title ?? slot.widgetId}</p>
+          </div>
+        );
+      }
+    }
+  }, [
+    derived, inProgressAgents, agentMap, recentActivities, tasks, approvals,
+    gatewaySessions, connected, velocity, analyticsLoading, agentProductivity,
+    approveItem, rejectItem, onNavigate,
+  ]);
+
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
-      <HeaderBar connected={connected} onRefresh={handleRefresh} refreshing={refreshing} />
-
-      {/* Command Centre Stat Strip */}
-      <StatStrip
-        inProgressCount={derived.inProgressTasks.length}
-        reviewCount={derived.reviewTasks.length}
-        internalReviewCount={derived.internalReviewTasks.length}
-        humanReviewCount={derived.humanReviewTasks.length}
-        doneTodayCount={derived.doneTodayCount}
-        inProgressAgents={inProgressAgents}
-        onNavigate={onNavigate}
+      <HeaderBar
+        connected={connected}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        editMode={editMode}
+        onToggleEdit={() => setEditMode(e => !e)}
       />
 
-      {/* Quick Actions */}
+      {/* Quick Actions (always visible) */}
       <QuickActionsRow onNavigate={onNavigate} />
 
-      {/* Analytics row: Sparkline + Velocity + Agent Productivity */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-4">
-        <TaskCompletionSparkline sparkline={sparkline} loading={analyticsLoading} />
-        <VelocityMetric velocity={velocity} loading={analyticsLoading} />
-        <AgentProductivitySummary
-          agentProductivity={agentProductivity}
-          agentMap={agentMap}
-          loading={analyticsLoading}
-        />
+      {/* Customizable widget grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 px-4 sm:px-6 pb-6">
+        {sortedSlots.map(slot => (
+          <WidgetCard
+            key={slot.id}
+            slot={slot}
+            editMode={editMode}
+            isDragging={dragSlotId === slot.id}
+            isDropTarget={dropSlotId === slot.id && dragSlotId !== null && dragSlotId !== slot.id}
+            onDragStart={handleDragStart}
+            onDragEnter={handleDragEnter}
+            onDragEnd={handleDragEnd}
+            onRemove={removeWidget}
+            onResize={resizeWidget}
+          >
+            {renderWidgetContent(slot)}
+          </WidgetCard>
+        ))}
+
+        {/* Add widget button — visible in edit mode */}
+        {editMode && (
+          <div className="col-span-1 sm:col-span-4 flex justify-center pt-2 pb-4">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-mission-control-surface border border-dashed border-mission-control-accent/40 text-mission-control-accent text-sm font-medium hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-all"
+            >
+              <Plus size={16} />
+              Add Widget
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Main content: Approvals + Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-4">
-        <ApprovalsQueue
-          approvals={approvals}
-          onApprove={approveItem}
-          onReject={rejectItem}
-          onNavigate={onNavigate}
+      {/* Add widget modal */}
+      {showAddModal && (
+        <AddWidgetModal
+          existingWidgetIds={existingWidgetIds}
+          onAdd={(widgetId) => {
+            const def = getWidgetDefinition(widgetId);
+            addWidget(widgetId, def?.defaultSize ?? 'md');
+            setShowAddModal(false);
+          }}
+          onClose={() => setShowAddModal(false)}
         />
-        <ActivityFeed
-          inProgressTasks={derived.inProgressTasks}
-          agentMap={agentMap}
-          activities={recentActivities}
-          allTasks={tasks}
-          onNavigate={onNavigate}
-          onAgentClick={setSelectedAgentId}
-        />
-      </div>
+      )}
 
-      {/* Bottom row: Schedule + System Health + Task Throughput */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-6">
-        <TodaySchedule onNavigate={onNavigate} />
-        <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />
-        <TaskThroughputChart tasks={tasks} />
-      </div>
-
-      {/* Agent detail modal — opened by clicking agent names in activity feed */}
+      {/* Agent detail modal */}
       {selectedAgentId && (
         <AgentDetailModal
           agentId={selectedAgentId}

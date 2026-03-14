@@ -1,6 +1,27 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video, CalendarClock, LayoutGrid, List } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Mail,
+  Plus,
+  Trash2,
+  Edit2,
+  Play,
+  RefreshCw,
+  X,
+  Check,
+  Paperclip,
+  Image as ImageIcon,
+  Video,
+  CalendarClock,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  Repeat,
+  Grid,
+} from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -14,7 +35,8 @@ import { scheduleApi } from '../lib/api';
 
 type ScheduledItemType = 'tweet' | 'post' | 'email' | 'message' | 'task' | 'meeting' | 'event' | 'idea';
 type ScheduledItemStatus = 'pending' | 'sent' | 'cancelled' | 'failed';
-type ViewMode = 'list' | 'week';
+type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+type ViewMode = 'list' | 'week' | 'month' | 'agenda';
 
 interface ScheduledItem {
   id: string;
@@ -25,6 +47,7 @@ interface ScheduledItem {
   createdAt: string;
   sentAt?: string;
   error?: string;
+  recurrence?: RecurrenceType;
   metadata?: {
     replyTo?: string;
     recipient?: string;
@@ -39,7 +62,6 @@ interface ScheduledItem {
 type AnyIcon = React.ComponentType<any>;
 
 // ─── Color coding per type ──────────────────────────────────────────────────
-// Left border color class and badge bg/text
 const typeStyles: Record<string, { border: string; badge: string; label: string }> = {
   post:    { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
   tweet:   { border: 'border-info',    badge: 'bg-info-subtle text-info',       label: 'Post' },
@@ -68,14 +90,17 @@ function getTypeIcon(type: string): AnyIcon {
 }
 
 // ─── Date arithmetic helpers ──────────────────────────────────────────────
-/** Returns Monday of the ISO week containing `date`. */
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0 = Sun
-  const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+function getMonthStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
 function addDays(date: Date, n: number): Date {
@@ -84,10 +109,18 @@ function addDays(date: Date, n: number): Date {
   return d;
 }
 
+function addMonths(date: Date, n: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + n, 1);
+}
+
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
+}
+
+function isSameMonth(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
 function isInWeek(date: Date, weekStart: Date): boolean {
@@ -95,7 +128,47 @@ function isInWeek(date: Date, weekStart: Date): boolean {
   return date >= weekStart && date < weekEnd;
 }
 
+// Last Friday of a month
+function getLastFridayOfMonth(year: number, month: number): Date {
+  const lastDay = new Date(year, month + 1, 0);
+  const dayOfWeek = lastDay.getDay(); // 0=Sun, 5=Fri
+  const offset = dayOfWeek >= 5 ? dayOfWeek - 5 : dayOfWeek + 2;
+  return new Date(year, month, lastDay.getDate() - offset);
+}
+
+// ─── Recurrence expansion ─────────────────────────────────────────────────
+/** Generate virtual occurrences of a recurring item up to 90 days from now. */
+function expandRecurring(item: ScheduledItem): ScheduledItem[] {
+  const rec = item.recurrence ?? 'none';
+  if (rec === 'none') return [item];
+
+  const results: ScheduledItem[] = [item];
+  const origin = new Date(item.scheduledFor);
+  const horizon = addDays(new Date(), 90);
+  let cursor = new Date(origin);
+
+  for (let i = 0; i < 365; i++) {
+    if (rec === 'daily') {
+      cursor = addDays(cursor, 1);
+    } else if (rec === 'weekly') {
+      cursor = addDays(cursor, 7);
+    } else if (rec === 'monthly') {
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, origin.getDate());
+    }
+    if (cursor > horizon) break;
+    results.push({
+      ...item,
+      id: `${item.id}__virtual_${i}`,
+      scheduledFor: cursor.toISOString(),
+    });
+  }
+  return results;
+}
+
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const FULL_DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8–19
 
 const typeConfig: Record<string, { icon: AnyIcon; color: string; label: string }> = {
@@ -105,6 +178,83 @@ const typeConfig: Record<string, { icon: AnyIcon; color: string; label: string }
   message: { icon: Mail,     color: 'text-review bg-review-subtle',                         label: 'Message' },
 };
 
+// ─── Schedule Templates ───────────────────────────────────────────────────
+interface ScheduleTemplate {
+  label: string;
+  type: 'tweet' | 'email';
+  content: string;
+  hour: number;
+  minute: number;
+  recurrence: RecurrenceType;
+  /** day of week for weekly (0=Mon…6=Sun) */
+  weekday?: number;
+}
+
+const SCHEDULE_TEMPLATES: ScheduleTemplate[] = [
+  {
+    label: 'Daily standup',
+    type: 'tweet',
+    content: 'Daily standup — team sync',
+    hour: 9,
+    minute: 0,
+    recurrence: 'daily',
+  },
+  {
+    label: 'Weekly planning',
+    type: 'tweet',
+    content: 'Weekly planning session',
+    hour: 10,
+    minute: 0,
+    recurrence: 'weekly',
+    weekday: 0, // Monday
+  },
+  {
+    label: 'Content review',
+    type: 'tweet',
+    content: 'Weekly content review',
+    hour: 14,
+    minute: 0,
+    recurrence: 'weekly',
+    weekday: 4, // Friday
+  },
+  {
+    label: 'Monthly retrospective',
+    type: 'tweet',
+    content: 'Monthly retrospective — last Friday',
+    hour: 14,
+    minute: 0,
+    recurrence: 'monthly',
+  },
+];
+
+function getNextOccurrence(template: ScheduleTemplate): { date: string; time: string } {
+  const now = new Date();
+  let target = new Date(now);
+  target.setHours(template.hour, template.minute, 0, 0);
+
+  if (template.recurrence === 'weekly' && template.weekday !== undefined) {
+    // Find next occurrence of the target weekday (Mon=0)
+    const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    let diff = template.weekday - todayIdx;
+    if (diff < 0 || (diff === 0 && target <= now)) diff += 7;
+    target = addDays(new Date(now), diff);
+    target.setHours(template.hour, template.minute, 0, 0);
+  } else if (template.recurrence === 'monthly') {
+    // Last Friday of current or next month
+    const lf = getLastFridayOfMonth(now.getFullYear(), now.getMonth());
+    lf.setHours(template.hour, template.minute, 0, 0);
+    target = lf <= now ? getLastFridayOfMonth(now.getFullYear(), now.getMonth() + 1) : lf;
+    target.setHours(template.hour, template.minute, 0, 0);
+  } else if (template.recurrence === 'daily') {
+    if (target <= now) target = addDays(target, 1);
+  }
+
+  return {
+    date: target.toISOString().split('T')[0],
+    time: `${String(template.hour).padStart(2, '0')}:${String(template.minute).padStart(2, '0')}`,
+  };
+}
+
 export default function ContentScheduler() {
   const [items, setItems] = useState<ScheduledItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -112,12 +262,25 @@ export default function ContentScheduler() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent'>('pending');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  // Week view state
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
 
-  // Reschedule popover state: keyed by item id
+  // Month view state
+  const [monthStart, setMonthStart] = useState<Date>(() => getMonthStart(new Date()));
+  // Day overflow popover
+  const [overflowDay, setOverflowDay] = useState<Date | null>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  // Reschedule popover state
   const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   const [rescheduleValue, setRescheduleValue] = useState<string>('');
   const rescheduleRef = useRef<HTMLDivElement>(null);
+
+  // Drag-and-drop state
+  const dragItemIdRef = useRef<string | null>(null);
+  const dragOffsetMinRef = useRef<number>(0);
+  const [dropTarget, setDropTarget] = useState<{ dayIdx: number; hourIdx: number } | null>(null);
 
   // Form state
   const [formType, setFormType] = useState<'tweet' | 'email'>('tweet');
@@ -126,6 +289,7 @@ export default function ContentScheduler() {
   const [formTime, setFormTime] = useState('');
   const [formRecipient, setFormRecipient] = useState('');
   const [formSubject, setFormSubject] = useState('');
+  const [formRecurrence, setFormRecurrence] = useState<RecurrenceType>('none');
 
   // Media upload state
   const [mediaFile, setMediaFile] = useState<{ path: string; fileName: string; size: number; type: string } | null>(null);
@@ -166,13 +330,28 @@ export default function ContentScheduler() {
     return () => document.removeEventListener('mousedown', handler);
   }, [rescheduleId]);
 
+  // Close overflow popover on outside click
+  useEffect(() => {
+    if (!overflowDay) return;
+    const handler = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowDay(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [overflowDay]);
+
   // ── Derived values ───────────────────────────────────────────────────────
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const currentWeekStart = getWeekStart(today);
 
-  const thisWeekItems = items.filter((item) => {
+  // Expand recurring items for display
+  const allDisplayItems: ScheduledItem[] = items.flatMap(expandRecurring);
+
+  const thisWeekItems = allDisplayItems.filter((item) => {
     const d = new Date(item.scheduledFor);
     return isInWeek(d, currentWeekStart) && item.status === 'pending';
   });
@@ -231,6 +410,18 @@ export default function ContentScheduler() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  // ── Template pre-fill ─────────────────────────────────────────────────────
+  const applyTemplate = (tpl: ScheduleTemplate) => {
+    const { date, time } = getNextOccurrence(tpl);
+    setFormType(tpl.type);
+    setFormContent(tpl.content);
+    setFormDate(date);
+    setFormTime(time);
+    setFormRecurrence(tpl.recurrence);
+    setFormRecipient('');
+    setFormSubject('');
+  };
+
   // ── CRUD ─────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!formContent.trim() || !formDate || !formTime) {
@@ -243,6 +434,7 @@ export default function ContentScheduler() {
         type: formType,
         content: formContent,
         scheduledFor,
+        recurrence: formRecurrence,
         metadata: {
           ...(formType === 'email' ? { recipient: formRecipient, subject: formSubject } : {}),
           ...(mediaFile ? { mediaPath: mediaFile.path, mediaFileName: mediaFile.fileName, mediaType: mediaFile.type, mediaSize: mediaFile.size } : {}),
@@ -282,12 +474,15 @@ export default function ContentScheduler() {
   };
 
   const handleEdit = (item: ScheduledItem) => {
+    // Don't edit virtual recurrence instances
+    if (item.id.includes('__virtual_')) return;
     setEditingId(item.id);
     setFormType(item.type === 'email' ? 'email' : 'tweet');
     setFormContent(item.content);
     const date = new Date(item.scheduledFor);
     setFormDate(date.toISOString().split('T')[0]);
     setFormTime(date.toTimeString().slice(0, 5));
+    setFormRecurrence((item.recurrence as RecurrenceType) ?? 'none');
     if (item.metadata) {
       setFormRecipient(item.metadata.recipient || '');
       setFormSubject(item.metadata.subject || '');
@@ -297,8 +492,8 @@ export default function ContentScheduler() {
 
   // ── Reschedule ────────────────────────────────────────────────────────────
   const openReschedule = (item: ScheduledItem) => {
+    if (item.id.includes('__virtual_')) return;
     const d = new Date(item.scheduledFor);
-    // Format as YYYY-MM-DDTHH:mm for datetime-local
     const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     setRescheduleValue(local);
     setRescheduleId(item.id);
@@ -330,6 +525,7 @@ export default function ContentScheduler() {
     setFormTime('');
     setFormRecipient('');
     setFormSubject('');
+    setFormRecurrence('none');
     handleRemoveMedia();
     setUploadError(null);
   };
@@ -357,21 +553,92 @@ export default function ContentScheduler() {
     return `${fmt(weekStart)} – ${fmt(end)}`;
   })();
 
-  // Items bucketed into week grid cells: [dayIndex][hour] = ScheduledItem[]
   const weekGrid: ScheduledItem[][][] = Array.from({ length: 7 }, () =>
     Array.from({ length: HOURS.length }, () => [])
   );
-  for (const item of items) {
+  for (const item of allDisplayItems) {
     const d = new Date(item.scheduledFor);
     if (!isInWeek(d, weekStart)) continue;
-    const dayOfWeek = d.getDay(); // 0=Sun
-    const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0 … Sun=6
+    const dayOfWeek = d.getDay();
+    const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const hour = d.getHours();
-    const hourIdx = hour - 8; // 8am = index 0
+    const hourIdx = hour - 8;
     if (hourIdx >= 0 && hourIdx < HOURS.length) {
       weekGrid[dayIdx][hourIdx].push(item);
     }
   }
+
+  // ── Month view navigation ─────────────────────────────────────────────────
+  const goToPrevMonth = () => setMonthStart((d) => addMonths(d, -1));
+  const goToNextMonth = () => setMonthStart((d) => addMonths(d, 1));
+  const goToThisMonth = () => setMonthStart(getMonthStart(new Date()));
+
+  const monthLabel = `${MONTH_NAMES[monthStart.getMonth()]} ${monthStart.getFullYear()}`;
+
+  // Build month grid: 6 rows x 7 cols (Mon-Sun)
+  const buildMonthGrid = (): Date[] => {
+    const firstDay = monthStart;
+    const dayOfWeek = firstDay.getDay(); // 0=Sun
+    const startOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0
+    const gridStart = addDays(firstDay, -startOffset);
+    return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+  };
+
+  const monthGrid = buildMonthGrid();
+
+  const itemsForDay = (day: Date): ScheduledItem[] =>
+    allDisplayItems.filter((item) => isSameDay(new Date(item.scheduledFor), day));
+
+  // ── Drag-and-drop handlers ────────────────────────────────────────────────
+  const handleDragStart = (e: React.DragEvent, item: ScheduledItem) => {
+    // Don't drag virtual recurrence instances
+    if (item.id.includes('__virtual_')) {
+      e.preventDefault();
+      return;
+    }
+    dragItemIdRef.current = item.id;
+    // Calculate offset: how many minutes into the hour the item starts
+    const d = new Date(item.scheduledFor);
+    dragOffsetMinRef.current = d.getMinutes();
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleSlotDragOver = (e: React.DragEvent, dayIdx: number, hourIdx: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTarget({ dayIdx, hourIdx });
+  };
+
+  const handleSlotDragLeave = () => {
+    setDropTarget(null);
+  };
+
+  const handleSlotDrop = async (e: React.DragEvent, dayIdx: number, hourIdx: number) => {
+    e.preventDefault();
+    setDropTarget(null);
+    const itemId = dragItemIdRef.current;
+    if (!itemId) return;
+    dragItemIdRef.current = null;
+
+    // Reconstruct target date from weekStart + dayIdx + hourIdx
+    const targetDay = addDays(weekStart, dayIdx);
+    const targetHour = HOURS[hourIdx];
+    targetDay.setHours(targetHour, dragOffsetMinRef.current, 0, 0);
+    const scheduledFor = targetDay.toISOString();
+
+    const result = await fetch(`/api/schedule/${itemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduledFor }),
+    }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+    if (result) {
+      showToast('success', 'Rescheduled', `Moved to ${targetDay.toLocaleString()}`);
+      loadSchedule();
+    } else {
+      showToast('error', 'Failed', 'Could not reschedule');
+    }
+  };
 
   // ── Render helpers ────────────────────────────────────────────────────────
   const renderReschedulePopover = (item: ScheduledItem) => {
@@ -414,15 +681,19 @@ export default function ContentScheduler() {
     const style = getTypeStyle(item.type);
     const Icon = getTypeIcon(item.type);
     const config = typeConfig[item.type];
+    const isVirtual = item.id.includes('__virtual_');
+    const isRecurring = (item.recurrence ?? 'none') !== 'none';
 
     if (compact) {
-      // Week grid cell chip
       return (
         <div
           key={item.id}
+          draggable={!isVirtual}
+          onDragStart={(e) => handleDragStart(e, item)}
           title={item.content}
-          className={`text-xs px-1.5 py-0.5 rounded border-l-2 ${style.border} bg-mission-control-surface truncate`}
+          className={`text-xs px-1.5 py-0.5 rounded border-l-2 ${style.border} bg-mission-control-surface truncate flex items-center gap-1 ${!isVirtual ? 'cursor-grab active:cursor-grabbing' : 'cursor-default opacity-70'}`}
         >
+          {isRecurring && <Repeat size={9} className="shrink-0 opacity-60" />}
           <span className="truncate block">{item.content}</span>
         </div>
       );
@@ -445,7 +716,7 @@ export default function ContentScheduler() {
           )}
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className={`text-xs px-2 py-0.5 rounded ${style.badge}`}>
                 {style.label}
               </span>
@@ -457,6 +728,12 @@ export default function ContentScheduler() {
               }`}>
                 {item.status}
               </span>
+              {isRecurring && (
+                <span className="text-xs px-2 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim flex items-center gap-1">
+                  <Repeat size={10} />
+                  {item.recurrence}
+                </span>
+              )}
               <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                 <Clock size={12} />
                 {formatScheduledTime(item.scheduledFor)}
@@ -526,16 +803,13 @@ export default function ContentScheduler() {
 
     return (
       <div className="flex flex-col h-full">
-        {/* Week nav bar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface shrink-0">
           <button
             onClick={goToPrevWeek}
             className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
             aria-label="Previous week"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <ChevronLeft size={16} />
           </button>
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">{weekRangeLabel}</span>
@@ -553,18 +827,14 @@ export default function ContentScheduler() {
             className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
             aria-label="Next week"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            <ChevronRight size={16} />
           </button>
         </div>
 
-        {/* Grid */}
         <div className="flex-1 overflow-auto">
           <div className="min-w-[700px]">
-            {/* Day header row */}
             <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
-              <div /> {/* time label col */}
+              <div />
               {weekDays.map((day, i) => {
                 const isToday = isSameDay(day, new Date());
                 return (
@@ -588,27 +858,33 @@ export default function ContentScheduler() {
               })}
             </div>
 
-            {/* Hour rows */}
             {HOURS.map((hour, hourIdx) => (
               <div
                 key={hour}
                 className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-mission-control-border/50 min-h-[56px]"
               >
-                {/* Time label */}
                 <div className="py-1 pr-2 text-right text-xs text-mission-control-text-dim shrink-0 pt-1.5">
                   {hour === 12 ? '12pm' : hour < 12 ? `${hour}am` : `${hour - 12}pm`}
                 </div>
-                {/* Day cells */}
                 {weekDays.map((day, dayIdx) => {
                   const isToday = isSameDay(day, new Date());
                   const cellItems = weekGrid[dayIdx][hourIdx];
+                  const isDropTarget = dropTarget?.dayIdx === dayIdx && dropTarget?.hourIdx === hourIdx;
                   return (
                     <div
                       key={dayIdx}
-                      className={`border-l border-mission-control-border/50 p-0.5 min-h-[56px] ${
+                      onDragOver={(e) => handleSlotDragOver(e, dayIdx, hourIdx)}
+                      onDragLeave={handleSlotDragLeave}
+                      onDrop={(e) => handleSlotDrop(e, dayIdx, hourIdx)}
+                      className={`border-l border-mission-control-border/50 p-0.5 min-h-[56px] transition-colors ${
                         isToday ? 'bg-info/5' : ''
-                      }`}
+                      } ${isDropTarget ? 'bg-mission-control-accent/10 border-l-2 border-mission-control-accent' : ''}`}
                     >
+                      {isDropTarget && cellItems.length === 0 && (
+                        <div className="h-full min-h-[40px] rounded border border-dashed border-mission-control-accent flex items-center justify-center">
+                          <span className="text-xs text-mission-control-accent">Drop here</span>
+                        </div>
+                      )}
                       {cellItems.map((item) => (
                         <div key={item.id} className="mb-0.5">
                           {renderItemCard(item, true)}
@@ -621,6 +897,290 @@ export default function ContentScheduler() {
             ))}
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // ── Month View ────────────────────────────────────────────────────────────
+  const renderMonthView = () => {
+    const isCurrentMonth = isSameMonth(monthStart, new Date());
+
+    return (
+      <div className="flex flex-col h-full">
+        {/* Month nav bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface shrink-0">
+          <button
+            onClick={goToPrevMonth}
+            className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium">{monthLabel}</span>
+            {!isCurrentMonth && (
+              <button
+                onClick={goToThisMonth}
+                className="text-xs px-2 py-1 bg-mission-control-border rounded hover:bg-mission-control-border/80 transition-colors"
+              >
+                Today
+              </button>
+            )}
+          </div>
+          <button
+            onClick={goToNextMonth}
+            className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
+            aria-label="Next month"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {/* Day-of-week header */}
+          <div className="grid grid-cols-7 border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
+            {DAY_NAMES.map((name) => (
+              <div key={name} className="py-2 text-center text-xs font-medium text-mission-control-text-dim border-l first:border-l-0 border-mission-control-border">
+                {name}
+              </div>
+            ))}
+          </div>
+
+          {/* 6-row grid */}
+          <div className="grid grid-cols-7" style={{ gridTemplateRows: 'repeat(6, minmax(80px, 1fr))' }}>
+            {monthGrid.map((day, idx) => {
+              const inMonth = isSameMonth(day, monthStart);
+              const isToday = isSameDay(day, new Date());
+              const dayItems = itemsForDay(day);
+              const visibleItems = dayItems.slice(0, 3);
+              const overflowCount = dayItems.length - visibleItems.length;
+
+              return (
+                <div
+                  key={idx}
+                  className={`border-l border-b border-mission-control-border/50 p-1 min-h-[80px] relative ${
+                    !inMonth ? 'opacity-40' : ''
+                  } ${isToday ? 'bg-info/5' : ''} ${idx % 7 === 0 ? 'border-l-0' : ''}`}
+                >
+                  {/* Day number */}
+                  <div className="flex items-start justify-between mb-0.5">
+                    <span
+                      className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
+                        isToday
+                          ? 'bg-info text-white'
+                          : inMonth
+                          ? 'text-mission-control-text'
+                          : 'text-mission-control-text-dim'
+                      }`}
+                    >
+                      {day.getDate()}
+                    </span>
+                  </div>
+
+                  {/* Event dots / chips */}
+                  <div className="space-y-0.5">
+                    {visibleItems.map((item) => {
+                      const style = getTypeStyle(item.type);
+                      const isRecurring = (item.recurrence ?? 'none') !== 'none';
+                      return (
+                        <div
+                          key={item.id}
+                          title={item.content}
+                          className={`text-xs px-1 py-0.5 rounded border-l-2 ${style.border} bg-mission-control-surface truncate flex items-center gap-1 cursor-pointer hover:opacity-80`}
+                          onClick={() => handleEdit(item)}
+                        >
+                          {isRecurring && <Repeat size={8} className="shrink-0 opacity-60" />}
+                          <span className="truncate">{item.content}</span>
+                        </div>
+                      );
+                    })}
+                    {overflowCount > 0 && (
+                      <button
+                        onClick={() => setOverflowDay(day)}
+                        className="text-xs text-mission-control-accent hover:underline w-full text-left px-1"
+                      >
+                        +{overflowCount} more
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Overflow popover */}
+        {overflowDay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setOverflowDay(null)}>
+            <div
+              ref={overflowRef}
+              className="bg-mission-control-surface border border-mission-control-border rounded-xl shadow-card-lg p-4 w-80 max-h-96 overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold">
+                  {overflowDay.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+                </h3>
+                <button onClick={() => setOverflowDay(null)} className="p-1 hover:bg-mission-control-border rounded">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="space-y-1">
+                {itemsForDay(overflowDay).map((item) => {
+                  const style = getTypeStyle(item.type);
+                  const time = new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  return (
+                    <div key={item.id} className={`flex items-center gap-2 p-2 rounded border-l-2 ${style.border} bg-mission-control-bg`}>
+                      <span className="text-xs text-mission-control-text-dim w-12 shrink-0">{time}</span>
+                      <span className="text-xs flex-1 truncate">{item.content}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                className="mt-3 w-full text-xs text-center py-1.5 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
+                onClick={() => {
+                  // Switch to week view focused on the clicked day's week
+                  setWeekStart(getWeekStart(overflowDay));
+                  setViewMode('week');
+                  setOverflowDay(null);
+                }}
+              >
+                View week
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Agenda View ───────────────────────────────────────────────────────────
+  const renderAgendaView = () => {
+    const now = new Date();
+    const horizon = addDays(now, 30);
+
+    const agendaItems = allDisplayItems
+      .filter((item) => {
+        const d = new Date(item.scheduledFor);
+        return d >= now && d <= horizon;
+      })
+      .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
+
+    // Group by day label
+    const grouped: { label: string; date: Date; items: ScheduledItem[] }[] = [];
+    for (const item of agendaItems) {
+      const d = new Date(item.scheduledFor);
+      const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      const existing = grouped.find((g) => `${g.date.getFullYear()}-${g.date.getMonth()}-${g.date.getDate()}` === dayKey);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        let label: string;
+        if (isSameDay(d, now)) {
+          label = 'Today';
+        } else if (isSameDay(d, addDays(now, 1))) {
+          label = 'Tomorrow';
+        } else {
+          label = d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+        }
+        grouped.push({ label, date: d, items: [item] });
+      }
+    }
+
+    if (grouped.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim py-16">
+          <div className="w-16 h-16 rounded-2xl bg-mission-control-border/30 flex items-center justify-center mb-4">
+            <List size={32} className="opacity-40" />
+          </div>
+          <p className="text-base font-medium text-mission-control-text mb-1">Nothing in the next 30 days</p>
+          <p className="text-sm text-center max-w-xs">Schedule something to see it here.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {grouped.map(({ label, date, items: groupItems }) => {
+          const isToday = isSameDay(date, now);
+          return (
+            <div key={label}>
+              {/* Day header */}
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <span className={`text-xs font-semibold uppercase tracking-wide ${isToday ? 'text-info' : 'text-mission-control-text-dim'}`}>
+                  {label}
+                </span>
+                <span className={`flex-1 h-px ${isToday ? 'bg-info/20' : 'bg-mission-control-border'}`} />
+                {groupItems.length === 0 && (
+                  <span className="text-xs text-mission-control-text-dim">No events today</span>
+                )}
+              </div>
+
+              {groupItems.length === 0 && isToday && (
+                <p className="text-sm text-mission-control-text-dim px-1">No events today</p>
+              )}
+
+              <div className="space-y-2">
+                {groupItems.map((item) => {
+                  const style = getTypeStyle(item.type);
+                  const time = new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const Icon = getTypeIcon(item.type);
+                  const isRecurring = (item.recurrence ?? 'none') !== 'none';
+                  const isVirtual = item.id.includes('__virtual_');
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center gap-3 p-3 bg-mission-control-surface border border-mission-control-border border-l-4 ${style.border} rounded-xl`}
+                    >
+                      <div className="flex items-center gap-1 text-xs text-mission-control-text-dim w-14 shrink-0">
+                        <Clock size={11} />
+                        <span>{time}</span>
+                      </div>
+
+                      <div className="p-1.5 bg-mission-control-border/30 rounded-lg shrink-0">
+                        <Icon size={14} className="text-mission-control-text-dim" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{item.content}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${style.badge}`}>{style.label}</span>
+                          {isRecurring && (
+                            <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
+                              <Repeat size={10} />
+                              {item.recurrence}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {!isVirtual && (
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={13} className="text-mission-control-text-dim" />
+                          </button>
+                          <button
+                            onClick={() => handleCancel(item.id)}
+                            className="p-1.5 hover:bg-error-subtle rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={13} className="text-error" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -699,6 +1259,30 @@ export default function ContentScheduler() {
               >
                 <LayoutGrid size={15} />
               </button>
+              <button
+                onClick={() => setViewMode('month')}
+                className={`p-2 transition-colors ${
+                  viewMode === 'month'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+                title="Month view"
+                aria-label="Month view"
+              >
+                <Grid size={15} />
+              </button>
+              <button
+                onClick={() => setViewMode('agenda')}
+                className={`p-2 transition-colors ${
+                  viewMode === 'agenda'
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+                title="Agenda view"
+                aria-label="Agenda view"
+              >
+                <Clock size={15} />
+              </button>
             </div>
 
             <button
@@ -752,6 +1336,26 @@ export default function ContentScheduler() {
           </div>
 
           <div className="space-y-3">
+            {/* Template dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-mission-control-text-dim">Template</span>
+              <select
+                onChange={(e) => {
+                  const idx = parseInt(e.target.value, 10);
+                  if (!isNaN(idx)) applyTemplate(SCHEDULE_TEMPLATES[idx]);
+                  e.target.value = '';
+                }}
+                defaultValue=""
+                className="flex-1 px-2 py-1.5 text-xs bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                aria-label="Select a schedule template"
+              >
+                <option value="" disabled>Select template...</option>
+                {SCHEDULE_TEMPLATES.map((tpl, i) => (
+                  <option key={i} value={i}>{tpl.label}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Type selector */}
             <div className="flex gap-2">
               {(['tweet', 'email'] as const).map((t) => {
@@ -889,6 +1493,27 @@ export default function ContentScheduler() {
               </div>
             </div>
 
+            {/* Recurrence selector */}
+            <div>
+              <label className="block text-xs text-mission-control-text-dim mb-1">Recurrence</label>
+              <div className="flex gap-2">
+                {(['none', 'daily', 'weekly', 'monthly'] as RecurrenceType[]).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setFormRecurrence(r)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+                      formRecurrence === r
+                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
+                  >
+                    {r !== 'none' && <Repeat size={11} />}
+                    {r === 'none' ? 'None' : r.charAt(0).toUpperCase() + r.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2">
               <button onClick={resetForm} className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm">
                 Cancel
@@ -907,16 +1532,19 @@ export default function ContentScheduler() {
       )}
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden flex flex-col">
         {viewMode === 'week' ? (
           renderWeekView()
+        ) : viewMode === 'month' ? (
+          renderMonthView()
+        ) : viewMode === 'agenda' ? (
+          renderAgendaView()
         ) : (
-          <div className="h-full overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4">
             {filteredItems.length === 0 ? (
               renderEmptyState()
             ) : (
               <>
-                {/* Today section highlight */}
                 {(() => {
                   const todayItems = filteredItems.filter((item) => isSameDay(new Date(item.scheduledFor), new Date()));
                   const otherItems = filteredItems.filter((item) => !isSameDay(new Date(item.scheduledFor), new Date()));
@@ -928,7 +1556,7 @@ export default function ContentScheduler() {
                             <span className="text-xs font-semibold text-info uppercase tracking-wide">Today</span>
                             <span className="flex-1 h-px bg-info/20" />
                           </div>
-                          <div className={`rounded-xl p-3 bg-info/5 border border-info/20 space-y-2`}>
+                          <div className="rounded-xl p-3 bg-info/5 border border-info/20 space-y-2">
                             {todayItems.map((item) => renderItemCard(item))}
                           </div>
                         </div>

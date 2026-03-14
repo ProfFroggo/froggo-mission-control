@@ -422,10 +422,16 @@ export async function POST(
                 if (inputT > 0 || outputT > 0) {
                   try {
                     const costUsd = calcCostUsd(chatModel, inputT, outputT);
-                    getDb().prepare(
+                    const db = getDb();
+                    db.prepare(
                       `INSERT INTO token_usage (agentId, sessionId, model, inputTokens, outputTokens, costUsd, source, timestamp)
                        VALUES (?, ?, ?, ?, ?, ?, 'chat', ?)`
                     ).run(agentId, parsed.session_id ?? null, chatModel, inputT, outputT, costUsd, Date.now());
+                    // Check all budgets that apply to this agent and emit SSE alerts
+                    try {
+                      const { checkBudgetAlerts: _cba } = await import('@/lib/budgetAlerts');
+                      _cba(db, agentId);
+                    } catch { /* non-critical */ }
                   } catch { /* non-critical */ }
                 }
               }

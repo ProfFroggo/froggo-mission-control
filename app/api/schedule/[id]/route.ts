@@ -17,6 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (body.type !== undefined) { sets.push('type = ?'); values.push(body.type); }
     if (body.content !== undefined) { sets.push('content = ?'); values.push(body.content); }
     if (body.scheduledFor !== undefined) { sets.push('scheduledFor = ?'); values.push(body.scheduledFor); }
+    if (body.recurrence !== undefined) { sets.push('recurrence = ?'); values.push(body.recurrence); }
     if (body.metadata !== undefined) {
       const existingMeta = typeof existing.metadata === 'string' ? JSON.parse(existing.metadata || '{}') : {};
       sets.push('metadata = ?');

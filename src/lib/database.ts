@@ -593,16 +593,6 @@ function initSchema(db: Database.Database) {
     -- ══════════════════════════════════════════
     -- KNOWLEDGE BASE
     -- ══════════════════════════════════════════
-    CREATE TABLE IF NOT EXISTS knowledge_versions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      articleId TEXT NOT NULL,
-      content TEXT NOT NULL,
-      editedBy TEXT DEFAULT 'human',
-      editedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
-      versionNote TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_knowledge_versions_articleId ON knowledge_versions(articleId, editedAt DESC);
-
     CREATE TABLE IF NOT EXISTS knowledge_base (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -740,33 +730,6 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
 
     -- ══════════════════════════════════════════
-    -- TOKEN BUDGETS
-    -- ══════════════════════════════════════════
-    CREATE TABLE IF NOT EXISTS budgets (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      agentId TEXT,
-      period TEXT NOT NULL DEFAULT 'monthly',
-      limitUsd REAL NOT NULL,
-      alertAt REAL NOT NULL DEFAULT 80,
-      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
-    );
-    CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
-
-    -- ══════════════════════════════════════════
-    -- CHAT ROOM MESSAGE REACTIONS (v2)
-    -- ══════════════════════════════════════════
-    CREATE TABLE IF NOT EXISTS message_reactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      messageId TEXT NOT NULL,
-      userId TEXT NOT NULL DEFAULT 'user',
-      reaction TEXT NOT NULL,
-      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
-      UNIQUE(messageId, userId, reaction)
-    );
-    CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
-
-    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaign_automations (
@@ -824,19 +787,8 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE library_files ADD COLUMN tags TEXT DEFAULT '[]'`,
     `ALTER TABLE library_files ADD COLUMN createdBy TEXT`,
     `ALTER TABLE library_files ADD COLUMN linkedTasks TEXT DEFAULT '[]'`,
-    // Library file extended metadata: description, starred, folderId
-    `ALTER TABLE library_files ADD COLUMN description TEXT`,
-    `ALTER TABLE library_files ADD COLUMN starred INTEGER DEFAULT 0`,
-    // Library folders: parentId for nested folder tree
-    `ALTER TABLE library_folders ADD COLUMN parentId TEXT REFERENCES library_folders(id) ON DELETE SET NULL`,
-    // Projects: explicit archived boolean flag (mirrors status = 'archived')
+    // Projects: explicit archived boolean (mirrors status = 'archived')
     `ALTER TABLE projects ADD COLUMN archived INTEGER NOT NULL DEFAULT 0`,
-    // Chat rooms v2: thread reply support on room messages
-    `ALTER TABLE chat_room_messages ADD COLUMN parentId TEXT`,
-    // Chat rooms v2: pinned message per room
-    `ALTER TABLE chat_rooms ADD COLUMN pinnedMessageId TEXT`,
-    // Chat rooms v2: room description
-    `ALTER TABLE chat_rooms ADD COLUMN description TEXT`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
@@ -913,35 +865,6 @@ function initSchema(db: Database.Database) {
   // Clean up sessions older than 7 days
   try {
     db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  } catch { /* non-critical */ }
-
-  // Settings: add updatedAt column if missing (existing DBs pre-schema-update)
-  try {
-    const cols = (db.prepare(`PRAGMA table_info(settings)`).all() as { name: string }[]).map(c => c.name);
-    if (!cols.includes('updatedAt')) {
-      db.exec(`ALTER TABLE settings ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)`);
-    }
-  } catch { /* non-critical */ }
-
-  // Settings: seed defaults on first run (INSERT OR IGNORE — never overwrite user values)
-  try {
-    const DEFAULTS: Record<string, unknown> = {
-      'automation.enabled': true,
-      'automation.maxConcurrent': 3,
-      'clara.reviewStrictness': 'standard',
-      'clara.autoDispatch': true,
-      'platform.theme': 'dark',
-      'platform.notifications': true,
-      'platform.soundEnabled': false,
-      'token.monthlyBudget': 0,
-    };
-    const seedStmt = db.prepare(
-      `INSERT OR IGNORE INTO settings (key, value, updatedAt) VALUES (?, ?, ?)`
-    );
-    const now = Date.now();
-    for (const [key, val] of Object.entries(DEFAULTS)) {
-      seedStmt.run(key, JSON.stringify(val), now);
-    }
   } catch { /* non-critical */ }
 
   syncCatalogAgents(db);

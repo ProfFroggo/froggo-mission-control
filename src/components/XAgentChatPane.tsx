@@ -35,6 +35,9 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
   campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
+  'agent-mode': { agentId: 'social-manager', displayName: 'Social Manager' },
+  competitors: { agentId: 'researcher', displayName: 'Researcher' },
+  hashtags: { agentId: 'writer', displayName: 'Writer' },
 };
 
 // Quick prompts for each tab — contextual one-click prompts that auto-send
@@ -117,12 +120,31 @@ const QUICK_PROMPTS: Record<XTab, string[]> = {
     'Summarize this week\'s Reddit mentions',
     'Find threads I should engage with',
   ],
+  'agent-mode': [
+    'Suggest a content brief for a SaaS growth account',
+    'What posting frequency works best for B2B?',
+    'Review my agent brief and suggest improvements',
+    'What topics should the agent focus on this week?',
+  ],
+  competitors: [
+    'Analyze what my top competitor does well',
+    'What content gaps can I exploit?',
+    'Suggest a counter-strategy to their approach',
+    'What would make my content stand out from theirs?',
+  ],
+  hashtags: [
+    'Suggest hashtags for a product launch tweet',
+    'What hashtags work best for growth content?',
+    'Which hashtags are trending in the SaaS space?',
+    'Create a hashtag set for a weekly series',
+  ],
 };
 
 // Set of valid tabs for validation
 const tabsWithoutUndefined = new Set<XTab>([
   'pipeline', 'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
-  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns'
+  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns',
+  'agent-mode', 'competitors', 'hashtags',
 ]);
 
 // System prompts for each tab to give context to the agent
@@ -150,6 +172,12 @@ const TAB_CONTEXT: Record<XTab, string> = {
   analytics: `You are the Social Manager agent reviewing X/Twitter analytics. Current context: X/Twitter Analytics Tab. Your role: Help interpret performance data, identify trends, suggest content optimizations.`,
 
   reddit: `You are the Social Manager agent monitoring Reddit for product mentions. Current context: Reddit Monitor Tab. Your role: Help monitor subreddits for mentions of a product, analyze threads, and draft authentic Reddit replies. Use natural, conversational Reddit tone.`,
+
+  'agent-mode': `You are the Social Manager agent helping configure and oversee the agentic social media workflow. Current context: Agent Mode Tab. Your role: Help define content briefs, review agent-generated drafts, suggest approval strategies, and optimize the automated content pipeline.`,
+
+  competitors: `You are the Researcher agent analyzing competitor social media strategies. Current context: Competitor Tracker Tab. Your role: Help analyze competitor content patterns, identify gaps and opportunities, and suggest counter-strategies to gain competitive advantage.`,
+
+  hashtags: `You are the Writer agent helping discover and manage hashtags for maximum reach. Current context: Hashtag Intelligence Tab. Your role: Suggest relevant hashtags, explain trending tags, help build hashtag sets for campaigns, and advise on hashtag strategy.`,
 
   campaigns: `You are the Social Manager agent helping plan multi-stage social media campaigns. Current context: Campaigns Tab.
 
