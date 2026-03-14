@@ -5,10 +5,10 @@
  * Trust tier enforcement and graceful error handling.
  */
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { loadAgentWidgets, canLoadWidgets, type WidgetDefinition } from '../lib/widgetRegistry';
-import ErrorBoundary from './ErrorBoundary';
+import { AsyncBoundary } from './AsyncBoundary';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('WidgetLoader');
@@ -94,14 +94,14 @@ export default function WidgetLoader({ agentId, trustTier }: WidgetLoaderProps) 
         {widgets
           .filter((w) => w.panelType === 'dashboard')
           .map((widget) => (
-            <ErrorBoundary
+            <AsyncBoundary
               key={widget.id}
-              fallback={<WidgetError widgetName={widget.name} />}
+              fallback={<WidgetLoading />}
+              errorFallback={<WidgetError widgetName={widget.name} />}
+              componentName={widget.name}
             >
-              <Suspense fallback={<WidgetLoading />}>
-                <WidgetPlaceholder widget={widget} agentId={agentId} />
-              </Suspense>
-            </ErrorBoundary>
+              <WidgetPlaceholder widget={widget} agentId={agentId} />
+            </AsyncBoundary>
           ))}
       </div>
     </div>

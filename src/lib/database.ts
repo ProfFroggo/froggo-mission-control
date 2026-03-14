@@ -512,6 +512,35 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
     -- ══════════════════════════════════════════
+    -- NOTIFICATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT,
+      userId TEXT,
+      metadata TEXT,
+      readAt TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+    CREATE INDEX IF NOT EXISTS idx_notifications_readAt ON notifications(readAt);
+    CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+
+    -- ══════════════════════════════════════════
+    -- NOTIFICATION PREFERENCES
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notification_preferences (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      type TEXT NOT NULL UNIQUE,
+      email INTEGER NOT NULL DEFAULT 1,
+      inApp INTEGER NOT NULL DEFAULT 1,
+      updatedAt TEXT DEFAULT (datetime('now'))
+    );
+
+        -- ══════════════════════════════════════════
     -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS chat_messages (
@@ -822,10 +851,37 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE catalog_modules ADD COLUMN errorCount INTEGER DEFAULT 0`,
     // Schedule: recurrence support
     `ALTER TABLE scheduled_items ADD COLUMN recurrence TEXT DEFAULT 'none'`,
+    // Campaigns v2: metrics JSON blob + saved brief text
+    `ALTER TABLE campaigns ADD COLUMN metrics TEXT`,
+    `ALTER TABLE campaigns ADD COLUMN brief TEXT`,
+    // Agent soul v2: personality traits, tone preset, memory scope
+    `ALTER TABLE agents ADD COLUMN traits TEXT DEFAULT '[]'`,
+    `ALTER TABLE agents ADD COLUMN tonePreset TEXT DEFAULT 'professional'`,
+    `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Agent soul v2: status history + availability schedules
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS agent_status_history (
+        id TEXT PRIMARY KEY,
+        agentId TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reason TEXT,
+        changedAt TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_agent_status_history_agentId ON agent_status_history(agentId, changedAt);
+
+      CREATE TABLE IF NOT EXISTS agent_schedules (
+        agentId TEXT PRIMARY KEY,
+        schedule TEXT NOT NULL DEFAULT '{}',
+        updatedAt TEXT DEFAULT (datetime('now'))
+      );
+    `);
+  } catch { /* tables already exist */ }
 
   // Module Builder: index for task-by-module queries
   try {
@@ -850,6 +906,60 @@ function initSchema(db: Database.Database) {
       END;
     `);
   } catch { /* FTS not available or already created */ }
+
+  // Knowledge Base v3: versions, templates, analytics
+  // Knowledge Base v3: versions, templates, analytics tables
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        content TEXT NOT NULL,
+        editedBy TEXT NOT NULL DEFAULT 'human',
+        editedAt INTEGER NOT NULL,
+        versionNote TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_versions_article ON knowledge_versions(articleId, editedAt DESC);
+      CREATE TABLE IF NOT EXISTS knowledge_templates (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS knowledge_analytics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        articleId TEXT NOT NULL REFERENCES knowledge_base(id) ON DELETE CASCADE,
+        event TEXT NOT NULL DEFAULT 'view',
+        recordedAt INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_knowledge_analytics_article ON knowledge_analytics(articleId, recordedAt DESC);
+    `);
+  } catch { /* tables already exist */ }
+
+  // Seed default knowledge templates if empty
+  try {
+    const tmplCount = db.prepare('SELECT COUNT(*) as c FROM knowledge_templates').get() as { c: number };
+    if (tmplCount.c === 0) {
+      const tnow = Date.now();
+      const defaultTemplates = [
+        { id: 'tmpl-how-to', label: 'How-to Guide', category: 'reference', content: '# How-to Guide: [Title]\n\n## Overview\nBriefly describe what this guide helps the reader accomplish.\n\n## Prerequisites\n- Requirement one\n\n## Steps\n1. First step\n2. Second step\n\n## Troubleshooting\n**Problem**: Describe a common issue.\n**Solution**: How to fix it.' },
+        { id: 'tmpl-decision-log', label: 'Decision Log', category: 'reference', content: '# Decision Log: [Topic]\n\n## Context\nDescribe the situation.\n\n## Options Considered\n1. Option A\n2. Option B\n\n## Decision\nState what was decided.\n\n## Rationale\nExplain why.\n\n## Follow-up\n- [ ] Action item' },
+        { id: 'tmpl-meeting-notes', label: 'Meeting Notes', category: 'reference', content: '# Meeting Notes\n\n## Attendees\n- Name / Role\n\n## Agenda\n1. Topic one\n\n## Discussion\nSummarize key points.\n\n## Action Items\n- [ ] Task \u2014 owner \u2014 due date' },
+        { id: 'tmpl-incident-report', label: 'Incident Report', category: 'technical', content: '# Incident Report: [Title]\n\n## Summary\nBrief description.\n\n## Timeline\n- HH:MM \u2014 event\n\n## Root Cause\nUnderlying cause.\n\n## Impact\nWho/what affected.\n\n## Resolution\nHow it was resolved.\n\n## Prevention\n- [ ] Action to prevent recurrence' },
+        { id: 'tmpl-how-to', label: 'How-to Guide', category: 'reference', content: '# How-to Guide: [Title]\n\n## Overview\nBriefly describe what this guide helps the reader accomplish.\n\n## Prerequisites\n- Requirement one\n- Requirement two\n\n## Steps\n1. First step\n2. Second step\n3. Third step\n\n## Troubleshooting\n**Problem**: Describe a common issue.\n**Solution**: How to fix it.' },
+        { id: 'tmpl-decision-log', label: 'Decision Log', category: 'reference', content: '# Decision Log: [Topic]\n\n## Context\nDescribe the situation that required a decision.\n\n## Options Considered\n1. Option A\n2. Option B\n\n## Decision\nState what was decided.\n\n## Rationale\nExplain why this option was chosen.\n\n## Follow-up\n- [ ] Action item' },
+        { id: 'tmpl-meeting-notes', label: 'Meeting Notes', category: 'reference', content: '# Meeting Notes \u2014 [Date]\n\n## Attendees\n- Name / Role\n\n## Agenda\n1. Topic one\n\n## Discussion\nSummarize key points discussed.\n\n## Action Items\n- [ ] Task \u2014 owner \u2014 due date' },
+        { id: 'tmpl-incident-report', label: 'Incident Report', category: 'technical', content: '# Incident Report: [Title]\n\n## Summary\nBrief description of the incident.\n\n## Timeline\n- HH:MM \u2014 event\n\n## Root Cause\nDescribe the underlying cause.\n\n## Impact\nWho/what was affected and for how long.\n\n## Resolution\nWhat was done to resolve it.\n\n## Prevention\n- [ ] Action to prevent recurrence' },
+      ];
+      const ins = db.prepare(`INSERT OR IGNORE INTO knowledge_templates (id, label, content, category, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`);
+      for (const t of defaultTemplates) {
+        ins.run(t.id, t.label, t.content, t.category, tnow, tnow);
+      }
+    }
+  } catch { /* non-critical */ }
+
 
   // Seed example knowledge base articles if empty
   try {

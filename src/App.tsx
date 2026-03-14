@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
 import { PanelSkeleton } from './components/PanelSkeleton';
+import { AsyncBoundary } from './components/AsyncBoundary';
 import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
 import { showToast } from './components/Toast';
@@ -516,23 +517,21 @@ function App() {
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >
           <PerformanceProfiler id={`${currentView}-panel`}>
-            <ErrorBoundary panelName={currentView} key={currentView}>
-              <Suspense fallback={<PanelSkeleton />}>
-                {/* Dynamic view rendering — driven by ViewRegistry */}
-                {currentView === 'contacts'
-                  ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
-                  : (() => {
-                      const reg = ViewRegistry.get(currentView);
-                      if (!reg) return null;
-                      const Comp = reg.component;
-                      if (currentView === 'dashboard') {
-                        return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
-                      }
-                      return <Comp />;
-                    })()
-                }
-              </Suspense>
-            </ErrorBoundary>
+            <AsyncBoundary componentName={currentView} key={currentView}>
+              {/* Dynamic view rendering — driven by ViewRegistry */}
+              {currentView === 'contacts'
+                ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+                : (() => {
+                    const reg = ViewRegistry.get(currentView);
+                    if (!reg) return null;
+                    const Comp = reg.component;
+                    if (currentView === 'dashboard') {
+                      return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
+                    }
+                    return <Comp />;
+                  })()
+              }
+            </AsyncBoundary>
           </PerformanceProfiler>
         </main>
 

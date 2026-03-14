@@ -18,6 +18,7 @@ import { showToast } from './Toast';
 import { taskApi, sessionApi } from '../lib/api';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import TaskQuickEdit from './TaskQuickEdit';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
@@ -1778,6 +1779,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
 
   // Focus edit input when entering edit mode
   useEffect(() => {
@@ -2074,17 +2078,34 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           </div>
         )}
         
+        {/* Quick-edit pencil button — visible on hover */}
+        <button
+          ref={quickEditBtnRef}
+          className="icon-btn-sm text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100 flex-shrink-0 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (quickEditBtnRef.current) {
+              setQuickEditAnchor(quickEditBtnRef.current.getBoundingClientRect());
+            }
+            setShowQuickEdit(true);
+          }}
+          title="Quick edit"
+          aria-label="Quick edit task"
+        >
+          <Pencil size={14} className="flex-shrink-0" />
+        </button>
+
         <div className="relative flex-shrink-0">
-          <button 
+          <button
             ref={menuBtnRef}
             className="icon-btn-sm text-mission-control-text-dim opacity-60 hover:opacity-100"
-            onClick={(e) => { 
-              e.stopPropagation(); 
+            onClick={(e) => {
+              e.stopPropagation();
               if (!showMenu && menuBtnRef.current) {
                 const rect = menuBtnRef.current.getBoundingClientRect();
                 setMenuBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
               }
-              setShowMenu(!showMenu); 
+              setShowMenu(!showMenu);
             }}
           >
             <MoreHorizontal size={16} className="flex-shrink-0" />
@@ -2355,6 +2376,28 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           )}
         </div>
       </div>
+
+      {/* Quick-edit popover */}
+      {showQuickEdit && quickEditAnchor && (
+        <TaskQuickEdit
+          task={task}
+          agents={agents}
+          anchorRect={quickEditAnchor}
+          onClose={() => { setShowQuickEdit(false); setQuickEditAnchor(null); }}
+          onSaved={(patch) => {
+            // Propagate relevant fields back to parent via existing callbacks
+            if (patch.title && patch.title !== task.title) {
+              onTitleEdit(task.id, patch.title);
+            }
+            if (patch.priority && patch.priority !== task.priority) {
+              onSetPriority(patch.priority);
+            }
+            if ('assignedTo' in patch) {
+              onAssign(patch.assignedTo ?? '');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }, (prev, next) => {
