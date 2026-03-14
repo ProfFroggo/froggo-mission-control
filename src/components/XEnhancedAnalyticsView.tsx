@@ -81,6 +81,50 @@ const TIME_BUCKETS = [
 
 const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
+// ---------------------------------------------------------------------------
+// Mock data for new analytics sections (labeled clearly — no live API for these)
+// ---------------------------------------------------------------------------
+
+// 7-day engagement rate trend — mock historical averages (%)
+const MOCK_ENGAGEMENT_TREND_7D = [2.1, 3.4, 2.8, 4.2, 3.9, 5.1, 4.7];
+const MOCK_ENGAGEMENT_TREND_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// Best posting time heatmap — engagement score 0–100 per time slot
+// Keys: dayIndex (0=Sun…6=Sat), time-of-day bucket
+const MOCK_POSTING_HEATMAP: Record<number, Record<string, number>> = {
+  0: { morning: 20, noon: 45, afternoon: 60, evening: 80, night: 30 }, // Sun
+  1: { morning: 35, noon: 70, afternoon: 75, evening: 65, night: 20 }, // Mon
+  2: { morning: 40, noon: 65, afternoon: 80, evening: 70, night: 25 }, // Tue
+  3: { morning: 30, noon: 60, afternoon: 85, evening: 75, night: 15 }, // Wed
+  4: { morning: 45, noon: 55, afternoon: 70, evening: 90, night: 35 }, // Thu
+  5: { morning: 50, noon: 80, afternoon: 65, evening: 55, night: 40 }, // Fri
+  6: { morning: 25, noon: 50, afternoon: 55, evening: 85, night: 45 }, // Sat
+};
+const MOCK_HEATMAP_TIME_SLOTS = ['morning', 'noon', 'afternoon', 'evening', 'night'] as const;
+const MOCK_HEATMAP_SLOT_LABELS: Record<string, string> = {
+  morning: 'Morning',
+  noon: 'Noon',
+  afternoon: 'Afternoon',
+  evening: 'Evening',
+  night: 'Night',
+};
+
+// Mock recent posts for the content performance mini-table
+interface MockPost {
+  content: string;
+  date: string;
+  likes: number;
+  replies: number;
+  impressions: number;
+}
+const MOCK_RECENT_POSTS: MockPost[] = [
+  { content: 'Shipped a massive update to our analytics pipeline today. Real-time insights incoming for everyone.', date: '2026-03-12', likes: 142, replies: 18, impressions: 4800 },
+  { content: 'Thread: How we reduced onboarding drop-off by 34% using targeted activation nudges.', date: '2026-03-10', likes: 98, replies: 31, impressions: 3200 },
+  { content: 'Growth tip: Your best-performing content from 6 months ago is worth reposting. Audiences forget.', date: '2026-03-08', likes: 211, replies: 9, impressions: 7100 },
+  { content: 'Excited to announce we crossed 1,000 active users this week. Grateful for the community support.', date: '2026-03-06', likes: 87, replies: 42, impressions: 2900 },
+  { content: 'The underrated growth lever nobody talks about: improving your existing users experience first.', date: '2026-03-04', likes: 163, replies: 22, impressions: 5500 },
+];
+
 type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
 
 // ---------------------------------------------------------------------------
@@ -127,6 +171,25 @@ function Sparkline({ values, width = 120, height = 36, color = CHART_COLORS.blue
 // ---------------------------------------------------------------------------
 // CSV export helper
 // ---------------------------------------------------------------------------
+
+function exportMockPostsCSV(posts: MockPost[]) {
+  const header = ['Content', 'Date', 'Likes', 'Replies', 'Impressions', 'Engagement %'];
+  const rows = posts.map((p) => {
+    const preview = p.content.slice(0, 80).replace(/"/g, '""') + (p.content.length > 80 ? '...' : '');
+    const engPct = p.impressions > 0
+      ? (((p.likes + p.replies) / p.impressions) * 100).toFixed(2)
+      : '0.00';
+    return [`"${preview}"`, p.date, p.likes, p.replies, p.impressions, engPct].join(',');
+  });
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `x-post-performance-mock-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function exportPostsCSV(posts: PostMetrics[]) {
   const header = ['Content', 'Published', 'Impressions', 'Likes', 'Replies', 'Engagement %'];
