@@ -37,6 +37,48 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
+// PATCH /api/approvals — batch approve or reject
+// Body: { ids: string[], action: 'approve' | 'reject', reason?: string }
+export async function PATCH(request: NextRequest) {
+  try {
+    const db = getDb();
+    const body = await request.json();
+    const { ids, action, reason } = body as { ids: string[]; action: 'approve' | 'reject'; reason?: string };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'ids must be a non-empty array' }, { status: 400 });
+    }
+    if (action !== 'approve' && action !== 'reject') {
+      return NextResponse.json({ error: 'action must be approve or reject' }, { status: 400 });
+    }
+
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    const respondedAt = Date.now();
+    const notes = reason ?? null;
+
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = db.prepare(
+      `SELECT id FROM approvals WHERE id IN (${placeholders}) AND status = 'pending'`
+    ).all(...ids) as { id: string }[];
+
+    const validIds = rows.map(r => r.id);
+    if (validIds.length === 0) {
+      return NextResponse.json({ updated: 0 });
+    }
+
+    const updatePlaceholders = validIds.map(() => '?').join(',');
+    db.prepare(
+      `UPDATE approvals SET status = ?, respondedAt = ?, notes = ? WHERE id IN (${updatePlaceholders})`
+    ).run(status, respondedAt, notes, ...validIds);
+
+    return NextResponse.json({ updated: validIds.length });
+  } catch (error) {
+    console.error('PATCH /api/approvals error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const db = getDb();
