@@ -3,7 +3,7 @@ import {
   FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link,
   RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette,
   Code, BookOpen, Bot, PanelLeftClose, PanelLeftOpen, Star, Copy,
-  ChevronRight, ChevronDown, Clock, Send, Tag, Info,
+  ChevronRight, ChevronDown, Clock, Send, Tag, Info, Check, FolderPlus,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
@@ -154,6 +154,16 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   // Starred
   const [starred, setStarred] = useState<Set<string>>(loadStarred);
 
+  // Available tags (from API) and active tag filter
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [activeTagFilters, setActiveTagFilters] = useState<Set<string>>(new Set());
+
+  // New folder inline input
+  const [newFolderInputVisible, setNewFolderInputVisible] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderCreating, setNewFolderCreating] = useState(false);
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
+
   // Viewer modal (kept for video / audio / binary)
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<any>(null);
@@ -189,7 +199,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const loadFolders = useCallback(async () => {
     try {
-      const res = await fetch('/api/library?action=folders');
+      const res = await fetch('/api/library/folders');
       if (res.ok) {
         const data = await res.json();
         setFolders(data.folders || []);
@@ -199,10 +209,64 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   }, []);
 
+  const loadTags = useCallback(async () => {
+    try {
+      const res = await fetch('/api/library/tags');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableTags(data.tags || []);
+      }
+    } catch {
+      // silent
+    }
+  }, []);
+
+  const handleCreateFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    setNewFolderCreating(true);
+    try {
+      const res = await fetch('/api/library/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        showToast('success', `Folder "${name}" created`);
+        setNewFolderName('');
+        setNewFolderInputVisible(false);
+        loadFolders();
+      } else {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        showToast('error', data.error || 'Failed to create folder');
+      }
+    } catch {
+      showToast('error', 'Failed to create folder');
+    } finally {
+      setNewFolderCreating(false);
+    }
+  };
+
+  const toggleTagFilter = (tag: string) => {
+    setActiveTagFilters(prev => {
+      const next = new Set<string>(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
   useEffect(() => {
     loadFiles();
     loadFolders();
-  }, [loadFiles, loadFolders]);
+    loadTags();
+  }, [loadFiles, loadFolders, loadTags]);
+
+  useEffect(() => {
+    if (newFolderInputVisible) {
+      newFolderInputRef.current?.focus();
+    }
+  }, [newFolderInputVisible]);
 
   useEffect(() => {
     if (initialPath) setSearchQuery(initialPath);
@@ -510,10 +574,12 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     if (selectedFolder === 'starred') {
       return fileList.filter(f => starred.has(f.id));
     }
-    // Real folder: for now match by project name (folder name matches project field)
+    // Real folder: match by folder_id field (DB-tracked files) or project name (legacy)
     const folder = folders.find(f => f.id === selectedFolder);
     if (folder) {
-      return fileList.filter(f => f.project === folder.name);
+      return fileList.filter(f =>
+        (f as unknown as Record<string, unknown>).folder_id === folder.id || f.project === folder.name
+      );
     }
     return fileList;
   };
@@ -541,7 +607,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         f.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : folderFiltered;
-  const filteredFiles = [...searchFiltered].sort((a, b) => {
+  // Apply active tag pill filters
+  const tagFiltered = activeTagFilters.size === 0
+    ? searchFiltered
+    : searchFiltered.filter(f =>
+        [...activeTagFilters].every(tag =>
+          (f.tags || []).map(t => t.toLowerCase()).includes(tag.toLowerCase())
+        )
+      );
+  const filteredFiles = [...tagFiltered].sort((a, b) => {
     if (sortMode === 'oldest') return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
     if (sortMode === 'name') return a.name.localeCompare(b.name);
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(); // newest
@@ -692,6 +766,49 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
+            {/* Starred quick-filter toggle */}
+            <button
+              onClick={() => setSelectedFolder(prev => prev === 'starred' ? 'all' : 'starred')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 transition-colors ml-auto ${
+                selectedFolder === 'starred'
+                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+              title="Show starred files only"
+            >
+              <Star size={11} className={selectedFolder === 'starred' ? 'fill-yellow-400' : ''} />
+              Starred
+            </button>
+          </div>
+        )}
+
+        {/* Tag filter pills */}
+        {searchMode === 'filter' && availableTags.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap pb-0.5">
+            <Tag size={11} className="text-mission-control-text-dim flex-shrink-0" />
+            {availableTags.slice(0, 20).map(tag => (
+              <button
+                key={tag}
+                onClick={() => toggleTagFilter(tag)}
+                className={`px-2 py-0.5 rounded-full text-xs flex-shrink-0 transition-colors ${
+                  activeTagFilters.has(tag)
+                    ? 'bg-mission-control-accent text-white'
+                    : 'bg-mission-control-border/60 text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {activeTagFilters.size > 0 && (
+              <button
+                onClick={() => setActiveTagFilters(new Set())}
+                className="px-2 py-0.5 rounded-full text-xs flex-shrink-0 text-mission-control-text-dim hover:text-error transition-colors flex items-center gap-0.5"
+                title="Clear tag filters"
+              >
+                <X size={10} />
+                Clear
+              </button>
+            )}
           </div>
         )}
 
@@ -748,14 +865,55 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="w-48 flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
               <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Folders</span>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-0.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
-                title="Collapse sidebar"
-              >
-                <PanelLeftClose size={13} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setNewFolderInputVisible(v => !v)}
+                  className="p-0.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
+                  title="New folder"
+                >
+                  <FolderPlus size={13} />
+                </button>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-0.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
+                  title="Collapse sidebar"
+                >
+                  <PanelLeftClose size={13} />
+                </button>
+              </div>
             </div>
+            {/* New folder inline input */}
+            {newFolderInputVisible && (
+              <div className="px-2 py-1.5 border-b border-mission-control-border flex items-center gap-1">
+                <input
+                  ref={newFolderInputRef}
+                  type="text"
+                  value={newFolderName}
+                  onChange={e => setNewFolderName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleCreateFolder();
+                    if (e.key === 'Escape') { setNewFolderInputVisible(false); setNewFolderName(''); }
+                  }}
+                  placeholder="Folder name..."
+                  className="flex-1 px-2 py-1 bg-mission-control-bg border border-mission-control-border rounded text-xs focus:outline-none focus:border-mission-control-accent min-w-0"
+                />
+                <button
+                  onClick={handleCreateFolder}
+                  disabled={newFolderCreating || !newFolderName.trim()}
+                  className="p-1 bg-mission-control-accent text-white rounded disabled:opacity-50 flex-shrink-0"
+                  title="Create folder"
+                >
+                  {newFolderCreating ? <RefreshCw size={11} className="animate-spin" /> : <Check size={11} />}
+                </button>
+                <button
+                  onClick={() => { setNewFolderInputVisible(false); setNewFolderName(''); }}
+                  className="p-1 hover:bg-mission-control-border rounded text-mission-control-text-dim flex-shrink-0"
+                  title="Cancel"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
               {/* Virtual: All Files */}
               <SidebarItem
@@ -786,7 +944,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               {folders.length > 0 && (
                 <div className="pt-2 mt-2 border-t border-mission-control-border">
                   {folders.map(folder => {
-                    const count = files.filter(f => f.project === folder.name).length;
+                    const count = files.filter(f =>
+                      (f as unknown as Record<string, unknown>).folder_id === folder.id || f.project === folder.name
+                    ).length;
                     return (
                       <SidebarItem
                         key={folder.id}
