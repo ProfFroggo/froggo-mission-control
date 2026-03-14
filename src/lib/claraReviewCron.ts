@@ -288,6 +288,34 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
 
+  // Increment claraReviewCount and check for human-review escalation
+  try {
+    getDb()
+      .prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1, updatedAt = ? WHERE id = ?')
+      .run(Date.now(), task.id);
+  } catch { /* non-critical */ }
+
+  try {
+    const reviewCountRow = getDb()
+      .prepare('SELECT claraReviewCount FROM tasks WHERE id = ?')
+      .get(task.id as string) as { claraReviewCount: number } | undefined;
+    const reviewCount = reviewCountRow?.claraReviewCount ?? 0;
+    if (reviewCount >= 3) {
+      const now = Date.now();
+      console.warn(`[clara-review-cron] Task ${task.id} has been reviewed ${reviewCount} times — escalating to human-review`);
+      getDb()
+        .prepare("UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?")
+        .run(now, task.id);
+      getDb()
+        .prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(task.id, 'clara', 'human-review-escalation',
+          `Task has been reviewed by Clara ${reviewCount} times and is still not progressing — needs human attention.`,
+          now);
+      inReview.delete(task.id as string);
+      return;
+    }
+  } catch { /* non-critical */ }
+
   // Stamp reviewedAt so we can detect stale in-review rows
   const startedAt = Date.now();
   trackEvent('clara.review.start', { taskId: task.id });
