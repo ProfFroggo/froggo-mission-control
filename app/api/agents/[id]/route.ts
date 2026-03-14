@@ -83,7 +83,6 @@ export async function PATCH(
       if (!isNaN(tier)) {
         setClauses.push('trust_tier = ?');
         values.push(body.trust_tier);
-        // Apply tier permissions cascade
         const perms = TIER_PERMISSIONS_MAP[tier];
         if (perms) {
           setClauses.push('capabilities = ?');
@@ -102,7 +101,7 @@ export async function PATCH(
       values.push(body.description.trim());
     }
 
-    // Manual status override — accepts any valid agent status
+    // Manual status override
     const VALID_STATUSES = ['active', 'busy', 'idle', 'offline', 'suspended', 'archived', 'draft', 'disabled'];
     if ('status' in body && typeof body.status === 'string' && VALID_STATUSES.includes(body.status)) {
       setClauses.push('status = ?');

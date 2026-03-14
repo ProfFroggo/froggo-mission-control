@@ -17,6 +17,9 @@ import {
   Zap,
   Loader2,
   ChevronDown,
+  Filter,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { DateRange } from './DateRangePicker';
 
@@ -27,6 +30,9 @@ const UsageStatsPanel = lazy(() => import('./UsageStatsPanel'));
 const PerformanceBenchmarks = lazy(() => import('./PerformanceBenchmarks'));
 const TokenUsageWidget = lazy(() => import('./TokenUsageWidget'));
 const AdvancedAgentComparison = lazy(() => import('./AdvancedAgentComparison'));
+const VelocityChart = lazy(() => import('./VelocityChart'));
+const AgentTrendsChart = lazy(() => import('./AgentTrendsChart'));
+const FunnelChart = lazy(() => import('./FunnelChart'));
 
 // Lightweight components - regular imports
 import TimeTrackingPanel from './TimeTrackingPanel';
@@ -45,7 +51,10 @@ type Tab =
   | 'benchmarks'
   | 'time'
   | 'heatmap'
-  | 'reports';
+  | 'reports'
+  | 'velocity'
+  | 'agent-trends'
+  | 'funnel';
 
 interface TabConfig {
   id: Tab;
@@ -78,6 +87,24 @@ const TABS: TabConfig[] = [
     label: 'Task Trends',
     icon: TrendingUp,
     description: 'Task completion trends',
+  },
+  {
+    id: 'velocity',
+    label: 'Velocity',
+    icon: TrendingUp,
+    description: 'Weekly task velocity chart',
+  },
+  {
+    id: 'agent-trends',
+    label: 'Agent Trends',
+    icon: Users,
+    description: 'Daily task completion per agent',
+  },
+  {
+    id: 'funnel',
+    label: 'Funnel',
+    icon: Filter,
+    description: 'Task pipeline funnel',
   },
   {
     id: 'agents',
@@ -117,6 +144,34 @@ const TABS: TabConfig[] = [
   },
 ];
 
+// ─── Date range presets ───────────────────────────────────────────────────────
+
+interface Preset {
+  label: string;
+  range: () => DateRange;
+}
+
+function startOfQuarter(): Date {
+  const now = new Date();
+  const q = Math.floor(now.getMonth() / 3);
+  return new Date(now.getFullYear(), q * 3, 1);
+}
+
+function startOfYear(): Date {
+  return new Date(new Date().getFullYear(), 0, 1);
+}
+
+const DATE_PRESETS: Preset[] = [
+  { label: 'Today', range: () => ({ start: new Date(new Date().setHours(0, 0, 0, 0)), end: new Date() }) },
+  { label: 'Last 7d', range: () => ({ start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), end: new Date() }) },
+  { label: 'Last 30d', range: () => ({ start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() }) },
+  { label: 'Last 90d', range: () => ({ start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), end: new Date() }) },
+  { label: 'This Quarter', range: () => ({ start: startOfQuarter(), end: new Date() }) },
+  { label: 'This Year', range: () => ({ start: startOfYear(), end: new Date() }) },
+];
+
+// ─── Export helpers ───────────────────────────────────────────────────────────
+
 // Loading fallback component
 function ChartSkeleton() {
   return (
@@ -131,11 +186,14 @@ function ChartSkeleton() {
 
 type ExportReportType = 'tasks' | 'agents' | 'approvals' | 'token-usage';
 
+/** BOM prefix ensures Excel correctly interprets the CSV as UTF-8. */
+const CSV_BOM = '\uFEFF';
+
 async function triggerAnalyticsExport(
   type: ExportReportType,
   format: 'csv' | 'json',
   dateRange: DateRange
-): Promise<void> {
+): Promise<string | null> {
   const params = new URLSearchParams({
     type,
     format,
@@ -148,35 +206,44 @@ async function triggerAnalyticsExport(
 
   if (format === 'csv') {
     const text = await res.text();
-    const blob = new Blob([text], { type: 'text/csv' });
+    // Prepend BOM if not already present
+    const content = text.startsWith('\uFEFF') ? text : CSV_BOM + text;
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${type}-report-${dateStr}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    return content;
   } else {
     const json = await res.json();
-    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    const str = JSON.stringify(json, null, 2);
+    const blob = new Blob([str], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `${type}-report-${dateStr}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    return str;
   }
 }
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showAgentComparison, setShowAgentComparison] = useState(false);
-  const [dateRange, _setDateRange] = useState<DateRange>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     end: new Date(),
   });
+  const [activePreset, setActivePreset] = useState<string>('Last 30d');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
+  const [copiedExport, setCopiedExport] = useState<string | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleRefresh = () => {
@@ -194,6 +261,11 @@ export default function AnalyticsDashboard() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [showExportMenu]);
 
+  function applyPreset(preset: Preset) {
+    setDateRange(preset.range());
+    setActivePreset(preset.label);
+  }
+
   const handleExport = async (type: ExportReportType, format: 'csv' | 'json') => {
     setExportBusy(true);
     setShowExportMenu(false);
@@ -206,11 +278,28 @@ export default function AnalyticsDashboard() {
     }
   };
 
+  const handleExportAndCopy = async (type: ExportReportType, format: 'csv' | 'json') => {
+    setExportBusy(true);
+    setShowExportMenu(false);
+    try {
+      const content = await triggerAnalyticsExport(type, format, dateRange);
+      if (content) {
+        await navigator.clipboard.writeText(content);
+        setCopiedExport(`${type}-${format}`);
+        setTimeout(() => setCopiedExport(null), 2000);
+      }
+    } catch {
+      // silent
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header with tabs */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/20 rounded-xl">
               <BarChart2 size={24} className="text-indigo-400" />
@@ -224,7 +313,24 @@ export default function AnalyticsDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Date range presets */}
+            <div className="flex bg-mission-control-border rounded-lg p-1 gap-0.5 flex-wrap">
+              {DATE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => applyPreset(preset)}
+                  className={`px-2.5 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
+                    activePreset === preset.label
+                      ? 'bg-mission-control-accent text-white'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={() => setShowAgentComparison(true)}
               className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
@@ -258,19 +364,34 @@ export default function AnalyticsDashboard() {
               </button>
 
               {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 z-50 w-52 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 z-50 w-64 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-lg overflow-hidden">
                   <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider border-b border-mission-control-border">
-                    Export as CSV
+                    Export as CSV (Excel-compatible)
                   </div>
                   {(['tasks', 'agents', 'approvals', 'token-usage'] as ExportReportType[]).map(
                     (t) => (
-                      <button
+                      <div
                         key={`csv-${t}`}
-                        onClick={() => handleExport(t, 'csv')}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors capitalize"
+                        className="flex items-center justify-between hover:bg-mission-control-border transition-colors"
                       >
-                        {t.replace('-', ' ')} CSV
-                      </button>
+                        <button
+                          onClick={() => handleExport(t, 'csv')}
+                          className="flex-1 text-left px-3 py-2 text-sm capitalize"
+                        >
+                          {t.replace('-', ' ')} CSV
+                        </button>
+                        <button
+                          onClick={() => handleExportAndCopy(t, 'csv')}
+                          className="px-3 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                          title="Export and copy to clipboard"
+                        >
+                          {copiedExport === `${t}-csv` ? (
+                            <Check size={12} className="text-success" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </button>
+                      </div>
                     )
                   )}
                   <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider border-b border-mission-control-border border-t">
@@ -278,13 +399,28 @@ export default function AnalyticsDashboard() {
                   </div>
                   {(['tasks', 'agents', 'approvals', 'token-usage'] as ExportReportType[]).map(
                     (t) => (
-                      <button
+                      <div
                         key={`json-${t}`}
-                        onClick={() => handleExport(t, 'json')}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-mission-control-border transition-colors capitalize"
+                        className="flex items-center justify-between hover:bg-mission-control-border transition-colors"
                       >
-                        {t.replace('-', ' ')} JSON
-                      </button>
+                        <button
+                          onClick={() => handleExport(t, 'json')}
+                          className="flex-1 text-left px-3 py-2 text-sm capitalize"
+                        >
+                          {t.replace('-', ' ')} JSON
+                        </button>
+                        <button
+                          onClick={() => handleExportAndCopy(t, 'json')}
+                          className="px-3 py-2 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                          title="Export and copy to clipboard"
+                        >
+                          {copiedExport === `${t}-json` ? (
+                            <Check size={12} className="text-success" />
+                          ) : (
+                            <Copy size={12} />
+                          )}
+                        </button>
+                      </div>
                     )
                   )}
                 </div>
@@ -323,6 +459,27 @@ export default function AnalyticsDashboard() {
           {activeTab === 'realtime' && <RealTimeAnalytics />}
           {activeTab === 'tokens' && <TokenUsageWidget />}
           {activeTab === 'trends' && <TaskTrendsChart />}
+          {activeTab === 'velocity' && (
+            <div className="h-full overflow-y-auto">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <VelocityChart weeks={8} />
+              </div>
+            </div>
+          )}
+          {activeTab === 'agent-trends' && (
+            <div className="h-full overflow-y-auto">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <AgentTrendsChart days={30} />
+              </div>
+            </div>
+          )}
+          {activeTab === 'funnel' && (
+            <div className="h-full overflow-y-auto">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+                <FunnelChart />
+              </div>
+            </div>
+          )}
           {activeTab === 'agents' && <PerformanceTable />}
           {activeTab === 'usage' && <UsageStatsPanel />}
           {activeTab === 'benchmarks' && <PerformanceBenchmarks />}
