@@ -2,9 +2,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo, KeyboardEvent } from 'react';
 import {
   BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronLeft,
-  Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link,
+  Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link, AlignLeft, Eye,
+  Network, ChevronDown,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
+import ArticleRevisionHistory from './ArticleRevisionHistory';
+import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -831,16 +834,23 @@ export default function KnowledgeBase() {
           </div>
         </div>
 
-        {/* Version history drawer */}
         {versionsArticleId && (
-          <VersionDrawer
-            versions={versions}
-            loading={versionsLoading}
-            previewVersion={previewVersion}
+          <ArticleRevisionHistory
+            articleId={versionsArticleId}
             currentContent={viewing.content}
-            onPreview={setPreviewVersion}
-            onRestore={restoreVersion}
-            onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
+            onRestore={async (content) => {
+              await fetch(`/api/knowledge/${versionsArticleId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, versionNote: 'Restored from version history' }),
+              });
+              const res = await fetch(`/api/knowledge/${versionsArticleId}`);
+              const data = await res.json();
+              if (data.success) setViewing(data.article);
+              setVersionsArticleId(null);
+              load();
+            }}
+            onClose={() => setVersionsArticleId(null)}
           />
         )}
       </div>
@@ -1050,6 +1060,7 @@ export default function KnowledgeBase() {
                 onTogglePin={() => togglePin(article)}
                 onToggleStar={() => toggleStar(article.id)}
                 onVersionHistory={() => setVersionsArticleId(article.id)}
+                viewCount={0}
               />
             ))
           )}
@@ -1146,6 +1157,7 @@ interface ArticleCardProps {
   searchTerm: string;
   isStarred: boolean;
   isKeyboardFocused: boolean;
+  viewCount: number;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1155,9 +1167,10 @@ interface ArticleCardProps {
 }
 
 function ArticleCard({
-  article, searchTerm, isStarred, isKeyboardFocused, onView, onEdit, onDelete, onTogglePin, onToggleStar, onVersionHistory,
+  article, searchTerm, isStarred, isKeyboardFocused, viewCount, onView, onEdit, onDelete, onTogglePin, onToggleStar, onVersionHistory,
 }: ArticleCardProps) {
   const excerpt = getExcerpt(article.content, searchTerm);
+  const wc = article.content.trim() ? article.content.trim().split(/\s+/).length : 0;
 
   return (
     <div
@@ -1234,6 +1247,18 @@ function ArticleCard({
             {t}
           </span>
         ))}
+        <span className="ml-auto flex items-center gap-2 text-xs text-mission-control-text-dim">
+          <span className="flex items-center gap-0.5">
+            <AlignLeft size={9} />
+            {wc}w
+          </span>
+          {viewCount > 0 && (
+            <span className="flex items-center gap-0.5">
+              <Eye size={9} />
+              {viewCount}
+            </span>
+          )}
+        </span>
       </div>
     </div>
   );
