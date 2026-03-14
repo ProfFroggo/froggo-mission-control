@@ -50,7 +50,8 @@ export function calculatePeriodSpend(
 
   const row = db.prepare(
     `SELECT COALESCE(SUM(costUsd), 0) AS spend FROM token_usage WHERE timestamp >= ? ${agentFilter}`
-  ).get(...(args as Parameters<typeof db.prepare>['arguments'])) as { spend: number };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ).get(...(args as any[])) as { spend: number };
 
   return row?.spend ?? 0;
 }

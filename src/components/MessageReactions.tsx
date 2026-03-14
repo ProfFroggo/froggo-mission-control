@@ -6,6 +6,7 @@ export interface ReactionSummary {
   reaction: string;
   count: number;
   users: string[];
+  label?: string;
 }
 
 interface MessageReactionsProps {

@@ -101,6 +101,15 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMatchIdx, setSearchMatchIdx] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Forward-declare searchMatchIds here so useEffects below can reference it
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const searchMatchIds = useMemo(() => {
+    if (!searchQuery.trim() || !room) return [] as string[];
+    const q = searchQuery.toLowerCase();
+    return room.messages
+      .filter((m: { content: string; id: string }) => m.content.toLowerCase().includes(q))
+      .map((m: { content: string; id: string }) => m.id);
+  }, [searchQuery, room]); // eslint-disable-line react-hooks/exhaustive-deps
   // Thread reply
   const [replyToMsg, setReplyToMsg] = useState<RoomMessage | null>(null);
   // Room settings panel
@@ -656,14 +665,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     return name.toLowerCase().includes(mentionFilter);
   });
 
-  // Search: compute matching message ids
-  const searchMatchIds = useMemo(() => {
-    if (!searchQuery.trim() || !room) return [] as string[];
-    const q = searchQuery.toLowerCase();
-    return room.messages
-      .filter(m => m.content.toLowerCase().includes(q))
-      .map(m => m.id);
-  }, [searchQuery, room?.messages]); // eslint-disable-line react-hooks/exhaustive-deps
+  // searchMatchIds declared earlier to avoid forward-reference issues
 
   // Pinned message
   const pinnedMessage = room.messages.find(m => m.id === room.pinnedMessageId);

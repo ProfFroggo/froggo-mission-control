@@ -429,7 +429,8 @@ export async function POST(
                     ).run(agentId, parsed.session_id ?? null, chatModel, inputT, outputT, costUsd, Date.now());
                     // Check all budgets that apply to this agent and emit SSE alerts
                     try {
-                      const { checkBudgetAlerts: _cba } = await import('@/lib/budgetAlerts');
+                      // eslint-disable-next-line @typescript-eslint/no-require-imports
+                      const { checkBudgetAlerts: _cba } = require('@/lib/budgetAlerts');
                       _cba(db, agentId);
                     } catch { /* non-critical */ }
                   } catch { /* non-critical */ }
