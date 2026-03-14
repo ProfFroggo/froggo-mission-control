@@ -728,6 +728,20 @@ function initSchema(db: Database.Database) {
       completedAt INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_automation_runs_automationId ON automation_runs(automationId);
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS campaign_automations (
+      linkId TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      automationId TEXT NOT NULL REFERENCES automations(id) ON DELETE CASCADE,
+      campaignTriggerType TEXT NOT NULL DEFAULT 'campaign-started',
+      linkedAt INTEGER NOT NULL,
+      UNIQUE(campaignId, automationId)
+    );
+    CREATE INDEX IF NOT EXISTS idx_campaign_automations_campaignId ON campaign_automations(campaignId);
+    CREATE INDEX IF NOT EXISTS idx_campaign_automations_automationId ON campaign_automations(automationId);
   `);
 
   // Add new columns to existing tables — safe to run on every startup

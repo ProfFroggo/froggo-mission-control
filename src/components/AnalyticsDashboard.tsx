@@ -1,4 +1,4 @@
-import { useState, Suspense, lazy } from 'react';
+import { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import {
   BarChart2,
   Activity,
@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Zap,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import { DateRange } from './DateRangePicker';
 
@@ -126,6 +127,44 @@ function ChartSkeleton() {
   );
 }
 
+type ExportReportType = 'tasks' | 'agents' | 'approvals' | 'token-usage';
+
+async function triggerAnalyticsExport(
+  type: ExportReportType,
+  format: 'csv' | 'json',
+  dateRange: DateRange
+): Promise<void> {
+  const params = new URLSearchParams({
+    type,
+    format,
+    from: dateRange.start.toISOString(),
+    to: dateRange.end.toISOString(),
+  });
+  const res = await fetch(`/api/reports?${params.toString()}`);
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  if (format === 'csv') {
+    const text = await res.text();
+    const blob = new Blob([text], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}-report-${dateStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    const json = await res.json();
+    const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}-report-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showAgentComparison, setShowAgentComparison] = useState(false);
@@ -134,34 +173,34 @@ export default function AnalyticsDashboard() {
     end: new Date(),
   });
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
-  const handleExport = async () => {
-    try {
-      // Export analytics data
-      const exportData = {
-        generatedAt: new Date().toISOString(),
-        dateRange: {
-          start: dateRange.start.toISOString(),
-          end: dateRange.end.toISOString(),
-        },
-        currentTab: activeTab,
-      };
+  // Close export menu on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    }
+    if (showExportMenu) document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [showExportMenu]);
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      // 'Failed to export analytics:', error;
+  const handleExport = async (type: ExportReportType, format: 'csv' | 'json') => {
+    setExportBusy(true);
+    setShowExportMenu(false);
+    try {
+      await triggerAnalyticsExport(type, format, dateRange);
+    } catch {
+      // silent
+    } finally {
+      setExportBusy(false);
     }
   };
 

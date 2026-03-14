@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2 } from 'lucide-react';
+import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi, updateApi } from '../lib/api';
+import { useSettings } from '../hooks/useSettings';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
@@ -337,10 +338,86 @@ function PlatformUpdateTab() {
   );
 }
 
+// ─────────────────────────────────────────────
+// Settings Audit Log (collapsible)
+// ─────────────────────────────────────────────
+interface AuditEntry {
+  id: number;
+  key: string;
+  oldValue: string | null;
+  newValue: string;
+  changedBy: string;
+  timestamp: number;
+}
+
+function SettingsAuditLog() {
+  const [open, setOpen] = useState(false);
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    fetch('/api/settings/audit')
+      .then((r) => r.json())
+      .then((data: AuditEntry[]) => setEntries(data))
+      .catch(() => setEntries([]))
+      .finally(() => setLoading(false));
+  }, [open]);
+
+  return (
+    <section>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text transition-colors mb-2"
+      >
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <Clock size={14} />
+        Recent Changes
+      </button>
+
+      {open && (
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-3 space-y-1">
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+              <Loader2 size={12} className="animate-spin" /> Loading audit log...
+            </div>
+          )}
+          {!loading && entries.length === 0 && (
+            <p className="text-xs text-mission-control-text-dim py-2">No changes recorded yet.</p>
+          )}
+          {!loading && entries.map((e) => (
+            <div key={e.id} className="flex items-start justify-between gap-3 py-1.5 border-b border-mission-control-border last:border-0">
+              <div className="min-w-0 flex-1">
+                <span className="font-mono text-xs text-mission-control-text truncate block">{e.key}</span>
+                <span className="text-xs text-mission-control-text-dim">
+                  {e.oldValue != null ? (
+                    <><span className="line-through opacity-60">{e.oldValue}</span> → </>
+                  ) : null}
+                  <span className="text-mission-control-accent">{e.newValue}</span>
+                </span>
+              </div>
+              <span className="text-xs text-mission-control-text-dim whitespace-nowrap shrink-0">
+                {new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function SettingsPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [agentCount, setAgentCount] = useState<number | null>(null);
+
+  // ── Persisted settings via useSettings hook ──────────────────────────────
+  const [notificationsSound, setNotificationsSound] = useSettings<boolean>('notifications.sound', true);
+  const [sidebarExpanded, setSidebarExpanded] = useSettings<boolean>('sidebar.expanded', true);
+  const [approvalsAutoAssign, setApprovalsAutoAssign] = useSettings<boolean>('approvals.autoAssign', false);
+
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('mission-control-settings');
     const parsed = saved ? JSON.parse(saved) : {};
@@ -654,9 +731,11 @@ export default function SettingsPanel() {
                     <div className="text-sm text-mission-control-text-dim">Show sidebar as icon only</div>
                   </div>
                   <Toggle
-                    checked={localStorage.getItem('sidebarExpanded') === 'false'}
+                    checked={!sidebarExpanded}
                     onChange={(checked) => {
-                      localStorage.setItem('sidebarExpanded', String(!checked));
+                      const expanded = !checked;
+                      setSidebarExpanded(expanded);
+                      localStorage.setItem('sidebarExpanded', String(expanded));
                       window.dispatchEvent(new Event('sidebarStateChange'));
                     }}
                     colorScheme="green"
@@ -760,6 +839,53 @@ export default function SettingsPanel() {
                 </button>
               </div>
             </section>
+
+            {/* Approvals */}
+            <section>
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <Shield size={16} /> Approvals
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Auto-Assign Approvals</div>
+                    <div className="text-sm text-mission-control-text-dim">
+                      Automatically assign new approval requests to the reviewing agent
+                    </div>
+                  </div>
+                  <Toggle
+                    checked={approvalsAutoAssign}
+                    onChange={setApprovalsAutoAssign}
+                    colorScheme="green"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Notifications Sound (persisted) */}
+            <section>
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
+                <Bell size={16} /> Notification Sound
+              </h2>
+              <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Sound Alerts</div>
+                    <div className="text-sm text-mission-control-text-dim">
+                      Play a sound when new notifications arrive
+                    </div>
+                  </div>
+                  <Toggle
+                    checked={notificationsSound}
+                    onChange={setNotificationsSound}
+                    colorScheme="green"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Audit log */}
+            <SettingsAuditLog />
           </div>
         )}
 

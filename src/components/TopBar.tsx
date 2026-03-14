@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Inbox, Loader, Wifi, WifiOff } from 'lucide-react';
+import { Inbox, Loader, Wifi, WifiOff, Activity } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';
+import PlatformHealthDashboard from './PlatformHealthDashboard';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -10,6 +11,8 @@ interface SystemStatus {
   pendingInbox: number;
   inProgressTasks: number;
 }
+
+type PlatformStatus = 'ok' | 'degraded' | 'error';
 
 interface TopBarProps {
   onNavigate?: (view: any) => void;
@@ -28,6 +31,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   const [offlineQueueSize, setOfflineQueueSize] = useState(0);
   const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
+  const [platformStatus, setPlatformStatus] = useState<PlatformStatus>('ok');
+  const [healthDashboardOpen, setHealthDashboardOpen] = useState(false);
 
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state, attempts }: { state: ConnectionState; attempts?: number }) => {
@@ -92,6 +97,33 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // Platform health status indicator — polls /api/health/metrics every 60s
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        const res = await fetch('/api/health/metrics');
+        if (!res.ok) { setPlatformStatus('error'); return; }
+        const snap = await res.json();
+        const dbOk = snap?.database?.status === 'ok';
+        const agentErrors = snap?.agents?.error ?? 0;
+        const apiErrors = snap?.api?.errorsLastHour ?? 0;
+        const queryMs = snap?.database?.queryTimeMs ?? 0;
+        if (!dbOk || agentErrors > 0) {
+          setPlatformStatus('error');
+        } else if (queryMs > 200 || apiErrors > 5) {
+          setPlatformStatus('degraded');
+        } else {
+          setPlatformStatus('ok');
+        }
+      } catch {
+        setPlatformStatus('error');
+      }
+    };
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <header 
@@ -107,6 +139,35 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
 
         {/* Right: Connection status + Counters */}
         <div className="no-drag flex items-center gap-3">
+          {/* Platform Health Indicator */}
+          <button
+            type="button"
+            onClick={() => setHealthDashboardOpen(true)}
+            title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
+            aria-label={`Platform health: ${platformStatus}`}
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border"
+          >
+            <span
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                platformStatus === 'ok'
+                  ? 'bg-success'
+                  : platformStatus === 'degraded'
+                  ? 'bg-warning'
+                  : 'bg-error animate-pulse'
+              }`}
+            />
+            <Activity
+              size={11}
+              className={
+                platformStatus === 'ok'
+                  ? 'text-success'
+                  : platformStatus === 'degraded'
+                  ? 'text-warning'
+                  : 'text-error'
+              }
+              aria-hidden="true"
+            />
+          </button>
           {/* Connection Status Indicator */}
           {connectionState !== 'connected' && (
             <span 

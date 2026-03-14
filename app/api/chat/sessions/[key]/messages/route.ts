@@ -71,7 +71,7 @@ export async function POST(
         UPDATE sessions SET messageCount = messageCount + 1, lastActivity = ? WHERE key = ?
       `).run(replyNow, sessionKey);
 
-      return NextResponse.json({ ...message, reply, role: 'assistant', content: reply, id: replyId }, { status: 201 });
+      return NextResponse.json({ ...(message as object), reply, role: 'assistant', content: reply, id: replyId }, { status: 201 });
     }
 
     return NextResponse.json(message, { status: 201 });
