@@ -28,6 +28,7 @@ import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
 import OnboardingWizard from './components/OnboardingWizard';
+import OnboardingFlow, { QuickTips, useOnboardingFlow } from './components/OnboardingFlow';
 import NetworkStatus from './components/NetworkStatus';
 import { DependencyGate } from './components/DependencyGate';
 import ShortcutsModal from './components/ShortcutsModal';
@@ -70,6 +71,7 @@ function App() {
   const quickActionsRef = useRef<QuickActionsRef>(null);
   const { activeTour, completeTour, skipTour, startTour, startPlatformTour, hasCompletedTour } = useTour();
   const { showOnboardingWizard, completeOnboarding, skipOnboarding } = useFirstTimeUser(startTour, hasCompletedTour);
+  const { showFlow: showOnboardingFlow, showTips, completeFlow, completeTips, restartOnboarding } = useOnboardingFlow();
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
@@ -233,6 +235,15 @@ function App() {
     window.addEventListener('restart-platform-tour', handleRestartTour);
     return () => window.removeEventListener('restart-platform-tour', handleRestartTour);
   }, [startPlatformTour]);
+
+  // Listen for restart-onboarding event dispatched from SettingsPanel
+  useEffect(() => {
+    const handleRestartOnboarding = () => {
+      restartOnboarding();
+    };
+    window.addEventListener('restart-onboarding', handleRestartOnboarding);
+    return () => window.removeEventListener('restart-onboarding', handleRestartOnboarding);
+  }, [restartOnboarding]);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -580,6 +591,23 @@ function App() {
               onComplete={(startTour) => completeOnboarding(startTour)}
               onSkip={() => skipOnboarding()}
             />
+          </ErrorBoundary>
+        )}
+
+        {/* Onboarding Flow (first-run simplified welcome) */}
+        {showOnboardingFlow && (
+          <ErrorBoundary panelName="Onboarding Flow">
+            <OnboardingFlow
+              onComplete={completeFlow}
+              onNavigate={(view) => setCurrentView(view as View)}
+            />
+          </ErrorBoundary>
+        )}
+
+        {/* Quick Tips (post-onboarding tooltip sequence) */}
+        {showTips && (
+          <ErrorBoundary panelName="Quick Tips">
+            <QuickTips onDone={completeTips} />
           </ErrorBoundary>
         )}
 
