@@ -18,6 +18,7 @@ import { showToast } from './Toast';
 import { taskApi, sessionApi } from '../lib/api';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import TaskQuickEdit from './TaskQuickEdit';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
@@ -1774,7 +1775,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const editInputRef = useRef<HTMLInputElement>(null);
-  
+  // Quick-edit inline popover
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
+  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
+
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
