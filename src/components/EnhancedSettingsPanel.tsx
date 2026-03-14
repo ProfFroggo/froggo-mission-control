@@ -3,7 +3,7 @@ import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
   ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink,
-  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson,
+  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
