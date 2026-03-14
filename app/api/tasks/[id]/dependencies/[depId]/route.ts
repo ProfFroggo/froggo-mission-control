@@ -15,17 +15,6 @@ export async function DELETE(
     const { id, depId } = await params;
     const db = getDb();
 
-    // Ensure table exists
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS task_dependencies (
-        id TEXT PRIMARY KEY,
-        taskId TEXT NOT NULL,
-        dependsOnId TEXT NOT NULL,
-        createdAt TEXT DEFAULT (datetime('now')),
-        UNIQUE(taskId, dependsOnId)
-      )
-    `);
-
     const existing = db.prepare(
       'SELECT id FROM task_dependencies WHERE id = ? AND taskId = ?'
     ).get(depId, id);

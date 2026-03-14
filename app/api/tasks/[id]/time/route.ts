@@ -18,20 +18,6 @@ interface TimeEntryRow {
   createdAt: string;
 }
 
-function ensureTimeTable(db: ReturnType<typeof getDb>) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS time_entries (
-      id TEXT PRIMARY KEY,
-      taskId TEXT NOT NULL,
-      startedAt TEXT,
-      stoppedAt TEXT,
-      duration INTEGER,
-      note TEXT,
-      createdAt TEXT DEFAULT (datetime('now'))
-    )
-  `);
-}
-
 function calcTotalMinutes(entries: TimeEntryRow[]): number {
   return entries.reduce((sum, e) => {
     if (e.duration != null) return sum + Math.floor(e.duration / 60);
@@ -50,7 +36,6 @@ export async function GET(
   try {
     const { id } = await params;
     const db = getDb();
-    ensureTimeTable(db);
 
     const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(id);
     if (!task) {
@@ -78,7 +63,6 @@ export async function POST(
   try {
     const { id } = await params;
     const db = getDb();
-    ensureTimeTable(db);
 
     const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(id);
     if (!task) {
@@ -100,7 +84,7 @@ export async function POST(
     const now = new Date().toISOString();
 
     if (action === 'start') {
-      // Check if there's already an open (no stoppedAt) entry for this task
+      // Check if there is already an open entry for this task
       const openEntry = db.prepare(
         "SELECT id FROM time_entries WHERE taskId = ? AND startedAt IS NOT NULL AND stoppedAt IS NULL AND duration IS NULL"
       ).get(id);

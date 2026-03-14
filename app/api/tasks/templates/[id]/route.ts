@@ -15,20 +15,6 @@ export async function DELETE(
     const { id } = await params;
     const db = getDb();
 
-    // Ensure the table exists (may not exist yet if templates were never used)
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS task_templates (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        priority TEXT DEFAULT 'medium',
-        tags TEXT,
-        subtasks TEXT,
-        createdAt TEXT DEFAULT (datetime('now'))
-      )
-    `);
-
     const existing = db.prepare('SELECT id FROM task_templates WHERE id = ?').get(id);
     if (!existing) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });

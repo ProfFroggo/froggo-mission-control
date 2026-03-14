@@ -24,18 +24,6 @@ function parseTask(row: Record<string, unknown>) {
   return parsed;
 }
 
-function ensureDepsTable(db: ReturnType<typeof getDb>) {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS task_dependencies (
-      id TEXT PRIMARY KEY,
-      taskId TEXT NOT NULL,
-      dependsOnId TEXT NOT NULL,
-      createdAt TEXT DEFAULT (datetime('now')),
-      UNIQUE(taskId, dependsOnId)
-    )
-  `);
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -43,7 +31,6 @@ export async function GET(
   try {
     const { id } = await params;
     const db = getDb();
-    ensureDepsTable(db);
 
     // Check task exists
     const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(id);
@@ -84,7 +71,6 @@ export async function POST(
   try {
     const { id } = await params;
     const db = getDb();
-    ensureDepsTable(db);
 
     const task = db.prepare('SELECT id FROM tasks WHERE id = ?').get(id);
     if (!task) {
