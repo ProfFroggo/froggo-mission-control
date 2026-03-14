@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
-  CalendarDays, CheckCircle2, CircleDot,
+  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList,
 } from 'lucide-react';
 import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
@@ -20,8 +20,10 @@ import Kanban from '../Kanban';
 import CampaignDispatchModal from './CampaignDispatchModal';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
+import CampaignROIDashboard from '../CampaignROIDashboard';
+import CampaignCommentsPanel from '../CampaignCommentsPanel';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -31,6 +33,9 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
   { id: 'performance', label: 'Performance', icon: BarChart2 },
+  { id: 'roi',         label: 'ROI',         icon: TrendingUp },
+  { id: 'comments',    label: 'Comments',    icon: MessageSquare },
+  { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
 ];
 
 const KPI_LABELS: Record<string, string> = {
@@ -1121,6 +1126,163 @@ function CampaignSettings({
   );
 }
 
+// ── Checklist Tab ───────────────────────────────────────────────────────────────
+interface ChecklistItem {
+  id: string;
+  label: string;
+  checked: boolean;
+  category: string;
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  planning:   'var(--mission-control-accent, #6366f1)',
+  creative:   'var(--color-success, #22c55e)',
+  compliance: 'var(--color-error, #ef4444)',
+  technical:  'var(--color-warning, #eab308)',
+  general:    'var(--mission-control-text-dim, #888)',
+};
+
+function ChecklistTab({ campaign }: { campaign: Campaign }) {
+  const [items, setItems] = useState<ChecklistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaign.id}/checklist`);
+      const data = await res.json();
+      if (data.success) setItems(data.items);
+    } catch { /* non-critical */ } finally {
+      setLoading(false);
+    }
+  }, [campaign.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggle = useCallback(async (item: ChecklistItem) => {
+    const optimistic = !item.checked;
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, checked: optimistic } : i));
+    try {
+      const res = await fetch(`/api/campaigns/${campaign.id}/checklist`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, checked: optimistic }),
+      });
+      if (!res.ok) throw new Error('Failed');
+    } catch {
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, checked: item.checked } : i));
+      showToast('Failed to update checklist', 'error');
+    }
+  }, [campaign.id]);
+
+  const reset = useCallback(async () => {
+    setResetting(true);
+    try {
+      const res = await fetch(`/api/campaigns/${campaign.id}/checklist/reset`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) setItems(data.items);
+    } catch {
+      showToast('Failed to reset checklist', 'error');
+    } finally {
+      setResetting(false);
+    }
+  }, [campaign.id]);
+
+  const doneCount = items.filter(i => i.checked).length;
+  const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
+  const categories = [...new Set(items.map(i => i.category))];
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-12"><Spinner size={24} /></div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-6 p-6 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ClipboardList size={16} className="text-mission-control-text-dim" />
+          <div>
+            <p className="text-sm font-medium text-mission-control-text-primary">Pre-launch checklist</p>
+            <p className="text-xs text-mission-control-text-dim">{doneCount} of {items.length} complete</p>
+          </div>
+        </div>
+        <button
+          onClick={reset}
+          disabled={resetting}
+          className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors px-2 py-1 rounded border border-mission-control-border"
+        >
+          {resetting ? <Spinner size={12} /> : <RefreshCw size={12} />}
+          Reset
+        </button>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Progress</span>
+          <span className="text-xs font-semibold text-mission-control-text-primary">{pct}%</span>
+        </div>
+        <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${pct}%`,
+              backgroundColor: pct === 100
+                ? 'var(--color-success, #22c55e)'
+                : 'var(--mission-control-accent, #6366f1)',
+            }}
+          />
+        </div>
+      </div>
+
+      {categories.map(cat => {
+        const catItems = items.filter(i => i.category === cat);
+        const catColor = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.general;
+        return (
+          <div key={cat} className="space-y-2">
+            <h4
+              className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1.5"
+              style={{ color: catColor }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catColor }} />
+              {cat}
+            </h4>
+            {catItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => toggle(item)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left"
+                style={{
+                  borderColor: item.checked
+                    ? 'var(--color-success, #22c55e)40'
+                    : 'var(--mission-control-border)',
+                  backgroundColor: item.checked
+                    ? 'var(--color-success, #22c55e)08'
+                    : 'var(--mission-control-surface)',
+                }}
+              >
+                {item.checked ? (
+                  <CheckCircle2 size={16} style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }} />
+                ) : (
+                  <Square size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                )}
+                <span
+                  className={`text-sm flex-1 ${
+                    item.checked
+                      ? 'line-through text-mission-control-text-dim'
+                      : 'text-mission-control-text-primary'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main Workspace ─────────────────────────────────────────────────────────────
 interface CampaignWorkspaceProps {
   campaign: Campaign;
@@ -1327,6 +1489,21 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'performance' && <PerformanceTab campaign={campaign} onUpdate={reload} />}
+        {activeTab === 'roi'         && (
+          <div className="h-full overflow-y-auto">
+            <CampaignROIDashboard campaign={campaign} />
+          </div>
+        )}
+        {activeTab === 'comments'    && (
+          <div className="h-full overflow-hidden flex flex-col">
+            <CampaignCommentsPanel campaignId={campaign.id} />
+          </div>
+        )}
+        {activeTab === 'checklist'   && (
+          <div className="h-full overflow-y-auto">
+            <ChecklistTab campaign={campaign} />
+          </div>
+        )}
       </div>
 
       {showDispatch && (
