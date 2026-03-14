@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { AlertRegion } from './LiveRegion';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -41,10 +42,15 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onDismiss]);
 
+  // Build screen reader announcement: title + optional message
+  const announcement = toast.message ? `${toast.title}: ${toast.message}` : toast.title;
+
   return (
     <div
       className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg animate-toast-in ${colors[toast.type]}`}
     >
+      {/* Screen reader announcement — assertive so errors/warnings are immediately announced */}
+      <AlertRegion message={announcement} />
       <Icon size={20} className="flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
         <div className="font-medium">{toast.title}</div>
