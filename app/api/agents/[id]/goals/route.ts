@@ -42,7 +42,6 @@ function rowToGoal(row: GoalRow) {
   };
 }
 
-// GET /api/agents/[id]/goals
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -71,7 +70,6 @@ export async function GET(
   }
 }
 
-// POST /api/agents/[id]/goals — create a new goal
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -95,7 +93,7 @@ export async function POST(
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
-    const goalId = randomUUID();
+    const goalId   = randomUUID();
     const title    = body.title.trim().slice(0, 200);
     const target   = typeof body.target === 'string' ? body.target.trim().slice(0, 200) : '';
     const deadline = typeof body.deadline === 'string' ? body.deadline.trim().slice(0, 50) : '';

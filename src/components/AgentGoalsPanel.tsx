@@ -91,7 +91,6 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
     );
   }
 
-  // Non-numeric: show status badge
   const statusColor = status === 'completed'
     ? 'var(--color-success)'
     : status === 'cancelled'
@@ -115,14 +114,12 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Add form state
   const [showForm, setShowForm] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [formTarget, setFormTarget] = useState('');
   const [formDeadline, setFormDeadline] = useState('');
   const [formSubmitting, setFormSubmitting] = useState(false);
 
-  // Inline progress edit
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editCurrent, setEditCurrent] = useState('');
 
@@ -212,7 +209,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Target size={14} className="text-mission-control-text-dim" />
@@ -246,7 +242,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         </div>
       </div>
 
-      {/* Error */}
       {error && !loading && (
         <div className="rounded-lg border border-error-border bg-error-subtle p-3 text-xs text-error flex items-center gap-2">
           <AlertTriangle size={12} className="flex-shrink-0" />
@@ -254,7 +249,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         </div>
       )}
 
-      {/* Add goal form */}
       {showForm && (
         <form
           onSubmit={handleAddGoal}
@@ -319,7 +313,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         </form>
       )}
 
-      {/* Empty state */}
       {!loading && goals.length === 0 && (
         <div className="rounded-xl border border-mission-control-border p-6 text-center space-y-2">
           <Target size={24} className="mx-auto text-mission-control-text-dim opacity-40" />
@@ -334,7 +327,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         </div>
       )}
 
-      {/* Active goals */}
       {activeGoals.length > 0 && (
         <div className="space-y-2">
           {activeGoals.map(goal => (
@@ -395,13 +387,13 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                     className="flex-1 text-xs"
                     autoFocus
                     onKeyDown={e => {
-                      if (e.key === 'Enter') handleUpdateProgress(goal.id);
+                      if (e.key === 'Enter') void handleUpdateProgress(goal.id);
                       if (e.key === 'Escape') setEditingGoalId(null);
                     }}
                   />
                   <button
                     type="button"
-                    onClick={() => handleUpdateProgress(goal.id)}
+                    onClick={() => void handleUpdateProgress(goal.id)}
                     className="px-2.5 py-1.5 text-[10px] font-medium rounded-md bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
                   >
                     Save
@@ -420,7 +412,6 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
         </div>
       )}
 
-      {/* Completed goals (collapsed count) */}
       {completedGoals.length > 0 && (
         <div className="text-[11px] text-mission-control-text-dim text-center pt-1">
           {completedGoals.length} completed goal{completedGoals.length !== 1 ? 's' : ''}

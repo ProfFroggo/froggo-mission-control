@@ -22,14 +22,14 @@ interface WeeklyPlan {
 
 // Maps known improvement/skill-gap signals to concrete weekly actions
 function generatePlanFromReviewData(improvements: string[], recommendations: string[], skillGaps: string[]): WeeklyPlan {
-  const hasRejections      = improvements.some(s => s.includes('rejected') || s.includes('failed'));
-  const hasLowSuccess      = improvements.some(s => s.includes('Success rate below'));
-  const hasHighDuration    = improvements.some(s => s.includes('duration'));
-  const hasHighTokens      = improvements.some(s => s.includes('token'));
-  const hasDeclining       = improvements.some(s => s.includes('declining'));
-  const hasNoTasks         = improvements.some(s => s.includes('No tasks'));
-  const needsPlanningNotes = skillGaps.includes('No planning notes') || recommendations.some(s => s.includes('planning notes'));
-  const needsSmallUnits    = recommendations.some(s => s.includes('smaller'));
+  const hasRejections       = improvements.some(s => s.includes('rejected') || s.includes('failed'));
+  const hasLowSuccess       = improvements.some(s => s.includes('Success rate below'));
+  const hasHighDuration     = improvements.some(s => s.includes('duration'));
+  const hasHighTokens       = improvements.some(s => s.includes('token'));
+  const hasDeclining        = improvements.some(s => s.includes('declining'));
+  const hasNoTasks          = improvements.some(s => s.includes('No tasks'));
+  const needsPlanningNotes  = skillGaps.includes('No planning notes') || recommendations.some(s => s.includes('planning notes'));
+  const needsSmallUnits     = recommendations.some(s => s.includes('smaller'));
   const needsContextSummary = recommendations.some(s => s.includes('context'));
 
   const week1: string[] = [];
@@ -117,7 +117,6 @@ export async function GET(
     const db = getDb();
     ensureTable(db);
 
-    // Verify agent exists
     const agentRow = db.prepare('SELECT id, name FROM agents WHERE id = ?').get(id) as { id: string; name: string } | undefined;
     if (!agentRow) {
       return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
@@ -149,8 +148,8 @@ export async function GET(
         `SELECT status FROM tasks WHERE assignedTo = ? AND createdAt >= ?`
       ).all(id, periodStart) as { status: string }[];
 
-      const done = tasks.filter(t => t.status === 'done').length;
-      const total = tasks.length;
+      const done     = tasks.filter(t => t.status === 'done').length;
+      const total    = tasks.length;
       const rejected = tasks.filter(t => t.status === 'failed').length;
       const successRate = total > 0 ? Math.round((done / total) * 100) : 0;
 
@@ -185,7 +184,6 @@ export async function GET(
     const plan = generatePlanFromReviewData(improvements, recommendations, skillGaps);
     const updatedAt = new Date().toISOString();
 
-    // Persist auto-generated plan
     db.prepare(
       `INSERT OR REPLACE INTO agent_coaching_plans (agentId, focus, plan, updatedAt)
        VALUES (?, ?, ?, ?)`

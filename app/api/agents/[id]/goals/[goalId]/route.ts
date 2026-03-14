@@ -36,7 +36,6 @@ function rowToGoal(row: GoalRow) {
   };
 }
 
-// PATCH /api/agents/[id]/goals/[goalId]
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; goalId: string }> }
@@ -93,7 +92,6 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/agents/[id]/goals/[goalId]
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; goalId: string }> }

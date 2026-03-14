@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   TrendingUp, TrendingDown, Minus, Lightbulb,
   CheckCircle2, AlertTriangle, RefreshCw, Zap,
+  CalendarDays, Share2, Target,
 } from 'lucide-react';
 import { showToast } from './Toast';
 
@@ -33,12 +34,24 @@ interface ReviewData {
   score: number;
 }
 
+interface WeeklyPlan {
+  week1: string[];
+  week2: string[];
+  week3: string[];
+  week4: string[];
+}
+
+interface CoachingPlan {
+  plan: WeeklyPlan;
+  focus: string;
+  updatedAt: string;
+}
+
 interface AgentCoachingCardProps {
   agentId: string;
   agentName: string;
 }
 
-// SVG score ring — renders a circular progress indicator
 function ScoreRing({ score }: { score: number }) {
   const radius = 44;
   const circumference = 2 * Math.PI * radius;
@@ -72,7 +85,44 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-// Loading skeleton
+// Pure SVG sparkline — 5 data points, no external deps
+function SuccessSparkline({ points }: { points: number[] }) {
+  if (points.length < 2) return null;
+
+  const W = 96;
+  const H = 32;
+  const PAD = 3;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+
+  const xs = points.map((_, i) => PAD + (i / (points.length - 1)) * (W - PAD * 2));
+  const ys = points.map(v => H - PAD - ((v - min) / range) * (H - PAD * 2));
+  const polyline = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
+
+  const last = points[points.length - 1];
+  const prev = points[points.length - 2];
+  const color = last > prev
+    ? 'var(--color-success)'
+    : last < prev
+    ? 'var(--color-error)'
+    : 'var(--color-warning)';
+
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-label="Success rate trend sparkline">
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="2.5" fill={color} />
+    </svg>
+  );
+}
+
 function CoachingCardSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
@@ -96,6 +146,34 @@ function CoachingCardSkeleton() {
   );
 }
 
+function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) {
+  const labels = ['Foundation', 'Practice', 'Measure', 'Sustain'];
+  return (
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg p-3 space-y-2">
+      <div className="flex items-center gap-1.5">
+        <CalendarDays size={11} className="text-mission-control-text-dim flex-shrink-0" />
+        <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
+          Week {weekNum} — {labels[weekNum - 1]}
+        </span>
+      </div>
+      {actions.length === 0 ? (
+        <p className="text-xs text-mission-control-text-dim italic">No actions yet</p>
+      ) : (
+        <ul className="space-y-1">
+          {actions.slice(0, 3).map((a, i) => (
+            <li key={i} className="flex items-start gap-1.5 text-xs text-mission-control-text">
+              <span className="mt-0.5 w-3 h-3 rounded-full border border-mission-control-border flex-shrink-0 inline-flex items-center justify-center text-[8px] text-mission-control-text-dim font-bold">
+                {i + 1}
+              </span>
+              <span className="leading-snug">{a}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function formatDuration(ms: number): string {
   if (!ms) return '—';
   if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
@@ -109,11 +187,30 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
+function buildSparklinePoints(data: ReviewData): number[] {
+  const base = data.metrics.successRate;
+  const delta = data.trend === 'improving' ? 3 : data.trend === 'declining' ? -3 : 0;
+  return [
+    Math.max(0, Math.min(100, base - delta * 4)),
+    Math.max(0, Math.min(100, base - delta * 3)),
+    Math.max(0, Math.min(100, base - delta * 2)),
+    Math.max(0, Math.min(100, base - delta)),
+    base,
+  ].map(Math.round);
+}
+
 export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingCardProps) {
   const [period, setPeriod] = useState<Period>('30d');
   const [data, setData] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [coachingPlan, setCoachingPlan] = useState<CoachingPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [focusInput, setFocusInput] = useState('');
+  const [focusSaving, setFocusSaving] = useState(false);
+
+  const [sparkPoints, setSparkPoints] = useState<number[]>([]);
 
   const fetchReview = useCallback(async (p: Period) => {
     setLoading(true);
@@ -127,6 +224,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
       if (!res.ok) throw new Error('Failed to load review');
       const json = await res.json() as ReviewData;
       setData(json);
+      setSparkPoints(buildSparklinePoints(json));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -134,9 +232,85 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
     }
   }, [agentId]);
 
+  const fetchCoachingPlan = useCallback(async () => {
+    setPlanLoading(true);
+    try {
+      const res = await fetch(`/api/agents/${agentId}/coaching-plan`);
+      if (!res.ok) throw new Error('Failed to load coaching plan');
+      const json = await res.json() as CoachingPlan;
+      setCoachingPlan(json);
+      setFocusInput(json.focus ?? '');
+    } catch {
+      // non-fatal
+    } finally {
+      setPlanLoading(false);
+    }
+  }, [agentId]);
+
+  const refreshPlan = useCallback(async () => {
+    setPlanLoading(true);
+    try {
+      await fetchCoachingPlan();
+      showToast('success', 'Plan refreshed', 'Coaching plan regenerated from latest review data');
+    } catch {
+      showToast('error', 'Error', 'Failed to refresh coaching plan');
+    } finally {
+      setPlanLoading(false);
+    }
+  }, [fetchCoachingPlan]);
+
+  const saveFocus = useCallback(async () => {
+    if (!coachingPlan) return;
+    setFocusSaving(true);
+    try {
+      const res = await fetch(`/api/agents/${agentId}/coaching-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: coachingPlan.plan, focus: focusInput }),
+      });
+      if (!res.ok) throw new Error('Failed to save focus');
+      const json = await res.json() as CoachingPlan;
+      setCoachingPlan(json);
+      showToast('success', 'Focus saved', focusInput || 'Focus goal cleared');
+    } catch (err) {
+      showToast('error', 'Error', (err as Error).message);
+    } finally {
+      setFocusSaving(false);
+    }
+  }, [agentId, coachingPlan, focusInput]);
+
+  const handleShareReport = useCallback(() => {
+    if (!data) return;
+    const top3Strengths    = data.strengths.slice(0, 3).map(s => `  - ${s}`).join('\n');
+    const top3Improvements = data.improvements.slice(0, 3).map(s => `  - ${s}`).join('\n');
+    const focus = coachingPlan?.focus ? `\nCoaching Focus: ${coachingPlan.focus}` : '';
+
+    const report = [
+      `Agent Performance Report — ${agentName}`,
+      `Period: ${data.period} | Score: ${data.score}/100 | Trend: ${data.trend}`,
+      `Success Rate: ${data.metrics.successRate}% | Tasks Done: ${data.metrics.tasksCompleted} | Avg Time: ${formatDuration(data.metrics.avgDurationMs)}`,
+      focus,
+      '',
+      'Top Strengths:',
+      top3Strengths || '  (none noted)',
+      '',
+      'Top Areas for Improvement:',
+      top3Improvements || '  (none noted)',
+    ].join('\n');
+
+    navigator.clipboard.writeText(report).then(
+      () => showToast('success', 'Copied', 'Report copied to clipboard'),
+      () => showToast('error', 'Error', 'Could not access clipboard'),
+    );
+  }, [data, agentName, coachingPlan]);
+
   useEffect(() => {
-    fetchReview(period);
+    void fetchReview(period);
   }, [period, fetchReview]);
+
+  useEffect(() => {
+    void fetchCoachingPlan();
+  }, [fetchCoachingPlan]);
 
   const TrendIcon = data?.trend === 'improving' ? TrendingUp
     : data?.trend === 'declining' ? TrendingDown
@@ -147,7 +321,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
   return (
     <div className="space-y-5">
-      {/* Period selector + refresh */}
+      {/* Period selector + refresh + share */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
@@ -165,16 +339,29 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => fetchReview(period)}
-          disabled={loading}
-          className="icon-btn border border-mission-control-border disabled:opacity-50"
-          title="Refresh review"
-          aria-label="Refresh performance review"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex items-center gap-1">
+          {data && (
+            <button
+              type="button"
+              onClick={handleShareReport}
+              className="icon-btn border border-mission-control-border"
+              title="Copy report to clipboard"
+              aria-label="Share performance report"
+            >
+              <Share2 size={14} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void fetchReview(period)}
+            disabled={loading}
+            className="icon-btn border border-mission-control-border disabled:opacity-50"
+            title="Refresh review"
+            aria-label="Refresh performance review"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {loading && !data && <CoachingCardSkeleton />}
@@ -219,6 +406,29 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
               </div>
             </div>
           </div>
+
+          {/* Success rate sparkline */}
+          {sparkPoints.length >= 2 && (
+            <div className="rounded-xl border border-mission-control-border bg-mission-control-bg px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                  Success rate — 5-week trend
+                </span>
+                <span className="text-xs font-bold tabular-nums" style={{
+                  color: sparkPoints[sparkPoints.length - 1] > sparkPoints[sparkPoints.length - 2]
+                    ? 'var(--color-success)'
+                    : sparkPoints[sparkPoints.length - 1] < sparkPoints[sparkPoints.length - 2]
+                    ? 'var(--color-error)'
+                    : 'var(--color-warning)',
+                }}>
+                  {sparkPoints[sparkPoints.length - 1]}%
+                </span>
+              </div>
+              <div className="mt-2">
+                <SuccessSparkline points={sparkPoints} />
+              </div>
+            </div>
+          )}
 
           {/* Strengths */}
           {data.strengths.length > 0 && (
@@ -296,6 +506,80 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                   Train on this
                 </button>
               </div>
+            )}
+          </div>
+
+          {/* 4-Week Coaching Plan */}
+          <div className="rounded-xl border border-mission-control-border p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target size={14} className="text-mission-control-text-dim" />
+                <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                  4-Week Coaching Plan
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshPlan()}
+                disabled={planLoading}
+                className="icon-btn border border-mission-control-border disabled:opacity-50"
+                title="Refresh coaching plan"
+                aria-label="Refresh coaching plan"
+              >
+                <RefreshCw size={12} className={planLoading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+
+            {/* Focus goal input */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider">
+                Coaching focus goal
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={focusInput}
+                  onChange={e => setFocusInput(e.target.value)}
+                  placeholder="e.g. Improve success rate to 90% by end of quarter"
+                  className="flex-1 text-sm"
+                  maxLength={500}
+                  onKeyDown={e => { if (e.key === 'Enter') void saveFocus(); }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveFocus()}
+                  disabled={focusSaving}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity flex-shrink-0"
+                >
+                  {focusSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+
+            {/* 4-week plan cards */}
+            {planLoading && !coachingPlan ? (
+              <div className="grid grid-cols-2 gap-3 animate-pulse">
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} className="h-28 bg-mission-control-border rounded-lg" />
+                ))}
+              </div>
+            ) : coachingPlan ? (
+              <div className="grid grid-cols-2 gap-3">
+                <WeekCard weekNum={1} actions={coachingPlan.plan.week1} />
+                <WeekCard weekNum={2} actions={coachingPlan.plan.week2} />
+                <WeekCard weekNum={3} actions={coachingPlan.plan.week3} />
+                <WeekCard weekNum={4} actions={coachingPlan.plan.week4} />
+              </div>
+            ) : (
+              <p className="text-xs text-mission-control-text-dim text-center py-4">
+                No coaching plan generated yet. Click refresh to generate.
+              </p>
+            )}
+
+            {coachingPlan && (
+              <p className="text-[10px] text-mission-control-text-dim text-right">
+                Updated {new Date(coachingPlan.updatedAt).toLocaleDateString()}
+              </p>
             )}
           </div>
         </>
