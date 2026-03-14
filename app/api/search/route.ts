@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // GET /api/search?q=query
-// Returns { tasks: [...], agents: [...], files: [...], knowledge: [...] }
+// Returns { tasks: [...], agents: [...], files: [...], knowledge: [...], automations: [...] }
 // Max 5 results per category. Searches title/name/description fields via LIKE.
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -69,7 +69,21 @@ export async function GET(request: NextRequest) {
       // knowledge_base table may not exist in all deployments
     }
 
-    return NextResponse.json({ tasks, agents, files, knowledge });
+    // Automations — search name and description
+    let automations: unknown[] = [];
+    try {
+      automations = db.prepare(`
+        SELECT id, name, description, status, trigger_type, updated_at
+        FROM automations
+        WHERE name LIKE ? OR description LIKE ?
+        ORDER BY updated_at DESC
+        LIMIT 5
+      `).all(like, like);
+    } catch {
+      // automations table may not exist in all deployments
+    }
+
+    return NextResponse.json({ tasks, agents, files, knowledge, automations });
   } catch (err) {
     console.error('[/api/search] Error:', err);
     return NextResponse.json({ tasks: [], agents: [], files: [], knowledge: [] }, { status: 500 });
