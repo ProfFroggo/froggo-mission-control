@@ -553,6 +553,7 @@ function CenterPane({
   onToggleStar,
   onArchive,
   onToggleRead,
+  onSnooze,
   loading,
   searchQuery,
   onSearchChange,
@@ -565,6 +566,10 @@ function CenterPane({
   onLoadAll,
   aiAnalyses,
   onMarkAllRead,
+  snoozedIds,
+  onBulkArchive,
+  onBulkMarkRead,
+  onBulkDelete,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
@@ -572,6 +577,7 @@ function CenterPane({
   onToggleStar: (id: string) => void;
   onArchive: (c: ConversationItem) => void;
   onToggleRead: (c: ConversationItem) => void;
+  onSnooze: (id: string, until: number) => void;
   loading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -584,6 +590,10 @@ function CenterPane({
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
   onMarkAllRead?: () => void;
+  snoozedIds: Set<string>;
+  onBulkArchive: (ids: string[]) => void;
+  onBulkMarkRead: (ids: string[]) => void;
+  onBulkDelete: (ids: string[]) => void;
 }) {
   // Platform-specific empty states
   const emptyState = () => {
