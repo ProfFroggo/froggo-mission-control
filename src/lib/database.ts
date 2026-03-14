@@ -767,6 +767,19 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_message_reactions_messageId ON message_reactions(messageId);
 
     -- ══════════════════════════════════════════
+    -- MODULE REVIEWS & RATINGS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS module_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      moduleId TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+      review TEXT,
+      reviewedBy TEXT DEFAULT 'user',
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_module_reviews_moduleId ON module_reviews(moduleId, createdAt DESC);
+
+    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS campaign_automations (
@@ -837,6 +850,11 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE chat_rooms ADD COLUMN pinnedMessageId TEXT`,
     // Chat rooms v2: room description
     `ALTER TABLE chat_rooms ADD COLUMN description TEXT`,
+    // Module configuration: per-module JSON config object
+    `ALTER TABLE catalog_modules ADD COLUMN configuration TEXT DEFAULT '{}'`,
+    // Module health: last activity and error tracking
+    `ALTER TABLE catalog_modules ADD COLUMN lastActivityAt INTEGER`,
+    `ALTER TABLE catalog_modules ADD COLUMN errorCount INTEGER DEFAULT 0`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

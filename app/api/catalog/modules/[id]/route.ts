@@ -48,6 +48,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       fields.push('enabled = ?');
       values.push(body.enabled ? 1 : 0);
     }
+    if (body.configuration !== undefined) {
+      fields.push('configuration = ?');
+      values.push(typeof body.configuration === 'string'
+        ? body.configuration
+        : JSON.stringify(body.configuration));
+    }
 
     if (fields.length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
