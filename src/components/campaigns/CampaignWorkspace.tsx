@@ -8,7 +8,7 @@ import {
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
   CalendarDays, CheckCircle2, CircleDot,
 } from 'lucide-react';
-import { Megaphone } from 'lucide-react';
+import { Megaphone, Calendar, DollarSign } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign, CampaignMember, CampaignAsset } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
