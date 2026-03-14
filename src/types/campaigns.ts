@@ -27,6 +27,19 @@ export interface KpiEntry {
   actual: number;
 }
 
+export interface CampaignMetrics {
+  reach?: number;
+  impressions?: number;
+  clicks?: number;
+  conversions?: number;
+  revenue?: number;
+  cost?: number;
+  // Channel breakdown for attribution pie (values are percentages 0-100)
+  attributionSocial?: number;
+  attributionEmail?: number;
+  attributionOrganic?: number;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -43,6 +56,8 @@ export interface Campaign {
   startDate?: number;
   endDate?: number;
   briefContent?: string;
+  brief?: string;
+  metrics?: string; // JSON: CampaignMetrics
   color: string;
   createdBy?: string;
   createdAt: number;
