@@ -1234,7 +1234,7 @@ export default function KnowledgeBase() {
       {showGraph && (
         <KnowledgeGraphPanel
           articles={articles}
-          onNavigate={article => { setViewing(article); setShowGraph(false); }}
+          onNavigate={article => { setViewing(article as unknown as KBArticle); setShowGraph(false); }}
           onClose={() => setShowGraph(false)}
         />
       )}
