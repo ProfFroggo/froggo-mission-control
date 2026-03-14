@@ -21,9 +21,10 @@ function ensureColumns(db: ReturnType<typeof getDb>) {
 // GET /api/automations/[id]/runs?limit=20
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const db = getDb();
     ensureColumns(db);
 
@@ -37,7 +38,7 @@ export async function GET(
          ORDER BY startedAt DESC
          LIMIT ?`
       )
-      .all(params.id, limit) as Record<string, unknown>[];
+      .all(id, limit) as Record<string, unknown>[];
 
     const runs = rows.map((row) => ({
       id: row.id,
@@ -59,7 +60,7 @@ export async function GET(
 
     return NextResponse.json({ runs });
   } catch (err) {
-    console.error(`GET /api/automations/${params.id}/runs error:`, err);
+    console.error(`GET /api/automations/runs error:`, err);
     return handleApiError(err);
   }
 }

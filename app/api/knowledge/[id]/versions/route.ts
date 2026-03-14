@@ -6,9 +6,10 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const db = getDb();
-  const article = db.prepare('SELECT id FROM knowledge_base WHERE id = ?').get(params.id);
+  const article = db.prepare('SELECT id FROM knowledge_base WHERE id = ?').get(id);
   if (!article) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
   const versions = db.prepare(
@@ -17,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
      WHERE articleId = ?
      ORDER BY editedAt DESC
      LIMIT 10`
-  ).all(params.id) as Array<{
+  ).all(id) as Array<{
     id: number;
     articleId: string;
     editedBy: string;

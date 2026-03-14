@@ -707,6 +707,7 @@ mark {
 }
 
 /* ============================================================
+/* ============================================================
    Mobile responsive utilities
    ============================================================ */
 @media (max-width: 768px) {
@@ -722,16 +723,26 @@ mark {
   .overflow-y-auto,
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
+  }
+
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
     font-size: 16px !important;
+  }
+
   .modal-content {
     max-height: 90vh;
     overflow-y: auto;
     margin: 0 16px;
     border-radius: 12px;
+  }
+
   .mobile-stack {
     flex-direction: column !important;
+  }
 }
+
 /* Accent color presets — set via data-accent attribute on :root */
 :root[data-accent="blue"]   { --mission-control-accent: #3b82f6; --mission-control-accent-dim: #2563eb; }
 :root[data-accent="purple"] { --mission-control-accent: #8b5cf6; --mission-control-accent-dim: #7c3aed; }

@@ -6,9 +6,10 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const db = getDb();
-  const article = db.prepare('SELECT id, category FROM knowledge_base WHERE id = ?').get(params.id) as
+  const article = db.prepare('SELECT id, category FROM knowledge_base WHERE id = ?').get(id) as
     | { id: string; category: string }
     | undefined;
   if (!article) {
@@ -18,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const viewRow = db.prepare(
     `SELECT COUNT(*) as views, MAX(recordedAt) as lastViewedAt
      FROM knowledge_analytics WHERE articleId = ? AND event = 'view'`
-  ).get(params.id) as { views: number; lastViewedAt: number | null };
+  ).get(id) as { views: number; lastViewedAt: number | null };
 
   // Related = same category, ordered by view count desc, limit 5 (excluding current)
   const related = db.prepare(`
@@ -30,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     GROUP BY kb.id
     ORDER BY viewCount DESC, kb.updatedAt DESC
     LIMIT 5
-  `).all(article.category, params.id) as Array<Record<string, unknown>>;
+  `).all(article.category, id) as Array<Record<string, unknown>>;
 
   const relatedParsed = related.map((a) => ({
     ...a,
@@ -46,18 +47,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const db = getDb();
   try {
+    const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const event = (body as { event?: string }).event ?? 'view';
-    const article = db.prepare('SELECT id FROM knowledge_base WHERE id = ?').get(params.id);
+    const article = db.prepare('SELECT id FROM knowledge_base WHERE id = ?').get(id);
     if (!article) {
       return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
     }
     db.prepare(
       `INSERT INTO knowledge_analytics (articleId, event, recordedAt) VALUES (?, ?, ?)`
-    ).run(params.id, event, Date.now());
+    ).run(id, event, Date.now());
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
