@@ -22,6 +22,8 @@ const EVENT_TYPES = [
   'circuit.closed',
   'task.unblocked',
   'agent.hired',
+  'automation.completed',
+  'automation.failed',
 ];
 
 function dispatchEvent(type: string, data: unknown) {
