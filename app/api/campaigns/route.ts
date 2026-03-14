@@ -6,10 +6,18 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 function parseCampaign(c: Record<string, unknown>): Record<string, unknown> {
+  // Parse types: try the types column first; fallback to wrapping legacy type string
+  let types: string[] = [];
+  if (c.types) {
+    try { types = JSON.parse(c.types as string); } catch { types = [c.types as string]; }
+  } else if (c.type) {
+    types = [c.type as string];
+  }
   return {
     ...c,
     channels: (() => { try { return JSON.parse(c.channels as string); } catch { return []; } })(),
     kpis: (() => { try { return JSON.parse(c.kpis as string); } catch { return {}; } })(),
+    types,
   };
 }
 
@@ -61,10 +69,21 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const body = await req.json().catch(() => ({}));
     const {
-      name, description, type = 'general', goal, channels = [], budget,
+      name, description, goal, channels = [], budget,
       currency = 'USD', targetAudience, startDate, endDate, briefContent,
       color = '#6366f1', memberAgentIds = [],
     } = body;
+
+    // Accept `types` array or legacy `type` string
+    let types: string[] = [];
+    if (Array.isArray(body.types) && body.types.length > 0) {
+      types = body.types;
+    } else if (typeof body.type === 'string' && body.type) {
+      types = [body.type];
+    } else {
+      types = ['general'];
+    }
+    const primaryType = types[0];
 
     if (!name?.trim()) {
       return NextResponse.json({ success: false, error: 'name required' }, { status: 400 });
@@ -73,11 +92,16 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
     const id = `cmp-${now}-${Math.random().toString(36).slice(2, 7)}`;
 
+    // Ensure types column exists (migration for existing DBs)
+    try {
+      db.exec(`ALTER TABLE campaigns ADD COLUMN types TEXT`);
+    } catch { /* column already exists */ }
+
     db.prepare(`
-      INSERT INTO campaigns (id, name, description, type, goal, status, channels, budget, budgetSpent, currency, targetAudience, kpis, startDate, endDate, briefContent, color, createdBy, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, 0, ?, ?, '{}', ?, ?, ?, ?, 'human', ?, ?)
+      INSERT INTO campaigns (id, name, description, type, types, goal, status, channels, budget, budgetSpent, currency, targetAudience, kpis, startDate, endDate, briefContent, color, createdBy, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, 0, ?, ?, '{}', ?, ?, ?, ?, 'human', ?, ?)
     `).run(
-      id, name.trim(), description || null, type, goal || null,
+      id, name.trim(), description || null, primaryType, JSON.stringify(types), goal || null,
       JSON.stringify(channels), budget || null, currency, targetAudience || null,
       startDate || null, endDate || null, briefContent || null, color, now, now
     );

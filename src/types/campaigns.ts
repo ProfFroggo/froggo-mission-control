@@ -45,6 +45,7 @@ export interface Campaign {
   name: string;
   description?: string;
   type: string;
+  types?: string[];
   goal?: string;
   status: string;
   channels: string[];

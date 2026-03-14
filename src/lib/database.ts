@@ -1077,6 +1077,11 @@ function initSchema(db: Database.Database) {
     db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
   } catch { /* non-critical */ }
 
+  // Phase 80: campaigns.types column (multi-type support)
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN types TEXT`);
+  } catch { /* column already exists */ }
+
   syncCatalogAgents(db);
   syncCatalogModules(db);
 

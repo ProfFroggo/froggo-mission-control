@@ -58,8 +58,12 @@ interface CampaignCardProps {
 
 export default function CampaignCard({ campaign, onClick, viewMode = 'grid' }: CampaignCardProps) {
   const sc = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft;
-  const tc = TYPE_COLORS[campaign.type] ?? TYPE_COLORS.general;
-  const typeLabel = TYPE_LABELS[campaign.type] ?? campaign.type;
+  // Support both legacy `type: string` and new `types: string[]`
+  const primaryType = (campaign.types && campaign.types.length > 0) ? campaign.types[0] : campaign.type;
+  const tc = TYPE_COLORS[primaryType] ?? TYPE_COLORS.general;
+  const typeLabel = campaign.types && campaign.types.length > 1
+    ? campaign.types.map(t => TYPE_LABELS[t] ?? t).join(', ')
+    : (TYPE_LABELS[primaryType] ?? primaryType);
 
   const totalTasks = campaign.totalTasks ?? 0;
   const doneTasks = campaign.doneTasks ?? 0;
