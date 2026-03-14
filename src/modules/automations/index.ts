@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
- * Automations Module — smart workflow automations.
- * Registers the Automations panel in the ViewRegistry.
+ * Automations Module — agentic automation builder.
+ * Lets users describe automations in plain English or build step-by-step.
  */
 
 import { lazy } from 'react';
@@ -12,18 +12,18 @@ import manifest from './module.json';
 
 const AutomationsPanel = lazy(() => import('../../components/AutomationsPanel'));
 
+ViewRegistry.register({
+  id: 'automations',
+  label: 'Automations',
+  icon: Zap,
+  component: AutomationsPanel,
+  moduleId: manifest.id,
+  category: manifest.category,
+  description: manifest.description,
+});
+
 const lifecycle: ModuleLifecycle = {
-  async init() {
-    ViewRegistry.register({
-      id: 'automations',
-      label: 'Automations',
-      icon: Zap,
-      component: AutomationsPanel,
-      moduleId: manifest.id,
-      category: manifest.category,
-      description: manifest.description,
-    });
-  },
+  async init() {},
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);

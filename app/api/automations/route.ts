@@ -1,131 +1,198 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { randomUUID } from 'crypto';
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function parseAutomation(a: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...a,
-    trigger_config: (() => { try { return JSON.parse(a.trigger_config as string); } catch { return {}; } })(),
-    steps: (() => { try { return JSON.parse(a.steps as string); } catch { return []; } })(),
-  };
+function parseAutomation(row: Record<string, unknown>) {
+  if (!row) return row;
+  const parsed = { ...row };
+  for (const field of ['trigger_config', 'steps']) {
+    if (typeof parsed[field] === 'string') {
+      try {
+        parsed[field] = JSON.parse(parsed[field] as string);
+      } catch {
+        parsed[field] = field === 'steps' ? [] : {};
+      }
+    }
+  }
+  return parsed;
 }
 
-// GET /api/automations — list all automations
-export async function GET(_req: NextRequest) {
+// ─── GET — list all automations ───────────────────────────────────────────────
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get('action');
+
+  // Parse endpoint — NL description → structured automation (stub)
+  if (action === 'parse') {
+    return NextResponse.json({ error: 'Use POST /api/automations?action=parse' }, { status: 405 });
+  }
+
   try {
     const db = getDb();
-    const rows = db.prepare('SELECT * FROM automations ORDER BY updated_at DESC').all() as Record<string, unknown>[];
-    const automations = rows.map(parseAutomation);
-    return NextResponse.json(automations);
-  } catch (error) {
-    console.error('GET /api/automations error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    const status = searchParams.get('status');
+    let rows: Record<string, unknown>[];
+    if (status) {
+      rows = db.prepare('SELECT * FROM automations WHERE status = ? ORDER BY createdAt DESC').all(status) as Record<string, unknown>[];
+    } else {
+      rows = db.prepare('SELECT * FROM automations ORDER BY createdAt DESC').all() as Record<string, unknown>[];
+    }
+    return NextResponse.json(rows.map(parseAutomation));
+  } catch (err) {
+    console.error('[automations GET]', err);
+    return NextResponse.json([], { status: 200 }); // return empty array if table not ready
   }
 }
 
-// POST /api/automations — create automation
-export async function POST(req: NextRequest) {
+// ─── POST — create a new automation OR parse NL description ──────────────────
+
+export async function POST(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get('action');
+
   try {
+    const body = await request.json();
+
+    // NL parse stub — in production this would call an AI agent
+    if (action === 'parse') {
+      const description: string = body.description ?? '';
+      // Basic heuristic parse for demo purposes
+      const isSchedule = /every|daily|weekly|monday|morning|night|at \d/i.test(description);
+      const isEvent = /when|trigger|created|approved|rejected/i.test(description);
+      const trigger_type = isSchedule ? 'schedule' : isEvent ? 'event' : 'manual';
+      const trigger_config = trigger_type === 'schedule'
+        ? { time: '09:00', frequency: 'daily' }
+        : trigger_type === 'event'
+        ? { event: 'task.created' }
+        : {};
+
+      // Extract a reasonable name from the first sentence
+      const name = description.split(/[.!?]/)[0].trim().slice(0, 80);
+
+      const steps = [
+        {
+          id: 'step-1',
+          type: 'run-agent',
+          label: 'Agent: ' + description.slice(0, 60),
+          config: { agentRole: 'researcher', prompt: description },
+        },
+      ];
+
+      return NextResponse.json({ name, description, trigger_type, trigger_config, steps });
+    }
+
+    // Check if this is a run-now action
+    if (action === 'run') {
+      const id = searchParams.get('id');
+      if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+      const db = getDb();
+      const now = Date.now();
+      db.prepare('UPDATE automations SET lastRun = ?, updatedAt = ? WHERE id = ?').run(now, now, id);
+      return NextResponse.json({ ok: true, lastRun: now });
+    }
+
+    // Create automation
     const db = getDb();
-    const body = await req.json().catch(() => ({}));
+    const id = randomUUID();
+    const now = Date.now();
     const {
       name,
       description = '',
-      status = 'draft',
-      trigger_type = 'manual',
+      trigger_type,
       trigger_config = {},
       steps = [],
+      status = 'draft',
     } = body;
 
-    if (!name?.trim()) {
-      return NextResponse.json({ success: false, error: 'name required' }, { status: 400 });
+    if (!name || !trigger_type) {
+      return NextResponse.json({ error: 'name and trigger_type are required' }, { status: 400 });
     }
 
-    const now = Date.now();
-    const id = `auto-${now}-${Math.random().toString(36).slice(2, 7)}`;
-
     db.prepare(`
-      INSERT INTO automations (id, name, description, status, trigger_type, trigger_config, steps, created_at, updated_at)
+      INSERT INTO automations (id, name, description, trigger_type, trigger_config, steps, status, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
-      name.trim(),
+      name,
       description,
-      status,
       trigger_type,
       JSON.stringify(trigger_config),
       JSON.stringify(steps),
+      status,
       now,
       now,
     );
 
     const row = db.prepare('SELECT * FROM automations WHERE id = ?').get(id) as Record<string, unknown>;
     return NextResponse.json(parseAutomation(row), { status: 201 });
-  } catch (error) {
-    console.error('POST /api/automations error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    console.error('[automations POST]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// PATCH /api/automations?id=... — update automation
-export async function PATCH(req: NextRequest) {
+// ─── PATCH — update an existing automation ───────────────────────────────────
+
+export async function PATCH(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
   try {
     const db = getDb();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
-    }
-
-    const body = await req.json().catch(() => ({}));
+    const body = await request.json();
     const now = Date.now();
 
     const fields: string[] = [];
-    const params: unknown[] = [];
+    const values: unknown[] = [];
 
-    if (body.name !== undefined)           { fields.push('name = ?');           params.push(body.name); }
-    if (body.description !== undefined)    { fields.push('description = ?');    params.push(body.description); }
-    if (body.status !== undefined)         { fields.push('status = ?');         params.push(body.status); }
-    if (body.trigger_type !== undefined)   { fields.push('trigger_type = ?');   params.push(body.trigger_type); }
-    if (body.trigger_config !== undefined) { fields.push('trigger_config = ?'); params.push(JSON.stringify(body.trigger_config)); }
-    if (body.steps !== undefined)          { fields.push('steps = ?');          params.push(JSON.stringify(body.steps)); }
-    if (body.last_run !== undefined)       { fields.push('last_run = ?');       params.push(body.last_run); }
-    if (body.next_run !== undefined)       { fields.push('next_run = ?');       params.push(body.next_run); }
-
-    fields.push('updated_at = ?');
-    params.push(now);
-    params.push(id);
-
-    db.prepare(`UPDATE automations SET ${fields.join(', ')} WHERE id = ?`).run(...params);
-
-    const row = db.prepare('SELECT * FROM automations WHERE id = ?').get(id) as Record<string, unknown> | undefined;
-    if (!row) {
-      return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+    const allowed = ['name', 'description', 'trigger_type', 'trigger_config', 'steps', 'status', 'nextRun', 'lastRun'];
+    for (const key of allowed) {
+      if (key in body) {
+        fields.push(`${key} = ?`);
+        const val = body[key];
+        values.push(typeof val === 'object' && val !== null ? JSON.stringify(val) : val);
+      }
     }
+
+    if (fields.length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    fields.push('updatedAt = ?');
+    values.push(now);
+    values.push(id);
+
+    db.prepare(`UPDATE automations SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+
+    const row = db.prepare('SELECT * FROM automations WHERE id = ?').get(id) as Record<string, unknown>;
+    if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(parseAutomation(row));
-  } catch (error) {
-    console.error('PATCH /api/automations error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    console.error('[automations PATCH]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/automations?id=... — delete automation
-export async function DELETE(req: NextRequest) {
+// ─── DELETE — remove an automation ───────────────────────────────────────────
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
   try {
     const db = getDb();
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
+    const result = db.prepare('DELETE FROM automations WHERE id = ?').run(id);
+    if (result.changes === 0) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-
-    db.prepare('DELETE FROM automations WHERE id = ?').run(id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('DELETE /api/automations error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[automations DELETE]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -26,3 +26,4 @@ import './projects';
 import './campaigns';
 import './automations';
 import './schedule';
+import './automations';
