@@ -58,6 +58,20 @@ export async function GET(request: NextRequest) {
       values.push(priority);
     }
 
+    // ?overdue=true — tasks with a past due date that aren't done
+    const overdue = searchParams.get('overdue');
+    if (overdue === 'true') {
+      conditions.push(`dueDate IS NOT NULL AND dueDate < ? AND status NOT IN ('done')`);
+      values.push(Date.now());
+    }
+
+    // ?dueBefore=timestamp — tasks due before given timestamp
+    const dueBefore = searchParams.get('dueBefore');
+    if (dueBefore) {
+      conditions.push('dueDate IS NOT NULL AND dueDate < ?');
+      values.push(parseInt(dueBefore, 10));
+    }
+
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
