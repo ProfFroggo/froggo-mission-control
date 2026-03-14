@@ -1,0 +1,116 @@
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/database';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+type Params = { params: Promise<{ id: string }> };
+
+/**
+ * GET /api/projects/:id/health
+ *
+ * Returns a health score (0–100) for the project, broken down into four
+ * sub-scores:
+ *
+ *  - taskCompletion   (0–40 pts) completedTasks / totalTasks × 40
+ *  - onTimeDelivery   (0–30 pts) tasksOnTime   / completedTasks × 30
+ *  - teamEngagement   (0–20 pts) activeMembersLast7d / totalMembers × 20
+ *  - agentCoverage    (0–10 pts) tasksWithAgent / totalTasks × 10
+ */
+export async function GET(_req: NextRequest, { params }: Params) {
+  try {
+    const { id } = await params;
+    const db = getDb();
+
+    const project = db.prepare('SELECT id FROM projects WHERE id = ?').get(id);
+    if (!project) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    const now = Date.now();
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+    // ── Task counts ──────────────────────────────────────────────────────────
+    const taskRow = db.prepare(`
+      SELECT
+        COUNT(*)                                                              AS totalTasks,
+        SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                     AS completedTasks,
+        SUM(CASE WHEN status = 'done' AND (dueDate IS NULL OR completedAt <= dueDate) THEN 1 ELSE 0 END) AS tasksOnTime,
+        SUM(CASE WHEN assignedTo IS NOT NULL AND assignedTo != '' THEN 1 ELSE 0 END) AS tasksWithAgent
+      FROM tasks
+      WHERE project_id = ?
+    `).get(id) as {
+      totalTasks: number;
+      completedTasks: number;
+      tasksOnTime: number;
+      tasksWithAgent: number;
+    };
+
+    // ── Member engagement ────────────────────────────────────────────────────
+    const memberRow = db.prepare(`
+      SELECT COUNT(*) AS totalMembers FROM project_members WHERE projectId = ?
+    `).get(id) as { totalMembers: number };
+
+    // Active = has task_activity in last 7 days for this project's tasks
+    const activeRow = db.prepare(`
+      SELECT COUNT(DISTINCT ta.agentId) AS activeMembersLast7d
+      FROM task_activity ta
+      INNER JOIN tasks t ON t.id = ta.taskId
+      WHERE t.project_id = ? AND ta.timestamp >= ? AND ta.agentId IS NOT NULL
+    `).get(id, sevenDaysAgo) as { activeMembersLast7d: number };
+
+    const totalTasks     = taskRow.totalTasks     ?? 0;
+    const completedTasks = taskRow.completedTasks ?? 0;
+    const tasksOnTime    = taskRow.tasksOnTime    ?? 0;
+    const tasksWithAgent = taskRow.tasksWithAgent ?? 0;
+    const totalMembers   = memberRow.totalMembers ?? 0;
+    const activeMembersLast7d = activeRow.activeMembersLast7d ?? 0;
+
+    // ── Sub-scores ───────────────────────────────────────────────────────────
+    const taskCompletionScore = totalTasks > 0
+      ? (completedTasks / totalTasks) * 40
+      : 20; // neutral when no tasks
+
+    const onTimeScore = completedTasks > 0
+      ? (tasksOnTime / completedTasks) * 30
+      : 15; // neutral when nothing completed yet
+
+    const teamEngagementScore = totalMembers > 0
+      ? (Math.min(activeMembersLast7d, totalMembers) / totalMembers) * 20
+      : 5;
+
+    const agentCoverageScore = totalTasks > 0
+      ? (tasksWithAgent / totalTasks) * 10
+      : 5;
+
+    const score = Math.min(
+      100,
+      Math.round(
+        taskCompletionScore + onTimeScore + teamEngagementScore + agentCoverageScore
+      )
+    );
+
+    return NextResponse.json({
+      projectId: id,
+      score,
+      breakdown: {
+        taskCompletion:   Math.round(taskCompletionScore),
+        onTimeDelivery:   Math.round(onTimeScore),
+        teamEngagement:   Math.round(teamEngagementScore),
+        agentCoverage:    Math.round(agentCoverageScore),
+      },
+      meta: {
+        totalTasks,
+        completedTasks,
+        tasksOnTime,
+        tasksWithAgent,
+        totalMembers,
+        activeMembersLast7d,
+      },
+    });
+  } catch (error) {
+    console.error('GET /api/projects/:id/health error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

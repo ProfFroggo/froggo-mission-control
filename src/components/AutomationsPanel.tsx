@@ -1,11 +1,13 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
+import { useState, useEffect, useCallback, useRef, type ComponentType } from 'react';
 import {
   Zap, Clock, Globe, Bot, Plus, Play, Pause, Trash2, Edit2,
   Search, LayoutGrid, List, ChevronRight, AlertCircle, CheckCircle,
-  RefreshCw, Calendar, FileText, MessageSquare, Archive,
+  RefreshCw, Calendar, FileText, MessageSquare, Archive, History, X,
 } from 'lucide-react';
 import AutomationBuilderModal from './AutomationBuilderModal';
+import { useEventBus } from '../lib/useEventBus';
+import { showToast } from './Toast';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -129,6 +131,155 @@ const TEMPLATES: Template[] = [
   },
 ];
 
+// ─── Run history types ───────────────────────────────────────────────────────
+
+interface AutomationRun {
+  id: string;
+  automationId: string;
+  status: 'running' | 'success' | 'failed';
+  stepsRun: number;
+  startedAt: number;
+  completedAt?: number;
+  message?: string;
+}
+
+// ─── Runs popover ─────────────────────────────────────────────────────────────
+
+interface RunsPopoverProps {
+  automationId: string;
+  automationName: string;
+  onClose: () => void;
+}
+
+function RunsPopover({ automationId, automationName, onClose }: RunsPopoverProps) {
+  const [runs, setRuns] = useState<AutomationRun[]>([]);
+  const [loading, setLoading] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/automations/${automationId}/run`);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setRuns(Array.isArray(data) ? data.slice(0, 10) : []);
+        }
+      } catch { /* silent */ }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [automationId]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  function formatDuration(startedAt: number, completedAt?: number): string {
+    if (!completedAt) return '—';
+    const ms = completedAt - startedAt;
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
+
+  function formatRelative(ts: number): string {
+    const diff = Date.now() - ts;
+    const minutes = Math.floor(diff / 60_000);
+    const hours = Math.floor(diff / 3_600_000);
+    const days = Math.floor(diff / 86_400_000);
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'just now';
+  }
+
+  const statusColor = (s: AutomationRun['status']) =>
+    s === 'success' ? 'var(--status-active, #22c55e)' : s === 'failed' ? 'var(--status-error, #ef4444)' : 'var(--status-paused, #f59e0b)';
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: 'absolute',
+        right: 0,
+        top: '100%',
+        marginTop: 4,
+        zIndex: 100,
+        background: 'var(--mission-control-surface)',
+        border: '1px solid var(--mission-control-border)',
+        borderRadius: 12,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
+        width: 360,
+        maxHeight: 400,
+        overflow: 'auto',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid var(--mission-control-border)' }}>
+        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--mission-control-text)' }}>
+          Run history — {automationName}
+        </span>
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--mission-control-text-dim)', padding: 2 }}
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div style={{ padding: '8px 0' }}>
+        {loading ? (
+          <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--mission-control-text-dim)', fontSize: 13 }}>
+            Loading...
+          </div>
+        ) : runs.length === 0 ? (
+          <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--mission-control-text-dim)', fontSize: 13 }}>
+            No runs yet
+          </div>
+        ) : runs.map(run => (
+          <div
+            key={run.id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 16px',
+              borderBottom: '1px solid var(--mission-control-border)',
+            }}
+          >
+            <span
+              style={{
+                width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                background: statusColor(run.status),
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--mission-control-text)', textTransform: 'capitalize' }}>
+                {run.status}
+                <span style={{ fontWeight: 400, color: 'var(--mission-control-text-dim)', marginLeft: 6 }}>
+                  {run.stepsRun} step{run.stepsRun !== 1 ? 's' : ''} &middot; {formatDuration(run.startedAt, run.completedAt)}
+                </span>
+              </div>
+              {run.message && run.status === 'failed' && (
+                <div style={{ fontSize: 11, color: 'var(--status-error, #ef4444)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {run.message}
+                </div>
+              )}
+            </div>
+            <span style={{ fontSize: 11, color: 'var(--mission-control-text-dim)', flexShrink: 0 }}>
+              {formatRelative(run.startedAt)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: AutomationStatus }) {
@@ -201,6 +352,7 @@ interface AutomationCardProps {
 
 function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: AutomationCardProps) {
   const isActive = automation.status === 'active';
+  const [runsOpen, setRunsOpen] = useState(false);
 
   return (
     <div
@@ -212,6 +364,7 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
+        position: 'relative',
       }}
     >
       {/* Top row: name + status + toggle */}
@@ -298,6 +451,19 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
           <Edit2 size={12} /> Edit
         </button>
         <button
+          onClick={() => setRunsOpen(prev => !prev)}
+          title="View run history"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+            background: runsOpen ? 'var(--mission-control-border)' : 'transparent',
+            color: 'var(--mission-control-text-dim)',
+            border: '1px solid var(--mission-control-border)', cursor: 'pointer',
+          }}
+        >
+          <History size={12} /> Runs
+        </button>
+        <button
           onClick={() => onDelete(automation.id)}
           style={{
             marginLeft: 'auto',
@@ -310,6 +476,15 @@ function AutomationCard({ automation, onToggle, onDelete, onEdit, onRunNow }: Au
           <Trash2 size={12} />
         </button>
       </div>
+
+      {/* Run history popover */}
+      {runsOpen && (
+        <RunsPopover
+          automationId={automation.id}
+          automationName={automation.name}
+          onClose={() => setRunsOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -479,6 +654,23 @@ export default function AutomationsPanel() {
   }, []);
 
   useEffect(() => { fetchAutomations(); }, [fetchAutomations]);
+
+  // SSE: automation.completed — toast + refresh list
+  useEventBus('automation.completed', (data) => {
+    const d = data as { name?: string; stepsRun?: number };
+    const name = d?.name ?? 'Unknown';
+    const steps = d?.stepsRun ?? 0;
+    showToast('success', `Automation '${name}' completed (${steps} step${steps !== 1 ? 's' : ''})`);
+    fetchAutomations();
+  });
+
+  // SSE: automation.failed — toast + refresh list
+  useEventBus('automation.failed', (data) => {
+    const d = data as { name?: string };
+    const name = d?.name ?? 'Unknown';
+    showToast('error', `Automation '${name}' failed`);
+    fetchAutomations();
+  });
 
   const handleToggle = async (id: string, currentStatus: AutomationStatus) => {
     const newStatus: AutomationStatus = currentStatus === 'active' ? 'paused' : 'active';

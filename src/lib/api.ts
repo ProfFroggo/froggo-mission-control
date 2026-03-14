@@ -380,6 +380,12 @@ export const projectsApi = {
     apiCall(`/projects/${id}`, { method: 'PATCH', body: data }),
   archive: (id: string) =>
     apiCall(`/projects/${id}`, { method: 'DELETE' }),
+  archiveProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: true } }),
+  restoreProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: false } }),
+  getHealth: (id: string) =>
+    apiCall(`/projects/${id}/health`),
   getMembers: (id: string) =>
     apiCall(`/projects/${id}/members`),
   addMember: (id: string, agentId: string, role = 'member') =>

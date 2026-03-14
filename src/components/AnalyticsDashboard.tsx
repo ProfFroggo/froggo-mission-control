@@ -241,7 +241,7 @@ export default function AnalyticsDashboard() {
             </button>
 
             <button
-              onClick={handleExport}
+              onClick={() => handleExport('tasks', 'csv')}
               className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
             >
               <Download size={16} />

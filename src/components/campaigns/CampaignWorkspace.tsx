@@ -936,6 +936,126 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
   );
 }
 
+// ── Link Automation Modal ──────────────────────────────────────────────────────
+const TRIGGER_OPTIONS = [
+  { value: 'campaign-started',  label: 'Campaign started' },
+  { value: 'campaign-ended',    label: 'Campaign ended' },
+  { value: 'milestone-reached', label: 'Milestone reached' },
+];
+
+function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
+  const [allAutomations, setAllAutomations] = useState<{ id: string; name: string; status: string }[]>([]);
+  const [linked, setLinked] = useState<{ automationId: string; campaignTriggerType: string }[]>([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [triggerType, setTriggerType] = useState('campaign-started');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/automations').then(r => r.json()),
+      campaignsApi.listAutomations(campaignId) as Promise<{ automations: { automationId: string; campaignTriggerType: string }[] }>,
+    ]).then(([autoRes, linkRes]) => {
+      setAllAutomations((autoRes.automations ?? []).filter((a: { status: string }) => a.status !== 'draft'));
+      setLinked(linkRes.automations ?? []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [campaignId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLink = async () => {
+    if (!selectedId) return;
+    setSaving(true);
+    try {
+      await campaignsApi.linkAutomation(campaignId, selectedId, triggerType);
+      showToast('Automation linked', 'success');
+      setLinked(prev => [...prev, { automationId: selectedId, campaignTriggerType: triggerType }]);
+      setSelectedId('');
+    } catch { showToast('Failed to link automation', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const handleUnlink = async (automationId: string) => {
+    try {
+      await campaignsApi.unlinkAutomation(campaignId, automationId);
+      setLinked(prev => prev.filter(l => l.automationId !== automationId));
+      showToast('Automation unlinked', 'success');
+    } catch { showToast('Failed to unlink', 'error'); }
+  };
+
+  const linkedIds = new Set(linked.map(l => l.automationId));
+  const available = allAutomations.filter(a => !linkedIds.has(a.id));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-mission-control-text-primary flex items-center gap-2">
+            <Zap size={15} className="text-mission-control-accent" /> Link Automation
+          </h2>
+          <button onClick={onClose} className="text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8"><Spinner size={20} /></div>
+        ) : (
+          <>
+            {linked.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Linked</p>
+                {linked.map(l => {
+                  const auto = allAutomations.find(a => a.id === l.automationId);
+                  return (
+                    <div key={l.automationId} className="flex items-center justify-between bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
+                      <div>
+                        <p className="text-xs font-medium text-mission-control-text-primary">{auto?.name ?? l.automationId}</p>
+                        <p className="text-[10px] text-mission-control-text-dim capitalize">{l.campaignTriggerType.replace(/-/g, ' ')}</p>
+                      </div>
+                      <button onClick={() => handleUnlink(l.automationId)} className="text-mission-control-text-dim hover:text-error transition-colors p-1">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Add automation</p>
+              {available.length === 0 ? (
+                <p className="text-xs text-mission-control-text-dim py-2">All automations already linked, or none exist.</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs text-mission-control-text-dim mb-1 block">Automation</label>
+                    <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
+                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded text-mission-control-text-primary focus:outline-none">
+                      <option value="">Select automation...</option>
+                      {available.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-mission-control-text-dim mb-1 block">Trigger</label>
+                    <select value={triggerType} onChange={e => setTriggerType(e.target.value)}
+                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded text-mission-control-text-primary focus:outline-none">
+                      {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={handleLink} disabled={!selectedId || saving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors w-full justify-center">
+                    {saving ? <Spinner size={12} /> : <Zap size={13} />} Link Automation
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Campaign Settings Popover ──────────────────────────────────────────────────
 function CampaignSettings({
   campaign, onUpdated, onArchived, onDuplicate,
