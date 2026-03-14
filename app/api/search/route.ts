@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
     : null; // null = all types
 
   const wantType = (type: string) => !requestedTypes || requestedTypes.has(type);
-
   // Pagination per group
+    : null;
   const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '5', 10), 1), 50);
   const offset = Math.max(parseInt(searchParams.get('offset') ?? '0', 10), 0);
 
@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Agents ───────────────────────────────────────────────────────────────
+      } catch { /* tasks table may vary */ }
     if (wantType('agents')) {
       try {
         const allAgents = db.prepare(`
@@ -101,6 +102,8 @@ export async function GET(request: NextRequest) {
 
     // ── Knowledge base ───────────────────────────────────────────────────────
     // Rank: title match first, then content-only match
+        result.agents = { items: allAgents.slice(offset, offset + limit), total: allAgents.length };
+      } catch { /* agents table may not exist */ }
     if (wantType('knowledge')) {
       try {
         const allKnowledge = db.prepare(`
@@ -120,6 +123,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Library files ────────────────────────────────────────────────────────
+      } catch { /* knowledge_base table may not exist */ }
     if (wantType('library')) {
       try {
         const allFiles = db.prepare(`
@@ -138,6 +142,8 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Campaigns ────────────────────────────────────────────────────────────
+        result.library = { items: allFiles.slice(offset, offset + limit), total: allFiles.length };
+      } catch { /* library_files table may not exist */ }
     if (wantType('campaigns')) {
       try {
         const allCampaigns = db.prepare(`
@@ -156,6 +162,8 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Automations ──────────────────────────────────────────────────────────
+        result.campaigns = { items: allCampaigns.slice(offset, offset + limit), total: allCampaigns.length };
+      } catch { /* campaigns table may not exist */ }
     if (wantType('automations')) {
       try {
         const allAutomations = db.prepare(`
@@ -171,6 +179,8 @@ export async function GET(request: NextRequest) {
       } catch {
         // automations table may not exist
       }
+        result.automations = { items: allAutomations.slice(offset, offset + limit), total: allAutomations.length };
+      } catch { /* automations table may not exist */ }
     }
 
     return NextResponse.json(result);
