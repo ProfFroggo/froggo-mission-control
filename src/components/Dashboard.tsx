@@ -290,7 +290,8 @@ function ApprovalsQueue({
   onReject: (id: string) => void;
   onNavigate?: (view: View) => void;
 }) {
-  const pending = approvals.filter(a => a.status === 'pending');
+  // Memoized so the filter only re-runs when approvals array reference changes
+  const pending = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
 
   return (
     <div className={`bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border overflow-hidden flex flex-col ${

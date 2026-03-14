@@ -30,22 +30,42 @@ function dispatchEvent(type: string, data: unknown) {
   });
 }
 
+// Stable named listeners stored so they can be removed on reconnect,
+// preventing listener accumulation on the EventSource singleton.
+const namedListeners = new Map<string, (e: MessageEvent) => void>();
+
+function attachListeners(es: EventSource): void {
+  for (const type of EVENT_TYPES) {
+    const listener = (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data);
+        dispatchEvent(type, data);
+      } catch { /* ignore parse errors */ }
+    };
+    namedListeners.set(type, listener);
+    es.addEventListener(type, listener);
+  }
+}
+
+function detachListeners(es: EventSource): void {
+  for (const [type, listener] of namedListeners) {
+    es.removeEventListener(type, listener);
+  }
+  namedListeners.clear();
+}
+
 function connectEventSource(): EventSource {
   if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
     return eventSource;
   }
 
-  eventSource = new EventSource('/api/events');
-
-  // Named event handlers for each registered event type
-  for (const type of EVENT_TYPES) {
-    eventSource.addEventListener(type, (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        dispatchEvent(type, data);
-      } catch { /* ignore parse errors */ }
-    });
+  // Remove stale listeners from the previous (closed) instance before replacing
+  if (eventSource) {
+    detachListeners(eventSource);
   }
+
+  eventSource = new EventSource('/api/events');
+  attachListeners(eventSource);
 
   eventSource.onerror = () => {
     // EventSource auto-reconnects — no manual retry needed
