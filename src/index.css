@@ -705,3 +705,44 @@ mark {
 .react-grid-item.react-dragging {
   transition: none;
 }
+
+/* ============================================================
+   Mobile responsive utilities
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Larger tap targets for interactive elements */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Better momentum-based touch scrolling on iOS */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent iOS zoom on input focus (font-size >= 16px required) */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Better modal sizing on small screens */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0 16px;
+    border-radius: 12px;
+  }
+
+  /* Stack flex row items vertically on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+}
