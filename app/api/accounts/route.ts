@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { ApiError, handleApiError } from '@/lib/apiErrors';
 
 export async function GET() {
   try {
@@ -13,13 +14,18 @@ export async function GET() {
     return NextResponse.json([]);
   } catch (error) {
     console.error('GET /api/accounts error:', error);
-    return NextResponse.json([]);
+    return handleApiError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => {
+      throw new ApiError(400, 'Invalid JSON body');
+    });
+    if (!body || typeof body !== 'object') {
+      throw new ApiError(400, 'Request body must be an object');
+    }
     const db = getDb();
 
     const row = db.prepare("SELECT value FROM settings WHERE key = 'accounts_list'").get() as { value: string } | undefined;
@@ -33,6 +39,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newAccount, { status: 201 });
   } catch (error) {
     console.error('POST /api/accounts error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error);
   }
 }
