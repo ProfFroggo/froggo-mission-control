@@ -811,7 +811,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       </div>
 
       {/* Clara review notes callout */}
-      {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected'].includes(task.reviewStatus) && (
+      {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected', 'pre-rejected'].includes(task.reviewStatus) && (
         <div className="mx-4 mt-3 p-3 bg-error-subtle border border-error-border rounded-xl flex items-start gap-2 flex-shrink-0">
           <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
