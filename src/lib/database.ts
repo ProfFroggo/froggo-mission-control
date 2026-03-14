@@ -858,10 +858,28 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE agents ADD COLUMN traits TEXT DEFAULT '[]'`,
     `ALTER TABLE agents ADD COLUMN tonePreset TEXT DEFAULT 'professional'`,
     `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
+    // Clara review SLA: timestamp when task entered internal-review status
+    `ALTER TABLE tasks ADD COLUMN reviewEnteredAt INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Clara review log table — tracks approve/reject decisions with SLA timing
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS clara_review_log (
+        id TEXT PRIMARY KEY,
+        taskId TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        reason TEXT,
+        reviewedAt TEXT DEFAULT (datetime('now')),
+        timeInReviewMinutes INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_clara_review_log_taskId ON clara_review_log(taskId);
+      CREATE INDEX IF NOT EXISTS idx_clara_review_log_reviewedAt ON clara_review_log(reviewedAt);
+    `);
+  } catch { /* already exists */ }
 
   // Agent soul v2: status history + availability schedules
   try {

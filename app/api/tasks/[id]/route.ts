@@ -216,7 +216,10 @@ export async function PATCH(
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
     const isTodoStatus = (updated.status as string) === 'todo';
     if (wasAssigned && isTodoStatus) {
-      db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), id);
+      const reviewEnteredAt = Date.now();
+      db.prepare('UPDATE tasks SET status = ?, reviewEnteredAt = ?, updatedAt = ? WHERE id = ?').run('internal-review', reviewEnteredAt, reviewEnteredAt, id);
+      // Emit SSE so ClaraReviewDashboard auto-refreshes
+      emitSSEEvent('clara.review_needed', { id, title: updated.title, assignedTo: body.assignedTo, priority: updated.priority ?? 'p2' });
       // Notify the assigned agent in their chat room
       try {
         const taskTitle = updated.title as string;
