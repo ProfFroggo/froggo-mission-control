@@ -145,6 +145,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
 
       {/* Per-agent health table */}
       <div className="rounded-lg border border-mission-control-border overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-mission-control-border bg-mission-control-surface/50">
@@ -216,6 +217,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
             ))}
           </tbody>
         </table>
+        </div>
         {healthRows.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-mission-control-text-dim">
             No agents to display
