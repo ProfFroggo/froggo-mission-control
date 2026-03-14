@@ -1,8 +1,8 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, KeyboardEvent } from 'react';
 import {
   BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronLeft,
-  Star, Tag, ChevronRight,
+  Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 
@@ -20,6 +20,128 @@ const STATIC_CATEGORIES = [
   'onboarding',
   'technical',
 ];
+
+// ── Article templates ─────────────────────────────────────────────────────────
+
+interface ArticleTemplate {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  content: string;
+}
+
+const ARTICLE_TEMPLATES: ArticleTemplate[] = [
+  {
+    id: 'how-to',
+    label: 'How-To Guide',
+    icon: FileText,
+    content: `# How-To Guide Title
+
+## Overview
+Briefly describe what this guide helps the reader accomplish and who it is for.
+
+## Prerequisites
+- Requirement one
+- Requirement two
+
+## Steps
+1. First step — describe what to do
+2. Second step — describe what to do
+3. Third step — describe what to do
+
+## Tips
+- Helpful tip or gotcha to watch out for
+- Another useful tip
+
+## Troubleshooting
+**Problem**: Describe a common issue.
+**Solution**: Describe how to fix it.
+`,
+  },
+  {
+    id: 'meeting-notes',
+    label: 'Meeting Notes',
+    icon: Clock,
+    content: `# Meeting Notes — [Date]
+
+## Attendees
+- Name / Role
+- Name / Role
+
+## Agenda
+1. Topic one
+2. Topic two
+3. Topic three
+
+## Discussion Summary
+Summarize the key points discussed for each agenda item.
+
+## Decisions Made
+- Decision one — owner: [name]
+- Decision two — owner: [name]
+
+## Action Items
+- [ ] Task description — owner: [name] — due: [date]
+- [ ] Task description — owner: [name] — due: [date]
+
+## Next Meeting
+Date / time / agenda preview
+`,
+  },
+  {
+    id: 'process-doc',
+    label: 'Process Documentation',
+    icon: BookOpen,
+    content: `# Process: [Process Name]
+
+## Purpose
+Explain why this process exists and what problem it solves.
+
+## Scope
+Define what is in scope and out of scope for this process.
+
+## Steps
+1. Step one — describe the action and any inputs required
+2. Step two
+3. Step three
+
+## Roles & Responsibilities
+- **Owner**: [Name / Role] — responsible for maintaining this process
+- **Participant**: [Name / Role] — participates in step X
+
+## Last Updated
+[Date] — [Author]
+`,
+  },
+  {
+    id: 'agent-instructions',
+    label: 'Agent Instructions',
+    icon: Wand2,
+    content: `# Agent Instructions: [Agent Name]
+
+## Agent Name & Role
+Describe what this agent does and its primary responsibility.
+
+## Capabilities
+- Capability one
+- Capability two
+- Capability three
+
+## How To Use
+Explain how to interact with this agent, what inputs it expects, and what outputs it produces.
+
+## Examples
+**Example request**: "..."
+**Expected response**: "..."
+
+## Limitations
+- Known limitation one
+- Escalation path when the agent cannot handle a request
+`,
+  },
+];
+
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface KBLink {
   title: string;
@@ -40,6 +162,15 @@ interface KBArticle {
   createdAt?: number;
   createdBy?: string;
   links?: KBLink[];
+}
+
+interface KBVersion {
+  id: number;
+  articleId: string;
+  editedBy: string;
+  editedAt: number;
+  versionNote: string | null;
+  content: string;
 }
 
 // tags can be a string (comma-list from the text input) or array during editing
@@ -90,8 +221,20 @@ function highlightText(text: string, term: string): React.ReactNode {
   );
 }
 
+/** Extract a content excerpt around the first occurrence of a search term */
+function getExcerpt(content: string, term: string, maxLength = 160): string {
+  const plain = content.replace(/#{1,6}\s/g, '').replace(/[*`_]/g, '');
+  if (!term.trim()) return plain.slice(0, maxLength);
+  const idx = plain.toLowerCase().indexOf(term.toLowerCase());
+  if (idx === -1) return plain.slice(0, maxLength);
+  const start = Math.max(0, idx - 60);
+  const end = Math.min(plain.length, idx + term.length + 100);
+  const excerpt = plain.slice(start, end);
+  return (start > 0 ? '...' : '') + excerpt + (end < plain.length ? '...' : '');
+}
+
 /** Very simple markdown-ish renderer — no library needed */
-function renderContent(content: string): React.ReactNode {
+function renderContent(content: string, allArticles: KBArticle[], onNavigate: (article: KBArticle) => void): React.ReactNode {
   const lines = content.split('\n');
   const nodes: React.ReactNode[] = [];
   let i = 0;
@@ -131,7 +274,7 @@ function renderContent(content: string): React.ReactNode {
       nodes.push(
         <ul key={`ul-${i}`} className="list-disc list-inside space-y-0.5 my-2 text-sm text-mission-control-text pl-2">
           {items.map((item, j) => (
-            <li key={j}>{renderInline(item)}</li>
+            <li key={j}>{renderInline(item, allArticles, onNavigate)}</li>
           ))}
         </ul>
       );
@@ -148,7 +291,7 @@ function renderContent(content: string): React.ReactNode {
       nodes.push(
         <ol key={`ol-${i}`} className="list-decimal list-inside space-y-0.5 my-2 text-sm text-mission-control-text pl-2">
           {items.map((item, j) => (
-            <li key={j}>{renderInline(item)}</li>
+            <li key={j}>{renderInline(item, allArticles, onNavigate)}</li>
           ))}
         </ol>
       );
@@ -192,7 +335,7 @@ function renderContent(content: string): React.ReactNode {
     // Paragraph
     nodes.push(
       <p key={i} className="text-sm text-mission-control-text leading-relaxed">
-        {renderInline(line)}
+        {renderInline(line, allArticles, onNavigate)}
       </p>
     );
     i++;
@@ -201,14 +344,15 @@ function renderContent(content: string): React.ReactNode {
   return <>{nodes}</>;
 }
 
-/** Inline markup: **bold**, *italic*, `code`, [link](url) */
-function renderInline(text: string): React.ReactNode {
-  // We process sequentially with a simple state machine
+/** Inline markup: **bold**, *italic*, `code`, [link](url), [[Article Title]] auto-links */
+function renderInline(text: string, allArticles: KBArticle[], onNavigate: (article: KBArticle) => void): React.ReactNode {
   const parts: React.ReactNode[] = [];
   let remaining = text;
   let key = 0;
 
   while (remaining.length > 0) {
+    // [[Article Title]] auto-link
+    const wikiMatch = remaining.match(/^(.*?)\[\[([^\]]+)\]\](.*)/s);
     // Bold
     const boldMatch = remaining.match(/^(.*?)\*\*(.*?)\*\*(.*)/s);
     // Italic
@@ -218,8 +362,8 @@ function renderInline(text: string): React.ReactNode {
     // Link
     const linkMatch = remaining.match(/^(.*?)\[([^\]]+)\]\(([^)]+)\)(.*)/s);
 
-    // Find which match comes first
     const candidates: Array<{ index: number; match: RegExpMatchArray; type: string }> = [];
+    if (wikiMatch && wikiMatch[1] !== undefined) candidates.push({ index: wikiMatch[1].length, match: wikiMatch, type: 'wiki' });
     if (boldMatch && boldMatch[1] !== undefined) candidates.push({ index: boldMatch[1].length, match: boldMatch, type: 'bold' });
     if (italicMatch && italicMatch[1] !== undefined) candidates.push({ index: italicMatch[1].length, match: italicMatch, type: 'italic' });
     if (codeMatch && codeMatch[1] !== undefined) candidates.push({ index: codeMatch[1].length, match: codeMatch, type: 'code' });
@@ -235,7 +379,26 @@ function renderInline(text: string): React.ReactNode {
 
     if (first.match[1]) parts.push(first.match[1]);
 
-    if (first.type === 'bold') {
+    if (first.type === 'wiki') {
+      const articleTitle = first.match[2];
+      const target = allArticles.find(a => a.title.toLowerCase() === articleTitle.toLowerCase());
+      if (target) {
+        parts.push(
+          <button
+            key={key++}
+            onClick={() => onNavigate(target)}
+            className="text-blue-400 hover:underline inline font-medium"
+            title={`View article: ${target.title}`}
+          >
+            <Link size={10} className="inline mr-0.5 opacity-70" />
+            {articleTitle}
+          </button>
+        );
+      } else {
+        parts.push(<span key={key++} className="text-mission-control-text-dim">{articleTitle}</span>);
+      }
+      remaining = first.match[3];
+    } else if (first.type === 'bold') {
       parts.push(<strong key={key++} className="font-semibold">{first.match[2]}</strong>);
       remaining = first.match[3];
     } else if (first.type === 'italic') {
@@ -265,6 +428,23 @@ function renderInline(text: string): React.ReactNode {
   }
 
   return <>{parts}</>;
+}
+
+/** Auto-detect article title mentions in content and wrap them with [[Title]] if not already */
+function autoLinkContent(content: string, allArticles: { title: string; id: string }[]): string {
+  let result = content;
+  // Sort by title length descending to match longer titles first
+  const sorted = [...allArticles].sort((a, b) => b.title.length - a.title.length);
+  for (const article of sorted) {
+    // Only wrap if not already wrapped
+    const escaped = article.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const alreadyWrapped = new RegExp(`\\[\\[${escaped}\\]\\]`, 'g');
+    if (alreadyWrapped.test(result)) continue;
+    // Replace bare occurrences
+    const bare = new RegExp(`(?<!\\[\\[)\\b${escaped}\\b(?!\\]\\])`, 'g');
+    result = result.replace(bare, `[[${article.title}]]`);
+  }
+  return result;
 }
 
 /** Compute related articles — same category + shared words in title */
@@ -303,6 +483,17 @@ export default function KnowledgeBase() {
   const [showStarred, setShowStarred] = useState(false);
   const [quickCreate, setQuickCreate] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard navigation state for search results
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchCursor, setSearchCursor] = useState(-1);
+
+  // Version history drawer
+  const [versionsArticleId, setVersionsArticleId] = useState<string | null>(null);
+  const [versions, setVersions] = useState<KBVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState<KBVersion | null>(null);
 
   // Quick-create modal state
   const [qcTitle, setQcTitle] = useState('');
@@ -311,6 +502,7 @@ export default function KnowledgeBase() {
   const [qcScope, setQcScope] = useState('all');
   const [qcContent, setQcContent] = useState('');
   const [qcSaving, setQcSaving] = useState(false);
+  const [qcGenerating, setQcGenerating] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -318,6 +510,9 @@ export default function KnowledgeBase() {
     debounceRef.current = setTimeout(() => setDebouncedSearch(search), 350);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
+
+  // Reset search cursor when search term changes
+  useEffect(() => { setSearchCursor(-1); }, [debouncedSearch]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -337,6 +532,17 @@ export default function KnowledgeBase() {
 
   // Persist starred to localStorage whenever it changes
   useEffect(() => { saveStarred(starred); }, [starred]);
+
+  // Load versions when drawer opens
+  useEffect(() => {
+    if (!versionsArticleId) { setVersions([]); return; }
+    setVersionsLoading(true);
+    setPreviewVersion(null);
+    fetch(`/api/knowledge/${versionsArticleId}/versions`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setVersions(d.versions); })
+      .finally(() => setVersionsLoading(false));
+  }, [versionsArticleId]);
 
   // ── Derived categories (from loaded articles + statics) ───────────────────
   const allCategories = useMemo<string[]>(() => {
@@ -421,6 +627,23 @@ export default function KnowledgeBase() {
     });
   };
 
+  const restoreVersion = async (v: KBVersion) => {
+    if (!confirm(`Restore this version from ${new Date(v.editedAt).toLocaleString()}?`)) return;
+    await fetch(`/api/knowledge/${v.articleId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: v.content, versionNote: 'Restored from version history' }),
+    });
+    setVersionsArticleId(null);
+    // If currently viewing this article, refresh it
+    if (viewing?.id === v.articleId) {
+      const res = await fetch(`/api/knowledge/${v.articleId}`);
+      const data = await res.json();
+      if (data.success) setViewing(data.article);
+    }
+    load();
+  };
+
   const quickCreateSave = async () => {
     const title = qcTitle.trim();
     const content = qcContent.trim();
@@ -441,11 +664,51 @@ export default function KnowledgeBase() {
     }
   };
 
+  const generateContent = async () => {
+    const topic = qcTitle.trim();
+    if (!topic) return;
+    setQcGenerating(true);
+    try {
+      const res = await fetch('/api/knowledge/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+      });
+      const data = await res.json();
+      if (data.success) setQcContent(data.content);
+    } finally {
+      setQcGenerating(false);
+    }
+  };
+
+  // ── Keyboard navigation for search ───────────────────────────────────────
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!searchFocused || displayedArticles.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSearchCursor(c => Math.min(c + 1, displayedArticles.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSearchCursor(c => Math.max(c - 1, 0));
+    } else if (e.key === 'Enter' && searchCursor >= 0) {
+      e.preventDefault();
+      setViewing(displayedArticles[searchCursor]);
+      setSearch('');
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSearch('');
+      setSearchCursor(-1);
+      searchInputRef.current?.blur();
+    }
+  };
+
   // ── Article detail view ──────────────────────────────────────────────────
 
   if (viewing) {
     const related = getRelated(viewing, articles);
     const isStarred = starred.has(viewing.id);
+    const linkedContent = autoLinkContent(viewing.content, articles.filter(a => a.id !== viewing.id));
     return (
       <div className="flex h-full">
         {/* Sidebar */}
@@ -488,6 +751,14 @@ export default function KnowledgeBase() {
               </div>
             </div>
             <button
+              onClick={() => setVersionsArticleId(viewing.id)}
+              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
+              aria-label="Version history"
+              title="Version history"
+            >
+              <History size={14} />
+            </button>
+            <button
               onClick={() => toggleStar(viewing.id)}
               className={`p-1.5 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-amber-400' : 'text-mission-control-text-dim hover:text-amber-400'}`}
               aria-label={isStarred ? 'Unstar article' : 'Star article'}
@@ -508,7 +779,7 @@ export default function KnowledgeBase() {
 
           <div className="flex-1 overflow-y-auto p-5">
             <div className="max-w-2xl">
-              {renderContent(viewing.content)}
+              {renderContent(linkedContent, articles, setViewing)}
 
               {viewing.links && viewing.links.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-mission-control-border">
@@ -559,6 +830,19 @@ export default function KnowledgeBase() {
             </div>
           </div>
         </div>
+
+        {/* Version history drawer */}
+        {versionsArticleId && (
+          <VersionDrawer
+            versions={versions}
+            loading={versionsLoading}
+            previewVersion={previewVersion}
+            currentContent={viewing.content}
+            onPreview={setPreviewVersion}
+            onRestore={restoreVersion}
+            onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
+          />
+        )}
       </div>
     );
   }
@@ -638,7 +922,7 @@ export default function KnowledgeBase() {
             className="w-full px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
           />
           <p className="text-xs text-mission-control-text-dim">
-            Markdown supported. Pinned articles are always injected into agent context.
+            Markdown supported. Pinned articles are always injected into agent context. Use [[Article Title]] to link to other articles.
           </p>
         </div>
       </div>
@@ -678,12 +962,25 @@ export default function KnowledgeBase() {
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
             <input
+              ref={searchInputRef}
               aria-label="Search knowledge base"
               value={search}
               onChange={e => setSearch(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search guidelines, brand voice, context..."
-              className="w-full pl-8 pr-3 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-blue-500"
+              className="w-full pl-8 pr-8 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-blue-500"
             />
+            {search && (
+              <button
+                onClick={() => { setSearch(''); setSearchCursor(-1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
           {/* Filter pills */}
@@ -721,29 +1018,38 @@ export default function KnowledgeBase() {
               description={
                 showStarred
                   ? 'Star articles to quickly find them later'
-                  : search || category !== 'all'
+                  : search
+                  ? `No articles match "${search}"`
+                  : category !== 'all'
                   ? 'Try a different search term or category'
                   : 'Add guidelines, brand voice, and context to help your agents work better'
               }
               action={
-                showStarred || search || category !== 'all'
+                search
+                  ? {
+                      label: `Create article about "${search}"`,
+                      onClick: () => { setQcTitle(search); setSearch(''); setQuickCreate(true); },
+                    }
+                  : showStarred || category !== 'all'
                   ? undefined
                   : { label: 'New Article', onClick: () => setQuickCreate(true) }
               }
               size="md"
             />
           ) : (
-            displayedArticles.map(article => (
+            displayedArticles.map((article, idx) => (
               <ArticleCard
                 key={article.id}
                 article={article}
                 searchTerm={debouncedSearch}
                 isStarred={starred.has(article.id)}
-                onView={() => setViewing(article)}
+                isKeyboardFocused={searchFocused && searchCursor === idx}
+                onView={() => { setViewing(article); setSearchCursor(-1); }}
                 onEdit={() => setEditing({ ...article, tags: article.tags.join(', ') })}
                 onDelete={() => del(article.id)}
                 onTogglePin={() => togglePin(article)}
                 onToggleStar={() => toggleStar(article.id)}
+                onVersionHistory={() => setVersionsArticleId(article.id)}
               />
             ))
           )}
@@ -760,16 +1066,31 @@ export default function KnowledgeBase() {
           scope={qcScope}
           content={qcContent}
           saving={qcSaving}
+          generating={qcGenerating}
           onChangeTitle={setQcTitle}
           onChangeCategory={setQcCategory}
           onChangeCategoryCustom={setQcCategoryCustom}
           onChangeScope={setQcScope}
           onChangeContent={setQcContent}
+          onGenerate={generateContent}
           onSave={quickCreateSave}
           onClose={() => {
             setQuickCreate(false);
             setQcTitle(''); setQcContent(''); setQcCategory('reference'); setQcCategoryCustom(''); setQcScope('all');
           }}
+        />
+      )}
+
+      {/* Version history drawer (from list view — when not in article view) */}
+      {versionsArticleId && !viewing && (
+        <VersionDrawer
+          versions={versions}
+          loading={versionsLoading}
+          previewVersion={previewVersion}
+          currentContent={articles.find(a => a.id === versionsArticleId)?.content ?? ''}
+          onPreview={setPreviewVersion}
+          onRestore={restoreVersion}
+          onClose={() => { setVersionsArticleId(null); setPreviewVersion(null); }}
         />
       )}
     </div>
@@ -824,21 +1145,28 @@ interface ArticleCardProps {
   article: KBArticle;
   searchTerm: string;
   isStarred: boolean;
+  isKeyboardFocused: boolean;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onTogglePin: () => void;
   onToggleStar: () => void;
+  onVersionHistory: () => void;
 }
 
 function ArticleCard({
-  article, searchTerm, isStarred, onView, onEdit, onDelete, onTogglePin, onToggleStar,
+  article, searchTerm, isStarred, isKeyboardFocused, onView, onEdit, onDelete, onTogglePin, onToggleStar, onVersionHistory,
 }: ArticleCardProps) {
-  const snippet = article.content.replace(/#{1,6}\s/g, '').slice(0, 150);
+  const excerpt = getExcerpt(article.content, searchTerm);
 
   return (
     <div
-      className="group rounded-lg bg-mission-control-surface border border-mission-control-border p-3 hover:border-blue-500/40 transition-colors cursor-pointer"
+      className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer ${
+        isKeyboardFocused
+          ? 'border-blue-500/70 ring-1 ring-blue-500/30'
+          : 'border-mission-control-border hover:border-blue-500/40'
+      }`}
+      style={{ padding: '0.75rem' }}
       onClick={onView}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -855,6 +1183,14 @@ function ArticleCard({
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onVersionHistory(); }}
+            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
+            aria-label="Version history"
+            title="Version history"
+          >
+            <History size={12} />
           </button>
           <button
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
@@ -881,7 +1217,7 @@ function ArticleCard({
         </div>
       </div>
       <p className="text-xs text-mission-control-text-dim line-clamp-2 mb-2">
-        {highlightText(snippet, searchTerm)}
+        {highlightText(excerpt, searchTerm)}
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="px-1.5 py-0.5 rounded text-xs bg-mission-control-border text-mission-control-text-dim capitalize">
@@ -911,21 +1247,29 @@ interface QuickCreateModalProps {
   scope: string;
   content: string;
   saving: boolean;
+  generating: boolean;
   onChangeTitle: (v: string) => void;
   onChangeCategory: (v: string) => void;
   onChangeCategoryCustom: (v: string) => void;
   onChangeScope: (v: string) => void;
   onChangeContent: (v: string) => void;
+  onGenerate: () => void;
   onSave: () => void;
   onClose: () => void;
 }
 
 function QuickCreateModal({
-  categories, title, category, categoryCustom, scope, content, saving,
+  categories, title, category, categoryCustom, scope, content, saving, generating,
   onChangeTitle, onChangeCategory, onChangeCategoryCustom, onChangeScope, onChangeContent,
-  onSave, onClose,
+  onGenerate, onSave, onClose,
 }: QuickCreateModalProps) {
   const canSave = title.trim() && content.trim() && !saving;
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const applyTemplate = (tmpl: ArticleTemplate) => {
+    onChangeContent(tmpl.content.replace(/^\# .*\n/, `# ${title || tmpl.label}\n`));
+    setShowTemplates(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
@@ -988,6 +1332,45 @@ function QuickCreateModal({
             </select>
           </div>
 
+          {/* Template / AI generation row */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <button
+                onClick={() => setShowTemplates(v => !v)}
+                className="w-full flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+              >
+                <FileText size={12} />
+                Use template
+              </button>
+              {showTemplates && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-10 overflow-hidden">
+                  {ARTICLE_TEMPLATES.map(tmpl => {
+                    const Icon = tmpl.icon;
+                    return (
+                      <button
+                        key={tmpl.id}
+                        onClick={() => applyTemplate(tmpl)}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                      >
+                        <Icon size={12} className="text-mission-control-text-dim shrink-0" />
+                        {tmpl.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={onGenerate}
+              disabled={!title.trim() || generating}
+              title={title.trim() ? `Generate content for "${title}"` : 'Enter a title first'}
+              className="flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
+            >
+              <Wand2 size={12} />
+              {generating ? 'Generating...' : 'Generate with AI'}
+            </button>
+          </div>
+
           <textarea
             value={content}
             onChange={e => onChangeContent(e.target.value)}
@@ -1013,6 +1396,110 @@ function QuickCreateModal({
             {saving ? 'Saving...' : 'Save Article'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Version History Drawer ────────────────────────────────────────────────────
+
+interface VersionDrawerProps {
+  versions: KBVersion[];
+  loading: boolean;
+  previewVersion: KBVersion | null;
+  currentContent: string;
+  onPreview: (v: KBVersion | null) => void;
+  onRestore: (v: KBVersion) => void;
+  onClose: () => void;
+}
+
+function VersionDrawer({ versions, loading, previewVersion, currentContent, onPreview, onRestore, onClose }: VersionDrawerProps) {
+  const displayContent = previewVersion?.content ?? currentContent;
+
+  return (
+    <div className="w-80 shrink-0 border-l border-mission-control-border flex flex-col h-full bg-mission-control-surface">
+      <div className="flex items-center gap-2 p-3 border-b border-mission-control-border">
+        <History size={14} className="text-mission-control-text-dim" />
+        <span className="text-sm font-medium text-mission-control-text flex-1">Version History</span>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+          aria-label="Close version history"
+        >
+          <X size={13} />
+        </button>
+      </div>
+
+      {/* Content preview pane */}
+      {previewVersion && (
+        <div className="border-b border-mission-control-border bg-mission-control-border/20 p-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-mission-control-text-dim">
+              Preview — {new Date(previewVersion.editedAt).toLocaleString()}
+            </span>
+            <button
+              onClick={() => onPreview(null)}
+              className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
+            >
+              Close preview
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
+            {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
+          </div>
+          <button
+            onClick={() => onRestore(previewVersion)}
+            className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+          >
+            <History size={11} />
+            Restore this version
+          </button>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto py-2">
+        {loading ? (
+          <div className="p-4 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-12 rounded bg-mission-control-border animate-pulse" />
+            ))}
+          </div>
+        ) : versions.length === 0 ? (
+          <div className="p-4 text-center">
+            <Clock size={20} className="text-mission-control-text-dim mx-auto mb-2" />
+            <p className="text-xs text-mission-control-text-dim">No version history yet.</p>
+            <p className="text-xs text-mission-control-text-dim mt-1">Versions are saved each time content is edited.</p>
+          </div>
+        ) : (
+          <div className="space-y-px px-2">
+            {versions.map(v => (
+              <button
+                key={v.id}
+                onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
+                className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
+                  previewVersion?.id === v.id
+                    ? 'bg-blue-600/20 border border-blue-500/40'
+                    : 'hover:bg-mission-control-border border border-transparent'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-mission-control-text">
+                    {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <span className="text-xs text-mission-control-text-dim">
+                    {new Date(v.editedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-mission-control-text-dim capitalize">{v.editedBy}</span>
+                  {v.versionNote && (
+                    <span className="text-xs text-mission-control-text-dim truncate opacity-70">· {v.versionNote}</span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
