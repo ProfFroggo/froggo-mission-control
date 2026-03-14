@@ -822,10 +822,34 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE catalog_modules ADD COLUMN errorCount INTEGER DEFAULT 0`,
     // Schedule: recurrence support
     `ALTER TABLE scheduled_items ADD COLUMN recurrence TEXT DEFAULT 'none'`,
+    // Agent soul v2: personality traits, tone preset, memory scope
+    `ALTER TABLE agents ADD COLUMN traits TEXT DEFAULT '[]'`,
+    `ALTER TABLE agents ADD COLUMN tonePreset TEXT DEFAULT 'professional'`,
+    `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+
+  // Agent soul v2: status history + availability schedules
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS agent_status_history (
+        id TEXT PRIMARY KEY,
+        agentId TEXT NOT NULL,
+        status TEXT NOT NULL,
+        reason TEXT,
+        changedAt TEXT DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_agent_status_history_agentId ON agent_status_history(agentId, changedAt);
+
+      CREATE TABLE IF NOT EXISTS agent_schedules (
+        agentId TEXT PRIMARY KEY,
+        schedule TEXT NOT NULL DEFAULT '{}',
+        updatedAt TEXT DEFAULT (datetime('now'))
+      );
+    `);
+  } catch { /* tables already exist */ }
 
   // Module Builder: index for task-by-module queries
   try {

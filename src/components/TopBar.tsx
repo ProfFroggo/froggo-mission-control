@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // TEST
 import { Inbox, Loader, Wifi, WifiOff, Activity } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
