@@ -5,6 +5,7 @@ import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { trackEvent } from '@/lib/telemetry';
+import { createNotification } from '@/lib/notificationWriter';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -379,9 +380,26 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
-    // Notify SSE clients of task update
+    // Emit notifications on status transitions
     const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
     const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
+    if (taskId && body.status === 'done') {
+      createNotification({
+        type: 'task_completed',
+        title: `Task completed: ${String((updated as Record<string, unknown>).title ?? id)}`,
+        userId: String((updated as Record<string, unknown>).assignedTo ?? 'system'),
+        metadata: { taskId: id },
+      }).catch(() => {});
+    } else if (taskId && body.status === 'review') {
+      createNotification({
+        type: 'approval_needed',
+        title: `Review requested: ${String((updated as Record<string, unknown>).title ?? id)}`,
+        userId: String((updated as Record<string, unknown>).reviewerId ?? 'clara'),
+        metadata: { taskId: id, requestedBy: (updated as Record<string, unknown>).assignedTo },
+      }).catch(() => {});
+    }
+
+    // Notify SSE clients of task update
     if (taskId) emitSSEEvent('task.updated', {
       id: taskId,
       status: taskStatus ?? null,

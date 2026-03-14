@@ -512,6 +512,32 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_inbox_status_created ON inbox(status, createdAt DESC);
 
     -- ══════════════════════════════════════════
+    -- NOTIFICATIONS
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT,
+      userId TEXT,
+      metadata TEXT,
+      readAt TEXT,
+      createdAt TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+    CREATE INDEX IF NOT EXISTS idx_notifications_readAt ON notifications(readAt);
+    CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications(createdAt DESC);
+    CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
+
+    CREATE TABLE IF NOT EXISTS notification_preferences (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(8)))),
+      type TEXT NOT NULL UNIQUE,
+      email INTEGER NOT NULL DEFAULT 1,
+      inApp INTEGER NOT NULL DEFAULT 1,
+      updatedAt TEXT DEFAULT (datetime('now'))
+    );
+
+    -- ══════════════════════════════════════════
     -- CHAT MESSAGES (Phase 98 — SDK chat persistence)
     -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS chat_messages (

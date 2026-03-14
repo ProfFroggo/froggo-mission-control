@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Inbox, Loader, Wifi, WifiOff, Activity } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Inbox, Loader, Wifi, WifiOff, Activity, Bell } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';
 import PlatformHealthDashboard from './PlatformHealthDashboard';
+import NotificationCenter from './NotificationCenter';
+import { useEventBus } from '../lib/useEventBus';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -33,6 +35,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>('ok');
   const [healthDashboardOpen, setHealthDashboardOpen] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state, attempts }: { state: ConnectionState; attempts?: number }) => {
@@ -124,6 +128,24 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch initial unread count
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadNotifCount(data.unreadCount ?? 0);
+      }
+    } catch { /* non-critical */ }
+  }, []);
+
+  useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+
+  // Increment badge on new notification SSE event
+  useEventBus('notification.new', useCallback(() => {
+    setUnreadNotifCount(prev => prev + 1);
+  }, []));
+
   return (
     <>
       <header 
@@ -139,6 +161,22 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
 
         {/* Right: Connection status + Counters */}
         <div className="no-drag flex items-center gap-3">
+          {/* Notification Bell */}
+          <button
+            type="button"
+            onClick={() => setNotifCenterOpen(prev => !prev)}
+            title="Notifications"
+            aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
+            className="relative inline-flex items-center justify-center p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors min-h-[44px] min-w-[44px]"
+          >
+            <Bell size={16} aria-hidden="true" />
+            {unreadNotifCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-error text-white rounded-full leading-none tabular-nums">
+                {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+              </span>
+            )}
+          </button>
+
           {/* Platform Health Indicator */}
           <button
             type="button"
@@ -231,6 +269,13 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
       <PlatformHealthDashboard
         isOpen={healthDashboardOpen}
         onClose={() => setHealthDashboardOpen(false)}
+      />
+
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        onUnreadCountChange={setUnreadNotifCount}
       />
     </>
   );
