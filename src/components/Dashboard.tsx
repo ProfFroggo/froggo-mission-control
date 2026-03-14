@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { formatTimeAgo } from '../utils/formatting';
 import {
   Wifi, WifiOff, CheckCircle, Bot, ArrowRight, Calendar,
@@ -6,7 +6,8 @@ import {
   ListTodo, Activity, MapPin, Video, ChevronRight,
   Loader2, XCircle, DollarSign,
   MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
-  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy
+  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy,
+  RefreshCw, TrendingUp, TrendingDown, Minus, Users
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentDetailModal from './AgentDetailModal';
@@ -47,7 +48,15 @@ const PHANTOM_AGENTS = ['main', 'chat-agent'];
 
 // ── HeaderBar ──────────────────────────────────────────────
 
-function HeaderBar({ connected }: { connected: boolean }) {
+function HeaderBar({
+  connected,
+  onRefresh,
+  refreshing,
+}: {
+  connected: boolean;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const today = new Date();
@@ -61,13 +70,26 @@ function HeaderBar({ connected }: { connected: boolean }) {
         </h1>
         <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
       </div>
-      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-        connected
-          ? 'bg-success-subtle text-success border border-success-border'
-          : 'bg-error-subtle text-error border border-error-border'
-      }`}>
-        {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-        {connected ? 'Online' : 'Connecting...'}
+      <div className="flex items-center gap-2">
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="Refresh dashboard"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50 transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        )}
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
+          connected
+            ? 'bg-success-subtle text-success border border-success-border'
+            : 'bg-error-subtle text-error border border-error-border'
+        }`}>
+          {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+          {connected ? 'Online' : 'Connecting...'}
+        </div>
       </div>
     </div>
   );
@@ -553,6 +575,342 @@ function ActivityFeed({
   );
 }
 
+// ── TaskCompletionSparkline ────────────────────────────────
+
+interface TaskStatsResponse {
+  completions: { date: string; tasks_completed: number }[];
+  agents: { agent: string; total: number; completed: number }[];
+}
+
+interface SparklineData {
+  dates: string[];
+  counts: number[];
+}
+
+interface AgentProductivity {
+  agent: string;
+  completed: number;
+}
+
+interface VelocityData {
+  currentAvg: number;
+  previousAvg: number;
+  pctChange: number;
+}
+
+function useAnalyticsData(refreshKey: number) {
+  const [sparkline, setSparkline] = useState<SparklineData | null>(null);
+  const [agentProductivity, setAgentProductivity] = useState<AgentProductivity[]>([]);
+  const [velocity, setVelocity] = useState<VelocityData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch 14 days to split into two 7-day windows for velocity
+      const res = await fetch('/api/analytics/task-stats?days=14');
+      if (!res.ok) return;
+      const data: TaskStatsResponse = await res.json();
+
+      // ── Sparkline: last 7 days ──────────────────────────────
+      const today = new Date();
+      const last7: { date: string; count: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const match = data.completions.find(c => c.date === dateStr);
+        last7.push({ date: dateStr, count: match?.tasks_completed ?? 0 });
+      }
+      setSparkline({
+        dates: last7.map(d => d.date),
+        counts: last7.map(d => d.count),
+      });
+
+      // ── Velocity: current 7 vs previous 7 ──────────────────
+      const prev7: { date: string; count: number }[] = [];
+      for (let i = 13; i >= 7; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const match = data.completions.find(c => c.date === dateStr);
+        prev7.push({ date: dateStr, count: match?.tasks_completed ?? 0 });
+      }
+      const currentSum = last7.reduce((s, d) => s + d.count, 0);
+      const previousSum = prev7.reduce((s, d) => s + d.count, 0);
+      const currentAvg = currentSum / 7;
+      const previousAvg = previousSum / 7;
+      const pctChange = previousAvg === 0
+        ? (currentAvg > 0 ? 100 : 0)
+        : Math.round(((currentAvg - previousAvg) / previousAvg) * 100);
+      setVelocity({ currentAvg, previousAvg, pctChange });
+
+      // ── Agent productivity: top 3 by completed (all-time from task-stats agents) ──
+      const sorted = [...(data.agents ?? [])]
+        .sort((a, b) => b.completed - a.completed)
+        .slice(0, 3)
+        .map(a => ({ agent: a.agent, completed: a.completed }));
+      setAgentProductivity(sorted);
+    } catch { /* non-critical */ } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  // refreshKey is intentionally used to trigger reload from outside
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, refreshKey]);
+
+  return { sparkline, agentProductivity, velocity, loading };
+}
+
+function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineData | null; loading: boolean }) {
+  const W = 220;
+  const H = 52;
+  const PAD_X = 4;
+  const PAD_Y = 8;
+
+  const points = useMemo(() => {
+    if (!sparkline || sparkline.counts.length < 2) return null;
+    const counts = sparkline.counts;
+    const maxVal = Math.max(...counts, 1);
+    const step = (W - PAD_X * 2) / (counts.length - 1);
+    return counts.map((c, i) => ({
+      x: PAD_X + i * step,
+      y: PAD_Y + (H - PAD_Y * 2) * (1 - c / maxVal),
+      count: c,
+      date: sparkline.dates[i],
+    }));
+  }, [sparkline]);
+
+  const total = sparkline?.counts.reduce((s, c) => s + c, 0) ?? 0;
+
+  return (
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={16} className="text-indigo-400" />
+          <h2 className="font-semibold text-sm">Task Completion Trend</h2>
+          <span className="text-xs text-mission-control-text-dim">last 7 days</span>
+        </div>
+        <span className="text-xs font-semibold text-mission-control-text">{total} total</span>
+      </div>
+      <div className="px-4 pt-3 pb-4">
+        {loading ? (
+          <div className="flex items-center justify-center h-14">
+            <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
+          </div>
+        ) : !points ? (
+          <div className="flex items-center justify-center h-14 text-xs text-mission-control-text-dim">
+            No data yet
+          </div>
+        ) : (
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full"
+            style={{ height: H }}
+            aria-label="Task completion trend over the last 7 days"
+            role="img"
+          >
+            {/* Fill area under the line */}
+            <defs>
+              <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.01" />
+              </linearGradient>
+            </defs>
+            <polygon
+              points={[
+                `${points[0].x},${H - PAD_Y}`,
+                ...points.map(p => `${p.x},${p.y}`),
+                `${points[points.length - 1].x},${H - PAD_Y}`,
+              ].join(' ')}
+              fill="url(#spark-fill)"
+            />
+            {/* Line */}
+            <polyline
+              points={points.map(p => `${p.x},${p.y}`).join(' ')}
+              fill="none"
+              stroke="var(--color-accent,#6366f1)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Data points + day labels */}
+            {points.map((p, i) => {
+              const isToday = i === points.length - 1;
+              const label = isToday
+                ? 'Today'
+                : new Date(p.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+              return (
+                <g key={p.date}>
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={isToday ? 3.5 : 2.5}
+                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-surface,#1e1e2e)'}
+                    stroke="var(--color-accent,#6366f1)"
+                    strokeWidth={1.5}
+                  />
+                  <text
+                    x={p.x}
+                    y={H}
+                    textAnchor="middle"
+                    fontSize={8}
+                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
+                    fontWeight={isToday ? 'bold' : 'normal'}
+                  >
+                    {label}
+                  </text>
+                  {p.count > 0 && (
+                    <text
+                      x={p.x}
+                      y={p.y - 5}
+                      textAnchor="middle"
+                      fontSize={8}
+                      fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
+                      fontWeight={isToday ? 'bold' : 'normal'}
+                    >
+                      {p.count}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── VelocityMetric ─────────────────────────────────────────
+
+function VelocityMetric({ velocity, loading }: { velocity: VelocityData | null; loading: boolean }) {
+  const isUp = (velocity?.pctChange ?? 0) > 0;
+  const isFlat = (velocity?.pctChange ?? 0) === 0;
+  const TrendIcon = isFlat ? Minus : isUp ? TrendingUp : TrendingDown;
+  const trendColor = isFlat
+    ? 'text-mission-control-text-dim'
+    : isUp
+    ? 'text-emerald-400'
+    : 'text-red-400';
+
+  return (
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
+        <Zap size={16} className="text-amber-400" />
+        <h2 className="font-semibold text-sm">Velocity</h2>
+        <span className="text-xs text-mission-control-text-dim">7-day avg</span>
+      </div>
+      <div className="px-4 py-4 flex items-center gap-4">
+        {loading ? (
+          <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
+        ) : velocity ? (
+          <>
+            <div>
+              <div className="text-3xl font-bold text-mission-control-text">
+                {velocity.currentAvg.toFixed(1)}
+              </div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">tasks/day</div>
+            </div>
+            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-semibold ${
+              isFlat
+                ? 'bg-mission-control-bg/50 text-mission-control-text-dim'
+                : isUp
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                : 'bg-red-500/10 text-red-400 border border-red-500/20'
+            }`}>
+              <TrendIcon size={14} className={trendColor} />
+              {isFlat ? 'No change' : `${isUp ? '+' : ''}${velocity.pctChange}%`}
+            </div>
+            <div className="ml-auto text-right">
+              <div className="text-xs text-mission-control-text-dim">vs prev 7d</div>
+              <div className="text-xs font-medium text-mission-control-text mt-0.5">
+                {velocity.previousAvg.toFixed(1)} tasks/day
+              </div>
+            </div>
+          </>
+        ) : (
+          <span className="text-xs text-mission-control-text-dim">No data</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AgentProductivitySummary ───────────────────────────────
+
+function AgentProductivitySummary({
+  agentProductivity,
+  agentMap,
+  loading,
+  onAgentClick,
+}: {
+  agentProductivity: AgentProductivity[];
+  agentMap: Map<string, Agent>;
+  loading: boolean;
+  onAgentClick?: (agentId: string) => void;
+}) {
+  const rankColors = ['text-amber-400', 'text-slate-400', 'text-amber-700'];
+
+  return (
+    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
+        <Users size={16} className="text-blue-400" />
+        <h2 className="font-semibold text-sm">Agent Productivity</h2>
+        <span className="text-xs text-mission-control-text-dim">by tasks completed</span>
+      </div>
+      <div className="p-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
+          </div>
+        ) : agentProductivity.length === 0 ? (
+          <div className="py-4 text-center text-xs text-mission-control-text-dim">No completed tasks yet</div>
+        ) : (
+          <div className="space-y-2">
+            {agentProductivity.map(({ agent, completed }, idx) => {
+              const agentData = agentMap.get(agent);
+              const maxCompleted = agentProductivity[0]?.completed ?? 1;
+              const pct = maxCompleted > 0 ? (completed / maxCompleted) * 100 : 0;
+              return (
+                <button
+                  key={agent}
+                  onClick={() => onAgentClick?.(agent)}
+                  className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-mission-control-bg/40 transition-colors group text-left"
+                >
+                  <span className={`text-xs font-bold w-4 flex-shrink-0 ${rankColors[idx] ?? 'text-mission-control-text-dim'}`}>
+                    {idx + 1}
+                  </span>
+                  <AgentAvatar agentId={agent} fallbackEmoji={agentData?.avatar} size="xs" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
+                        {agentData?.name ?? agent}
+                      </span>
+                      <span className="text-xs font-semibold text-mission-control-text-dim flex-shrink-0 ml-2">
+                        {completed}
+                      </span>
+                    </div>
+                    <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-mission-control-accent/60 rounded-full transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── TaskThroughputChart ────────────────────────────────────
 
 function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
@@ -992,6 +1350,34 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   const rejectItem = useStore(s => s.rejectItem);
   const loadApprovals = useStore(s => s.loadApprovals);
 
+  // Refresh key: incrementing triggers analytics re-fetch + store reloads
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshKey(k => k + 1);
+    await Promise.allSettled([
+      fetchAgents(),
+      loadApprovals(),
+      connected ? loadGatewaySessions() : Promise.resolve(),
+    ]);
+    // Allow the spinner to show briefly so the user sees feedback
+    refreshTimeoutRef.current = setTimeout(() => setRefreshing(false), 600);
+  }, [refreshing, fetchAgents, loadApprovals, loadGatewaySessions, connected]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    };
+  }, []);
+
+  // Analytics data (sparkline, velocity, agent productivity) driven by refreshKey
+  const { sparkline, agentProductivity, velocity, loading: analyticsLoading } =
+    useAnalyticsData(refreshKey);
+
   // Load data on mount
   useEffect(() => {
     fetchAgents().catch(() => {});
@@ -1042,7 +1428,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
       {/* Header */}
-      <HeaderBar connected={connected} />
+      <HeaderBar connected={connected} onRefresh={handleRefresh} refreshing={refreshing} />
 
       {/* Command Centre Stat Strip */}
       <StatStrip
@@ -1057,6 +1443,17 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
 
       {/* Quick Actions */}
       <QuickActionsRow onNavigate={onNavigate} />
+
+      {/* Analytics row: Sparkline + Velocity + Agent Productivity */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 sm:px-6 pb-4">
+        <TaskCompletionSparkline sparkline={sparkline} loading={analyticsLoading} />
+        <VelocityMetric velocity={velocity} loading={analyticsLoading} />
+        <AgentProductivitySummary
+          agentProductivity={agentProductivity}
+          agentMap={agentMap}
+          loading={analyticsLoading}
+        />
+      </div>
 
       {/* Main content: Approvals + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 sm:px-6 pb-4">
