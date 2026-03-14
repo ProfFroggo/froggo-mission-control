@@ -30,7 +30,7 @@ export function useBreakpoint(): Breakpoint {
     mobileQuery.addEventListener('change', update);
     tabletQuery.addEventListener('change', update);
 
-    // Fallback for browsers that don't fire matchMedia change events
+    // Also handle resize for browsers without matchMedia change support
     window.addEventListener('resize', update);
 
     return () => {
