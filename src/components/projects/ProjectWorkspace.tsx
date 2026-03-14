@@ -19,13 +19,15 @@ import { useChatRoomStore } from '../../store/chatRoomStore';
 import ChatRoomView from '../ChatRoomView';
 import ProjectDispatchModal from './ProjectDispatchModal';
 import Kanban from '../Kanban';
+import ProjectGanttView from '../ProjectGanttView';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files';
+type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: LayoutGrid },
   { id: 'chat',        label: 'Chat',        icon: MessageSquare },
   { id: 'tasks',       label: 'Tasks',       icon: Flag },
+  { id: 'timeline',    label: 'Timeline',    icon: Calendar },
   { id: 'automations', label: 'Automations', icon: Zap },
   { id: 'approvals',   label: 'Approvals',   icon: ShieldAlert },
   { id: 'files',       label: 'Files',       icon: FolderOpen },
@@ -1160,6 +1162,16 @@ function KanbanWithAdvance({ project, onDispatch }: { project: Project; onDispat
   );
 }
 
+// ─── Timeline Tab ──────────────────────────────────────────────────────────────
+
+function TimelineTab({ project }: { project: Project }) {
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <ProjectGanttView projectId={project.id} projectName={project.name} />
+    </div>
+  );
+}
+
 // ─── Main Workspace ────────────────────────────────────────────────────────────
 
 interface ProjectWorkspaceProps {
@@ -1362,6 +1374,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         )}
         {activeTab === 'chat'        && <ChatTab project={project} />}
         {activeTab === 'tasks'       && <KanbanWithAdvance project={project} onDispatch={() => setShowDispatch(true)} />}
+        {activeTab === 'timeline'    && <TimelineTab project={project} />}
         {activeTab === 'automations' && <AutomationsTab project={project} />}
         {activeTab === 'approvals'   && <ApprovalsTab project={project} />}
         {activeTab === 'files'       && <FilesTab project={project} />}

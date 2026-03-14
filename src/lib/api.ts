@@ -386,6 +386,12 @@ export const projectsApi = {
     apiCall(`/projects/${id}/milestones`, { method: 'PATCH', body: { milestoneId, ...data } }),
   deleteMilestone: (id: string, milestoneId: string) =>
     apiCall(`/projects/${id}/milestones?milestoneId=${encodeURIComponent(milestoneId)}`, { method: 'DELETE' }),
+  archiveProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: true } }),
+  restoreProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: false } }),
+  getHealth: (id: string) =>
+    apiCall(`/projects/${id}/health`),
 };
 
 export const updateApi = {

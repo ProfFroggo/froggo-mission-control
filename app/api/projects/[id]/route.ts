@@ -50,6 +50,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    // Convenience alias: { archived: true/false } → sets status
+    if ('archived' in body) {
+      body.status = body.archived ? 'archived' : 'active';
+      delete body.archived;
+    }
+
     const allowed = ['name', 'description', 'emoji', 'color', 'goal', 'status'];
     const updates: string[] = [];
     const values: unknown[] = [];
