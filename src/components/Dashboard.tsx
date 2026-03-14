@@ -1623,7 +1623,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
   }, [derived.inProgressTasks, agentMap]);
 
-  // Agent detail modal — opened when an agent name is clicked in the activity feed
+  // Agent detail modal
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   // Dashboard customization state
