@@ -1,7 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { emitSSEEvent } from '@/lib/sseEmitter';
 import { randomUUID } from 'crypto';
 
 function parseApproval(row: Record<string, unknown>) {
@@ -38,6 +37,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
 // PATCH /api/approvals — batch approve or reject
 // Body: { ids: string[], action: 'approve' | 'reject', reason?: string }
 export async function PATCH(request: NextRequest) {
@@ -71,14 +71,6 @@ export async function PATCH(request: NextRequest) {
     db.prepare(
       `UPDATE approvals SET status = ?, respondedAt = ?, notes = ? WHERE id IN (${updatePlaceholders})`
     ).run(status, respondedAt, notes, ...validIds);
-
-    // Update inbox count badge
-    try {
-      const pendingCount = (db.prepare(
-        "SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'"
-      ).get() as { c: number }).c;
-      emitSSEEvent('inbox.count', { count: pendingCount });
-    } catch { /* non-critical */ }
 
     return NextResponse.json({ updated: validIds.length });
   } catch (error) {

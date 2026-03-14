@@ -3,7 +3,6 @@ import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
   FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap,
-  Keyboard,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';

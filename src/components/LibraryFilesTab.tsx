@@ -4,6 +4,7 @@ import {
   RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette,
   Code, BookOpen, Bot, PanelLeftClose, PanelLeftOpen, Star, Copy,
   ChevronRight, ChevronDown, Clock, Send, Tag, Info, Check, FolderPlus,
+  Wand2, Loader2,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
@@ -168,6 +169,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<any>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
+
+  // Generate image modal
+  const [genImageOpen, setGenImageOpen] = useState(false);
+  const [genImagePrompt, setGenImagePrompt] = useState('');
+  const [genImageLoading, setGenImageLoading] = useState(false);
+  const [genImageResult, setGenImageResult] = useState<{ url: string; filename: string } | null>(null);
+  const [genImageError, setGenImageError] = useState<string | null>(null);
 
   // Inline editing
   const [projectInputs, setProjectInputs] = useState<Record<string, string>>({});
@@ -409,11 +417,19 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const handleFileClick = (file: LibraryFileItem) => {
     const mime = file.mimeType || '';
-    // Open inline detail for text, images, code
-    if (isTextFile(mime, file.name) || mime.startsWith('image/')) {
+    const nameLc = file.name.toLowerCase();
+    // Open inline detail for text, images, code, audio, video, and PDF
+    if (
+      isTextFile(mime, file.name) ||
+      mime.startsWith('image/') ||
+      mime.startsWith('audio/') ||
+      mime.startsWith('video/') ||
+      mime === 'application/pdf' ||
+      nameLc.endsWith('.pdf')
+    ) {
       openDetail(file);
     } else {
-      // Open viewer modal for video, audio, binary
+      // Open viewer modal for other binary types
       openViewer(file);
     }
   };
@@ -544,6 +560,39 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     });
   };
 
+  const handleGenerateImage = async () => {
+    const prompt = genImagePrompt.trim();
+    if (!prompt) return;
+    setGenImageLoading(true);
+    setGenImageResult(null);
+    setGenImageError(null);
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setGenImageError(data.error || 'Image generation failed');
+      } else {
+        setGenImageResult({ url: data.url, filename: data.filename });
+      }
+    } catch (err) {
+      setGenImageError(String(err));
+    } finally {
+      setGenImageLoading(false);
+    }
+  };
+
+  const handleSaveGeneratedImage = () => {
+    showToast('success', 'Image saved to library');
+    setGenImageOpen(false);
+    setGenImagePrompt('');
+    setGenImageResult(null);
+    loadFiles();
+  };
+
   // ─── Drag & drop ────────────────────────────────────────────────────────────
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -654,6 +703,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
               Refresh
+            </button>
+            <button
+              onClick={() => { setGenImageOpen(true); setGenImageResult(null); setGenImageError(null); setGenImagePrompt(''); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-xs"
+            >
+              <Wand2 size={13} />
+              Generate Image
             </button>
             <button
               onClick={handleUpload}
@@ -1229,6 +1285,26 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     src={detailContent}
                     alt={detailFile.name}
                     className="w-full rounded-lg max-h-48 object-contain bg-mission-control-bg"
+                  />
+                ) : (detailFile.mimeType === 'application/pdf' || detailFile.name.toLowerCase().endsWith('.pdf')) ? (
+                  <iframe
+                    src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
+                    className="w-full rounded-lg bg-white"
+                    style={{ height: 200 }}
+                    title={detailFile.name}
+                  />
+                ) : detailFile.mimeType?.startsWith('audio/') ? (
+                  <audio
+                    controls
+                    className="w-full"
+                    src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
+                  />
+                ) : detailFile.mimeType?.startsWith('video/') ? (
+                  <video
+                    controls
+                    className="w-full rounded-lg"
+                    style={{ maxHeight: 160 }}
+                    src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   />
                 ) : detailContent ? (
                   <pre className="text-xs font-mono bg-mission-control-bg p-2 rounded-lg overflow-auto max-h-48 whitespace-pre-wrap leading-relaxed">
