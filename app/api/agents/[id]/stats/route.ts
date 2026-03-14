@@ -26,7 +26,7 @@ export async function GET(
     ).get(id) as { count: number };
     const tasksCompleted = doneRow.count;
 
-    // Count rejected tasks (human-review that were ultimately failed/rejected)
+    // Count rejected tasks (failed status)
     const rejectedRow = db.prepare(
       `SELECT COUNT(*) as count FROM tasks WHERE assignedTo = ? AND status = 'failed'`
     ).get(id) as { count: number };

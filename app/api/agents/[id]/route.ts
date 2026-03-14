@@ -90,6 +90,18 @@ export async function PATCH(
       values.push(JSON.stringify(body.capabilities));
     }
 
+    if ('description' in body && typeof body.description === 'string') {
+      setClauses.push('description = ?');
+      values.push(body.description.trim());
+    }
+
+    // Manual status override — accepts any valid agent status
+    const VALID_STATUSES = ['active', 'busy', 'idle', 'offline', 'suspended', 'archived', 'draft', 'disabled'];
+    if ('status' in body && typeof body.status === 'string' && VALID_STATUSES.includes(body.status)) {
+      setClauses.push('status = ?');
+      values.push(body.status);
+    }
+
     if (setClauses.length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
