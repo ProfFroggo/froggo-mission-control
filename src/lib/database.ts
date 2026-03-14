@@ -804,6 +804,8 @@ function initSchema(db: Database.Database) {
       createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     CREATE INDEX IF NOT EXISTS idx_budgets_agentId ON budgets(agentId);
     -- CHAT ROOM MESSAGE REACTIONS (v2)
+
+    -- ══════════════════════════════════════════
     CREATE TABLE IF NOT EXISTS message_reactions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       messageId TEXT NOT NULL,
@@ -819,6 +821,9 @@ function initSchema(db: Database.Database) {
       review TEXT,
       reviewedBy TEXT DEFAULT 'user',
     CREATE INDEX IF NOT EXISTS idx_module_reviews_moduleId ON module_reviews(moduleId, createdAt DESC);
+    );
+
+    -- ══════════════════════════════════════════
     -- CAMPAIGN AUTOMATIONS (campaign ↔ automation links)
     CREATE TABLE IF NOT EXISTS campaign_automations (
       linkId TEXT PRIMARY KEY,

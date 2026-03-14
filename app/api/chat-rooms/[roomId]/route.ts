@@ -28,6 +28,7 @@ export async function PATCH(
     if (name !== undefined) { updates.push('name = ?'); values.push(name); }
     if (description !== undefined) { updates.push('description = ?'); values.push(description); }
     if (pinnedMessageId !== undefined) { updates.push('pinnedMessageId = ?'); values.push(pinnedMessageId); }
+    if (pinnedMessageId !== undefined) { updates.push('pinnedMessageId = ?'); values.push(pinnedMessageId ?? null); }
 
     if (updates.length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

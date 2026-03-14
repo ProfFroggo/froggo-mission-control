@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { X, Bell, BellOff, BellRing, Pin, PinOff } from 'lucide-react';
+import { X, Bell, BellOff, BellRing, Pin } from 'lucide-react';
 import { type ChatRoom } from '../store/chatRoomStore';
 
 export type NotificationSetting = 'all' | 'mentions' | 'muted';
@@ -35,6 +36,14 @@ export function useRoomNotifSetting(roomId: string) {
     setStoredNotif(roomId, v);
   };
   return [setting, update] as const;
+}
+
+interface RoomSettingsPanelProps {
+  room: ChatRoom;
+  onClose: () => void;
+  onLeave: () => void;
+  onSave: (updates: { name?: string; description?: string }) => Promise<void>;
+  onUnpin: () => void;
 }
 
 export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUnpin }: RoomSettingsPanelProps) {
@@ -110,6 +119,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
             className="w-full py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save Changes'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
 
           {/* Notifications */}
@@ -135,6 +145,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
 
           {/* Pinned message */}
           {room.pinnedMessageId && (
+          {room.pinnedMessageId ? (
             <div>
               <p className="text-xs font-medium text-mission-control-text-dim mb-2">Pinned Message</p>
               <button
@@ -151,6 +162,9 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
               <p className="text-xs font-medium text-mission-control-text-dim mb-1">Pinned Message</p>
               <p className="text-xs text-mission-control-text-dim">
                 Hover a message and click the <Pin size={10} className="inline" /> pin icon to pin it here.
+                <Pin size={14} />
+          ) : (
+                Hover a message and click the pin icon to pin it here.
               </p>
             </div>
           )}
