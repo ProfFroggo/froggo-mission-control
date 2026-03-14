@@ -1845,7 +1845,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const editInputRef = useRef<HTMLInputElement>(null);
-  
+  // Quick-edit inline popover
+  const [showQuickEdit, setShowQuickEdit] = useState(false);
+  const [quickEditAnchor, setQuickEditAnchor] = useState<DOMRect | null>(null);
+  const quickEditBtnRef = useRef<HTMLButtonElement>(null);
+
   const priorityBtnRef = useRef<HTMLButtonElement>(null);
   const assignBtnRef = useRef<HTMLButtonElement>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
