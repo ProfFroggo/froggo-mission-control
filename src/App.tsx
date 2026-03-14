@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
+import { PanelSkeleton } from './components/PanelSkeleton';
 import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
 import { showToast } from './components/Toast';
@@ -465,7 +466,7 @@ function App() {
         >
           <PerformanceProfiler id={`${currentView}-panel`}>
             <ErrorBoundary panelName={currentView} key={currentView}>
-              <Suspense fallback={<LoadingPanel />}>
+              <Suspense fallback={<PanelSkeleton />}>
                 {/* Dynamic view rendering — driven by ViewRegistry */}
                 {currentView === 'contacts'
                   ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
