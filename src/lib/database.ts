@@ -13,6 +13,10 @@ import { keychainSet } from './keychain';
 // Database location — single source of truth via ENV wrapper
 const DB_PATH = ENV.DB_PATH;
 
+// Note: better-sqlite3 caches prepared statements internally per Database instance.
+// Calling db.prepare() inside request handlers is safe and efficient — the library
+// deduplicates statement compilation automatically. No manual statement caching is needed.
+
 // Ensure directory exists
 const dbDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dbDir)) {

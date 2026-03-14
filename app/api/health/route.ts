@@ -111,5 +111,10 @@ export async function GET() {
     modulesTotal,
     gitBranch,
     gitCommit,
+    uptime: process.uptime(),
+  }, {
+    headers: {
+      'Cache-Control': 'public, max-age=10',
+    },
   });
 }

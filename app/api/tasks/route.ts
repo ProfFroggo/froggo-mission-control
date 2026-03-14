@@ -75,10 +75,18 @@ export async function GET(request: NextRequest) {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
+    // idx_tasks_priority_status and idx_tasks_status_updated cover the ORDER BY priority ASC, createdAt DESC
+    // idx_tasks_assignedTo_status covers ?assignedTo= filter; idx_tasks_status covers ?status= filter
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(tasks, {
+      headers: {
+        'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
+        'Content-Type': 'application/json',
+        'Vary': 'Accept-Encoding',
+      },
+    });
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

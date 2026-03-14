@@ -31,7 +31,13 @@ export async function GET(_request: NextRequest) {
     const rows = db.prepare(
       `SELECT * FROM agents WHERE status != 'archived' ORDER BY CASE id WHEN 'mission-control' THEN 0 WHEN 'hr' THEN 1 WHEN 'coder' THEN 2 WHEN 'inbox' THEN 3 ELSE 4 END, name ASC`
     ).all() as Record<string, unknown>[];
-    return NextResponse.json(rows.map(parseAgent));
+    return NextResponse.json(rows.map(parseAgent), {
+      headers: {
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        'Content-Type': 'application/json',
+        'Vary': 'Accept-Encoding',
+      },
+    });
   } catch (error) {
     console.error('GET /api/agents error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
