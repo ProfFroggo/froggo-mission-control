@@ -14,8 +14,8 @@ export class ApiError extends Error {
 }
 
 /**
- * Converts any thrown error into a well-formed NextResponse JSON error.
- * Use in every API route catch block instead of ad-hoc NextResponse.json calls.
+ * Converts any thrown error into a well-formed JSON error response.
+ * Use in every API route catch block instead of ad-hoc Response.json calls.
  *
  * Usage:
  *   import { handleApiError } from '@/lib/apiErrors';

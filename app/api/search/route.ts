@@ -12,18 +12,18 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
-interface GroupedResult<T> {
-  items: T[];
+interface GroupedResult {
+  items: unknown[];
   total: number;
 }
 
 interface SearchResponse {
-  tasks: GroupedResult<unknown>;
-  agents: GroupedResult<unknown>;
-  knowledge: GroupedResult<unknown>;
-  library: GroupedResult<unknown>;
-  campaigns: GroupedResult<unknown>;
-  automations: GroupedResult<unknown>;
+  tasks: GroupedResult;
+  agents: GroupedResult;
+  knowledge: GroupedResult;
+  library: GroupedResult;
+  campaigns: GroupedResult;
+  automations: GroupedResult;
 }
 
 const INCOMPLETE_STATUSES = ['todo', 'internal-review', 'in-progress', 'review', 'human-review'];
@@ -32,16 +32,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const q = searchParams.get('q')?.trim();
 
+  const empty: GroupedResult = { items: [], total: 0 };
+  const emptyResponse: SearchResponse = {
+    tasks: empty, agents: empty, knowledge: empty,
+    library: empty, campaigns: empty, automations: empty,
+  };
+
   if (!q || q.length < 2) {
-    const empty: GroupedResult<unknown> = { items: [], total: 0 };
-    return NextResponse.json({
-      tasks: empty,
-      agents: empty,
-      knowledge: empty,
-      library: empty,
-      campaigns: empty,
-      automations: empty,
-    });
+    return NextResponse.json(emptyResponse);
   }
 
   const db = getDb();
@@ -56,34 +54,24 @@ export async function GET(request: NextRequest) {
   const wantType = (type: string) => !requestedTypes || requestedTypes.has(type);
 
   // Pagination per group
-  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '5', 10), 1), 50);
-  const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0);
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '5', 10), 1), 50);
+  const offset = Math.max(parseInt(searchParams.get('offset') ?? '0', 10), 0);
 
-  const empty: GroupedResult<unknown> = { items: [], total: 0 };
-  const result: SearchResponse = {
-    tasks: empty,
-    agents: empty,
-    knowledge: empty,
-    library: empty,
-    campaigns: empty,
-    automations: empty,
-  };
+  const result: SearchResponse = { ...emptyResponse };
 
   try {
     // ── Tasks ────────────────────────────────────────────────────────────────
-    // Rank: incomplete first (CASE), then by updatedAt desc within each group
+    // Rank: incomplete first, then by updatedAt desc
     if (wantType('tasks')) {
       try {
-        const incompleteList = INCOMPLETE_STATUSES.map(() => '?').join(', ');
-        const taskParams = [like, like, ...INCOMPLETE_STATUSES, ...INCOMPLETE_STATUSES, like, like];
+        const inPlaceholders = INCOMPLETE_STATUSES.map(() => '?').join(', ');
         const allTasks = db.prepare(`
           SELECT id, title, description, status, assignedTo, updatedAt,
-            CASE WHEN status IN (${incompleteList}) THEN 0 ELSE 1 END AS rank_group
+            CASE WHEN status IN (${inPlaceholders}) THEN 0 ELSE 1 END AS rank_group
           FROM tasks
           WHERE title LIKE ? OR description LIKE ?
           ORDER BY rank_group ASC, updatedAt DESC
-        `).all(like, like, ...INCOMPLETE_STATUSES) as Array<Record<string, unknown>>;
-
+        `).all(...INCOMPLETE_STATUSES, like, like) as Array<Record<string, unknown>>;
         result.tasks = {
           items: allTasks.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
           total: allTasks.length,
@@ -102,7 +90,6 @@ export async function GET(request: NextRequest) {
           WHERE name LIKE ? OR role LIKE ? OR id LIKE ?
           ORDER BY name ASC
         `).all(like, like, like) as Array<Record<string, unknown>>;
-
         result.agents = {
           items: allAgents.slice(offset, offset + limit),
           total: allAgents.length,
@@ -123,7 +110,6 @@ export async function GET(request: NextRequest) {
           WHERE title LIKE ? OR content LIKE ?
           ORDER BY rank_group ASC, updatedAt DESC
         `).all(like, like, like) as Array<Record<string, unknown>>;
-
         result.knowledge = {
           items: allKnowledge.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
           total: allKnowledge.length,
@@ -142,7 +128,6 @@ export async function GET(request: NextRequest) {
           WHERE name LIKE ? OR path LIKE ?
           ORDER BY createdAt DESC
         `).all(like, like) as Array<Record<string, unknown>>;
-
         result.library = {
           items: allFiles.slice(offset, offset + limit),
           total: allFiles.length,
@@ -161,7 +146,6 @@ export async function GET(request: NextRequest) {
           WHERE name LIKE ? OR description LIKE ?
           ORDER BY updatedAt DESC
         `).all(like, like) as Array<Record<string, unknown>>;
-
         result.campaigns = {
           items: allCampaigns.slice(offset, offset + limit),
           total: allCampaigns.length,
@@ -180,7 +164,6 @@ export async function GET(request: NextRequest) {
           WHERE name LIKE ? OR description LIKE ?
           ORDER BY updated_at DESC
         `).all(like, like) as Array<Record<string, unknown>>;
-
         result.automations = {
           items: allAutomations.slice(offset, offset + limit),
           total: allAutomations.length,
@@ -193,6 +176,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error('[/api/search] Error:', err);
-    return NextResponse.json(result, { status: 500 });
+    return NextResponse.json(emptyResponse, { status: 500 });
   }
 }

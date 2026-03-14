@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react';
 
 /**
  * Returns `true` when the browser believes the network is reachable.
- * Subscribes to `window` online/offline events so the value stays current.
+ * Subscribes to `window` online/offline events so the value stays live.
  *
- * The hook also accepts an optional `sseDisconnected` flag: if the SSE
- * connection drops while `navigator.onLine` is still true (e.g. server-side
- * outage) the hook will report offline as well.
+ * Accepts an optional `sseDisconnected` flag: if the SSE connection drops
+ * while `navigator.onLine` is still true (e.g. a server-side outage) the
+ * hook will report offline as well, giving a more accurate picture.
  */
 export function useOnlineStatus(sseDisconnected?: boolean): boolean {
   const [online, setOnline] = useState(() =>
@@ -32,11 +32,6 @@ export function useOnlineStatus(sseDisconnected?: boolean): boolean {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  // If SSE dropped we treat the connection as degraded/offline
-  if (sseDisconnected && !online === false) {
-    return false;
-  }
 
   return online && !sseDisconnected;
 }

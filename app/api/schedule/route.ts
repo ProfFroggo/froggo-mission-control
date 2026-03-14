@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     const id = `sched-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const now = Date.now();
     db.prepare(
-      'INSERT INTO scheduled_items (id, type, content, scheduledFor, metadata, status, platform, recurrence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO scheduled_items (id, type, content, scheduledFor, metadata, status, platform, recurrence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     ).run(
       id,
       body.type || 'task',
