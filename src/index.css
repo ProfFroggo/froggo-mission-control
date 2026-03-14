@@ -722,22 +722,20 @@ mark {
   .overflow-y-auto,
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
-  }
-
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select,
-  textarea {
     font-size: 16px !important;
-  }
-
   .modal-content {
     max-height: 90vh;
     overflow-y: auto;
     margin: 0 16px;
     border-radius: 12px;
-  }
-
   .mobile-stack {
     flex-direction: column !important;
-  }
 }
+/* Accent color presets — set via data-accent attribute on :root */
+:root[data-accent="blue"]   { --mission-control-accent: #3b82f6; --mission-control-accent-dim: #2563eb; }
+:root[data-accent="purple"] { --mission-control-accent: #8b5cf6; --mission-control-accent-dim: #7c3aed; }
+:root[data-accent="green"]  { --mission-control-accent: #10b981; --mission-control-accent-dim: #059669; }
+:root[data-accent="red"]    { --mission-control-accent: #ef4444; --mission-control-accent-dim: #dc2626; }
+:root[data-accent="amber"]  { --mission-control-accent: #f59e0b; --mission-control-accent-dim: #d97706; }
+:root[data-accent="pink"]   { --mission-control-accent: #ec4899; --mission-control-accent-dim: #db2777; }
