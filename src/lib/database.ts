@@ -865,6 +865,35 @@ function initSchema(db: Database.Database) {
     db.prepare(`DELETE FROM agent_sessions WHERE createdAt < ?`).run(Date.now() - 7 * 24 * 60 * 60 * 1000);
   } catch { /* non-critical */ }
 
+  // Settings: add updatedAt column if missing (existing DBs pre-schema-update)
+  try {
+    const cols = (db.prepare(`PRAGMA table_info(settings)`).all() as { name: string }[]).map(c => c.name);
+    if (!cols.includes('updatedAt')) {
+      db.exec(`ALTER TABLE settings ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)`);
+    }
+  } catch { /* non-critical */ }
+
+  // Settings: seed defaults on first run (INSERT OR IGNORE — never overwrite user values)
+  try {
+    const DEFAULTS: Record<string, unknown> = {
+      'automation.enabled': true,
+      'automation.maxConcurrent': 3,
+      'clara.reviewStrictness': 'standard',
+      'clara.autoDispatch': true,
+      'platform.theme': 'dark',
+      'platform.notifications': true,
+      'platform.soundEnabled': false,
+      'token.monthlyBudget': 0,
+    };
+    const seedStmt = db.prepare(
+      `INSERT OR IGNORE INTO settings (key, value, updatedAt) VALUES (?, ?, ?)`
+    );
+    const now = Date.now();
+    for (const [key, val] of Object.entries(DEFAULTS)) {
+      seedStmt.run(key, JSON.stringify(val), now);
+    }
+  } catch { /* non-critical */ }
+
   syncCatalogAgents(db);
   syncCatalogModules(db);
 

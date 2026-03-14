@@ -25,7 +25,7 @@ export function useSetting<T>(key: string, defaultValue: T): [T, (value: T) => P
     let cancelled = false;
     settingsApi
       .get(key)
-      .then(result => {
+      .then((result: { value?: unknown } | null) => {
         if (!cancelled && result?.value !== undefined && result.value !== null) {
           setValue(result.value as T);
         }
