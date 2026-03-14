@@ -34,7 +34,7 @@ export interface CampaignMetrics {
   conversions?: number;
   revenue?: number;
   cost?: number;
-  // Channel attribution breakdown (values are percentages 0-100)
+  // Channel breakdown for attribution pie (values are percentages 0-100)
   attributionSocial?: number;
   attributionEmail?: number;
   attributionOrganic?: number;
