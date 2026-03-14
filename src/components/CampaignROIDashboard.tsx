@@ -10,7 +10,7 @@ interface CampaignROIDashboardProps {
   previousCampaign?: Campaign | null;
 }
 
-// ── SVG ring ────────────────────────────────────────────────────────────────
+// ── SVG ROI ring ─────────────────────────────────────────────────────────────
 function ROIRing({ roi }: { roi: number }) {
   const RADIUS = 52;
   const STROKE = 10;
@@ -28,8 +28,7 @@ function ROIRing({ roi }: { roi: number }) {
       ? 'var(--color-warning, #eab308)'
       : 'var(--color-error, #ef4444)';
 
-  const label =
-    roi >= 100 ? 'Strong' : roi >= 50 ? 'Moderate' : 'Weak';
+  const label = roi >= 100 ? 'Strong' : roi >= 50 ? 'Moderate' : 'Weak';
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -39,7 +38,6 @@ function ROIRing({ roi }: { roi: number }) {
           height={RADIUS * 2}
           style={{ transform: 'rotate(-90deg)' }}
         >
-          {/* Track */}
           <circle
             stroke="var(--mission-control-border, #2a2a2a)"
             fill="transparent"
@@ -48,7 +46,6 @@ function ROIRing({ roi }: { roi: number }) {
             cx={RADIUS}
             cy={RADIUS}
           />
-          {/* ROI arc */}
           <circle
             stroke={color}
             fill="transparent"
@@ -83,7 +80,7 @@ function ROIRing({ roi }: { roi: number }) {
   );
 }
 
-// ── Attribution pie (pure SVG) ───────────────────────────────────────────────
+// ── Attribution pie (pure SVG) ────────────────────────────────────────────────
 interface PieSlice {
   label: string;
   pct: number;
@@ -96,7 +93,6 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
   const CY = SIZE / 2;
   const R = 44;
 
-  // Build SVG arc paths
   const paths = useMemo(() => {
     const total = slices.reduce((s, sl) => s + sl.pct, 0) || 100;
     let startAngle = -Math.PI / 2;
@@ -113,15 +109,20 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
       startAngle = endAngle;
       return result;
     });
-  }, [slices]);
+  }, [slices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex items-center gap-6">
       <svg width={SIZE} height={SIZE} style={{ flexShrink: 0 }}>
         {paths.map((p, i) => (
-          <path key={i} d={p.d} fill={p.color} stroke="var(--mission-control-bg0, #111)" strokeWidth={1.5} />
+          <path
+            key={i}
+            d={p.d}
+            fill={p.color}
+            stroke="var(--mission-control-bg0, #111)"
+            strokeWidth={1.5}
+          />
         ))}
-        {/* Centre hole */}
         <circle cx={CX} cy={CY} r={22} fill="var(--mission-control-surface, #1a1a1a)" />
       </svg>
       <div className="flex flex-col gap-1.5">
@@ -156,9 +157,7 @@ function ComparisonBar({
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-mission-control-text-dim">{label}</span>
-      </div>
+      <span className="text-xs text-mission-control-text-dim">{label}</span>
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-mission-control-text-dim w-16 text-right flex-shrink-0">Current</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
@@ -167,7 +166,9 @@ function ComparisonBar({
             style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent, #6366f1)' }}
           />
         </div>
-        <span className="text-xs font-medium text-mission-control-text-primary w-16 flex-shrink-0">{fmt(current)}</span>
+        <span className="text-xs font-medium text-mission-control-text-primary w-16 flex-shrink-0">
+          {fmt(current)}
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-mission-control-text-dim w-16 text-right flex-shrink-0">Previous</span>
@@ -177,7 +178,9 @@ function ComparisonBar({
             style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim, #888)' }}
           />
         </div>
-        <span className="text-xs font-medium text-mission-control-text-dim w-16 flex-shrink-0">{fmt(previous)}</span>
+        <span className="text-xs font-medium text-mission-control-text-dim w-16 flex-shrink-0">
+          {fmt(previous)}
+        </span>
       </div>
     </div>
   );
@@ -207,11 +210,19 @@ function MetricPill({
 // ── Main component ────────────────────────────────────────────────────────────
 export default function CampaignROIDashboard({ campaign, previousCampaign }: CampaignROIDashboardProps) {
   const metrics: CampaignMetrics = useMemo(() => {
-    try { return campaign.metrics ? JSON.parse(campaign.metrics) : {}; } catch { return {}; }
+    try {
+      return campaign.metrics ? JSON.parse(campaign.metrics) : {};
+    } catch {
+      return {};
+    }
   }, [campaign.metrics]);
 
   const prevMetrics: CampaignMetrics = useMemo(() => {
-    try { return previousCampaign?.metrics ? JSON.parse(previousCampaign.metrics) : {}; } catch { return {}; }
+    try {
+      return previousCampaign?.metrics ? JSON.parse(previousCampaign.metrics) : {};
+    } catch {
+      return {};
+    }
   }, [previousCampaign]);
 
   const currency = campaign.currency ?? 'USD';
@@ -223,12 +234,28 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
     `${currency} ${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const attributionSlices: PieSlice[] = [
-    { label: 'Social',  pct: metrics.attributionSocial  ?? 40, color: 'var(--mission-control-accent, #6366f1)' },
-    { label: 'Email',   pct: metrics.attributionEmail   ?? 30, color: 'var(--color-success, #22c55e)' },
-    { label: 'Organic', pct: metrics.attributionOrganic ?? 30, color: 'var(--color-warning, #eab308)' },
+    {
+      label: 'Social',
+      pct: metrics.attributionSocial ?? 40,
+      color: 'var(--mission-control-accent, #6366f1)',
+    },
+    {
+      label: 'Email',
+      pct: metrics.attributionEmail ?? 30,
+      color: 'var(--color-success, #22c55e)',
+    },
+    {
+      label: 'Organic',
+      pct: metrics.attributionOrganic ?? 30,
+      color: 'var(--color-warning, #eab308)',
+    },
   ];
 
-  const hasMetrics = revenue > 0 || cost > 0 || (metrics.impressions ?? 0) > 0 || (metrics.clicks ?? 0) > 0;
+  const hasMetrics =
+    revenue > 0 ||
+    cost > 0 ||
+    (metrics.impressions ?? 0) > 0 ||
+    (metrics.clicks ?? 0) > 0;
 
   if (!hasMetrics) {
     return (
@@ -236,7 +263,11 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
         <BarChart2 size={28} className="text-mission-control-text-dim" />
         <p className="text-sm text-mission-control-text-dim">No metrics data yet.</p>
         <p className="text-xs text-mission-control-text-dim">
-          Update the campaign&apos;s <code className="px-1 py-0.5 rounded bg-mission-control-border text-mission-control-text-primary text-[10px]">metrics</code> field to see ROI analytics.
+          Update the campaign&apos;s{' '}
+          <code className="px-1 py-0.5 rounded bg-mission-control-border text-mission-control-text-primary text-[10px]">
+            metrics
+          </code>{' '}
+          field to see ROI analytics.
         </p>
       </div>
     );
@@ -244,7 +275,7 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
 
   return (
     <div className="flex flex-col gap-6 p-6 overflow-y-auto">
-      {/* Top row: ROI ring + key metrics strip */}
+      {/* ROI ring + key metrics strip */}
       <div className="flex flex-wrap items-start gap-6">
         <ROIRing roi={roi} />
         <div className="flex flex-wrap gap-2 flex-1 min-w-0">
@@ -255,17 +286,23 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
             <MetricPill icon={Eye} label="Impressions" value={(metrics.impressions ?? 0).toLocaleString()} />
           )}
           {(metrics.clicks ?? 0) > 0 && (
-            <MetricPill icon={MousePointerClick} label="Clicks" value={(metrics.clicks ?? 0).toLocaleString()} />
+            <MetricPill
+              icon={MousePointerClick}
+              label="Clicks"
+              value={(metrics.clicks ?? 0).toLocaleString()}
+            />
           )}
           {(metrics.conversions ?? 0) > 0 && (
-            <MetricPill icon={Repeat2} label="Conversions" value={(metrics.conversions ?? 0).toLocaleString()} />
+            <MetricPill
+              icon={Repeat2}
+              label="Conversions"
+              value={(metrics.conversions ?? 0).toLocaleString()}
+            />
           )}
           {revenue > 0 && (
             <MetricPill icon={TrendingUp} label="Revenue" value={fmtCurrency(revenue)} />
           )}
-          {cost > 0 && (
-            <MetricPill icon={DollarSign} label="Cost" value={fmtCurrency(cost)} />
-          )}
+          {cost > 0 && <MetricPill icon={DollarSign} label="Cost" value={fmtCurrency(cost)} />}
         </div>
       </div>
 

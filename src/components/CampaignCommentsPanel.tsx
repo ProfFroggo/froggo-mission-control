@@ -22,7 +22,12 @@ interface CampaignCommentsPanelProps {
 function formatDate(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch {
     return dateStr;
   }
@@ -47,8 +52,12 @@ function CommentRow({
       )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-semibold text-mission-control-text-primary">{comment.author}</span>
-          <span className="text-[10px] text-mission-control-text-dim">{formatDate(comment.createdAt)}</span>
+          <span className="text-xs font-semibold text-mission-control-text-primary">
+            {comment.author}
+          </span>
+          <span className="text-[10px] text-mission-control-text-dim">
+            {formatDate(comment.createdAt)}
+          </span>
         </div>
         <p className="text-sm text-mission-control-text-primary whitespace-pre-wrap break-words leading-relaxed">
           {comment.body}
@@ -81,7 +90,7 @@ function CommentComposer({
   parentId,
   onSubmit,
   onCancel,
-  placeholder = 'Add a comment…',
+  placeholder = 'Add a comment\u2026',
   autoFocus = false,
 }: {
   campaignId: string;
@@ -173,20 +182,27 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
     }
   }, [campaignId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const handleDelete = useCallback(async (commentId: string) => {
-    try {
-      const res = await fetch(`/api/campaigns/${campaignId}/comments/${commentId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed');
-      setComments(prev => prev.filter(c => c.id !== commentId));
-      showToast('Comment deleted', 'success');
-    } catch {
-      showToast('Failed to delete comment', 'error');
-    }
-  }, [campaignId]);
+  const handleDelete = useCallback(
+    async (commentId: string) => {
+      try {
+        const res = await fetch(`/api/campaigns/${campaignId}/comments/${commentId}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed');
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        showToast('Comment deleted', 'success');
+      } catch {
+        showToast('Failed to delete comment', 'error');
+      }
+    },
+    [campaignId]
+  );
 
-  // Build threaded structure: top-level + replies keyed by parentId
+  // Build threaded structure
   const topLevel = comments.filter(c => !c.parentId);
   const repliesMap: Record<string, Comment[]> = {};
   for (const c of comments) {
@@ -206,13 +222,14 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Comment list */}
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         {topLevel.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
             <MessageSquare size={28} className="text-mission-control-text-dim" />
             <p className="text-sm text-mission-control-text-dim">No comments yet.</p>
-            <p className="text-xs text-mission-control-text-dim">Be the first to leave a comment on this campaign.</p>
+            <p className="text-xs text-mission-control-text-dim">
+              Be the first to leave a comment on this campaign.
+            </p>
           </div>
         )}
 
@@ -224,7 +241,6 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
               onDelete={handleDelete}
             />
 
-            {/* Replies */}
             {(repliesMap[comment.id] ?? []).map(reply => (
               <CommentRow
                 key={reply.id}
@@ -235,15 +251,17 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
               />
             ))}
 
-            {/* Inline reply composer */}
             {replyingTo === comment.id && (
               <div className="pl-8">
                 <CommentComposer
                   campaignId={campaignId}
                   parentId={comment.id}
-                  placeholder={`Replying to ${comment.author}…`}
+                  placeholder={`Replying to ${comment.author}\u2026`}
                   autoFocus
-                  onSubmit={() => { setReplyingTo(null); load(); }}
+                  onSubmit={() => {
+                    setReplyingTo(null);
+                    load();
+                  }}
                   onCancel={() => setReplyingTo(null)}
                 />
               </div>
@@ -252,11 +270,10 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
         ))}
       </div>
 
-      {/* New comment composer at bottom */}
       <div className="border-t border-mission-control-border p-4">
         <CommentComposer
           campaignId={campaignId}
-          placeholder="Add a comment… (Cmd+Enter to post)"
+          placeholder="Add a comment\u2026 (Cmd+Enter to post)"
           onSubmit={load}
         />
       </div>
