@@ -134,6 +134,35 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
 
+  // Increment claraReviewCount before spawning — every review attempt counts
+  try {
+    getDb()
+      .prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1, updatedAt = ? WHERE id = ?')
+      .run(Date.now(), task.id);
+  } catch { /* non-critical */ }
+
+  // Check for human-review escalation BEFORE spawning Clara
+  try {
+    const reviewCountRow = getDb()
+      .prepare('SELECT claraReviewCount FROM tasks WHERE id = ?')
+      .get(task.id as string) as { claraReviewCount: number } | undefined;
+    const reviewCount = reviewCountRow?.claraReviewCount ?? 0;
+    if (reviewCount >= 3) {
+      const now = Date.now();
+      console.warn(`[clara-review-cron] Task ${task.id} has been reviewed ${reviewCount} times — escalating to human-review`);
+      getDb()
+        .prepare("UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?")
+        .run(now, task.id);
+      getDb()
+        .prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(task.id, 'clara', 'human-review-escalation',
+          `Task has been reviewed by Clara ${reviewCount} times and is still not progressing — needs human attention.`,
+          now);
+      inPreReview.delete(task.id as string);
+      return;
+    }
+  } catch { /* non-critical */ }
+
   trackEvent('clara.pre-review.start', { taskId: task.id });
   try {
     getDb()
@@ -209,16 +238,32 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
 
         if (current?.status === 'in-progress' && current?.assignedTo) {
           // Clara approved — dispatch the agent now
-          console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${current.assignedTo}`);
+          const agentName = current.assignedTo;
+          const approvalMsg = `Pre-review passed: agent assigned (${agentName}), planning notes present, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''} defined. Dispatching to ${agentName}.`;
+          console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${agentName}`);
           db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-            .run(task.id, 'clara', 'pre-review-approved', 'Clara approved — dispatching agent', Date.now());
+            .run(task.id, 'clara', 'pre-review-approved', approvalMsg, Date.now());
           dispatchTask(task.id as string);
         } else if (current?.status === 'todo') {
-          // Clara rejected — log to activity so it shows in the task detail activity tab
+          // Clara rejected — set lastClaraReviewAt and log a specific rejection message
+          const now = Date.now();
+          db.prepare('UPDATE tasks SET lastClaraReviewAt = ?, updatedAt = ? WHERE id = ?').run(now, now, task.id);
           console.log(`[clara-review-cron] Pre-review rejected task ${task.id} — returned to todo`);
-          const rejReason = (current.reviewNotes || 'No reason provided').slice(0, 500);
+
+          // Build a specific rejection reason from gate failures if reviewNotes is absent or generic
+          let rejReason = (current.reviewNotes || '').trim();
+          if (!rejReason || rejReason === 'Rejected') {
+            const failedGates: string[] = [];
+            if (!hasAgent) failedGates.push('no agent assigned (assignedTo is empty)');
+            if (!hasPlanningNotes) failedGates.push('planningNotes is empty or missing');
+            if (!hasSubtasks) failedGates.push('no subtasks created yet');
+            rejReason = failedGates.length > 0
+              ? `Gate failures: ${failedGates.join('; ')}`
+              : 'Review criteria not met';
+          }
+
           db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-            .run(task.id, 'clara', 'pre-review-rejected', `Clara rejected: ${rejReason}`, Date.now());
+            .run(task.id, 'clara', 'pre-review-rejected', `Pre-review failed: ${rejReason}. Task returned to todo.`, now);
         }
       } catch { /* non-critical */ }
     }, 2000);
@@ -364,11 +409,19 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
           // Write outcome to task_activity so it shows in the task detail activity tab
           if (reviewed.reviewStatus === 'rejected') {
+            // Set lastClaraReviewAt on rejection so retry cooldown can be enforced
+            try {
+              db2.prepare('UPDATE tasks SET lastClaraReviewAt = ?, updatedAt = ? WHERE id = ?').run(now2, now2, task.id);
+            } catch { /* non-critical */ }
+
+            const rejMsg = notes
+              ? `Post-review failed: ${notes}. Task returned to in-progress for rework.`
+              : 'Post-review failed: work appears incomplete — subtasks may be unfinished, output files missing, or the deliverable does not match the description. Task returned to in-progress for rework.';
             db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-              .run(task.id, 'clara', 'review-rejected', `Clara rejected: ${notes || 'No specific feedback provided.'}`, now2);
+              .run(task.id, 'clara', 'review-rejected', rejMsg, now2);
           } else {
             db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-              .run(task.id, 'clara', 'review-approved', `Clara approved: ${notes || 'Work complete and verified.'}`, now2);
+              .run(task.id, 'clara', 'review-approved', `Post-review passed: ${notes || 'Work complete and verified.'}`, now2);
           }
 
           // Also log to Clara's pattern memory file for future reviews
