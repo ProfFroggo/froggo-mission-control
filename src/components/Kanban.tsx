@@ -5,7 +5,8 @@ import {
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap,
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive, ShieldCheck, ShieldX, ShieldAlert,
   CheckCircle, CheckCircle2, Ban, FileText, Pencil, ChevronDown, ChevronRight, Hash,
-  ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock
+  ClipboardList, Eye, Inbox, SortAsc, Save, Tag, CalendarClock,
+  Square, UserCheck,
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -113,6 +114,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const [isArchiving, setIsArchiving] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [pendingDeleteTaskId, setPendingDeleteTaskId] = useState<string | null>(null);
+
+  // Multi-select / bulk operations
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
   
   // Active agent sessions (for real-time activity indicators)
   const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
@@ -317,6 +326,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         setShowKeyboardHelp(false);
         setShowSortMenu(false);
         setShowSaveViewDialog(false);
+        setSelectedIds(new Set());
+        setLastSelectedId(null);
+        setShowBulkAssign(false);
       }
       if (e.key === 'f' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -755,6 +767,84 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       });
     }
   };
+
+  // Toggle a task's selection, with shift-click range support
+  const handleToggleSelect = useCallback((taskId: string, shiftKey: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (shiftKey && lastSelectedId) {
+        // Build an ordered flat list of all visible task IDs across columns (in column order)
+        const allVisibleIds: string[] = [];
+        for (const col of columns) {
+          const colTasks = columnTaskMap[col.id] ?? [];
+          for (const t of colTasks) allVisibleIds.push(t.id);
+        }
+        const fromIdx = allVisibleIds.indexOf(lastSelectedId);
+        const toIdx = allVisibleIds.indexOf(taskId);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          const lo = Math.min(fromIdx, toIdx);
+          const hi = Math.max(fromIdx, toIdx);
+          for (let i = lo; i <= hi; i++) next.add(allVisibleIds[i]);
+        } else {
+          next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+        }
+      } else {
+        next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+      }
+      return next;
+    });
+    setLastSelectedId(taskId);
+  }, [lastSelectedId, columnTaskMap]);
+
+  const handleBulkMarkDone = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'status', 'done');
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Marked ${result.updated} task${result.updated !== 1 ? 's' : ''} as done`);
+    } catch {
+      showToast('error', 'Bulk update failed');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
+
+  const handleBulkAssign = useCallback(async (agentId: string) => {
+    if (selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    setShowBulkAssign(false);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'assign', agentId);
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Assigned ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
+    } catch {
+      showToast('error', 'Bulk assign failed');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
+
+  const confirmBulkDelete = useCallback(async () => {
+    setShowBulkDeleteConfirm(false);
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const result = await taskApi.bulk(Array.from(selectedIds), 'delete');
+      await loadTasksFromDB();
+      setSelectedIds(new Set());
+      setLastSelectedId(null);
+      showToast('success', `Deleted ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
+    } catch {
+      showToast('error', 'Bulk delete failed');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  }, [selectedIds, loadTasksFromDB]);
 
   if (taskLoadError) {
     return (
@@ -1381,6 +1471,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                       isDeleting={deletingTasks.has(task.id)}
                       isSpawning={spawningTasks.has(task.id)}
                       isMoving={movingTasks.has(task.id)}
+                      isSelected={selectedIds.has(task.id)}
+                      isAnySelected={selectedIds.size > 0}
+                      onToggleSelect={handleToggleSelect}
                     />
                   ))
                 )}
@@ -1550,6 +1643,101 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         cancelLabel="Cancel"
         type="danger"
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={showBulkDeleteConfirm}
+        onClose={() => setShowBulkDeleteConfirm(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Tasks"
+        message={`Delete ${selectedIds.size} selected task${selectedIds.size !== 1 ? 's' : ''}? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        type="danger"
+        loading={isBulkDeleting}
+      />
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-xl px-4 py-3 flex items-center gap-3">
+          {/* Count badge */}
+          <span className="text-sm font-semibold text-mission-control-text whitespace-nowrap">
+            {selectedIds.size} task{selectedIds.size !== 1 ? 's' : ''} selected
+          </span>
+
+          <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
+
+          {/* Mark Done */}
+          <button
+            onClick={handleBulkMarkDone}
+            disabled={isBulkUpdating || isBulkDeleting}
+            className="icon-text px-3 py-1.5 bg-success-subtle text-success border border-success-border rounded-xl text-sm hover:bg-success hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckCircle size={15} className="flex-shrink-0" />
+            Mark Done
+          </button>
+
+          {/* Assign Agent */}
+          <div className="relative">
+            <button
+              onClick={() => setShowBulkAssign(v => !v)}
+              disabled={isBulkUpdating || isBulkDeleting}
+              className="icon-text px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-xl text-sm hover:border-mission-control-accent/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <UserCheck size={15} className="flex-shrink-0" />
+              Assign Agent
+              <ChevronDown size={13} className="flex-shrink-0" />
+            </button>
+            {showBulkAssign && (
+              <>
+                <div
+                  className="fixed inset-0 z-[60]"
+                  onClick={() => setShowBulkAssign(false)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setShowBulkAssign(false); }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Close assign dropdown"
+                />
+                <div className="absolute bottom-full mb-2 left-0 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl py-1 z-[61] min-w-[180px] max-h-60 overflow-y-auto">
+                  {agents.filter(a => !isProtectedAgent(a.id)).length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-mission-control-text-dim">No agents available</div>
+                  ) : agents.filter(a => !isProtectedAgent(a.id)).map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => handleBulkAssign(a.id)}
+                      className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border transition-colors"
+                    >
+                      <span className="flex-shrink-0">{a.avatar || '🤖'}</span>
+                      {a.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Delete */}
+          <button
+            onClick={() => setShowBulkDeleteConfirm(true)}
+            disabled={isBulkUpdating || isBulkDeleting}
+            className="icon-text px-3 py-1.5 bg-error-subtle text-error border border-error-border rounded-xl text-sm hover:bg-error hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={15} className="flex-shrink-0" />
+            Delete
+          </button>
+
+          <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
+
+          {/* Clear selection */}
+          <button
+            onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }}
+            className="icon-btn text-mission-control-text-dim hover:text-mission-control-text"
+            title="Clear selection (Esc)"
+          >
+            <X size={16} className="flex-shrink-0" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1571,9 +1759,12 @@ interface TaskCardProps {
   isDeleting?: boolean;
   isSpawning?: boolean;
   isMoving?: boolean;
+  isSelected?: boolean;
+  isAnySelected?: boolean;
+  onToggleSelect?: (taskId: string, shiftKey: boolean) => void;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, onTitleEdit, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, onTitleEdit, isDragging, isDeleting, isSpawning, isMoving, isSelected, isAnySelected, onToggleSelect }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
@@ -1715,7 +1906,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
-        task.status === 'in-progress'
+        isSelected
+          ? 'border-mission-control-accent bg-mission-control-accent/5 shadow-[0_0_0_1px_var(--mc-accent)]'
+          : task.status === 'in-progress'
           ? 'border-success/60 bg-success-subtle shadow-[0_0_0_1px_rgba(34,197,94,0.2)]'
           /* TODO: move to CSS token when design system tokens include status colors */
           : activityIndicator ? activityIndicator.color
@@ -1726,8 +1919,22 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
     >
-      {/* Top row: Priority + Title + Menu */}
+      {/* Top row: Checkbox + Priority + Title + Menu */}
       <div className="flex items-start gap-1.5 mb-2">
+        {/* Selection checkbox — visible on hover or when any task is selected */}
+        {onToggleSelect && (
+          <button
+            className={`flex-shrink-0 mt-0.5 transition-opacity ${isAnySelected || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'}`}
+            onClick={(e) => { e.stopPropagation(); onToggleSelect(task.id, e.shiftKey); }}
+            title={isSelected ? 'Deselect task' : 'Select task (Shift+click for range)'}
+            aria-label={isSelected ? 'Deselect task' : 'Select task'}
+          >
+            {isSelected
+              ? <CheckSquare size={15} className="text-mission-control-accent flex-shrink-0" />
+              : <Square size={15} className="text-mission-control-text-dim flex-shrink-0" />
+            }
+          </button>
+        )}
         {/* Priority indicator */}
         {priorityConfig && (
           <div className="relative flex-shrink-0">

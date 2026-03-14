@@ -58,6 +58,8 @@ export const taskApi = {
     apiCall(`/tasks/${taskId}/attachments`),
   addAttachment: (taskId: string, attachment: any) =>
     apiCall(`/tasks/${taskId}/attachments`, { method: 'POST', body: attachment }),
+  bulk: (ids: string[], action: 'status' | 'assign' | 'delete' | 'priority', value?: string | null) =>
+    apiCall('/tasks/bulk', { method: 'POST', body: { ids, action, value } }),
 };
 
 // ──────────────────────────────────────────────────
