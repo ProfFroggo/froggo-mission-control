@@ -25,21 +25,16 @@ export function useFirstTimeUser(
   useEffect(() => {
     const onboardingDone = localStorage.getItem(ONBOARDING_KEY);
     const tourSeen = localStorage.getItem(TOUR_SEEN_KEY);
-    // ?setup=1 forces wizard open (used by CLI on first launch to bypass stale localStorage)
     const forceSetup = new URLSearchParams(window.location.search).get('setup') === '1';
 
     if (!onboardingDone || forceSetup) {
-      // Wizard not completed (or forced) -- show it first
       setShowOnboardingWizard(true);
-      // Strip ?setup=1 so browser URL is clean
       if (forceSetup) window.history.replaceState({}, '', window.location.pathname);
     } else if (!tourSeen && !hasCompletedTour('getting-started')) {
-      // Wizard done but tour not seen -- auto-start tour after brief delay
       const timer = setTimeout(() => {
         startTour('gettingStarted');
         localStorage.setItem(TOUR_SEEN_KEY, 'true');
       }, 2000);
-
       return () => clearTimeout(timer);
     }
   }, []);

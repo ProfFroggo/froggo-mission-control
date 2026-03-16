@@ -48,14 +48,7 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
     setConnecting(true);
     setError(null);
     try {
-      const res = await fetch('/api/google/auth/url');
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError(data.error ?? 'Failed to get auth URL');
-        setConnecting(false);
-      }
+      window.location.href = '/api/google/auth';
     } catch {
       setError('Failed to start authentication');
       setConnecting(false);

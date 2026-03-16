@@ -593,6 +593,7 @@ function App() {
           </ErrorBoundary>
         )}
 
+<<<<<<< HEAD
         {/* Onboarding Flow (first-run simplified welcome) */}
         {showOnboardingFlow && (
           <ErrorBoundary panelName="Onboarding Flow">
@@ -602,6 +603,9 @@ function App() {
             />
           </ErrorBoundary>
         )}
+=======
+        {/* OnboardingFlow disabled — OnboardingWizard is the real setup wizard */}
+>>>>>>> dev
 
         {/* Quick Tips (post-onboarding tooltip sequence) */}
         {showTips && (

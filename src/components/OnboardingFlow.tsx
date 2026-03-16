@@ -40,40 +40,14 @@ type Direction = 'forward' | 'backward';
 // ─────────────────────────────────────────────
 // Agent definitions
 // ─────────────────────────────────────────────
-const AGENT_DEFS: AgentDef[] = [
-  {
-    id: 'clara',
-    name: 'Clara',
-    role: 'Chief of Staff',
-    tagline: 'Orchestrates your entire operation',
-    description: 'Reviews tasks, coordinates agents, and ensures nothing falls through the cracks.',
-    color: '#22c55e',
-  },
-  {
-    id: 'rex',
-    name: 'Rex',
-    role: 'Research Analyst',
-    tagline: 'Turns data into actionable insights',
-    description: 'Deep-dives on markets, competitors, and trends so you can make informed decisions.',
-    color: '#3b82f6',
-  },
-  {
-    id: 'nova',
-    name: 'Nova',
-    role: 'Content Strategist',
-    tagline: 'Creates copy that converts',
-    description: 'Writes, edits, and schedules content across every channel your brand touches.',
-    color: '#a855f7',
-  },
-  {
-    id: 'sage',
-    name: 'Sage',
-    role: 'Operations Lead',
-    tagline: 'Keeps workflows running smoothly',
-    description: 'Manages automations, tracks deliverables, and flags blockers before they become fires.',
-    color: '#f59e0b',
-  },
+// Agent definitions loaded dynamically from DB — fallback to defaults if API unavailable
+const FALLBACK_AGENTS: AgentDef[] = [
+  { id: 'clara', name: 'Clara', role: 'Chief of Staff', tagline: 'Reviews and coordinates', description: 'Quality reviewer and coordinator.', color: '#22c55e' },
+  { id: 'coder', name: 'Coder', role: 'Developer', tagline: 'Writes and maintains code', description: 'Implements features and fixes bugs.', color: '#3b82f6' },
+  { id: 'designer', name: 'Designer', role: 'UI/UX Designer', tagline: 'Creates beautiful interfaces', description: 'Design, mockups, and visual assets.', color: '#a855f7' },
+  { id: 'growth-director', name: 'Growth Director', role: 'Growth Strategy', tagline: 'Drives growth initiatives', description: 'Marketing, partnerships, and user acquisition.', color: '#f59e0b' },
 ];
+const AGENT_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#e11d48', '#8b5cf6', '#eab308'];
 
 // ─────────────────────────────────────────────
 // Step dots progress indicator
@@ -264,7 +238,7 @@ function StepPlatformSetup({
 }
 
 // ─────────────────────────────────────────────
-// Step 3 — Meet Your AI Agents
+// Step 3 — Meet Your AI Agents (loaded from DB)
 // ─────────────────────────────────────────────
 function StepMeetAgents({
   selected,
@@ -279,15 +253,36 @@ function StepMeetAgents({
   onBack: () => void;
   creating: boolean;
 }) {
+  const [agents, setAgents] = useState<AgentDef[]>(FALLBACK_AGENTS);
+
+  useEffect(() => {
+    fetch('/api/agents')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Array<Record<string, unknown>>) => {
+        const arr = Array.isArray(data) ? data : (data as Record<string, unknown>).agents as Array<Record<string, unknown>> || [];
+        if (arr.length > 0) {
+          setAgents(arr.map((a, i) => ({
+            id: a.id as string,
+            name: (a.name as string) || (a.id as string),
+            role: (a.role as string) || 'Agent',
+            tagline: ((a.personality as string) || '').slice(0, 60) || 'AI agent',
+            description: ((a.personality as string) || (a.role as string) || 'Autonomous AI agent').slice(0, 120),
+            color: AGENT_COLORS[i % AGENT_COLORS.length],
+          })));
+        }
+      })
+      .catch(() => { /* keep fallbacks */ });
+  }, []);
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold text-mission-control-text">Meet your AI agents</h2>
-        <p className="text-sm text-mission-control-text-dim">Select the agents you want on your team. You can add more later.</p>
+        <p className="text-sm text-mission-control-text-dim">These are the agents on your team. You can add more later from the Agents page.</p>
       </div>
 
-      <div className="space-y-2.5">
-        {AGENT_DEFS.map(agent => {
+      <div className="space-y-2.5 max-h-[400px] overflow-y-auto">
+        {agents.map(agent => {
           const isSelected = selected.has(agent.id);
           return (
             <button
@@ -300,21 +295,17 @@ function StepMeetAgents({
                   : 'border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/40'
               }`}
             >
-              {/* Avatar */}
               <AgentAvatar agentId={agent.id} size="md" />
 
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold text-mission-control-text">{agent.name}</span>
                   <span className="text-xs text-mission-control-text-dim">·</span>
                   <span className="text-xs text-mission-control-text-dim">{agent.role}</span>
                 </div>
-                <p className="text-xs font-medium mt-0.5" style={{ color: agent.color }}>{agent.tagline}</p>
                 <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">{agent.description}</p>
               </div>
 
-              {/* Checkbox */}
               <div
                 className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors mt-0.5 ${
                   isSelected
@@ -651,16 +642,16 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const handleAgentsNext = useCallback(async () => {
     setCreatingAgents(true);
     let created = 0;
+    // Agents already exist in DB — just acknowledge selection
     for (const agentId of selectedAgents) {
-      const def = AGENT_DEFS.find(a => a.id === agentId);
-      if (!def) continue;
       try {
-        const res = await fetch('/api/agents', {
-          method: 'POST',
+        // Enable selected agents (set status to idle if they exist)
+        await fetch(`/api/agents/${agentId}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: def.id, name: def.name, capabilities: [def.role] }),
+          body: JSON.stringify({ status: 'idle' }),
         });
-        if (res.ok) created++;
+        created++;
       } catch {
         // Non-blocking
       }

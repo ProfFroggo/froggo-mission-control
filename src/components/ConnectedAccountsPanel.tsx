@@ -24,7 +24,7 @@ export default function ConnectedAccountsPanel() {
   const loadStatus = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/google/auth/status');
+      const res = await fetch('/api/google/auth?action=status');
       const data = await res.json();
       setStatus(data);
     } catch {
@@ -38,13 +38,7 @@ export default function ConnectedAccountsPanel() {
 
   const handleConnect = async () => {
     try {
-      const res = await fetch('/api/google/auth/url');
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast('error', 'Failed to get auth URL', data.error || 'Unknown error');
-      }
+      window.location.href = '/api/google/auth';
     } catch {
       showToast('error', 'Failed to connect', 'Could not reach auth endpoint');
     }

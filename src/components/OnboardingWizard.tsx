@@ -311,7 +311,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const checkGoogleStatus = useCallback(async () => {
     setGoogleStatus('checking');
     try {
-      const res = await fetch('/api/google/auth/status');
+      const res = await fetch('/api/google/auth?action=status');
       const data = res.ok ? await res.json() : null;
       if (data?.authenticated) {
         setGoogleStatus('connected');
@@ -421,17 +421,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // ─────────────────────────────────────────────
   const connectGoogle = async () => {
     setGoogleConnecting(true);
-    try {
-      const res = await fetch('/api/google/auth/url');
-      const data = await res.json();
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        setGoogleConnecting(false);
-      }
-    } catch {
-      setGoogleConnecting(false);
-    }
+    // Redirect to our Gemini Workspace CLI OAuth flow
+    window.location.href = '/api/google/auth';
   };
 
   // ─────────────────────────────────────────────
