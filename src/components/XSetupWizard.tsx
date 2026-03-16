@@ -10,11 +10,13 @@ interface XSetupWizardProps {
 type Step = 'keys' | 'verify' | 'agent' | 'done';
 
 const TWITTER_KEYS = [
-  { id: 'twitter_api_key', label: 'API Key (Consumer Key)', placeholder: 'Enter your X API key...', required: false },
-  { id: 'twitter_api_secret', label: 'API Secret (Consumer Secret)', placeholder: 'Enter your API secret...', required: false },
-  { id: 'twitter_oauth_client_id', label: 'OAuth 2.0 Client ID', placeholder: 'Client ID...', required: true },
-  { id: 'twitter_oauth_client_secret', label: 'OAuth 2.0 Client Secret', placeholder: 'Client secret...', required: true },
-  { id: 'twitter_bearer_token', label: 'Bearer Token', placeholder: 'AAAA...', required: true },
+  { id: 'twitter_api_key', label: 'API Key (Consumer Key)', placeholder: 'Enter your X API key...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_api_secret', label: 'API Secret (Consumer Secret)', placeholder: 'Enter your API secret...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_access_token', label: 'Access Token', placeholder: 'Your user access token...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_access_token_secret', label: 'Access Token Secret', placeholder: 'Your access token secret...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_bearer_token', label: 'Bearer Token', placeholder: 'AAAA...', required: true, group: 'App' },
+  { id: 'twitter_oauth_client_id', label: 'OAuth 2.0 Client ID', placeholder: 'Client ID...', required: false, group: 'OAuth 2.0' },
+  { id: 'twitter_oauth_client_secret', label: 'OAuth 2.0 Client Secret', placeholder: 'Client secret...', required: false, group: 'OAuth 2.0' },
 ] as const;
 
 async function getKey(key: string): Promise<string> {

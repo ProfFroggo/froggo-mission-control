@@ -12,6 +12,8 @@ export const KEYCHAIN_KEYS = new Set([
   'anthropic_api_key',
   'twitter_api_key',
   'twitter_api_secret',
+  'twitter_access_token',
+  'twitter_access_token_secret',
   'twitter_bearer_token',
   'twitter_oauth_client_id',
   'twitter_oauth_client_secret',

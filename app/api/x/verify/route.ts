@@ -5,6 +5,18 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
+async function getSetting(key: string): Promise<string> {
+  try {
+    const { keychainGet } = await import('@/lib/keychain');
+    const val = await keychainGet(key);
+    if (val) return val;
+  } catch {}
+  try {
+    const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+    return row?.value || '';
+  } catch { return ''; }
+}
+
 export async function POST() {
   try {
     const creds = await loadCredentialsServer();
@@ -18,7 +30,32 @@ export async function POST() {
       oauthClientSecret: !!creds.oauthClientSecret,
     };
 
-    // 1. Try user access token first (from OAuth 2.0 PKCE flow)
+    // 1. Try OAuth 1.0a user tokens (API Key + Secret + Access Token + Access Secret)
+    const accessToken = await getSetting('twitter_access_token');
+    const accessSecret = await getSetting('twitter_access_token_secret');
+    if (creds.apiKey && creds.apiSecret && accessToken && accessSecret) {
+      try {
+        const { TwitterApi } = await import('twitter-api-v2');
+        const client = new TwitterApi({
+          appKey: creds.apiKey,
+          appSecret: creds.apiSecret,
+          accessToken,
+          accessSecret,
+        });
+        const me = await client.v2.me({ 'user.fields': 'profile_image_url,public_metrics,description,verified' });
+        if (me.data) {
+          db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_user_id', me.data.id);
+          db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_username', me.data.username);
+          db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_user_profile', JSON.stringify(me.data));
+          return NextResponse.json({ success: true, user: me.data, checks });
+        }
+      } catch (e) {
+        console.error('[x/verify] OAuth 1.0a failed:', e instanceof Error ? e.message : e);
+        // Fall through to other methods
+      }
+    }
+
+    // 2. Try OAuth 2.0 user access token (from PKCE flow)
     const userToken = (db.prepare("SELECT value FROM settings WHERE key = 'twitter_user_access_token'").get() as { value: string } | undefined)?.value;
     if (userToken) {
       const meRes = await fetch('https://api.twitter.com/2/users/me?user.fields=profile_image_url,public_metrics,description,verified', {
@@ -27,7 +64,6 @@ export async function POST() {
       if (meRes.ok) {
         const meData = await meRes.json();
         if (meData.data) {
-          // Cache user ID for other endpoints
           db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`).run('twitter_user_id', meData.data.id);
           return NextResponse.json({ success: true, user: meData.data, checks });
         }
