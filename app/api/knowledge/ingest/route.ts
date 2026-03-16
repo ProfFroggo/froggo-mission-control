@@ -165,29 +165,33 @@ Return ONLY valid JSON, no markdown fences.` }];
   // Step 2: Full document rewrite as markdown (separate call, full token budget)
   const isHtmlFile = filename.toLowerCase().endsWith('.html') || filename.toLowerCase().endsWith('.htm');
   const rewritePrompt = isHtmlFile
-    ? `This is an HTML file. Extract ONLY the visible text content — NOT the source code.
+    ? `This is an HTML file. Your job is to create a proper knowledge base article from it.
+
+Step 1: Extract all visible text content (what a human sees in a browser — ignore HTML/CSS/JS/SVG code)
+Step 2: Rewrite it as a clean, well-structured markdown knowledge document
 
 Rules:
-- Extract the text that a human would see when viewing this page in a browser
-- Convert it to clean, well-structured markdown
-- Ignore all HTML tags, CSS, JavaScript, SVG code — only extract readable text
-- Preserve headings, paragraphs, lists, tables, and data
-- For charts/graphs: describe the data they show
-- For navigation elements: skip them
-- Do NOT output any HTML, CSS, or JavaScript code
-- Output ONLY the markdown content document`
-    : `Rewrite this entire document as a clean, well-structured markdown document.
+- Extract ALL visible text: headings, paragraphs, data, stats, quotes, labels, captions
+- Rewrite into proper markdown with clear structure: # headings, ## sections, bullet points, tables
+- For data/metrics: present as markdown tables or bold key figures
+- For charts/graphs: describe the data and insights they show
+- Add context and structure — don't just dump text, organize it so a reader can learn from it
+- Skip navigation elements, buttons, footers — only meaningful content
+- Do NOT output any HTML, CSS, or JavaScript
+- The output should read like a well-written article, not a text dump`
+    : `Rewrite this entire document as a proper knowledge base article in markdown.
 
 Rules:
-- Convert ALL content — every heading, paragraph, list, table, footnote, caption
-- Use proper markdown: # headings, **bold**, *italic*, - lists, | tables |
-- Preserve the document's structure and hierarchy
-- Do NOT summarize or skip sections — include EVERYTHING
-- For tables: use markdown table format with | separators
-- For images/figures: describe them in [brackets]
-- Output ONLY the markdown document, no JSON, no explanation
+- Include ALL content — every heading, paragraph, list, table, data point, footnote
+- Structure it as a well-organized knowledge article with clear # headings and ## sections
+- Use proper markdown: **bold** for key terms, bullet points for lists, | tables | for data
+- For data/metrics: present as markdown tables with clear column headers
+- Preserve the document's full depth — do NOT summarize or skip sections
+- Add section breaks between major topics
+- The output should read like a well-written reference document
+- Output ONLY the markdown, no JSON, no explanation
 
-This is the COMPLETE rewrite — if the original has 10 pages, your output should cover all 10 pages.`;
+This is the COMPLETE document — every page, every section, every detail.`;
 
   const rewriteParts = [...parts, { text: rewritePrompt }];
 
