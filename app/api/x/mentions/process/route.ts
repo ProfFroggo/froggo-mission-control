@@ -145,36 +145,50 @@ export async function POST() {
       ORDER BY createdAt DESC
     `).all() as Array<{ id: number; content: string; metadata: string }>;
 
-    // Load knowledge base for brand context — get comprehensive brand knowledge
+    // Load knowledge base — MANDATORY: Voice & Style Guide is the primary reference
+    let voiceGuide = '';
     let brandContext = '';
     let brandGuidelines = '';
     try {
-      // Get brand/strategy articles
+      // 1. Load the Voice & Style Guide specifically — this is the #1 reference for all replies
+      const voiceRow = db.prepare(
+        `SELECT title, content FROM knowledge_base
+         WHERE title LIKE '%Voice and Style Guide%' OR title LIKE '%Voice & Style%'
+         LIMIT 1`
+      ).get() as { title: string; content: string } | undefined;
+
+      if (voiceRow) {
+        // Give the AI the FULL guide (up to 3000 chars) — this is the most important context
+        voiceGuide = `\n\n=== MANDATORY: ${voiceRow.title} ===\nYou MUST follow this guide for every reply. Read it carefully before writing anything.\n\n${(voiceRow.content || '').slice(0, 3000)}`;
+      }
+
+      // 2. Load Brand Voice & Tone (general)
+      const brandVoiceRow = db.prepare(
+        `SELECT title, content FROM knowledge_base
+         WHERE title LIKE '%Brand Voice%' AND title NOT LIKE '%Style Guide%'
+         LIMIT 1`
+      ).get() as { title: string; content: string } | undefined;
+
+      if (brandVoiceRow) {
+        brandGuidelines = `\n\n=== ${brandVoiceRow.title} ===\n${(brandVoiceRow.content || '').slice(0, 1500)}`;
+      }
+
+      // 3. Load additional brand/strategy articles for factual context
       const kbRows = db.prepare(
         `SELECT title, summary, content FROM knowledge_base
          WHERE scope IN ('agents', 'all')
+         AND title NOT LIKE '%Voice and Style Guide%'
+         AND title NOT LIKE '%Brand Voice%'
          ORDER BY
-           CASE WHEN tags LIKE '%brand%' OR tags LIKE '%voice%' OR tags LIKE '%strategy%' THEN 0 ELSE 1 END,
+           CASE WHEN tags LIKE '%brand%' OR tags LIKE '%strategy%' OR tags LIKE '%product%' THEN 0 ELSE 1 END,
            updated_at DESC
          LIMIT 5`
       ).all() as Array<{ title: string; summary: string; content: string }>;
 
       if (kbRows.length > 0) {
-        brandContext = `\n\nBrand knowledge base (use this to inform tone, facts, and positioning):\n${kbRows.map(a =>
+        brandContext = `\n\nAdditional brand knowledge (use for facts and positioning):\n${kbRows.map(a =>
           `- ${a.title}: ${(a.summary || a.content || '').slice(0, 300)}`
         ).join('\n')}`;
-
-        // Extract any explicit guidelines
-        const guidelineArticles = kbRows.filter(a =>
-          a.title.toLowerCase().includes('guide') ||
-          a.title.toLowerCase().includes('voice') ||
-          a.title.toLowerCase().includes('brand')
-        );
-        if (guidelineArticles.length > 0) {
-          brandGuidelines = `\n\nBrand guidelines to follow:\n${guidelineArticles.map(a =>
-            (a.content || '').slice(0, 500)
-          ).join('\n')}`;
-        }
       }
     } catch { /* KB might not exist */ }
 
@@ -212,20 +226,22 @@ export async function POST() {
         ? `\nAuthor has ${meta.author_followers} followers (${meta.author_followers > 10000 ? 'HIGH PROFILE — take extra care' : meta.author_followers > 1000 ? 'medium following' : 'smaller account'}).`
         : '';
 
-      const prompt = `You are a social media manager with strict judgment about what is appropriate for customer-facing communication.
+      const prompt = `You are the social media manager for Bitso Onchain (@BitsoOnchain). Before writing ANY reply, you MUST review the Voice and Style Guide below and match its tone, vocabulary, and style exactly.
+${voiceGuide}
+${brandGuidelines}
 
 STEP 1 — TRIAGE THIS MENTION. Decide:
 - "reply" — worth replying to (genuine question, feedback, engagement opportunity)
 - "ignore" — not worth replying (spam, trolling, irrelevant, bot-like)
 - "escalate" — needs human review (complaint, legal mention, competitor attack, sensitive topic, angry customer)
 
-STEP 2 — If "reply", generate exactly 3 reply options. If "ignore" or "escalate", skip replies.
+STEP 2 — If "reply", generate exactly 3 reply options that MATCH THE VOICE AND STYLE GUIDE. If "ignore" or "escalate", skip replies.
 
-STEP 3 — VALIDATE each reply against the knowledge base:
-- Does it contain accurate information? (Don't make promises the product can't keep)
+STEP 3 — VALIDATE each reply:
+- Does it match the voice guide's tone, vocabulary, and style?
+- Does it contain accurate information from the knowledge base?
 - Does it accidentally reveal internal information? (roadmaps, pricing changes, unreleased features)
 - Could it be misinterpreted as a commitment, guarantee, or legal statement?
-- Is the tone appropriate for a public, customer-facing response?
 - Would you be comfortable if this was screenshotted and went viral?
 
 Flag any reply that fails validation as "unsafe" with a reason.
@@ -233,10 +249,11 @@ Flag any reply that fails validation as "unsafe" with a reason.
 MENTION:
 @${meta.author_username}: "${row.content}"${parentContext}
 ${typeContext}${followerContext}
-${brandContext}${brandGuidelines}${replyHistory}
+${brandContext}${replyHistory}
 
-REPLY GUIDELINES:
+REPLY RULES:
 - Each reply MUST be under 200 characters
+- MUST match the voice and style guide — use the exact tone, phrases, and energy it describes
 - Reference specific details from their tweet (never generic)
 - If they asked a question, answer ONLY with information from the knowledge base — never fabricate
 - If the knowledge base doesn't have the answer, say "DM us and we'll help" instead of guessing
@@ -254,7 +271,7 @@ Return ONLY JSON:
   "triage_reason": "brief explanation",
   "replies": ["reply1", "reply2", "reply3"],
   "recommended": 0,
-  "reasoning": "why this option is best",
+  "reasoning": "why this option is best and how it matches the voice guide",
   "safety_flags": ["any concerns about specific replies"],
   "confidence": 0.0-1.0
 }`;
