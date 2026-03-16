@@ -217,16 +217,16 @@ ${knowledgeArticleRules}`;
       console.warn(`[knowledge/ingest] Rewrite truncated: finishReason=${finishReason}, content length=${extractedContent.length}`);
     }
   } else {
-    // If 2.5-flash fails, fall back to 2.0-flash
-    console.warn('[knowledge/ingest] 2.5-flash failed, falling back to 2.0-flash');
+    // Fall back to gemini-2.5-flash
+    console.warn('[knowledge/ingest] 3.1-flash-lite failed, falling back to 2.5-flash');
     const fallbackRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: rewriteParts }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+          generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
         }),
       }
     );
