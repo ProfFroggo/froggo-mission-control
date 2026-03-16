@@ -183,7 +183,7 @@ This is the COMPLETE rewrite — if the original has 10 pages, your output shoul
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: rewriteParts }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 500000 },
       }),
     }
   );
