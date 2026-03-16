@@ -195,14 +195,15 @@ ${knowledgeArticleRules}`;
 
   const rewriteParts = [...parts, { text: rewritePrompt }];
 
+  // Use gemini-2.5-flash for rewrite — supports 65K+ output tokens (2.0-flash caps at 8K)
   const rewriteRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: rewriteParts }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 500000 },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
       }),
     }
   );
@@ -211,6 +212,28 @@ ${knowledgeArticleRules}`;
   if (rewriteRes.ok) {
     const rewriteData = await rewriteRes.json();
     extractedContent = rewriteData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    const finishReason = rewriteData?.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn(`[knowledge/ingest] Rewrite truncated: finishReason=${finishReason}, content length=${extractedContent.length}`);
+    }
+  } else {
+    // If 2.5-flash fails, fall back to 2.0-flash
+    console.warn('[knowledge/ingest] 2.5-flash failed, falling back to 2.0-flash');
+    const fallbackRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: rewriteParts }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+        }),
+      }
+    );
+    if (fallbackRes.ok) {
+      const fallbackData = await fallbackRes.json();
+      extractedContent = fallbackData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    }
   }
 
   return { ...meta, extractedContent };
