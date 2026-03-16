@@ -11,6 +11,7 @@ export type XTab = 'pipeline' | 'engage' | 'intelligence' | 'measure' | 'configu
 import XPipelineView from './XPipelineView';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
 import { XMentionsView } from './XMentionsView';
+import { XEngageView } from './XEngageView';
 import XIntelligenceView from './XIntelligenceView';
 import XConfigureView from './XConfigureView';
 
@@ -19,8 +20,7 @@ function ContentRouter({ tab }: { tab: XTab }) {
     case 'pipeline':
       return <XPipelineView />;
     case 'engage':
-      // XEngageView being built by parallel agent — XMentionsView as fallback
-      return <XMentionsView />;
+      return <XEngageView />;
     case 'intelligence':
       return <XIntelligenceView />;
     case 'measure':

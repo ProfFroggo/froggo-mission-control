@@ -1,7 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// XPipelineView — Kanban-style content pipeline board (Ideas → Published)
+// XPipelineView — Multi-view content pipeline (Board / Calendar / List / Campaigns)
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Lightbulb,
   Edit3,
@@ -15,8 +15,17 @@ import {
   ChevronRight,
   User,
   RefreshCw,
+  Columns3,
+  List,
+  Rocket,
+  CheckCheck,
+  Loader2,
+  Search,
 } from 'lucide-react';
-import { scheduleApi } from '../lib/api';
+import { scheduleApi, approvalApi } from '../lib/api';
+import EpicCalendar from './EpicCalendar';
+import XCampaignView from './XCampaignView';
+import { showToast } from './Toast';
 
 // ─────────────────────────────────────────────
 // Types
@@ -53,6 +62,10 @@ interface Column {
   emptyLabel: string;
 }
 
+type ViewMode = 'board' | 'calendar' | 'list' | 'campaigns';
+
+type ListFilter = 'all' | 'ideas' | 'drafts' | 'approved' | 'rejected' | 'scheduled' | 'published';
+
 // ─────────────────────────────────────────────
 // Column definitions
 // ─────────────────────────────────────────────
@@ -64,6 +77,23 @@ const COLUMNS: Column[] = [
   { id: 'approved',  label: 'Approved',  icon: <CheckCircle size={14} />, accent: 'var(--color-success)',               emptyLabel: 'Nothing approved' },
   { id: 'scheduled', label: 'Scheduled', icon: <Calendar size={14} />,  accent: 'var(--color-purple, #a855f7)',          emptyLabel: 'Nothing scheduled' },
   { id: 'published', label: 'Published', icon: <Send size={14} />,      accent: 'var(--color-emerald, #10b981)',         emptyLabel: 'Nothing published this week' },
+];
+
+const LIST_FILTERS: { id: ListFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'ideas', label: 'Ideas' },
+  { id: 'drafts', label: 'Drafts' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'scheduled', label: 'Scheduled' },
+  { id: 'published', label: 'Published' },
+];
+
+const VIEW_MODES: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
+  { id: 'board',     label: 'Board',     icon: <Columns3 size={14} /> },
+  { id: 'calendar',  label: 'Calendar',  icon: <Calendar size={14} /> },
+  { id: 'list',      label: 'List',      icon: <List size={14} /> },
+  { id: 'campaigns', label: 'Campaigns', icon: <Rocket size={14} /> },
 ];
 
 // ─────────────────────────────────────────────
@@ -95,7 +125,7 @@ function contentPreview(raw: string): string {
       text = parsed;
     }
   } catch { /* use raw */ }
-  return text.slice(0, 120) + (text.length > 120 ? '…' : '');
+  return text.slice(0, 120) + (text.length > 120 ? '...' : '');
 }
 
 function mapToColumn(item: ScheduledItem): ColumnId {
@@ -107,6 +137,8 @@ function mapToColumn(item: ScheduledItem): ColumnId {
   if (s === 'approved') return 'approved';
   if (s === 'pending') return 'in-review';
   if (s === 'draft') return 'drafting';
+  // Plan items go to ideas by default (they appear in the board as pipeline items)
+  if (t === 'plan') return 'ideas';
   return 'ideas';
 }
 
@@ -116,8 +148,109 @@ function typeBadgeLabel(type: string): string {
     case 'campaign': return 'Campaign';
     case 'draft': return 'Draft';
     case 'idea': return 'Idea';
+    case 'plan': return 'Plan';
     default: return 'Tweet';
   }
+}
+
+function matchesListFilter(item: PipelineItem, filter: ListFilter): boolean {
+  if (filter === 'all') return true;
+  const s = item.status?.toLowerCase() ?? '';
+  const t = item.type?.toLowerCase() ?? '';
+  switch (filter) {
+    case 'ideas': return s === 'idea' || t === 'idea' || t === 'plan';
+    case 'drafts': return s === 'draft' || s === 'pending' || t === 'draft';
+    case 'approved': return s === 'approved';
+    case 'rejected': return s === 'rejected';
+    case 'scheduled': return s === 'scheduled';
+    case 'published': return s === 'published' || s === 'sent';
+    default: return true;
+  }
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status?.toLowerCase()) {
+    case 'approved': return 'bg-success-subtle text-success';
+    case 'rejected': return 'bg-error-subtle text-error';
+    case 'idea': return 'bg-info-subtle text-info';
+    case 'scheduled': return 'bg-purple-500/10 text-purple-400';
+    case 'published':
+    case 'sent': return 'bg-emerald-500/10 text-emerald-400';
+    case 'pending': return 'bg-info-subtle text-info';
+    default: return 'bg-warning-subtle text-warning';
+  }
+}
+
+function typeBadgeClass(type: string): string {
+  switch (type?.toLowerCase()) {
+    case 'plan': return 'bg-blue-500/10 text-blue-400';
+    case 'thread': return 'bg-purple-500/10 text-purple-400';
+    case 'campaign': return 'bg-mission-control-accent/10 text-mission-control-accent';
+    case 'idea': return 'bg-info-subtle text-info';
+    default: return 'bg-mission-control-surface text-mission-control-text-dim';
+  }
+}
+
+// ─────────────────────────────────────────────
+// Calendar event mapping (from XCalendarView)
+// ─────────────────────────────────────────────
+
+function eventColorResolver(event: CalendarEvent): string | undefined {
+  const colorId = (event as unknown as { colorId?: string }).colorId || '';
+  if (colorId === 'research')  return 'bg-purple-500';
+  if (colorId === 'plan')      return 'bg-blue-500';
+  if (colorId === 'draft')     return 'bg-amber-500';
+  if (colorId === 'scheduled') return 'bg-emerald-500';
+  return undefined;
+}
+
+function isEventDraggable(event: CalendarEvent): boolean {
+  return (event as unknown as { colorId?: string }).colorId === 'scheduled';
+}
+
+function mapPipelineItemsToCalendarEvents(items: PipelineItem[]): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+
+  for (const item of items) {
+    const t = item.type?.toLowerCase() ?? '';
+    const s = item.status?.toLowerCase() ?? '';
+    const ts = Number(item.scheduledFor);
+    const d = !isNaN(ts) && ts > 0 ? new Date(ts) : new Date();
+    const dateStr = d.toISOString().split('T')[0];
+
+    let colorId = 'draft';
+    if (t === 'idea' || s === 'idea') colorId = 'research';
+    else if (t === 'plan') colorId = 'plan';
+    else if (s === 'scheduled') colorId = 'scheduled';
+
+    const preview = contentPreview(item.content);
+
+    if (s === 'scheduled' && !isNaN(ts) && ts > 0) {
+      // Scheduled items get dateTime (timed events)
+      events.push({
+        id: `pipeline-${item.id}`,
+        summary: preview.slice(0, 60),
+        description: item.content || '',
+        start: { dateTime: d.toISOString() },
+        end: { dateTime: new Date(d.getTime() + 3600000).toISOString() },
+        colorId,
+        source: 'x-pipeline' as CalendarEvent['source'],
+      } as CalendarEvent);
+    } else {
+      // All other items are all-day events on their date
+      events.push({
+        id: `pipeline-${item.id}`,
+        summary: `[${typeBadgeLabel(item.type)}] ${preview.slice(0, 60)}`,
+        description: item.content || '',
+        start: { date: dateStr },
+        end: { date: dateStr },
+        colorId,
+        source: 'x-pipeline' as CalendarEvent['source'],
+      } as CalendarEvent);
+    }
+  }
+
+  return events;
 }
 
 // ─────────────────────────────────────────────
@@ -162,7 +295,7 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
 }
 
 // ─────────────────────────────────────────────
-// Content Card
+// Content Card (Board view)
 // ─────────────────────────────────────────────
 
 interface CardProps {
@@ -196,7 +329,7 @@ function PipelineCard({ item, onAction }: CardProps) {
     >
       {/* Type badge */}
       <div className="flex items-center gap-1.5 mb-1.5">
-        <span className="px-1.5 py-0.5 text-xs bg-mission-control-surface text-mission-control-text-dim rounded">
+        <span className={`px-1.5 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
           {badgeLabel}
         </span>
         {item.platform && (
@@ -326,7 +459,7 @@ function QuickAddIdea({ onAdd }: QuickAddProps) {
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') setOpen(false); }}
-        placeholder="Describe the content idea…"
+        placeholder="Describe the content idea..."
         rows={3}
         className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded px-2 py-1 text-mission-control-text resize-none mb-2 placeholder:text-mission-control-text-dim"
       />
@@ -336,7 +469,7 @@ function QuickAddIdea({ onAdd }: QuickAddProps) {
           disabled={saving || !text.trim()}
           className="flex-1 text-xs px-2 py-1 bg-info hover:bg-info/80 text-white rounded transition-colors disabled:opacity-50"
         >
-          {saving ? 'Adding…' : 'Add idea'}
+          {saving ? 'Adding...' : 'Add idea'}
         </button>
         <button
           onClick={() => setOpen(false)}
@@ -359,8 +492,6 @@ interface StatsBarProps {
 }
 
 function StatsBar({ counts, total }: StatsBarProps) {
-  const weekStart = Date.now() - 7 * 86_400_000;
-  // published this week comes from the counts since we filter at mapping time
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim overflow-x-auto">
       <span className="text-mission-control-text font-medium whitespace-nowrap">Total: {total}</span>
@@ -374,6 +505,276 @@ function StatsBar({ counts, total }: StatsBarProps) {
 }
 
 // ─────────────────────────────────────────────
+// View Mode Toggle
+// ─────────────────────────────────────────────
+
+interface ViewModeToggleProps {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}
+
+function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
+  return (
+    <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
+      {VIEW_MODES.map(mode => (
+        <button
+          key={mode.id}
+          onClick={() => onChange(mode.id)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+            viewMode === mode.id
+              ? 'bg-info-subtle text-info'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
+          }`}
+        >
+          {mode.icon}
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// List View (inline)
+// ─────────────────────────────────────────────
+
+interface ListViewProps {
+  items: PipelineItem[];
+  onAction: (id: string, action: string, payload?: Record<string, unknown>) => Promise<void>;
+}
+
+function PipelineListView({ items, onAction }: ListViewProps) {
+  const [filter, setFilter] = useState<ListFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [approvingAll, setApprovingAll] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [showDatePickerFor, setShowDatePickerFor] = useState<string | null>(null);
+
+  const filtered = useMemo(() => {
+    let result = items.filter(i => matchesListFilter(i, filter));
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(i =>
+        i.content.toLowerCase().includes(q) ||
+        (i.parsedMeta.proposed_by || '').toLowerCase().includes(q) ||
+        i.type.toLowerCase().includes(q)
+      );
+    }
+    // Sort by date (newest first)
+    return result.sort((a, b) => Number(b.scheduledFor) - Number(a.scheduledFor));
+  }, [items, filter, searchQuery]);
+
+  const pendingItems = items.filter(i => i.status === 'pending' || (i.status === 'draft' && i.type !== 'idea'));
+
+  const doAction = async (id: string, action: string, payload?: Record<string, unknown>) => {
+    setActionLoadingId(id);
+    try {
+      await onAction(id, action, payload);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (pendingItems.length === 0) return;
+    setApprovingAll(true);
+    let approved = 0;
+    for (const item of pendingItems) {
+      try {
+        await approvalApi.respond(item.id, 'approve');
+        approved++;
+      } catch {
+        // continue on individual failures
+      }
+    }
+    // Trigger a reload via parent action
+    if (approved > 0) {
+      await onAction(pendingItems[0].id, 'noop');
+    }
+    setApprovingAll(false);
+    showToast('success', `Approved ${approved} item${approved !== 1 ? 's' : ''}`);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Filter pills + search + bulk actions */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border flex-wrap">
+        <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0">
+          {LIST_FILTERS.map(f => {
+            const count = f.id === 'all' ? items.length : items.filter(i => matchesListFilter(i, f.id)).length;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                  filter === f.id
+                    ? 'bg-info-subtle text-info font-medium'
+                    : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border'
+                }`}
+              >
+                {f.label}
+                {count > 0 && (
+                  <span className={`text-xs ${filter === f.id ? 'text-info/70' : 'text-mission-control-text-dim'}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {pendingItems.length > 0 && (
+          <button
+            onClick={handleBulkApprove}
+            disabled={approvingAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-success-subtle text-success border border-success/30 rounded-lg hover:bg-success/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {approvingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={12} />}
+            Approve all ({pendingItems.length})
+          </button>
+        )}
+      </div>
+
+      {/* Search input */}
+      <div className="px-4 py-2 border-b border-mission-control-border">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search content..."
+            className="w-full text-sm bg-mission-control-bg-alt border border-mission-control-border rounded-lg pl-9 pr-3 py-1.5 text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+          />
+        </div>
+      </div>
+
+      {/* List rows */}
+      {filtered.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-mission-control-text-dim">
+            <List size={48} className="mx-auto mb-3 text-mission-control-text-dim" />
+            <p className="font-medium text-mission-control-text">
+              {filter === 'all' ? 'No pipeline items yet' : `No ${filter} items`}
+            </p>
+            <p className="text-sm mt-1">
+              {searchQuery ? 'Try a different search.' : 'Items will appear here as they are created.'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          <div className="divide-y divide-mission-control-border">
+            {filtered.map(item => {
+              const preview = contentPreview(item.content);
+              const proposedBy = item.parsedMeta.proposed_by;
+              const ts = relativeTime(Number(item.scheduledFor));
+              const isLoading = actionLoadingId === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-bg-alt/50 transition-colors"
+                >
+                  {/* Content preview */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-mission-control-text truncate leading-relaxed">{preview}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {proposedBy && (
+                        <span className="flex items-center gap-1 text-xs text-mission-control-text-dim">
+                          <User size={10} />
+                          {proposedBy}
+                        </span>
+                      )}
+                      {ts && <span className="text-xs text-mission-control-text-dim">{ts}</span>}
+                    </div>
+                  </div>
+
+                  {/* Type badge */}
+                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${typeBadgeClass(item.type)}`}>
+                    {typeBadgeLabel(item.type)}
+                  </span>
+
+                  {/* Status badge */}
+                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${statusBadgeClass(item.status)}`}>
+                    {item.status}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0 relative">
+                    {item.column === 'ideas' && (
+                      <button
+                        onClick={() => doAction(item.id, 'draft')}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-warning-subtle text-warning rounded hover:bg-warning/20 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Edit3 size={10} />} Draft
+                      </button>
+                    )}
+                    {item.column === 'drafting' && (
+                      <button
+                        onClick={() => doAction(item.id, 'submit')}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-info-subtle text-info rounded hover:bg-info/20 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <ChevronRight size={10} />} Submit
+                      </button>
+                    )}
+                    {item.column === 'in-review' && (
+                      <>
+                        <button
+                          onClick={() => doAction(item.id, 'approve')}
+                          disabled={isLoading}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-success-subtle text-success rounded hover:bg-success/20 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />} Approve
+                        </button>
+                        <button
+                          onClick={() => doAction(item.id, 'reject')}
+                          disabled={isLoading}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-error-subtle text-error rounded hover:bg-error/20 transition-colors disabled:opacity-50"
+                        >
+                          {isLoading ? <Loader2 size={10} className="animate-spin" /> : <X size={10} />} Reject
+                        </button>
+                      </>
+                    )}
+                    {item.column === 'approved' && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowDatePickerFor(showDatePickerFor === item.id ? null : item.id)}
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-surface text-mission-control-text-dim rounded hover:text-mission-control-text transition-colors"
+                        >
+                          <Calendar size={10} /> Schedule
+                        </button>
+                        {showDatePickerFor === item.id && (
+                          <DateTimePicker
+                            onSchedule={iso => { setShowDatePickerFor(null); doAction(item.id, 'schedule', { scheduledTime: iso }); }}
+                            onCancel={() => setShowDatePickerFor(null)}
+                          />
+                        )}
+                      </div>
+                    )}
+                    {item.column === 'scheduled' && (
+                      <button
+                        onClick={() => doAction(item.id, 'publish')}
+                        disabled={isLoading}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-500/10 text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                      >
+                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />} Publish
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────
 
@@ -381,15 +782,16 @@ export default function XPipelineView() {
   const [items, setItems] = useState<PipelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('board');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const raw = await scheduleApi.getAll();
       const allRaw: ScheduledItem[] = Array.isArray(raw) ? raw : [];
       // Only show social/twitter content — not meetings, events, or other scheduled items
-      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social']);
+      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social', 'plan']);
       const all = allRaw.filter(item =>
         item.platform === 'twitter' || item.platform === 'x' ||
         SOCIAL_TYPES.has(item.type?.toLowerCase() || '') ||
@@ -406,11 +808,15 @@ export default function XPipelineView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const handleAction = async (id: string, action: string, payload?: Record<string, unknown>) => {
+  const handleAction = useCallback(async (id: string, action: string, payload?: Record<string, unknown>) => {
+    if (action === 'noop') {
+      await load();
+      return;
+    }
     const actionMap: Record<string, { status?: string; type?: string; metadata?: Record<string, unknown>; scheduledFor?: string }> = {
       draft:   { status: 'draft',     type: 'draft' },
       submit:  { status: 'pending' },
@@ -432,9 +838,9 @@ export default function XPipelineView() {
     if (update.metadata) body.metadata = update.metadata;
     await scheduleApi.update(id, body);
     await load();
-  };
+  }, [load]);
 
-  const handleAddIdea = async (content: string) => {
+  const handleAddIdea = useCallback(async (content: string) => {
     await scheduleApi.create({
       type: 'idea',
       content,
@@ -442,14 +848,30 @@ export default function XPipelineView() {
       scheduledFor: String(Date.now()),
     });
     await load();
-  };
+  }, [load]);
 
-  const byColumn = (col: ColumnId) => items.filter(i => i.column === col);
+  const byColumn = useCallback((col: ColumnId) => items.filter(i => i.column === col), [items]);
 
-  const counts = COLUMNS.reduce((acc, col) => {
+  const counts = useMemo(() => COLUMNS.reduce((acc, col) => {
     acc[col.id] = byColumn(col.id).length;
     return acc;
-  }, {} as Record<ColumnId, number>);
+  }, {} as Record<ColumnId, number>), [byColumn]);
+
+  // Calendar events derived from pipeline items
+  const calendarEvents = useMemo(() => mapPipelineItemsToCalendarEvents(items), [items]);
+
+  const handleCalendarCreateTweet = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('x-tab-change', { detail: 'pipeline' }));
+  }, []);
+
+  const handleCalendarExternalDrop = useCallback(async (
+    _event: CalendarEvent,
+    _newStart: Date,
+    _newEnd: Date,
+  ): Promise<boolean> => {
+    await load();
+    return false;
+  }, [load]);
 
   if (loading) {
     return (
@@ -478,49 +900,79 @@ export default function XPipelineView() {
       {/* Stats bar */}
       <StatsBar counts={counts} total={items.length} />
 
-      {/* Kanban board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full gap-0 min-w-max">
-          {COLUMNS.map((col, colIdx) => {
-            const colItems = byColumn(col.id);
-            return (
-              <div
-                key={col.id}
-                className="flex flex-col w-64 flex-shrink-0 border-r border-mission-control-border last:border-r-0"
-                style={{ height: '100%' }}
-              >
-                {/* Column accent + header */}
-                <div style={{ height: 3, background: col.accent }} />
-                <div className="flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
-                  <div className="flex items-center gap-1.5 text-mission-control-text-dim">
-                    {col.icon}
-                    <span className="text-xs font-medium text-mission-control-text">{col.label}</span>
+      {/* View mode toggle */}
+      <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+
+      {/* View content */}
+      {viewMode === 'board' && (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden">
+          <div className="flex h-full gap-0 min-w-max">
+            {COLUMNS.map((col) => {
+              const colItems = byColumn(col.id);
+              return (
+                <div
+                  key={col.id}
+                  className="flex flex-col w-64 flex-shrink-0 border-r border-mission-control-border last:border-r-0"
+                  style={{ height: '100%' }}
+                >
+                  {/* Column accent + header */}
+                  <div style={{ height: 3, background: col.accent }} />
+                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
+                    <div className="flex items-center gap-1.5 text-mission-control-text-dim">
+                      {col.icon}
+                      <span className="text-xs font-medium text-mission-control-text">{col.label}</span>
+                    </div>
+                    <span className="px-1.5 py-0.5 text-xs bg-mission-control-bg text-mission-control-text-dim rounded-full min-w-[20px] text-center">
+                      {colItems.length}
+                    </span>
                   </div>
-                  <span className="px-1.5 py-0.5 text-xs bg-mission-control-bg text-mission-control-text-dim rounded-full min-w-[20px] text-center">
-                    {colItems.length}
-                  </span>
-                </div>
 
-                {/* Cards */}
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                  {/* Quick add — only in Ideas column, at top */}
-                  {col.id === 'ideas' && (
-                    <QuickAddIdea onAdd={handleAddIdea} />
-                  )}
+                  {/* Cards */}
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                    {/* Quick add — only in Ideas column, at top */}
+                    {col.id === 'ideas' && (
+                      <QuickAddIdea onAdd={handleAddIdea} />
+                    )}
 
-                  {colItems.length === 0 && col.id !== 'ideas' ? (
-                    <p className="text-xs text-mission-control-text-dim text-center mt-6 px-2">{col.emptyLabel}</p>
-                  ) : (
-                    colItems.map(item => (
-                      <PipelineCard key={item.id} item={item} onAction={handleAction} />
-                    ))
-                  )}
+                    {colItems.length === 0 && col.id !== 'ideas' ? (
+                      <p className="text-xs text-mission-control-text-dim text-center mt-6 px-2">{col.emptyLabel}</p>
+                    ) : (
+                      colItems.map(item => (
+                        <PipelineCard key={item.id} item={item} onAction={handleAction} />
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {viewMode === 'calendar' && (
+        <div className="flex-1 overflow-hidden">
+          <EpicCalendar
+            externalEvents={calendarEvents}
+            createButtonLabel="Create Tweet"
+            onCreateClick={handleCalendarCreateTweet}
+            onExternalDrop={handleCalendarExternalDrop}
+            eventColorResolver={eventColorResolver}
+            isEventDraggable={isEventDraggable}
+          />
+        </div>
+      )}
+
+      {viewMode === 'list' && (
+        <div className="flex-1 overflow-hidden">
+          <PipelineListView items={items} onAction={handleAction} />
+        </div>
+      )}
+
+      {viewMode === 'campaigns' && (
+        <div className="flex-1 overflow-hidden">
+          <XCampaignView />
+        </div>
+      )}
     </div>
   );
 }
