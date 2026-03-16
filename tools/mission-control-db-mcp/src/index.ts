@@ -498,6 +498,109 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['title', 'content', 'category'],
       },
     },
+
+    // ── Social Media Module Tools ────────────────────────────────────────────
+    {
+      name: 'x_mentions_list',
+      description: 'List X/Twitter mentions with optional filters. Returns mentions with AI-generated reply suggestions, triage status, and engagement metrics. Use this to review incoming mentions and decide which to reply to.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter: pending | considering | ignored | replied' },
+          type: { type: 'string', description: 'Filter: reply | quote | mention' },
+          unprocessed: { type: 'boolean', description: 'Only show mentions without AI replies' },
+          limit: { type: 'number', description: 'Max results (default 20)' },
+        },
+      },
+    },
+    {
+      name: 'x_mention_update',
+      description: 'Update a mention status or notes. Use to mark as ignored, considering, or add notes for context.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Mention ID' },
+          reply_status: { type: 'string', description: 'New status: pending | considering | ignored | replied' },
+          notes: { type: 'string', description: 'Internal notes about this mention' },
+        },
+        required: ['id'],
+      },
+    },
+    {
+      name: 'x_post_create',
+      description: 'Create a new X/Twitter post draft. Goes through approval before posting. Use type "thread" and provide thread_tweets array for multi-tweet threads.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Tweet text (max 280 chars)' },
+          type: { type: 'string', description: 'tweet | thread' },
+          thread_tweets: { type: 'array', items: { type: 'string' }, description: 'Array of tweet texts for threads' },
+          scheduled_for: { type: 'number', description: 'Unix ms timestamp to schedule (optional)' },
+          campaign_id: { type: 'string', description: 'Campaign ID to associate with (optional)' },
+        },
+        required: ['content'],
+      },
+    },
+    {
+      name: 'x_posts_list',
+      description: 'List X/Twitter post drafts, scheduled posts, and published posts. Filter by status to see pipeline stages.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter: draft | pending | approved | scheduled | published' },
+          limit: { type: 'number', description: 'Max results (default 20)' },
+        },
+      },
+    },
+    {
+      name: 'x_campaign_create',
+      description: 'Create a new multi-stage X/Twitter campaign with planned stages.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Campaign title' },
+          subject: { type: 'string', description: 'Campaign theme/goal' },
+          start_date: { type: 'string', description: 'Start date ISO string' },
+          stages: { type: 'array', description: 'Array of { dayOffset, time, type, content, notes }' },
+        },
+        required: ['title'],
+      },
+    },
+    {
+      name: 'x_analytics',
+      description: 'Get X/Twitter analytics: recent post performance, engagement trends, and content mix. Reads from x_analytics_snapshots and live API data.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          period: { type: 'string', description: 'week | month | quarter' },
+        },
+      },
+    },
+    {
+      name: 'x_search',
+      description: 'Search X/Twitter for tweets matching a query. Returns tweets with engagement metrics. Useful for research, competitor analysis, and hashtag discovery.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+          max: { type: 'number', description: 'Max results (default 20, max 100)' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'x_reply_queue',
+      description: 'Create a reply approval for a mention. The reply goes through human approval before posting. Use after reviewing AI suggestions or crafting a custom reply.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mention_id: { type: 'string', description: 'Mention ID from x_mentions_list' },
+          reply_text: { type: 'string', description: 'Reply text (max 280 chars)' },
+          tier: { type: 'number', description: 'Approval tier: 1 (fast-track) or 3 (standard). Default 3.' },
+        },
+        required: ['mention_id', 'reply_text'],
+      },
+    },
   ],
 }));
 
@@ -1513,6 +1616,136 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         } catch (err: any) {
           return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], error: `Could not query campaigns: ${err.message}` }) }] };
         }
+      }
+
+      // ── Social Media Module Handlers ──────────────────────────────────────
+
+      case 'x_mentions_list': {
+        const a = (args || {}) as Record<string, any>;
+        const conditions: string[] = [];
+        const vals: any[] = [];
+        if (a.status) { conditions.push('reply_status = ?'); vals.push(a.status); }
+        if (a.type) { conditions.push('mention_type = ?'); vals.push(a.type); }
+        if (a.unprocessed) { conditions.push('ai_processed_at IS NULL'); }
+        const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+        const limit = Math.min(a.limit || 20, 100);
+        const rows = db.prepare(`SELECT * FROM x_mentions ${where} ORDER BY tweet_created_at DESC LIMIT ?`).all(...vals, limit) as any[];
+        const parsed = rows.map((r: any) => ({
+          ...r,
+          ai_replies: r.ai_replies ? JSON.parse(r.ai_replies) : null,
+          ai_replies_english: r.ai_replies_english ? JSON.parse(r.ai_replies_english) : null,
+          ai_safety_flags: r.ai_safety_flags ? JSON.parse(r.ai_safety_flags) : [],
+          is_reply_to_us: !!r.is_reply_to_us,
+          is_spam: !!r.is_spam,
+        }));
+        return { content: [{ type: 'text', text: JSON.stringify({ mentions: parsed, total: parsed.length }, null, 2) }] };
+      }
+
+      case 'x_mention_update': {
+        const a = (args || {}) as Record<string, any>;
+        const allowed = ['reply_status', 'notes', 'is_spam'];
+        const sets: string[] = ['updated_at = ?'];
+        const vals: any[] = [Date.now()];
+        for (const f of allowed) {
+          if (f in a) { sets.push(`${f} = ?`); vals.push(a[f]); }
+        }
+        vals.push(a.id);
+        db.prepare(`UPDATE x_mentions SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, id: a.id }) }] };
+      }
+
+      case 'x_post_create': {
+        const a = (args || {}) as Record<string, any>;
+        const id = `xp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        db.prepare(`
+          INSERT INTO x_posts (id, content, type, status, thread_tweets, scheduled_for, campaign_id, proposed_by, created_at, updated_at)
+          VALUES (?, ?, ?, 'draft', ?, ?, ?, 'social-manager', ?, ?)
+        `).run(
+          id, a.content, a.type || 'tweet',
+          a.thread_tweets ? JSON.stringify(a.thread_tweets) : null,
+          a.scheduled_for || null, a.campaign_id || null,
+          Date.now(), Date.now(),
+        );
+        const apId = `xa-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        db.prepare(`
+          INSERT INTO approvals (id, type, title, content, tier, status, metadata, requester, createdAt)
+          VALUES (?, 'tweet', ?, ?, 3, 'pending', ?, 'social-manager', ?)
+        `).run(apId, `Post: ${String(a.content || '').slice(0, 50)}`, a.content, JSON.stringify({ post_id: id }), Date.now());
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, post_id: id, approval_id: apId, status: 'draft — queued for approval' }) }] };
+      }
+
+      case 'x_posts_list': {
+        const a = (args || {}) as Record<string, any>;
+        const where = a.status ? 'WHERE status = ?' : '';
+        const vals = a.status ? [a.status] : [];
+        const limit = Math.min(a.limit || 20, 100);
+        const rows = db.prepare(`SELECT * FROM x_posts ${where} ORDER BY created_at DESC LIMIT ?`).all(...vals, limit);
+        return { content: [{ type: 'text', text: JSON.stringify({ posts: rows, total: (rows as any[]).length }, null, 2) }] };
+      }
+
+      case 'x_campaign_create': {
+        const a = (args || {}) as Record<string, any>;
+        const id = `xc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const stages = a.stages || [];
+        db.prepare(`
+          INSERT INTO x_campaigns (id, title, subject, status, start_date, stages, total_posts, proposed_by, created_at, updated_at)
+          VALUES (?, ?, ?, 'draft', ?, ?, ?, 'social-manager', ?, ?)
+        `).run(id, a.title, a.subject || '', a.start_date || null, JSON.stringify(stages), (stages as any[]).length, 'social-manager', Date.now(), Date.now());
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, campaign_id: id, stages: (stages as any[]).length }) }] };
+      }
+
+      case 'x_analytics': {
+        const a = (args || {}) as Record<string, any>;
+        const snapshot = db.prepare('SELECT * FROM x_analytics_snapshots ORDER BY snapshot_date DESC LIMIT 1').get() as any;
+        const recentPosts = db.prepare('SELECT * FROM x_posts WHERE status = ? ORDER BY published_at DESC LIMIT 10').all('published') as any[];
+        let liveData = null;
+        try {
+          const res = await new Promise<any>((resolve) => {
+            const req = http.request({ hostname: '127.0.0.1', port: 3000, path: '/api/x/analytics', method: 'GET', headers: authHeaders() }, (r) => {
+              let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve(null); } });
+            });
+            req.on('error', () => resolve(null));
+            req.setTimeout(10000, () => { req.destroy(); resolve(null); });
+            req.end();
+          });
+          liveData = res;
+        } catch { /* non-critical */ }
+        return { content: [{ type: 'text', text: JSON.stringify({ snapshot: snapshot || null, recentPosts, liveAnalytics: liveData, period: a.period || 'week' }, null, 2) }] };
+      }
+
+      case 'x_search': {
+        const a = (args || {}) as Record<string, any>;
+        const result = await new Promise<any>((resolve) => {
+          const q = encodeURIComponent(String(a.query || ''));
+          const max = Math.min(a.max || 20, 100);
+          const req = http.request({ hostname: '127.0.0.1', port: 3000, path: `/api/x/search?q=${q}&max=${max}`, method: 'GET', headers: authHeaders() }, (r) => {
+            let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve({ error: 'parse failed' }); } });
+          });
+          req.on('error', (e: any) => resolve({ error: e.message }));
+          req.setTimeout(15000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+          req.end();
+        });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      }
+
+      case 'x_reply_queue': {
+        const a = (args || {}) as Record<string, any>;
+        const mention = db.prepare('SELECT * FROM x_mentions WHERE id = ?').get(a.mention_id) as any;
+        if (!mention) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Mention not found' }) }], isError: true };
+        const apId = `xr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const tier = a.tier || 3;
+        db.prepare(`
+          INSERT INTO approvals (id, type, title, content, tier, status, metadata, requester, createdAt)
+          VALUES (?, 'x-reply', ?, ?, ?, 'pending', ?, 'social-manager', ?)
+        `).run(
+          apId,
+          `Reply to @${mention.author_username}`,
+          a.reply_text,
+          tier,
+          JSON.stringify({ mentionId: mention.id, tweetId: mention.tweet_id, replyText: a.reply_text, mention_author: mention.author_username }),
+          Date.now(),
+        );
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, approval_id: apId, tier, mention_id: mention.id, status: 'queued for human approval' }) }] };
       }
 
       default:
