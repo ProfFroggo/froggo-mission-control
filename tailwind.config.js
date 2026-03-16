@@ -88,10 +88,15 @@ export default {
       },
       animation: {
         'shimmer': 'shimmer 2s infinite',
+        'slide-in-right': 'slideInRight 0.2s ease-out',
       },
       keyframes: {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
+        },
+        slideInRight: {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
         },
       },
     },
