@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
 
     if (textContent) {
       // Text-based file — send as text
-      parts.push({ text: `File content:\n${textContent.slice(0, 30000)}` });
+      parts.push({ text: `File content:\n${textContent}` });
     } else if (GEMINI_INLINE_TYPES.has(mimeType) && fileBuffer.length < 20 * 1024 * 1024) {
       // Binary file Gemini can read inline (PDF, images)
       parts.push({
@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
       ``,
       `---`,
       ``,
-      analysis.extractedContent || textContent?.slice(0, 10000) || '*No content extracted*',
+      analysis.extractedContent || textContent || '*No content extracted*',
     ].join('\n');
 
     // Save to database
