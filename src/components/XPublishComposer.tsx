@@ -157,7 +157,11 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
   );
 }
 
-export default function XPublishComposer() {
+interface XPublishComposerProps {
+  onPostSuccess?: () => void;
+}
+
+export default function XPublishComposer({ onPostSuccess }: XPublishComposerProps = {}) {
   const [mode, setMode] = useState<PostMode>('single');
   const [tweets, setTweets] = useState<string[]>(['']);
   const [posting, setPosting] = useState(false);
@@ -378,6 +382,7 @@ export default function XPublishComposer() {
       // Clear draft on successful approval creation
       localStorage.removeItem(DRAFT_KEY);
       setResult({ success: true });
+      onPostSuccess?.();
       setTimeout(() => {
         setTweets(['']);
         setResult(null);

@@ -48,7 +48,7 @@ export default function XComposeModal({ open, onClose }: XComposeModalProps) {
 
         {/* Composer */}
         <div className="flex-1 overflow-y-auto">
-          <XPublishComposer />
+          <XPublishComposer onPostSuccess={onClose} />
         </div>
       </div>
     </div>

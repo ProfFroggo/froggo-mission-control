@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, CheckCircle, XCircle, Clock, MessageSquare, Send, FileText, Zap } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, Clock, MessageSquare, Send, FileText, Zap, Loader2 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -54,7 +54,8 @@ function timeAgo(ts: number): string {
 export default function XApprovalBadge() {
   const [items, setItems] = useState<PendingApproval[]>([]);
   const [open, setOpen] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { open: promptOpen, config: promptConfig, onSubmit: promptOnSubmit, showPrompt, closePrompt } = usePromptDialog();
 
@@ -101,15 +102,20 @@ export default function XApprovalBadge() {
   }, [open]);
 
   const handleApprove = async (id: string | number) => {
-    setActionLoading(String(id));
+    const key = String(id);
+    setActionLoading((prev) => new Set(prev).add(key));
     try {
-      await approvalApi.respond(String(id), 'approved', undefined, undefined);
+      await approvalApi.respond(key, 'approved', undefined, undefined);
       showToast('success', 'Approved');
       await loadItems();
     } catch {
       showToast('error', 'Failed to approve');
     } finally {
-      setActionLoading(null);
+      setActionLoading((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
     }
   };
 
@@ -120,17 +126,41 @@ export default function XApprovalBadge() {
       placeholder: 'Reason...',
       confirmLabel: 'Reject',
     }, async (reason: string) => {
-      setActionLoading(String(id));
+      const key = String(id);
+      setActionLoading((prev) => new Set(prev).add(key));
       try {
-        await approvalApi.respond(String(id), 'rejected', reason || undefined, undefined);
+        await approvalApi.respond(key, 'rejected', reason || undefined, undefined);
         showToast('success', 'Rejected');
         await loadItems();
       } catch {
         showToast('error', 'Failed to reject');
       } finally {
-        setActionLoading(null);
+        setActionLoading((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
       }
     });
+  };
+
+  const handleApproveAll = async () => {
+    setBatchLoading(true);
+    let failCount = 0;
+    for (const item of items) {
+      try {
+        await approvalApi.respond(String(item.id), 'approved', undefined, undefined);
+      } catch {
+        failCount++;
+      }
+    }
+    if (failCount === 0) {
+      showToast('success', 'All items approved');
+    } else {
+      showToast('error', `Failed to approve ${failCount} item${failCount > 1 ? 's' : ''}`);
+    }
+    await loadItems();
+    setBatchLoading(false);
   };
 
   const count = items.length;
@@ -184,7 +214,7 @@ export default function XApprovalBadge() {
               <div className="divide-y divide-mission-control-border">
                 {items.map((item) => {
                   const info = getTypeInfo(item.type);
-                  const isLoading = actionLoading === String(item.id);
+                  const isLoading = actionLoading.has(String(item.id));
 
                   return (
                     <div key={item.id} className="px-4 py-3 hover:bg-mission-control-bg-alt/50 transition-colors">
@@ -229,6 +259,29 @@ export default function XApprovalBadge() {
               </div>
             )}
           </div>
+
+          {/* Approve All button */}
+          {items.length >= 2 && (
+            <div className="px-4 py-3 border-t border-mission-control-border">
+              <button
+                onClick={handleApproveAll}
+                disabled={batchLoading || actionLoading.size > 0}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {batchLoading ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle size={14} />
+                    Approve All ({items.length})
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

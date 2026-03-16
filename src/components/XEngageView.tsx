@@ -21,6 +21,9 @@ import {
   ChevronDown,
   ChevronRight,
   TrendingUp,
+  Settings,
+  EyeOff,
+  UserX,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { inboxApi, approvalApi } from '../lib/api';
@@ -60,7 +63,10 @@ interface ReplyTemplate {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LS_PRIORITY_KEY = 'x-reply-priority-accounts';
+const LS_IGNORED_KEY = 'x-reply-ignored-accounts';
 const LS_TEMPLATE_KEY = 'x-reply-templates';
+const LS_ENGAGE_SETTINGS_KEY = 'x-engage-settings';
+const POLL_INTERVAL = 60_000; // auto-refresh mentions every 60s
 
 const DEFAULT_TEMPLATES: ReplyTemplate[] = [
   { id: 'tpl-1', name: 'Agree + Add', body: 'Totally agree, {{username}}. Building on that — [add your point here].' },
@@ -71,17 +77,50 @@ const DEFAULT_TEMPLATES: ReplyTemplate[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+interface EngageSettings {
+  autoIgnoreBots: boolean;
+  autoIgnoreLowEngagement: boolean;
+  lowEngagementThreshold: number; // ignore mentions with < N followers
+  defaultReplyTier: 1 | 3;
+  showSentiment: boolean;
+  showNotes: boolean;
+}
+
+const DEFAULT_SETTINGS: EngageSettings = {
+  autoIgnoreBots: false,
+  autoIgnoreLowEngagement: false,
+  lowEngagementThreshold: 10,
+  defaultReplyTier: 3,
+  showSentiment: true,
+  showNotes: true,
+};
+
 function loadPriority(): string[] {
   try { return JSON.parse(localStorage.getItem(LS_PRIORITY_KEY) ?? '[]'); } catch { return []; }
 }
 function savePriority(v: string[]): void {
   try { localStorage.setItem(LS_PRIORITY_KEY, JSON.stringify(v)); } catch { /* noop */ }
 }
+function loadIgnored(): string[] {
+  try { return JSON.parse(localStorage.getItem(LS_IGNORED_KEY) ?? '[]'); } catch { return []; }
+}
+function saveIgnored(v: string[]): void {
+  try { localStorage.setItem(LS_IGNORED_KEY, JSON.stringify(v)); } catch { /* noop */ }
+}
 function loadTemplates(): ReplyTemplate[] {
   try {
     const raw = localStorage.getItem(LS_TEMPLATE_KEY);
     return raw ? JSON.parse(raw) : DEFAULT_TEMPLATES;
   } catch { return DEFAULT_TEMPLATES; }
+}
+function loadSettings(): EngageSettings {
+  try {
+    const raw = localStorage.getItem(LS_ENGAGE_SETTINGS_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+  } catch { return DEFAULT_SETTINGS; }
+}
+function saveSettings(s: EngageSettings): void {
+  try { localStorage.setItem(LS_ENGAGE_SETTINGS_KEY, JSON.stringify(s)); } catch { /* noop */ }
 }
 
 function inferSentiment(text: string): 'positive' | 'negative' | 'neutral' {
@@ -172,7 +211,7 @@ export const XEngageView: React.FC = () => {
   // Reply composer
   const [selectedMention, setSelectedMention] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [fastTrack, setFastTrack] = useState(false);
+  const [fastTrack, setFastTrack] = useState(() => loadSettings().defaultReplyTier === 1);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates] = useState<ReplyTemplate[]>(loadTemplates);
@@ -181,6 +220,15 @@ export const XEngageView: React.FC = () => {
   const [priorityAccounts, setPriorityAccounts] = useState<string[]>(loadPriority);
   const [priorityInput, setPriorityInput] = useState('');
   const [showPriorityPanel, setShowPriorityPanel] = useState(false);
+
+  // Ignored accounts
+  const [ignoredAccounts, setIgnoredAccounts] = useState<string[]>(loadIgnored);
+  const [ignoredInput, setIgnoredInput] = useState('');
+  const [showIgnoredPanel, setShowIgnoredPanel] = useState(false);
+
+  // Engagement settings
+  const [settings, setSettings] = useState<EngageSettings>(loadSettings);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Notes
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -231,7 +279,22 @@ export const XEngageView: React.FC = () => {
 
   useEffect(() => {
     loadMentions();
+    // Auto-refresh polling
+    const interval = setInterval(loadMentions, POLL_INTERVAL);
+    return () => clearInterval(interval);
   }, [loadMentions]);
+
+  // Listen for agent draft replies — when agent suggests reply text, inject into composer
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.content && selectedMention) {
+        setReplyText(detail.content);
+      }
+    };
+    window.addEventListener('x-draft-proposal', handler);
+    return () => window.removeEventListener('x-draft-proposal', handler);
+  }, [selectedMention]);
 
   // ─── Fetch new mentions from X API ─────────────────────────────────────────
 
@@ -345,6 +408,40 @@ export const XEngageView: React.FC = () => {
     savePriority(updated);
   };
 
+  // ─── Ignored accounts ────────────────────────────────────────────────────
+
+  const handleAddIgnored = () => {
+    const handle = ignoredInput.trim().replace(/^@/, '').toLowerCase();
+    if (!handle || ignoredAccounts.includes(handle)) return;
+    const updated = [...ignoredAccounts, handle];
+    setIgnoredAccounts(updated);
+    saveIgnored(updated);
+    setIgnoredInput('');
+  };
+
+  const handleRemoveIgnored = (handle: string) => {
+    const updated = ignoredAccounts.filter(h => h !== handle);
+    setIgnoredAccounts(updated);
+    saveIgnored(updated);
+  };
+
+  const toggleIgnored = (username: string) => {
+    const handle = username.toLowerCase();
+    const updated = ignoredAccounts.includes(handle)
+      ? ignoredAccounts.filter(h => h !== handle)
+      : [...ignoredAccounts, handle];
+    setIgnoredAccounts(updated);
+    saveIgnored(updated);
+  };
+
+  // ─── Settings management ─────────────────────────────────────────────────
+
+  const updateSetting = <K extends keyof EngageSettings>(key: K, value: EngageSettings[K]) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    saveSettings(updated);
+  };
+
   // ─── Template application ──────────────────────────────────────────────────
 
   const applyTemplateToReply = (template: ReplyTemplate, mention: Mention) => {
@@ -356,12 +453,20 @@ export const XEngageView: React.FC = () => {
 
   const isHot = (m: Mention): boolean => m.like_count >= minLikes || m.retweet_count >= minRetweets;
 
-  const filteredMentions = allMentions.filter(m => {
+  // Filter out ignored accounts first (unless viewing the "ignored" filter)
+  const visibleMentions = allMentions.filter(m => {
+    const handle = m.author_username.toLowerCase();
+    // Always hide ignored accounts unless viewing ignored filter
+    if (activeFilter !== 'ignored' && ignoredAccounts.includes(handle)) return false;
+    return true;
+  });
+
+  const filteredMentions = visibleMentions.filter(m => {
     switch (activeFilter) {
       case 'hot': return isHot(m);
       case 'pending': return m.reply_status === 'pending';
       case 'replied': return m.reply_status === 'replied';
-      case 'ignored': return m.reply_status === 'ignored';
+      case 'ignored': return m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase());
       default: return true;
     }
   });
@@ -374,13 +479,14 @@ export const XEngageView: React.FC = () => {
     return b.created_at - a.created_at;
   });
 
-  // Filter counts
+  // Filter counts (exclude ignored accounts from non-ignored counts)
+  const nonIgnored = allMentions.filter(m => !ignoredAccounts.includes(m.author_username.toLowerCase()));
   const counts: Record<FilterTab, number> = {
-    all: allMentions.length,
-    hot: allMentions.filter(isHot).length,
-    pending: allMentions.filter(m => m.reply_status === 'pending').length,
-    replied: allMentions.filter(m => m.reply_status === 'replied').length,
-    ignored: allMentions.filter(m => m.reply_status === 'ignored').length,
+    all: nonIgnored.length,
+    hot: nonIgnored.filter(isHot).length,
+    pending: nonIgnored.filter(m => m.reply_status === 'pending').length,
+    replied: nonIgnored.filter(m => m.reply_status === 'replied').length,
+    ignored: allMentions.filter(m => m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase())).length,
   };
 
   // ─── Render: mention card ──────────────────────────────────────────────────
@@ -407,9 +513,11 @@ export const XEngageView: React.FC = () => {
             )}
             <div className="font-medium text-mission-control-text truncate">@{mention.author_username}</div>
             <div className="text-sm text-mission-control-text-dim truncate">{mention.author_name}</div>
-            <span className={`text-xs px-1.5 py-0.5 rounded ${sentimentBadgeClasses(mention.sentiment)}`}>
-              {mention.sentiment}
-            </span>
+            {settings.showSentiment && (
+              <span className={`text-xs px-1.5 py-0.5 rounded ${sentimentBadgeClasses(mention.sentiment)}`}>
+                {mention.sentiment}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 ml-2">
             <div className="text-xs text-mission-control-text-dim">
@@ -492,10 +600,24 @@ export const XEngageView: React.FC = () => {
               onClick={() => togglePriority(mention.author_username)}
               title={isPriority ? 'Remove from priority' : 'Add to priority'}
               className="p-1.5 rounded border border-mission-control-border hover:bg-mission-control-surface transition-colors"
+              aria-label={isPriority ? 'Remove from priority' : 'Add to priority'}
             >
               {isPriority
                 ? <StarOff size={14} className="text-warning" />
                 : <Star size={14} className="text-mission-control-text-dim" />
+              }
+            </button>
+
+            {/* Ignore user toggle */}
+            <button
+              onClick={() => toggleIgnored(mention.author_username)}
+              title={ignoredAccounts.includes(mention.author_username.toLowerCase()) ? 'Unignore user' : 'Ignore user'}
+              className="p-1.5 rounded border border-mission-control-border hover:bg-mission-control-surface transition-colors"
+              aria-label={ignoredAccounts.includes(mention.author_username.toLowerCase()) ? 'Unignore user' : 'Ignore user'}
+            >
+              {ignoredAccounts.includes(mention.author_username.toLowerCase())
+                ? <EyeOff size={14} className="text-error" />
+                : <UserX size={14} className="text-mission-control-text-dim" />
               }
             </button>
 
@@ -538,13 +660,15 @@ export const XEngageView: React.FC = () => {
           </div>
         </div>
 
-        {/* Notes */}
+        {/* Notes (conditional) */}
+        {settings.showNotes && (
         <div className="mb-3">
           <div className="flex items-center gap-2">
             <input
               type="text"
               value={notes[mention.id] ?? ''}
               onChange={(e) => setNotes(prev => ({ ...prev, [mention.id]: e.target.value }))}
+              onBlur={() => { if (notes[mention.id]?.trim()) saveNotes(mention.id, notes[mention.id]); }}
               placeholder="Add notes..."
               className="flex-1 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
             />
@@ -562,6 +686,7 @@ export const XEngageView: React.FC = () => {
             </div>
           )}
         </div>
+        )}
 
         {/* Inline reply composer */}
         {isSelected && (
@@ -681,10 +806,18 @@ export const XEngageView: React.FC = () => {
             <Inbox size={20} className="text-info" />
             <div className="text-lg font-semibold text-mission-control-text">Engagement Inbox</div>
           </div>
+          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-info-subtle text-info' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'}`}
+            title="Engagement settings"
+          >
+            <Settings size={16} />
+          </button>
           <button
             onClick={fetchNewMentions}
             disabled={fetching}
-            className="px-4 py-2 bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            className="px-4 py-2 bg-info text-white rounded-lg hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
           >
             {fetching ? (
               <>
@@ -695,6 +828,7 @@ export const XEngageView: React.FC = () => {
               <><RefreshCw size={16} /> Fetch New</>
             )}
           </button>
+          </div>
         </div>
 
         {/* Filter pills */}
@@ -746,8 +880,96 @@ export const XEngageView: React.FC = () => {
           </div>
         )}
 
+        {/* Settings panel */}
+        {showSettings && (
+          <div className="mb-3 p-4 rounded-xl border border-mission-control-border bg-mission-control-surface space-y-4">
+            <h4 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
+              <Settings size={14} />
+              Engagement Settings
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Default reply tier */}
+              <div>
+                <label className="text-xs text-mission-control-text-dim mb-1 block">Default Reply Approval Tier</label>
+                <select
+                  value={settings.defaultReplyTier}
+                  onChange={(e) => {
+                    const tier = Number(e.target.value) as 1 | 3;
+                    updateSetting('defaultReplyTier', tier);
+                    setFastTrack(tier === 1);
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text"
+                >
+                  <option value={3}>Tier 3 — Standard review</option>
+                  <option value={1}>Tier 1 — Fast-track (minimal review)</option>
+                </select>
+              </div>
+
+              {/* Auto-ignore low engagement */}
+              <div>
+                <label className="text-xs text-mission-control-text-dim mb-1 block">Auto-Ignore Low Engagement</label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.autoIgnoreLowEngagement}
+                      onChange={(e) => updateSetting('autoIgnoreLowEngagement', e.target.checked)}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-mission-control-text">Ignore accounts with fewer than</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={settings.lowEngagementThreshold}
+                    onChange={(e) => updateSetting('lowEngagementThreshold', parseInt(e.target.value) || 0)}
+                    className="w-16 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                    min="0"
+                  />
+                  <span className="text-xs text-mission-control-text-dim">followers</span>
+                </div>
+              </div>
+
+              {/* Show sentiment */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.showSentiment}
+                  onChange={(e) => updateSetting('showSentiment', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-mission-control-text">Show sentiment badges</span>
+              </label>
+
+              {/* Show notes */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.showNotes}
+                  onChange={(e) => updateSetting('showNotes', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-mission-control-text">Show notes on cards</span>
+              </label>
+
+              {/* Auto-ignore bots */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.autoIgnoreBots}
+                  onChange={(e) => updateSetting('autoIgnoreBots', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-mission-control-text">Auto-ignore suspected bots</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Account lists: Priority + Ignored */}
+        <div className="flex gap-4 flex-wrap">
         {/* Priority accounts collapsible */}
-        <div>
+        <div className="flex-1 min-w-[200px]">
           <button
             onClick={() => setShowPriorityPanel(v => !v)}
             className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
@@ -800,6 +1022,63 @@ export const XEngageView: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Ignored accounts collapsible */}
+        <div className="flex-1 min-w-[200px]">
+          <button
+            onClick={() => setShowIgnoredPanel(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+          >
+            <UserX size={12} className="text-error" />
+            Ignored accounts
+            {ignoredAccounts.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full text-xs bg-error-subtle text-error">
+                {ignoredAccounts.length}
+              </span>
+            )}
+            {showIgnoredPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          {showIgnoredPanel && (
+            <div className="mt-2 p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
+              <p className="text-xs text-mission-control-text-dim mb-2">
+                Mentions from ignored accounts are hidden from all filters except Ignored.
+              </p>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={ignoredInput}
+                  onChange={e => setIgnoredInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddIgnored(); }}
+                  placeholder="@username"
+                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                />
+                <button
+                  onClick={handleAddIgnored}
+                  disabled={!ignoredInput.trim()}
+                  className="px-3 py-1 text-xs rounded bg-error/80 text-white disabled:opacity-50 transition-colors"
+                >
+                  Ignore
+                </button>
+              </div>
+              {ignoredAccounts.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {ignoredAccounts.map(h => (
+                    <span
+                      key={h}
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-error-subtle text-error"
+                    >
+                      @{h}
+                      <button onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`}>
+                        <span className="text-[10px]">&times;</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
