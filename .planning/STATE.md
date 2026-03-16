@@ -2,125 +2,77 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-09)
+See: .planning/PROJECT.md (updated 2026-03-15)
 
-**Core value:** Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
-**Current focus:** v10.0 Real-Time Streaming — All phases complete
+**Core value:** Tasks flow from creation to completion autonomously with self-healing at every failure point.
+**Current focus:** Phase 3 — Task Dispatcher Hardening
 
 ## Current Position
 
-Phase: 101 of 101 (performance-hardening)
-Plan: Complete
-Status: Complete
-Last activity: 2026-03-10 — v10.0 streaming upgrade complete (4 phases, 98–101)
+Phase: 4 of 10 (Auto-advance & Recovery)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-03-15 — Phase 3 complete (dispatcher hardening)
 
-Progress: ██████████ 100% (v10.0 — 4/4 phases done)
+Progress: ███░░░░░░░ 30%
 
 ## Performance Metrics
 
-**Velocity (v1.0 + v2.0):**
-- Total plans completed: 39 (30 v1.0 + 9 v2.0)
-- v2.0 execution time: ~45 min (8 phases, autonomous)
-- Total git commits this session: 11
+**Velocity:**
+- Total plans completed: 4
+- Phases complete: 3 of 10
 
 ## Accumulated Context
 
-### Architecture (v2.0 — fully operational)
+### Critical Bugs Fixed (outside GSD phases)
 
-- **App**: Next.js 15 App Router, TypeScript, Tailwind, Zustand
-- **DB**: `~/mission-control/data/mission-control.db` (better-sqlite3, WAL, 18 tables)
-- **Memory**: `~/mission-control/memory/` (Obsidian vault, QMD BM25/vector/hybrid indexed)
-- **Library**: `~/mission-control/library/` (agent output files, category-routed)
-- **MCP**: `tools/mission-control-db-mcp/` (11 tools) + `tools/memory-mcp/` (4 tools v3.0)
-- **Agents**: 15 in `.claude/agents/` — maxTurns, worktreePath, personality enriched
-- **Hooks**: `tools/hooks/` — review-gate.js, session-sync.js (writes to vault + QMD)
-- **Skills**: 9 in `.claude/skills/` (6 updated + 3 new: x-twitter, nextjs-patterns, git-workflow)
-- **Voice**: `tools/voice-bridge/` — Gemini Live WS server, `/api/voice/status` endpoint
-- **Tmux**: `tools/tmux-setup.sh` — `mission-control` session, 3 windows, per-agent panes
-- **Worktrees**: `tools/worktree-setup.sh` — `~/mission-control-worktrees/{coder,designer,chief}`
-- **Approval Rules**: `APPROVAL_RULES.md` — Tier 0-3 with per-agent matrix
-- **E2E test**: `tools/e2e-smoke-test.sh` — 107/107 checks pass (v2.0 + v3.0 + v4.0)
+- **DB corruption**: orphan indexes + corrupted B-trees. Fixed with .recover rebuild + permanent auto-repair on startup
+- **Stale --resume sessions**: Claude crashes exit 1 when resuming non-existent session. Fixed with auto-clear fallback on retry
+- **Dispatcher spawning every 30s**: dispatcherCron was re-dispatching tasks already in-progress. Fixed to only recover stuck tasks >10min
+- **dispatchTask guard**: rejects dispatch for tasks not in in-progress/internal-review
+- **Clara rubber-stamp**: pre-review was just checking 3 booleans. Rewritten to actual quality review with 5 evaluation criteria
+- **human-review → done blocked**: status transition + done enforcement skipped for human-review tasks
+- **Automations API column mismatch**: createdAt vs created_at silently breaking all automation creation
 
-### Path Mapping (PDF spec → actual)
+### Key Decisions
 
-| Spec path | Actual path |
-|-----------|-------------|
-| `~/froggo-nextjs/` | `~/git/mission-control-nextjs/` |
-| `~/froggo/data/froggo.db` | `~/mission-control/data/mission-control.db` |
-| `~/obsidian-vault/` | `~/mission-control/memory/` |
-| `froggo-agents` tmux session | `mission-control` (renamed to match project) |
-| `~/froggo-worktrees/` | `~/mission-control-worktrees/` |
+- Automations and cron jobs should be UNIFIED (Phase 8) — currently two parallel systems
+- HR training creates individual tasks for action items, not just log notes
+- Training logs: ~/mission-control/library/docs/hr/training/
+- Reports: ~/mission-control/library/docs/hr/reports/
+- Agents mark subtasks complete ONE BY ONE as they work, not batched at end
 
-### Key Decisions (v2.0)
+### Key Files Modified
 
-- ENV.DB_PATH is canonical — no direct process.env in src/
-- Tmux session named `mission-control` (not `froggo-agents`)
-- Memory MCP v3.0: 4 tools (memory_search/recall/write/read) + QMD hybrid search
-- Three-tier model: Opus 4.6 (lead), Sonnet 4.6 (workers), Haiku 4.5 (trivial)
-- Gemini Live `gemini-2.5-flash-native-audio-preview` for voice layer
-- Voice bridge runs as standalone Node.js WS server on port 8765
-- MCP servers registered in `.claude/settings.json` mcpServers block
-- Agent worktrees for coder/designer/chief only; senior-coder shares coder worktree
-- 15 agents total (2 more than spec: discord-manager, finance-manager added in v1.0)
+- `src/lib/claraReviewCron.ts` — pipeline fixes, Clara review rewrite, error logging, cycle telemetry
+- `src/lib/taskDispatcher.ts` — resume fallback, dispatch guard, feedback injection, spawn logging
+- `src/lib/taskDispatcherCron.ts` — changed from dispatching todo tasks to recovering stuck in-progress
+- `src/lib/database.ts` — auto-repair corrupt DB on startup
+- `src/store/store.ts` — human-review→done transition, same-status no-op
+- `app/api/automations/route.ts` — fixed snake_case column names
+- `app/api/training-logs/route.ts` — separate training/reports dirs
 
-### Deferred Issues (carried from v1.0)
+### Deferred Issues
 
-- Starred messages API not implemented (ChatPanel TODO)
-- File attachments (fs:writeBase64) no web equivalent
-- Whisper transcription not wired (bridge.ts shim in place)
-- 531 `window.clawdbot` refs still via bridge.ts — direct migration per-component not done
+- Automations = cron jobs unification (Phase 8)
+- Agent memory nearly empty — 11/14 agents have zero memory files (Phase 5-6)
+- GSD planning framework for agents (Phase 7)
 
-### Pending Todos
+### What's Working
 
-None.
-
-### Key Decisions (v3.0 — in progress)
-
-- Task dispatcher: cwd=process.cwd() (not agent workspace) for MCP access; `{agentId}:task` key for task sessions
-- `--system-prompt` with SOUL.md for `--print` mode (not `--agents {id}` which is for interactive mode only)
-- Agent workspace CLAUDE.md files: replaced defunct derek-db CLI with mcp__mission-control_db__* MCP tools
-- Task session expiry: 2 hours (shorter than chat 30-min in-memory; task sessions are discrete)
-
-### Key Decisions (v9.0)
-
-- Memory protocol: Stop hook (memory-capture.js) is primary; TASK_SUFFIX instruction is fallback
-- Session expiry raised 2h → 24h; cleanup cron deletes sessions >7 days
-- Structured memory frontmatter: date, agent, task, tags, confidence — enforced by memory_write
-- Expertise map lives at `memory/agents/expertise-map.md` — auto-appended on every write
-- Memory injection token budget: 1500 tokens max; dropped if total prompt would exceed model limit
-- Clara pattern file per-agent: `memory/agents/clara/agent-patterns/{agentId}.md`
-- Vector embeddings: Phase 96 — requires research on Anthropic embeddings API
-- Task templates: generated after 5+ similar completions; offered in TaskModal
-
-### Key Decisions (v8.0)
-
-- Interactive chat → Anthropic SDK streaming (not CLI); CLI retained for task dispatch
-- SSE via in-process event emitter (SQLite has no native pub/sub)
-- Auth: INTERNAL_API_TOKEN bearer check in middleware.ts (single shared secret for local use)
-- Clara double-dispatch fix: remove fetch() from MCP task_update handler; cron is the only trigger
-- Circuit breaker: 3-strike per-agent lockout stored in agent_status column (not in-memory only)
-- Audit source: `~/Downloads/froggo-platform-audit-final.md` — 110+ gaps, all mapped to phases
-
-## Roadmap Evolution
-
-- Milestone v3.0 created: Autonomous Core — closes dispatcher gap, adds PreCompact resilience, Agent Teams hooks, token tracking, skills auto-loading, monitoring, rate limiting (Phases 23-30)
-- Phase 23.1 inserted: Agent Identity Foundation — fixed all 15 workspace CLAUDE.md files
-- Milestone v4.0 created: Agent & Module Library — catalog schema, hire/install wizards (HR + Coder agent-backed), library UIs, lifecycle management, onboarding role presets (Phases 31-39)
-- Milestone v5.0 created: Projects Module — project data model + REST API, creation wizard, card view, workspace shell with 4 tabs (chat/tasks/automations/files+memory), agent dispatch from project context (Phases 40-49)
-- Milestone v6.0 created: Security Hardening — command injection fix, path traversal fixes (library + soul), Gemini key server-side, CSP headers, input validation sweep (Phases 50-57)
-- Milestone v8.0 created: Platform Quality — full 3-pass audit (frontend 47 issues, API 40 issues, catalog 22 issues), streaming, SSE, auth, soul quality (Phases 79-86)
-- Milestone v10.0 created: Real-Time Streaming — SDK chat route, route separation, StreamingText component, performance hardening (Phases 98-101)
-
-### Key Decisions (v4.0)
-
-- Catalog tables (catalog_agents, catalog_modules) are SEPARATE from existing agents/module_state tables — additive only
-- .catalog/ manifest files are source of truth; syncCatalogAgents/syncCatalogModules() upsert on every DB init
-- ON CONFLICT preserves installed/enabled/core — DB owns hire state, manifests own metadata
-- 7 core modules: settings, agent-mgmt, inbox, chat, kanban, approvals, notifications
-- syncCatalogModules() placed in catalogSync.ts (shared file) not a separate file
+- Full pipeline: todo → Clara pre-review → in-progress → review → Clara post-review → done
+- Test task completed end-to-end autonomously (haiku task)
+- HR training session completed: 10 agent training logs produced
+- HR team health report completed
+- Re-dispatch after Clara rejection working
+- Stuck task recovery working
+- DB auto-repair on startup
+- Dispatcher: circuit breaker with auto-recovery, exponential backoff, 30-min process timeout
+- Dispatcher: agent busy/idle status tracking
+- Dispatch health API: GET /api/dispatch-health
 
 ## Session Continuity
 
-Last session: 2026-03-10
-Stopped at: v10.0 streaming upgrade complete — all 4 phases (98–101) shipped 2026-03-10.
-Resume file: None
+Last session: 2026-03-15
+Stopped at: Phase 3 complete, executing Phases 4-10 autonomously
+Resume with: `/gsd:plan-phase 4`

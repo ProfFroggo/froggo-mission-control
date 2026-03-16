@@ -608,7 +608,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               <button onClick={handleClose} className="flex-1 px-4 py-2 bg-mission-control-bg border border-mission-control-border text-sm rounded-lg hover:border-mission-control-text-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
                 Cancel
               </button>
-              <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-success text-white text-sm font-medium rounded-xl hover:bg-success/90 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+              <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-success text-white text-sm font-medium rounded-lg hover:bg-success/90 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
                 <Check size={16} /> Proceed
               </button>
             </div>
@@ -617,7 +617,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
         {phase === 'done' && (
           <div className="border-t border-mission-control-border p-4 flex-shrink-0">
-            <button onClick={handleClose} className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+            <button onClick={handleClose} className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
               Done
             </button>
           </div>

@@ -56,7 +56,7 @@ export default function AccessibilitySettings() {
         
         <div className="space-y-4">
           {/* Reduced Motion */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <div className="flex items-center gap-3">
               {settings.reducedMotion ? (
                 <EyeOff size={20} className="text-mission-control-text-dim" aria-hidden="true" />
@@ -96,7 +96,7 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* High Contrast */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <div className="flex items-center gap-3">
               <Eye size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
@@ -132,7 +132,7 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* Font Size */}
-          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <div className="flex items-center gap-3 mb-4">
               <Type size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div className="flex-1">
@@ -202,7 +202,7 @@ export default function AccessibilitySettings() {
         
         <div className="space-y-4">
           {/* Keyboard Navigation Indicators */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <div className="flex items-center gap-3">
               <Keyboard size={20} className="text-mission-control-text-dim" aria-hidden="true" />
               <div>
@@ -247,7 +247,7 @@ export default function AccessibilitySettings() {
         
         <div className="space-y-4">
           {/* Enable announcements */}
-          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <div className="flex items-center gap-3">
               {settings.screenReaderEnabled ? (
                 <Volume2 size={20} className="text-mission-control-text-dim" aria-hidden="true" />
@@ -287,7 +287,7 @@ export default function AccessibilitySettings() {
           </div>
 
           {/* Test announcements */}
-          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
             <label htmlFor="test-announcement" className="text-sm font-medium text-mission-control-text block mb-2">
               Test Screen Reader Announcement
             </label>
@@ -321,7 +321,7 @@ export default function AccessibilitySettings() {
 
       {/* Info */}
       <div 
-        className="p-4 bg-info-subtle border border-info-border rounded-xl"
+        className="p-4 bg-info-subtle border border-info-border rounded-lg"
         role="status"
         aria-label="Accessibility information"
       >

@@ -333,7 +333,7 @@ Be conversational, friendly, and help design an effective agent.`;
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div 
-        className={`glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col ${
+        className={`glass-modal rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`} 
         onClick={(e) => e.stopPropagation()}
@@ -361,7 +361,7 @@ Be conversational, friendly, and help design an effective agent.`;
               type="button"
               aria-pressed={mode === 'chat'}
               aria-label="Chat with Mission Control mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'chat'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -376,7 +376,7 @@ Be conversational, friendly, and help design an effective agent.`;
               type="button"
               aria-pressed={mode === 'manual'}
               aria-label="Manual entry mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'manual'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -443,7 +443,7 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Extracted Worker Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Worker Agent Ready!</span>
@@ -530,7 +530,7 @@ Be conversational, friendly, and help design an effective agent.`;
             // Manual Mode
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Name & Role */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="worker-name" className="block text-sm text-mission-control-text-dim mb-1">Worker Name *</label>
                   <input
@@ -586,7 +586,7 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Model Selection */}
               <div>
                 <span className="block text-sm text-mission-control-text-dim mb-1">Model</span>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}

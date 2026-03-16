@@ -53,13 +53,16 @@ export default function SpecPreviewPanel({
       icon: <LayoutGrid size={14} />,
       badge: wireframe ? 1 : 0,
       action: onRegenerateWireframe ? (
-        <button
+        <span
+          role="button"
+          tabIndex={0}
           onClick={(e) => { e.stopPropagation(); onRegenerateWireframe(); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onRegenerateWireframe(); } }}
           title="Regenerate wireframe"
-          className="ml-1 p-0.5 hover:text-mission-control-text text-mission-control-text-dim rounded transition-colors"
+          className="ml-1 p-0.5 hover:text-mission-control-text text-mission-control-text-dim rounded transition-colors inline-flex"
         >
           <RefreshCw size={11} />
-        </button>
+        </span>
       ) : undefined,
     },
     { id: 'tasks', label: 'Tasks', icon: <ListChecks size={14} />, badge: liveTasks.length },
@@ -195,7 +198,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
           <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Layers size={13} /> Components & Views
           </h3>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {spec.views?.map(v => (
               <div key={v.id} className="border-2 border-dashed border-mission-control-border rounded-lg p-3 text-center">
                 <div className="text-xs font-medium text-mission-control-text">{v.name}</div>

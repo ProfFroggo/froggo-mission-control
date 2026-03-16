@@ -178,7 +178,7 @@ export default function LibraryTemplatesTab() {
           </p>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90"
           >
             <Plus size={16} />
             New Template
@@ -194,13 +194,13 @@ export default function LibraryTemplatesTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-9 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
+              className="w-full pl-9 pr-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
             />
           </div>
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
+            className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
           >
             <option value="all">All Types</option>
             <option value="tweet">Tweets</option>
@@ -216,7 +216,7 @@ export default function LibraryTemplatesTab() {
         {sortedTemplates.length === 0 ? (
           <EmptyState icon={LayoutTemplate} title="No templates" description="Create your first template" />
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedTemplates.map(template => {
               const config = typeConfig[template.type];
               const Icon = config.icon;
@@ -225,7 +225,7 @@ export default function LibraryTemplatesTab() {
               return (
                 <div
                   key={template.id}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`p-4 rounded-lg border transition-all ${
                     isEditing
                       ? 'bg-mission-control-accent/5 border-mission-control-accent/30'
                       : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
@@ -352,7 +352,7 @@ export default function LibraryTemplatesTab() {
                   type="text"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   placeholder="Template name"
                 />
               </div>
@@ -362,7 +362,7 @@ export default function LibraryTemplatesTab() {
                   id="template-type"
                   value={newTemplate.type}
                   onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as Template['type'] })}
-                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
+                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                 >
                   <option value="tweet">Tweet</option>
                   <option value="email">Email</option>
@@ -376,7 +376,7 @@ export default function LibraryTemplatesTab() {
                   id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                  className="w-full h-32 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent resize-none"
+                  className="w-full h-32 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
                   placeholder="Use {variable} for placeholders"
                 />
               </div>
@@ -391,7 +391,7 @@ export default function LibraryTemplatesTab() {
               <button
                 onClick={handleCreate}
                 disabled={!newTemplate.name || !newTemplate.content}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-xl disabled:opacity-50"
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg disabled:opacity-50"
               >
                 Create
               </button>

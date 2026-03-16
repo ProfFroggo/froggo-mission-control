@@ -318,12 +318,12 @@ export default function WizardChat() {
             placeholder={step === 'extracting' ? 'Generating plan...' : 'Continue the conversation...'}
             rows={1}
             disabled={streaming || step === 'extracting'}
-            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50"
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50"
           />
           <button
             onClick={handleSendClick}
             disabled={streaming || step === 'extracting'}
-            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
             title="Send message"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

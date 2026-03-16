@@ -257,11 +257,11 @@ export function ValidatedSelect({
         onChange={handleChange}
         onBlur={handleBlur}
         className={`
-          w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text
-          focus:outline-none focus:ring-2 transition-all cursor-pointer
-          ${hasError 
-            ? 'border-red-500 focus:ring-error/50' 
-            : 'border-mission-control-border focus:ring-mission-control-accent'
+          w-full px-3 py-2 bg-mission-control-surface border rounded-lg text-mission-control-text
+          focus:outline-none transition-all cursor-pointer
+          ${hasError
+            ? 'border-red-500 focus:border-error'
+            : 'border-mission-control-border focus:border-mission-control-accent'
           }
           ${className}
         `}

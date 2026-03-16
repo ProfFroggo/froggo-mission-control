@@ -201,7 +201,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       aria-label="Close modal backdrop"
     >
       <div
-        className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] flex flex-col ${
+        className={`glass-modal rounded-lg max-w-3xl w-full h-[80vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -214,7 +214,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             {(() => {
               const theme = getAgentTheme(agent.id);
               return theme.pic ? (
-                <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
+                <div className={`relative flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
                   <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -372,12 +372,12 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 placeholder={`Message ${agent.name}...`}
                 rows={2}
                 disabled={sending}
-                className="flex-1 resize-none rounded-xl border border-mission-control-border bg-mission-control-bg2 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+                className="flex-1 resize-none rounded-lg border border-mission-control-border bg-mission-control-bg2 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
               />
               <button
                 onClick={sendMessage}
                 disabled={!input.trim() || sending}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>

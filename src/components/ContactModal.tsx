@@ -90,7 +90,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
         setChatMessages([{
           id: `msg-${Date.now()}`,
           role: 'assistant',
-          content: "Hey! 🐸 Tell me about someone you'd like to add to your contacts. I can help you organize personal and professional relationships. Who should we add?",
+          content: "Hey! Tell me about someone you'd like to add to your contacts. I can help you organize personal and professional relationships. Who should we add?",
           timestamp: Date.now(),
         }]);
       }
@@ -168,7 +168,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
     try {
       const conversationHistory = chatMessages.map(m => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping add a contact to the knowledge base. Have a natural conversation to gather:\n- Name (full name)\n- Relationship (family, friend, colleague, contact, client, etc)\n- Role/Title (if professional)\n- Context (how we know them, what they do, why they're important)\n- Contact info (email, phone, location if mentioned)\n- Company (if professional contact)\n- Any other relevant details\n\nAsk clarifying questions naturally. When you have enough info, output in this JSON format:\n\`\`\`json\n{"contact": {"name": "...", "relationship": "...", "role": "...", "context": "...", "email": "...", "phone": "...", "location": "...", "company": "...", "type": "personal|professional"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and thorough.`;
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control, helping add a contact to the knowledge base. Have a natural conversation to gather:\n- Name (full name)\n- Relationship (family, friend, colleague, contact, client, etc)\n- Role/Title (if professional)\n- Context (how we know them, what they do, why they're important)\n- Contact info (email, phone, location if mentioned)\n- Company (if professional contact)\n- Any other relevant details\n\nAsk clarifying questions naturally. When you have enough info, output in this JSON format:\n\`\`\`json\n{"contact": {"name": "...", "relationship": "...", "role": "...", "context": "...", "email": "...", "phone": "...", "location": "...", "company": "...", "type": "personal|professional"}, "complete": true}\n\`\`\`\n\nBe conversational, friendly, and thorough.`;
 
       const unsubscribe = gateway.on('chat', (data: any) => {
         const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
@@ -496,7 +496,7 @@ Be thorough but only include real people, not generic references.`;
         <div className="flex gap-2">
             <button
               onClick={() => setMode('dialogue')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'dialogue'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -508,7 +508,7 @@ Be thorough but only include real people, not generic references.`;
             </button>
             <button
               onClick={() => setMode('upload')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'upload'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -519,7 +519,7 @@ Be thorough but only include real people, not generic references.`;
             </button>
             <button
               onClick={() => setMode('manual')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'manual'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -586,7 +586,7 @@ Be thorough but only include real people, not generic references.`;
               {/* Extracted Contact Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Contact Ready!</span>
@@ -598,7 +598,7 @@ Be thorough but only include real people, not generic references.`;
                       {extractedData.company && <div><strong>Company:</strong> {extractedData.company}</div>}
                       {extractedData.email && <div><strong>Email:</strong> {extractedData.email}</div>}
                       {extractedData.context && <div><strong>Context:</strong> {extractedData.context.slice(0, 100)}...</div>}
-                      <div><strong>Type:</strong> {extractedData.type === 'professional' ? '💼 Professional' : '👤 Personal'}</div>
+                      <div className="flex items-center gap-1"><strong>Type:</strong> {extractedData.type === 'professional' ? <span className="inline-flex items-center gap-1"><Briefcase size={14} /> Professional</span> : <span className="inline-flex items-center gap-1"><User size={14} /> Personal</span>}</div>
                     </div>
                     <button
                       onClick={handleCreateFromDialogue}
@@ -663,7 +663,7 @@ Be thorough but only include real people, not generic references.`;
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="mx-auto flex items-center gap-2 px-6 py-3 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-mission-control-accent/50 transition-colors"
+                  className="mx-auto flex items-center gap-2 px-6 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
                 >
                   <Upload size={20} />
                   <span>Upload Text/Markdown File</span>
@@ -674,7 +674,7 @@ Be thorough but only include real people, not generic references.`;
               </div>
 
               {uploadedContent && (
-                <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+                <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <FileText size={16} className="text-mission-control-accent" />
                     <span className="font-semibold text-sm">Uploaded Content</span>
@@ -703,7 +703,7 @@ Be thorough but only include real people, not generic references.`;
                       <button
                         key={idx}
                         onClick={() => setSelectedEntity(idx)}
-                        className={`w-full text-left p-4 rounded-xl border transition-all ${
+                        className={`w-full text-left p-4 rounded-lg border transition-all ${
                           selectedEntity === idx
                             ? 'border-mission-control-accent bg-mission-control-accent/10'
                             : 'border-mission-control-border hover:border-mission-control-accent/50'
@@ -807,7 +807,7 @@ Be thorough but only include real people, not generic references.`;
               </div>
 
               {/* Relationship & Role */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="contact-relationship" className="block text-sm text-mission-control-text-dim mb-1">Relationship</label>
                   <input
@@ -835,7 +835,7 @@ Be thorough but only include real people, not generic references.`;
               </div>
 
               {/* Company & Location */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="contact-company" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <Briefcase size={14} /> Company
@@ -867,7 +867,7 @@ Be thorough but only include real people, not generic references.`;
               </div>
 
               {/* Email & Phone */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="contact-email" className="block text-sm text-mission-control-text-dim mb-1 flex items-center gap-1">
                     <Mail size={14} /> Email
@@ -947,7 +947,7 @@ Be thorough but only include real people, not generic references.`;
 
         {/* Status Message - Positioned absolutely over modal */}
         {saveStatus !== 'idle' && (
-          <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 z-10 ${
+          <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 z-10 ${
             saveStatus === 'success' ? 'bg-success-subtle border border-success-border text-success' :
             saveStatus === 'error' ? 'bg-error-subtle border border-error-border text-error' :
             'bg-mission-control-surface border border-mission-control-border'

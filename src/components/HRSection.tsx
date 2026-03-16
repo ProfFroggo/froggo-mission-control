@@ -115,16 +115,16 @@ export default function HRSection() {
   return (
     <>
       <div className="mb-8">
-        <div className="rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-transparent overflow-hidden">
+        <div className="rounded-lg border border-success-border bg-gradient-to-br from-teal-500/5 to-transparent overflow-hidden">
           {/* HR Header */}
-          <div className="p-4 flex items-center gap-3 border-b border-teal-500/20">
+          <div className="p-4 flex items-center gap-3 border-b border-success-border">
             <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-2xl ring-2 ring-teal-500/30">
               🎓
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-success-border">
                   Agent Management
                 </span>
               </h2>
@@ -173,25 +173,25 @@ export default function HRSection() {
           <div className="p-3 flex gap-2">
             <button
               onClick={() => setShowCreate(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-500 text-white font-medium rounded-xl hover:bg-teal-600 transition-colors text-sm"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm"
             >
               <UserPlus size={16} /> Create New Agent
             </button>
             <button
               onClick={openReports}
-              className="flex items-center gap-2 px-4 py-2.5 border border-teal-500/30 text-teal-400 rounded-xl hover:bg-teal-500/10 transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
             >
               <FileText size={16} /> Reports
             </button>
             <button
               onClick={openTrainingLog}
-              className="flex items-center gap-2 px-4 py-2.5 border border-teal-500/30 text-teal-400 rounded-xl hover:bg-teal-500/10 transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
             >
               <BookOpen size={16} /> Training Log
             </button>
             <button
               onClick={() => setShowSkills(true)}
-              className="flex items-center gap-2 px-4 py-2.5 border border-teal-500/30 text-teal-400 rounded-xl hover:bg-teal-500/10 transition-colors text-sm"
+              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
             >
               <Award size={16} /> Skills
             </button>
@@ -200,7 +200,7 @@ export default function HRSection() {
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-amber-500/20 text-xs text-amber-300">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning-border text-xs text-amber-300">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}

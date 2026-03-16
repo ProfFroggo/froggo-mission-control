@@ -84,7 +84,7 @@ export default function WeatherWidget() {
   const weatherColor = current ? getWeatherColor(current.weatherDesc[0].value) : 'text-mission-control-text-dim';
 
   return (
-    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Thermometer size={16} className={weatherColor} />

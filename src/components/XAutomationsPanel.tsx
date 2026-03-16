@@ -130,7 +130,7 @@ export default function XAutomationsPanel() {
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-review-subtle rounded-xl">
+            <div className="p-2 bg-review-subtle rounded-lg">
               <Zap size={24} className="text-review" />
             </div>
             <div>
@@ -146,7 +146,7 @@ export default function XAutomationsPanel() {
               setEditingAutomation(null);
               setShowBuilder(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
           >
             <Plus size={16} />
             New Automation
@@ -170,7 +170,7 @@ export default function XAutomationsPanel() {
             </p>
             <button
               onClick={() => setShowBuilder(true)}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/80 transition-colors"
+              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
             >
               Create Your First Automation
             </button>
@@ -185,7 +185,7 @@ export default function XAutomationsPanel() {
               return (
                 <div
                   key={automation.id}
-                  className={`flex-shrink-0 w-96 bg-mission-control-surface rounded-xl border-2 transition-all ${
+                  className={`flex-shrink-0 w-96 bg-mission-control-surface rounded-lg border-2 transition-all ${
                     automation.enabled 
                       ? 'border-success-border hover:border-success-border' 
                       : 'border-mission-control-border hover:border-mission-control-border/80'
@@ -385,7 +385,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
           <h2 className="text-xl font-semibold mb-2">
@@ -407,7 +407,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Auto-thank new followers"
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
             />
           </div>
           
@@ -419,7 +419,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this automation do?"
               rows={2}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
             />
           </div>
           
@@ -437,7 +437,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   id="automation-trigger"
                   value={triggerType}
                   onChange={(e) => setTriggerType(e.target.value as any)}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                 >
                   <option value="mention">Someone mentions me</option>
                   <option value="keyword">Tweet contains keywords</option>
@@ -460,7 +460,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                       keywords: e.target.value.split(',').map((k: string) => k.trim()).filter(Boolean)
                     })}
                     placeholder="bitcoin, crypto, web3"
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   />
                 </div>
               )}
@@ -472,7 +472,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     id="automation-interval"
                     value={triggerConfig.interval || '1h'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, interval: e.target.value })}
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   >
                     <option value="15m">Every 15 minutes</option>
                     <option value="30m">Every 30 minutes</option>
@@ -491,7 +491,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     id="automation-follower-action"
                     value={triggerConfig.action || 'follow'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, action: e.target.value })}
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
                   >
                     <option value="follow">New follower</option>
                     <option value="unfollow">Lost follower</option>
@@ -510,7 +510,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={action.id || `action-${index}`} className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                <div key={action.id || `action-${index}`} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-3">
                       <select
@@ -598,7 +598,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   onChange={(e) => setMaxPerHour(parseInt(e.target.value) || 0)}
                   min="1"
                   max="100"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3"
                 />
               </div>
               
@@ -611,7 +611,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                   onChange={(e) => setMaxPerDay(parseInt(e.target.value) || 0)}
                   min="1"
                   max="1000"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3"
                 />
               </div>
             </div>

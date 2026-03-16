@@ -6,8 +6,8 @@
 
 /* Global focus visible styles - WCAG 2.1 Level AA compliant */
 *:focus-visible {
-  outline: 3px solid var(--mission-control-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
+  outline-offset: var(--focus-ring-offset, 2px);
   border-radius: 4px;
 }
 
@@ -34,23 +34,23 @@
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid var(--mission-control-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 /* Interactive elements focus */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 3px solid var(--mission-control-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
+  outline-offset: var(--focus-ring-offset, 2px);
   border-color: var(--mission-control-accent);
 }
 
 /* Custom focus for cards and interactive elements */
 .card:focus-visible,
 .card-interactive:focus-visible {
-  outline: 3px solid var(--mission-control-accent);
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
   outline-offset: 3px;
 }
 
@@ -146,8 +146,8 @@ select:focus-visible {
 
 /* Indicate keyboard navigation mode */
 body.keyboard-nav *:focus {
-  outline: 3px solid var(--mission-control-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 body:not(.keyboard-nav) *:focus {
@@ -228,8 +228,8 @@ a:focus {
 
 /* Keyboard-accessible drag handles */
 .drag-handle:focus-visible {
-  outline: 3px solid var(--mission-control-accent);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
+  outline-offset: var(--focus-ring-offset, 2px);
   cursor: grab;
 }
 
@@ -271,17 +271,17 @@ label {
 
 /* Error states */
 [aria-invalid="true"] {
-  border-color: #ef4444;
+  border-color: var(--color-error);
 }
 
 [aria-invalid="true"]:focus {
-  outline-color: #ef4444;
+  outline-color: var(--color-error);
 }
 
 /* Required fields */
 [aria-required="true"]::after {
   content: ' *';
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 /* ========== LANDMARK REGIONS ========== */
@@ -331,8 +331,8 @@ button.inline {
 [role="alert"] {
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  background: var(--color-error-bg);
 }
 
 /* ========== PRINT STYLES ========== */

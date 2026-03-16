@@ -4,7 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
+import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle, ClipboardList, MessageCircle, Gamepad2, Monitor, Bot, Send as SendPlane } from 'lucide-react';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -56,13 +56,13 @@ function SortableSession({ sessionKey, children }: { sessionKey: string; childre
   );
 }
 
-const CHANNELS: { id: ChannelFilter; label: string; icon: string; color: string }[] = [
-  { id: 'all', label: 'All', icon: '📋', color: 'text-mission-control-text' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-success' },
-  { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-info' },
-  { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-review' },
-  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-mission-control-text-dim' },
-  { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-warning' },
+const CHANNELS: { id: ChannelFilter; label: string; icon: React.ReactNode; color: string }[] = [
+  { id: 'all', label: 'All', icon: <ClipboardList size={14} />, color: 'text-mission-control-text' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} />, color: 'text-success' },
+  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} />, color: 'text-info' },
+  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} />, color: 'text-review' },
+  { id: 'webchat', label: 'Webchat', icon: <Monitor size={14} />, color: 'text-mission-control-text-dim' },
+  { id: 'agents', label: 'Agents', icon: <Bot size={14} />, color: 'text-warning' },
 ];
 
 export default function SessionsFilter() {

@@ -1,26 +1,129 @@
-import { memo, useState } from 'react';
+import { memo, useState, type ComponentPropsWithoutRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
 interface MentionData {
   ids: string[];
-  names: Record<string, string>; // id -> display name
+  names: Record<string, string>;
 }
 
 interface MarkdownMessageProps {
   content: string;
   mentions?: MentionData;
-  onArtifactOpen?: (lang: string, code: string) => void;  // NEW
+  onArtifactOpen?: (lang: string, code: string) => void;
   streaming?: boolean;
 }
 
-// React.memo with custom comparator — only re-renders when content or mentions change.
-// This prevents costly markdown re-parsing during streaming when unrelated state updates.
 const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArtifactOpen, streaming }: MarkdownMessageProps) {
+  if (!content) return null;
+
+  // Strip leaked tool XML
+  const cleaned = content
+    .replace(/<tool_request\b[^>]*\/>/g, '')
+    .replace(/<tool_request\b[^>]*>[\s\S]*?<\/tool_request>/g, '')
+    .replace(/<tool_result\b[^>]*>[\s\S]*?<\/tool_result>/g, '')
+    .trim();
+
   return (
-    <div className="max-w-none leading-relaxed text-left text-sm">
-      {parseMarkdown(content, mentions, streaming ? undefined : onArtifactOpen, streaming)}
+    <div className="max-w-none leading-relaxed text-left text-sm break-words" style={{ overflowWrap: 'break-word' }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Headings
+          h1: ({ children }) => <h1 className="text-lg font-bold mt-4 mb-2 text-mission-control-text">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-semibold mt-3 mb-2 text-mission-control-text">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-semibold mt-3 mb-1.5 text-mission-control-text">{children}</h3>,
+          h4: ({ children }) => <h4 className="text-sm font-medium mt-2 mb-1 text-mission-control-text">{children}</h4>,
+          h5: ({ children }) => <h5 className="text-sm font-medium mt-2 mb-1 text-mission-control-text-dim">{children}</h5>,
+          h6: ({ children }) => <h6 className="text-xs font-medium mt-2 mb-1 text-mission-control-text-dim">{children}</h6>,
+
+          // Paragraphs
+          p: ({ children }) => <p className="my-1.5 leading-relaxed">{children}</p>,
+
+          // Lists
+          ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1 pl-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1 pl-1">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+
+          // Tables
+          table: ({ children }) => (
+            <div className="my-3 overflow-x-auto rounded-lg border border-mission-control-border">
+              <table className="w-full text-sm">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-mission-control-surface">{children}</thead>,
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children, ...props }) => {
+            const rowIndex = (props as Record<string, unknown>)['data-row-index'];
+            return <tr className={typeof rowIndex === 'number' && rowIndex % 2 !== 0 ? 'bg-mission-control-surface/30' : ''}>{children}</tr>;
+          },
+          th: ({ children }) => <th className="px-3 py-2 text-left font-medium text-mission-control-text border-b border-mission-control-border whitespace-nowrap">{children}</th>,
+          td: ({ children }) => <td className="px-3 py-2 text-mission-control-text border-t border-mission-control-border/50">{children}</td>,
+
+          // Blockquotes
+          blockquote: ({ children }) => (
+            <blockquote className="my-2 pl-3 border-l-2 border-mission-control-accent/40 text-mission-control-text-dim italic">{children}</blockquote>
+          ),
+
+          // Horizontal rule
+          hr: () => <hr className="my-3 border-mission-control-border" />,
+
+          // Code
+          code: ({ className, children, ...props }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            const isBlock = match || (typeof children === 'string' && children.includes('\n'));
+
+            if (isBlock) {
+              const lang = match?.[1] || '';
+              const code = String(children).replace(/\n$/, '');
+
+              if (!streaming && onArtifactOpen && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
+                return <ArtifactCard lang={lang} code={code} onOpen={onArtifactOpen} />;
+              }
+              return <CodeBlock code={code} language={lang} />;
+            }
+
+            return (
+              <code className="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold" {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => <>{children}</>,
+
+          // Links
+          a: ({ href, children }) => {
+            const safe = href ? sanitizeUrl(href) : null;
+            if (!safe) return <span>{children}</span>;
+            return (
+              <a href={safe} className="text-mission-control-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">
+                {children}
+              </a>
+            );
+          },
+
+          // Images
+          img: (props: ComponentPropsWithoutRef<'img'>) => {
+            const safe = props.src ? sanitizeUrl(props.src) : null;
+            if (!safe) return null;
+            return <img {...props} src={safe} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
+          },
+
+          // Strong / Em
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em>{children}</em>,
+
+          // Task lists (GFM)
+          input: (props: ComponentPropsWithoutRef<'input'>) => (
+            <input {...props} disabled className="mr-1.5 accent-mission-control-accent" />
+          ),
+        }}
+      >
+        {cleaned}
+      </ReactMarkdown>
     </div>
   );
 }, (prev, next) =>
@@ -34,222 +137,14 @@ export default MarkdownMessage;
 
 const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx', 'react']);
 
-function parseMarkdown(text: string, mentions?: MentionData, onArtifactOpen?: (lang: string, code: string) => void, streaming?: boolean): React.ReactNode[] {
-  const elements: React.ReactNode[] = [];
-  const lines = text.split('\n');
-  let i = 0;
-  let key = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Code blocks
-    if (line.startsWith('```')) {
-      const lang = line.slice(3).trim();
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].startsWith('```')) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      if (!streaming && onArtifactOpen) {
-        elements.push(
-          <ArtifactCard
-            key={key++}
-            lang={lang}
-            code={codeLines.join('\n')}
-            onOpen={onArtifactOpen}
-          />
-        );
-      } else {
-        elements.push(
-          <CodeBlock key={key++} code={codeLines.join('\n')} language={lang} />
-        );
-      }
-      i++;
-      continue;
-    }
-
-    // Headers (scaled down for chat context)
-    if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-sm font-semibold mt-3 mb-1.5 text-mission-control-text">{line.slice(4)}</h3>);
-      i++;
-      continue;
-    }
-    if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-base font-semibold mt-3 mb-2 text-mission-control-text">{line.slice(3)}</h2>);
-      i++;
-      continue;
-    }
-    if (line.startsWith('# ')) {
-      elements.push(<h1 key={key++} className="text-lg font-bold mt-3 mb-2 text-mission-control-text">{line.slice(2)}</h1>);
-      i++;
-      continue;
-    }
-
-    // Bullet lists
-    if (line.match(/^[-*]\s/)) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].match(/^[-*]\s/)) {
-        listItems.push(lines[i].slice(2));
-        i++;
-      }
-      elements.push(
-        <ul key={key++} className="list-disc list-inside my-2 space-y-2 pl-1">
-          {listItems.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">{formatInline(item, mentions)}</li>
-          ))}
-        </ul>
-      );
-      continue;
-    }
-
-    // Numbered lists
-    if (line.match(/^\d+\.\s/)) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].match(/^\d+\.\s/)) {
-        listItems.push(lines[i].replace(/^\d+\.\s/, ''));
-        i++;
-      }
-      elements.push(
-        <ol key={key++} className="list-decimal list-inside my-2 space-y-2 pl-1">
-          {listItems.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">{formatInline(item, mentions)}</li>
-          ))}
-        </ol>
-      );
-      continue;
-    }
-
-    // Empty line
-    if (line.trim() === '') {
-      i++;
-      continue;
-    }
-
-    // Regular paragraph
-    elements.push(<p key={key++} className="my-1.5 leading-relaxed">{formatInline(line, mentions)}</p>);
-    i++;
-  }
-
-  return elements;
-}
-
-// Escape HTML entities to prevent XSS through content
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-// Note: sanitizeUrl is imported from '../utils/sanitize'
-
-/**
- * Format inline markdown with XSS protection using escape-first approach
- *
- * SECURITY MODEL:
- * 1. Escape ALL HTML entities first (prevents any tag injection)
- * 2. Use controlled regex to reintroduce ONLY 3 safe tag types:
- *    - <strong> for **bold** (no attributes)
- *    - <code> for `code` (hardcoded safe class attribute)
- *    - <a> for [text](url) (URLs validated by sanitizeUrl())
- * 3. Render with dangerouslySetInnerHTML (safe because step 1 escaped everything)
- *
- * SECURITY GUARANTEES:
- * - No script injection possible (escapeHtml prevents <script> tags)
- * - No event handlers possible (escapeHtml prevents onclick/onerror/etc.)
- * - No dangerous protocols (sanitizeUrl blocks javascript:/data:/etc.)
- * - Regex patterns are non-overlapping and deterministic
- * - Failed URL validation degrades to plain text (safe fallback)
- *
- * AUDIT: 2026-03-03 - Reviewed and approved (LOW RISK - SECURE)
- * Security audit: 2026-03-03 — dangerouslySetInnerHTML usage reviewed and approved (LOW RISK - SECURE)
- */
-function formatInline(text: string, mentions?: MentionData): React.ReactNode {
-  let remaining = escapeHtml(text);
-
-  // @mentions — highlighted pill badges (applied before bold so agent names don't get mangled)
-  if (mentions) {
-    // @all
-    remaining = remaining.replace(
-      /@all\b/gi,
-      `<span class="inline font-medium px-1.5 py-0.5 rounded bg-mission-control-accent/20 text-mission-control-accent">@all</span>`
-    );
-    // Per-agent @Name or @id
-    mentions.ids.forEach(id => {
-      const name = mentions.names[id] || id;
-      const safeId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      remaining = remaining.replace(
-        new RegExp(`@${safeName}\\b|@${safeId}\\b`, 'gi'),
-        `<span class="inline font-medium px-1.5 py-0.5 rounded bg-mission-control-border/60 text-mission-control-text">$&</span>`
-      );
-    });
-  }
-
-  // Bold **text** - restore tags after escaping
-  remaining = remaining.replace(/\*\*(.+?)\*\*/g, (_, content) => {
-    return `<strong>${content}</strong>`;
-  });
-
-  // Inline code `code`
-  remaining = remaining.replace(/`([^`]+)`/g, (_, content) => {
-    return `<code class="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold">${content}</code>`;
-  });
-
-  // Images ![alt](url) — must be before links to avoid partial match
-  remaining = remaining.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, altText, url) => {
-    const sanitizedUrl = sanitizeUrl(url);
-    if (!sanitizedUrl) return `![${altText}](${escapeHtml(url)})`;
-    return `<img src="${sanitizedUrl}" alt="${altText}" class="max-w-full rounded-lg my-2 block cursor-pointer" style="max-height:480px;object-fit:contain;" />`;
-  });
-
-  // Links [text](url) - with XSS protection for URLs
-  // Note: text content is already escaped, URL is sanitized separately
-  remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, linkText, url) => {
-    // Sanitize URL: only allow http/https/mailto/tel protocols
-    const sanitizedUrl = sanitizeUrl(url);
-    if (!sanitizedUrl) {
-      // Return plain text if URL is unsafe
-      return `[${linkText}](${escapeHtml(url)})`;
-    }
-    return `<a href="${sanitizedUrl}" class="text-mission-control-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
-  });
-
-  // Bare URLs — auto-link any standalone http/https URL not already inside an <a>
-  remaining = remaining.replace(/(https?:\/\/[^\s<>"']+)/g, (_, url) => {
-    const sanitizedUrl = sanitizeUrl(url);
-    if (!sanitizedUrl) return url;
-    const display = url.length > 60 ? url.slice(0, 57) + '\u2026' : url;
-    return `<a href="${sanitizedUrl}" class="text-mission-control-accent hover:underline underline-offset-2 font-medium break-all" target="_blank" rel="noopener noreferrer">${display}</a>`;
-  });
-
-  // SECURITY: content is escapeHtml()'d first; only safe tags (strong/code/a) are re-introduced
-  // via controlled regex. URLs are validated by sanitizeUrl() (utils/sanitize.ts).
-  return <span dangerouslySetInnerHTML={{ __html: remaining }} />;
-}
-
 function extractArtifactTitle(lang: string, code: string): string {
-  // Try <title> tag for HTML
   const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i);
   if (titleMatch) return titleMatch[1].trim();
-
-  // Try first HTML comment
   const commentMatch = code.match(/<!--\s*([^\n-][^\n]*?)\s*-->/);
   if (commentMatch) return commentMatch[1].trim();
-
-  // Try first JSX/TSX export default or function name
   const funcMatch = code.match(/(?:export\s+default\s+function|function)\s+(\w+)/);
   if (funcMatch) return funcMatch[1];
-
-  // Fallback
-  const labels: Record<string, string> = {
-    html: 'HTML Document', htm: 'HTML Document', svg: 'SVG Image',
-    jsx: 'React Component', tsx: 'React Component',
-  };
+  const labels: Record<string, string> = { html: 'HTML Document', htm: 'HTML Document', svg: 'SVG Image', jsx: 'React Component', tsx: 'React Component' };
   return labels[lang.toLowerCase()] || `${lang.toUpperCase()} File`;
 }
 
@@ -261,22 +156,11 @@ function artifactIcon(lang: string) {
   return FileCode;
 }
 
-function ArtifactCard({ lang, code, onOpen }: {
-  lang: string;
-  code: string;
-  onOpen?: (lang: string, code: string) => void;
-}) {
+function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOpen?: (lang: string, code: string) => void }) {
   const [copied, setCopied] = useState(false);
-
   const title = extractArtifactTitle(lang, code);
   const lineCount = code.split('\n').filter(l => l.trim()).length;
   const Icon = artifactIcon(lang);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="my-2 flex items-center gap-2.5 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-colors group">
@@ -284,18 +168,13 @@ function ArtifactCard({ lang, code, onOpen }: {
       <span className="text-xs font-medium text-mission-control-text flex-1 truncate">{title}</span>
       <span className="text-xs text-mission-control-text-dim font-mono opacity-60">{lang.toUpperCase()}</span>
       <span className="text-xs text-mission-control-text-dim opacity-50">{lineCount}L</span>
-      <button
-        onClick={handleCopy}
-        className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100"
-        title="Copy code"
-      >
+      <button onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+        className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100" title="Copy code">
         {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
       </button>
       {onOpen && (
-        <button
-          onClick={() => onOpen(lang, code)}
-          className="flex items-center gap-1 px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 text-xs rounded hover:bg-mission-control-accent hover:text-white transition-colors"
-        >
+        <button onClick={() => onOpen(lang, code)}
+          className="flex items-center gap-1 px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 text-xs rounded hover:bg-mission-control-accent hover:text-white transition-colors">
           <ExternalLink size={11} /> Open
         </button>
       )}
@@ -306,33 +185,18 @@ function ArtifactCard({ lang, code, onOpen }: {
 function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    const success = await copyToClipboard(code);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } else {
-      alert('Failed to copy code. Please copy manually.');
-    }
-  };
-
   return (
     <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
       <div className="flex items-center justify-between px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
-        <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
-          {language || 'code'}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-mission-control-border/50 hover:text-mission-control-text transition-all"
-          title="Copy code"
-        >
+        <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">{language || 'code'}</span>
+        <button onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded text-mission-control-text-dim hover:bg-mission-control-border/50 hover:text-mission-control-text transition-all" title="Copy code">
           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>
       <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="font-mono text-mission-control-text">{code}</code>
+        <code className="font-mono text-mission-control-text break-words whitespace-pre-wrap">{code}</code>
       </pre>
     </div>
   );

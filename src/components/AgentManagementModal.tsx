@@ -692,7 +692,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     { id: 'performance', label: 'Performance', dirty: false },
   ];
 
-  const inputBase = 'w-full bg-mission-control-bg0 border border-mission-control-border rounded px-3 py-2 text-mission-control-text-primary text-sm focus:outline-none focus:border-mission-control-accent';
+  const inputBase = 'w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent';
 
   return (
     <div
@@ -701,14 +701,14 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
       aria-hidden="true"
     >
       <div
-        className="glass-modal rounded-xl max-w-2xl w-full max-h-[88vh] overflow-hidden flex flex-col"
+        className="glass-modal rounded-lg max-w-2xl w-full max-h-[88vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border">
           <h2 className="text-sm font-bold">{agentName}</h2>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -724,7 +724,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
               className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
                 section === s.id
                   ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text-primary'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <s.icon size={13} />{s.label}
@@ -739,8 +739,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
               <button key={t.id} type="button" onClick={() => setTab(t.id)}
                 className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors relative whitespace-nowrap ${
                   tab === t.id
-                    ? 'bg-mission-control-bg0 text-mission-control-text-primary border border-b-0 border-mission-control-border -mb-px'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text-primary'
+                    ? 'bg-mission-control-bg0 text-mission-control-text border border-b-0 border-mission-control-border -mb-px'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {t.label}
@@ -774,7 +774,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                 )}
                 {chatMessages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
+                    <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                       m.role === 'user'
                         ? 'bg-mission-control-accent text-white rounded-br-sm'
                         : 'bg-mission-control-surface border border-mission-control-border rounded-bl-sm'
@@ -853,7 +853,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                           {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
                         </div>
                         <div>
-                          <div className="font-medium text-sm text-mission-control-text-primary">{m.label}</div>
+                          <div className="font-medium text-sm text-mission-control-text">{m.label}</div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">{m.desc}</div>
                         </div>
                       </button>
@@ -890,8 +890,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   {addSkillMode !== null && (
                     <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-mission-control-text-primary">New Skill</span>
-                        <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                        <span className="text-xs font-medium text-mission-control-text">New Skill</span>
+                        <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
                       </div>
 
                       <input
@@ -906,21 +906,21 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         <button
                           type="button"
                           onClick={() => setAddSkillMode('url')}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary'}`}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
                         >
                           <Link size={10} /> From URL
                         </button>
                         <button
                           type="button"
                           onClick={() => setAddSkillMode('text')}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary'}`}
+                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
                         >
                           <FileText size={10} /> Write / Paste
                         </button>
                         <button
                           type="button"
                           onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                         >
                           <Upload size={10} /> Upload .md
                         </button>
@@ -973,7 +973,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                             <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
                               {on && <Check size={10} className="text-white" />}
                             </div>
-                            <span className="flex-1 text-sm text-mission-control-text-primary">{skill.name}</span>
+                            <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
                             <span className="text-xs text-mission-control-text-dim font-mono">{skill.slug}</span>
                           </button>
                         );
@@ -997,7 +997,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                     return (
                       <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
                         <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
-                          <span className="text-sm font-medium text-mission-control-text-primary">{server.label}</span>
+                          <span className="text-sm font-medium text-mission-control-text">{server.label}</span>
                           <button
                             type="button"
                             onClick={() => toggleServer(server.tools, !allOn)}
@@ -1019,7 +1019,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                                 <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                                   {on && <Check size={9} className="text-white" />}
                                 </div>
-                                <span className={`text-xs font-mono ${on ? 'text-mission-control-text-primary' : 'text-mission-control-text-dim'}`}>{tool}</span>
+                                <span className={`text-xs font-mono ${on ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>{tool}</span>
                               </button>
                             );
                           })}
@@ -1036,7 +1036,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <Server size={13} className="text-mission-control-text-dim" />
-                        <span className="text-xs font-medium text-mission-control-text-primary">Custom MCP Servers</span>
+                        <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
                       </div>
                       {!showAddMcp && (
                         <button
@@ -1054,7 +1054,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         {mcpServers.map(server => (
                           <div key={server.id} className="flex items-center justify-between border border-mission-control-border rounded-lg px-3 py-2">
                             <div className="min-w-0">
-                              <span className="text-xs font-medium text-mission-control-text-primary">{server.name}</span>
+                              <span className="text-xs font-medium text-mission-control-text">{server.name}</span>
                               <p className="text-xs text-mission-control-text-dim font-mono mt-0.5 truncate">
                                 {server.transport === 'stdio'
                                   ? `stdio: ${server.command} ${(server.args || []).join(' ')}`
@@ -1080,8 +1080,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                     {showAddMcp && (
                       <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-mission-control-text-primary">New MCP Server</span>
-                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                          <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
+                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
                         </div>
                         <input
                           className={`${inputBase} text-xs`}
@@ -1167,8 +1167,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   {showAddKey && (
                     <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-mission-control-text-primary">New Credential</span>
-                        <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text-primary text-xs">Cancel</button>
+                        <span className="text-xs font-medium text-mission-control-text">New Credential</span>
+                        <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
                       </div>
                       <select
                         className={`${inputBase} text-xs`}
@@ -1233,7 +1233,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                               {on && <Check size={10} className="text-white" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm text-mission-control-text-primary">{key.name}</div>
+                              <div className="text-sm text-mission-control-text">{key.name}</div>
                               <div className="text-xs text-mission-control-text-dim">{key.service}</div>
                             </div>
                             <Key size={12} className={on ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
@@ -1348,7 +1348,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                                   return (
                                     <div key={perm.id} className="flex items-center justify-between px-3 py-2">
                                       <div className="min-w-0 mr-2">
-                                        <span className="text-xs text-mission-control-text-primary">{perm.label}</span>
+                                        <span className="text-xs text-mission-control-text">{perm.label}</span>
                                         <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
                                       </div>
                                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -1356,7 +1356,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                                           <button
                                             type="button"
                                             onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
-                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text-primary px-1.5 py-0.5 rounded border border-mission-control-border transition-colors"
+                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded border border-mission-control-border transition-colors"
                                           >Reset</button>
                                         )}
                                         <button
@@ -1407,7 +1407,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                           {agentDisallowed.map(tool => (
                             <div key={tool} className="flex items-center justify-between px-3 py-1.5">
-                              <code className="text-xs font-mono text-mission-control-text-primary">{tool}</code>
+                              <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                               <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors">
                                 <X size={12} />
                               </button>
@@ -1441,15 +1441,15 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       {/* Task stats */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
-                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksCompleted}</div>
+                          <div className="text-2xl font-bold text-mission-control-text">{metrics.tasksCompleted}</div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">Tasks Done</div>
                         </div>
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
-                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksInProgress}</div>
+                          <div className="text-2xl font-bold text-mission-control-text">{metrics.tasksInProgress}</div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">In Progress</div>
                         </div>
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-center">
-                          <div className="text-2xl font-bold text-mission-control-text-primary">{metrics.tasksTotal}</div>
+                          <div className="text-2xl font-bold text-mission-control-text">{metrics.tasksTotal}</div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">Total Tasks</div>
                         </div>
                       </div>
@@ -1464,7 +1464,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                               style={{ width: `${metrics.approvalRate ?? 0}%` }}
                             />
                           </div>
-                          <span className="text-sm font-bold text-mission-control-text-primary w-10 text-right">
+                          <span className="text-sm font-bold text-mission-control-text w-10 text-right">
                             {metrics.approvalRate !== null ? `${metrics.approvalRate}%` : 'N/A'}
                           </span>
                         </div>
@@ -1481,7 +1481,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                             <BookOpen size={12} className="text-mission-control-text-dim" />
                             <span className="text-xs text-mission-control-text-dim">Memory Notes</span>
                           </div>
-                          <div className="text-lg font-bold text-mission-control-text-primary">{metrics.memoryNotes}</div>
+                          <div className="text-lg font-bold text-mission-control-text">{metrics.memoryNotes}</div>
                           <div className="text-xs text-mission-control-text-dim">notes in vault</div>
                         </div>
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
@@ -1489,7 +1489,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                             <BarChart2 size={12} className="text-mission-control-text-dim" />
                             <span className="text-xs text-mission-control-text-dim">Recent Activity</span>
                           </div>
-                          <div className="text-lg font-bold text-mission-control-text-primary">{metrics.recentActivity}</div>
+                          <div className="text-lg font-bold text-mission-control-text">{metrics.recentActivity}</div>
                           <div className="text-xs text-mission-control-text-dim">actions last 7d</div>
                         </div>
                       </div>
@@ -1499,7 +1499,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         {metrics.avgCompletionMs !== null && (
                           <div className="flex justify-between px-1">
                             <span className="text-mission-control-text-dim text-xs">Avg. completion time</span>
-                            <span className="text-mission-control-text-primary text-xs font-medium">
+                            <span className="text-mission-control-text text-xs font-medium">
                               {metrics.avgCompletionMs < 3600000
                                 ? `${Math.round(metrics.avgCompletionMs / 60000)}m`
                                 : `${(metrics.avgCompletionMs / 3600000).toFixed(1)}h`}
@@ -1509,7 +1509,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         {metrics.lastActive !== null && (
                           <div className="flex justify-between px-1">
                             <span className="text-mission-control-text-dim text-xs">Last active</span>
-                            <span className="text-mission-control-text-primary text-xs font-medium">
+                            <span className="text-mission-control-text text-xs font-medium">
                               {new Date(metrics.lastActive).toLocaleString()}
                             </span>
                           </div>
@@ -1519,7 +1519,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       <button
                         type="button"
                         onClick={() => { setMetrics(null); }}
-                        className="text-xs text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+                        className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                       >
                         Refresh metrics
                       </button>

@@ -294,7 +294,7 @@ export default function XCampaignView() {
                 value={editingCampaign.title}
                 onChange={e => setEditingCampaign({ ...editingCampaign, title: e.target.value })}
                 placeholder="e.g., AI Agents Launch Week"
-                className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
               />
             </div>
             <div>
@@ -305,7 +305,7 @@ export default function XCampaignView() {
                 onChange={e => setEditingCampaign({ ...editingCampaign, subject: e.target.value })}
                 placeholder="What is this campaign about? Describe the narrative arc, key messages, and goals..."
                 rows={3}
-                className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none"
+                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
               />
             </div>
             <div className="flex gap-4">
@@ -319,7 +319,7 @@ export default function XCampaignView() {
                   type="date"
                   value={editingCampaign.start_date || ''}
                   onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
-                  className="w-full bg-mission-control-bg-alt text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                  className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
               <div className="flex-1">
@@ -382,7 +382,7 @@ export default function XCampaignView() {
                               min={0}
                               value={stage.dayOffset}
                               onChange={e => updateStage(stage.id, { dayOffset: Math.max(0, parseInt(e.target.value) || 0) })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
                             />
                           </div>
                           <div className="w-28">
@@ -392,7 +392,7 @@ export default function XCampaignView() {
                               type="time"
                               value={stage.time}
                               onChange={e => updateStage(stage.id, { time: e.target.value })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
                             />
                           </div>
                           <div className="flex-1">
@@ -401,7 +401,7 @@ export default function XCampaignView() {
                               id={`stage-type-${stage.id}`}
                               value={stage.type}
                               onChange={e => updateStage(stage.id, { type: e.target.value as CampaignStage['type'] })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded px-2 py-1 text-sm"
+                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
                             >
                               {STAGE_TYPES.map(t => (
                                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -494,7 +494,7 @@ export default function XCampaignView() {
 
       {/* AI Proposal Banner */}
       {aiProposal && (
-        <div className="mx-4 mt-4 p-4 bg-mission-control-accent/10 border-2 border-mission-control-accent/40 rounded-xl animate-in fade-in">
+        <div className="mx-4 mt-4 p-4 bg-mission-control-accent/10 border-2 border-mission-control-accent/40 rounded-lg animate-in fade-in">
           <div className="flex items-start gap-3">
             <Sparkles className="w-5 h-5 text-mission-control-accent flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">

@@ -183,7 +183,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     try {
       const result = evaluateRule(rule as FolderRule, testData as ConversationData);
       setTestResult(result);
-      showToast(result ? 'success' : 'info', result ? '✅ Rule matches!' : '❌ Rule does not match');
+      showToast(result ? 'success' : 'info', result ? 'Rule matches!' : 'Rule does not match');
     } catch (error) {
       // '[RuleEditor] Test error:', error;
       showToast('error', 'Test failed');

@@ -130,7 +130,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                 >
                   Open System Settings
                 </button>
-                <button type="button" onClick={fetchSources} className="px-4 py-2 rounded-xl bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+                <button type="button" onClick={fetchSources} className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
                   Check Again
                 </button>
               </div>
@@ -150,7 +150,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filtered.map(source => (
                 <button type="button" key={source.id} onClick={() => setSelected(source.id)} onDoubleClick={() => onSelect(source)}
-                  className={`group flex flex-col rounded-xl border-2 overflow-hidden transition-all hover:scale-[1.02] ${
+                  className={`group flex flex-col rounded-lg border-2 overflow-hidden transition-all hover:scale-[1.02] ${
                     selected === source.id
                       ? 'border-mission-control-accent shadow-lg shadow-mission-control-accent/20 bg-mission-control-accent/5'
                       : 'border-mission-control-border hover:border-mission-control-text-dim bg-mission-control-bg'
@@ -198,7 +198,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
             Cancel
           </button>
           <button type="button" onClick={handleConfirm} disabled={!selected}
-            className="px-4 py-2 rounded-xl bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+            className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
             Share
           </button>
         </div>

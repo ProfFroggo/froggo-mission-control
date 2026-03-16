@@ -121,7 +121,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-xl">
+            <div className="p-2 bg-info-subtle rounded-lg">
               <HelpCircle size={24} className="text-info" />
             </div>
             <div>
@@ -133,7 +133,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-xl transition-colors"
+            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
           >
             <X size={20} />
           </button>
@@ -383,7 +383,7 @@ function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () =
   return (
     <button
       onClick={onClick}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-xl transition-colors text-left group"
+      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left group"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
@@ -488,7 +488,7 @@ function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean;
   return (
     <button
       onClick={onToggle}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-xl transition-colors text-left"
+      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
@@ -517,7 +517,7 @@ function QuickTipsView({ tips }: { tips: QuickTip[] }) {
       {tips.map(tip => (
         <div
           key={tip.id}
-          className="p-4 bg-mission-control-bg border border-mission-control-border rounded-xl hover:border-mission-control-accent transition-colors"
+          className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
         >
           <Zap size={18} className="text-mission-control-accent mb-2" />
           <h4 className="font-medium mb-1">{tip.title}</h4>
@@ -532,7 +532,7 @@ function QuickTipsView({ tips }: { tips: QuickTip[] }) {
 function ShortcutsView() {
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-info-subtle border border-info-border rounded-xl">
+      <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
         <p className="text-sm">
           <strong>Tip:</strong> Press <kbd className="px-2 py-1 bg-mission-control-bg border border-mission-control-border rounded text-xs">⌘?</kbd> anytime to view the full keyboard shortcuts reference.
         </p>

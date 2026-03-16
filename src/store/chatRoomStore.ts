@@ -57,11 +57,14 @@ export interface RoomMessage {
   mentionedAgents?: string[];
   /** Reference to artifact created by this message */
   artifactId?: string;
+  /** Thread parent message id */
+  parentId?: string;
 }
 
 export interface ChatRoom {
   id: string;
   name: string;
+  description?: string;
   agents: string[]; // agent IDs participating
   messages: RoomMessage[];
   createdAt: number;
@@ -74,6 +77,8 @@ export interface ChatRoom {
   activeArtifactId?: string;
   /** Persisted count from DB — used in room list before messages are lazy-loaded */
   messageCount?: number;
+  /** Pinned message id */
+  pinnedMessageId?: string;
 }
 
 interface ChatRoomState {
@@ -92,6 +97,7 @@ interface ChatRoomState {
   updateMessage: (roomId: string, messageId: string, updates: Partial<RoomMessage>) => void;
   setSessionKey: (roomId: string, agentId: string, sessionKey: string) => void;
   updateRoomAgents: (roomId: string, agents: string[]) => void;
+  updateRoom: (roomId: string, updates: Partial<Pick<ChatRoom, 'name' | 'description' | 'pinnedMessageId'>>) => void;
   getActiveRoom: () => ChatRoom | null;
 
   // Artifact Actions
@@ -141,6 +147,8 @@ export const useChatRoomStore = create<ChatRoomState>()(
             .map(r => ({
               id: r.id,
               name: r.name,
+              description: r.description ?? undefined,
+              pinnedMessageId: r.pinnedMessageId ?? undefined,
               agents: (() => { try { return JSON.parse(r.agents || '[]'); } catch { return []; } })(),
               messages: [],
               messageCount: r.messageCount ?? 0,
@@ -292,6 +300,19 @@ export const useChatRoomStore = create<ChatRoomState>()(
           r.id === roomId ? { ...r, agents, updatedAt: Date.now() } : r
         ),
       }));
+    },
+
+    updateRoom: (roomId: string, updates: Partial<Pick<ChatRoom, 'name' | 'description' | 'pinnedMessageId'>>) => {
+      set(state => ({
+        rooms: state.rooms.map(r =>
+          r.id === roomId ? { ...r, ...updates, updatedAt: Date.now() } : r
+        ),
+      }));
+      fetch(`/api/chat-rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      }).catch(e => console.warn('[chatRoomStore] Failed to update room in DB:', e));
     },
 
     getActiveRoom: () => {

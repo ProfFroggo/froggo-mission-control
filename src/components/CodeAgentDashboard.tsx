@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react';
+import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2, Info, Monitor, Bug, Clock } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 import EmptyState from './EmptyState';
@@ -142,7 +142,7 @@ export default function CodeAgentDashboard() {
 
   const taskStatusColors = {
     pending: 'bg-mission-control-bg0',
-    'in-progress': 'bg-warning',
+    'in-progress': 'bg-info',
     review: 'bg-review',
     done: 'bg-success',
   };
@@ -158,7 +158,7 @@ export default function CodeAgentDashboard() {
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-xl">
+            <div className="p-2 bg-info-subtle rounded-lg">
               <Code size={24} className="text-info" />
             </div>
             <div>
@@ -171,7 +171,7 @@ export default function CodeAgentDashboard() {
           <button
             onClick={loadData}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -184,15 +184,15 @@ export default function CodeAgentDashboard() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'bg-mission-control-accent text-white'
                   : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              {tab === 'dashboard' && '💻 Dashboard'}
-              {tab === 'cron' && '⏰ Cron Jobs'}
-              {tab === 'debug' && '🐛 Debug'}
+              {tab === 'dashboard' && <span className="flex items-center gap-1.5"><Monitor size={14} /> Dashboard</span>}
+              {tab === 'cron' && <span className="flex items-center gap-1.5"><Clock size={14} /> Cron Jobs</span>}
+              {tab === 'debug' && <span className="flex items-center gap-1.5"><Bug size={14} /> Debug</span>}
             </button>
           ))}
         </div>
@@ -222,14 +222,14 @@ export default function CodeAgentDashboard() {
       {/* Stats Bar */}
       <div className="px-6 pt-4 pb-2 bg-mission-control-surface border-b border-mission-control-border">
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-mission-control-bg rounded-xl p-4">
+          <div className="bg-mission-control-bg rounded-lg p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
               <Terminal size={14} />
               <span className="text-xs">Active Sessions</span>
             </div>
             <div className="text-2xl font-bold">{sessions.filter(s => s.status === 'running').length}</div>
           </div>
-          <div className="bg-mission-control-bg rounded-xl p-4">
+          <div className="bg-mission-control-bg rounded-lg p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
               <GitCommit size={14} />
               <span className="text-xs">Commits Today</span>
@@ -238,14 +238,14 @@ export default function CodeAgentDashboard() {
               {commits.filter(c => Date.now() - c.timestamp < 86400000).length}
             </div>
           </div>
-          <div className="bg-mission-control-bg rounded-xl p-4">
+          <div className="bg-mission-control-bg rounded-lg p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
               <Zap size={14} />
               <span className="text-xs">Total Tokens</span>
             </div>
             <div className="text-2xl font-bold">{(totalTokens / 1000).toFixed(1)}k</div>
           </div>
-          <div className="bg-mission-control-bg rounded-xl p-4">
+          <div className="bg-mission-control-bg rounded-lg p-4">
             <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
               <CheckCircle size={14} />
               <span className="text-xs">Tasks Done</span>

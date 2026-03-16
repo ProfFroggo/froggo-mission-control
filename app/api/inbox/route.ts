@@ -103,3 +103,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const db = getDb();
+    const body = await request.json();
+
+    if (body.action === 'mark-all-read') {
+      const result = db.prepare(
+        `UPDATE inbox SET isRead = 1 WHERE isRead = 0`
+      ).run();
+      emitSSEEvent('inbox.count', { count: 0 });
+      return NextResponse.json({ updated: result.changes });
+    }
+
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (error) {
+    console.error('PATCH /api/inbox error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

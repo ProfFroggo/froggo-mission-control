@@ -453,7 +453,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
       {/* Smart Folder Rule Editor Modal */}
       {editingRuleId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-lg shadow-2xl overflow-hidden">
             <SmartFolderRuleEditor
               folderId={editingRuleId}
               folderName={folders.find(f => f.id === editingRuleId)?.name || 'Folder'}

@@ -13,6 +13,7 @@ import AgentAvatar from './AgentAvatar';
 import { ChatAgent, fetchAgentList } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
+import MarkdownMessage from './MarkdownMessage';
 import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
 
@@ -207,7 +208,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
   if (!isOpen) return null;
 
   return (
-    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-[28rem] overflow-y-auto`}>
+    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-[28rem] overflow-y-auto`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Phone size={14} className="text-mission-control-accent" />
@@ -237,7 +238,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
             <select
               value={selectedMic}
               onChange={e => handleMicChange(e.target.value)}
-              className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded px-2 py-1 focus:outline-none focus:border-mission-control-accent"
+              className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="default">System Default</option>
               {micDevices.map(d => (
@@ -303,7 +304,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
   const viewLabel = getViewLabel(currentView);
 
   return (
-    <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4`}>
+    <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <Sparkles size={14} className="text-mission-control-accent" />
@@ -441,7 +442,7 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
   if (!isOpen) return null;
 
   return (
-    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
+    <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium flex items-center gap-2">
           <ListTodo size={14} className="text-mission-control-accent" />
@@ -595,12 +596,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     const unsubs = [
       geminiLive.on('connected', () => { setCallConnected(true); setCallRinging(false); }),
       geminiLive.on('disconnected', () => { setCallConnected(false); setCallListening(false); setCallSpeaking(false); }),
-      geminiLive.on('reconnecting', ({ attempt }: any) => { addTx('system', `🔄 Reconnecting (attempt ${attempt})...`); }),
+      geminiLive.on('reconnecting', ({ attempt }: any) => { addTx('system', `Reconnecting (attempt ${attempt})...`); }),
       geminiLive.on('listening-start', () => setCallListening(true)),
       geminiLive.on('listening-end', () => setCallListening(false)),
       geminiLive.on('speaking-start', () => setCallSpeaking(true)),
       geminiLive.on('speaking-end', () => setCallSpeaking(false)),
-      geminiLive.on('error', ({ message }: any) => addTx('system', `⚠️ ${message}`)),
+      geminiLive.on('error', ({ message }: any) => addTx('system', `${message}`)),
       geminiLive.on('transcript', ({ text, role }: any) => {
         if (!text?.trim()) return;
         const r = role === 'model' ? 'assistant' : 'user';
@@ -617,7 +618,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           const agent = activeCallAgentRef.current;
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
-            addTx('system', `🔧 ${fc.name}(${JSON.stringify(fc.args || {}).slice(0, 100)})`);
+            addTx('system', `${fc.name}(${JSON.stringify(fc.args || {}).slice(0, 100)})`);
             logger.debug(`[QuickActions] Executing tool: ${fc.name}`);
             let result: any;
             try {
@@ -626,7 +627,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             } catch (err: unknown) {
               // `[QuickActions] Tool ${fc.name} error:`, err;
               result = { error: (err as Error).message || 'Tool execution failed' };
-              addTx('system', `⚠️ ${fc.name} failed: ${(err as Error).message}`);
+              addTx('system', `${fc.name} failed: ${(err as Error).message}`);
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
           }
@@ -635,7 +636,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           logger.debug('[QuickActions] Tool responses sent');
         } catch (err: unknown) {
           // '[QuickActions] Tool handler error:', err;
-          addTx('system', `⚠️ Tool error: ${(err as Error).message}`);
+          addTx('system', `Tool error: ${(err as Error).message}`);
         }
       }),
     ];
@@ -673,7 +674,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       setCallMuted(false);
       setCallVideoMode('none');
       setCallDialogOpen(false);
-      setCallTranscript(prev => [...prev, { role: 'system', text: '📵 Call ended' }]);
+      setCallTranscript(prev => [...prev, { role: 'system', text: 'Call ended' }]);
       if (isMeetingActive) toggleMeeting();
       showToast('success', 'Call Ended', `Disconnected from ${agent.name}`);
     } else {
@@ -689,7 +690,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       saveActiveCall(call);
       activeCallAgentRef.current = { id: agent.id, name: agent.name, role: agent.role };
       setCallRinging(true);
-      setCallTranscript([{ role: 'system', text: `📞 Calling ${agent.name}...` }]);
+      setCallTranscript([{ role: 'system', text: `Calling ${agent.name}...` }]);
       setCallDialogOpen(true);
       setAgentCallModalOpen(false);
 
@@ -729,7 +730,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         if (!isMeetingActive) toggleMeeting();
       } catch (err: unknown) {
         stopRinging();
-        setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${(err as Error).message}` }]);
+        setCallTranscript(prev => [...prev, { role: 'system', text: `${(err as Error).message}` }]);
         setActiveCall(null);
         saveActiveCall(null);
       }
@@ -746,7 +747,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallMuted(false);
     setCallVideoMode('none');
     setCallDialogOpen(false);
-    setCallTranscript(prev => [...prev, { role: 'system', text: '📵 Call ended' }]);
+    setCallTranscript(prev => [...prev, { role: 'system', text: 'Call ended' }]);
     if (isMeetingActive) toggleMeeting();
   };
 
@@ -805,11 +806,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       // Additional attachment attempt after a delay
       setTimeout(() => attachVideoStream(), 500);
       
-      setCallTranscript(prev => [...prev, { role: 'system', text: `🖥️ Sharing: ${source.name}` }]);
+      setCallTranscript(prev => [...prev, { role: 'system', text: `Sharing: ${source.name}` }]);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       logger.error('[QuickActions] Screen share failed:', errMsg);
-      setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed: ${errMsg}` }]);
+      setCallTranscript(prev => [...prev, { role: 'system', text: `Screen share failed: ${errMsg}` }]);
     }
   };
 
@@ -824,7 +825,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         setCallVideoMode('camera');
         attachVideoStream();
         setTimeout(() => attachVideoStream(), 500);
-      } catch (_err) { setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Camera failed` }]); }
+      } catch (_err) { setCallTranscript(prev => [...prev, { role: 'system', text: `Camera failed` }]); }
     }
   };
 
@@ -905,10 +906,10 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           role: 'assistant', content: reply, timestamp: Date.now(),
         }).catch(() => {});
       } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
+        setChatMessages(prev => [...prev, { role: 'assistant', content: 'No response from agent' }]);
       }
     } catch (_err) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get response' }]);
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Failed to get response' }]);
     }
     setChatLoading(false);
   };
@@ -1029,7 +1030,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
-        <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-4`}>
+        <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium flex items-center gap-2">
               <MessageSquare size={16} className="text-mission-control-accent" />
@@ -1110,12 +1111,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <div>
                   <div className="text-sm font-semibold text-white">{activeCall.agentName}</div>
                   <div className="text-[11px] text-white/70">
-                    {callRinging ? '📞 Ringing...' : callSpeaking ? '🔊 Speaking' : callListening ? '🎤 Listening' : callConnected ? '✅ Connected' : '⏳ Connecting...'}
+                    {callRinging ? 'Ringing...' : callSpeaking ? 'Speaking' : callListening ? 'Listening' : callConnected ? 'Connected' : 'Connecting...'}
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
                   <span className="text-[10px] bg-success-subtle text-white px-2 py-0.5 rounded-full">
-                    {callVideoMode === 'screen' ? '🖥 Screen' : '📷 Camera'}
+                    {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
               </div>
@@ -1183,7 +1184,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
-        <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
+        <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium flex items-center gap-2">
               <MessageSquare size={14} className="text-mission-control-accent" />
@@ -1235,18 +1236,18 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             )}
             {chatMessages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-xl ${
+                <div className={`max-w-[85%] px-3 py-2 rounded-lg ${
                   msg.role === 'user'
                     ? 'bg-mission-control-accent text-white'
                     : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
-                  {msg.content}
+                  {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
                 </div>
               </div>
             ))}
             {chatLoading && chatMessages.length > 0 && (
               <div className="flex justify-start">
-                <div className="bg-mission-control-border/50 px-3 py-2 rounded-xl text-mission-control-text-dim">
+                <div className="bg-mission-control-border/50 px-3 py-2 rounded-lg text-mission-control-text-dim">
                   <span className="animate-pulse">●●●</span>
                 </div>
               </div>

@@ -540,7 +540,7 @@ ${skillData.instructions}
       aria-label="Close modal"
     >
       <div
-        className={`glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col ${
+        className={`glass-modal rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={e => e.stopPropagation()}
@@ -567,7 +567,7 @@ ${skillData.instructions}
           <div className="flex gap-2">
             <button
               onClick={() => setMode('suggest')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'suggest'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -579,7 +579,7 @@ ${skillData.instructions}
             </button>
             <button
               onClick={() => setMode('dialogue')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'dialogue'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -590,7 +590,7 @@ ${skillData.instructions}
             </button>
             <button
               onClick={() => setMode('manual')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
                 mode === 'manual'
                   ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
                   : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
@@ -607,7 +607,7 @@ ${skillData.instructions}
           {mode === 'suggest' ? (
             // Suggest Mode
             <div className="p-6 space-y-4 overflow-y-auto h-full">
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-4">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
                 <div className="flex items-start gap-3">
                   <Search className="text-mission-control-accent mt-1" size={20} />
                   <div>
@@ -629,7 +629,7 @@ ${skillData.instructions}
                   {suggestions.map((suggestion, idx) => (
                     <div
                       key={idx}
-                      className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/50 transition-all cursor-pointer group"
+                      className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent/50 transition-all cursor-pointer group"
                       onClick={() => handleSelectSuggestion(suggestion)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectSuggestion(suggestion); } }}
                       role="button"
@@ -736,7 +736,7 @@ ${skillData.instructions}
               {/* Extracted Skill Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-xl p-4">
+                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle size={16} className="text-mission-control-accent" />
                       <span className="font-semibold text-sm">Skill Ready!</span>
@@ -791,7 +791,7 @@ ${skillData.instructions}
           ) : (
             // Manual Mode
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="skill-name" className="block text-sm text-mission-control-text-dim mb-1">Skill Name *</label>
                   <input

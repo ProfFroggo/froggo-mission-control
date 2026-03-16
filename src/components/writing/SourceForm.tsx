@@ -59,7 +59,7 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
       <select
         value={type}
         onChange={(e) => setType(e.target.value as ResearchSource['type'])}
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
+        className="w-full px-2 py-1 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
       >
         {SOURCE_TYPES.map((t) => (
           <option key={t.value} value={t.value}>{t.label}</option>

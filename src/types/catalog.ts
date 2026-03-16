@@ -39,6 +39,7 @@ export interface CatalogModule {
   installed: boolean;
   enabled: boolean;             // only relevant when installed
   core: boolean;                // core modules cannot be uninstalled
+  configuration: Record<string, unknown>; // per-module config object
   createdAt: number;
   updatedAt: number;
 }
@@ -53,7 +54,7 @@ export interface CatalogAgentRow extends Omit<CatalogAgent, 'capabilities' | 're
   core: number;
 }
 
-export interface CatalogModuleRow extends Omit<CatalogModule, 'requiredAgents' | 'requiredNpm' | 'requiredApis' | 'requiredSkills' | 'requiredCli' | 'installed' | 'enabled' | 'core'> {
+export interface CatalogModuleRow extends Omit<CatalogModule, 'requiredAgents' | 'requiredNpm' | 'requiredApis' | 'requiredSkills' | 'requiredCli' | 'installed' | 'enabled' | 'core' | 'configuration'> {
   requiredAgents: string;
   requiredNpm: string;
   requiredApis: string;
@@ -62,6 +63,7 @@ export interface CatalogModuleRow extends Omit<CatalogModule, 'requiredAgents' |
   installed: number;
   enabled: number;
   core: number;
+  configuration: string | null;
 }
 
 // Helper to parse a raw DB row into a typed CatalogAgent
@@ -89,6 +91,7 @@ export function parseCatalogModule(row: CatalogModuleRow): CatalogModule {
     installed: row.installed === 1,
     enabled:   row.enabled   === 1,
     core:      row.core      === 1,
+    configuration: (() => { try { return JSON.parse(row.configuration || '{}'); } catch { return {}; } })(),
   };
 }
 

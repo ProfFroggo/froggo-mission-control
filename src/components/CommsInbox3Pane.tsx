@@ -11,7 +11,7 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
@@ -19,7 +19,9 @@ import {
   Reply, Send,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
   Activity as ActivityIcon, FileText, Code,
-  CalendarPlus, ListPlus, Bot
+  CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
+  Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
+  AtSign, ChevronUp, Trash2, Menu
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '../lib/gateway';
@@ -121,7 +123,7 @@ const SYSTEM_ACCOUNT: Account = {
   color: 'text-review',
 };
 
-const EMAIL_COLORS = ['text-warning', 'text-info', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
+const EMAIL_COLORS = ['text-warning', 'text-info', 'text-success', 'text-error', 'text-review'];
 
 // Build accounts from gateway channels + discovered email accounts
 function buildAccountsFromSources(
@@ -174,16 +176,77 @@ function buildAccountsFallback(): Account[] {
 }
 
 const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: () => true },
+  { id: 'inbox', label: 'All', icon: <Inbox size={16} />, filter: () => true },
   { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
-  { id: 'unreplied', label: 'Unreplied', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
   { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
+  { id: 'unreplied', label: 'Needs Reply', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
+  { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} />, filter: (m) => {
+    const kw = ['@you', '@me', 'mentioned you', 'tagged you'];
+    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
+  }},
   { id: 'urgent', label: 'Urgent', icon: <AlertTriangle size={16} />, filter: (m) => {
     const kw = ['urgent', 'asap', 'important', 'emergency', 'critical'];
     return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
   }},
   { id: 'archived', label: 'Archived', icon: <Archive size={16} />, filter: () => false }, // loaded separately
 ];
+
+// ─── Quick Reply Templates ─────────────────────────────────────────────────────
+
+const DEFAULT_TEMPLATES = [
+  "Thanks, I'll look into this.",
+  "On it — will update you shortly.",
+  "Approved. Please proceed.",
+  "This needs more context. Can you clarify?",
+  "Flagged for human review.",
+];
+
+function loadTemplates(): string[] {
+  try {
+    const raw = localStorage.getItem('inbox.reply-templates');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_TEMPLATES;
+}
+
+function saveTemplates(templates: string[]) {
+  try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch { /* ignore */ }
+}
+
+// ─── localStorage helpers for item state ──────────────────────────────────────
+
+function loadItemState(key: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(`inbox.${key}`);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch { /* ignore */ }
+  return new Set();
+}
+
+function saveItemState(key: string, set: Set<string>) {
+  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
+}
+
+function loadSnoozeMap(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem('inbox.snoozed');
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveSnoozeMap(map: Record<string, number>) {
+  try { localStorage.setItem('inbox.snoozed', JSON.stringify(map)); } catch { /* ignore */ }
+}
+
+// ─── Filter pill types ────────────────────────────────────────────────────────
+
+type SenderTypeFilter = 'all' | 'agent' | 'human' | 'system';
+type ChannelFilter = 'all' | 'discord' | 'telegram' | 'email' | 'chat';
+type TimeFilter = 'all' | 'today' | 'week';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -205,9 +268,9 @@ function platformIcon(platform: string, size: number) {
 
 // Triage badge colors
 const TRIAGE_COLORS: Record<string, string> = {
-  urgent: 'bg-red-500',
-  action: 'bg-orange-500',
-  fyi: 'bg-blue-500',
+  urgent: 'bg-error',
+  action: 'bg-warning',
+  fyi: 'bg-info',
   'no-reply': 'bg-mission-control-bg',
 };
 
@@ -268,6 +331,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
   const [showHtml, setShowHtml] = useState(true);
   const htmlMode = isHtmlEmail(body);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const isDark = document.documentElement.classList.contains('dark');
 
   // Auto-resize iframe to content height
   useEffect(() => {
@@ -294,31 +358,31 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
         <div className="px-4 py-3 border-b border-mission-control-border space-y-1">
           {metadata.from && (
             <div className="flex gap-2 text-sm">
-              <span className="text-mission-control-text-dim w-12 flex-shrink-0">From</span>
+              <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">From</span>
               <span className="font-medium">{metadata.from}</span>
             </div>
           )}
           {metadata.to && (
             <div className="flex gap-2 text-sm">
-              <span className="text-mission-control-text-dim w-12 flex-shrink-0">To</span>
+              <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">To</span>
               <span>{metadata.to}</span>
             </div>
           )}
           {metadata.cc && (
             <div className="flex gap-2 text-sm">
-              <span className="text-mission-control-text-dim w-12 flex-shrink-0">Cc</span>
+              <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Cc</span>
               <span className="text-mission-control-text-dim">{metadata.cc}</span>
             </div>
           )}
           {metadata.date && (
             <div className="flex gap-2 text-sm">
-              <span className="text-mission-control-text-dim w-12 flex-shrink-0">Date</span>
+              <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Date</span>
               <span className="text-mission-control-text-dim">{metadata.date}</span>
             </div>
           )}
           {metadata.subject && (
             <div className="flex gap-2 text-sm">
-              <span className="text-mission-control-text-dim w-12 flex-shrink-0">Subj</span>
+              <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Subject</span>
               <span className="font-semibold">{metadata.subject}</span>
             </div>
           )}
@@ -351,7 +415,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             srcDoc={sanitizeEmailHtml(body)}
             sandbox="allow-same-origin"
             className="w-full border-0 min-h-[200px] bg-mission-control-surface rounded"
-            style={{ colorScheme: 'light' }}
+            style={{ colorScheme: isDark ? 'dark' : 'light' }}
             title="Email content"
           />
         ) : (
@@ -389,7 +453,7 @@ function LeftPane({
   const [foldersExpanded, setFoldersExpanded] = useState(true);
 
   return (
-    <div className="w-56 flex-shrink-0 bg-mission-control-surface border-r border-mission-control-border flex flex-col overflow-y-auto">
+    <div className="w-80 flex flex-col">
       {/* All Messages */}
       <button
         onClick={() => { onSelectAccount(null); onSelectFolder('inbox'); }}
@@ -501,6 +565,7 @@ function CenterPane({
   onLoadMore,
   onLoadAll,
   aiAnalyses,
+  onMarkAllRead,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
@@ -519,6 +584,7 @@ function CenterPane({
   onLoadMore?: () => void;
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
+  onMarkAllRead?: () => void;
 }) {
   // Platform-specific empty states
   const emptyState = () => {
@@ -528,19 +594,32 @@ function CenterPane({
     return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
   };
 
+  const unreadCount = conversations.filter(c => !c.is_read).length;
+
   return (
-    <div className="w-[400px] flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
+    <div className="w-96 flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
-          <button
-            onClick={onRefresh}
-            disabled={loading || refreshing}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && onMarkAllRead && (
+              <button
+                onClick={onMarkAllRead}
+                title="Mark all as read"
+                className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs"
+              >
+                <CheckCheck size={14} />
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={loading || refreshing}
+              className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
         {/* Search */}
         <div className="relative">
@@ -559,11 +638,30 @@ function CenterPane({
       {/* Message List */}
       <div className="flex-1 overflow-y-auto">
         {loading && conversations.length === 0 ? (
-          <div className="text-center text-mission-control-text-dim py-12 text-sm">Loading messages...</div>
+          /* Skeleton loading rows */
+          <div className="divide-y divide-mission-control-border/30">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="px-3 py-3 animate-pulse">
+                <div className="flex items-start gap-2">
+                  <div className="mt-2 w-2 h-2 rounded-full bg-mission-control-border flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 bg-mission-control-border rounded w-28" />
+                      <div className="h-2 bg-mission-control-border rounded w-10 ml-auto" />
+                    </div>
+                    <div className="h-3 bg-mission-control-border rounded w-40" />
+                    <div className="h-2 bg-mission-control-border rounded w-full" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : conversations.length === 0 ? (
-          <div className="text-center text-mission-control-text-dim py-12">
-            {emptyState().icon}
-            <p className="text-sm">{emptyState().msg}</p>
+          /* Proper empty state */
+          <div className="flex flex-col items-center justify-center h-full min-h-[300px] px-4 text-center">
+            <CheckCircle size={32} className="text-mission-control-text-dim/30 mb-3" />
+            <p className="text-sm font-medium text-mission-control-text-dim">All caught up</p>
+            <p className="text-xs text-mission-control-text-dim/60 mt-1">No pending messages</p>
           </div>
         ) : (
           <>
@@ -577,7 +675,7 @@ function CenterPane({
                 className={`group w-full text-left px-3 py-2.5 border-b border-mission-control-border/30 border-l-2 transition-colors cursor-pointer ${
                   selectedId === conv.id
                     ? 'bg-mission-control-accent/10 border-l-mission-control-accent'
-                    : 'border-l-transparent hover:bg-mission-control-surface/50'
+                    : 'border-l-transparent hover:bg-mission-control-surface'
                 } ${!conv.is_read ? 'bg-mission-control-surface/30' : ''}`}
               >
                 <div className="flex items-start gap-2 overflow-hidden w-full">
@@ -615,8 +713,11 @@ function CenterPane({
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="text-[10px] text-info bg-info-subtle rounded px-1 py-0.5 font-medium" title="Unread messages">
-                          {conv.unread_count} unread
+                        <span
+                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold tabular-nums bg-warning text-white rounded-full flex-shrink-0"
+                          title={`${conv.unread_count} unread`}
+                        >
+                          {conv.unread_count > 99 ? '99+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
@@ -750,19 +851,19 @@ function InboxDashboard({
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold text-mission-control-accent">{unreadCount}</div>
+            <div className="text-2xl font-bold tabular-nums text-mission-control-accent">{unreadCount}</div>
             <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
             <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-2xl font-bold tabular-nums text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
             <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
-            <div className="text-2xl font-bold text-mission-control-text">{messages.length}</div>
+            <div className="text-2xl font-bold tabular-nums text-mission-control-text">{messages.length}</div>
             <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Total</div>
           </div>
         </div>
@@ -798,7 +899,7 @@ function InboxDashboard({
                   >
                     <div className="flex items-start gap-2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                        analysis?.triage === 'urgent' ? 'bg-red-500' : 'bg-orange-500'
+                        analysis?.triage === 'urgent' ? 'bg-error' : 'bg-warning'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
@@ -853,16 +954,16 @@ function InboxDashboard({
 
         {/* Empty state when no AI data yet */}
         {aiAnalyses.size === 0 && !analysisLoading && (
-          <div className="text-center py-8">
-            <Sparkles size={32} className="mx-auto mb-3 text-mission-control-text-dim/30" />
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <Sparkles size={32} className="mb-3 text-mission-control-text-dim/30" />
             <p className="text-sm text-mission-control-text-dim">AI is analyzing your messages...</p>
             <p className="text-[10px] text-mission-control-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
           </div>
         )}
 
         {analysisLoading && aiAnalyses.size === 0 && (
-          <div className="text-center py-8">
-            <Sparkles size={24} className="mx-auto mb-2 text-mission-control-accent animate-pulse" />
+          <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+            <Sparkles size={24} className="mb-2 text-mission-control-accent animate-pulse" />
             <p className="text-sm text-mission-control-text-dim">Analyzing your inbox...</p>
           </div>
         )}
@@ -1231,7 +1332,7 @@ function RightPane({
           <div className="space-y-4">
             {thread.map((msg, i) => (
               <div key={msg.id || i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
+                <div className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
                   msg.fromMe
                     ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
                     : 'bg-mission-control-surface border border-mission-control-border'
@@ -1253,7 +1354,7 @@ function RightPane({
         ) : conversation.platform === 'telegram' ? (
           /* Telegram empty state — show preview while thread loads */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border text-sky-400">
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border text-info">
               <Send size={14} />
               <span className="font-semibold text-sm text-mission-control-text">{conversation.name || conversation.from}</span>
             </div>
@@ -1457,6 +1558,7 @@ export default function CommsInbox3Pane() {
   // Dynamic accounts from gateway
   const [accounts, setAccounts] = useState<Account[]>(buildAccountsFallback);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Check Google auth status on mount (handles ?code= callback too)
   useEffect(() => {
@@ -1467,7 +1569,7 @@ export default function CommsInbox3Pane() {
       setGoogleAuth({ authenticated: false, checked: false });
       return;
     }
-    fetch('/api/google/auth/status')
+    fetch('/api/google/auth?action=status')
       .then(r => r.json())
       .then(data => setGoogleAuth({ authenticated: data.authenticated, email: data.email, checked: true }))
       .catch(() => setGoogleAuth({ authenticated: false, checked: true }));
@@ -1987,6 +2089,28 @@ export default function CommsInbox3Pane() {
     }
   };
 
+  // Mark all messages as read
+  const handleMarkAllRead = async () => {
+    try {
+      if (googleAuth.authenticated) {
+        // Best-effort: mark all visible messages read via Gmail API
+        await Promise.allSettled(
+          allMessages
+            .filter(m => m.platform === 'email' && !m.is_read)
+            .map(m => fetch(`/api/gmail/messages/${m.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ read: true }),
+            }))
+        );
+      } else {
+        await fetch('/api/inbox/mark-all-read', { method: 'PATCH' }).catch(() => {});
+      }
+      setAllMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+      showToast('success', 'All marked as read');
+    } catch (e) { /* ignore */ }
+  };
+
   // Toggle read/unread
   const handleToggleRead = async (conv: ConversationItem) => {
     const newReadState = !conv.is_read;
@@ -2112,17 +2236,48 @@ export default function CommsInbox3Pane() {
   const showGmailSetup = googleAuth.checked && !googleAuth.authenticated && allMessages.length === 0;
 
   return (
-    <div className="h-full flex overflow-hidden">
-      <LeftPane
-        selectedAccount={selectedAccount}
-        selectedFolder={selectedFolder}
-        onSelectAccount={setSelectedAccount}
-        onSelectFolder={setSelectedFolder}
-        accountCounts={accountCounts}
-        folderCounts={folderCounts}
-        accounts={accounts}
-        loadingAccounts={loadingAccounts}
-      />
+    <div className="h-full flex overflow-hidden relative">
+      {/* Mobile sidebar toggle */}
+      <button
+        onClick={() => setMobileSidebarOpen(true)}
+        className="md:hidden absolute top-3 left-3 z-30 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border transition-colors"
+        aria-label="Open sidebar"
+      >
+        <Menu size={16} />
+      </button>
+
+      {/* Mobile sidebar overlay */}
+      {mobileSidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-40 flex">
+          <div className="w-56 flex-shrink-0 bg-mission-control-surface border-r border-mission-control-border flex flex-col overflow-y-auto">
+            <LeftPane
+              selectedAccount={selectedAccount}
+              selectedFolder={selectedFolder}
+              onSelectAccount={(id) => { setSelectedAccount(id); setMobileSidebarOpen(false); }}
+              onSelectFolder={(id) => { setSelectedFolder(id); setMobileSidebarOpen(false); }}
+              accountCounts={accountCounts}
+              folderCounts={folderCounts}
+              accounts={accounts}
+              loadingAccounts={loadingAccounts}
+            />
+          </div>
+          <div className="flex-1 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div className="hidden bg-mission-control-surface border-r border-mission-control-border md:block">
+        <LeftPane
+          selectedAccount={selectedAccount}
+          selectedFolder={selectedFolder}
+          onSelectAccount={setSelectedAccount}
+          onSelectFolder={setSelectedFolder}
+          accountCounts={accountCounts}
+          folderCounts={folderCounts}
+          accounts={accounts}
+          loadingAccounts={loadingAccounts}
+        />
+      </div>
 
       {/* If not authenticated and no messages, show Gmail connect prompt in center+right */}
       {showGmailSetup ? (
@@ -2151,6 +2306,7 @@ export default function CommsInbox3Pane() {
             onLoadMore={handleLoadMore}
             onLoadAll={handleLoadAll}
             aiAnalyses={aiAnalyses}
+            onMarkAllRead={handleMarkAllRead}
           />
           <RightPane
             conversation={selectedConversation}

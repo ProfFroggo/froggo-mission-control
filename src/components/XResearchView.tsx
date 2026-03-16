@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Loader2, Check, Send } from 'lucide-react';
+import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Loader2, Check, Send, Lightbulb } from 'lucide-react';
 import { Spinner } from './LoadingStates';
+import { scheduleApi } from '../lib/api';
+import { showToast } from './Toast';
 
 interface ResearchResult {
   id: string;
@@ -133,6 +135,23 @@ export function XResearchView() {
     setSearched(true);
   };
 
+  const saveAsIdea = async (result: ResearchResult) => {
+    const content = result.content || result.url || '';
+    if (!content) return;
+    try {
+      await scheduleApi.create({
+        type: 'idea',
+        content: `[Research] ${content}`,
+        platform: 'twitter',
+        status: 'idea',
+        metadata: JSON.stringify({ source: result.url, author: result.username, savedFrom: 'research' }),
+      });
+      showToast('success', 'Saved as idea');
+    } catch {
+      showToast('error', 'Failed to save idea');
+    }
+  };
+
   const formatNumber = (num: number | undefined) => {
     if (!num) return '-';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -233,7 +252,7 @@ export function XResearchView() {
                 {savedItems.map((saved) => (
                   <div
                     key={saved.id}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -307,7 +326,7 @@ export function XResearchView() {
           <div className="space-y-4">
             {/* Selection Actions */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center justify-between bg-mission-control-surface border border-mission-control-accent/50 rounded-xl p-3">
+              <div className="flex items-center justify-between bg-mission-control-surface border border-mission-control-accent/50 rounded-lg p-3">
                 <span className="text-sm text-mission-control-text">
                   <Check size={16} className="inline mr-1" />
                   {selectedIds.size} selected
@@ -329,7 +348,7 @@ export function XResearchView() {
                   key={result.id}
                   role="button"
                   tabIndex={0}
-                  className={`bg-mission-control-surface border rounded-xl p-4 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
+                  className={`bg-mission-control-surface border rounded-lg p-4 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
                     selectedIds.has(result.id)
                       ? 'border-mission-control-accent bg-mission-control-accent/5'
                       : 'border-mission-control-border'
@@ -381,16 +400,16 @@ export function XResearchView() {
                             </span>
                           )}
                           {result.likes !== undefined && (
-                            <span>❤️ {formatNumber(result.likes)}</span>
+                            <span>{formatNumber(result.likes)} likes</span>
                           )}
                           {result.retweets !== undefined && (
-                            <span>🔁 {formatNumber(result.retweets)}</span>
+                            <span>{formatNumber(result.retweets)} RT</span>
                           )}
                           {result.replies !== undefined && (
-                            <span>💬 {formatNumber(result.replies)}</span>
+                            <span>{formatNumber(result.replies)} replies</span>
                           )}
                           {result.impressions !== undefined && (
-                            <span>👁️ {formatNumber(result.impressions)}</span>
+                            <span>{formatNumber(result.impressions)} views</span>
                           )}
                         </div>
                       )}
@@ -407,22 +426,32 @@ export function XResearchView() {
                         </div>
                       )}
 
-                      {/* Date & Link */}
+                      {/* Date & Link & Save as Idea */}
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-mission-control-border">
                         <span className="text-xs text-mission-control-text-dim">
                           {result.date && new Date(result.date).toLocaleDateString()}
                         </span>
-                        {result.url && (
-                          <a
-                            href={result.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-info hover:underline flex items-center gap-1"
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); saveAsIdea(result); }}
+                            className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-info transition-colors"
+                            title="Save as idea draft"
                           >
-                            View on X <ExternalLink size={10} />
-                          </a>
-                        )}
+                            <Lightbulb size={12} />
+                            Save as Idea
+                          </button>
+                          {result.url && (
+                            <a
+                              href={result.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-info hover:underline flex items-center gap-1"
+                            >
+                              View on X <ExternalLink size={10} />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

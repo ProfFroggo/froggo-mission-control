@@ -40,12 +40,16 @@ export async function POST(request: NextRequest) {
     const id  = `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const now = Date.now();
 
+    const scheduledAtMs = new Date(scheduledAt).getTime();
+    const scheduledForStr = new Date(scheduledAt).toISOString();
     db.prepare(`
-      INSERT INTO scheduled_items (id, title, description, type, scheduledAt, duration, attendees, status, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?)
+      INSERT INTO scheduled_items (id, title, description, type, content, scheduledFor, scheduledAt, duration, attendees, status, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?)
     `).run(
-      id, title, description ?? null, type,
-      new Date(scheduledAt).getTime(),
+      id, title, description ?? '', type,
+      description || title,
+      scheduledForStr,
+      scheduledAtMs,
       duration ?? 60,
       attendees ? JSON.stringify(attendees) : null,
       now, now

@@ -27,10 +27,10 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   const loadFiles = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/training-logs');
+      const res = await fetch('/api/training-logs?type=reports');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: ReportFile[] = await res.json();
-      setFiles(data);
+      setFiles(data.filter(f => f.type === 'weekly-report'));
       if (data.length > 0 && !selectedFile) {
         loadFileContent(data[0]);
       }
@@ -107,7 +107,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
               onClick={() => loadFileContent(file)}
               className={`w-full text-left p-3 rounded-lg border transition-all ${
                 selectedFile?.name === file.name
-                  ? 'border-teal-500/50 bg-teal-500/10'
+                  ? 'border-mission-control-accent/50 bg-mission-control-accent/10'
                   : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
               }`}
             >
@@ -132,8 +132,8 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center ring-2 ring-teal-500/30">
-              <FileText size={20} className="text-teal-400" />
+            <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center ring-2 ring-mission-control-accent/30">
+              <FileText size={20} className="text-mission-control-accent" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">HR Reports</h2>
@@ -154,7 +154,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             {selectedFile && fileContent && (
               <button
                 onClick={downloadReport}
-                className="flex items-center gap-2 px-3 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
               >
                 <Download size={16} />
                 Download

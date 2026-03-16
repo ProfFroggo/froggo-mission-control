@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -12,6 +12,8 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
 import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
+import MessageReactions from './MessageReactions';
+import RoomSettingsPanel, { useRoomNotifSetting } from './RoomSettingsPanel';
 
 interface AttachedFile {
   id: string;
@@ -38,7 +40,7 @@ function formatToolName(name: string): string {
 }
 
 export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideHeader = false }: ChatRoomViewProps) {
-  const { rooms, addMessage, updateMessage, updateRoomAgents, deleteRoom, loadMessages } = useChatRoomStore();
+  const { rooms, addMessage, updateMessage, updateRoomAgents, updateRoom, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
@@ -91,12 +93,70 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   // Pending tool permission requests — keyed by approvalId
   const [pendingPermissions, setPendingPermissions] = useState<Map<string, ToolPermissionRequest & { msgId: string }>>(new Map());
 
+  // --- Chat Rooms v2 features ---
+  const [presenceUsers, setPresenceUsers] = useState<Array<{ id: string; name: string; avatar?: string; joinedAt: number }>>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMatchIdx, setSearchMatchIdx] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchMatchIdsRef = useRef<string[]>([]);
+  const [replyToMsg, setReplyToMsg] = useState<RoomMessage | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [,] = useRoomNotifSetting(roomId);
+
   // Load message history from DB when opening a room (only if empty)
   useEffect(() => {
     if (room && room.messages.length === 0) {
       loadMessages(roomId);
     }
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Presence: join on mount, leave on unmount
+  useEffect(() => {
+    fetch('/api/chat/presence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'join', roomId, userId: 'user', name: 'You' }),
+    }).then(r => r.json()).then(d => setPresenceUsers(d.users ?? [])).catch(() => {});
+    return () => {
+      fetch('/api/chat/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'leave', roomId, userId: 'user' }),
+      }).catch(() => {});
+    };
+  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Search: focus input on show
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus();
+  }, [showSearch]);
+
+  // Keyboard: Cmd+F → toggle search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(v => !v);
+      }
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false);
+        setSearchQuery('');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showSearch]);
+
+  // Scroll to current search match
+  useEffect(() => {
+    const ids = searchMatchIdsRef.current;
+    if (!ids.length) return;
+    const msgId = ids[searchMatchIdx];
+    if (!msgId) return;
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [searchMatchIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch in-progress task status for room agents
   useEffect(() => {
@@ -516,10 +576,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       role: 'user',
       content: displayContent,
       timestamp: Date.now(),
+      parentId: replyToMsg?.id,
     };
     addMessage(roomId, userMsg);
     setInput('');
     setAttachments([]);
+    setReplyToMsg(null);
 
     // Determine which agents to address
     // When no @mention, only route to mission-control (orchestrator) to avoid waking all agents
@@ -583,6 +645,21 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     );
   }
 
+  // Compute search match IDs (plain array — not a hook, safe after early return)
+  const searchMatchIds = (() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return room.messages
+      .filter(m => m.content?.toLowerCase().includes(q))
+      .map(m => m.id);
+  })();
+  searchMatchIdsRef.current = searchMatchIds;
+
+  // Pinned message reference
+  const pinnedMessage = room.pinnedMessageId
+    ? room.messages.find(m => m.id === room.pinnedMessageId) ?? null
+    : null;
+
   // Build filtered agents list with @all option
   const agentMatches = room.agents.filter(id => {
     const name = agentName(id);
@@ -604,10 +681,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        {!hideHeader && <div className={`p-4 border-b flex items-center gap-3 ${
+        {!hideHeader && <div className={`p-4 border-b border-mission-control-border flex items-center gap-3 ${
           isTeamMeeting
             ? 'bg-warning/10 border-amber-500/30'
-            : 'bg-mission-control-surface border-mission-control-border'
+            : 'bg-mission-control-surface'
         }`}>
         <button
           onClick={onBack}
@@ -630,7 +707,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           )}
           <div>
             <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-amber-500' : ''}`}>
-              {isTeamMeeting && '🏢 '}{room.name}
+              {room.name}
             </h2>
             <p className="text-xs text-mission-control-text-dim">
               {isTeamMeeting
@@ -656,7 +733,49 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
+        {/* Presence avatar stack */}
+        {presenceUsers.length > 0 && (
+          <div className="hidden sm:flex items-center ml-2">
+            <div className="flex -space-x-2">
+              {presenceUsers.slice(0, 3).map(u => (
+                <div
+                  key={u.id}
+                  title={u.name}
+                  className="w-6 h-6 rounded-full bg-success flex items-center justify-center text-white text-xs font-semibold border-2 border-mission-control-surface ring-0"
+                >
+                  {u.name.charAt(0).toUpperCase()}
+                </div>
+              ))}
+              {presenceUsers.length > 3 && (
+                <div className="w-6 h-6 rounded-full bg-mission-control-border flex items-center justify-center text-xs font-semibold border-2 border-mission-control-surface text-mission-control-text-dim">
+                  +{presenceUsers.length - 3}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-2">
+          {/* Search toggle */}
+          <button
+            onClick={() => { setShowSearch(v => !v); if (showSearch) setSearchQuery(''); }}
+            className={`p-2 rounded-lg transition-colors ${
+              showSearch
+                ? 'bg-mission-control-accent/15 text-mission-control-accent ring-1 ring-mission-control-accent/30'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
+            }`}
+            title="Search messages (Cmd+F)"
+          >
+            <Search size={16} />
+          </button>
+          {/* Settings */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            title="Room settings"
+          >
+            <Settings size={16} />
+          </button>
           {/* Stop / Resume toggle */}
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
             <button
@@ -721,6 +840,68 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         </div>
       </div>}
 
+      {/* Search bar */}
+      {showSearch && (
+        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-2">
+          <Search size={14} className="text-mission-control-text-dim shrink-0" />
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setSearchMatchIdx(0); }}
+            placeholder="Search messages..."
+            className="flex-1 bg-transparent text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none"
+          />
+          {searchMatchIds.length > 0 && (
+            <>
+              <span className="text-xs text-mission-control-text-dim shrink-0">
+                {searchMatchIdx + 1}/{searchMatchIds.length}
+              </span>
+              <button
+                onClick={() => setSearchMatchIdx(i => (i - 1 + searchMatchIds.length) % searchMatchIds.length)}
+                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+                title="Previous match"
+              >
+                <ChevronDown size={14} className="rotate-180" />
+              </button>
+              <button
+                onClick={() => setSearchMatchIdx(i => (i + 1) % searchMatchIds.length)}
+                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+                title="Next match"
+              >
+                <ChevronDown size={14} />
+              </button>
+            </>
+          )}
+          {searchQuery && searchMatchIds.length === 0 && (
+            <span className="text-xs text-mission-control-text-dim shrink-0">No results</span>
+          )}
+          <button
+            onClick={() => { setShowSearch(false); setSearchQuery(''); }}
+            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            title="Close search"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Pinned message banner */}
+      {pinnedMessage && (
+        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface/80 flex items-center gap-2 text-xs">
+          <Pin size={12} className="text-mission-control-accent shrink-0" />
+          <span className="text-mission-control-text-dim truncate flex-1">{pinnedMessage.content.slice(0, 120)}</span>
+          <button
+            onClick={() => {
+              const el = document.getElementById(`msg-${pinnedMessage.id}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+            className="text-mission-control-accent hover:underline shrink-0"
+          >
+            Jump
+          </button>
+        </div>
+      )}
+
       {/* Voice Meeting Mode */}
       {voiceMode ? (
         <TeamVoiceMeeting roomId={roomId} onEndVoice={() => setVoiceMode(false)} />
@@ -729,13 +910,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {room.messages.length === 0 ? (
-          <div className="text-center py-16 text-mission-control-text-dim">
+          <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-mission-control-text-dim">
             {isTeamMeeting ? (
               <>
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
                   <UsersRound size={40} className="text-amber-500" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started 🏢</p>
+                <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started</p>
                 <p className="text-sm mb-4">
                   All {room.agents.length} agents are present and ready.
                 </p>
@@ -765,12 +946,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               </>
             ) : (
               <>
-                <Users size={48} className="mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-2">Room Created!</p>
-                <p className="text-sm mb-4">
+                <Users size={48} className="mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">Room Created</p>
+                <p className="text-sm mb-4 text-center">
                   Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
-                <p className="text-xs">
+                <p className="text-xs text-center">
                   Use <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
                   or <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
@@ -794,8 +975,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             // Collect any pending permission requests for this message
             const msgPermissions = [...pendingPermissions.values()].filter(p => p.msgId === msg.id);
 
+            const isSearchMatch = searchQuery.trim() && searchMatchIds.includes(msg.id);
+            const isCurrentMatch = isSearchMatch && searchMatchIds[searchMatchIdx] === msg.id;
+            const parentMsg = msg.parentId ? room.messages.find(m => m.id === msg.parentId) : null;
+
             return (
-              <div key={msg.id}>
+              <div
+                key={msg.id}
+                id={`msg-${msg.id}`}
+                className={`group ${msg.parentId ? 'ml-8 border-l-2 border-mission-control-border pl-3' : ''} ${isCurrentMatch ? 'ring-1 ring-mission-control-accent/50 rounded-lg' : ''}`}
+              >
+              {/* Thread parent reference */}
+              {parentMsg && (
+                <div className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1 opacity-70">
+                  <Reply size={11} className="rotate-180" />
+                  <span className="truncate max-w-xs">{parentMsg.content.slice(0, 60)}</span>
+                </div>
+              )}
               <div
                 className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${showAvatar ? 'mt-4' : 'mt-1'}`}
               >
@@ -811,7 +1007,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 </div>
 
                 {/* Content */}
-                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] min-w-[100px]`}>
+                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%] min-w-[100px]`}>
                   {showAvatar && (
                     <div className={`text-xs font-medium mb-1 px-1 ${
                       isUser ? 'text-mission-control-accent' : (theme?.text || 'text-mission-control-text-dim')
@@ -820,7 +1016,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     </div>
                   )}
                   <div
-                    className={`px-4 py-3 rounded-2xl ${
+                    className={`px-4 py-3 rounded-2xl break-words ${
                       isUser
                         ? 'bg-mission-control-accent text-white rounded-tr-sm'
                         : `bg-mission-control-surface/90 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm shadow-sm`
@@ -860,6 +1056,31 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     )}
                   </div>
                   <span className="text-xs text-mission-control-text-dim mt-1 px-1">{time}</span>
+                  {/* Hover action buttons */}
+                  <div className={`flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
+                    <button
+                      onClick={() => setReplyToMsg(msg)}
+                      title="Reply in thread"
+                      className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                    >
+                      <Reply size={13} />
+                    </button>
+                    <button
+                      onClick={() => updateRoom(roomId, {
+                        pinnedMessageId: room.pinnedMessageId === msg.id ? undefined : msg.id,
+                      })}
+                      title={room.pinnedMessageId === msg.id ? 'Unpin' : 'Pin message'}
+                      className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
+                        room.pinnedMessageId === msg.id
+                          ? 'text-mission-control-accent'
+                          : 'text-mission-control-text-dim hover:text-mission-control-text'
+                      }`}
+                    >
+                      <Pin size={13} />
+                    </button>
+                  </div>
+                  {/* Reactions */}
+                  <MessageReactions messageId={msg.id} isUser={isUser} />
                 </div>
               </div>
               {/* Tool permission cards for this message */}
@@ -978,9 +1199,25 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
+        {/* Reply-to banner */}
+        {replyToMsg && (
+          <div className="mb-2 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg flex items-center gap-2 text-xs">
+            <Reply size={12} className="text-mission-control-accent shrink-0" />
+            <span className="text-mission-control-text-dim truncate flex-1">
+              Replying to: {replyToMsg.content.slice(0, 80)}
+            </span>
+            <button
+              onClick={() => setReplyToMsg(null)}
+              className="text-mission-control-text-dim hover:text-mission-control-text shrink-0"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {/* @ Mention autocomplete */}
         {showMentions && filteredAgents.length > 0 && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute bottom-full left-4 right-4 mb-2 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl overflow-hidden">
             {filteredAgents.map(id => {
               // Special case for @all
               if (id === 'all') {
@@ -1019,14 +1256,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         <div className="flex items-center gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-xl bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors self-stretch flex items-center"
+            className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors self-stretch flex items-center"
             title="Attach file"
           >
             <Paperclip size={20} />
           </button>
           <button
             onClick={() => setShowMentions(!showMentions)}
-            className={`p-3 rounded-xl transition-all self-stretch flex items-center ${
+            className={`p-3 rounded-lg transition-all self-stretch flex items-center ${
               showMentions ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title="Mention an agent"
@@ -1042,14 +1279,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               onKeyDown={handleKeyDown}
               placeholder={`Message the room... (use @name to mention)`}
               rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
             />
           </div>
 
           <button
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
+            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
           >
             <Send size={20} />
           </button>
@@ -1090,7 +1327,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                         : [...room.agents, agent.id];
                       if (updated.length > 0) updateRoomAgents(roomId, updated);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       inRoom ? 'bg-mission-control-accent/10 ring-1 ring-mission-control-accent/30' : 'hover:bg-mission-control-bg'
                     }`}
                   >
@@ -1123,8 +1360,25 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
+
+      {/* Room Settings Panel */}
+      {showSettings && (
+        <RoomSettingsPanel
+          room={room}
+          onClose={() => setShowSettings(false)}
+          onLeave={() => {
+            setShowSettings(false);
+            deleteRoom(room.id);
+            onBack();
+          }}
+          onSave={async (updates) => {
+            await updateRoom(roomId, updates);
+          }}
+          onUnpin={() => updateRoom(roomId, { pinnedMessageId: undefined })}
+        />
+      )}
       </div>
-      
+
       {/* Artifact Panel */}
       <ArtifactPanel sessionId={roomId} />
     </div>

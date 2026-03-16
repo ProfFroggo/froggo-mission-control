@@ -219,7 +219,7 @@ function QuickProjectionTab() {
       {result && (
         <div className="grid grid-cols-3 gap-3 mt-4">
           {/* Before */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
             <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Before</p>
             <p className="text-lg font-bold text-mission-control-text">
               {formatCurrency(result.before.monthly)}
@@ -231,7 +231,7 @@ function QuickProjectionTab() {
           </div>
 
           {/* After */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
             <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">After</p>
             <p className="text-lg font-bold text-mission-control-text">
               {formatCurrency(result.after.monthly)}
@@ -244,7 +244,7 @@ function QuickProjectionTab() {
 
           {/* Savings */}
           <div
-            className={`rounded-xl p-4 border ${
+            className={`rounded-lg p-4 border ${
               result.savings.monthly >= 0
                 ? 'bg-success/10 border-success/30'
                 : 'bg-error/10 border-error/30'
@@ -441,7 +441,7 @@ function ScenarioBuilderTab() {
 
       {/* Comparison chart */}
       {compareMode && comparisonChartData.length > 0 && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <h4 className="text-sm font-semibold text-mission-control-text mb-3">Scenario Comparison</h4>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -500,7 +500,7 @@ function ScenarioBuilderTab() {
             const months = projectionData[scenario.id];
             const color = SCENARIO_COLORS[idx % SCENARIO_COLORS.length];
             return (
-              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h4 className="font-semibold text-mission-control-text">{scenario.name}</h4>
@@ -617,7 +617,7 @@ function ScenarioBuilderTab() {
 
       {/* New scenario form */}
       {showForm && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-4">
           <h4 className="font-semibold text-mission-control-text">New Scenario</h4>
 
           {/* Name */}
@@ -654,7 +654,7 @@ function ScenarioBuilderTab() {
                 id="scenario-account"
                 value={form.baseAccountId}
                 onChange={(e) => setForm((f) => ({ ...f, baseAccountId: e.target.value }))}
-                className="w-full bg-mission-control-bg-alt border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
               >
                 <option value="">None (delta mode)</option>
                 {accounts.map((a) => (
@@ -856,7 +856,7 @@ function ScenarioBuilderTab() {
                       return { ...f, eventRows: next };
                     })
                   }
-                  className="w-32 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  className="w-32 px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={() =>
@@ -913,7 +913,7 @@ export default function FinanceScenarioPanel() {
   ];
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
       {/* Tab strip */}
       <div className="flex items-center gap-1 mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (

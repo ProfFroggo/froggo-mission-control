@@ -108,7 +108,7 @@ export default function AgentUtilizationChart() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <Award size={16} className="text-warning" />
             Top Performer
@@ -122,11 +122,11 @@ export default function AgentUtilizationChart() {
             </div>
           )}
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Total Tasks</div>
           <div className="text-2xl font-bold text-info">{totalTasks}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
             <Clock size={16} className="text-warning" />
             Total Hours
@@ -185,6 +185,7 @@ export default function AgentUtilizationChart() {
 
       {/* Agent Details Table */}
       <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-mission-control-bg border-b border-mission-control-border">
             <tr>
@@ -233,6 +234,7 @@ export default function AgentUtilizationChart() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

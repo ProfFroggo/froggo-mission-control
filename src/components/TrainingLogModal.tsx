@@ -31,10 +31,9 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
   const loadFiles = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/training-logs');
+      const res = await fetch('/api/training-logs?type=training');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: TrainingLogFile[] = await res.json();
-      const logs = data.filter((f) => f.type === 'training-log');
+      const logs: TrainingLogFile[] = await res.json();
       setFiles(logs);
       if (logs.length > 0) {
         loadFileContent(logs[0]);
@@ -90,7 +89,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <BookOpen size={20} className="text-teal-400" />
+          <BookOpen size={20} className="text-mission-control-accent" />
           <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
           <button
             onClick={handleClose}
@@ -117,7 +116,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
                   onClick={() => loadFileContent(file)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedFile?.name === file.name
-                      ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30'
+                      ? 'bg-mission-control-accent/15 text-mission-control-accent border border-mission-control-accent/30'
                       : 'text-mission-control-text-dim hover:bg-mission-control-surface hover:text-mission-control-text border border-transparent'
                   }`}
                 >

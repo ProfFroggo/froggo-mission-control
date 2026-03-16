@@ -404,7 +404,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     return (
                       <div 
                         key={task.id} 
-                        className="group p-4 hover:bg-mission-control-bg/30 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
+                        className="group p-4 hover:bg-mission-control-border/40 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
                         onClick={() => onNavigate?.('kanban')}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate?.('kanban'); } }}
                         role="button"
@@ -475,7 +475,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             </div>
 
             {/* Weather & Quick Stats side-by-side */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
                 <WeatherWidget />
               </div>
@@ -493,7 +493,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
           >
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-review-border">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-review-border">
                 <Users size={24} className="text-review" />
               </div>
               
@@ -536,7 +536,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         <SessionCardSkeleton />
                       </>
                     ) : sessions.length === 0 ? (
-                      <p className="text-sm text-mission-control-text-dim text-center py-8">No active sessions</p>
+                      <div className="flex flex-col items-center justify-center min-h-[200px] text-mission-control-text-dim">
+                        <Activity size={32} className="mb-3 opacity-40" />
+                        <p className="text-sm font-medium mb-1">No active sessions</p>
+                        <p className="text-xs">Sessions will appear here when agents are working</p>
+                      </div>
                     ) : (
                       sessions.slice(0, 6).map((s: any) => {
                         const isActive = Date.now() - (s.updatedAt || 0) < 300000;

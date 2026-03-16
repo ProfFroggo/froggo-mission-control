@@ -19,7 +19,18 @@
  *       expr?: string,        // cron (5-field: min hour dom month dow)
  *     },
  *     sessionTarget: string,  // agent id | 'isolated' | 'main'
- *     payload: { message: string, model?: string },
+ *     payload: { kind?: 'task'|'message', message: string, model?: string },
+ *     taskTemplate?: {                   // When set, cron creates a task instead of messaging agent
+ *       title: string,                   // Supports {date} placeholder
+ *       description?: string,
+ *       planningNotes?: string,          // Agent instructions / acceptance criteria
+ *       assignTo?: string,              // Agent ID to assign
+ *       priority?: string,              // p0, p1, p2, p3
+ *       project?: string,
+ *       project_id?: string,
+ *       tags?: string[],
+ *       subtasks?: Array<string | { title: string, description?: string, assignedTo?: string }>,
+ *     },
  *     state: { lastRunAtMs?: number, nextRunAtMs?: number, runningAtMs?: number },
  *   }
  *
@@ -248,6 +259,143 @@ async function runApiJob(job) {
   });
 }
 
+// ── Task-based job execution ──────────────────────────────────────────────────
+// Instead of messaging an agent directly, create a proper task in the pipeline.
+// The task goes through: todo → Clara review → agent assigned → in-progress → done
+
+async function runTaskJob(job) {
+  const template = job.taskTemplate || {};
+  const payload = job.payload || {};
+  const rawTarget = job.sessionTarget || 'mission-control';
+  const agentId = GENERIC_TARGETS.has(rawTarget) ? null : rawTarget;
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Build task title — support {date} placeholder
+  const title = (template.title || job.name || 'Scheduled Task')
+    .replace(/\{date\}/g, dateStr);
+
+  // Build planning notes from the cron message + template description
+  const planningNotes = [
+    template.planningNotes || payload.message || '',
+    template.description ? `\n\nContext: ${template.description}` : '',
+  ].join('').trim() || `Scheduled cron job: ${job.name}`;
+
+  // Subtasks from template
+  const subtasks = template.subtasks || [];
+
+  const taskBody = {
+    title,
+    description: template.description || `Recurring scheduled task: ${job.name}`,
+    status: 'todo',
+    priority: template.priority || 'p2',
+    assignedTo: template.assignTo || agentId || null,
+    tags: template.tags || ['scheduled', 'cron'],
+    planningNotes,
+    project: template.project || null,
+    project_id: template.project_id || null,
+  };
+
+  log(`Creating task for cron job "${job.name}" → "${title}" assigned=${taskBody.assignedTo}`);
+
+  return new Promise((resolve) => {
+    const body = JSON.stringify(taskBody);
+    const req = http.request({
+      host: '127.0.0.1',
+      port: 3000,
+      path: '/api/tasks',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk.toString(); });
+      res.on('end', () => {
+        try {
+          const task = JSON.parse(data);
+          if (task.id) {
+            log(`[${job.id}] Task created: ${task.id} — "${title}"`);
+
+            // Create subtasks if template defines them
+            if (subtasks.length > 0) {
+              let created = 0;
+              for (const st of subtasks) {
+                const stBody = JSON.stringify({
+                  title: typeof st === 'string' ? st : st.title,
+                  description: typeof st === 'string' ? null : (st.description || null),
+                  assignedTo: typeof st === 'string' ? null : (st.assignedTo || null),
+                });
+                const stReq = http.request({
+                  host: '127.0.0.1',
+                  port: 3000,
+                  path: `/api/tasks/${task.id}/subtasks`,
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(stBody),
+                  },
+                }, (stRes) => {
+                  let stData = '';
+                  stRes.on('data', c => { stData += c; });
+                  stRes.on('end', () => {
+                    created++;
+                    if (created === subtasks.length) {
+                      log(`[${job.id}] ${created} subtasks created for ${task.id}`);
+                    }
+                  });
+                });
+                stReq.on('error', () => {});
+                stReq.write(stBody);
+                stReq.end();
+              }
+            }
+
+            // Log activity
+            const actBody = JSON.stringify({
+              agentId: 'system',
+              action: 'created',
+              message: `Cron job "${job.name}" created task: ${title}`,
+            });
+            const actReq = http.request({
+              host: '127.0.0.1',
+              port: 3000,
+              path: `/api/tasks/${task.id}/activity`,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(actBody),
+              },
+            }, () => {});
+            actReq.on('error', () => {});
+            actReq.write(actBody);
+            actReq.end();
+          } else {
+            log(`[${job.id}] Task creation failed: ${data}`);
+          }
+        } catch (e) {
+          log(`[${job.id}] Task creation parse error: ${e.message}`);
+        }
+        resolve();
+      });
+    });
+
+    req.on('error', err => {
+      log(`[${job.id}] Task creation request error: ${err.message}`);
+      resolve();
+    });
+
+    req.setTimeout(30_000, () => {
+      log(`[${job.id}] Task creation timed out`);
+      req.destroy();
+      resolve();
+    });
+
+    req.write(body);
+    req.end();
+  });
+}
+
 function runLegacyJob(job) {
   log(`Running legacy job ${job.id}: ${job.command}`);
   const proc = spawn('bash', ['-c', job.command], {
@@ -329,11 +477,17 @@ function checkJobs() {
     if (!job.enabled) return job;
 
     if (isDue(job, now)) {
-      runApiJob(job).catch(e => {
+      // Route to task creation or direct agent messaging
+      const execFn = (job.taskTemplate || (job.payload && job.payload.kind === 'task'))
+        ? runTaskJob
+        : runApiJob;
+      const startedAt = Date.now();
+      execFn(job).then(() => {
+        logRunToDb(job.id, 'success', `Job "${job.name}" completed`, startedAt);
+      }).catch(e => {
         log(`[${job.id}] runApiJob error: ${e.message}`);
-        // Phase 85: log to cron-errors.log for observability
+        logRunToDb(job.id, 'failed', e.message, startedAt);
         try {
-          const fs = require('fs');
           const errLogPath = path.join(HOME, 'mission-control', 'cron-errors.log');
           fs.appendFileSync(errLogPath, `${new Date().toISOString()} Job ${job.id} failed: ${e.message}\n`);
         } catch { /* non-critical */ }
@@ -366,6 +520,24 @@ function getDb() {
     _db = new Database(DB_PATH, { fileMustExist: true });
     return _db;
   } catch { return null; }
+}
+
+/** Log cron execution to automation_runs table */
+function logRunToDb(jobId, status, message, startedAt) {
+  try {
+    const db = getDb();
+    if (!db) return;
+    const id = `run-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    db.prepare(
+      `INSERT INTO automation_runs (id, automationId, status, message, startedAt, completedAt) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(id, jobId, status, (message || '').slice(0, 500), startedAt, Date.now());
+    // Keep last 100 runs per job
+    db.prepare(
+      `DELETE FROM automation_runs WHERE automationId = ? AND id NOT IN (SELECT id FROM automation_runs WHERE automationId = ? ORDER BY startedAt DESC LIMIT 100)`
+    ).run(jobId, jobId);
+    // Also update automations table last_run if matching
+    db.prepare(`UPDATE automations SET last_run = ?, updated_at = ? WHERE id = ?`).run(Date.now(), Date.now(), jobId);
+  } catch { /* non-critical */ }
 }
 
 function postToRoom(roomId, content) {
@@ -420,6 +592,78 @@ async function checkStuckTasks() {
   }
 }
 
+// ── Scheduled items processing ───────────────────────────────────────────────
+// Processes pending items from the scheduled_items table at their scheduled time.
+
+async function processScheduledItems() {
+  const database = getDb();
+  if (!database) return;
+
+  try {
+    const now = Date.now();
+    const nowIso = new Date().toISOString();
+
+    // Find pending items where scheduledFor <= now
+    // scheduledFor can be ISO string or unix timestamp
+    const pending = database.prepare(
+      `SELECT * FROM scheduled_items WHERE status = 'pending' AND (
+        (typeof(scheduledFor) = 'text' AND scheduledFor <= ?) OR
+        (typeof(scheduledFor) = 'integer' AND scheduledFor <= ?) OR
+        (scheduledAt IS NOT NULL AND scheduledAt <= ?)
+      )`
+    ).all(nowIso, now, now);
+
+    if (pending.length === 0) return;
+
+    log(`Processing ${pending.length} scheduled item(s)`);
+
+    for (const item of pending) {
+      try {
+        const type = item.type || 'event';
+        const content = item.content || '';
+        const title = item.title || content.slice(0, 80);
+
+        if (type === 'post' || type === 'social') {
+          // Create a task for social-manager to post
+          const taskBody = JSON.stringify({
+            title: `Post: ${title}`,
+            description: content,
+            status: 'todo',
+            priority: 'p2',
+            assignedTo: 'social-manager',
+            planningNotes: `Scheduled social post. Content:\n\n${content}\n\nPlatform: ${item.platform || 'twitter'}`,
+            tags: ['scheduled', 'social'],
+          });
+          const req = http.request({
+            host: '127.0.0.1', port: 3000,
+            path: '/api/tasks', method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(taskBody) },
+          }, (res) => { res.resume(); });
+          req.on('error', () => {});
+          req.write(taskBody);
+          req.end();
+          log(`[scheduled] Created social post task: "${title}"`);
+        } else if (type === 'meeting') {
+          // Post reminder to mission-control chat
+          await postToRoom('general', `Meeting reminder: **${title}**\n${content}`);
+          log(`[scheduled] Posted meeting reminder: "${title}"`);
+        } else {
+          // Generic event — log to activity
+          log(`[scheduled] Processed event: "${title}"`);
+        }
+
+        // Mark as completed
+        database.prepare(`UPDATE scheduled_items SET status = 'completed', updatedAt = ? WHERE id = ?`).run(now, item.id);
+      } catch (e) {
+        log(`[scheduled] Error processing item ${item.id}: ${e.message}`);
+        database.prepare(`UPDATE scheduled_items SET status = 'failed', updatedAt = ? WHERE id = ?`).run(now, item.id);
+      }
+    }
+  } catch (e) {
+    log(`Error in processScheduledItems: ${e.message}`);
+  }
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 log('Mission Control cron daemon starting...');
@@ -432,6 +676,10 @@ setInterval(checkJobs, CHECK_INTERVAL);
 // Stuck task sweep every 30 minutes
 checkStuckTasks();
 setInterval(checkStuckTasks, STUCK_CHECK_INTERVAL);
+
+// Scheduled items processing every minute
+processScheduledItems();
+setInterval(processScheduledItems, CHECK_INTERVAL);
 
 function shutdown() {
   log('Cron daemon shutting down.');

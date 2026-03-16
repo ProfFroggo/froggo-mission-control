@@ -169,7 +169,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
           <div>
@@ -226,7 +226,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       setAuthMethod(info.authMethods[0] as 'oauth' | 'app-password');
                     }}
                     disabled={info.comingSoon}
-                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                       info.comingSoon
                         ? 'border-mission-control-border opacity-50 cursor-not-allowed'
                         : provider === p
@@ -326,7 +326,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     <button
                       key={type}
                       onClick={() => toggleDataType(type)}
-                      className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                         isSelected
                           ? 'border-mission-control-accent bg-mission-control-accent/10'
                           : 'border-mission-control-border hover:border-mission-control-accent/50'
@@ -372,7 +372,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               {authMethod === 'oauth' ? (
                 <div className="space-y-4">
-                  <div className="p-6 bg-mission-control-bg rounded-xl border border-mission-control-border text-center">
+                  <div className="p-6 bg-mission-control-bg rounded-lg border border-mission-control-border text-center">
                     <div className="text-4xl mb-4">🔐</div>
                     <h4 className="font-medium mb-2">OAuth Authentication</h4>
                     <p className="text-sm text-mission-control-text-dim mb-4">

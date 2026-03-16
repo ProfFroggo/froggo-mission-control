@@ -151,7 +151,7 @@ export default function AnalyticsPanel() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <BarChart3 size={24} className="text-mission-control-accent" />
           </div>
           <div>
@@ -229,7 +229,7 @@ export default function AnalyticsPanel() {
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Target size={20} className="text-info" />
                   <TrendingUp size={16} className="text-success" />
@@ -243,7 +243,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Users size={20} className="text-review" />
                   <Zap size={16} className="text-warning" />
@@ -257,7 +257,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
                   <Clock size={20} className="text-warning" />
                   <Activity size={16} className="text-success" />
@@ -271,7 +271,7 @@ export default function AnalyticsPanel() {
                 </div>
               </div>
 
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
                   <TrendingUp size={20} className="text-success" />
                   <Zap size={16} className="text-info" />
@@ -297,7 +297,7 @@ export default function AnalyticsPanel() {
 
             {/* Subtask Progress */}
             {subtaskStats.length > 0 && (
-              <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+              <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
                 <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                   <Target size={16} className="text-mission-control-accent" />
                   Active Tasks - Subtask Progress
@@ -338,7 +338,7 @@ export default function AnalyticsPanel() {
         
         {view === 'projects' && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
               <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Calendar size={16} className="text-mission-control-accent" />
                 Project Statistics
@@ -354,7 +354,7 @@ export default function AnalyticsPanel() {
                 {projectStats.map((project) => (
                   <div
                     key={project.project}
-                    className="p-4 bg-mission-control-bg rounded-xl"
+                    className="p-4 bg-mission-control-bg rounded-lg"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -373,7 +373,7 @@ export default function AnalyticsPanel() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">In Progress</div>
                         <div className="font-medium text-info">

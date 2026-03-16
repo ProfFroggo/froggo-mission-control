@@ -5,6 +5,7 @@ import { dispatchTask } from '@/lib/taskDispatcher';
 import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { trackEvent } from '@/lib/telemetry';
+import { createNotification } from '@/lib/notificationWriter';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -12,20 +13,27 @@ import { homedir } from 'os';
 const HOME = homedir();
 
 function computeNextDue(currentDue: number, rec: { frequency: string; interval: number }): number {
-  const d = new Date(currentDue);
   const n = rec.interval || 1;
-  switch (rec.frequency) {
-    case 'daily':   d.setDate(d.getDate() + n); break;
-    case 'weekly':  d.setDate(d.getDate() + n * 7); break;
-    case 'monthly': d.setMonth(d.getMonth() + n); break;
-    case 'yearly':  d.setFullYear(d.getFullYear() + n); break;
-  }
+  const now = Date.now();
+
+  // Advance from the original due date, skipping any dates in the past.
+  // This prevents drift when tasks are completed late.
+  const d = new Date(currentDue);
+  do {
+    switch (rec.frequency) {
+      case 'daily':   d.setDate(d.getDate() + n); break;
+      case 'weekly':  d.setDate(d.getDate() + n * 7); break;
+      case 'monthly': d.setMonth(d.getMonth() + n); break;
+      case 'yearly':  d.setFullYear(d.getFullYear() + n); break;
+    }
+  } while (d.getTime() < now); // Skip past dates — land on next future occurrence
+
   return d.getTime();
 }
 
 const SCALAR_FIELDS = [
   'title', 'description', 'status', 'priority', 'project', 'project_id', 'assignedTo',
-  'reviewerId', 'reviewStatus', 'reviewNotes', 'planningNotes', 'dueDate',
+  'reviewerId', 'reviewStatus', 'reviewNotes', 'planningNotes', 'dueDate', 'scheduledAt',
   'estimatedHours', 'progress', 'lastAgentUpdate', 'completedAt',
   'projectName', 'stageNumber', 'stageName', 'nextStage', 'parentTaskId',
   'recurrenceParentId',
@@ -92,6 +100,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
     }
 
+    // Capture previous status before update (for transition-based triggers)
+    const previousStatus = body.status
+      ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
+      : undefined;
+
     const setClauses: string[] = [];
     const values: unknown[] = [];
 
@@ -157,6 +170,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
+    // Soft check: if moving to review, report incomplete subtasks as a warning (not a block)
+    // The agent gets a chance to see what it missed; Clara will catch any remaining gaps.
+    let incompleteSubtaskWarning: string | undefined;
+    if (body.status === 'review') {
+      try {
+        const incompleteSubs = db.prepare(
+          'SELECT id, title FROM subtasks WHERE taskId = ? AND completed = 0'
+        ).all(id) as { id: string; title: string }[];
+        if (incompleteSubs.length > 0) {
+          const titles = incompleteSubs.map(s => `"${s.title}"`).join(', ');
+          incompleteSubtaskWarning = `${incompleteSubs.length} subtask(s) still incomplete: ${titles}. Clara will review these.`;
+        }
+      } catch { /* non-critical */ }
+    }
+
     // Handoff note: write when assignedTo changes (task is handed off to a new agent)
     // The outgoing agent's context is captured so the incoming agent can continue smoothly.
     if ('assignedTo' in body && body.assignedTo) {
@@ -165,7 +193,7 @@ export async function PATCH(
           ? (updated.assignedTo as string | null)
           : null;
         if (previousAgent && previousAgent !== body.assignedTo) {
-          const handoffDir = join(HOME, 'mission-control', 'memory', 'agents', previousAgent as string, 'handoffs');
+          const handoffDir = join(HOME, 'mission-control', 'agents', previousAgent as string, 'handoffs');
           if (!existsSync(handoffDir)) mkdirSync(handoffDir, { recursive: true });
           const handoffPath = join(handoffDir, `${id}.md`);
           const taskTitle = updated.title as string;
@@ -199,12 +227,40 @@ export async function PATCH(
     const wasAssigned = 'assignedTo' in body && body.assignedTo;
     const isTodoStatus = (updated.status as string) === 'todo';
     if (wasAssigned && isTodoStatus) {
-      db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), id);
+      const reviewEnteredAt = Date.now();
+      db.prepare('UPDATE tasks SET status = ?, reviewEnteredAt = ?, updatedAt = ? WHERE id = ?').run('internal-review', reviewEnteredAt, reviewEnteredAt, id);
+      // Emit SSE so ClaraReviewDashboard auto-refreshes
+      emitSSEEvent('clara.review_needed', { id, title: updated.title, assignedTo: body.assignedTo, priority: updated.priority ?? 'p2' });
+      // Notify the assigned agent in their chat room
+      try {
+        const taskTitle = updated.title as string;
+        const priority = (updated.priority as string | null) ?? 'p2';
+        db.prepare(
+          `INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`
+        ).run(
+          body.assignedTo as string,
+          'system',
+          `New task assigned to you: "${taskTitle}" [${priority}]. Task is now in Pre-review — Clara will check the plan and dispatch you when approved.`,
+          Date.now()
+        );
+      } catch { /* non-critical — chat table may not be ready */ }
     }
 
     // 2. Task rejected by Clara (reviewStatus=rejected/needs-changes → status=in-progress)
     const wasRejected = body.reviewStatus === 'rejected' || body.reviewStatus === 'needs-changes';
     if (wasRejected && updated.assignedTo) {
+      dispatchTask(id);
+    }
+
+    // 3. Human resolves human-review → in-progress: re-dispatch the agent
+    const wasHumanReview = previousStatus === 'human-review';
+    if (wasHumanReview && body.status === 'in-progress' && updated.assignedTo) {
+      try {
+        db.prepare(
+          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+        ).run(id, 'system', 'human-review-resolved',
+          `Human resolved blocker — re-dispatching agent ${updated.assignedTo}`, Date.now());
+      } catch { /* non-critical */ }
       dispatchTask(id);
     }
 
@@ -281,12 +337,12 @@ export async function PATCH(
               if (!existingRecurrence) {
                 db.prepare(`
                   INSERT INTO tasks (
-                    id, title, description, status, priority, project, assignedTo,
+                    id, title, description, status, priority, project, project_id, assignedTo,
                     reviewerId, planningNotes, dueDate, estimatedHours, tags, labels,
                     blockedBy, blocks, progress, createdAt, updatedAt,
                     recurrence, recurrenceParentId
                   ) VALUES (
-                    ?, ?, ?, 'todo', ?, ?, ?,
+                    ?, ?, ?, 'todo', ?, ?, ?, ?,
                     ?, ?, ?, ?, '[]', '[]',
                     '[]', '[]', 0, ?, ?,
                     ?, ?
@@ -294,7 +350,7 @@ export async function PATCH(
                 `).run(
                   nextId,
                   updated.title, updated.description ?? null,
-                  updated.priority ?? 'p2', updated.project ?? null, updated.assignedTo ?? null,
+                  updated.priority ?? 'p2', updated.project ?? null, updated.project_id ?? null, updated.assignedTo ?? null,
                   updated.reviewerId ?? null, updated.planningNotes ?? null,
                   nextDue, updated.estimatedHours ?? null,
                   now, now,
@@ -351,9 +407,26 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
-    // Notify SSE clients of task update
+    // Emit notifications on status transitions
     const taskId = (updated as Record<string, unknown>)?.id as string | undefined;
     const taskStatus = (updated as Record<string, unknown>)?.status as string | undefined;
+    if (taskId && body.status === 'done') {
+      createNotification({
+        type: 'task_completed',
+        title: `Task completed: ${String((updated as Record<string, unknown>).title ?? id)}`,
+        userId: String((updated as Record<string, unknown>).assignedTo ?? 'system'),
+        metadata: { taskId: id },
+      }).catch(() => {});
+    } else if (taskId && body.status === 'review') {
+      createNotification({
+        type: 'approval_needed',
+        title: `Review requested: ${String((updated as Record<string, unknown>).title ?? id)}`,
+        userId: String((updated as Record<string, unknown>).reviewerId ?? 'clara'),
+        metadata: { taskId: id, requestedBy: (updated as Record<string, unknown>).assignedTo },
+      }).catch(() => {});
+    }
+
+    // Notify SSE clients of task update
     if (taskId) emitSSEEvent('task.updated', {
       id: taskId,
       status: taskStatus ?? null,
@@ -381,7 +454,9 @@ export async function PATCH(
       } catch { /* non-critical */ }
     }
 
-    return NextResponse.json(parseTask(updated));
+    const finalResponse = parseTask(updated) as Record<string, unknown>;
+    if (incompleteSubtaskWarning) finalResponse.warning = incompleteSubtaskWarning;
+    return NextResponse.json(finalResponse);
   } catch (error) {
     console.error('PATCH /api/tasks/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

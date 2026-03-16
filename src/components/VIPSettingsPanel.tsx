@@ -269,8 +269,8 @@ export default function VIPSettingsPanel() {
                         type="text"
                         value={formData.label}
                         onChange={e => setFormData({ ...formData, label: e.target.value })}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-info-border"
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                                 focus:outline-none focus:border-mission-control-accent"
                       />
                     </div>
                     <div>
@@ -279,8 +279,8 @@ export default function VIPSettingsPanel() {
                         id="vip-category"
                         value={formData.category}
                         onChange={e => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-info-border"
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                                 focus:outline-none focus:border-mission-control-accent"
                       >
                         {CATEGORY_OPTIONS.map(cat => (
                           <option key={cat.value} value={cat.value}>
@@ -310,8 +310,8 @@ export default function VIPSettingsPanel() {
                         value={formData.notes}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         rows={2}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-info-border"
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                                 focus:outline-none focus:border-mission-control-accent"
                         placeholder="Why is this person a VIP?"
                       />
                     </div>
@@ -418,8 +418,8 @@ export default function VIPSettingsPanel() {
                   value={formData.identifier}
                   onChange={e => setFormData({ ...formData, identifier: e.target.value })}
                   placeholder="email@example.com, +1234567890, @username, domain.com"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-info-border"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
@@ -431,8 +431,8 @@ export default function VIPSettingsPanel() {
                   id="vip-type"
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-info-border"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                           focus:outline-none focus:border-mission-control-accent"
                 >
                   {TYPE_OPTIONS.map(type => (
                     <option key={type.value} value={type.value}>
@@ -452,8 +452,8 @@ export default function VIPSettingsPanel() {
                   value={formData.label}
                   onChange={e => setFormData({ ...formData, label: e.target.value })}
                   placeholder="Kevin, CEO, Key Client"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-info-border"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 
@@ -463,8 +463,8 @@ export default function VIPSettingsPanel() {
                   id="vip-category"
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-info-border"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                           focus:outline-none focus:border-mission-control-accent"
                 >
                   {CATEGORY_OPTIONS.map(cat => (
                     <option key={cat.value} value={cat.value}>
@@ -502,8 +502,8 @@ export default function VIPSettingsPanel() {
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                   placeholder="Why is this person a VIP?"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-info-border"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text
+                           focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
 

@@ -95,7 +95,7 @@ export default function ProjectSelector() {
 
         {/* Create form */}
         {showForm && (
-          <div className="mb-8 p-4 rounded-xl border border-mission-control-border bg-mission-control-surface">
+          <div className="mb-8 p-4 rounded-lg border border-mission-control-border bg-mission-control-surface">
             <div className="space-y-4">
               <div>
                 <label htmlFor="project-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
@@ -157,7 +157,7 @@ export default function ProjectSelector() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="p-4 rounded-xl border border-mission-control-border bg-mission-control-surface animate-pulse"
+                className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface animate-pulse"
               >
                 <div className="h-5 w-48 bg-mission-control-border rounded mb-2" />
                 <div className="h-3 w-32 bg-mission-control-border rounded" />
@@ -183,7 +183,7 @@ export default function ProjectSelector() {
               <button
                 key={project.id}
                 onClick={() => openProject(project.id)}
-                className="w-full text-left p-4 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:shadow-card transition-all group"
+                className="w-full text-left p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:shadow-card transition-all group"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

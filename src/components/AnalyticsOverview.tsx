@@ -1,5 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, MessageSquare, Zap, Clock, Calendar, Activity, ArrowUp, ArrowDown, Minus, Users, FolderKanban } from 'lucide-react';
+import {
+  TrendingUp,
+  MessageSquare,
+  Zap,
+  Clock,
+  Calendar,
+  Activity,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Users,
+  FolderKanban,
+  CheckCircle,
+  PlusCircle,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -10,11 +26,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { analyticsApi, taskApi, inboxApi, sessionApi } from '../lib/api';
+import { analyticsApi, taskApi, inboxApi, sessionApi, agentApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 const logger = createLogger('Analytics');
+
+// ──────────────────────────────────────────────────
+// Types
+// ──────────────────────────────────────────────────
 
 interface Stat {
   label: string;
@@ -45,88 +65,512 @@ interface ProjectData {
   completion_rate: number;
 }
 
-export default function AnalyticsOverview() {
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
+/** One bar in the 14-day pipeline velocity chart */
+interface VelocityDay {
+  date: string;
+  dayLabel: string;   // e.g. "Mon"
+  count: number;
+}
+
+/** Row in the agent performance leaderboard */
+interface AgentLeaderboardRow {
+  id: string;
+  name: string;
+  color: string;
+  tasksDone: number;
+  tasksInProgress: number;
+  avgCompletionMs: number | null;
+  online: boolean;
+}
+
+/** Slice in the status donut */
+interface StatusSlice {
+  status: string;
+  label: string;
+  count: number;
+  color: string;
+}
+
+// ──────────────────────────────────────────────────
+// Constants
+// ──────────────────────────────────────────────────
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  'todo':             { label: 'Todo',           color: '#6B7280' },
+  'internal-review':  { label: 'Pre-review',     color: '#F59E0B' },
+  'in-progress':      { label: 'In Progress',    color: '#3B82F6' },
+  'review':           { label: 'Review',         color: '#8B5CF6' },
+  'done':             { label: 'Done',           color: '#10B981' },
+  'human-review':     { label: 'Human Review',   color: '#F97316' },
+};
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// ──────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────
+
+function isoDate(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+function startOfWeek(d: Date): Date {
+  const copy = new Date(d);
+  copy.setDate(copy.getDate() - copy.getDay());
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
+
+// ──────────────────────────────────────────────────
+// Sub-components
+// ──────────────────────────────────────────────────
+
+/** 14-day pipeline velocity — pure SVG bar chart */
+function PipelineVelocityChart({ days }: { days: VelocityDay[] }) {
+  const chartWidth  = 560;
+  const chartHeight = 160;
+  const padLeft     = 24;
+  const padBottom   = 20;
+  const innerW      = chartWidth - padLeft;
+  const innerH      = chartHeight - padBottom;
+  const n           = 14;
+  const barW        = Math.floor(innerW / n) - 2;
+  const maxVal      = Math.max(...days.map((d) => d.count), 1);
+
+  return (
+    <svg
+      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+      width="100%"
+      preserveAspectRatio="xMidYMid meet"
+      className="h-full"
+      style={{ overflow: 'visible' }}
+      aria-label="14-day pipeline velocity"
+    >
+      {/* Y-axis max label */}
+      <text
+        x={padLeft - 4}
+        y={6}
+        textAnchor="end"
+        fontSize={9}
+        fill="var(--mission-control-text-dim)"
+      >
+        {maxVal}
+      </text>
+
+      {days.map((day, idx) => {
+        const barH  = maxVal > 0 ? Math.max(2, (day.count / maxVal) * innerH) : 2;
+        const x     = padLeft + idx * (innerW / n) + 1;
+        const y     = innerH - barH;
+
+        return (
+          <g key={day.date}>
+            <rect
+              x={x}
+              y={y}
+              width={barW}
+              height={barH}
+              fill="var(--mission-control-accent)"
+              opacity={day.count === 0 ? 0.08 : 0.85}
+              rx={2}
+            >
+              <title>{`${day.date}: ${day.count} completed`}</title>
+            </rect>
+            {/* X-axis day label — show every other to avoid crowding */}
+            {idx % 2 === 0 && (
+              <text
+                x={x + barW / 2}
+                y={innerH + 14}
+                textAnchor="middle"
+                fontSize={8}
+                fill="var(--mission-control-text-dim)"
+              >
+                {day.dayLabel}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Baseline */}
+      <line
+        x1={padLeft}
+        y1={innerH}
+        x2={chartWidth}
+        y2={innerH}
+        stroke="var(--mission-control-border)"
+        strokeWidth={1}
+      />
+    </svg>
+  );
+}
+
+/** SVG donut chart for task status distribution */
+function StatusDonutChart({ slices }: { slices: StatusSlice[] }) {
+  const total     = slices.reduce((s, sl) => s + sl.count, 0);
+  const r         = 50;
+  const cx        = 65;
+  const cy        = 65;
+  const stroke    = 18;
+  const circ      = 2 * Math.PI * r;
+
+  if (total === 0) {
+    return (
+      <div className="flex items-center justify-center h-32 text-sm text-mission-control-text-dim">
+        No task data
+      </div>
+    );
+  }
+
+  let offset = 0;
+  const arcs = slices
+    .filter((sl) => sl.count > 0)
+    .map((sl) => {
+      const pct   = sl.count / total;
+      const dash  = pct * circ;
+      const arc   = { ...sl, dash, offset: circ - offset, pct };
+      offset += dash;
+      return arc;
+    });
+
+  return (
+    <div className="space-y-4">
+      {/* Horizontal bar breakdown */}
+      <div className="flex rounded-full overflow-hidden h-3" title={`${total} total tasks`}>
+        {arcs.map((arc) => (
+          <div
+            key={arc.status}
+            className="h-full transition-all"
+            style={{ width: `${arc.pct * 100}%`, backgroundColor: arc.color }}
+            title={`${arc.label}: ${arc.count} (${Math.round(arc.pct * 100)}%)`}
+          />
+        ))}
+      </div>
+
+      {/* Legend rows with counts + percentages */}
+      <div className="space-y-2">
+        {arcs.map((arc) => (
+          <div key={arc.status} className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: arc.color }} />
+            <span className="text-sm text-mission-control-text flex-1">{arc.label}</span>
+            <span className="text-sm font-medium tabular-nums text-mission-control-text">{arc.count}</span>
+            <span className="text-xs tabular-nums text-mission-control-text-dim w-10 text-right">{Math.round(arc.pct * 100)}%</span>
+          </div>
+        ))}
+        <div className="flex items-center gap-3 pt-2 border-t border-mission-control-border">
+          <span className="w-2.5 h-2.5 flex-shrink-0" />
+          <span className="text-sm font-medium text-mission-control-text-dim flex-1">Total</span>
+          <span className="text-sm font-bold tabular-nums text-mission-control-text">{total}</span>
+          <span className="text-xs tabular-nums text-mission-control-text-dim w-10 text-right">100%</span>
+        </div>
+      </div>
+    </div>
+  );
+
+}
+
+/** Agent performance leaderboard table */
+function AgentLeaderboard({ rows }: { rows: AgentLeaderboardRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <div className="text-sm text-mission-control-text-dim py-6 text-center">
+        No agent task data available
+      </div>
+    );
+  }
+
+  function fmtDuration(ms: number | null): string {
+    if (ms === null || ms <= 0) return '—';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m`;
+    return '<1m';
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-mission-control-text-dim border-b border-mission-control-border">
+            <th className="text-left pb-2 font-medium">Agent</th>
+            <th className="text-right pb-2 font-medium">Done this wk</th>
+            <th className="text-right pb-2 font-medium">In progress</th>
+            <th className="text-right pb-2 font-medium">Avg time</th>
+            <th className="text-right pb-2 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr
+              key={row.id}
+              className="border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/40 transition-colors"
+            >
+              <td className="py-2.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+                    style={{ background: row.color || 'var(--mission-control-accent)' }}
+                  >
+                    {row.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="truncate max-w-[120px]">{row.name}</span>
+                </div>
+              </td>
+              <td className="py-2.5 text-right font-medium text-success tabular-nums">{row.tasksDone}</td>
+              <td className="py-2.5 text-right tabular-nums">{row.tasksInProgress}</td>
+              <td className="py-2.5 text-right tabular-nums text-mission-control-text-dim">
+                {fmtDuration(row.avgCompletionMs)}
+              </td>
+              <td className="py-2.5 text-right">
+                {row.online ? (
+                  <span className="inline-flex items-center gap-1 text-success text-xs">
+                    <Wifi size={11} />
+                    Online
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-mission-control-text-dim text-xs">
+                    <WifiOff size={11} />
+                    Offline
+                  </span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────
+// Fill-gap helper (kept from original)
+// ──────────────────────────────────────────────────
+
+function fillDateRange(
+  data: { date: string; [key: string]: any }[],
+  days: number,
+  valueKey: string,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of data) {
+    if (row.date && row.date !== '1970-01-01') {
+      map.set(row.date, row[valueKey] || 0);
+    }
+  }
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = isoDate(d);
+    if (!map.has(key)) map.set(key, 0);
+  }
+  return map;
+}
+
+// ──────────────────────────────────────────────────
+// Main component
+// ──────────────────────────────────────────────────
+
+export default function AnalyticsOverview({ days = 30 }: { days?: number }) {
   const [stats, setStats] = useState<Stat[]>([]);
   const [dailyData, setDailyData] = useState<DailyActivity[]>([]);
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [_loading, setLoading] = useState(false);
 
-  // Fill gaps in date range with zeros
-  function fillDateRange(data: { date: string; [key: string]: any }[], days: number, valueKey: string): Map<string, number> {
-    const map = new Map<string, number>();
-    // Build map from data
-    for (const row of data) {
-      if (row.date && row.date !== '1970-01-01') {
-        map.set(row.date, row[valueKey] || 0);
-      }
-    }
-    // Fill missing dates
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
-      if (!map.has(key)) map.set(key, 0);
-    }
-    return map;
-  }
+  // New state for the four new panels
+  const [velocityDays, setVelocityDays] = useState<VelocityDay[]>([]);
+  const [leaderboard, setLeaderboard] = useState<AgentLeaderboardRow[]>([]);
+  const [statusSlices, setStatusSlices] = useState<StatusSlice[]>([]);
+
+  // Weekly summary
+  const [weekDone, setWeekDone]         = useState(0);
+  const [prevWeekDone, setPrevWeekDone] = useState(0);
+  const [weekCreated, setWeekCreated]   = useState(0);
+  const [agentUtil, setAgentUtil]       = useState<{ active: number; total: number }>({ active: 0, total: 0 });
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch analytics data from REST API
-      const analyticsResult = await analyticsApi.getTaskStats().catch((err: any) => { logger.error('Failed to get analytics data:', err); return null; });
+      const analyticsResult = await analyticsApi
+        .getTaskStats()
+        .catch((err: any) => { logger.error('Failed to get analytics data:', err); return null; });
 
-      // Also get current stats
-      const sessionsResult = await sessionApi.getAll().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
+      const sessionsResult = await sessionApi
+        .getAll()
+        .catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
       const sessionsCount = Array.isArray(sessionsResult) ? sessionsResult.length : 0;
-      const tasksResult = await taskApi.getAll().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
-      const tasksArr = Array.isArray(tasksResult) ? tasksResult : (tasksResult as any)?.tasks || [];
+
+      const tasksResult = await taskApi
+        .getAll()
+        .catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
+      const tasksArr: any[] = Array.isArray(tasksResult)
+        ? tasksResult
+        : (tasksResult as any)?.tasks || [];
+
+      const inboxResult = await inboxApi
+        .getAll()
+        .catch((err: any) => { logger.error('Failed to list inbox:', err); return null; });
+      const inboxArr: any[] = Array.isArray(inboxResult)
+        ? inboxResult
+        : (inboxResult as any)?.items || [];
+      const pendingApprovals = inboxArr.filter((i: any) => i.status === 'pending').length;
+
+      const agentsResult = await agentApi
+        .getAll()
+        .catch((err: any) => { logger.error('Failed to list agents:', err); return null; });
+      const agentsArr: any[] = Array.isArray(agentsResult) ? agentsResult : [];
+
+      // ── Status distribution ──────────────────────────
+      const slices: StatusSlice[] = Object.entries(STATUS_META).map(([status, meta]) => ({
+        status,
+        label: meta.label,
+        color: meta.color,
+        count: tasksArr.filter((t: any) => t.status === status).length,
+      }));
+      setStatusSlices(slices);
+
+      // ── 14-day velocity ──────────────────────────────
+      const now = new Date();
+      const velocity: VelocityDay[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const key = isoDate(d);
+        velocity.push({
+          date: key,
+          dayLabel: DAY_NAMES[d.getDay()],
+          count: 0,
+        });
+      }
+      // Count done tasks by completedAt / updatedAt date
+      for (const task of tasksArr) {
+        if (task.status !== 'done') continue;
+        const raw = task.completedAt || task.updatedAt || task.updated_at;
+        if (!raw) continue;
+        const key = isoDate(new Date(raw));
+        const slot = velocity.find((v) => v.date === key);
+        if (slot) slot.count++;
+      }
+      setVelocityDays(velocity);
+
+      // ── Weekly summary ───────────────────────────────
+      const thisWeekStart = startOfWeek(now);
+      const prevWeekStart = new Date(thisWeekStart);
+      prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+      const prevWeekEnd = new Date(thisWeekStart);
+      prevWeekEnd.setMilliseconds(-1);
+
+      let wDone = 0;
+      let pwDone = 0;
+      let wCreated = 0;
+
+      for (const task of tasksArr) {
+        // Done this week
+        if (task.status === 'done') {
+          const raw = task.completedAt || task.updatedAt || task.updated_at;
+          if (raw) {
+            const d = new Date(raw);
+            if (d >= thisWeekStart) wDone++;
+            else if (d >= prevWeekStart && d <= prevWeekEnd) pwDone++;
+          }
+        }
+        // Created this week
+        const created = task.createdAt || task.created_at;
+        if (created && new Date(created) >= thisWeekStart) wCreated++;
+      }
+
+      setWeekDone(wDone);
+      setPrevWeekDone(pwDone);
+      setWeekCreated(wCreated);
+
+      // ── Agent leaderboard ────────────────────────────
+      const HEARTBEAT_THRESHOLD_MS = 5 * 60 * 1000; // 5 min
+      const lbRows: AgentLeaderboardRow[] = agentsArr.map((ag: any) => {
+        const agTasks = tasksArr.filter(
+          (t: any) => t.assignedTo === ag.id || t.agent === ag.id || t.agentId === ag.id,
+        );
+
+        // Done this week
+        const doneThisWeek = agTasks.filter((t: any) => {
+          if (t.status !== 'done') return false;
+          const raw = t.completedAt || t.updatedAt || t.updated_at;
+          if (!raw) return false;
+          return new Date(raw) >= thisWeekStart;
+        }).length;
+
+        const inProg = agTasks.filter((t: any) => t.status === 'in-progress').length;
+
+        // Average completion time (createdAt → completedAt)
+        const completionTimes: number[] = agTasks
+          .filter((t: any) => t.status === 'done' && t.createdAt && (t.completedAt || t.updatedAt))
+          .map((t: any) => {
+            return new Date(t.completedAt || t.updatedAt).getTime() - new Date(t.createdAt).getTime();
+          })
+          .filter((ms: number) => ms > 0);
+
+        const avgMs =
+          completionTimes.length > 0
+            ? completionTimes.reduce((a: number, b: number) => a + b, 0) / completionTimes.length
+            : null;
+
+        const lastHeartbeat = ag.lastHeartbeat || ag.last_heartbeat;
+        const online = lastHeartbeat
+          ? Date.now() - new Date(lastHeartbeat).getTime() < HEARTBEAT_THRESHOLD_MS
+          : ag.status === 'active' || ag.status === 'online';
+
+        return {
+          id: ag.id,
+          name: ag.name || ag.id,
+          color: ag.color || '#6366F1',
+          tasksDone: doneThisWeek,
+          tasksInProgress: inProg,
+          avgCompletionMs: avgMs,
+          online,
+        };
+      });
+
+      // Sort: most done this week first
+      lbRows.sort((a, b) => b.tasksDone - a.tasksDone || b.tasksInProgress - a.tasksInProgress);
+      setLeaderboard(lbRows);
+
+      // Agent utilisation
+      const onlineCount = lbRows.filter((r) => r.online).length;
+      setAgentUtil({ active: onlineCount, total: agentsArr.length });
+
+      // ── Original stats / daily chart ─────────────────
       const tasksCount = tasksArr.length;
-      const completedTasks = tasksArr.filter((t: any) => t.status === 'done')?.length || 0;
-      const inboxResult = await inboxApi.getAll().catch((err: any) => { logger.error('Failed to list inbox:', err); return null; });
-      const inboxArr = Array.isArray(inboxResult) ? inboxResult : (inboxResult as any)?.items || [];
-      const pendingApprovals = inboxArr.filter((i: any) => i.status === 'pending')?.length || 0;
+      const completedTasks = tasksArr.filter((t: any) => t.status === 'done').length;
 
       if (analyticsResult?.success) {
-        const days = analyticsResult.days || (timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90);
+        const fetchDays = analyticsResult.days || days;
 
-        // Build daily data from real completions + creations
-        const completionsMap = fillDateRange(analyticsResult.completions || [], days, 'tasks_completed');
-        const createdMap = fillDateRange(analyticsResult.created || [], days, 'tasks_created');
+        const completionsMap = fillDateRange(analyticsResult.completions || [], fetchDays, 'tasks_completed');
+        const createdMap     = fillDateRange(analyticsResult.created || [], fetchDays, 'tasks_created');
 
-        // Generate complete date range (fillDateRange already filled all dates, just use one map's keys)
         const allDates: string[] = [];
-        for (let i = days - 1; i >= 0; i--) {
+        for (let i = fetchDays - 1; i >= 0; i--) {
           const d = new Date();
           d.setDate(d.getDate() - i);
-          allDates.push(d.toISOString().split('T')[0]);
+          allDates.push(isoDate(d));
         }
-        
-        const daily: DailyActivity[] = allDates.map(date => ({
+
+        const daily: DailyActivity[] = allDates.map((date) => ({
           date,
           label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           completed: completionsMap.get(date) || 0,
-          created: createdMap.get(date) || 0,
+          created:   createdMap.get(date) || 0,
         }));
         setDailyData(daily);
 
-        // Agent data
         setAgents(analyticsResult.agents || []);
-
-        // Project data
         setProjects(analyticsResult.projects || []);
 
-        // Compute trends from real data
         const totalCompleted = daily.reduce((s, d) => s + d.completed, 0);
-        const avgPerDay = daily.length > 0 ? Math.round(totalCompleted / daily.length * 10) / 10 : 0;
-
-        // Compare first half vs second half for trend
-        const mid = Math.floor(daily.length / 2);
-        const firstHalf = daily.slice(0, mid).reduce((s, d) => s + d.completed, 0);
-        const secondHalf = daily.slice(mid).reduce((s, d) => s + d.completed, 0);
-        const completionTrend = firstHalf > 0 ? Math.round((secondHalf - firstHalf) / firstHalf * 100) : 0;
+        const avgPerDay = daily.length > 0 ? Math.round((totalCompleted / daily.length) * 10) / 10 : 0;
+        const mid         = Math.floor(daily.length / 2);
+        const firstHalf   = daily.slice(0, mid).reduce((s, d) => s + d.completed, 0);
+        const secondHalf  = daily.slice(mid).reduce((s, d) => s + d.completed, 0);
+        const completionTrend = firstHalf > 0 ? Math.round(((secondHalf - firstHalf) / firstHalf) * 100) : 0;
 
         setStats([
           {
@@ -160,7 +604,6 @@ export default function AnalyticsOverview() {
           },
         ]);
       } else {
-        // Fallback: use basic task data if analytics IPC not available
         setStats([
           {
             label: 'Active Sessions',
@@ -196,39 +639,91 @@ export default function AnalyticsOverview() {
         setProjects([]);
       }
     } catch (error) {
-      // 'Failed to load analytics:', error;
+      // failed to load analytics
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
+  }, [days]);
 
   useEffect(() => {
     loadAnalytics();
   }, [loadAnalytics]);
 
+  // Weekly delta arrow
+  const weekDelta = weekDone - prevWeekDone;
+  const utilPct   = agentUtil.total > 0 ? Math.round((agentUtil.active / agentUtil.total) * 100) : 0;
+
+  const hasVelocityData = velocityDays.some((d) => d.count > 0);
+
   return (
     <div className="h-full overflow-y-auto p-6">
-      {/* Time range selector */}
-      <div className="flex justify-end mb-6">
-        <div className="flex bg-mission-control-border rounded-xl p-1">
-          {(['7d', '30d', 'all'] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                timeRange === range
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Time'}
-            </button>
-          ))}
+      {/* ── Weekly Summary Card ──────────────────────────────── */}
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5 mb-6">
+        <h2 className="font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide text-mission-control-text-dim">
+          <Calendar size={14} />
+          This Week
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Tasks done vs last week */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle size={16} className="text-success" />
+              <span className="text-sm text-mission-control-text-dim">Tasks completed</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tabular-nums">{weekDone}</span>
+              {weekDelta !== 0 && (
+                <span
+                  className={`flex items-center gap-0.5 text-xs font-medium tabular-nums ${
+                    weekDelta > 0 ? 'text-success' : 'text-error'
+                  }`}
+                >
+                  {weekDelta > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                  {Math.abs(weekDelta)} vs last wk
+                </span>
+              )}
+              {weekDelta === 0 && (
+                <span className="flex items-center gap-0.5 text-xs text-mission-control-text-dim">
+                  <Minus size={12} />
+                  same as last wk
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* New tasks created */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <PlusCircle size={16} className="text-info" />
+              <span className="text-sm text-mission-control-text-dim">New tasks</span>
+            </div>
+            <div className="text-3xl font-bold tabular-nums">{weekCreated}</div>
+          </div>
+
+          {/* Agent utilisation */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-review" />
+              <span className="text-sm text-mission-control-text-dim">Agent utilisation</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold tabular-nums">{utilPct}%</span>
+              <span className="text-xs text-mission-control-text-dim tabular-nums">
+                {agentUtil.active}/{agentUtil.total} online
+              </span>
+            </div>
+            <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden mt-1">
+              <div
+                className="h-full bg-mission-control-accent rounded-full transition-all"
+                style={{ width: `${utilPct}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* ── Stats Grid ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
@@ -239,11 +734,15 @@ export default function AnalyticsOverview() {
               <div className="flex items-center justify-between mb-3">
                 <Icon size={20} className={stat.color} />
                 {stat.trend && (
-                  <div className={`flex items-center gap-1 text-xs ${
-                    stat.trend === 'up' ? 'text-success' :
-                    stat.trend === 'down' ? 'text-error' :
-                    'text-mission-control-text-dim'
-                  }`}>
+                  <div
+                    className={`flex items-center gap-1 text-xs ${
+                      stat.trend === 'up'
+                        ? 'text-success'
+                        : stat.trend === 'down'
+                        ? 'text-error'
+                        : 'text-mission-control-text-dim'
+                    }`}
+                  >
                     {stat.trend === 'up' && <ArrowUp size={14} />}
                     {stat.trend === 'down' && <ArrowDown size={14} />}
                     {stat.trend === 'neutral' && <Minus size={14} />}
@@ -251,14 +750,63 @@ export default function AnalyticsOverview() {
                   </div>
                 )}
               </div>
-              <div className="text-2xl font-bold mb-1">{stat.value}</div>
+              <div className="text-2xl font-bold mb-1 tabular-nums">{stat.value}</div>
               <div className="text-sm text-mission-control-text-dim">{stat.label}</div>
             </div>
           );
         })}
       </div>
 
-      {/* Activity Chart - Real Data */}
+      {/* ── Pipeline Velocity + Status Donut ─────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        {/* Pipeline velocity — 2 cols wide */}
+        <div className="lg:col-span-2 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 min-h-[280px] flex flex-col">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
+            <TrendingUp size={16} className="text-mission-control-accent" />
+            Pipeline Velocity
+          </h2>
+          <p className="text-xs text-mission-control-text-dim mb-4">
+            Tasks completed per day — last 14 days
+          </p>
+          {hasVelocityData ? (
+            <div className="flex-1 min-h-0">
+              <PipelineVelocityChart days={velocityDays} />
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center min-h-[160px] text-sm text-mission-control-text-dim">
+              No completed tasks in the last 14 days
+            </div>
+          )}
+        </div>
+
+        {/* Status donut — 1 col wide */}
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 min-h-[280px] flex flex-col">
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
+            <Activity size={16} className="text-mission-control-accent" />
+            Status Distribution
+          </h2>
+          <p className="text-xs text-mission-control-text-dim mb-4">
+            Current task breakdown by status
+          </p>
+          <div className="flex-1 flex items-center">
+            <StatusDonutChart slices={statusSlices} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Agent Performance Leaderboard ────────────────────── */}
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
+        <h2 className="font-semibold mb-1 flex items-center gap-2">
+          <Users size={16} className="text-mission-control-accent" />
+          Agent Performance
+        </h2>
+        <p className="text-xs text-mission-control-text-dim mb-4">
+          Tasks completed this week, in-progress workload, and average completion time per agent
+        </p>
+        <AgentLeaderboard rows={leaderboard} />
+      </div>
+
+      {/* ── Activity Chart — Real Data ────────────────────────── */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">Task Activity</h2>
@@ -275,10 +823,14 @@ export default function AnalyticsOverview() {
         </div>
 
         {dailyData.length > 0 ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full" style={{ minHeight: 256 }}>
+            <ResponsiveContainer width="100%" height={256}>
               <BarChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} vertical={false} />
+                <CartesianGrid
+                  strokeDasharray={CHART_GRID.strokeDasharray}
+                  stroke={CHART_GRID.stroke}
+                  vertical={false}
+                />
                 <XAxis
                   dataKey="label"
                   stroke={CHART_AXIS.stroke}
@@ -297,21 +849,21 @@ export default function AnalyticsOverview() {
                   }}
                   labelStyle={{ color: CHART_AXIS.stroke }}
                 />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                {/* Legend is rendered manually above the chart */}
                 <Bar dataKey="completed" name="Completed" fill={CHART_COLORS.green} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="created" name="Created" fill={CHART_COLORS.blue} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-64 flex items-center justify-center text-mission-control-text-dim">
+          <div className="flex items-center justify-center text-mission-control-text-dim" style={{ minHeight: 256 }}>
             No task data available for this period
           </div>
         )}
       </div>
 
-      {/* Agent Activity + Project Progress */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      {/* ── Agent Activity + Project Progress ────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Agent Utilization */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -321,12 +873,15 @@ export default function AnalyticsOverview() {
           {agents.length > 0 ? (
             <div className="space-y-3">
               {agents.slice(0, 6).map((agent, idx) => {
-                const pct = agent.total > 0 ? Math.round((agent.completed / agent.total) * 100) : 0;
+                const pct =
+                  agent.total > 0 ? Math.round((agent.completed / agent.total) * 100) : 0;
                 return (
                   <div key={idx} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="truncate max-w-[150px]">{agent.agent}</span>
-                      <span className="text-mission-control-text-dim">{agent.completed}/{agent.total} ({pct}%)</span>
+                      <span className="text-mission-control-text-dim tabular-nums">
+                        {agent.completed}/{agent.total} ({pct}%)
+                      </span>
                     </div>
                     <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
@@ -339,7 +894,9 @@ export default function AnalyticsOverview() {
               })}
             </div>
           ) : (
-            <div className="text-sm text-mission-control-text-dim py-4 text-center">No agent data for this period</div>
+            <div className="text-sm text-mission-control-text-dim py-4 text-center">
+              No agent data for this period
+            </div>
           )}
         </div>
 
@@ -355,11 +912,13 @@ export default function AnalyticsOverview() {
                 <div key={idx} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="truncate max-w-[150px]">{proj.project}</span>
-                    <span className="text-mission-control-text-dim">{proj.completed}/{proj.total} ({proj.completion_rate}%)</span>
+                    <span className="text-mission-control-text-dim tabular-nums">
+                      {proj.completed}/{proj.total} ({proj.completion_rate}%)
+                    </span>
                   </div>
                   <div className="h-2 bg-mission-control-bg rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-green-500 rounded-full transition-all"
+                      className="h-full bg-mission-control-accent rounded-full transition-all"
                       style={{ width: `${proj.completion_rate}%` }}
                     />
                   </div>
@@ -367,13 +926,15 @@ export default function AnalyticsOverview() {
               ))}
             </div>
           ) : (
-            <div className="text-sm text-mission-control-text-dim py-4 text-center">No project data for this period</div>
+            <div className="text-sm text-mission-control-text-dim py-4 text-center">
+              No project data for this period
+            </div>
           )}
         </div>
       </div>
 
-      {/* Real insights from data */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* ── Insights + Top Agents ─────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <TrendingUp size={16} className="text-mission-control-accent" />
@@ -385,21 +946,24 @@ export default function AnalyticsOverview() {
               <span className="text-sm font-medium text-mission-control-accent">
                 {dailyData.length > 0
                   ? (() => {
-                      const best = dailyData.reduce((max, d) => d.completed > max.completed ? d : max, dailyData[0]);
-                      return best.completed > 0 ? `${best.label} (${best.completed})` : '-';
+                      const best = dailyData.reduce(
+                        (max, d) => (d.completed > max.completed ? d : max),
+                        dailyData[0],
+                      );
+                      return best.completed > 0 ? `${best.label} (${best.completed})` : 'No data yet';
                     })()
-                  : '-'}
+                  : 'No data yet'}
               </span>
             </div>
             <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total completed</span>
-              <span className="text-sm font-medium text-mission-control-accent">
+              <span className="text-sm font-medium text-mission-control-accent tabular-nums">
                 {dailyData.reduce((sum, d) => sum + d.completed, 0)} tasks
               </span>
             </div>
             <div className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
               <span className="text-sm">Total created</span>
-              <span className="text-sm font-medium text-mission-control-accent">
+              <span className="text-sm font-medium text-mission-control-accent tabular-nums">
                 {dailyData.reduce((sum, d) => sum + d.created, 0)} tasks
               </span>
             </div>
@@ -412,17 +976,27 @@ export default function AnalyticsOverview() {
             Top Agents
           </h3>
           <div className="space-y-3">
-            {agents.length > 0 ? agents.slice(0, 3).map((agent, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg">
-                <span className="text-sm truncate max-w-[150px]">
-                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {agent.agent}
-                </span>
-                <span className="text-sm font-medium text-mission-control-accent">
-                  {agent.completed} done
-                </span>
+            {agents.length > 0 ? (
+              agents.slice(0, 3).map((agent, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 bg-mission-control-bg rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-mission-control-text-dim">
+                      {idx + 1}.
+                    </span>
+                    <span className="text-sm truncate max-w-[150px]">{agent.agent}</span>
+                  </div>
+                  <span className="text-sm font-medium text-mission-control-accent">
+                    {agent.completed} done
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-mission-control-text-dim py-4 text-center">
+                No agent data
               </div>
-            )) : (
-              <div className="text-sm text-mission-control-text-dim py-4 text-center">No agent data</div>
             )}
           </div>
         </div>

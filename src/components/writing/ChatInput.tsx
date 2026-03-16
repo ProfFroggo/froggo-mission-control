@@ -51,12 +51,12 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder="Ask the agent..."
           rows={1}
           disabled={disabled}
-          className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50 dark"
+          className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50 dark"
         />
         <button
           onClick={handleSendClick}
           disabled={disabled || !input.trim()}
-          className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+          className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           title="Send message"
         >
           <Send size={20} />

@@ -6,24 +6,93 @@ type ApiOptions = {
   method?: string;
   body?: any;
   params?: Record<string, string>;
+  /** Optional AbortSignal to cancel in-flight requests */
+  signal?: AbortSignal;
 };
 
+/** Pause for `ms` milliseconds, respecting an optional abort signal */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(id);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true },
+    );
+  });
+}
+
+/**
+ * Core fetch wrapper with resilience:
+ * - 429 rate-limit: respect Retry-After header or 2s backoff, up to 3 retries
+ * - 503 service unavailable: exponential backoff (1s, 2s, 4s), up to 3 retries
+ * - Network error (fetch throws): single retry after 1s
+ * - AbortSignal support for cancellation
+ */
 async function apiCall<T = any>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = 'GET', body, params } = options;
+  const { method = 'GET', body, params, signal } = options;
   const url = new URL(`/api${path}`, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   }
-  const res = await fetch(url.toString(), {
-    method,
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(process.env.NEXT_PUBLIC_API_TOKEN ? { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
-  return res.json();
+
+  const fetchOnce = () =>
+    fetch(url.toString(), {
+      method,
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(process.env.NEXT_PUBLIC_API_TOKEN
+          ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` }
+          : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal,
+    });
+
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+    let res: Response;
+    try {
+      res = await fetchOnce();
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') throw err;
+      // Network error — single retry after 1s
+      if (attempt === 0) {
+        await delay(1000, signal);
+        continue;
+      }
+      throw err;
+    }
+
+    // Rate limited — respect Retry-After header or default 2s
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get('Retry-After');
+      const waitMs = retryAfter ? parseFloat(retryAfter) * 1000 : 2000;
+      await delay(waitMs, signal);
+      continue;
+    }
+
+    // Service unavailable — exponential backoff: 1s, 2s, 4s
+    if (res.status === 503 && attempt < MAX_RETRIES) {
+      await delay(1000 * Math.pow(2, attempt), signal);
+      continue;
+    }
+
+    if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
+    return res.json();
+  }
+
+  throw new Error(`API request failed after ${MAX_RETRIES} retries`);
 }
 
 // ──────────────────────────────────────────────────
@@ -46,6 +115,8 @@ export const taskApi = {
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'PATCH', body: updates }),
   deleteSubtask: (taskId: string, subtaskId: string) =>
     apiCall(`/tasks/${taskId}/subtasks/${subtaskId}`, { method: 'DELETE' }),
+  reorderSubtasks: (taskId: string, orderedIds: string[]) =>
+    apiCall(`/tasks/${taskId}/subtasks/reorder`, { method: 'POST', body: { orderedIds } }),
   getSubtasks: (taskId: string) =>
     apiCall(`/tasks/${taskId}/subtasks`),
   getActivity: (taskId: string) =>
@@ -56,6 +127,8 @@ export const taskApi = {
     apiCall(`/tasks/${taskId}/attachments`),
   addAttachment: (taskId: string, attachment: any) =>
     apiCall(`/tasks/${taskId}/attachments`, { method: 'POST', body: attachment }),
+  bulk: (ids: string[], action: 'status' | 'assign' | 'delete' | 'priority', value?: string | null) =>
+    apiCall('/tasks/bulk', { method: 'POST', body: { ids, action, value } }),
 };
 
 // ──────────────────────────────────────────────────
@@ -169,6 +242,8 @@ export const approvalApi = {
     apiCall('/approvals', { method: 'POST', body: approval }),
   respond: (id: string, action: string, notes?: string, adjustedContent?: string) =>
     apiCall(`/approvals/${id}`, { method: 'PATCH', body: { action, notes, adjustedContent } }),
+  batchRespond: (ids: string[], action: 'approve' | 'reject', reason?: string) =>
+    apiCall('/approvals', { method: 'PATCH', body: { ids, action, reason } }),
 };
 
 // ──────────────────────────────────────────────────
@@ -248,10 +323,22 @@ export const moduleApi = {
 // Settings
 // ──────────────────────────────────────────────────
 export const settingsApi = {
-  getAll: () => apiCall('/settings'),
-  get: (key: string) => apiCall(`/settings/${key}`),
+  /** Returns all settings as { [key]: value } */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAll: () => apiCall<any>('/settings'),
+  /** Returns { key, value } for a single setting key */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  get: (key: string) => apiCall<any>(`/settings/${key}`),
+  /** Returns all settings whose key starts with `namespace.` */
+  getByNamespace: (namespace: string) =>
+    apiCall<Record<string, unknown>>('/settings', { params: { namespace } }),
+  /** Single-key upsert via PUT /api/settings/[key] */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set: (key: string, value: any) =>
     apiCall(`/settings/${key}`, { method: 'PUT', body: { value } }),
+  /** Bulk upsert via PATCH /api/settings */
+  patch: (updates: Record<string, unknown>) =>
+    apiCall<{ success: boolean; updated: number }>('/settings', { method: 'PATCH', body: updates }),
 };
 
 // ──────────────────────────────────────────────────
@@ -288,6 +375,12 @@ export const catalogApi = {
     apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { enabled } }),
   uninstallModule: (id: string) =>
     apiCall(`/catalog/modules/${id}`, { method: 'DELETE' }),
+  updateModuleConfiguration: (id: string, configuration: Record<string, unknown>) =>
+    apiCall(`/catalog/modules/${id}`, { method: 'PATCH', body: { configuration } }),
+  getModuleReviews: (id: string) => apiCall(`/catalog/modules/${id}/reviews`),
+  submitModuleReview: (id: string, data: { rating: number; review?: string; reviewedBy?: string }) =>
+    apiCall(`/catalog/modules/${id}/reviews`, { method: 'POST', body: data }),
+  getModulesHealth: () => apiCall('/modules/health'),
 };
 
 // ──────────────────────────────────────────────────
@@ -332,6 +425,8 @@ export const scheduleApi = {
   getAll: () => apiCall('/schedule'),
   create: (data: Record<string, unknown>) =>
     apiCall('/schedule', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/schedule/${id}`, { method: 'PATCH', body: data }),
   delete: (id: string) =>
     apiCall(`/schedule/${id}`, { method: 'DELETE' }),
 };
@@ -344,6 +439,23 @@ export const libraryApi = {
   getSkills: () => apiCall('/library/skills') as Promise<{ skills: any[] }>,
   createSkill: (data: { name: string; slug?: string; content?: string; url?: string }) =>
     apiCall('/library/skills', { method: 'POST', body: data }),
+  // Folders
+  getFolders: () => apiCall('/library/folders') as Promise<{ success: boolean; folders: any[] }>,
+  createFolder: (data: { name: string; parentId?: string | null; color?: string }) =>
+    apiCall('/library/folders', { method: 'POST', body: data }),
+  updateFolder: (id: string, data: { name?: string; color?: string; sortOrder?: number }) =>
+    apiCall(`/library/folders/${id}`, { method: 'PATCH', body: data }),
+  deleteFolder: (id: string) =>
+    apiCall(`/library/folders/${id}`, { method: 'DELETE' }),
+  // Tags
+  getTags: (category?: string) =>
+    apiCall('/library/tags', { params: category ? { category } : undefined }) as Promise<{ success: boolean; tags: string[] }>,
+  // Ask agent about a file
+  askFile: (id: string, question: string) =>
+    apiCall(`/library/${id}/ask`, { method: 'POST', body: { question } }) as Promise<{ success: boolean; answer: string }>,
+  // File metadata
+  updateFileMeta: (id: string, data: { tags?: string[]; folderId?: string | null; starred?: boolean; description?: string }) =>
+    apiCall(`/files/${id}`, { method: 'PATCH', body: data }),
 };
 
 // ──────────────────────────────────────────────────
@@ -360,6 +472,12 @@ export const projectsApi = {
     apiCall(`/projects/${id}`, { method: 'PATCH', body: data }),
   archive: (id: string) =>
     apiCall(`/projects/${id}`, { method: 'DELETE' }),
+  archiveProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: true } }),
+  restoreProject: (id: string) =>
+    apiCall(`/projects/${id}`, { method: 'PATCH', body: { archived: false } }),
+  getHealth: (id: string) =>
+    apiCall(`/projects/${id}/health`),
   getMembers: (id: string) =>
     apiCall(`/projects/${id}/members`),
   addMember: (id: string, agentId: string, role = 'member') =>
@@ -372,9 +490,64 @@ export const projectsApi = {
     apiCall(`/projects/${id}/files`, { method: 'POST', body: { name, content, encoding } }),
   dispatch: (id: string, data: any) =>
     apiCall(`/projects/${id}/dispatch`, { method: 'POST', body: data }),
+  getMilestones: (id: string) =>
+    apiCall(`/projects/${id}/milestones`),
+  createMilestone: (id: string, data: { title: string; dueDate?: number }) =>
+    apiCall(`/projects/${id}/milestones`, { method: 'POST', body: data }),
+  updateMilestone: (id: string, milestoneId: string, data: { title?: string; dueDate?: number; completed?: boolean }) =>
+    apiCall(`/projects/${id}/milestones`, { method: 'PATCH', body: { milestoneId, ...data } }),
+  deleteMilestone: (id: string, milestoneId: string) =>
+    apiCall(`/projects/${id}/milestones?milestoneId=${encodeURIComponent(milestoneId)}`, { method: 'DELETE' }),
 };
 
 export const updateApi = {
   check: () => apiCall<{ current: string; latest: string | null; updateAvailable: boolean; releaseNotes: string | null; error?: string }>('/update'),
+};
+
+// ──────────────────────────────────────────────────
+// Automations
+// ──────────────────────────────────────────────────
+export const automationsApi = {
+  getAll: () => apiCall('/automations'),
+  create: (data: Record<string, unknown>) =>
+    apiCall('/automations', { method: 'POST', body: data }),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiCall('/automations', { method: 'PATCH', params: { id }, body: data }),
+  delete: (id: string) =>
+    apiCall('/automations', { method: 'DELETE', params: { id } }),
+  run: (id: string) =>
+    apiCall(`/automations/${id}/run`, { method: 'POST' }),
+};
+
+// ──────────────────────────────────────────────────
+// Campaigns
+// ──────────────────────────────────────────────────
+export const campaignsApi = {
+  list: (status?: string, type?: string) => {
+    const params: Record<string, string> = {};
+    if (status) params.status = status;
+    if (type) params.type = type;
+    return apiCall('/campaigns', { params: Object.keys(params).length ? params : undefined });
+  },
+  get: (id: string) => apiCall(`/campaigns/${id}`),
+  create: (data: any) => apiCall('/campaigns', { method: 'POST', body: data }),
+  update: (id: string, data: any) => apiCall(`/campaigns/${id}`, { method: 'PATCH', body: data }),
+  delete: (id: string) => apiCall(`/campaigns/${id}`, { method: 'DELETE' }),
+  addMember: (id: string, agentId: string, role = 'member') =>
+    apiCall(`/campaigns/${id}/members`, { method: 'POST', body: { agentId, role, action: 'add' } }),
+  removeMember: (id: string, agentId: string) =>
+    apiCall(`/campaigns/${id}/members`, { method: 'POST', body: { agentId, action: 'remove' } }),
+  dispatch: (id: string, data: any) =>
+    apiCall(`/campaigns/${id}/dispatch`, { method: 'POST', body: data }),
+  generateTasks: (id: string) =>
+    apiCall(`/campaigns/${id}/generate-tasks`, { method: 'POST' }),
+  duplicate: (id: string) =>
+    apiCall(`/campaigns/${id}/duplicate`, { method: 'POST' }),
+  listAutomations: (id: string) =>
+    apiCall(`/campaigns/${id}/automations`),
+  linkAutomation: (id: string, automationId: string, triggerType: string) =>
+    apiCall(`/campaigns/${id}/automations`, { method: 'POST', body: { automationId, triggerType } }),
+  unlinkAutomation: (id: string, automationId: string) =>
+    apiCall(`/campaigns/${id}/automations?automationId=${encodeURIComponent(automationId)}`, { method: 'DELETE' }),
 };
 

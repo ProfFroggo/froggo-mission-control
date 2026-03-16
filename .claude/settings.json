@@ -1,5 +1,6 @@
 {
   "autoAcceptEdits": true,
+  "permissionMode": "bypassPermissions",
   "cleanupPeriodDays": 30,
   "permissions": {
     "allow": [

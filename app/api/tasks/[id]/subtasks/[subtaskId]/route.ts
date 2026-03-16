@@ -2,7 +2,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 
-const ALLOWED_FIELDS = ['title', 'description', 'completed', 'assignedTo', 'completedAt', 'completedBy', 'position'];
+const ALLOWED_FIELDS = ['title', 'description', 'completed', 'assignedTo', 'completedAt', 'completedBy', 'position', 'dueDate'];
+
+function normalizeSubtask(row: Record<string, unknown>) {
+  return { ...row, completed: row.completed === 1 || row.completed === true };
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -32,12 +36,12 @@ export async function PATCH(
     values.push(subtaskId);
     db.prepare(`UPDATE subtasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
 
-    const updated = db.prepare('SELECT * FROM subtasks WHERE id = ?').get(subtaskId);
+    const updated = db.prepare('SELECT * FROM subtasks WHERE id = ?').get(subtaskId) as Record<string, unknown> | undefined;
     if (!updated) {
       return NextResponse.json({ error: 'Subtask not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json(normalizeSubtask(updated));
   } catch (error) {
     console.error('PATCH /api/tasks/[id]/subtasks/[subtaskId] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

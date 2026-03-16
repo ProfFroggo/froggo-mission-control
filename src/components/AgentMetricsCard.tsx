@@ -52,12 +52,12 @@ function OrchestratorMetrics({ m, compact }: { m: Record<string, number>; compac
         <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Orchestration Metrics</h4>
         <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20">Command</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Stat icon={Users} label="Agents Active" value={`${m.agentsActive ?? 0}/${m.agentsTotal ?? 0}`} color="text-mission-control-accent" />
         <Stat icon={GitBranch} label="Dispatches" value={m.dispatches ?? 0} color="text-info" sub="tasks dispatched" />
         <Stat icon={Target} label="Open Tasks" value={m.openTasks ?? 0} color="text-warning" sub="being overseen" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Zap} label="Cron Runs" value={m.cronRuns ?? 0} color="text-success" sub="scheduled jobs" />
         <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-pink-400" sub="actions taken" />
       </div>
@@ -90,12 +90,12 @@ function HRMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
         <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">HR Metrics</h4>
         <span className="text-xs px-2 py-0.5 rounded-full bg-success-subtle text-success border border-success-border">People Ops</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Stat icon={Users} label="Agent Roster" value={m.agentsTotal ?? 0} color="text-mission-control-accent" sub="total agents" />
         <Stat icon={BookOpen} label="Skills Distributed" value={m.skillSlotsTotal ?? 0} color="text-success" sub={`${m.agentsWithSkills ?? 0} agents trained`} />
         <Stat icon={CheckCircle} label="Problems Resolved" value={m.problemsResolved ?? 0} color="text-info" sub="HR tasks done" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Shield} label="Reviews Done" value={m.reviewsDone ?? 0} color="text-warning" sub="approvals handled" />
         <Stat icon={TrendingUp} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-pink-400" sub="actions taken" />
       </div>
@@ -133,7 +133,7 @@ function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
         <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Quality Control</h4>
         <span className={`text-xs px-2 py-0.5 rounded-full border ${ratingBg}`}>{ratingLabel}</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="bg-mission-control-bg rounded-lg p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <Shield size={13} className={ratingColor} />
@@ -146,7 +146,7 @@ function QCMetrics({ m, compact }: { m: Record<string, number>; compact: boolean
         <Stat icon={ThumbsUp} label="Approved" value={m.reviewsApproved ?? 0} color="text-success" sub="passed review" />
         <Stat icon={ThumbsDown} label="Rejected" value={m.reviewsRejected ?? 0} color="text-error" sub="sent back" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Clock} label="Awaiting Review" value={m.awaitingReview ?? 0} color="text-warning" sub="in queue" />
         <Stat icon={AlertCircle} label="Escalated" value={m.escalatedToHuman ?? 0} color="text-review" sub="to human-review" />
       </div>
@@ -183,7 +183,7 @@ function InboxMetrics({ m, compact }: { m: Record<string, number>; compact: bool
         <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Communications</h4>
         <span className="text-xs px-2 py-0.5 rounded-full bg-info-subtle text-info border border-info-border">Auto-Comms</span>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="bg-mission-control-bg rounded-lg p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <Inbox size={13} className="text-info" />
@@ -196,7 +196,7 @@ function InboxMetrics({ m, compact }: { m: Record<string, number>; compact: bool
         <Stat icon={CheckCircle} label="Approvals" value={m.approvalsHandled ?? 0} color="text-success" sub="handled" />
         <Stat icon={GitBranch} label="Tasks Created" value={m.tasksCreated ?? 0} color="text-mission-control-accent" sub="from inbox" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Stat icon={Zap} label="Last 7 Days" value={m.actionsLast7Days ?? 0} color="text-warning" sub="auto-actions" />
         <Stat icon={TrendingUp} label="Total Actions" value={m.totalActions ?? 0} color="text-pink-400" sub="all time" />
       </div>
@@ -314,7 +314,7 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-mission-control-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
             <Target size={16} className="text-success" />
@@ -349,7 +349,7 @@ export default function AgentMetricsCard({ agentId, agentName: _agentName, metri
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-mission-control-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
             <Zap size={14} className="text-warning" />

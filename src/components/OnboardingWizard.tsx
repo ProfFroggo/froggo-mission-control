@@ -604,7 +604,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </div>
       <button
         onClick={goNext}
-        className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
+        className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
       >
         Get Started
       </button>
@@ -651,7 +651,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           ))}
         </div>
         {sysCheck.cli === 'fail' && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3 text-xs space-y-1.5">
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-warning-border mb-3 text-xs space-y-1.5">
             <p className="font-medium text-amber-400">Claude CLI not detected</p>
             <p className="text-mission-control-text-dim">Mission Control requires the Claude Code CLI to spawn agents.</p>
             <a
@@ -707,7 +707,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         <p>Per-agent permissions — which tools each agent can use — are configured individually on the <span className="text-mission-control-text font-medium">Agents</span> page after setup.</p>
       </div>
       {permissionsConfirmed ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border">
           <CheckCircle size={16} className="text-green-500" />
           <span className="text-sm text-mission-control-text">Permissions confirmed</span>
         </div>
@@ -742,7 +742,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </p>
 
       {geminiStatus === 'ok' ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20 mb-4">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border mb-4">
           <CheckCircle size={16} className="text-green-500" />
           <span className="text-sm text-mission-control-text">API key validated and saved</span>
         </div>
@@ -781,7 +781,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         </button>
       )}
       {geminiSkipped && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-500">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
           <AlertTriangle size={12} />
           Skipped — add your key later in Settings
         </div>
@@ -808,7 +808,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       )}
 
       {googleStatus === 'connected' && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20 mb-4">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border mb-4">
           <CheckCircle size={16} className="text-green-500" />
           <span className="text-sm text-mission-control-text">
             Connected{googleEmail ? ` as ${googleEmail}` : ''}
@@ -839,7 +839,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             </button>
           )}
           {googleSkipped && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-500">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
               <AlertTriangle size={12} />
               Skipped — connect later via Settings
             </div>
@@ -933,7 +933,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           </label>
         )}
         {obsidianSkipped ? (
-          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-500">
+          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
             <AlertTriangle size={12} />
             Skipped — open Obsidian and load ~/mission-control/memory as a vault anytime
           </div>
@@ -1178,7 +1178,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         )}
 
         {allDone && !hasErrors && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border">
             <CheckCircle size={16} className="text-green-500" />
             <span className="text-sm text-mission-control-text">All items installed successfully</span>
           </div>
@@ -1276,7 +1276,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </p>
       <button
         onClick={() => { handleFinish(false); }}
-        className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
+        className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
       >
         Go to Dashboard
       </button>

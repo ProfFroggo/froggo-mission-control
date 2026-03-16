@@ -26,9 +26,9 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
 ];
 
 const COLUMNS: { id: TaskStatus; label: string; color: string; iconColor: string; borderColor: string; icon: React.ReactNode }[] = [
-  { id: 'todo',            label: 'To Do',            color: 'text-info',    iconColor: 'text-info',    borderColor: 'border-t-info',    icon: <FileText size={13} /> },
+  { id: 'todo',            label: 'To Do',            color: 'text-[#6b7a8d]', iconColor: 'text-[#6b7a8d]', borderColor: 'border-t-[#6b7a8d]', icon: <FileText size={13} /> },
   { id: 'internal-review', label: 'Pre-review',   color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
-  { id: 'in-progress',     label: 'In Progress',      color: 'text-warning', iconColor: 'text-warning', borderColor: 'border-t-warning', icon: <Zap size={13} /> },
+  { id: 'in-progress',     label: 'In Progress',      color: 'text-info', iconColor: 'text-info', borderColor: 'border-t-info', icon: <Zap size={13} /> },
   { id: 'review',          label: 'Agent Review',     color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Bot size={13} /> },
   { id: 'human-review',    label: 'Human Review',     color: 'text-warning', iconColor: 'text-warning', borderColor: 'border-t-warning', icon: <User size={13} /> },
   { id: 'done',            label: 'Done',             color: 'text-success', iconColor: 'text-success', borderColor: 'border-t-success', icon: <CheckCircle size={13} /> },
@@ -83,7 +83,7 @@ function TaskCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onOpen}
-      className={`group bg-mission-control-bg border rounded-xl p-3 cursor-pointer select-none transition-all duration-150 ${
+      className={`group bg-mission-control-bg border rounded-lg p-3 cursor-pointer select-none transition-all duration-150 ${
         isDragging ? 'opacity-40 scale-95 rotate-1 shadow-lg' :
         dueInfo?.isOverdue ? 'border-error-border bg-error-subtle/30' :
         task.priority === 'p0' ? 'border-error-border' :
@@ -175,7 +175,7 @@ function TaskCard({
       {showPriority && priorPos && createPortal(
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
-          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl p-2 z-[101] min-w-[150px]"
+          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-2 z-[101] min-w-[150px]"
             style={{ top: priorPos.top, left: priorPos.left }}
             onClick={e => e.stopPropagation()}>
             <div className="text-xs text-mission-control-text-dim mb-2 px-2 font-medium">Set Priority</div>
@@ -194,7 +194,7 @@ function TaskCard({
       {showMenu && menuPos && createPortal(
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl py-1 z-[101] min-w-[140px]"
+          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1 z-[101] min-w-[140px]"
             style={{ top: menuPos.top, left: menuPos.left }}
             onClick={e => e.stopPropagation()}>
             <button onClick={() => { setShowMenu(false); onOpen(); }}
@@ -334,7 +334,7 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
             return (
               <div
                 key={col.id}
-                className={`flex flex-col rounded-xl border transition-colors flex-shrink-0 w-52 ${
+                className={`flex flex-col rounded-lg border transition-colors flex-shrink-0 w-52 ${
                   isDragTarget ? 'border-mission-control-accent bg-mission-control-accent/5' : 'border-mission-control-border bg-mission-control-surface/30'
                 }`}
                 onDragOver={e => { e.preventDefault(); setDragOverCol(col.id); }}

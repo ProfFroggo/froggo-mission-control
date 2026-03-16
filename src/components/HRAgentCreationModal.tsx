@@ -499,16 +499,16 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
       <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} type="button" aria-label="Close" />
-      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-teal-500/30 rounded-2xl shadow-2xl shadow-teal-500/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
+      <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+          <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center text-mission-control-accent">
             <GraduationCap size={22} />
           </div>
           <div className="flex-1">
             <h2 className="font-bold text-mission-control-text">HR — Agent Creator</h2>
-            <p className="text-xs text-teal-400">
+            <p className="text-xs text-mission-control-accent">
               {stage === 'creating'
                 ? creationDone ? 'Onboarding complete!' : creationError ? 'Onboarding failed' : 'Launching new agent...'
                 : 'Building your next team member'}
@@ -524,7 +524,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
           <div className="flex-1 overflow-y-auto p-4 min-h-[300px]">
             {/* Agent card */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden border border-teal-500/40 flex items-center justify-center bg-teal-500/20 flex-shrink-0">
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-mission-control-accent/40 flex items-center justify-center bg-mission-control-accent/20 flex-shrink-0">
                 {generatedAvatarPng ? (
                   <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
                 ) : (
@@ -535,8 +535,8 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 <div className="font-semibold text-mission-control-text">{pendingConfig.name}</div>
                 <div className="text-xs text-mission-control-text-dim">{pendingConfig.role}</div>
               </div>
-              {!creationDone && !creationError && <Loader2 size={16} className="ml-auto text-teal-400 animate-spin" />}
-              {creationDone && <Sparkles size={18} className="ml-auto text-teal-400" />}
+              {!creationDone && !creationError && <Loader2 size={16} className="ml-auto text-mission-control-accent animate-spin" />}
+              {creationDone && <Sparkles size={18} className="ml-auto text-mission-control-accent" />}
             </div>
 
             {/* Progress bar */}
@@ -548,7 +548,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 </div>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-teal-400'}`}
+                    className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -558,15 +558,15 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
             {/* Steps list */}
             <div className="space-y-2">
               {creationSteps.map((step) => (
-                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-all duration-300 ${
-                  step.status === 'running'  ? 'bg-teal-500/5 border-teal-500/30' :
+                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 ${
+                  step.status === 'running'  ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
                   step.status === 'done'     ? 'bg-success-subtle border-success-border' :
                   step.status === 'skipped'  ? 'bg-mission-control-surface/30 border-mission-control-border opacity-60' :
                   step.status === 'error'    ? 'bg-error-subtle border-error-border' :
                   'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
-                    {step.status === 'running'  && <Loader2 size={16} className="text-teal-400 animate-spin" />}
+                    {step.status === 'running'  && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
                     {step.status === 'done'     && <CheckCircle size={16} className="text-success" />}
                     {step.status === 'skipped'  && <Circle size={16} className="text-mission-control-text-dim" />}
                     {step.status === 'error'    && <XCircle size={16} className="text-error" />}
@@ -576,7 +576,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                     <div className={`text-sm font-medium ${
                       step.status === 'done'    ? 'text-success' :
                       step.status === 'error'   ? 'text-error' :
-                      step.status === 'running' ? 'text-teal-400' :
+                      step.status === 'running' ? 'text-mission-control-accent' :
                       step.status === 'skipped' ? 'text-mission-control-text-dim' :
                       'text-mission-control-text-dim'
                     }`}>{step.label}</div>
@@ -590,13 +590,13 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Done card */}
             {creationDone && (
-              <div className="mt-4 p-4 bg-teal-500/10 border border-teal-500/30 rounded-xl text-center">
+              <div className="mt-4 p-4 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg text-center">
                 {generatedAvatarPng ? (
-                  <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-teal-500/40 object-cover" />
+                  <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-mission-control-accent/40 object-cover" />
                 ) : (
                   <div className="text-2xl mb-1">{pendingConfig.emoji}</div>
                 )}
-                <div className="font-semibold text-teal-400">{pendingConfig.name} is live!</div>
+                <div className="font-semibold text-mission-control-accent">{pendingConfig.name} is live!</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">
                   Find them in the Agents panel · Onboarding task created
                 </div>
@@ -605,7 +605,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Error banner */}
             {creationError && (
-              <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-xl">
+              <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-lg">
                 <div className="text-sm text-error font-medium">Onboarding failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{creationError}</div>
               </div>
@@ -620,11 +620,11 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'hr' && (
-                  <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5 text-teal-400">
+                  <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5 text-mission-control-accent">
                     <GraduationCap size={14} />
                   </div>
                 )}
-                <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
                     ? 'bg-info-subtle text-info rounded-br-md'
                     : 'bg-mission-control-surface text-mission-control-text rounded-bl-md'
@@ -640,10 +640,10 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Pending config — confirm/edit prompt */}
             {pendingConfig && !isTyping && (
-              <div className="mt-2 p-3 bg-teal-500/10 border border-teal-500/30 rounded-xl space-y-2">
+              <div className="mt-2 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{pendingConfig.emoji}</span>
-                  <span className="font-semibold text-teal-400">{pendingConfig.name}</span>
+                  <span className="font-semibold text-mission-control-accent">{pendingConfig.name}</span>
                   <span className="text-xs text-mission-control-text-dim">· {pendingConfig.role}</span>
                 </div>
                 <div className="text-xs text-mission-control-text-dim space-y-0.5">
@@ -653,13 +653,13 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => startCreation(pendingConfig)}
-                    className="flex-1 py-2 bg-teal-500 text-white text-sm rounded-xl hover:bg-teal-600 transition-colors flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-1.5"
                   >
                     <Check size={14} /> Create agent
                   </button>
                   <button
                     onClick={() => { setPendingConfig(null); addUserMessage('wait, let me change something'); askHR('wait, let me change something'); }}
-                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim text-sm rounded-xl hover:bg-mission-control-border transition-colors"
+                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-border transition-colors"
                   >
                     Edit
                   </button>
@@ -669,14 +669,14 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="w-7 h-7 rounded-full bg-teal-500/20 flex items-center justify-center mr-2 text-teal-400">
+                <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 text-mission-control-accent">
                   <GraduationCap size={14} />
                 </div>
-                <div className="bg-mission-control-surface px-4 py-3 rounded-xl">
+                <div className="bg-mission-control-surface px-4 py-3 rounded-lg">
                   <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-teal-400/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               </div>
@@ -688,17 +688,17 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         {/* Input / action bar */}
         <div className="p-3 border-t border-mission-control-border">
           {stage === 'creating' && creationDone ? (
-            <button onClick={handleClose} className="w-full py-2.5 bg-teal-500 text-white font-medium rounded-xl hover:bg-teal-600 transition-colors flex items-center justify-center gap-2">
+            <button onClick={handleClose} className="w-full py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-2">
               <Check size={16} /> Done — View Agents
             </button>
           ) : stage === 'creating' && creationError ? (
             <div className="flex gap-2">
-              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm">Back</button>
-              <button onClick={() => pendingConfig && startCreation(pendingConfig)} className="flex-1 py-2.5 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors text-sm">Retry</button>
+              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm">Back</button>
+              <button onClick={() => pendingConfig && startCreation(pendingConfig)} className="flex-1 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">Retry</button>
             </div>
           ) : stage === 'creating' ? (
             <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
-              <Loader2 size={14} className="animate-spin text-teal-400" />
+              <Loader2 size={14} className="animate-spin text-mission-control-accent" />
               Launching {pendingConfig?.name}...
             </div>
           ) : pendingConfig ? null : (
@@ -710,10 +710,10 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 onKeyDown={handleKeyDown}
                 disabled={isTyping}
                 placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-teal-500/50 disabled:opacity-50"
+                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
               />
-              <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                 {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </button>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -1043,7 +1043,7 @@ export default function ChatPanel() {
     const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     createRoom(`Team Meeting — ${timestamp}`, allAgentIds);
     setShowRoomList(false);
-    showToast('🏢 Team Meeting started! All agents are here.', 'success');
+    showToast('Team Meeting started! All agents are here.', 'success');
   };
 
   // If viewing a room, render the room view
@@ -1168,7 +1168,7 @@ export default function ChatPanel() {
           <div className="w-px h-5 bg-mission-control-border mx-1" />
           <button
             onClick={startTeamMeeting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-warning-hover transition-all shadow-sm hover:shadow-md text-xs font-semibold"
             title="Start Team Meeting — All agents join"
           >
             <UsersRound size={15} />
@@ -1225,7 +1225,7 @@ export default function ChatPanel() {
                   <button
                     key={room.id}
                     onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-mission-control-bg border border-transparent hover:border-mission-control-border transition-all text-left"
+                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-mission-control-bg border border-transparent hover:border-mission-control-border transition-all text-left"
                   >
                     <div className="flex -space-x-1.5">
                       {room.agents.slice(0, 3).map(id => (
@@ -1304,10 +1304,13 @@ export default function ChatPanel() {
             ))}
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <Sparkles size={32} className="mb-3 opacity-30" />
-            <p className="text-sm font-medium">New conversation</p>
-            <p className="text-xs mt-1 opacity-70">Send a message to get started</p>
+          <div className="flex-1 flex items-center justify-center h-full">
+            <EmptyState
+              icon={MessageSquare}
+              title="No messages yet"
+              description="Start a conversation with your agent team"
+              size="md"
+            />
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
           <EmptyState
@@ -1342,10 +1345,35 @@ export default function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing indicator — shown while agent is generating a response (before first token) */}
+      {loading && (
+        <div
+          className={`px-4 py-2 flex items-center gap-2 text-xs text-mission-control-text-dim select-none ${isVoiceMode ? 'hidden' : ''}`}
+          aria-live="polite"
+          aria-label="Agent is typing"
+        >
+          <div className="flex gap-1">
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '0ms' }}
+            />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '200ms' }}
+            />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-mission-control-accent inline-block"
+              style={{ animation: 'typing-bounce 1.2s ease-in-out infinite', animationDelay: '400ms' }}
+            />
+          </div>
+          <span>{selectedAgent?.name ?? 'Agent'} is typing...</span>
+        </div>
+      )}
+
       {/* Connection banner removed — chat uses REST API, gateway is optional */}
 
-      {/* Input */}
-      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface ${isVoiceMode ? 'hidden' : ''}`}>
+      {/* Input — sticky bottom on mobile so it's always accessible */}
+      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface sticky bottom-0 sm:relative ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1442,7 +1470,7 @@ export default function ChatPanel() {
           {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-xl bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all"
+            className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all"
             title="Attach files"
           >
             <Paperclip size={20} />
@@ -1450,9 +1478,9 @@ export default function ChatPanel() {
 
           <button
             onClick={toggleVoice}
-            className={`p-3 rounded-xl transition-all ${
+            className={`p-3 rounded-lg transition-all ${
               listening
-                ? 'bg-red-500 text-white animate-pulse'
+                ? 'bg-error text-white animate-pulse'
                 : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
@@ -1463,7 +1491,7 @@ export default function ChatPanel() {
           <button
             onClick={generateSuggestions}
             disabled={messages.length === 0 || loadingSuggestions}
-            className={`p-3 rounded-xl transition-all ${
+            className={`p-3 rounded-lg transition-all ${
               loadingSuggestions
                 ? 'bg-mission-control-accent text-white animate-pulse'
                 : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10'
@@ -1482,7 +1510,7 @@ export default function ChatPanel() {
               onKeyDown={handleKeyDown}
               placeholder={`Message ${selectedAgent.name}...`}
               rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
             />
           </div>
 
@@ -1490,7 +1518,7 @@ export default function ChatPanel() {
             onClick={sendMessage}
             disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
             title="Send message (Enter)"
-            className="p-3 bg-mission-control-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
@@ -1558,6 +1586,46 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
   );
 }
 
+// ──────────────────────────────────────────
+// Message reactions — persisted to localStorage
+// ──────────────────────────────────────────
+type ReactionType = 'up' | 'down';
+interface MessageReaction { up: number; down: number; mine: ReactionType | null }
+
+const REACTIONS_KEY = 'chat-message-reactions';
+
+function loadReactions(): Record<string, MessageReaction> {
+  try {
+    const raw = localStorage.getItem(REACTIONS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveReactions(data: Record<string, MessageReaction>) {
+  try {
+    localStorage.setItem(REACTIONS_KEY, JSON.stringify(data));
+  } catch { /* quota exceeded */ }
+}
+
+function toggleReaction(msgId: string, reaction: ReactionType): MessageReaction {
+  const all = loadReactions();
+  const current: MessageReaction = all[msgId] ?? { up: 0, down: 0, mine: null };
+  if (current.mine === reaction) {
+    all[msgId] = { ...current, [reaction]: Math.max(0, current[reaction] - 1), mine: null };
+  } else {
+    const prev = current.mine;
+    all[msgId] = {
+      up: reaction === 'up' ? current.up + 1 : prev === 'up' ? Math.max(0, current.up - 1) : current.up,
+      down: reaction === 'down' ? current.down + 1 : prev === 'down' ? Math.max(0, current.down - 1) : current.down,
+      mine: reaction,
+    };
+  }
+  saveReactions(all);
+  return all[msgId];
+}
+
 // ============================================
 // Memoized ChatMessage Item Component
 // ============================================
@@ -1587,6 +1655,18 @@ const MessageItem = memo(function MessageItem({
   onArtifactOpen,
   onImageClick,
 }: MessageItemProps) {
+  const msgId = msg.id ?? '';
+  const [reaction, setReaction] = useState<MessageReaction>(() => {
+    if (!msgId) return { up: 0, down: 0, mine: null };
+    return loadReactions()[msgId] ?? { up: 0, down: 0, mine: null };
+  });
+
+  const handleReaction = (type: ReactionType, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!msgId) return;
+    setReaction(toggleReaction(msgId, type));
+  };
+
   return (
     <div
       className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${
@@ -1605,11 +1685,11 @@ const MessageItem = memo(function MessageItem({
       </div>
 
       {/* ChatMessage content column */}
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%] min-w-[120px]`}>
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
           <div className={`text-xs font-medium mb-1 px-1 ${
-            isUser ? 'text-mission-control-accent' : 'text-emerald-600'
+            isUser ? 'text-mission-control-accent' : 'text-success'
           }`}>
             {isUser ? 'You' : selectedAgent.name}
           </div>
@@ -1619,19 +1699,51 @@ const MessageItem = memo(function MessageItem({
         <div className="relative group w-full">
           {/* ChatMessage actions bar (appears on hover) */}
           {!msg.streaming && (
-            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred || reaction.mine ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+              {/* Thumbs up */}
+              <button
+                onClick={(e) => handleReaction('up', e)}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
+                  reaction.mine === 'up'
+                    ? 'bg-success/10 text-success shadow-sm border border-success/30'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-success hover:bg-success/10 border border-mission-control-border'
+                }`}
+                title="Helpful"
+                aria-label="Mark as helpful"
+              >
+                <ThumbsUp size={13} className={reaction.mine === 'up' ? 'fill-current' : ''} />
+                {reaction.up > 0 && (
+                  <span className="text-[10px] font-medium leading-none">{reaction.up}</span>
+                )}
+              </button>
+              {/* Thumbs down */}
+              <button
+                onClick={(e) => handleReaction('down', e)}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center gap-0.5 ${
+                  reaction.mine === 'down'
+                    ? 'bg-error/10 text-error shadow-sm border border-error/30'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-error hover:bg-error/10 border border-mission-control-border'
+                }`}
+                title="Not helpful"
+                aria-label="Mark as not helpful"
+              >
+                <ThumbsDown size={13} className={reaction.mine === 'down' ? 'fill-current' : ''} />
+                {reaction.down > 0 && (
+                  <span className="text-[10px] font-medium leading-none">{reaction.down}</span>
+                )}
+              </button>
               <button
                 onClick={(e) => onToggleStar(msg, e)}
                 className={`p-1.5 rounded-lg transition-all duration-100 ${
                   isStarred
-                    ? 'bg-yellow-100 text-warning shadow-sm'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-yellow-50 border border-mission-control-border'
+                    ? 'bg-warning-subtle text-warning shadow-sm'
+                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-warning-subtle border border-mission-control-border'
                 }`}
                 title={isStarred ? 'Unstar message' : 'Star message'}
               >
-                <Star 
-                  size={14} 
-                  className={isStarred ? 'fill-yellow-500' : ''}
+                <Star
+                  size={14}
+                  className={isStarred ? 'fill-current' : ''}
                 />
               </button>
               <button
@@ -1642,7 +1754,7 @@ const MessageItem = memo(function MessageItem({
                         .map((b: any) => b.text)
                         .join('')
                     : msg.content;
-                  
+
                   const success = await copyToClipboard(textToCopy);
                   if (success) {
                     showToast('success', 'Copied', 'Message copied to clipboard');
@@ -1660,7 +1772,7 @@ const MessageItem = memo(function MessageItem({
 
           {/* ChatMessage bubble */}
           <div
-            className={`relative rounded-2xl shadow-sm ${
+            className={`relative rounded-2xl shadow-sm break-words ${
               isUser
                 ? 'bg-mission-control-accent text-white rounded-tr-sm px-4 py-3'
                 : msg.subtle
@@ -1722,7 +1834,7 @@ const MessageItem = memo(function MessageItem({
             {time}
           </span>
           {isStarred && (
-            <Star size={10} className="text-warning fill-yellow-500" />
+            <Star size={10} className="text-warning fill-current" />
           )}
         </div>
       </div>

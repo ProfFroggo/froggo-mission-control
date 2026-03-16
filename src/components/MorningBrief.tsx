@@ -421,7 +421,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           <p className="text-mission-control-text-dim mb-6">Couldn&apos;t load your brief data.</p>
           <button
             onClick={onDismiss}
-            className="px-6 py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent/80 transition-colors"
+            className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/80 transition-colors"
           >
             Continue to Dashboard
           </button>
@@ -460,7 +460,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-6 space-y-4">
           {/* Urgent Items */}
           {brief.urgentItems.length > 0 && (
-            <div className="p-4 bg-error-subtle border border-error-border rounded-xl">
+            <div className="p-4 bg-error-subtle border border-error-border rounded-lg">
               <div className="flex items-center gap-2 text-error mb-2">
                 <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
@@ -477,7 +477,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.pendingApprovals > 0 && (
             <button
               onClick={() => { onDismiss(); onNavigate('inbox'); }}
-              className="w-full p-4 bg-mission-control-bg rounded-xl hover:bg-mission-control-border transition-colors text-left group"
+              className="w-full p-4 bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors text-left group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -496,7 +496,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Gibraltar Weather */}
           {brief.weather && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Cloud size={16} className="text-info" />
                 <span className="font-medium">Gibraltar Weather</span>
@@ -513,7 +513,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Overnight Activity */}
           {brief.overnightActivity && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Activity size={16} className="text-review" />
                 <span className="font-medium">While You Slept</span>
@@ -535,7 +535,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Session Activity Stats */}
           {brief.sessionStats && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Users size={16} className="text-cyan-400" />
                 <span className="font-medium">Session Activity</span>
@@ -589,7 +589,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Agent Activity Stats */}
           {brief.agentStats && (brief.agentStats.activeAgents > 0 || brief.agentStats.busyAgents.length > 0) && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Bot size={16} className="text-success" />
                 <span className="font-medium">Agent Activity</span>
@@ -631,7 +631,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Upcoming Events */}
           {brief.upcomingEvents.length > 0 && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar size={16} className="text-mission-control-accent" />
                 <span className="font-medium">Today&apos;s Schedule</span>
@@ -649,7 +649,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
           {/* Twitter Mentions */}
           {brief.mentions && brief.mentions.length > 0 && (
-            <div className="p-4 bg-mission-control-bg rounded-xl">
+            <div className="p-4 bg-mission-control-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 <AtSign size={16} className="text-info" />
                 <span className="font-medium">Recent Mentions</span>
@@ -696,7 +696,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
           <button
             onClick={onDismiss}
-            className="w-full py-3 bg-mission-control-accent text-white rounded-xl font-medium hover:bg-mission-control-accent/90 transition-colors"
+            className="w-full py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/90 transition-colors"
           >
             {hasItems ? "Let's get to work" : "Start your day"}
           </button>

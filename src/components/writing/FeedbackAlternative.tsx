@@ -16,7 +16,7 @@ export default function FeedbackAlternative({ index, text, commentary, onAccept 
         </span>
         <p className="text-sm text-mission-control-text mt-0.5 whitespace-pre-wrap">{text}</p>
         {commentary && (
-          <p className="text-xs text-indigo-400/80 mt-1 italic">{commentary}</p>
+          <p className="text-xs text-mission-control-accent/80 mt-1 italic">{commentary}</p>
         )}
       </div>
       <button

@@ -98,7 +98,7 @@ Time: ${new Date().toISOString()}
           <div className="max-w-md w-full bg-mission-control-surface rounded-2xl border border-error-border p-6 shadow-xl">
             {/* Icon and Title */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-error-subtle rounded-xl">
+              <div className="p-3 bg-error-subtle rounded-lg">
                 <AlertTriangle size={28} className="text-error" />
               </div>
               <div>
@@ -131,7 +131,7 @@ Time: ${new Date().toISOString()}
             <div className="space-y-2">
               <button
                 onClick={this.handleRetry}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium"
               >
                 <RefreshCw size={18} />
                 Try Again
@@ -140,7 +140,7 @@ Time: ${new Date().toISOString()}
               <div className="flex gap-2">
                 <button
                   onClick={this.handleReportError}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm"
                 >
                   <Bug size={16} />
                   Report Error
@@ -148,7 +148,7 @@ Time: ${new Date().toISOString()}
 
                 <button
                   onClick={() => window.location.reload()}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-xl hover:bg-mission-control-border transition-colors text-sm"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-bg border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm"
                 >
                   <XCircle size={16} />
                   Reload App

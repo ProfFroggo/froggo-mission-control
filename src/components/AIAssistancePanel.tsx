@@ -369,8 +369,10 @@ Provide a brief, actionable summary.`;
             {activeTab === 'suggestions' && (
               <div className="space-y-3">
                 {suggestions.length === 0 ? (
-                  <div className="text-center py-8 text-mission-control-text-dim text-sm">
-                    No suggestions generated yet
+                  <div className="flex flex-col items-center justify-center min-h-[200px] text-mission-control-text-dim">
+                    <Zap size={32} className="mb-3 opacity-40" />
+                    <p className="text-sm font-medium mb-1">No suggestions generated yet</p>
+                    <p className="text-xs">Select an inbox item to get smart suggestions</p>
                   </div>
                 ) : (
                   suggestions.map((suggestion) => (
@@ -479,9 +481,11 @@ Provide a brief, actionable summary.`;
                     {summary}
                   </p>
                 ) : (
-                  <p className="text-sm text-mission-control-text-dim text-center py-4">
-                    No summary generated yet
-                  </p>
+                  <div className="flex flex-col items-center justify-center min-h-[200px] text-mission-control-text-dim">
+                    <Sparkles size={32} className="mb-3 opacity-40" />
+                    <p className="text-sm font-medium mb-1">No summary generated yet</p>
+                    <p className="text-xs">Select an inbox item to generate a summary</p>
+                  </div>
                 )}
               </div>
             )}

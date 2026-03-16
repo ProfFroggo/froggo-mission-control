@@ -113,7 +113,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
       aria-label="Close modal backdrop"
     >
       <div 
-        className={`glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+        className={`glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`} 
         onClick={handleInnerClick}

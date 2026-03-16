@@ -20,17 +20,20 @@ const STORAGE_KEY = 'mission-control-panel-config';
 const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'dashboard',     label: 'Dashboard',        visible: true,  order: 0  },
   { id: 'projects',      label: 'Projects',          visible: true,  order: 1  },
-  { id: 'kanban',        label: 'Tasks',             visible: true,  order: 2  },
-  { id: 'approvals',     label: 'Approvals',         visible: true,  order: 3  },
-  { id: 'chat',          label: 'Chat',              visible: true,  order: 4  },
-  { id: 'inbox',         label: 'Inbox',             visible: true,  order: 5  },
-  { id: 'schedule',      label: 'Schedule',          visible: true,  order: 6  },
-  { id: 'library',       label: 'Library',           visible: true,  order: 7  },
-  { id: 'agents',        label: 'Agents',            visible: true,  order: 8  },
-  { id: 'modules',       label: 'Modules',           visible: true,  order: 9  },
-  { id: 'settings',      label: 'Settings',          visible: true,  order: 10 },
-  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 11 },
-  { id: 'notifications', label: 'Notifications',     visible: false, order: 12 },
+  { id: 'campaigns',     label: 'Campaigns',         visible: true,  order: 2  },
+  { id: 'kanban',        label: 'Tasks',             visible: true,  order: 3  },
+  { id: 'approvals',     label: 'Approvals',         visible: true,  order: 4  },
+  { id: 'chat',          label: 'Chat',              visible: true,  order: 5  },
+  { id: 'inbox',         label: 'Inbox',             visible: true,  order: 6  },
+  { id: 'schedule',      label: 'Schedule',          visible: true,  order: 7  },
+  { id: 'library',       label: 'Library',           visible: true,  order: 8  },
+  { id: 'knowledge',     label: 'Knowledge',         visible: true,  order: 9  },
+  { id: 'agents',        label: 'Agents',            visible: true,  order: 10 },
+  { id: 'automations',   label: 'Automations',       visible: true,  order: 11 },
+  { id: 'modules',       label: 'Modules',           visible: true,  order: 12 },
+  { id: 'settings',      label: 'Settings',          visible: true,  order: 13 },
+  { id: 'toolbar',       label: 'Floating Toolbar',  visible: true,  order: 14 },
+  { id: 'notifications', label: 'Notifications',     visible: false, order: 15 },
 ];
 
 function loadFromStorage(): PanelConfig[] {
@@ -139,31 +142,36 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
     const coreIds = new Set(DEFAULT_PANELS.map(p => p.id));
 
     set((state) => {
-      // Strip panels for uninstalled module views (not in ViewRegistry, not core)
-      const filtered = state.panels.filter(p =>
-        coreIds.has(p.id) || registeredViewIds.has(p.id)
-      );
+      const existingIds = new Set(state.panels.map(p => p.id));
+      let changed = false;
+
+      // Start with current panels (preserves user's saved order)
+      let result = [...state.panels];
 
       // Add panels for newly registered views not yet in list
-      const existing = new Set(filtered.map(p => p.id));
-      let maxOrder = Math.max(...filtered.map(p => p.order), 0);
-      const newPanels: PanelConfig[] = [];
-
+      let maxOrder = Math.max(...result.map(p => p.order), 0);
       for (const view of allViews) {
-        if (!existing.has(view.id) && view.id !== 'comms') {
-          newPanels.push({
+        if (!existingIds.has(view.id) && view.id !== 'comms') {
+          result.push({
             id: view.id,
             label: view.label,
             visible: true,
             order: ++maxOrder,
           });
+          changed = true;
         }
       }
 
-      const merged = [...filtered, ...newPanels];
-      if (merged.length !== state.panels.length || newPanels.length > 0) {
-        saveToStorage(merged);
-        return { panels: merged };
+      // Remove panels for uninstalled module views (not in ViewRegistry, not core)
+      const beforeLen = result.length;
+      result = result.filter(p =>
+        coreIds.has(p.id) || registeredViewIds.has(p.id)
+      );
+      if (result.length !== beforeLen) changed = true;
+
+      if (changed) {
+        saveToStorage(result);
+        return { panels: result };
       }
       return state;
     });

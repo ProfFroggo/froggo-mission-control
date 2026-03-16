@@ -47,7 +47,7 @@ export default function CharacterList() {
           ) : (
             <div
               key={char.id}
-              className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-bg/60 transition-colors"
+              className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
               <div className="flex items-start justify-between gap-1">
                 <div className="flex-1 min-w-0">

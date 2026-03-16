@@ -95,7 +95,7 @@ export default function TimeTrackingPanel() {
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
             >
               <option value="all">All Projects</option>
               {projects.map((p) => (
@@ -110,7 +110,7 @@ export default function TimeTrackingPanel() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
           >
             <option value="recent">Most Recent</option>
             <option value="duration">Longest Duration</option>
@@ -119,26 +119,26 @@ export default function TimeTrackingPanel() {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Total Time</div>
-          <div className="text-2xl font-bold text-info">
+          <div className="text-2xl font-bold text-info tabular-nums">
             {formatDuration(totalTime)}
           </div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Avg Time/Task</div>
-          <div className="text-2xl font-bold text-success">
+          <div className="text-2xl font-bold text-success tabular-nums">
             {formatDuration(avgTime)}
           </div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Active Tasks</div>
-          <div className="text-2xl font-bold text-warning">{activeTasksCount}</div>
+          <div className="text-2xl font-bold text-warning tabular-nums">{activeTasksCount}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Tracked Tasks</div>
-          <div className="text-2xl font-bold text-review">{tasks.length}</div>
+          <div className="text-2xl font-bold text-review tabular-nums">{tasks.length}</div>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ export default function TimeTrackingPanel() {
               <div key={project.project}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">{project.project}</span>
-                  <span className="text-sm text-mission-control-text-dim">
+                  <span className="text-sm text-mission-control-text-dim tabular-nums">
                     {project.totalTimeSpent.toFixed(1)}h
                   </span>
                 </div>
@@ -205,7 +205,7 @@ export default function TimeTrackingPanel() {
                   <td className="p-3 text-sm text-mission-control-text-dim">
                     {formatDate(task.startTime)}
                   </td>
-                  <td className="p-3 text-sm font-medium">
+                  <td className="p-3 text-sm font-medium tabular-nums">
                     {formatDuration(task.duration)}
                   </td>
                   <td className="p-3">

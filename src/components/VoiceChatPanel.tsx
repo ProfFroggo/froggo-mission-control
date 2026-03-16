@@ -225,9 +225,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       try {
         await ctx.resume();
         setAudioState('running');
-        addSystemMessage('🔊 Audio enabled');
+        addSystemMessage('Audio enabled');
       } catch (e: unknown) {
-        addSystemMessage(`⚠️ Audio resume failed: ${e instanceof Error ? e.message : String(e)}`);
+        addSystemMessage(`Audio resume failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   };
@@ -238,7 +238,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.on('connected', () => {
         setCallActive(true);
         setConnecting(false);
-        addSystemMessage('🔗 Connected — speak naturally');
+        addSystemMessage('Connected — speak naturally');
       }),
       geminiLive.on('disconnected', ({ code }: { code?: number; reason?: string } = {}) => {
         const wasActive = callActiveRef.current;
@@ -260,7 +260,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }),
       geminiLive.on('reconnecting', ({ attempt }: { attempt: number; delayMs: number }) => {
         setConnecting(true);
-        addSystemMessage(`🔄 Reconnecting... (attempt ${attempt})`);
+        addSystemMessage(`Reconnecting... (attempt ${attempt})`);
       }),
       geminiLive.on('listening-start', () => setListening(true)),
       geminiLive.on('listening-end', () => setListening(false)),
@@ -270,7 +270,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.on('model-audio-level', ({ level }: { level: number }) => setSpeakLevel(level)),
       geminiLive.on('error', ({ message }: { message: string }) => {
         logger.error('Gemini error:', message);
-        addSystemMessage(`⚠️ ${message}`);
+        addSystemMessage(`${message}`);
       }),
       geminiLive.on('transcript', (data: { text: string; role: string }) => {
         if (!data.text?.trim()) return;
@@ -316,7 +316,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         // Voice thinking update
       }),
       geminiLive.on('interrupted', () => {
-        addSystemMessage('🔄 Interrupted');
+        addSystemMessage('Interrupted');
       }),
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
@@ -326,14 +326,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
             // Tool call executed
-            addSystemMessage(`🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
+            addSystemMessage(`${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
             let result: any;
             try {
               result = await executeToolCall(fc.name, fc.args || {}, selectedAgent);
             } catch (toolErr: any) {
               // `[VoiceChat] Tool execution error for ${fc.name}:`, toolErr;
               result = { error: toolErr.message || 'Tool execution failed' };
-              addSystemMessage(`⚠️ ${fc.name} failed: ${toolErr.message}`);
+              addSystemMessage(`${fc.name} failed: ${toolErr.message}`);
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
             if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
@@ -345,12 +345,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             await geminiLive.sendToolResponse(responses);
           } catch (sendErr: any) {
             // '[VoiceChat] Failed to send tool response:', sendErr;
-            addSystemMessage(`⚠️ Tool response send failed: ${sendErr.message}`);
+            addSystemMessage(`Tool response send failed: ${sendErr.message}`);
           }
         } catch (outerErr: any) {
           geminiLive.stopToolCallKeepalive();
           // '[VoiceChat] Unexpected error in tool-call handler:', outerErr;
-          addSystemMessage(`⚠️ Tool call error: ${outerErr.message}`);
+          addSystemMessage(`Tool call error: ${outerErr.message}`);
         }
       }),
     ];
@@ -400,7 +400,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         tools: buildAgentTools(),
       });
       
-      addActivity({ type: 'chat', message: `🎙️ Voice call with ${selectedAgent.name}`, timestamp: Date.now() });
+      addActivity({ type: 'chat', message: `Voice call with ${selectedAgent.name}`, timestamp: Date.now() });
       await geminiLive.startMic(selectedMic || undefined);
       
       // Auto-start video if selected
@@ -408,7 +408,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         try {
           await geminiLive.startVideo('camera');
           setVideoActive(true);
-          addSystemMessage('📹 Camera active');
+          addSystemMessage('Camera active');
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         } catch (_e) {
           // Camera activation failed silently — video mode already reset by state
@@ -419,7 +419,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }
     } catch (err: unknown) {
       // '[VoiceChat] Connect failed:', err;
-      addSystemMessage(`⚠️ Connection failed: ${err instanceof Error ? err.message : String(err)}`);
+      addSystemMessage(`Connection failed: ${err instanceof Error ? err.message : String(err)}`);
       setConnecting(false);
       callActiveRef.current = false;
     }
@@ -430,7 +430,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     setMicLevel(0);
     setSpeakLevel(0);
     await geminiLive.disconnect();
-    addSystemMessage('📞 Call ended');
+    addSystemMessage('Call ended');
   };
   
   const toggleMic = async () => {
@@ -456,14 +456,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         const mode = videoMode !== 'none' ? videoMode : 'camera';
         await geminiLive.startVideo(mode);
         setVideoActive(true);
-        addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
+        addSystemMessage(mode === 'camera' ? 'Camera active' : 'Screen sharing active');
         if (mode === 'screen') {
           geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
         } else {
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         }
       } catch (e: unknown) {
-        addSystemMessage(`⚠️ Video failed: ${e instanceof Error ? e.message : String(e)}`);
+        addSystemMessage(`Video failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   };
@@ -490,10 +490,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       await geminiLive.startVideo('screen', sourceId);
       setVideoActive(true);
       setActiveSourceId(source.id);
-      addSystemMessage(`🖥️ Sharing: ${source.name}`);
+      addSystemMessage(`Sharing: ${source.name}`);
       geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
     } catch (e: unknown) {
-      addSystemMessage(`⚠️ Screen share failed: ${e instanceof Error ? e.message : String(e)}`);
+      addSystemMessage(`Screen share failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
   
@@ -514,7 +514,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     try {
       await geminiLive.sendText(text);
     } catch (e: unknown) {
-      addSystemMessage(`⚠️ Send failed: ${e instanceof Error ? e.message : String(e)}`);
+      addSystemMessage(`Send failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
   
@@ -638,7 +638,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 value={selectedMic}
                 onChange={(e) => setSelectedMic(e.target.value)}
                 disabled={callActive}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm disabled:opacity-50"
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm disabled:opacity-50"
               >
                 <option value="">System default</option>
                 {audioInputs.map(d => (
@@ -653,7 +653,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 id="speaker-select"
                 value={selectedSpeaker}
                 onChange={(e) => setSelectedSpeaker(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm"
+                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm"
               >
                 <option value="">System default</option>
                 {audioOutputs.map(d => (
@@ -761,7 +761,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           <div className="flex items-center justify-center h-12">
             {listening && !speaking && (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-indigo-400 font-medium">⚡ Listening…</span>
+                <span className="text-xs text-mission-control-accent font-medium">⚡ Listening…</span>
                 <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
               </div>
             )}
@@ -797,7 +797,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         <div className="flex items-center justify-center gap-4">
           {callActive && (
             <button data-voice-meeting onClick={toggleMic} disabled={speaking}
-              className={`p-4 rounded-full transition-all ${listening ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-110' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'} disabled:opacity-40`}
+              className={`p-4 rounded-full transition-all ${listening ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/30 scale-110' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'} disabled:opacity-40`}
               title={listening ? 'Pause mic' : 'Resume mic'}>
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
             </button>
@@ -1227,7 +1227,7 @@ function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null,
   }
   
   // Team roster (one-liners only, ~150 tokens)
-  parts.push(`Your team: Coder 💻 (code/builds), Writer ✍️ (content), Researcher 🔍 (analysis), Chief 👨‍💻 (complex projects), Clara 🔍 (quality review), Designer 🎨 (UI/UX), HR 🎓 (agent management), Jess 🤖 (psychology/therapy).`);
+  parts.push(`Your team: Coder (code/builds), Writer (content), Researcher (analysis), Chief (complex projects), Clara (quality review), Designer (UI/UX), HR (agent management), Jess (psychology/therapy).`);
 
   // Voice behavior (~100 tokens)
   parts.push(`\nVoice chat mode: Be conversational and concise (1-3 sentences). Natural speech, no markdown. Use tools proactively — don't ask permission, just do it.`);

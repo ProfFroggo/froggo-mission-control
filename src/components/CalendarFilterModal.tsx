@@ -239,7 +239,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
       aria-label="Close calendar filter"
     >
       <div 
-        className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter"
+        className="glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
@@ -247,7 +247,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-xl">
+            <div className="p-2 bg-info-subtle rounded-lg">
               <Calendar size={20} className="text-info" />
             </div>
             <div>

@@ -32,7 +32,7 @@ export function SkeletonText({ lines = 3, className = '' }: { lines?: number; cl
 
 export function SkeletonCard({ className = '' }: SkeletonProps) {
   return (
-    <div className={`p-4 bg-mission-control-surface border border-mission-control-border rounded-xl ${className}`}>
+    <div className={`p-4 bg-mission-control-surface border border-mission-control-border rounded-lg ${className}`}>
       <div className="flex items-center gap-3 mb-3">
         <Skeleton className="w-10 h-10 rounded-full" />
         <div className="flex-1">
@@ -49,7 +49,7 @@ export function SkeletonList({ count = 3, className = '' }: { count?: number; cl
   return (
     <div className={`space-y-3 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
+        <div key={i} className="flex items-center gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="flex-1">
             <Skeleton className="h-4 w-2/3 mb-1" />
@@ -88,7 +88,7 @@ export function SkeletonMessage({ className = '' }: SkeletonProps) {
       <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
       <div className="flex-1">
         <Skeleton className="h-4 w-24 mb-2" />
-        <div className="p-3 bg-mission-control-surface rounded-xl">
+        <div className="p-3 bg-mission-control-surface rounded-lg">
           <SkeletonText lines={2} />
         </div>
       </div>
@@ -100,7 +100,7 @@ export function SkeletonInbox() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+        <div key={i} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
           <div className="flex items-start gap-3">
             <Skeleton className="w-10 h-10 rounded-lg" />
             <div className="flex-1">

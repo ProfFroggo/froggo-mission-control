@@ -334,13 +334,13 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about your finances..."
-            className="flex-1 bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-xl px-4 py-2 focus:outline-none focus:border-mission-control-accent transition-colors"
+            className="flex-1 bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent transition-colors"
             disabled={loading || initializing}
           />
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
-            className="p-2 bg-mission-control-accent hover:opacity-90 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+            className="p-2 bg-mission-control-accent hover:opacity-90 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             aria-label={loading ? "Sending message" : "Send message"}
           >
             {loading ? (

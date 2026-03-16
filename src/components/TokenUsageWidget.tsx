@@ -1,350 +1,320 @@
-// LEGACY: TokenUsageWidget uses file-level suppression for intentional patterns.
-// Widget for token usage tracking - patterns are safe.
-// Review: 2026-02-17 - suppression retained, patterns are safe
-
-import { useState, useEffect } from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
-import { Zap, DollarSign, TrendingUp, Shield } from 'lucide-react';
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+import { useState, useEffect, useMemo } from 'react';
+import { Coins, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
 import AgentTokenDetailModal from './AgentTokenDetailModal';
-import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
 
-interface TokenSummaryResponse {
-  by_agent: Array<{
-    agent: string;
-    total_input: number;
-    total_output: number;
-    total_all: number;
-    total_cost: number;
-    calls: number;
-  }>;
-  by_model?: Array<any>;
-  period?: string;
-  error?: string;
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AgentUsage {
+  agentId: string;
+  tokens: number;
+  cost: number;
+  taskCount: number;
 }
 
-interface BudgetResponse {
-  agent: string;
-  daily_limit: number;
-  used_today: number;
-  remaining: number;
-  percentage_used: number;
-  alert_threshold: number;
-  over_budget: boolean;
-  hard_limit: boolean;
-  error?: string;
-}
-
-interface ChartData {
-  agent: string;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  calls: number;
+interface DayUsage {
+  date: string;
+  tokens: number;
   cost: number;
 }
 
-export default function TokenUsageWidget() {
+interface TokenData {
+  totalTokens: number;
+  totalCost: number;
+  byAgent: AgentUsage[];
+  byDay: DayUsage[];
+}
+
+// ─── Sparkline (SVG polyline, daily cost) ────────────────────────────────────
+
+function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
+  const W = 280;
+  const H = 48;
+  const PAD_X = 4;
+  const PAD_Y = 6;
+
+  const points = useMemo(() => {
+    if (byDay.length < 2) return null;
+    const values = byDay.map(d => d.cost);
+    const maxVal = Math.max(...values, 0.000001);
+    const step = (W - PAD_X * 2) / (values.length - 1);
+    return values.map((v, i) => ({
+      x: PAD_X + i * step,
+      y: PAD_Y + (H - PAD_Y * 2) * (1 - v / maxVal),
+      cost: v,
+      date: byDay[i].date,
+    }));
+  }, [byDay]);
+
+  if (!points) {
+    return (
+      <div className="flex items-center justify-center h-12 text-xs text-mission-control-text-dim">
+        Not enough data
+      </div>
+    );
+  }
+
+  const polylinePoints = points.map(p => `${p.x},${p.y}`).join(' ');
+  const fillPoints = [
+    `${points[0].x},${H - PAD_Y}`,
+    ...points.map(p => `${p.x},${p.y}`),
+    `${points[points.length - 1].x},${H - PAD_Y}`,
+  ].join(' ');
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full h-12"
+      aria-label="Daily cost sparkline"
+      role="img"
+    >
+      <defs>
+        <linearGradient id="cost-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <polygon points={fillPoints} fill="url(#cost-spark-fill)" />
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke="var(--color-warning, #f59e0b)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {points.length > 0 && (
+        <circle
+          cx={points[points.length - 1].x}
+          cy={points[points.length - 1].y}
+          r={3}
+          fill="var(--color-warning, #f59e0b)"
+        />
+      )}
+    </svg>
+  );
+}
+
+// ─── Agent usage bar row ──────────────────────────────────────────────────────
+
+function AgentBar({
+  agent,
+  maxTokens,
+  onClick,
+}: {
+  agent: AgentUsage;
+  maxTokens: number;
+  onClick: () => void;
+}) {
+  const pct = maxTokens > 0 ? Math.min((agent.tokens / maxTokens) * 100, 100) : 0;
+  const theme = getAgentTheme(agent.agentId);
+  const label = agent.agentId.replace(/-/g, ' ');
+  const tokLabel =
+    agent.tokens >= 1_000_000
+      ? `${(agent.tokens / 1_000_000).toFixed(1)}M`
+      : agent.tokens >= 1_000
+      ? `${(agent.tokens / 1_000).toFixed(0)}K`
+      : String(agent.tokens);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <button
+          type="button"
+          onClick={onClick}
+          className="font-medium capitalize hover:underline text-left truncate max-w-32"
+          title={agent.agentId}
+        >
+          {label}
+        </button>
+        <div className="flex items-center gap-2 text-mission-control-text-dim shrink-0 tabular-nums">
+          <span>{tokLabel}</span>
+          <span className="text-warning">${agent.cost.toFixed(4)}</span>
+        </div>
+      </div>
+      <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, backgroundColor: theme.color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Budget banner ────────────────────────────────────────────────────────────
+
+function BudgetBanner({ totalCost, budgetUsd }: { totalCost: number; budgetUsd: number }) {
+  if (budgetUsd <= 0) return null;
+  const pct = (totalCost / budgetUsd) * 100;
+  if (pct < 80) return null;
+  const isOver = pct >= 100;
+
+  return (
+    <div
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+        isOver
+          ? 'bg-error-subtle border border-error-border text-error'
+          : 'bg-warning-subtle border border-warning-border text-warning'
+      }`}
+    >
+      <AlertTriangle size={14} className="shrink-0" />
+      <span>
+        {isOver
+          ? `Monthly budget exceeded — $${totalCost.toFixed(4)} / $${budgetUsd.toFixed(2)} (${pct.toFixed(0)}%)`
+          : `Approaching monthly budget — $${totalCost.toFixed(4)} / $${budgetUsd.toFixed(2)} (${pct.toFixed(0)}%)`}
+      </span>
+    </div>
+  );
+}
+
+// ─── Main widget ──────────────────────────────────────────────────────────────
+
+export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'today' | '7d' | '30d'>('today');
-  const [summaryData, setSummaryData] = useState<TokenSummaryResponse | null>(null);
-  const [budgetData, setBudgetData] = useState<Map<string, BudgetResponse>>(new Map());
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [data, setData] = useState<TokenData | null>(null);
+  const [budgetUsd, setBudgetUsd] = useState(0);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
-  }, [period]);
+    loadBudget();
+  }, [days]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
-      const summary = await fetch(`/api/analytics/token-usage?period=${periodMap[period] || period}`).then(r => r.ok ? r.json() : null).catch(() => null);
-      if (!summary) {
-        setLoading(false);
-        return;
+      const res = await fetch(`/api/token-usage?days=${days}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json as TokenData);
       }
-      setSummaryData(summary as TokenSummaryResponse);
-
-      if (!summary.error && summary.by_agent) {
-        const chartData = summary.by_agent
-          .filter((item: any) => item.agent !== 'unknown')
-          .map((item: any) => ({
-            agent: item.agent,
-            inputTokens: item.total_input,
-            outputTokens: item.total_output,
-            totalTokens: item.total_all,
-            calls: item.calls,
-            cost: item.total_cost,
-          }));
-        setChartData(chartData);
-      }
-    } catch (error) {
-      // Failed to load token data
+    } catch {
+      // silently fail — widget shows empty state
     } finally {
       setLoading(false);
     }
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium mb-2">{data.agent}</p>
-          <p className="text-sm text-info">Input: {data.inputTokens.toLocaleString()}</p>
-          <p className="text-sm text-review">Output: {data.outputTokens.toLocaleString()}</p>
-          <p className="text-sm text-success">Total: {data.totalTokens.toLocaleString()}</p>
-          <p className="text-sm text-warning">Calls: {data.calls}</p>
-          <p className="text-sm text-warning">Cost: ${data.cost.toFixed(4)}</p>
-        </div>
-      );
+  const loadBudget = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (res.ok) {
+        const settings = await res.json() as Record<string, string>;
+        const raw = settings['token_budget_usd'];
+        if (raw) setBudgetUsd(parseFloat(raw) || 0);
+      }
+    } catch {
+      // no budget configured
     }
-    return null;
   };
 
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">Loading token data...</div>
+        <div className="text-mission-control-text-dim text-sm">Loading token data...</div>
       </div>
     );
   }
 
-  if (summaryData?.error || !summaryData?.by_agent) {
+  if (!data) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">No token data available</div>
+        <div className="text-mission-control-text-dim text-sm">No token data available</div>
       </div>
     );
   }
 
-  // Calculate summary stats
-  const totalTokens = summaryData.by_agent.reduce((sum, d) => sum + d.total_all, 0);
-  const totalCost = summaryData.by_agent.reduce((sum, d) => sum + d.total_cost, 0);
-  const topConsumer = summaryData.by_agent.reduce(
-    (max, agent) => (agent.total_all > max.total_all ? agent : max),
-    summaryData.by_agent[0]
-  );
+  const top3 = data.byAgent.slice(0, 3);
+  const maxTokens = top3.length > 0 ? top3[0].tokens : 1;
+
+  const totalLabel =
+    data.totalTokens >= 1_000_000
+      ? `${(data.totalTokens / 1_000_000).toFixed(2)}M`
+      : data.totalTokens >= 1_000
+      ? `${(data.totalTokens / 1_000).toFixed(1)}K`
+      : String(data.totalTokens);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col gap-5 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Zap className="text-mission-control-accent" size={20} />
-            Token Usage
-          </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            Token burn rate and budget tracking
-          </p>
-        </div>
-
-        {/* Period selector */}
-        <div className="flex bg-mission-control-border rounded-lg p-1">
-          {(['today', '7d', '30d'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                period === p
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              {p === 'today' ? 'Today' : p}
-            </button>
-          ))}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Coins size={18} className="text-mission-control-accent" />
+          <h2 className="text-base font-semibold">Token Usage</h2>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
-            <Zap size={16} className="text-warning" />
+      {/* Budget alert banner */}
+      <BudgetBanner totalCost={data.totalCost} budgetUsd={budgetUsd} />
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1">
+            <Zap size={13} className="text-warning" />
             Total Tokens
           </div>
-          <div className="text-2xl font-bold text-warning">
-            {totalTokens.toLocaleString()}
-          </div>
-          <div className="text-sm text-mission-control-text-dim mt-1">
-            {summaryData.by_agent.reduce((sum, d) => sum + d.calls, 0)} calls
-          </div>
+          <div className="text-2xl font-bold tabular-nums">{totalLabel}</div>
+          <div className="text-xs text-mission-control-text-dim mt-0.5">last {days} days</div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
-            <DollarSign size={16} className="text-success" />
-            Total Cost
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1">
+            <Coins size={13} className="text-success" />
+            Est. Cost
           </div>
-          <div className="text-2xl font-bold text-success">
-            ${totalCost.toFixed(2)}
-          </div>
-          <div className="text-sm text-mission-control-text-dim mt-1">
-            {period === 'today' ? 'Today' : `Last ${period}`}
-          </div>
-        </div>
-
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
-          <div className="text-sm text-mission-control-text-dim mb-1 flex items-center gap-2">
-            <TrendingUp size={16} className="text-info" />
-            Top Consumer
-          </div>
-          <div className="text-xl font-bold">
-            {topConsumer?.agent || 'None'}
-          </div>
-          <div className="text-sm text-mission-control-text-dim mt-1">
-            {topConsumer?.total_all.toLocaleString() || '0'} tokens
+          <div className="text-2xl font-bold text-success tabular-nums">${data.totalCost.toFixed(4)}</div>
+          <div className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
+            {budgetUsd > 0 ? `of $${budgetUsd.toFixed(2)} budget` : 'no budget set'}
           </div>
         </div>
       </div>
 
-      {/* Burn Rate Bar Chart */}
-      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
-        <h3 className="text-sm font-medium text-mission-control-text-dim mb-4">
-          Per-Agent Token Consumption
-        </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart
-            data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
-            <XAxis dataKey="agent" stroke={CHART_AXIS.stroke} />
-            <YAxis stroke={CHART_AXIS.stroke} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar
-              dataKey="inputTokens"
-              name="Input Tokens"
-              stackId="a"
-              onClick={(data: any) => setSelectedAgent(data.agent)}
-              cursor="pointer"
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-input-${index}`} fill={getAgentTheme(entry.agent).color} />
-              ))}
-            </Bar>
-            <Bar
-              dataKey="outputTokens"
-              name="Output Tokens"
-              stackId="a"
-              onClick={(data: any) => setSelectedAgent(data.agent)}
-              cursor="pointer"
-            >
-              {chartData.map((entry, index) => {
-                // Use a slightly darker/lighter variant for output
-                const baseColor = getAgentTheme(entry.agent).color;
-                return <Cell key={`cell-output-${index}`} fill={baseColor} fillOpacity={0.6} />;
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Budget Status Section */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="text-sm font-medium text-mission-control-text-dim mb-4 flex items-center gap-2">
-          <Shield size={16} className="text-info" />
-          Budget Status
-        </h3>
-        <div className="space-y-4">
-          {summaryData.by_agent
-            .filter((agent) => agent.agent !== 'unknown')
-            .map((agent) => {
-              const budget = budgetData.get(agent.agent);
-              if (!budget || budget.daily_limit === 0) {
-                return (
-                  <div key={agent.agent} className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 w-32">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getAgentTheme(agent.agent).color }}
-                      />
-                      <span
-                        className="text-sm font-medium cursor-pointer hover:underline"
-                        onClick={() => setSelectedAgent(agent.agent)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(agent.agent); } }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {agent.agent}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm text-mission-control-text-dim">No budget set</div>
-                    </div>
-                  </div>
-                );
-              }
-
-              const pctRaw = budget.percentage_used ?? budget.percentage_used ?? 0;
-              const percentage = pctRaw > 1 ? pctRaw : pctRaw * 100; // normalize to 0-100
-              const threshold = (budget.alert_threshold || 0.9) * 100;
-              let barColor = getAgentTheme(agent.agent).color; // Green (< 70%)
-              if (percentage >= threshold) {
-                barColor = CHART_COLORS.red; // Red (>= alert threshold)
-              } else if (percentage >= 70) {
-                barColor = CHART_COLORS.amber; // Yellow (70-90%)
-              }
-
-              return (
-                <div key={agent.agent} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getAgentTheme(agent.agent).color }}
-                      />
-                      <span
-                        className="text-sm font-medium cursor-pointer hover:underline"
-                        onClick={() => setSelectedAgent(agent.agent)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(agent.agent); } }}
-                        role="button"
-                        tabIndex={0}
-                      >
-                        {agent.agent}
-                      </span>
-                      {budget.over_budget && (
-                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full font-medium">
-                          OVER BUDGET
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-mission-control-text-dim">
-                      {budget.used_today.toLocaleString()} / {budget.daily_limit.toLocaleString()} tokens
-                      <span className="ml-2 text-xs">({percentage.toFixed(1)}%)</span>
-                    </div>
-                  </div>
-                  <div className="bg-mission-control-border rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-full transition-all duration-300"
-                      style={{
-                        width: `${Math.min(percentage, 100)}%`,
-                        backgroundColor: barColor,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+      {/* Top 3 agents */}
+      {top3.length > 0 && (
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">
+            <TrendingUp size={12} />
+            Top Consumers
+          </div>
+          <div className="space-y-3">
+            {top3.map(agent => (
+              <AgentBar
+                key={agent.agentId}
+                agent={agent}
+                maxTokens={maxTokens}
+                onClick={() => setSelectedAgent(agent.agentId)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Agent Token Detail Modal */}
+      {/* Daily spend sparkline */}
+      {data.byDay.length > 0 && (
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">
+            <Coins size={12} />
+            Daily Spend
+          </div>
+          <CostSparkline byDay={data.byDay} />
+          <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+            {data.byDay.length > 0 && <span>{data.byDay[0].date}</span>}
+            {data.byDay.length > 1 && <span>{data.byDay[data.byDay.length - 1].date}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {top3.length === 0 && data.byDay.length === 0 && (
+        <div className="flex-1 flex items-center justify-center text-sm text-mission-control-text-dim">
+          No token usage recorded in the last {days} days
+        </div>
+      )}
+
+      {/* Agent detail modal */}
       <AgentTokenDetailModal
         isOpen={selectedAgent !== null}
         onClose={() => setSelectedAgent(null)}

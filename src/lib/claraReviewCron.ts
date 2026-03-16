@@ -17,7 +17,7 @@ import { ENV } from './env';
 import { getDb } from './database';
 import { TIER_TOOLS, loadDisallowedTools, dispatchTask, recoverStuckInProgressTasks } from './taskDispatcher';
 import { trackEvent } from './telemetry';
-import { existsSync, readFileSync, mkdirSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, mkdirSync, appendFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -52,7 +52,7 @@ function buildClaraSystemPrompt(assignedTo?: string): string {
 
   // Load agent-specific review history
   if (assignedTo) {
-    const patternFile = join(HOME, 'mission-control', 'memory', 'agents', 'clara', 'agent-patterns', `${assignedTo}.md`);
+    const patternFile = join(HOME, 'mission-control', 'agents', 'clara', 'memory', 'agent-patterns', `${assignedTo}.md`);
     const patterns = readFile(patternFile);
     if (patterns) {
       // Keep last 20 lines to control token usage
@@ -86,7 +86,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
   if (inPreReview.has(task.id as string)) return;
   inPreReview.add(task.id as string);
 
-  const assignedTo = (task.assignedTo as string | undefined) || undefined;
+  let assignedTo = (task.assignedTo as string | undefined) || undefined;
 
   // Fetch subtask count to include in Clara's review context
   let subtaskCount = 0;
@@ -97,42 +97,110 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     subtaskCount = row?.cnt ?? 0;
   } catch { /* non-critical */ }
 
-  const hasAgent         = !!assignedTo;
+  let hasAgent         = !!assignedTo;
   const hasPlanningNotes = !!(task.planningNotes as string | null)?.trim();
   const hasDescription   = !!(task.description as string | null)?.trim();
-  const hasSubtasks      = subtaskCount >= 1;
+  let hasSubtasks      = subtaskCount >= 1;
   const hasMinSubtasks   = subtaskCount >= 2;
 
+  // Fetch subtask details for Clara's review
+  let subtaskDetails = '';
+  try {
+    const subs = getDb().prepare('SELECT title, completed FROM subtasks WHERE taskId = ? ORDER BY position').all(task.id as string) as { title: string; completed: number }[];
+    if (subs.length > 0) {
+      subtaskDetails = subs.map(s => `  [${s.completed ? 'x' : ' '}] ${s.title}`).join('\n');
+    }
+  } catch { /* non-critical */ }
+
+  // Fetch recent activity for context
+  let recentActivity = '';
+  try {
+    const acts = getDb().prepare('SELECT action, substr(message,1,150) as msg FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 5').all(task.id as string) as { action: string; msg: string }[];
+    if (acts.length > 0) {
+      recentActivity = acts.map(a => `  - [${a.action}] ${a.msg}`).join('\n');
+    }
+  } catch { /* non-critical */ }
+
   const message = [
-    `## Pre-work Review — Task: ${task.id}`,
+    `## Pre-work Quality Review — Task: ${task.id}`,
+    '',
     `**Title:** ${task.title}`,
-    hasDescription ? `**Description:** ${task.description}` : '**Description:** MISSING',
-    `**Assigned to:** ${assignedTo || 'UNASSIGNED'}`,
-    `**Planning notes:** ${hasPlanningNotes ? (task.planningNotes as string).slice(0, 500) : 'MISSING'}`,
-    `**Subtasks:** ${subtaskCount} created`,
+    task.description ? `**Description:** ${task.description}` : '**Description:** (none)',
     `**Priority:** ${task.priority || 'p2'}`,
+    `**Assigned to:** ${assignedTo || 'UNASSIGNED'}`,
     '',
-    '## Your job: check all 3 gates. Decide now.',
+    '**Planning notes:**',
+    hasPlanningNotes ? (task.planningNotes as string).slice(0, 800) : '(empty)',
     '',
-    `GATE 1 — Agent assigned: ${hasAgent ? 'PASS' : 'FAIL — no agent assigned'}`,
-    `GATE 2 — Planning notes non-empty: ${hasPlanningNotes ? 'PASS' : 'FAIL — planningNotes is empty or missing'}`,
-    `GATE 3 — At least 1 subtask: ${hasSubtasks ? `PASS (${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''})` : 'FAIL — no subtasks created yet'}`,
-    !hasDescription ? 'NOTE — Description is empty (not a hard gate, but worth fixing)' : null,
-    !hasMinSubtasks && hasSubtasks ? 'NOTE — Only 1 subtask. Ask agent to expand subtasks as they work.' : null,
+    `**Subtasks (${subtaskCount}):**`,
+    subtaskDetails || '  (none)',
     '',
-    '## Decision rules',
-    'ALL 3 gates pass → approve and dispatch.',
-    'Exactly 2 of 3 pass AND the failing gate is minor (only 1 subtask instead of 2, or description missing) → approve, but add a note in reviewNotes asking the agent to expand subtasks as they work.',
-    'Any hard gate fails (no agent assigned, OR planningNotes empty) → reject back to todo.',
+    recentActivity ? `**Recent activity:**\n${recentActivity}` : null,
     '',
-    'If approving → use:',
-    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "pre-approved", "reviewNotes": "All gates passed." }`,
+    '---',
     '',
-    'If rejecting → use this exact format. Your reviewNotes MUST list every missing item so the human knows exactly what to fix:',
-    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "MISSING: [item1], [item2]. To fix: [specific action required for each]." }`,
+    '## Your Review',
     '',
-    'Do not ask clarifying questions. Make the call now based only on the data above.',
+    'You are Clara, the quality reviewer. Actually THINK about this task before deciding.',
+    'Do NOT just check boxes — assess whether this task will succeed.',
+    '',
+    '### Evaluate these questions:',
+    '',
+    '1. **Is the right agent assigned?** Does this agent have the skills for this work?',
+    '   If a coding task is assigned to hr, or a design task to coder — that\'s wrong.',
+    '',
+    '2. **Are the planning notes actionable?** Can the agent read them and know exactly',
+    '   what to do? Vague notes like "do the thing" are not acceptable.',
+    '   Good notes have: concrete steps, expected output location, clear deliverables.',
+    '',
+    '3. **Are subtasks well-defined?** Each subtask should be a verifiable unit of work.',
+    '   A single subtask like "Complete: [task title]" is lazy — break it down.',
+    '',
+    '4. **Is the scope realistic?** Can this be done in one agent session?',
+    '   If it\'s too big, recommend breaking into multiple tasks.',
+    '',
+    '5. **Is anything missing?** Output paths? Dependencies? Context the agent needs?',
+    '',
+    '### Your decision:',
+    '',
+    '**APPROVE** — task is well-defined, agent is right, plan is clear:',
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "in-progress", "reviewStatus": "pre-approved", "reviewNotes": "<what convinced you — be specific>" }`,
+    '',
+    '**FIX AND APPROVE** — minor issues you can fix yourself, then approve:',
+    '  Use task_update, subtask_create, or subtask_update to fix the issues,',
+    '  then approve with a note about what you fixed.',
+    '',
+    '**REJECT** — fundamental problems that need human attention:',
+    `  mcp__mission-control_db__task_update { "id": "${task.id}", "status": "todo", "reviewStatus": "pre-rejected", "reviewNotes": "<specific problems and how to fix them>" }`,
+    '',
+    'Write specific, actionable reviewNotes. "All gates passed" is NOT acceptable.',
+    'Say WHAT you reviewed and WHY you approved or rejected.',
   ].filter(Boolean).join('\n');
+
+  // NOTE: claraReviewCount is incremented AFTER the review completes (not before)
+  // to prevent false escalations when the subprocess fails/times out silently.
+
+  // Check for human-review escalation BEFORE spawning Clara
+  try {
+    const reviewCountRow = getDb()
+      .prepare('SELECT claraReviewCount FROM tasks WHERE id = ?')
+      .get(task.id as string) as { claraReviewCount: number } | undefined;
+    const reviewCount = reviewCountRow?.claraReviewCount ?? 0;
+    if (reviewCount >= 5) {
+      const now = Date.now();
+      console.warn(`[clara-review-cron] Task ${task.id} has been reviewed ${reviewCount} times — escalating to human-review`);
+      getDb()
+        .prepare("UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?")
+        .run(now, task.id);
+      getDb()
+        .prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(task.id, 'clara', 'human-review-escalation',
+          `Task has been reviewed by Clara ${reviewCount} times and is still not progressing — needs human attention.`,
+          now);
+      inPreReview.delete(task.id as string);
+      return;
+    }
+  } catch { /* non-critical */ }
 
   trackEvent('clara.pre-review.start', { taskId: task.id });
   try {
@@ -152,13 +220,15 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
   }
 
+  const claraDisallowed = loadDisallowedTools('clara');
   const proc = spawnClaude([
     '--print',
     '--output-format', 'stream-json',
     '--verbose',
     '--model', 'claude-haiku-4-5-20251001',
+    '--dangerously-skip-permissions',
     '--allowedTools', TIER_TOOLS['worker'].join(','),
-    '--disallowedTools', loadDisallowedTools('clara').join(','),
+    ...(claraDisallowed.length > 0 ? ['--disallowedTools', claraDisallowed.join(',')] : []),
     '--system-prompt', buildClaraSystemPrompt(assignedTo),
   ], {
     cwd: process.cwd(),
@@ -178,15 +248,23 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     return;
   }
   proc.stdout!.resume();
-  proc.stderr!.resume();
+  let stderrBuf = '';
+  proc.stderr!.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
 
   const reviewTimeout = setTimeout(() => {
     try { proc.kill(); } catch { /* already exited */ }
   }, 3 * 60_000);
 
-  proc.on('close', () => {
+  proc.on('close', (code: number | null) => {
     clearTimeout(reviewTimeout);
     inPreReview.delete(task.id as string);
+    if (code && code !== 0) {
+      console.error(`[clara-review-cron] Pre-review process exited ${code} for ${task.id}: ${stderrBuf.slice(0, 300)}`);
+      try {
+        getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
+          .run(task.id, 'clara', 'clara-process-exit', `Pre-review exited code ${code}: ${stderrBuf.slice(0, 200)}`, Date.now());
+      } catch { /* activity logging */ }
+    }
     trackEvent('clara.pre-review.complete', { taskId: task.id });
 
     // Fix 1b: only reset reviewStatus if Clara hasn't already made a decision.
@@ -204,27 +282,76 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     setTimeout(() => {
       try {
         const db = getDb();
-        const current = db.prepare('SELECT status, assignedTo, reviewStatus FROM tasks WHERE id = ?')
-          .get(task.id as string) as { status: string; assignedTo: string | null; reviewStatus: string | null } | undefined;
+        const current = db.prepare('SELECT status, assignedTo, reviewStatus, reviewNotes FROM tasks WHERE id = ?')
+          .get(task.id as string) as { status: string; assignedTo: string | null; reviewStatus: string | null; reviewNotes: string | null } | undefined;
 
         if (current?.status === 'in-progress' && current?.assignedTo) {
           // Clara approved — dispatch the agent now
-          console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${current.assignedTo}`);
+          const agentName = current.assignedTo;
+          const approvalMsg = `Pre-review passed: agent assigned (${agentName}), planning notes present, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''} defined. Dispatching to ${agentName}.`;
+          console.log(`[clara-review-cron] Pre-review approved task ${task.id} — dispatching to ${agentName}`);
           db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
-            .run(task.id, 'clara', 'pre-review-approved', 'Clara approved — dispatching agent', Date.now());
+            .run(task.id, 'clara', 'pre-review-approved', approvalMsg, Date.now());
+          // Increment count only on successful review (not on silent failures)
+          db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id);
           dispatchTask(task.id as string);
         } else if (current?.status === 'todo') {
-          // Clara rejected — log it
+          // Clara rejected — increment count, set lastClaraReviewAt, log reason
+          const now = Date.now();
+          db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1, lastClaraReviewAt = ?, updatedAt = ? WHERE id = ?').run(now, now, task.id);
           console.log(`[clara-review-cron] Pre-review rejected task ${task.id} — returned to todo`);
+
+          let rejReason = (current.reviewNotes || '').trim();
+          if (!rejReason || rejReason === 'Rejected') {
+            const failedGates: string[] = [];
+            if (!hasAgent) failedGates.push('no agent assigned (assignedTo is empty)');
+            if (!hasPlanningNotes) failedGates.push('planningNotes is empty or missing');
+            if (!hasSubtasks) failedGates.push('no subtasks created yet');
+            rejReason = failedGates.length > 0
+              ? `Gate failures: ${failedGates.join('; ')}`
+              : 'Review criteria not met';
+          }
+
+          db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+            .run(task.id, 'clara', 'pre-review-rejected', `Pre-review failed: ${rejReason}. Task returned to todo.`, now);
+
+          // ── Re-dispatch agent to fix planning ──
+          // The agent needs to address Clara's feedback and resubmit with better planning.
+          const planFixAgent = current.assignedTo || (task.assignedTo as string);
+          if (planFixAgent) {
+            console.log(`[clara-review-cron] Re-dispatching ${planFixAgent} to fix planning for ${task.id}`);
+            db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'system', 'planning-fix-dispatch',
+                `Re-dispatching ${planFixAgent} to fix task planning based on Clara's feedback`, now);
+            // Delay so DB writes settle
+            setTimeout(() => {
+              try {
+                const check = getDb().prepare('SELECT status, reviewStatus FROM tasks WHERE id = ?')
+                  .get(task.id as string) as { status: string; reviewStatus: string | null } | undefined;
+                if (check?.status === 'todo') {
+                  dispatchTask(task.id as string);
+                }
+              } catch { /* non-critical */ }
+            }, 3000);
+          }
+        } else {
+          // Clara's subprocess didn't make a decision — DON'T increment count
+          // Task stays in internal-review, will be retried next cycle
+          console.warn(`[clara-review-cron] Clara subprocess produced no decision for ${task.id} (status=${current?.status}) — will retry next cycle`);
         }
       } catch { /* non-critical */ }
     }, 2000);
   });
 
-  proc.on('error', () => {
+  proc.on('error', (err: Error) => {
     clearTimeout(reviewTimeout);
     inPreReview.delete(task.id as string);
     resetPreReviewStatus(task.id);
+    console.error(`[clara-review-cron] Spawn error for pre-review task ${task.id}:`, err.message);
+    try {
+      getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
+        .run(task.id, 'clara', 'clara-spawn-error', `Pre-review spawn failed: ${err.message}`, Date.now());
+    } catch { /* truly non-critical — activity logging */ }
   });
 }
 
@@ -285,6 +412,30 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     'Do not ask clarifying questions. Make the call now based only on the data above.',
   ].filter(Boolean).join('\n');
 
+  // NOTE: claraReviewCount is incremented AFTER review completes (not before)
+  // to prevent false escalations when subprocess fails silently.
+
+  try {
+    const reviewCountRow = getDb()
+      .prepare('SELECT claraReviewCount FROM tasks WHERE id = ?')
+      .get(task.id as string) as { claraReviewCount: number } | undefined;
+    const reviewCount = reviewCountRow?.claraReviewCount ?? 0;
+    if (reviewCount >= 5) {
+      const now = Date.now();
+      console.warn(`[clara-review-cron] Task ${task.id} has been reviewed ${reviewCount} times — escalating to human-review`);
+      getDb()
+        .prepare("UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?")
+        .run(now, task.id);
+      getDb()
+        .prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(task.id, 'clara', 'human-review-escalation',
+          `Task has been reviewed by Clara ${reviewCount} times and is still not progressing — needs human attention.`,
+          now);
+      inReview.delete(task.id as string);
+      return;
+    }
+  } catch { /* non-critical */ }
+
   // Stamp reviewedAt so we can detect stale in-review rows
   const startedAt = Date.now();
   trackEvent('clara.review.start', { taskId: task.id });
@@ -305,13 +456,15 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
   }
 
+  const claraDisallowed = loadDisallowedTools('clara');
   const proc = spawnClaude([
     '--print',
     '--output-format', 'stream-json',
     '--verbose',
     '--model', 'claude-haiku-4-5-20251001',
+    '--dangerously-skip-permissions',
     '--allowedTools', TIER_TOOLS['worker'].join(','),
-    '--disallowedTools', loadDisallowedTools('clara').join(','),
+    ...(claraDisallowed.length > 0 ? ['--disallowedTools', claraDisallowed.join(',')] : []),
     '--system-prompt', buildClaraSystemPrompt(assignedTo),
   ], {
     cwd: process.cwd(),
@@ -319,19 +472,36 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     stdio: 'pipe',
   });
 
-  proc.stdin!.write(message);
-  proc.stdin!.end();
+  // Wrap stdin write in try-catch so inReview is always cleaned up on failure
+  try {
+    proc.stdin!.write(message);
+    proc.stdin!.end();
+  } catch (e) {
+    inReview.delete(task.id as string);
+    resetReviewStatus(task.id);
+    try { proc.kill(); } catch { /* already exited */ }
+    console.error('[clara-review-cron] stdin write failed for task', task.id, e);
+    return;
+  }
   proc.stdout!.resume();
-  proc.stderr!.resume();
+  let stderrBuf = '';
+  proc.stderr!.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
 
   // Kill Clara's process after 3 minutes — prevents zombie reviews
   const reviewTimeout = setTimeout(() => {
     try { proc.kill(); } catch { /* already exited */ }
   }, 3 * 60_000);
 
-  proc.on('close', () => {
+  proc.on('close', (code: number | null) => {
     clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
+    if (code && code !== 0) {
+      console.error(`[clara-review-cron] Post-review process exited ${code} for ${task.id}: ${stderrBuf.slice(0, 300)}`);
+      try {
+        getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
+          .run(task.id, 'clara', 'clara-process-exit', `Post-review exited code ${code}: ${stderrBuf.slice(0, 200)}`, Date.now());
+      } catch { /* activity logging */ }
+    }
     trackEvent('clara.review.complete', { taskId: task.id });
     // If Clara exited without calling task_update (MCP failure, model responded without
     // using tools, process killed), reviewStatus is still 'in-review' in the DB.
@@ -346,33 +516,146 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
           .get(task.id as string) as { reviewStatus: string; reviewNotes: string } | undefined;
 
         if (reviewed?.reviewStatus === 'approved' || reviewed?.reviewStatus === 'rejected') {
-          const patternDir = join(HOME, 'mission-control', 'memory', 'agents', 'clara', 'agent-patterns');
+          // Increment review count only on actual decisions (not silent failures)
+          try { getDb().prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id); } catch { /* */ }
+          const db2 = getDb();
+          const notes = (reviewed.reviewNotes || '').slice(0, 500);
+          const now2 = Date.now();
+
+          // Write outcome to task_activity so it shows in the task detail activity tab
+          if (reviewed.reviewStatus === 'rejected') {
+            // Set lastClaraReviewAt on rejection so retry cooldown can be enforced
+            try {
+              db2.prepare('UPDATE tasks SET lastClaraReviewAt = ?, updatedAt = ? WHERE id = ?').run(now2, now2, task.id);
+            } catch { /* non-critical */ }
+
+            const rejMsg = notes
+              ? `Post-review failed: ${notes}. Task returned to in-progress for rework.`
+              : 'Post-review failed: work appears incomplete — subtasks may be unfinished, output files missing, or the deliverable does not match the description. Task returned to in-progress for rework.';
+            db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'review-rejected', rejMsg, now2);
+
+            // ── Re-dispatch agent with Clara's feedback ──
+            // The task is back in in-progress — re-spawn the agent so it can fix the issue
+            const agentToRedispatch = assignedTo || (task.assignedTo as string);
+            if (agentToRedispatch) {
+              console.log(`[clara-review-cron] Re-dispatching ${agentToRedispatch} for ${task.id} with Clara's feedback`);
+              db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+                .run(task.id, 'system', 'redispatch-after-rejection',
+                  `Re-dispatching ${agentToRedispatch} to implement Clara's feedback: ${notes.slice(0, 200)}`,
+                  now2);
+              // Delay re-dispatch to let DB writes settle
+              setTimeout(() => {
+                try {
+                  const check = getDb().prepare('SELECT status FROM tasks WHERE id = ?')
+                    .get(task.id as string) as { status: string } | undefined;
+                  if (check?.status === 'in-progress') {
+                    dispatchTask(task.id as string);
+                  }
+                } catch { /* non-critical */ }
+              }, 3000);
+            }
+          } else {
+            db2.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+              .run(task.id, 'clara', 'review-approved', `Post-review passed: ${notes || 'Work complete and verified.'}`, now2);
+          }
+
+          // Also log to Clara's pattern memory file for future reviews
+          const patternDir = join(HOME, 'mission-control', 'agents', 'clara', 'memory', 'agent-patterns');
           mkdirSync(patternDir, { recursive: true });
 
           const agentId = assignedTo || 'unknown';
           const patternFile = join(patternDir, `${agentId}.md`);
           const date = new Date().toISOString().slice(0, 10);
-          const line = `${date} | ${task.title} | ${reviewed.reviewStatus} | ${(reviewed.reviewNotes || '').slice(0, 200)}\n`;
+          const line = `${date} | ${task.title} | ${reviewed.reviewStatus} | ${notes.slice(0, 200)}\n`;
           appendFileSync(patternFile, line, 'utf-8');
           trackEvent('memory.written', { agentId: 'clara' });
+
+          // ── Session checkpoint: save task learnings to agent memory ──
+          if (reviewed.reviewStatus === 'approved' && agentId !== 'unknown') {
+            try {
+              const memDir = join(HOME, 'mission-control', 'agents', agentId, 'memory');
+              mkdirSync(memDir, { recursive: true });
+
+              // Gather task context for checkpoint
+              const taskRow = getDb().prepare('SELECT title, description, lastAgentUpdate FROM tasks WHERE id = ?')
+                .get(task.id as string) as { title: string; description: string | null; lastAgentUpdate: string | null } | undefined;
+              const activities = getDb().prepare(
+                `SELECT action, substr(message,1,120) as msg FROM task_activity WHERE taskId = ? AND action NOT IN ('status_change','update') ORDER BY timestamp DESC LIMIT 5`
+              ).all(task.id as string) as { action: string; msg: string }[];
+              const attachments = getDb().prepare(
+                `SELECT fileName FROM task_attachments WHERE taskId = ? LIMIT 5`
+              ).all(task.id as string) as { fileName: string }[];
+
+              const slug = (taskRow?.title || 'task').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
+              const checkpointPath = join(memDir, `${date}-${slug}.md`);
+
+              const activityLines = activities.map(a => `- [${a.action}] ${a.msg}`).join('\n');
+              const fileLines = attachments.map(a => `- ${a.fileName}`).join('\n');
+
+              const checkpoint = [
+                `---`,
+                `date: ${date}`,
+                `task: ${task.id}`,
+                `agent: ${agentId}`,
+                `outcome: approved`,
+                `---`,
+                ``,
+                `# ${taskRow?.title || 'Task'}`,
+                ``,
+                taskRow?.lastAgentUpdate ? `**Result:** ${taskRow.lastAgentUpdate.slice(0, 200)}` : '',
+                notes ? `**Clara's review:** ${notes.slice(0, 150)}` : '',
+                activityLines ? `\n**Key steps:**\n${activityLines}` : '',
+                fileLines ? `\n**Files created:**\n${fileLines}` : '',
+              ].filter(Boolean).join('\n').slice(0, 800);
+
+              writeFileSync(checkpointPath, checkpoint, 'utf-8');
+              trackEvent('memory.checkpoint', { agentId, taskId: task.id as string });
+            } catch { /* non-critical — never block review flow */ }
+          }
         }
       } catch { /* non-critical */ }
     }, 2000); // Brief delay so DB write from MCP has settled
   });
 
-  proc.on('error', () => {
+  proc.on('error', (err: Error) => {
     clearTimeout(reviewTimeout);
     inReview.delete(task.id as string);
     resetReviewStatus(task.id);
+    console.error(`[clara-review-cron] Spawn error for post-review task ${task.id}:`, err.message);
+    try {
+      getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
+        .run(task.id, 'clara', 'clara-spawn-error', `Post-review spawn failed: ${err.message}`, Date.now());
+    } catch { /* truly non-critical — activity logging */ }
   });
 }
 
 export function runReviewCycle(): { queued: number } {
   let queued = 0;
+  let advanced = 0;
+  let recovered = 0;
+  let reset = 0;
+
+  // ── Auto-advance: todo tasks with agent assigned → internal-review ───────────
+  // Skip pre-rejected tasks — agent is fixing the planning, don't auto-advance until they resubmit
+  try {
+    const todoWithAgent = getDb()
+      .prepare(`SELECT id FROM tasks WHERE status = 'todo' AND assignedTo IS NOT NULL AND assignedTo <> ''
+                AND (reviewStatus IS NULL OR reviewStatus NOT IN ('pre-rejected'))
+                AND (reviewNotes IS NULL OR reviewNotes = '')`)
+      .all() as { id: string }[];
+    if (todoWithAgent.length > 0) {
+      const now = Date.now();
+      for (const { id } of todoWithAgent) {
+        getDb().prepare(`UPDATE tasks SET status = 'internal-review', updatedAt = ? WHERE id = ?`).run(now, id);
+      }
+      advanced = todoWithAgent.length;
+      console.log(`[clara-review-cron] Auto-advanced ${todoWithAgent.length} todo task(s) to internal-review`);
+    }
+  } catch { /* non-critical */ }
 
   // ── Pre-work pass: tasks in internal-review waiting for Clara's gate ─────────
   try {
-    // Include tasks with no agent too — Clara rejects them with "no agent assigned"
     const preTasks = getDb()
       .prepare(`SELECT id, title, description, assignedTo, priority, planningNotes FROM tasks
                 WHERE status = 'internal-review'
@@ -416,6 +699,162 @@ export function runReviewCycle(): { queued: number } {
       console.log(`[clara-review-cron] Queued ${reviewTasks.length} task(s) for post-work review`);
     }
   } catch { /* non-critical */ }
+
+  // ── Stuck in-progress recovery: re-dispatch tasks with no recent activity ────
+  try {
+    const thirtyMinAgo = Date.now() - 30 * 60_000;
+    const tenMinAgo = Date.now() - 10 * 60_000;
+    const stuckTasks = getDb()
+      .prepare(`SELECT t.id, t.title, t.assignedTo, t.lastClaraReviewAt FROM tasks t
+                WHERE t.status = 'in-progress'
+                  AND t.updatedAt < ?
+                  AND t.id NOT IN (
+                    SELECT DISTINCT taskId FROM task_activity WHERE timestamp > ?
+                  )`)
+      .all(thirtyMinAgo, thirtyMinAgo) as { id: string; title: string; assignedTo: string | null; lastClaraReviewAt: number | null }[];
+
+    for (const stuck of stuckTasks) {
+      // Skip if Clara just rejected (re-dispatch from rejection handler will handle it)
+      if (stuck.lastClaraReviewAt && stuck.lastClaraReviewAt > tenMinAgo) continue;
+      // Skip if no agent assigned
+      if (!stuck.assignedTo) continue;
+
+      console.log(`[clara-review-cron] Recovering stuck in-progress task ${stuck.id} — re-dispatching to ${stuck.assignedTo}`);
+      const now = Date.now();
+      getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+        .run(stuck.id, 'system', 'stuck-recovery',
+          `Task stuck in-progress >30min with no activity. Re-dispatching to ${stuck.assignedTo}.`,
+          now);
+      getDb().prepare('UPDATE tasks SET updatedAt = ? WHERE id = ?').run(now, stuck.id);
+      dispatchTask(stuck.id);
+    }
+    if (stuckTasks.length > 0) {
+      recovered = stuckTasks.filter(s => s.assignedTo).length;
+    console.log(`[clara-review-cron] Recovered ${stuckTasks.length} stuck in-progress task(s)`);
+    }
+  } catch { /* non-critical */ }
+
+  // ── Stuck in-progress escalation: 4h+ with 3+ re-dispatches → human-review ─
+  try {
+    const fourHoursAgo = Date.now() - 4 * 60 * 60_000;
+    const longStuck = getDb()
+      .prepare(`SELECT t.id, t.title, t.assignedTo FROM tasks t
+                WHERE t.status = 'in-progress'
+                  AND t.updatedAt < ?
+                  AND t.assignedTo IS NOT NULL`)
+      .all(fourHoursAgo) as { id: string; title: string; assignedTo: string }[];
+
+    for (const stuck of longStuck) {
+      // Check how many stuck-recovery re-dispatches this task has had
+      const recoveryCount = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action IN ('stuck-recovery', 'auto_redispatch')`
+      ).get(stuck.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (recoveryCount >= 3) {
+        const now = Date.now();
+        console.warn(`[clara-review-cron] Task ${stuck.id} stuck >4h with ${recoveryCount} re-dispatches — escalating to human-review`);
+        getDb().prepare(`UPDATE tasks SET status = 'human-review', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`)
+          .run(`Agent unable to complete after ${recoveryCount} re-dispatch attempts over 4+ hours. Needs human attention.`, now, stuck.id);
+        getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(stuck.id, 'system', 'stuck-escalation',
+            `Escalated to human-review: stuck in-progress >4h with ${recoveryCount} re-dispatch attempts`, now);
+        // Notify in mission-control chat room
+        try {
+          getDb().prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
+            .run('mission-control', 'system',
+              `Task "${stuck.title}" (assigned to ${stuck.assignedTo}) has been stuck for 4+ hours after ${recoveryCount} re-dispatch attempts. Moved to human-review.`,
+              now);
+        } catch { /* non-critical */ }
+      }
+    }
+  } catch { /* non-critical */ }
+
+  // ── Stale human-review alert: tasks in human-review >24h → chat reminder ────
+  try {
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60_000;
+    const staleHumanReview = getDb()
+      .prepare(`SELECT t.id, t.title, t.assignedTo FROM tasks t
+                WHERE t.status = 'human-review' AND t.updatedAt < ?`)
+      .all(twentyFourHoursAgo) as { id: string; title: string; assignedTo: string | null }[];
+
+    for (const stale of staleHumanReview) {
+      // Only alert once per 24h — check if we already sent a reminder recently
+      const recentAlert = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'stale-human-review-alert' AND timestamp > ?`
+      ).get(stale.id, twentyFourHoursAgo) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (recentAlert === 0) {
+        const now = Date.now();
+        getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+          .run(stale.id, 'system', 'stale-human-review-alert',
+            `Task has been in human-review for >24h — needs attention`, now);
+        try {
+          getDb().prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
+            .run('mission-control', 'system',
+              `Reminder: Task "${stale.title}" has been waiting in human-review for over 24 hours. Please review.`,
+              now);
+        } catch { /* non-critical */ }
+      }
+    }
+  } catch { /* non-critical */ }
+
+  // ── Orphaned review status cleanup: reset stale reviewStatus ────────────────
+  try {
+    const tenMinAgo = Date.now() - 10 * 60_000;
+    // Reset stale pre-review (Clara subprocess timed out)
+    const stalePreReview = getDb()
+      .prepare(`UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE status = 'internal-review' AND reviewStatus = 'pre-review' AND updatedAt < ?`)
+      .run(Date.now(), tenMinAgo);
+    if (stalePreReview.changes > 0) {
+      reset += stalePreReview.changes;
+      console.log(`[clara-review-cron] Reset ${stalePreReview.changes} stale pre-review status(es)`);
+    }
+
+    // Reset stale in-review (Clara subprocess timed out)
+    const staleInReview = getDb()
+      .prepare(`UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE status = 'review' AND reviewStatus = 'in-review' AND updatedAt < ?`)
+      .run(Date.now(), tenMinAgo);
+    if (staleInReview.changes > 0) {
+      reset += staleInReview.changes;
+      console.log(`[clara-review-cron] Reset ${staleInReview.changes} stale in-review status(es)`);
+    }
+  } catch { /* non-critical */ }
+
+  // ── Memory housekeeping: archive old memory files (once per hour) ─────────
+  try {
+    const g2 = globalThis as Record<string, unknown>;
+    const lastHousekeeping = (g2._lastMemoryHousekeeping as number) || 0;
+    if (Date.now() - lastHousekeeping > 60 * 60_000) {
+      g2._lastMemoryHousekeeping = Date.now();
+      const agentsBaseDir = join(HOME, 'mission-control', 'agents');
+      if (existsSync(agentsBaseDir)) {
+        const { readdirSync, renameSync, statSync } = require('fs') as typeof import('fs');
+        const agentDirs = readdirSync(agentsBaseDir).filter((d: string) => !d.startsWith('.') && d !== '_archive');
+        for (const agentId of agentDirs) {
+          const memDir = join(agentsBaseDir, agentId as string, 'memory');
+          if (!existsSync(memDir)) continue;
+          const files = readdirSync(memDir)
+            .filter((f: string) => f.endsWith('.md') && f !== 'README.md')
+            .map((f: string) => ({ name: f, mtime: statSync(join(memDir, f)).mtimeMs }))
+            .sort((a: { mtime: number }, b: { mtime: number }) => b.mtime - a.mtime);
+          if (files.length > 30) {
+            const archiveDir = join(memDir, 'archive');
+            mkdirSync(archiveDir, { recursive: true });
+            const toArchive = files.slice(20); // Keep 20 most recent
+            for (const f of toArchive) {
+              renameSync(join(memDir, f.name), join(archiveDir, f.name));
+            }
+            console.log(`[clara-review-cron] Archived ${toArchive.length} old memory files for agent ${agentId}`);
+          }
+        }
+      }
+    }
+  } catch { /* non-critical */ }
+
+  // ── Cycle summary ──────────────────────────────────────────────────────────
+  if (queued > 0 || advanced > 0 || recovered > 0 || reset > 0) {
+    console.log(`[clara-review-cron] Cycle complete: ${queued} queued, ${advanced} advanced, ${recovered} recovered, ${reset} reset`);
+  }
 
   return { queued };
 }

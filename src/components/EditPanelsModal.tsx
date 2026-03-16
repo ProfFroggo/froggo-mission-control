@@ -44,7 +44,7 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl bg-mission-control-surface border border-mission-control-border transition-shadow ${
+      className={`flex items-center gap-3 px-4 py-3.5 rounded-lg bg-mission-control-surface border border-mission-control-border transition-shadow ${
         isDragging ? 'shadow-xl scale-[1.02]' : ''
       }`}
     >
@@ -172,13 +172,13 @@ export default function EditPanelsModal() {
         <div className="flex gap-3 p-6 pt-4 border-t border-mission-control-border">
           <button
             onClick={handleReset}
-            className="flex-1 py-3 rounded-xl border border-mission-control-border text-mission-control-text font-semibold text-sm hover:bg-mission-control-surface transition-colors"
+            className="flex-1 py-3 rounded-lg border border-mission-control-border text-mission-control-text font-semibold text-sm hover:bg-mission-control-surface transition-colors"
           >
             Reset
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-xl bg-mission-control-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="flex-1 py-3 rounded-lg bg-mission-control-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             Save
           </button>

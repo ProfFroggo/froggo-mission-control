@@ -373,7 +373,7 @@ export default function AdvancedAgentComparison({
                 Key Insights
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-mission-control-bg rounded-xl">
+                <div className="p-4 bg-mission-control-bg rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-1">Top Performer</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
@@ -386,7 +386,7 @@ export default function AdvancedAgentComparison({
                     Most tasks completed
                   </div>
                 </div>
-                <div className="p-4 bg-mission-control-bg rounded-xl">
+                <div className="p-4 bg-mission-control-bg rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-1">Most Efficient</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
@@ -398,7 +398,7 @@ export default function AdvancedAgentComparison({
                     Best tasks per hour ratio
                   </div>
                 </div>
-                <div className="p-4 bg-mission-control-bg rounded-xl">
+                <div className="p-4 bg-mission-control-bg rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-1">Highest Rate</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0
@@ -411,7 +411,7 @@ export default function AdvancedAgentComparison({
                     Best completion percentage
                   </div>
                 </div>
-                <div className="p-4 bg-mission-control-bg rounded-xl">
+                <div className="p-4 bg-mission-control-bg rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-1">Most Consistent</div>
                   <div className="font-medium text-lg">
                     {metrics.length > 0

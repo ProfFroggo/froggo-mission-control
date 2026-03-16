@@ -26,14 +26,14 @@ function ensureDir(p: string) {
 // Category → vault subfolder routing (relative to VAULT_PATH = ~/mission-control)
 // Writes route into the correct subfolder of the wider vault.
 const CATEGORY_FOLDER: Record<string, string> = {
-  task:     'memory/agents',   // overridden below to agents/{agentId}
+  task:     'agents',   // overridden below to agents/{agentId}/memory
   decision: 'memory/knowledge',
   gotcha:   'memory/knowledge',
   pattern:  'memory/knowledge',
   daily:    'memory/daily',
   review:   'memory/sessions',
   session:  'memory/sessions',
-  agent:    'agents',  // overridden below to agents/{agentId}
+  agent:    'agents',  // overridden below to agents/{agentId}/memory
 };
 
 const server = new Server(
@@ -252,10 +252,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const agent    = (args?.agent  as string) || AGENT_ID;
         const tags     = (args?.tags   as string[]) || [];
 
-        // Resolve destination folder
+        // Resolve destination folder — unified under agents/{id}/memory/
         let folder = CATEGORY_FOLDER[category] || 'memory/knowledge';
         if (category === 'agent' || category === 'task') {
-          folder = path.join('memory', 'agents', agent);
+          folder = path.join('agents', agent, 'memory');
         }
 
         const destDir = path.join(VAULT_PATH, folder);
@@ -276,7 +276,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Update expertise map if tags provided
         if (tags && tags.length > 0) {
           try {
-            const expertiseMapDir = path.join(VAULT_PATH, 'memory', 'agents');
+            const expertiseMapDir = path.join(VAULT_PATH, 'memory');
             ensureDir(expertiseMapDir);
             const expertiseMapPath = path.join(expertiseMapDir, 'expertise-map.md');
             const relFilePath = path.relative(VAULT_PATH, filePath);

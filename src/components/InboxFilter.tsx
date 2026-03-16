@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply } from 'lucide-react';
+import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply, MessageCircle, Gamepad2, Send as SendPlane, AlertTriangle } from 'lucide-react';
 import { showToast } from './Toast';
 
 export interface FilterCriteria {
@@ -33,12 +33,12 @@ interface InboxFilterProps {
   filteredCount: number;
 }
 
-const PLATFORM_OPTIONS = [
-  { id: 'email', label: 'Email', icon: '📧' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
-  { id: 'telegram', label: 'Telegram', icon: '✈️' },
-  { id: 'discord', label: 'Discord', icon: '🎮' },
-  { id: 'twitter', label: 'Social Media', icon: '𝕏' },
+const PLATFORM_OPTIONS: { id: string; label: string; icon: React.ReactNode }[] = [
+  { id: 'email', label: 'Email', icon: <Mail size={14} /> },
+  { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={14} /> },
+  { id: 'telegram', label: 'Telegram', icon: <SendPlane size={14} /> },
+  { id: 'discord', label: 'Discord', icon: <Gamepad2 size={14} /> },
+  { id: 'twitter', label: 'Social Media', icon: <span className="text-sm font-bold">𝕏</span> },
 ];
 
 const QUICK_FILTER_EXAMPLES = [
@@ -381,7 +381,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   flags.urgent ? 'bg-error-subtle text-error' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
                 }`}
               >
-                <span>🚨</span> Urgent
+                <AlertTriangle size={14} /> Urgent
               </button>
             </div>
           </div>
@@ -411,7 +411,11 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
         <div className="px-3 pb-3 border-t border-mission-control-border pt-3">
           <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Saved Filters</div>
           {savedFilters.length === 0 ? (
-            <p className="text-sm text-mission-control-text-dim text-center py-2">No saved filters</p>
+            <div className="flex flex-col items-center justify-center min-h-[200px] text-mission-control-text-dim">
+              <Filter size={32} className="mb-3 opacity-40" />
+              <p className="text-sm font-medium mb-1">No saved filters</p>
+              <p className="text-xs">Save a filter to quickly apply it later</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {savedFilters.map(filter => (

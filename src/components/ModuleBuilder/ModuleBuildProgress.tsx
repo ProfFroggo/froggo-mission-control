@@ -74,7 +74,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-mission-control-border p-4 text-mission-control-text-dim text-sm">
+      <div className="rounded-lg border border-mission-control-border p-4 text-mission-control-text-dim text-sm">
         Loading build progress...
       </div>
     );
@@ -82,7 +82,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
 
   if (!data || data.total === 0) {
     return (
-      <div className="rounded-xl border border-mission-control-border p-4 text-mission-control-text-dim text-sm">
+      <div className="rounded-lg border border-mission-control-border p-4 text-mission-control-text-dim text-sm">
         No tasks found for this module.
       </div>
     );
@@ -91,7 +91,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
   const allDone = data.completed === data.total;
 
   return (
-    <div className="rounded-xl border border-mission-control-border bg-mission-control-surface overflow-hidden">
+    <div className="rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
         <div className="flex items-center justify-between mb-2">

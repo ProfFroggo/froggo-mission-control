@@ -58,7 +58,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
   if (resolved) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
         {resolved === 'rejected' ? (
           <>
             <Lock size={13} className="text-error shrink-0" />
@@ -78,7 +78,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
   }
 
   return (
-    <div className="rounded-xl border border-info/30 bg-info/5 p-3 space-y-2.5 text-sm">
+    <div className="rounded-lg border border-info/30 bg-info/5 p-3 space-y-2.5 text-sm">
       {/* Header */}
       <div className="flex items-start gap-2.5">
         <ShieldQuestion size={16} className="text-info mt-0.5 shrink-0" />

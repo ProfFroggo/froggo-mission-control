@@ -77,7 +77,7 @@ export default function DebugTab() {
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* Gateway Connection */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity size={16} className="text-mission-control-accent" />
@@ -99,7 +99,7 @@ export default function DebugTab() {
       </div>
 
       {/* Active Sessions */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Terminal size={16} className="text-mission-control-accent" />
@@ -128,7 +128,7 @@ export default function DebugTab() {
       </div>
 
       {/* Recent Logs */}
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-mission-control-accent" />

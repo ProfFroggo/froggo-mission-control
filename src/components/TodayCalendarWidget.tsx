@@ -83,7 +83,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   return (
-    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
         <div className="flex items-center gap-2">

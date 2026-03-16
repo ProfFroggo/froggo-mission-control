@@ -15,6 +15,13 @@ function parseAgent(row: Record<string, unknown>) {
       parsed.capabilities = [];
     }
   }
+  if (typeof parsed.traits === 'string') {
+    try {
+      parsed.traits = JSON.parse(parsed.traits as string);
+    } catch {
+      parsed.traits = [];
+    }
+  }
   return parsed;
 }
 
@@ -76,7 +83,6 @@ export async function PATCH(
       if (!isNaN(tier)) {
         setClauses.push('trust_tier = ?');
         values.push(body.trust_tier);
-        // Apply tier permissions cascade
         const perms = TIER_PERMISSIONS_MAP[tier];
         if (perms) {
           setClauses.push('capabilities = ?');
@@ -88,6 +94,36 @@ export async function PATCH(
     if ('capabilities' in body && Array.isArray(body.capabilities)) {
       setClauses.push('capabilities = ?');
       values.push(JSON.stringify(body.capabilities));
+    }
+
+    if ('description' in body && typeof body.description === 'string') {
+      setClauses.push('description = ?');
+      values.push(body.description.trim());
+    }
+
+    // Manual status override
+    const VALID_STATUSES = ['active', 'busy', 'idle', 'offline', 'suspended', 'archived', 'draft', 'disabled'];
+    if ('status' in body && typeof body.status === 'string' && VALID_STATUSES.includes(body.status)) {
+      setClauses.push('status = ?');
+      values.push(body.status);
+    }
+
+    // Agent soul v2: traits, tone preset, memory scope
+    if ('traits' in body && Array.isArray(body.traits)) {
+      setClauses.push('traits = ?');
+      values.push(JSON.stringify(body.traits));
+    }
+
+    const VALID_TONE_PRESETS = ['professional', 'casual', 'technical', 'empathetic'];
+    if ('tonePreset' in body && typeof body.tonePreset === 'string' && VALID_TONE_PRESETS.includes(body.tonePreset)) {
+      setClauses.push('tonePreset = ?');
+      values.push(body.tonePreset);
+    }
+
+    const VALID_MEMORY_SCOPES = ['session', 'persistent'];
+    if ('memoryScope' in body && typeof body.memoryScope === 'string' && VALID_MEMORY_SCOPES.includes(body.memoryScope)) {
+      setClauses.push('memoryScope = ?');
+      values.push(body.memoryScope);
     }
 
     if (setClauses.length === 0) {

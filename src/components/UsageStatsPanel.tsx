@@ -27,19 +27,18 @@ interface UsageStats {
   totalConversations: number;
 }
 
-export default function UsageStatsPanel() {
+export default function UsageStatsPanel({ days = 30 }: { days?: number }) {
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<7 | 30 | 90>(30);
 
   useEffect(() => {
     loadStats();
-  }, [timeRange]);
+  }, [days]);
 
   const loadStats = async () => {
     setLoading(true);
     try {
-      const result = await fetch(`/api/analytics/usage-stats?days=${timeRange}`).then(r => r.ok ? r.json() : null).catch(() => null);
+      const result = await fetch(`/api/analytics/usage-stats?days=${days}`).then(r => r.ok ? r.json() : null).catch(() => null);
 
       if (result) {
         setStats({
@@ -110,21 +109,6 @@ export default function UsageStatsPanel() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-mission-control-border rounded-lg p-1">
-            {([7, 30, 90] as const).map((days) => (
-              <button
-                key={days}
-                onClick={() => setTimeRange(days)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  timeRange === days
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-              >
-                {days}d
-              </button>
-            ))}
-          </div>
 
           <button
             onClick={loadStats}
@@ -138,12 +122,12 @@ export default function UsageStatsPanel() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <MessageSquare size={20} className="text-info" />
             <TrendingUp size={16} className="text-success" />
           </div>
-          <div className="text-3xl font-bold text-info mb-1">
+          <div className="text-3xl font-bold text-info mb-1 tabular-nums">
             {stats.totalMessages.toLocaleString()}
           </div>
           <div className="text-sm text-mission-control-text-dim">Total Messages</div>
@@ -152,12 +136,12 @@ export default function UsageStatsPanel() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Users size={20} className="text-review" />
             <MessageCircle size={16} className="text-info" />
           </div>
-          <div className="text-3xl font-bold text-review mb-1">
+          <div className="text-3xl font-bold text-review mb-1 tabular-nums">
             {stats.totalConversations}
           </div>
           <div className="text-sm text-mission-control-text-dim">Conversations</div>
@@ -166,7 +150,7 @@ export default function UsageStatsPanel() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Phone size={20} className="text-success" />
             <Activity size={16} className="text-warning" />
@@ -180,12 +164,12 @@ export default function UsageStatsPanel() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Mail size={20} className="text-warning" />
             <TrendingUp size={16} className="text-success" />
           </div>
-          <div className="text-3xl font-bold text-warning mb-1">
+          <div className="text-3xl font-bold text-warning mb-1 tabular-nums">
             {stats.avgResponseTime.toFixed(1)}m
           </div>
           <div className="text-sm text-mission-control-text-dim">Avg Response Time</div>
@@ -198,7 +182,8 @@ export default function UsageStatsPanel() {
       {/* Messages Over Time Chart */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 mb-6">
         <h3 className="font-semibold mb-4">Messages Over Time</h3>
-        <ResponsiveContainer width="100%" height={250}>
+        <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={stats.messagesPerDay}>
             <defs>
               <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
@@ -231,14 +216,16 @@ export default function UsageStatsPanel() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Channel Distribution & Peak Hours */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Channel Breakdown */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Channel Distribution</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.channelBreakdown} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis type="number" stroke={CHART_AXIS.stroke} />
@@ -253,12 +240,14 @@ export default function UsageStatsPanel() {
               <Bar dataKey="count" fill={CHART_COLORS.purple} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Peak Hours */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Activity by Hour</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.peakHours}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis
@@ -278,16 +267,17 @@ export default function UsageStatsPanel() {
               <Bar dataKey="count" fill={CHART_COLORS.green} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Insights */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
         <h3 className="font-semibold mb-4">Insights</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-mission-control-bg rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Most active hour</div>
-            <div className="font-medium text-lg">
+            <div className="font-medium text-lg tabular-nums">
               {peakHour ? `${peakHour.hour}:00 - ${peakHour.hour + 1}:00` : 'N/A'}
             </div>
             {peakHour && (
@@ -296,9 +286,9 @@ export default function UsageStatsPanel() {
               </div>
             )}
           </div>
-          <div className="p-4 bg-mission-control-bg rounded-xl">
+          <div className="p-4 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Messages per conversation</div>
-            <div className="font-medium text-lg">
+            <div className="font-medium text-lg tabular-nums">
               {stats.totalConversations > 0
                 ? Math.round(stats.totalMessages / stats.totalConversations)
                 : 0}
@@ -307,7 +297,7 @@ export default function UsageStatsPanel() {
               Average depth
             </div>
           </div>
-          <div className="p-4 bg-mission-control-bg rounded-xl">
+          <div className="p-4 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Busiest day</div>
             <div className="font-medium text-lg">
               {stats.messagesPerDay.length > 0
@@ -323,7 +313,7 @@ export default function UsageStatsPanel() {
               messages
             </div>
           </div>
-          <div className="p-4 bg-mission-control-bg rounded-xl">
+          <div className="p-4 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Growth trend</div>
             <div className="font-medium text-lg flex items-center gap-2">
               {stats.messagesPerDay.length >= 2 &&

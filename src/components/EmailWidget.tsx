@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
+import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag, Briefcase, Diamond } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { useUserSettings } from '../store/userSettings';
 import WidgetLoading from './WidgetLoading';
@@ -130,7 +130,7 @@ export default function EmailWidget() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={`text-lg ${ACCOUNTS.find(a => a.email === account.email)?.color}`}>
-                    {account.label === 'Bitso' ? '💼' : account.label === 'Carbium' ? '🔷' : '📧'}
+                    {account.label === 'Bitso' ? <Briefcase size={18} /> : account.label === 'Carbium' ? <Diamond size={18} /> : <Mail size={18} />}
                   </span>
                   <div>
                     <div className="font-medium text-sm">{account.label}</div>

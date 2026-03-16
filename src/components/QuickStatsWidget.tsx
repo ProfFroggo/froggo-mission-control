@@ -1,4 +1,4 @@
-import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
+import { Users, Bot, CheckSquare, Activity, Gamepad2, MessageCircle, Monitor, CheckCircle, Settings, Send as SendPlane } from 'lucide-react';
 import { formatTimeAgo } from '../utils/formatting';
 import { useStore } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,7 +20,7 @@ export default function QuickStatsWidget() {
   // Show loading state while initial data is loading
   if (loading.tasks || loading.agents) {
     return (
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
         <div className="p-4 border-b border-mission-control-border">
           <h2 className="font-semibold flex items-center gap-2">
             <Activity size={16} className="text-mission-control-accent" /> Quick Stats
@@ -57,22 +57,22 @@ export default function QuickStatsWidget() {
   // Recent Activity - last 3 significant events
   const recentActivities = activities.slice(0, 3);
 
-  const channelIcons: Record<string, string> = {
-    discord: '🎮',
-    telegram: '✈️',
-    whatsapp: '💬',
-    web: '💻',
+  const channelIcons: Record<string, React.ReactNode> = {
+    discord: <Gamepad2 size={14} />,
+    telegram: <SendPlane size={14} />,
+    whatsapp: <MessageCircle size={14} />,
+    web: <Monitor size={14} />,
   };
 
   const channelColors: Record<string, string> = {
-    discord: 'text-indigo-400',
+    discord: 'text-mission-control-accent',
     telegram: 'text-info',
     whatsapp: 'text-success',
     web: 'text-mission-control-text-dim',
   };
 
   return (
-    <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
       <div className="p-4 border-b border-mission-control-border">
         <h2 className="font-semibold flex items-center gap-2">
           <Activity size={16} className="text-mission-control-accent" /> Quick Stats
@@ -93,7 +93,7 @@ export default function QuickStatsWidget() {
                 key={channel}
                 className="flex items-center gap-1.5 px-2 py-1 bg-mission-control-bg/50 rounded-md text-xs"
               >
-                <span>{channelIcons[channel] || '💻'}</span>
+                <span>{channelIcons[channel] || <Monitor size={14} />}</span>
                 <span className={channelColors[channel] || 'text-mission-control-text-dim'}>
                   {channel}
                 </span>
@@ -188,9 +188,9 @@ export default function QuickStatsWidget() {
                 <div key={activity.id} className="text-xs overflow-hidden">
                   <div className="flex items-start gap-2 min-w-0">
                     <span className="shrink-0">
-                      {activity.type === 'chat' ? '💬' : 
-                       activity.type === 'task' ? '✅' : 
-                       activity.type === 'agent' ? '🤖' : '⚙️'}
+                      {activity.type === 'chat' ? <MessageCircle size={14} /> :
+                       activity.type === 'task' ? <CheckCircle size={14} /> :
+                       activity.type === 'agent' ? <Bot size={14} /> : <Settings size={14} />}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-mission-control-text line-clamp-2">{activity.message}</p>

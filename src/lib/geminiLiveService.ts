@@ -688,6 +688,7 @@ export class GeminiLiveService {
     if (this.audioContext) {
       this.audioContext.close().catch((err) => { console.error('[GeminiLive] Failed to close audio context:', err); });
       this.audioContext = null;
+      this.workletLoaded = false; // Must re-register worklet on new AudioContext
     }
     this.micAnalyser = null;
     this.emit('listening-end');

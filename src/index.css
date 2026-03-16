@@ -24,57 +24,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme CSS Variables */
-:root {
-  --mission-control-bg: #0a0a0a;
-  --mission-control-surface: #141414;
-  --mission-control-border: #2a2a2a; /* Pure gray, no purple/blue tint */
-  --mission-control-text: #fafafa;
-  --mission-control-text-dim: #a1a1aa;
-  --mission-control-accent: #22c55e;
-  --mission-control-accent-dim: #16a34a;
-  --mission-control-bg-alt: #1a1a1a;   /* Alternate bg: between bg (#0a0a0a) and surface (#141414), used for input backgrounds */
-  --mission-control-bg0: #0a0a0a;      /* Deepest background, same as --mission-control-bg, used for status dots and inactive states */
-  --mission-control-card: #141414;     /* Card background, same as --mission-control-surface, used for message bubbles and cards */
-  --mission-control-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mission-control-font-size: 14px;
-  
-  /* Status colors (theme-independent) */
-  --color-success: #22c55e;
-  --color-success-bg: rgba(34, 197, 94, 0.1);
-  --color-error: #ef4444;
-  --color-error-bg: rgba(239, 68, 68, 0.1);
-  --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
-  --color-info: #3b82f6;
-  --color-info-bg: rgba(59, 130, 246, 0.1);
-  
-  /* Channel brand colors (fixed for brand identity) */
-  --channel-discord: #5865F2;
-  --channel-discord-bg: rgba(88, 101, 242, 0.2);
-  --channel-telegram: #229ED9;
-  --channel-telegram-bg: rgba(34, 158, 217, 0.2);
-  --channel-whatsapp: #25D366;
-  --channel-whatsapp-bg: rgba(37, 211, 102, 0.2);
-  --channel-webchat: #a855f7;
-  --channel-webchat-bg: rgba(168, 85, 247, 0.2);
-}
-
-/* Light theme */
-:root.light {
-  --mission-control-bg: #fafafa;
-  --mission-control-surface: #ffffff;
-  --mission-control-border: #e4e4e7;
-  --mission-control-text: #18181b;
-  --mission-control-text-dim: #52525b; /* Improved from #71717a for better contrast (7.8:1 vs 5.9:1) */
-  --mission-control-bg-alt: #f4f4f5;   /* Light alternate bg: slightly darker than white for input backgrounds */
-  --mission-control-bg0: #fafafa;      /* Deepest background in light mode */
-  --mission-control-card: #ffffff;     /* Card background in light mode */
-}
-
 * {
   box-sizing: border-box;
 }
+
 
 body {
   margin: 0;
@@ -115,6 +68,30 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Thin scrollbar utility */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mission-control-border) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--mission-control-border);
+  border-radius: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--mission-control-border) 80%, var(--mission-control-text));
 }
 
 /* Glassmorphism styles */
@@ -307,10 +284,10 @@ body {
     @apply gap-2 px-4 py-2; /* Standard spacing: gap-2, padding 16px/8px */
     @apply transition-all duration-150;
     @apply active:scale-95;
-    @apply rounded-xl;
+    @apply rounded-lg;
     @apply font-medium;
   }
-  
+
   .btn-sm {
     @apply inline-flex items-center justify-center;
     @apply gap-1.5 px-3 py-1.5; /* Compact spacing */
@@ -319,30 +296,58 @@ body {
     @apply rounded-lg;
     @apply text-sm font-medium;
   }
-  
+
   .btn-lg {
     @apply inline-flex items-center justify-center;
     @apply gap-3 px-6 py-3; /* Generous spacing */
     @apply transition-all duration-150;
     @apply active:scale-95;
-    @apply rounded-xl;
+    @apply rounded-lg;
     @apply text-base font-medium;
   }
-  
+
   .btn-primary {
-    @apply bg-mission-control-accent text-white rounded-xl;
+    @apply bg-mission-control-accent text-white rounded-lg;
     @apply hover:bg-mission-control-accent-dim hover:shadow-glow;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
   }
 
   .btn-secondary {
-    @apply bg-mission-control-border text-mission-control-text rounded-xl;
+    @apply bg-mission-control-border text-mission-control-text rounded-lg;
     @apply hover:brightness-125;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
   }
-  
+
+  .btn-ghost {
+    @apply bg-transparent text-mission-control-text-dim rounded-lg;
+    @apply hover:bg-mission-control-surface hover:text-mission-control-text;
+    @apply active:scale-95 transition-all duration-150;
+    @apply px-4 py-2 gap-2;
+  }
+
+  /* Semantic badge variants — status/severity */
+  .badge-success {
+    @apply bg-success-subtle text-success border border-success-border;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+
+  .badge-warning {
+    @apply bg-warning-subtle text-warning border border-warning-border;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+
+  .badge-error {
+    @apply bg-error-subtle text-error border border-error-border;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+
+  .badge-info {
+    @apply bg-info-subtle text-info border border-info-border;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap;
+  }
+
   /* Channel badge colors */
   .badge-discord {
     @apply bg-[#5865F2]/20 text-[#5865F2] border-[#5865F2]/30;
@@ -550,6 +555,22 @@ body {
   animation: slide-in 0.3s ease-out;
 }
 
+/* Toast slide-in from bottom-right */
+@keyframes toast-in {
+  from {
+    transform: translateX(calc(100% + 1rem));
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Slide-up animation for bulk actions toolbar */
 @keyframes slide-up {
   from {
@@ -591,6 +612,18 @@ mark {
   animation: slide-down 0.3s ease-out;
 }
 
+/* Typing indicator — 3 bouncing dots used in ChatPanel */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
 /* react-grid-layout dark mode overrides */
 .react-grid-item.react-grid-placeholder {
   background: rgba(34, 197, 94, 0.1) !important;
@@ -625,3 +658,48 @@ mark {
 .react-grid-item.react-dragging {
   transition: none;
 }
+
+/* ============================================================
+/* ============================================================
+   Mobile responsive utilities
+   ============================================================ */
+@media (max-width: 768px) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0 16px;
+    border-radius: 12px;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+}
+
+/* Accent color presets — set via data-accent attribute on :root */
+:root[data-accent="blue"]   { --mission-control-accent: #3b82f6; --mission-control-accent-dim: #2563eb; }
+:root[data-accent="purple"] { --mission-control-accent: #8b5cf6; --mission-control-accent-dim: #7c3aed; }
+:root[data-accent="green"]  { --mission-control-accent: #10b981; --mission-control-accent-dim: #059669; }
+:root[data-accent="red"]    { --mission-control-accent: #ef4444; --mission-control-accent-dim: #dc2626; }
+:root[data-accent="amber"]  { --mission-control-accent: #f59e0b; --mission-control-accent-dim: #d97706; }
+:root[data-accent="pink"]   { --mission-control-accent: #ec4899; --mission-control-accent-dim: #db2777; }

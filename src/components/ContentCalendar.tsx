@@ -112,7 +112,7 @@ export default function ContentCalendar() {
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-review-subtle rounded-xl">
+            <div className="p-2 bg-review-subtle rounded-lg">
               <Calendar size={24} className="text-review" />
             </div>
             <div>
@@ -135,7 +135,7 @@ export default function ContentCalendar() {
                 showToast('info', 'Select a date on the calendar to schedule content');
                 setSelectedDate(new Date());
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90"
             >
               <Plus size={16} />
               Schedule
@@ -176,7 +176,7 @@ export default function ContentCalendar() {
         <div className="grid grid-cols-7 gap-2">
           {days.map((date, idx) => {
             if (!date) {
-              return <div key={`empty-${idx}`} className="min-h-24 bg-mission-control-bg/30 rounded-xl" />;
+              return <div key={`empty-${idx}`} className="min-h-24 bg-mission-control-bg/30 rounded-lg" />;
             }
 
             const dayItems = getItemsForDate(date);
@@ -192,7 +192,7 @@ export default function ContentCalendar() {
                 tabIndex={0}
                 aria-label={`Select date ${date.toLocaleDateString()}${today ? ', today' : ''}${dayItems.length > 0 ? `, ${dayItems.length} items` : ''}`}
                 aria-pressed={selectedDate?.toDateString() === date.toDateString()}
-                className={`min-h-24 p-2 rounded-xl border cursor-pointer transition-all ${
+                className={`min-h-24 p-2 rounded-lg border cursor-pointer transition-all ${
                   today
                     ? 'bg-mission-control-accent/10 border-mission-control-accent/30'
                     : selectedDate?.toDateString() === date.toDateString()

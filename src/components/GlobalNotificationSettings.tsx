@@ -184,7 +184,7 @@ export default function GlobalNotificationSettings() {
             id="default-notification-level"
             value={defaultNotificationLevel}
             onChange={(e) => setDefaultNotificationLevel(e.target.value)}
-            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
           >
             <option value="all">All messages</option>
             <option value="mentions">Mentions only</option>
@@ -202,7 +202,7 @@ export default function GlobalNotificationSettings() {
             id="default-priority-level"
             value={defaultPriorityLevel}
             onChange={(e) => setDefaultPriorityLevel(e.target.value)}
-            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
           >
             <option value="low">Low</option>
             <option value="normal">Normal</option>
@@ -232,7 +232,7 @@ export default function GlobalNotificationSettings() {
             <select
               value={defaultSoundType}
               onChange={(e) => setDefaultSoundType(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="default">Default</option>
               <option value="subtle">Subtle</option>
@@ -280,14 +280,14 @@ export default function GlobalNotificationSettings() {
                 type="time"
                 value={quietStart}
                 onChange={(e) => setQuietStart(e.target.value)}
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
               />
               <span className="text-mission-control-text-dim">to</span>
               <input
                 type="time"
                 value={quietEnd}
                 onChange={(e) => setQuietEnd(e.target.value)}
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
               />
             </div>
           )}
@@ -323,7 +323,7 @@ export default function GlobalNotificationSettings() {
                 min="5"
                 max="60"
                 step="5"
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent w-32"
+                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent w-32"
               />
             </div>
           )}

@@ -330,7 +330,7 @@ export default function SecuritySettings() {
           <Shield size={16} />
           AI Security Audit
         </h2>
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
           <p className="text-sm text-mission-control-text-dim mb-4">
             Run a comprehensive AI-powered security audit to scan configuration files, credentials, logs, and permissions for vulnerabilities.
           </p>
@@ -380,7 +380,7 @@ export default function SecuritySettings() {
           </button>
         </div>
         
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border">
           {apiKeys.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
               <Key size={32} className="mx-auto mb-2 opacity-50" />
@@ -434,12 +434,12 @@ export default function SecuritySettings() {
           </h2>
           <button
             onClick={handleRestoreDefaults}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text-primary transition-colors"
+            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Restore defaults
           </button>
         </div>
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
           <div className="p-3 border-b border-mission-control-border bg-mission-control-bg0/30">
             <p className="text-xs text-mission-control-text-dim mb-2">
               These patterns are blocked for all agents via <code className="font-mono bg-mission-control-bg px-1 rounded">--disallowedTools</code>. Supports Claude tool patterns like <code className="font-mono bg-mission-control-bg px-1 rounded">Bash(rm -rf *)</code>.
@@ -467,7 +467,7 @@ export default function SecuritySettings() {
             ) : (
               disallowedTools.map(tool => (
                 <div key={tool} className="flex items-center justify-between px-3 py-2">
-                  <code className="text-xs font-mono text-mission-control-text-primary">{tool}</code>
+                  <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                   <button
                     onClick={() => handleRemoveDisallowed(tool)}
                     className="p-1 hover:bg-error/10 text-mission-control-text-dim hover:text-error rounded transition-colors"
@@ -506,7 +506,7 @@ export default function SecuritySettings() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border max-h-96 overflow-y-auto">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border max-h-96 overflow-y-auto">
           {filteredLogs.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
               <CheckCircle size={32} className="mx-auto mb-2 opacity-50" />
@@ -574,7 +574,7 @@ export default function SecuritySettings() {
       {/* Add Key Modal */}
       {addKeyModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-md w-full">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
               <Plus size={16} />
               Add Credential
@@ -583,7 +583,7 @@ export default function SecuritySettings() {
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Preset</label>
                 <select
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                   onChange={e => {
                     const preset = API_PRESETS.find(p => p.service === e.target.value);
                     if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
@@ -602,7 +602,7 @@ export default function SecuritySettings() {
                   value={newKey.name}
                   onChange={(e) => setNewKey(k => ({ ...k, name: e.target.value }))}
                   placeholder="e.g., OpenAI Production"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                 />
               </div>
               <div>
@@ -613,7 +613,7 @@ export default function SecuritySettings() {
                   value={newKey.service}
                   onChange={(e) => setNewKey(k => ({ ...k, service: e.target.value }))}
                   placeholder="e.g., OpenAI"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                 />
               </div>
               <div>

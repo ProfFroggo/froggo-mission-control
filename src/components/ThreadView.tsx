@@ -93,7 +93,7 @@ function ThreadMessage({
       <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%] min-w-[120px]`}>
         {/* Sender name and timestamp */}
         <div className={`flex items-center gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}`}>
-          <span className={`text-xs font-medium ${isMe ? 'text-mission-control-accent' : 'text-indigo-600'}`}>
+          <span className={`text-xs font-medium ${isMe ? 'text-mission-control-accent' : 'text-mission-control-accent-dim'}`}>
             {isMe ? 'You' : displayName}
           </span>
           <span className="text-[10px] text-mission-control-text-dim/70">

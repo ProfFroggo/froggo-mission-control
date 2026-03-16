@@ -84,12 +84,14 @@ const shortcuts = [
     { keys: ['N'], action: 'New Task' },
     { keys: ['?'], action: 'Show Panel Help' },
   ]},
-  { category: 'Inbox (Approvals)', items: [
-    { keys: ['J'], action: 'Next Item' },
-    { keys: ['K'], action: 'Previous Item' },
-    { keys: ['A'], action: 'Approve' },
-    { keys: ['R'], action: 'Reject' },
-    { keys: ['X'], action: 'Defer' },
+  { category: 'Approvals Queue', items: [
+    { keys: ['A'], action: 'Approve focused item' },
+    { keys: ['D'], action: 'Deny focused item' },
+  ]},
+  { category: 'Global (bare keys)', items: [
+    { keys: ['?'], action: 'Show this shortcuts panel' },
+    { keys: ['N'], action: 'New task (navigates to Kanban)' },
+    { keys: ['Esc'], action: 'Close any open modal or panel' },
   ]},
   { category: 'Social Media', items: [
     { keys: ['⌘', 'N'], action: 'New Tweet' },
@@ -178,7 +180,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
         <div className="p-6 border-b border-mission-control-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+              <div className="p-2 bg-mission-control-accent/20 rounded-lg">
                 <Keyboard size={24} className="text-mission-control-accent" />
               </div>
               <div>
@@ -188,7 +190,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-xl transition-colors"
+              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             >
               <X size={20} />
             </button>

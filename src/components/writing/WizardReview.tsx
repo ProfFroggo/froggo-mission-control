@@ -341,7 +341,7 @@ export default function WizardReview() {
                       const val = e.target.value;
                       if (val !== '_custom') updateCharacter(i, 'role', val);
                     }}
-                    className="px-2 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
+                    className="px-2 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="protagonist">Protagonist</option>
                     <option value="antagonist">Antagonist</option>

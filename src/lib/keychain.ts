@@ -10,6 +10,22 @@
 export const KEYCHAIN_KEYS = new Set([
   'gemini_api_key',
   'anthropic_api_key',
+  'twitter_api_key',
+  'twitter_api_secret',
+  'twitter_bearer_token',
+  'twitter_oauth_client_id',
+  'twitter_oauth_client_secret',
+  'github_token',
+  'discord_bot_token',
+  'slack_bot_token',
+  'sendgrid_api_key',
+  'stripe_api_key',
+  'elevenlabs_api_key',
+  'birdeye_api_key',
+  'helius_api_key',
+  'perplexity_api_key',
+  'replicate_api_key',
+  'aws_access_key',
 ]);
 
 const SERVICE = 'froggo-mission-control';

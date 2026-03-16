@@ -92,7 +92,7 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
   const total = breakdown.reduce((sum, r) => sum + r.total, 0);
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide">

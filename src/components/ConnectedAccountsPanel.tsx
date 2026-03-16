@@ -78,7 +78,7 @@ export default function ConnectedAccountsPanel() {
   return (
     <div className="space-y-6">
       {/* Status card */}
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             {/* Google icon */}
@@ -148,7 +148,7 @@ export default function ConnectedAccountsPanel() {
       </div>
 
       {/* Services */}
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-5">
         <h3 className="font-medium mb-3 text-sm text-mission-control-text-dim uppercase tracking-wide">Services enabled</h3>
         <div className="grid grid-cols-2 gap-3">
           {GOOGLE_SERVICES.map(({ icon: Icon, label, description }) => (

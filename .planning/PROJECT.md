@@ -1,147 +1,116 @@
-# Mission Control — Froggo Platform
+# Mission Control Agent Autonomy — Deep System Review & Fix Plan
 
 ## What This Is
 
-Mission Control is a multi-agent AI orchestration platform running in the browser. Agents (coder, researcher, writer, chief, clara, designer, social-manager, and 8 more) are orchestrated via Claude Code CLI, communicate through a shared SQLite database and Obsidian memory vault, and are controlled through a Next.js dashboard. A self-service catalog allows users to browse, hire, and install agents and modules without touching a CLI. Onboarding role presets configure a fresh instance in seconds.
+A comprehensive overhaul of Mission Control's agent execution pipeline, memory system, and planning framework. The platform has 14 agents, a kanban task board, Clara review gates, cron scheduling, and MCP-based tool access — but the system isn't truly autonomous. Tasks get stuck, reviews fail silently, dispatch crashes, memory is fragmented, and agents don't use structured planning. This project makes everything work end-to-end without human intervention.
 
 ## Core Value
 
-Agents talking end-to-end — a human assigns work, agents execute autonomously, approvals surface only what needs human judgment.
+Tasks flow from creation to completion autonomously: `todo → Clara pre-review → in-progress (agent works) → review (Clara verifies) → done` — with self-healing at every failure point and agents that remember, learn, and plan.
 
 ## Requirements
 
 ### Validated
 
-- ✓ Electron removed, Next.js App Router scaffolded — v1.0
-- ✓ 18-table SQLite schema with `getDb()` singleton — v1.0
-- ✓ 36 API routes covering all former IPC channels — v1.0
-- ✓ All Zustand stores using typed REST API clients — v1.0
-- ✓ `mission-control-db` MCP server (11 tools) for agent DB access — v1.0
-- ✓ memory MCP server (3 tools) for Obsidian vault access — v1.0
-- ✓ 13 agent SOUL.md configs in `.claude/agents/` — v1.0
-- ✓ Tiered approval hook system (Tier 0–3) — v1.0
-- ✓ Session sync hook → Obsidian vault — v1.0
-- ✓ Obsidian vault at `~/mission-control/memory/` with QMD indexing — v1.0
-- ✓ Chat rooms with 5s polling UI — v1.0
-- ✓ Session management API (persist + resume sessions) — v1.0
-- ✓ Cron daemon + cron MCP server (3 tools) — v1.0
-- ✓ Real SSE streaming via claude CLI `stream-json` — v1.0
-- ✓ 6 Claude Code skills in `.claude/skills/` — v1.0
-- ✓ `npm run build` PASS, TypeScript clean — v1.0
-- ✓ ENV singleton (`src/lib/env.ts`) — single source of truth for paths/models — v2.0
-- ✓ Tmux orchestration (`tools/tmux-setup.sh`, `tools/agent-start.sh`) — v2.0
-- ✓ Enhanced memory MCP v3 (4 tools, QMD BM25/vector/hybrid) — v2.0
-- ✓ APPROVAL_RULES.md Tier 0–3 + git worktrees for coder/designer/chief — v2.0
-- ✓ 15 agents with real personality, maxTurns, worktreePath, model configs — v2.0
-- ✓ 9 skills including x-twitter-strategy, nextjs-patterns, git-workflow — v2.0
-- ✓ Voice bridge: Gemini Live WS server at `ws://localhost:8765` — v2.0
-- ✓ Task dispatcher: soul file as `--system-prompt`, per-agent model, session persistence — v3.0
-- ✓ All 15 workspace CLAUDE.md files using MCP tool calls (not defunct derek-db) — v3.0
-- ✓ PreCompact hook re-injects current task + last 5 activities — v3.0
-- ✓ TeammateIdle + TaskCompleted hooks auto-log to task board — v3.0
-- ✓ Token & cost tracking: `token_usage` table, MODEL_PRICING, calcCostUsd() — v3.0
-- ✓ Skills auto-loading in dispatch message — v3.0
-- ✓ Monitoring: checkStuckTasks() cron sweep, /api/agents/health endpoint — v3.0
-- ✓ Rate limiting: per-agent spawn lock + dispatch debounce — v3.0
-- ✓ Catalog data model: catalog_agents + catalog_modules tables, 15+19 JSON manifests, catalogSync.ts — v4.0
-- ✓ Catalog REST API: GET/PATCH/DELETE endpoints with core module protection — v4.0
-- ✓ Agent Library UI: AgentLibraryPanel, Active/Library tabs, model badges — v4.0
-- ✓ HR stream endpoint fixed, v3.0 soul template, custom agents register in catalog — v4.0
-- ✓ Agent hire wizard: workspace creation with CLAUDE.md + SOUL.md + MEMORY.md — v4.0
-- ✓ Module Library UI: ModuleLibraryPanel, Installed/Library tabs, category/dep warnings — v4.0
-- ✓ Module install wizard: 3-step modal, POST /api/modules/install — v4.0
-- ✓ Lifecycle: non-destructive fire (workspace archive), non-destructive uninstall — v4.0
-- ✓ Onboarding role presets: 4 roles auto-install agents+modules, 7-step wizard — v4.0
-- ✓ `validateAgentId()` utility — all agent/catalog routes guarded against path traversal and injection — v6.0
-- ✓ Command injection fixed in spawn route (`spawnSync` args array, never shell-interpolated) — v6.0
-- ✓ Path traversal fixed in library (`startsWith` boundary) + files/read (`ALLOWED_ROOTS` allowlist) routes — v6.0
-- ✓ Hardcoded absolute path removed from soul route (uses `process.cwd()`) — v6.0
-- ✓ Gemini API key server-side: 7 components use DB-backed settings API, not localStorage — v6.0
-- ✓ 5 security headers in next.config.js (X-Frame-Options, CSP with Gemini origins, nosniff, Referrer-Policy, XSS-Protection) — v6.0
-- ✓ Input length limits: task (500/5000), hire (100), library (255), soul (50KB cap, 413 on exceed) — v6.0
-- ✓ Module ID validation via `validateAgentId` in catalog/modules/[id] — v6.0
-- ✓ 20 security regression checks in e2e-smoke-test.sh (127/128 passing) — v6.0
+- ✓ 14 agents with SOUL.md configs in `.claude/agents/` — existing
+- ✓ SQLite task board with kanban statuses — existing
+- ✓ Clara pre-work review (internal-review gate) — existing
+- ✓ Clara post-work review (review gate) — existing
+- ✓ Task dispatcher with retry + backoff — existing
+- ✓ Cron daemon checking schedule.json every 60s — existing
+- ✓ MCP tools for DB access (11 tools) — existing
+- ✓ Memory MCP server for vault access — existing
+- ✓ Session persistence (resume sessions) — existing
+- ✓ Cron jobs can create tasks (taskTemplate) — existing (just built)
+- ✓ Knowledge ingest with Gemini AI — existing (just built)
 
-### Active (v5.0 — next milestone, TBD)
+### Active
 
-- [ ] Agent streaming workspace generation (currently step-progress UI, not live stream)
-- [ ] Role preset saved to DB for catalog recommendations
-- [ ] Re-hire UX: full config preservation on re-hire
-- [ ] Starred messages API (ChatPanel TODO)
-- [ ] File attachments in chat
-- [ ] Whisper transcription wired (bridge.ts shim in place)
+#### Pipeline Autonomy (Critical)
+- [ ] Re-dispatch agent after Clara post-review rejection with feedback
+- [ ] Clara subprocess reliability (--dangerously-skip-permissions, no empty args)
+- [ ] Dispatch subprocess reliability (same fixes)
+- [ ] Failed dispatch → retry to todo (not dead-end human-review)
+- [ ] Auto-advance todo tasks with agent → internal-review
+- [ ] Review count only increments on actual decisions (not silent failures)
+- [ ] Circuit breaker recovery (open circuits auto-close after cooldown)
+
+#### Agent Memory System (Critical)
+- [ ] Unify memory locations (currently 4+ scattered dirs)
+- [ ] Per-agent memory: each agent gets structured memory dir
+- [ ] Session checkpoints: save learnings after each task completion
+- [ ] Memory injection: agents receive relevant memory at dispatch time
+- [ ] Clean up duplicate `memory/memory/` nesting
+- [ ] Agent pattern memory (Clara's review patterns → all agents)
+
+#### GSD-Driven Agent Execution (Critical)
+- [ ] Agents use GSD-style phases/milestones for projects and campaigns
+- [ ] Multi-agent GSD: project roadmap with phase assignments to different agents
+- [ ] Campaign execution uses structured planning (not ad-hoc task creation)
+- [ ] Progress tracking per project: phases, milestones, completion %
+- [ ] Agents can create/update their own subtasks and planning notes
+
+#### Cron & Scheduling Reliability
+- [ ] All cron jobs use taskTemplate (create tasks, not messages)
+- [ ] Task recurrence uses original due date (no drift)
+- [ ] Cron execution history in DB (not just JSON state)
+- [ ] Scheduled content execution engine (tweets, emails)
+
+#### Knowledge System
+- [ ] Living knowledge base: daily Gemini review cron
+- [ ] Auto-discover knowledge from tasks, meetings, agent notes
+- [ ] Knowledge graph relationships between articles
+- [ ] Knowledge sync: DB ↔ filesystem always in sync
 
 ### Out of Scope
 
-- Electron / electron-builder — permanently removed, MDM blocks unsigned Electron on Bitso device
-- OpenClaw gateway — replaced by Claude Code SDK direct integration
-- `--dangerously-skip-permissions` — agents use proper approval flow
-- Twitter/X automation — deferred (no external API keys in scope)
-- Finance module — deferred (external API dependencies)
-- Supabase / remote DB — SQLite is intentional for local-first operation
+- UI/UX polish — just completed 3 full passes, not revisiting
+- New module development (finance, meetings) — focus on existing system
+- External API integrations (Twitter posting, email sending) — setup wizard done, actual posting is separate
+- Deployment/hosting — local development only for now
+- Test suite creation — focus on making the system work first
 
 ## Context
 
-**Current state (post v6.0):**
-- Stack: Next.js 15 App Router, TypeScript, Tailwind CSS, Zustand, better-sqlite3, lucide-react
-- DB: `~/mission-control/data/mission-control.db` (20 tables: 18 core + catalog_agents + catalog_modules)
-- Memory: `~/mission-control/memory/` (Obsidian vault, QMD indexed)
-- Library: `~/mission-control/library/` (agent output files, category-routed)
-- MCP: `mission-control-db` (11 tools) + `memory` (4 tools v3)
-- Catalog: `catalog/agents/` (15 manifests) + `catalog/modules/` (18 manifests)
-- Agents: 15 defined in `.claude/agents/` with enriched SOUL.md + workspace dirs
-- E2E test: `tools/e2e-smoke-test.sh` — 127/128 checks pass (1 pre-existing TS error)
-- LOC: ~119,510 TypeScript/TSX
-- Security: all critical/high audit findings resolved (v6.0)
+### Current Architecture
+- **Runtime**: Next.js 16 App Router + SQLite (better-sqlite3)
+- **Agent execution**: Claude Code CLI spawned as child process with `--print --output-format stream-json`
+- **Agent config**: SOUL.md files in `.claude/agents/{id}.md`
+- **Memory vault**: `~/mission-control/memory/` (Obsidian-compatible)
+- **Knowledge base**: `~/mission-control/memory/knowledge/` + SQLite `knowledge_base` table
+- **Cron daemon**: `tools/cron-daemon.js` (Node.js, reads schedule.json)
+- **MCP servers**: mission-control-db (11 tools), memory (3 tools), cron (3 tools)
+- **Task pipeline**: todo → internal-review → in-progress → review → done
 
-**Technical debt:**
-- Belt-and-suspenders in ModuleInstallModal (calls both moduleApi.install + catalogApi.setModuleInstalled)
-- 531 `window.clawdbot` refs still via bridge.ts shim (from v1.0 carry-over)
+### Known Critical Bugs (Found Today)
+1. **Clara subprocess fails silently**: Missing `--dangerously-skip-permissions` causes permission prompt hang → 3-min timeout → silent failure → count increments → human-review dead-end
+2. **Empty --disallowedTools crash**: `loadDisallowedTools().join(',')` returns `""` → Claude CLI crashes with exit code 1
+3. **No re-dispatch after rejection**: Clara rejects post-work review → task goes to in-progress → no agent re-spawned → task sits forever
+4. **Review count pre-increment**: Count goes up before subprocess runs → silent failures count as reviews → false escalation
+5. **Todo tasks not auto-advancing**: Tasks reset to todo via DB don't auto-move to internal-review
+6. **Memory fragmentation**: 4+ memory locations, most agents have zero memory files, duplicate `memory/memory/` dir
 
-**Path mapping:**
-| Spec path | Actual path |
-|-----------|-------------|
-| `~/froggo-nextjs/` | `~/git/mission-control-nextjs/` |
-| `~/froggo/data/froggo.db` | `~/mission-control/data/mission-control.db` |
-| `~/obsidian-vault/` | `~/mission-control/memory/` |
-| `froggo-agents` tmux session | `mission-control` (renamed) |
-| `~/froggo-worktrees/` | `~/mission-control/worktrees/` |
+### Agent Roster
+mission-control, clara, coder, hr, inbox, designer, social-manager, growth-director, qa-engineer, security, senior-coder, chief, finance-manager, data-analyst (+ art, voice, writer as workers)
 
 ## Constraints
 
-- **No Electron**: Kandji MDM (installed Feb 2026) blocks unsigned Electron apps with SIGKILL
-- **No OpenClaw**: Replaced by Claude Code SDK + Next.js API routes
-- **No --dangerously-skip-permissions**: Agents use proper approval flow
-- **Local-first**: SQLite, Obsidian vault, no external database
-- **Tech stack**: Next.js App Router, TypeScript, better-sqlite3 (server-side), Tailwind CSS
+- **CLI-based agents**: Must use Claude Code CLI spawn architecture (not HTTP API/SDK)
+- **No breaking changes**: All fixes must be backward compatible with existing task data
+- **SQLite storage**: No migration to external databases
+- **Self-healing**: Every failure mode must have an automatic recovery path — no dead ends
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js App Router (not Pages) | Modern SSR + API routes, edge-ready | ✓ Good |
-| `better-sqlite3` (not Postgres) | Same DB file, zero migration, simpler ops | ✓ Good |
-| `window.clawdbot` compat shim | Incremental migration without breaking all components at once | ✓ Good |
-| Claude Code SDK (not custom runner) | No OpenClaw dependency, native ecosystem | ✓ Good |
-| SSE for streaming (not WebSocket) | Simpler, works with Next.js routes natively | ✓ Good |
-| `noImplicitAny: false` in tsconfig | Electron codebase used implicit any throughout | ✓ Good |
-| Obsidian vault for memory | Human-readable, QMD-searchable, works offline | ✓ Good |
-| StdioServerTransport for MCP | Standard pattern, no extra server port needed | ✓ Good |
-| Tmux for agent orchestration | Terminal multiplexer, persistent sessions, easy pane management | ✓ Good |
-| Gemini Live for voice layer | Native audio I/O, personality transfer via system_instruction | ✓ Good |
-| Three-tier model strategy | Cost/capability tradeoff per agent role | ✓ Good |
-| `--system-prompt` with SOUL.md for dispatch | `--agents {id}` is interactive mode only; `--print` needs explicit system | ✓ Good |
-| Catalog additive (separate tables) | No migration risk to existing agents/module_state | ✓ Good |
-| ON CONFLICT preserves hire state | Manifests own metadata; DB owns install state | ✓ Good |
-| Non-destructive fire (workspace rename) | Preserves agent work history for forensics | ✓ Good |
-| Core module guard at API layer | Defense in depth — not just UI | ✓ Good |
-| `Promise.allSettled` for role presets | Partial install failure doesn't block onboarding | ✓ Good |
-| `validateAgentId` shared utility pattern | One function applied everywhere — returns `NextResponse \| null` | ✓ Good |
-| `spawnSync` args array for child processes | Agent ID never shell-interpolated — eliminates injection class | ✓ Good |
-| `ALLOWED_ROOTS` allowlist for file reads | Safer than denylist — explicit whitelist of accessible paths | ✓ Good |
-| CSP via `next.config.js headers()` (not middleware) | Simpler, no edge runtime needed, applies globally | ✓ Good |
-| Input length caps pragmatic (not RFC-strict) | 500/5000/100/255/50KB chosen for DoS prevention, not pedantic limits | ✓ Good |
-| Static smoke test checks (grep-based) | No running server required — catches regressions in any environment | ✓ Good |
+| Agents must use --dangerously-skip-permissions | Autonomous execution requires no interactive prompts | ✓ Good |
+| Failed dispatch → todo (not human-review) | human-review is a dead end with no auto-recovery | ✓ Good |
+| Review count only on actual decisions | Prevents false escalation from silent subprocess failures | ✓ Good |
+| Cron jobs create tasks via taskTemplate | Tasks go through full pipeline instead of bypassing it via chat | ✓ Good |
+| GSD planning for agent project execution | Structured phases/milestones beat ad-hoc task creation | — Pending |
+| Unified memory at ~/mission-control/memory/agents/{id}/ | Single location per agent, structured dirs | — Pending |
+| Re-dispatch with Clara feedback on rejection | Closes the loop so agents implement review changes | — Pending |
 
 ---
-*Last updated: 2026-03-07 after v6.0 milestone*
+*Last updated: 2026-03-15 after initialization*

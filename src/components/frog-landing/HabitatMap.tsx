@@ -109,7 +109,7 @@ export function HabitatMap() {
         {/* Selected region detail (mobile + desktop) */}
         <div className="mt-8 text-center min-h-[80px]" aria-live="polite">
           {selectedRegion ? (
-            <div className="inline-flex flex-col items-center gap-2 rounded-xl border border-[rgba(82,183,136,0.2)] bg-[rgba(13,31,23,0.6)] px-8 py-5">
+            <div className="inline-flex flex-col items-center gap-2 rounded-lg border border-[rgba(82,183,136,0.2)] bg-[rgba(13,31,23,0.6)] px-8 py-5">
               <div className="flex items-center gap-2 text-[var(--frog-moss)]">
                 <MapPin className="h-5 w-5" aria-hidden="true" />
                 <h3 className="text-lg font-semibold text-[var(--frog-mist)]">

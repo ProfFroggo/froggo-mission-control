@@ -42,7 +42,7 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value as VerifiedFact['status'])}
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
+        className="w-full px-2 py-1 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
       >
         <option value="unverified">Unverified</option>
         <option value="verified">Verified</option>

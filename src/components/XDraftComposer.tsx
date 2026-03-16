@@ -216,7 +216,7 @@ export default function XDraftComposer() {
                 id="content-plan"
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full bg-mission-control-bg-alt text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 disabled={submitting}
               >
                 <option value="">Select a content plan...</option>

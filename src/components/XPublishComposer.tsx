@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image, Calendar, Clock, X } from 'lucide-react';
+import { Send, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
 import { approvalApi, scheduleApi } from '../lib/api';
+import { showToast } from './Toast';
 
 type PostMode = 'single' | 'thread';
 
@@ -389,6 +390,25 @@ export default function XPublishComposer() {
     }
   };
 
+  const handleCaptureIdea = async () => {
+    const content = mode === 'single' ? tweets[0] : JSON.stringify({ type: 'thread', tweets: tweets.filter(t => t.trim()) });
+    if (!content.trim()) return;
+    try {
+      await scheduleApi.create({
+        type: 'idea',
+        content,
+        platform: 'twitter',
+        status: 'idea',
+        metadata: JSON.stringify({ capturedAt: Date.now() }),
+      });
+      localStorage.removeItem(DRAFT_KEY);
+      setTweets(['']);
+      showToast('success', 'Idea saved to drafts');
+    } catch {
+      showToast('error', 'Failed to save idea');
+    }
+  };
+
   const handleScheduleSubmit = async () => {
     if (isScheduleDisabled || !scheduledAt) return;
 
@@ -661,7 +681,7 @@ export default function XPublishComposer() {
               value={scheduledAt}
               min={getMinScheduleTime()}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
             />
             {scheduleResult && !scheduleResult.success && (
               <div className="flex items-center gap-2 text-sm text-red-400">
@@ -844,6 +864,17 @@ export default function XPublishComposer() {
                 {postButtonLabel()}
               </>
             )}
+          </button>
+
+          {/* Capture Idea button — saves rough draft instantly */}
+          <button
+            onClick={handleCaptureIdea}
+            disabled={posting || !tweets.some(t => t.trim())}
+            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-info hover:border-info hover:bg-info/5"
+            title="Save as idea — capture rough draft without polishing"
+          >
+            <Lightbulb className="w-5 h-5" />
+            Idea
           </button>
 
           {/* Schedule button */}

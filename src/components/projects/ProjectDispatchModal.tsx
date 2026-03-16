@@ -58,11 +58,11 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
         <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
           <div className="flex items-center gap-2">
             <Bot size={16} className="text-mission-control-accent" />
-            <span className="font-semibold text-mission-control-text-primary text-sm">Dispatch Agent</span>
+            <span className="font-semibold text-mission-control-text text-sm">Dispatch Agent</span>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text-primary hover:bg-mission-control-surface rounded transition-colors"
+            className="p-1 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded transition-colors"
           >
             <X size={15} />
           </button>
@@ -74,7 +74,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
           <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
             {(() => { const DispIcon = getProjectIcon(project.emoji); return <DispIcon size={16} style={{ color: project.color }} />; })()}
             <div className="min-w-0">
-              <p className="text-xs font-medium text-mission-control-text-primary truncate">{project.name}</p>
+              <p className="text-xs font-medium text-mission-control-text truncate">{project.name}</p>
               {project.goal && (
                 <p className="text-xs text-mission-control-text-dim truncate flex items-center gap-1">
                   <Target size={9} /> {project.goal}
@@ -110,7 +110,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
                     }`}
                   >
                     <AgentAvatar agentId={m.agentId} size="sm" />
-                    <span className="text-sm text-mission-control-text-primary">{(m as any).agentName || m.agentId}</span>
+                    <span className="text-sm text-mission-control-text">{(m as any).agentName || m.agentId}</span>
                     {agentId === m.agentId && (
                       <div className="ml-auto w-4 h-4 rounded-full bg-mission-control-accent flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -131,7 +131,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoFocus
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50"
             />
           </div>
 
@@ -145,7 +145,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text-primary placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50 resize-none"
+              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50 resize-none"
             />
           </div>
 
@@ -174,7 +174,7 @@ export default function ProjectDispatchModal({ project, members, onClose, onDisp
         <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text-primary hover:bg-mission-control-surface transition-colors text-sm"
+            className="px-4 py-2 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text hover:bg-mission-control-surface transition-colors text-sm"
           >
             Cancel
           </button>

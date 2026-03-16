@@ -321,7 +321,7 @@ export default function FinancePanel() {
     >
       {/* Drop Overlay */}
       {dragOver && (
-        <div className="absolute inset-0 z-50 bg-mission-control-bg/80 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-mission-control-accent rounded-xl">
+        <div className="absolute inset-0 z-50 bg-mission-control-bg/80 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-mission-control-accent rounded-lg">
           <div className="text-center">
             <Upload size={48} className="mx-auto mb-3 text-mission-control-accent" />
             <p className="text-lg font-semibold text-mission-control-text">Drop bank statement here</p>
@@ -437,7 +437,7 @@ export default function FinancePanel() {
         <div className={`${chatOpen ? 'w-3/5' : 'w-full'} overflow-auto p-4 transition-all`}>
         {/* AI Processing Banner */}
         {aiProcessing && (
-          <div className="bg-mission-control-surface border border-mission-control-accent/30 rounded-xl p-4 mb-4">
+          <div className="bg-mission-control-surface border border-mission-control-accent/30 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-3">
               <div className="animate-spin h-5 w-5 border-2 border-mission-control-accent border-t-transparent rounded-full" />
               <div className="flex-1">
@@ -451,13 +451,13 @@ export default function FinancePanel() {
         )}
 
         {/* AI Insights Section */}
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 mb-6">
           <FinanceInsightsPanel />
         </div>
 
         {/* Legacy Alerts (if any exist) */}
         {alerts.length > 0 && (
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Bell size={18} className="text-warning" />
               <h2 className="text-heading-3">System Alerts</h2>
@@ -492,7 +492,7 @@ export default function FinancePanel() {
         {/* Budget Cards Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Family Budget */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-heading-3 flex items-center gap-2">
                 <DollarSign size={20} className="text-info" />
@@ -569,7 +569,7 @@ export default function FinancePanel() {
           </div>
 
           {/* Crypto Budget */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-heading-3 flex items-center gap-2">
                 <Coins size={20} className="text-review" />
@@ -693,7 +693,7 @@ export default function FinancePanel() {
         )}
 
         {/* Recent Transactions */}
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl">
           <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
             <h2 className="text-heading-3">Recent Transactions</h2>
             <span className="text-sm text-mission-control-text-dim">
@@ -734,7 +734,7 @@ export default function FinancePanel() {
                                 showToast('success', `Recategorized to ${newCat}`);
                               }}
                               onBlur={() => setEditingCategoryTxId(null)}
-                              className="bg-mission-control-surface border border-mission-control-border rounded px-2 py-0.5 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-0.5 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                               aria-label={`Change category for ${tx.description}`}
                             >
                               {categoryOptions.length > 0
@@ -813,7 +813,7 @@ export default function FinancePanel() {
       {/* Upload Modal */}
       {uploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-heading-3 mb-4">Upload Bank Statement</h2>
 
             <div className="space-y-4">
@@ -865,7 +865,7 @@ export default function FinancePanel() {
       {/* Budget Creation Modal */}
       {budgetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-heading-3 mb-4">
               Create {budgetModalType === 'family' ? 'Family' : 'Crypto'} Budget
             </h2>
@@ -915,7 +915,7 @@ export default function FinancePanel() {
                   <select
                     value={budgetCurrency}
                     onChange={(e) => setBudgetCurrency(e.target.value)}
-                    className="px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                   >
                     <option value="EUR">EUR</option>
                     <option value="USD">USD</option>
@@ -958,7 +958,7 @@ export default function FinancePanel() {
       {/* Create Account Modal */}
       {showCreateAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-heading-3 mb-4">Create Account</h2>
 
             <div className="space-y-4">
@@ -1031,7 +1031,7 @@ export default function FinancePanel() {
       {/* Export Modal */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-mission-control-bg border border-mission-control-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 w-full max-w-md shadow-2xl">
             <h2 className="text-heading-3 mb-4">Export Transactions</h2>
 
             <div className="space-y-4">
@@ -1052,7 +1052,7 @@ export default function FinancePanel() {
               </div>
 
               {/* Date range */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="export-date-from" className="block text-sm text-mission-control-text-dim mb-1">From</label>
                   <input

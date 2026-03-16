@@ -19,11 +19,14 @@ export function runDispatchCycle(): { dispatched: number; skipped: number } {
   try {
     const db = getDb();
 
-    // Find all 'todo' tasks with an assigned agent
+    // Only dispatch tasks that are in-progress but have no running process
+    // (stuck recovery). Clara review cron handles todo → internal-review → dispatch.
+    // Do NOT dispatch 'todo' tasks — that's Clara's job via pre-review.
     const tasks = db.prepare(
       `SELECT id, assignedTo FROM tasks
-       WHERE status = 'todo' AND assignedTo IS NOT NULL AND assignedTo != ''`
-    ).all() as Array<{ id: string; assignedTo: string }>;
+       WHERE status = 'in-progress' AND assignedTo IS NOT NULL AND assignedTo != ''
+         AND updatedAt < ?`
+    ).all(Date.now() - 10 * 60_000) as Array<{ id: string; assignedTo: string }>;
 
     const now = Date.now();
     for (const task of tasks) {
@@ -63,7 +66,7 @@ export function startDispatcherCron(): void {
   // Set sentinel immediately (before setInterval) to prevent concurrent callers from racing in
   g.__taskDispatcherInterval = true;
 
-  console.log('[dispatcherCron] Task dispatcher starting (30s interval)');
+  console.log('[dispatcherCron] Stuck task recovery starting (30s interval)');
 
   // Run immediately on start, then every 30s
   runDispatchCycle();

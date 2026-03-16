@@ -178,7 +178,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
               <div
                 key={mod.id}
                 onClick={() => onSelectModule(mod.id)}
-                className="group relative bg-mission-control-surface border border-mission-control-border rounded-xl p-4 cursor-pointer hover:border-mission-control-accent/50 transition-colors"
+                className="group relative bg-mission-control-surface border border-mission-control-border rounded-lg p-4 cursor-pointer hover:border-mission-control-accent/50 transition-colors"
               >
                 {/* Status badge */}
                 <div className="flex items-center justify-between mb-2">

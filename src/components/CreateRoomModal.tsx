@@ -46,7 +46,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-mission-control-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/10 rounded-xl">
+            <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <Users size={20} className="text-mission-control-accent" />
             </div>
             <div>
@@ -71,7 +71,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
               value={roomName}
               onChange={e => setRoomName(e.target.value)}
               placeholder={defaultName || 'e.g., Architecture Discussion'}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-mission-control-accent"
             />
           </div>
 
@@ -88,7 +88,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
                   <button
                     key={agent.id}
                     onClick={() => toggleAgent(agent.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                       selected
                         ? `${theme.border} ${theme.bg} ring-1 ${theme.ring}`
                         : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-bg'
@@ -123,14 +123,14 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
           <div className="flex gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-xl border border-mission-control-border hover:bg-mission-control-border transition-colors"
+              className="px-4 py-2 text-sm rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleCreate}
               disabled={selectedAgents.size < 1}
-              className="px-4 py-2 text-sm rounded-xl bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-2"
+              className="px-4 py-2 text-sm rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-2"
             >
               <MessageSquarePlus size={16} />
               Create Room

@@ -122,8 +122,8 @@ export function XCalendarView() {
 
       const research = items.filter((i: any) => i.type === 'research');
       const plans = items.filter((i: any) => i.type === 'plan');
-      const drafts = items.filter((i: any) => i.type === 'draft' && !i.scheduledTime);
-      const scheduled = items.filter((i: any) => i.scheduledTime && i.platform === 'twitter');
+      const drafts = items.filter((i: any) => i.type === 'draft' && !i.scheduledFor);
+      const scheduled = items.filter((i: any) => i.scheduledFor && i.platform === 'twitter');
 
       const mapped: CalendarEvent[] = [
         ...mapResearchToEvents(research),
@@ -131,7 +131,7 @@ export function XCalendarView() {
         ...mapDraftsToEvents(drafts),
         ...mapDirectScheduledToEvents(scheduled.map((s: any) => ({
           id: s.id,
-          scheduled_time: s.scheduledTime,
+          scheduled_time: s.scheduledFor,
           content: s.content,
           status: s.status || 'pending',
           metadata: s.metadata ? JSON.stringify(s.metadata) : '{}',

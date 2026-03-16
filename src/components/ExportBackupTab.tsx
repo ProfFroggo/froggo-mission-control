@@ -258,7 +258,7 @@ export default function ExportBackupTab() {
       )}
 
       {/* Export Section */}
-      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
+      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
           <Download size={20} />
           Export Data
@@ -329,7 +329,7 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Backup Section */}
-      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
+      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
           <HardDrive size={20} />
           Database Backup
@@ -420,7 +420,7 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Available Backups */}
-      <section className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6">
+      <section className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
             <Database size={20} />
@@ -482,7 +482,7 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-error-subtle border border-error-border rounded-xl p-6">
+      <section className="bg-error-subtle border border-error-border rounded-lg p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-error">
           <AlertTriangle size={20} />
           Danger Zone

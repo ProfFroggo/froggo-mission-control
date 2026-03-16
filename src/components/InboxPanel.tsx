@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, CheckCheck, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -133,6 +133,27 @@ export default function InboxPanel() {
   // AI Assistance Panel state
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedItemForAI, setSelectedItemForAI] = useState<InboxItem | null>(null);
+
+  // Mark-all-read state
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+
+  const handleMarkAllRead = useCallback(async () => {
+    setMarkingAllRead(true);
+    try {
+      await fetch('/api/inbox', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mark-all-read' }),
+      });
+      showToast('success', 'All marked as read');
+      loadInbox();
+    } catch {
+      showToast('error', 'Failed to mark all as read');
+    } finally {
+      setMarkingAllRead(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadInbox = useCallback(async () => {
     if ((window as any).__appVisible === false) return; // Skip when tab hidden
@@ -1025,7 +1046,7 @@ export default function InboxPanel() {
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <Inbox size={24} className="text-mission-control-accent" />
             </div>
             <div>
@@ -1056,15 +1077,26 @@ export default function InboxPanel() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowKeyboardHelp(true)}
-              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
               title="Keyboard shortcuts (?)"
             >
               <span className="text-xs font-mono">⌨️</span>
               Shortcuts
             </button>
             <button
+              onClick={handleMarkAllRead}
+              disabled={markingAllRead || pendingItems.length === 0}
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Mark all as read"
+            >
+              {markingAllRead
+                ? <Loader2 size={16} className="flex-shrink-0 animate-spin" />
+                : <CheckCheck size={16} className="flex-shrink-0" />}
+              Mark all read
+            </button>
+            <button
               onClick={loadInbox}
-              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+              className="icon-text px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -1074,14 +1106,14 @@ export default function InboxPanel() {
                 <span className="text-sm text-mission-control-text-dim">{selectedIds.size} selected</span>
                 <button
                   onClick={handleBulkApprove}
-                  className="icon-text px-3 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors text-sm"
+                  className="icon-text px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
                 >
                    <CheckCircle size={16} className="flex-shrink-0" />
                   Approve
                 </button>
                 <button
                   onClick={handleBulkReject}
-                  className="icon-text px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors text-sm"
+                  className="icon-text px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
                 >
                    <XCircle size={16} className="flex-shrink-0" />
                   Reject
@@ -1103,7 +1135,7 @@ export default function InboxPanel() {
                 </button>
                 <button
                   onClick={handleApproveAll}
-                  className="icon-text px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+                  className="icon-text px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                 >
                    <CheckCircle size={16} className="flex-shrink-0" />
                   Approve All
@@ -1386,6 +1418,17 @@ export default function InboxPanel() {
                         {item.context && (
                           <p className="text-xs text-mission-control-text-dim mt-1">{item.context}</p>
                         )}
+                        {item.content && !isExpanded && (
+                          <p
+                            className="text-xs text-mission-control-text-dim/70 mt-1 overflow-hidden whitespace-nowrap text-ellipsis"
+                            style={{ maxWidth: '100%' }}
+                            title={typeof item.content === 'string' ? item.content : undefined}
+                          >
+                            {typeof item.content === 'string'
+                              ? item.content.slice(0, 120).replace(/\n/g, ' ')
+                              : null}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1484,7 +1527,7 @@ export default function InboxPanel() {
                             value={feedbackText}
                             onChange={(e) => setFeedbackText(e.target.value)}
                             placeholder="Enter your feedback for revision..."
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
                             rows={3}
                           />
                           <div className="flex gap-2 mt-2">
@@ -1649,7 +1692,7 @@ export default function InboxPanel() {
           aria-label="Close schedule modal"
         >
           <div 
-            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-lg w-full mx-4" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4" 
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1688,7 +1731,7 @@ export default function InboxPanel() {
                       value={scheduleModal.date}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1698,7 +1741,7 @@ export default function InboxPanel() {
                       type="time"
                       value={scheduleModal.time}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
-                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                      className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
                     />
                   </div>
                 </div>
@@ -1880,7 +1923,7 @@ export default function InboxPanel() {
           aria-label="Close keyboard help"
         >
           <div 
-            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
+            className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1974,7 +2017,7 @@ export default function InboxPanel() {
           aria-label="Close agent warning"
           type="button"
         >
-          <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-mission-control-surface border border-mission-control-border rounded-xl p-6 max-w-lg w-full mx-4">
+          <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-lg w-full mx-4">
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-warning-subtle rounded-lg">

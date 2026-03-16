@@ -383,13 +383,13 @@ export default function MeetingTranscribe() {
 
               {/* AI Summary (shown after meeting ends) */}
               {summarising && (
-                <div className="mx-4 mt-4 p-4 rounded-xl bg-review-subtle border border-review-border flex items-center gap-3 text-sm text-review">
+                <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border flex items-center gap-3 text-sm text-review">
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   Generating meeting notes with Gemini…
                 </div>
               )}
               {summary && !summarising && (
-                <div className="mx-4 mt-4 p-4 rounded-xl bg-review-subtle border border-review-border space-y-3">
+                <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border space-y-3">
                   <div className="flex items-center gap-2 text-review font-semibold text-sm">
                     <Sparkles className="w-4 h-4" /> Meeting Notes
                   </div>

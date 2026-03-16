@@ -124,7 +124,7 @@ interface UpdateInfo {
 
 function MarketplaceCardSkeleton() {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 space-y-3">
       <div className="flex items-start gap-3">
         <Skeleton width="w-10" height="h-10" rounded="lg" />
         <div className="flex-1 space-y-1.5">
@@ -192,7 +192,7 @@ function ModuleCard({
   const IconComponent = resolveIcon(mod.icon);
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">

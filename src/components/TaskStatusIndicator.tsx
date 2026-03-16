@@ -1,11 +1,11 @@
 /**
  * TaskStatusIndicator - Shows real-time visual status of a task's agent
  *
- * 🟢 Active  - Agent is actively working (session active within 5 min)
- * 🟡 Paused  - Agent has a session but idle (5-30 min since last activity)
- * 🔴 Stuck   - Agent blocked/errored (>30 min idle or error state)
- * ⚪ Ready   - Task has agent assigned, ready to spawn (todo status)
- * (nothing)  - No agent assigned or task is done/failed
+ * Green dot  Active  - Agent is actively working (session active within 5 min)
+ * Yellow dot Paused  - Agent has a session but idle (5-30 min since last activity)
+ * Red dot    Stuck   - Agent blocked/errored (>30 min idle or error state)
+ * Gray dot   Ready   - Task has agent assigned, ready to spawn (todo status)
+ * (nothing)          - No agent assigned or task is done/failed
  */
 
 import { useEffect, useState, memo } from 'react';
@@ -28,12 +28,11 @@ interface StatusInfo {
   lastActivity: number | null;
 }
 
-const STATUS_CONFIG: Record<AgentStatus, { 
-  color: string; 
-  bgColor: string; 
+const STATUS_CONFIG: Record<AgentStatus, {
+  color: string;
+  bgColor: string;
   pulseColor: string;
-  label: string; 
-  emoji: string;
+  label: string;
   animate: boolean;
 }> = {
   active: {
@@ -41,7 +40,6 @@ const STATUS_CONFIG: Record<AgentStatus, {
     bgColor: 'bg-success-subtle',
     pulseColor: 'bg-success-subtle',
     label: 'Working',
-    emoji: '🟢',
     animate: true,
   },
   paused: {
@@ -49,7 +47,6 @@ const STATUS_CONFIG: Record<AgentStatus, {
     bgColor: 'bg-warning-subtle',
     pulseColor: 'bg-warning-subtle',
     label: 'Paused',
-    emoji: '🟡',
     animate: false,
   },
   stuck: {
@@ -57,7 +54,6 @@ const STATUS_CONFIG: Record<AgentStatus, {
     bgColor: 'bg-error-subtle',
     pulseColor: 'bg-error-subtle',
     label: 'Stuck',
-    emoji: '🔴',
     animate: true,
   },
   ready: {
@@ -65,7 +61,6 @@ const STATUS_CONFIG: Record<AgentStatus, {
     bgColor: 'bg-mission-control-text-dim/20',
     pulseColor: 'bg-mission-control-text-dim/30',
     label: 'Ready',
-    emoji: '⚪',
     animate: false,
   },
   none: {
@@ -73,7 +68,6 @@ const STATUS_CONFIG: Record<AgentStatus, {
     bgColor: '',
     pulseColor: '',
     label: '',
-    emoji: '',
     animate: false,
   },
 };

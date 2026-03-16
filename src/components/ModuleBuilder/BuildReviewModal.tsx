@@ -47,7 +47,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div
-        className="relative flex flex-col bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl"
+        className="relative flex flex-col bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl"
         style={{ width: '680px', maxWidth: '95vw', maxHeight: '85vh' }}
       >
         {/* Header */}

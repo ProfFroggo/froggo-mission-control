@@ -153,7 +153,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Why are you snoozing this?"
-                className="w-full px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
               />
             </div>
 
@@ -187,13 +187,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
+                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
                 <input
                   type="time"
                   value={customTime}
                   onChange={(e) => setCustomTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
+                  className="flex-1 px-3 py-2 border border-mission-control-border rounded-lg bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                 />
               </div>
               <button

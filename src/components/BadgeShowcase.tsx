@@ -59,7 +59,7 @@ export default function BadgeShowcase() {
             <h2 className="text-lg font-semibold mb-4">{section.title}</h2>
             <div className="grid grid-cols-3 gap-6">
               {section.items.map((item, j) => (
-                <div key={j} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                <div key={j} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   <div className="flex items-center gap-3">
                     <IconBadge icon={item.icon} color={item.preset.color} size={20} />
                     <div>
@@ -120,7 +120,7 @@ export default function BadgeShowcase() {
         </div>
 
         {/* Status indicator */}
-        <div className="p-4 bg-success-subtle border border-success-border rounded-xl">
+        <div className="p-4 bg-success-subtle border border-success-border rounded-lg">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-success" />
             <div>

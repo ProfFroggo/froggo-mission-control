@@ -32,7 +32,7 @@ export default function LibraryPanel() {
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="p-6 pb-0">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <FolderOpen size={24} className="text-mission-control-accent" />
             </div>
             <div>

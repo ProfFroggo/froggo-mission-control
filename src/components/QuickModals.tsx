@@ -114,7 +114,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
                 {date}
               </div>
               {(dateEvents as any[]).map((event: any) => (
-                <div key={event.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
+                <div key={event.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
                   <div className="font-medium">{event.title}</div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
@@ -213,7 +213,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
           <div className="p-8 text-center text-mission-control-text-dim">No unread emails</div>
         ) : (
           emails.map((email) => (
-            <div key={email.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
+            <div key={email.id} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs px-1.5 py-0.5 bg-mission-control-border rounded flex-shrink-0 whitespace-nowrap">{email.account}</span>
                 <span className="text-xs text-mission-control-text-dim truncate">{email.from}</span>
@@ -296,7 +296,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
           <div className="p-8 text-center text-mission-control-text-dim">No recent mentions</div>
         ) : (
           mentions.map((tweet: any, i) => (
-            <div key={tweet.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
+            <div key={tweet.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">@{tweet.author?.username || tweet.author || tweet.user?.screen_name || 'unknown'}</span>
                 {tweet.author?.name && <span className="text-xs text-mission-control-text-dim">({tweet.author.name})</span>}
@@ -324,7 +324,7 @@ function PlatformIcon({ platform }: { platform: string }) {
       );
     case 'discord':
       return (
-        <span className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">D</span>
+        <span className="w-5 h-5 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-xs font-bold">D</span>
       );
     default:
       return <MessageSquare size={16} className="text-mission-control-text-dim" />;
@@ -399,7 +399,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
           </div>
         ) : (
           messages.map((msg: any, i) => (
-            <div key={msg.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-bg/30 transition-colors">
+            <div key={msg.id || i} className="p-4 border-b border-mission-control-border/50 hover:bg-mission-control-border/40 transition-colors">
               <div className="flex items-start gap-3">
                 <PlatformIcon platform={msg.platform} />
                 <div className="flex-1 min-w-0">

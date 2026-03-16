@@ -1,12 +1,29 @@
 // LEGACY: XReplyGuyView uses file-level suppression for intentional patterns.
 // loadHotMentions is redefined on each render but captures latest state - safe pattern.
 // Review: 2026-02-17 - suppression retained, pattern is safe
+// Updated: 2026-03-14 - added priority targets, reply templates, sentiment filter, auto-reply stub
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Zap, Send, MessageCircle, Heart, Repeat2 } from 'lucide-react';
+import {
+  TrendingUp,
+  Zap,
+  Send,
+  MessageCircle,
+  Heart,
+  Repeat2,
+  Star,
+  StarOff,
+  AlertCircle,
+  ToggleLeft,
+  ToggleRight,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { inboxApi, approvalApi } from '../lib/api';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HotMention {
   id: string;
@@ -20,7 +37,73 @@ interface HotMention {
   retweet_count: number;
   reply_count: number;
   reply_status: string;
+  sentiment?: 'positive' | 'negative' | 'neutral';
 }
+
+type SentimentFilter = 'all' | 'positive' | 'negative' | 'neutral';
+
+interface ReplyTemplate {
+  id: string;
+  name: string;
+  body: string;
+}
+
+// ─── Default reply templates ──────────────────────────────────────────────────
+
+const DEFAULT_TEMPLATES: ReplyTemplate[] = [
+  { id: 'tpl-1', name: 'Agree + Add', body: 'Totally agree, {{username}}. Building on that — [add your point here].' },
+  { id: 'tpl-2', name: 'Question back', body: 'Great point on {{topic}}, {{username}}. Curious — how are you thinking about [follow-up question]?' },
+  { id: 'tpl-3', name: 'Resource share', body: 'We wrote about this exact thing, {{username}}. Happy to share the thread if helpful.' },
+  { id: 'tpl-4', name: 'Validate + Engage', body: 'This resonates, {{username}}. The {{topic}} angle is one we see a lot too.' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const LS_PRIORITY_KEY = 'x-reply-priority-accounts';
+const LS_TEMPLATE_KEY = 'x-reply-templates';
+const LS_AUTO_REPLY_KEY = 'x-auto-reply-enabled';
+
+function loadPriority(): string[] {
+  try { return JSON.parse(localStorage.getItem(LS_PRIORITY_KEY) ?? '[]'); } catch { return []; }
+}
+function savePriority(v: string[]): void {
+  try { localStorage.setItem(LS_PRIORITY_KEY, JSON.stringify(v)); } catch {}
+}
+function loadTemplates(): ReplyTemplate[] {
+  try {
+    const raw = localStorage.getItem(LS_TEMPLATE_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_TEMPLATES;
+  } catch { return DEFAULT_TEMPLATES; }
+}
+function saveTemplates(v: ReplyTemplate[]): void {
+  try { localStorage.setItem(LS_TEMPLATE_KEY, JSON.stringify(v)); } catch {}
+}
+
+function inferSentiment(text: string): 'positive' | 'negative' | 'neutral' {
+  const lower = text.toLowerCase();
+  const pos = ['great', 'love', 'excellent', 'awesome', 'fantastic', 'congrats', 'amazing', 'nice', 'good', 'helpful', 'thanks', 'thank you', 'brilliant'];
+  const neg = ['bad', 'terrible', 'awful', 'broken', 'hate', 'wrong', 'sucks', 'issue', 'problem', 'failed', 'crash', 'worst', 'annoying'];
+  if (pos.some(w => lower.includes(w))) return 'positive';
+  if (neg.some(w => lower.includes(w))) return 'negative';
+  return 'neutral';
+}
+
+function applyTemplate(template: string, username: string, topic: string): string {
+  return template.replace(/\{\{username\}\}/g, `@${username}`).replace(/\{\{topic\}\}/g, topic || 'this topic');
+}
+
+function extractTopic(text: string): string {
+  const words = text.replace(/https?:\/\/\S+/g, '').split(/\s+/).slice(0, 3).join(' ');
+  return words.length > 30 ? words.slice(0, 30) + '...' : words;
+}
+
+function sentimentColor(s: 'positive' | 'negative' | 'neutral'): string {
+  if (s === 'positive') return 'var(--color-success)';
+  if (s === 'negative') return 'var(--color-error)';
+  return 'var(--color-mission-control-text-dim)';
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export const XReplyGuyView: React.FC = () => {
   const [mentions, setMentions] = useState<HotMention[]>([]);
@@ -33,6 +116,17 @@ export const XReplyGuyView: React.FC = () => {
   const [posting, setPosting] = useState(false);
   const [postNowDraftId, setPostNowDraftId] = useState<string | null>(null);
   const postConfirmDialog = useConfirmDialog();
+
+  // --- New state ---
+  const [priorityAccounts, setPriorityAccounts] = useState<string[]>(loadPriority);
+  const [priorityInput, setPriorityInput] = useState('');
+  const [showPriorityPanel, setShowPriorityPanel] = useState(false);
+  const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>('all');
+  const [templates, setTemplates] = useState<ReplyTemplate[]>(loadTemplates);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [autoReply, setAutoReply] = useState<boolean>(() => {
+    try { return JSON.parse(localStorage.getItem(LS_AUTO_REPLY_KEY) ?? 'false'); } catch { return false; }
+  });
 
   useEffect(() => {
     loadHotMentions();
@@ -49,8 +143,12 @@ export const XReplyGuyView: React.FC = () => {
           const retweets = (item as any).retweet_count || 0;
           return likes >= minLikes && retweets >= minRetweets;
         })
-        .slice(0, 50);
-      setMentions(items as HotMention[]);
+        .slice(0, 50)
+        .map((item: any): HotMention => ({
+          ...item,
+          sentiment: inferSentiment(item.text ?? ''),
+        }));
+      setMentions(items);
     } catch (error) {
       showToast('error', 'Error', 'Failed to load hot mentions');
     } finally {
@@ -103,10 +201,54 @@ export const XReplyGuyView: React.FC = () => {
     return mention.like_count + (mention.retweet_count * 2) + mention.reply_count;
   };
 
+  const handleAddPriority = () => {
+    const handle = priorityInput.trim().replace(/^@/, '').toLowerCase();
+    if (!handle) return;
+    if (priorityAccounts.includes(handle)) return;
+    const updated = [...priorityAccounts, handle];
+    setPriorityAccounts(updated);
+    savePriority(updated);
+    setPriorityInput('');
+  };
+
+  const handleRemovePriority = (handle: string) => {
+    const updated = priorityAccounts.filter(h => h !== handle);
+    setPriorityAccounts(updated);
+    savePriority(updated);
+  };
+
+  const handleToggleAutoReply = () => {
+    const next = !autoReply;
+    setAutoReply(next);
+    try { localStorage.setItem(LS_AUTO_REPLY_KEY, JSON.stringify(next)); } catch {}
+    if (next) {
+      showToast('info', 'Auto-reply stub enabled', 'Auto-reply requires human review before any post goes live');
+    }
+  };
+
+  const applyTemplateToReply = (template: ReplyTemplate, mention: HotMention) => {
+    const applied = applyTemplate(template.body, mention.author_username, extractTopic(mention.text));
+    setReplyText(applied);
+  };
+
+  // Sort: priority accounts first
+  const sortedMentions = [...mentions].sort((a, b) => {
+    const aPriority = priorityAccounts.includes(a.author_username.toLowerCase()) ? 0 : 1;
+    const bPriority = priorityAccounts.includes(b.author_username.toLowerCase()) ? 0 : 1;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return getEngagementScore(b) - getEngagementScore(a);
+  });
+
+  // Sentiment filter
+  const filteredMentions = sentimentFilter === 'all'
+    ? sortedMentions
+    : sortedMentions.filter(m => m.sentiment === sentimentFilter);
+
   const renderMention = (mention: HotMention) => {
     const isSelected = selectedMention === mention.id;
     const engagementScore = getEngagementScore(mention);
-    
+    const isPriority = priorityAccounts.includes(mention.author_username.toLowerCase());
+
     return (
       <div
         key={mention.id}
@@ -117,8 +259,22 @@ export const XReplyGuyView: React.FC = () => {
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
+            {isPriority && (
+              <Star size={13} style={{ color: 'var(--color-warning)' }} className="flex-shrink-0" />
+            )}
             <div className="font-medium text-mission-control-text">@{mention.author_username}</div>
             <div className="text-sm text-mission-control-text-dim">{mention.author_name}</div>
+            {mention.sentiment && (
+              <span
+                className="text-xs px-1.5 py-0.5 rounded"
+                style={{
+                  color: sentimentColor(mention.sentiment),
+                  background: `${sentimentColor(mention.sentiment)}20`,
+                }}
+              >
+                {mention.sentiment}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-xs font-medium text-warning bg-warning-subtle px-2 py-1 rounded">
@@ -157,6 +313,31 @@ export const XReplyGuyView: React.FC = () => {
         {/* Quick reply section */}
         {isSelected ? (
           <div className="space-y-3 bg-mission-control-bg p-3 rounded border border-info">
+            {/* Templates */}
+            <div>
+              <button
+                onClick={() => setShowTemplates(v => !v)}
+                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text mb-2"
+              >
+                {showTemplates ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                Reply templates
+              </button>
+              {showTemplates && (
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  {templates.map(tpl => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => applyTemplateToReply(tpl, mention)}
+                      className="text-left px-2 py-1.5 text-xs rounded border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text"
+                    >
+                      <div className="font-medium">{tpl.name}</div>
+                      <div className="text-mission-control-text-dim truncate">{tpl.body.slice(0, 40)}...</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
@@ -167,7 +348,7 @@ export const XReplyGuyView: React.FC = () => {
               /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
             />
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="text-xs text-mission-control-text-dim">
@@ -186,12 +367,13 @@ export const XReplyGuyView: React.FC = () => {
                   </span>
                 </label>
               </div>
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={() => {
                     setSelectedMention(null);
                     setReplyText('');
+                    setShowTemplates(false);
                   }}
                   className="px-3 py-1.5 text-sm border border-mission-control-border rounded hover:bg-mission-control-surface"
                 >
@@ -207,7 +389,7 @@ export const XReplyGuyView: React.FC = () => {
                 </button>
               </div>
             </div>
-            
+
             {fastTrack && (
               <div className="text-xs text-warning bg-warning-subtle p-2 rounded flex items-center gap-1">
                 <Zap size={12} />
@@ -216,9 +398,9 @@ export const XReplyGuyView: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => setSelectedMention(mention.id)}
+              onClick={() => { setSelectedMention(mention.id); setShowTemplates(false); }}
               className="px-4 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 flex items-center gap-1"
             >
               <Zap size={14} />
@@ -233,6 +415,20 @@ export const XReplyGuyView: React.FC = () => {
             >
               <MessageCircle size={14} />
               Suggest Reply
+            </button>
+            <button
+              onClick={() => {
+                const updated = priorityAccounts.includes(mention.author_username.toLowerCase())
+                  ? priorityAccounts.filter(h => h !== mention.author_username.toLowerCase())
+                  : [...priorityAccounts, mention.author_username.toLowerCase()];
+                setPriorityAccounts(updated);
+                savePriority(updated);
+              }}
+              title={isPriority ? 'Remove from priority' : 'Add to priority'}
+              className="p-1.5 rounded border border-mission-control-border hover:bg-mission-control-surface transition-colors"
+              style={{ color: isPriority ? 'var(--color-warning)' : 'var(--color-mission-control-text-dim)' }}
+            >
+              {isPriority ? <StarOff size={14} /> : <Star size={14} />}
             </button>
           </div>
         )}
@@ -257,13 +453,13 @@ export const XReplyGuyView: React.FC = () => {
             {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
-        
+
         <div className="text-sm text-mission-control-text-dim mb-3">
           Fast-track high-engagement mentions. Skip approval for time-sensitive replies.
         </div>
-        
-        {/* Filters */}
-        <div className="flex items-center gap-4">
+
+        {/* Filters row */}
+        <div className="flex flex-wrap items-center gap-4 mb-3">
           <div className="flex items-center gap-2">
             <label htmlFor="min-likes" className="text-xs text-mission-control-text-dim">Min Likes:</label>
             <input
@@ -287,6 +483,113 @@ export const XReplyGuyView: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* Sentiment filter */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs text-mission-control-text-dim">Sentiment:</span>
+          {(['all', 'positive', 'negative', 'neutral'] as SentimentFilter[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setSentimentFilter(s)}
+              className="px-2.5 py-1 text-xs rounded-full capitalize transition-colors"
+              style={
+                sentimentFilter === s
+                  ? { background: 'var(--color-info-subtle)', color: 'var(--color-info)' }
+                  : { background: 'var(--color-mission-control-surface)', color: 'var(--color-mission-control-text-dim)' }
+              }
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {/* Priority targets collapsible */}
+        <div className="mb-3">
+          <button
+            onClick={() => setShowPriorityPanel(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+          >
+            <Star size={12} style={{ color: 'var(--color-warning)' }} />
+            Priority targets
+            {priorityAccounts.length > 0 && (
+              <span
+                className="px-1.5 py-0.5 rounded-full text-xs"
+                style={{ background: 'var(--color-warning-subtle)', color: 'var(--color-warning)' }}
+              >
+                {priorityAccounts.length}
+              </span>
+            )}
+            {showPriorityPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          </button>
+          {showPriorityPanel && (
+            <div className="mt-2 p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
+              <p className="text-xs text-mission-control-text-dim mb-2">
+                Priority accounts always appear first in the list.
+              </p>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={priorityInput}
+                  onChange={e => setPriorityInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAddPriority(); }}
+                  placeholder="@username"
+                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                />
+                <button
+                  onClick={handleAddPriority}
+                  disabled={!priorityInput.trim()}
+                  className="px-3 py-1 text-xs rounded transition-colors disabled:opacity-50"
+                  style={{ background: 'var(--color-info)', color: '#fff' }}
+                >
+                  Add
+                </button>
+              </div>
+              {priorityAccounts.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {priorityAccounts.map(h => (
+                    <span
+                      key={h}
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border"
+                      style={{ background: 'var(--color-warning-subtle)', color: 'var(--color-warning)' }}
+                    >
+                      @{h}
+                      <button onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`}>
+                        <span style={{ fontSize: 10 }}>×</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Auto-reply toggle */}
+        <div className="flex items-center justify-between p-2.5 rounded-lg border border-mission-control-border bg-mission-control-surface">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-mission-control-text">Auto-reply mode (stub)</span>
+            <span className="text-xs text-mission-control-text-dim">— all replies still require human review</span>
+          </div>
+          <button
+            onClick={handleToggleAutoReply}
+            aria-label={autoReply ? 'Disable auto-reply' : 'Enable auto-reply'}
+          >
+            {autoReply ? (
+              <ToggleRight size={24} style={{ color: 'var(--color-warning)' }} />
+            ) : (
+              <ToggleLeft size={24} className="text-mission-control-text-dim" />
+            )}
+          </button>
+        </div>
+        {autoReply && (
+          <div
+            className="flex items-center gap-2 mt-2 p-2 rounded text-xs"
+            style={{ background: 'var(--color-warning-subtle)', color: 'var(--color-warning)' }}
+          >
+            <AlertCircle size={12} />
+            Auto-reply is stubbed — no posts go out without explicit human approval.
+          </div>
+        )}
       </div>
 
       {/* Mentions list */}
@@ -295,19 +598,21 @@ export const XReplyGuyView: React.FC = () => {
           <div className="flex items-center justify-center h-full text-mission-control-text-dim">
             <div>Loading hot mentions...</div>
           </div>
-        ) : mentions.length === 0 ? (
+        ) : filteredMentions.length === 0 ? (
           <div className="flex items-center justify-center h-full text-mission-control-text-dim">
             <div className="text-center">
               <TrendingUp size={48} className="mx-auto mb-2 text-mission-control-text-dim" />
-              <div className="text-sm">No high-engagement mentions found</div>
-              <div className="text-xs mt-2">Try lowering the engagement thresholds</div>
+              <div className="text-sm">No mentions match the current filters</div>
+              <div className="text-xs mt-2">
+                {sentimentFilter !== 'all' ? 'Try changing the sentiment filter' : 'Try lowering the engagement thresholds'}
+              </div>
             </div>
           </div>
         ) : (
-          mentions.map(renderMention)
+          filteredMentions.map(renderMention)
         )}
       </div>
-      
+
       {posting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-mission-control-surface rounded-lg p-6 text-center border border-mission-control-border">

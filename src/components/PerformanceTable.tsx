@@ -213,29 +213,29 @@ export default function PerformanceTable() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: theme.color }}
                         />
-                        <span className="font-medium">{agent.agent_id}</span>
+                        <span className="font-medium capitalize">{agent.agent_id.replace(/-/g, ' ')}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className={agent.success_rate >= 0.8 ? 'text-success' : agent.success_rate >= 0.6 ? 'text-warning' : 'text-error'}>
                         {(agent.success_rate * 100).toFixed(0)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">{agent.avg_completion_hours.toFixed(1)}h</span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className={agent.clara_approval_rate >= 0.85 ? 'text-success' : agent.clara_approval_rate >= 0.7 ? 'text-warning' : 'text-error'}>
                         {(agent.clara_approval_rate * 100).toFixed(0)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">{agent.tokens_per_task.toLocaleString()}</span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">{agent.total_tasks}</span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">${agent.total_cost.toFixed(2)}</span>
                     </td>
                   </tr>
@@ -263,7 +263,7 @@ export default function PerformanceTable() {
             role="presentation"
           >
             <div className="p-6 border-b border-mission-control-border sticky top-0 bg-mission-control-surface">
-              <h3 className="text-xl font-bold flex items-center gap-2">
+              <h3 className="text-xl font-bold flex items-center gap-2 tracking-tight">
                 <Activity size={20} className="text-mission-control-accent" />
                 {selectedAgent} Audit Trail
               </h3>

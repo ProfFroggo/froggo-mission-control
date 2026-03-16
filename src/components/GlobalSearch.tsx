@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap } from 'lucide-react';
+import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap, Compass } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
@@ -12,9 +12,26 @@ const XIcon = ({ size = 16, className = '' }: { size?: number; className?: strin
   </svg>
 );
 
+const PANEL_NAV = [
+  { id: 'dashboard',     label: 'Dashboard',     keywords: ['dashboard', 'home', 'overview'] },
+  { id: 'projects',      label: 'Projects',       keywords: ['projects', 'project'] },
+  { id: 'kanban',        label: 'Kanban',         keywords: ['kanban', 'board', 'tasks'] },
+  { id: 'chat',          label: 'Chat',           keywords: ['chat', 'messages', 'rooms'] },
+  { id: 'approvals',     label: 'Approvals',      keywords: ['approvals', 'approve', 'inbox'] },
+  { id: 'schedule',      label: 'Schedule',       keywords: ['schedule', 'calendar', 'posts'] },
+  { id: 'library',       label: 'Library',        keywords: ['library', 'files', 'documents'] },
+  { id: 'knowledge',     label: 'Knowledge',      keywords: ['knowledge', 'wiki', 'base'] },
+  { id: 'campaigns',     label: 'Campaigns',      keywords: ['campaigns', 'campaign', 'marketing'] },
+  { id: 'agents',        label: 'Agents',         keywords: ['agents', 'agent', 'ai'] },
+  { id: 'automations',   label: 'Automations',    keywords: ['automations', 'automation', 'workflows'] },
+  { id: 'twitter',       label: 'Social Media',   keywords: ['social', 'twitter', 'x', 'posts'] },
+  { id: 'notifications', label: 'Notifications',  keywords: ['notifications', 'alerts'] },
+  { id: 'settings',      label: 'Settings',       keywords: ['settings', 'preferences', 'config'] },
+];
+
 interface SearchResult {
   id: string;
-  type: 'task' | 'fact' | 'message' | 'email' | 'session' | 'calendar' | 'tweet' | 'agent';
+  type: 'task' | 'fact' | 'message' | 'email' | 'session' | 'calendar' | 'tweet' | 'agent' | 'automation';
   title: string;
   snippet: string;
   timestamp?: string;
@@ -30,7 +47,7 @@ interface GlobalSearchProps {
   onNavigate?: (view: string, id?: string) => void;
 }
 
-type FilterType = 'all' | 'task' | 'fact' | 'message' | 'email' | 'session' | 'calendar' | 'tweet' | 'agent';
+type FilterType = 'all' | 'task' | 'fact' | 'message' | 'email' | 'session' | 'calendar' | 'tweet' | 'agent' | 'automation';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
 type StatusFilter = 'all' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done';
 
@@ -43,6 +60,7 @@ const typeIcons = {
   calendar: Calendar,
   tweet: XIcon,
   agent: User,
+  automation: Zap,
 };
 
 const typeColors = {
@@ -54,6 +72,7 @@ const typeColors = {
   calendar: 'text-warning bg-warning-subtle',
   tweet: 'text-sky-400 bg-sky-500/10',
   agent: 'text-pink-400 bg-pink-500/10',
+  automation: 'text-violet-400 bg-violet-500/10',
 };
 
 const typeLabels = {
@@ -65,6 +84,7 @@ const typeLabels = {
   calendar: 'Event',
   tweet: 'Tweet',
   agent: 'Agent',
+  automation: 'Automation',
 };
 
 const statusColors = {
@@ -88,6 +108,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
   const [showHistory, setShowHistory] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  // Compute matched panel navigation results from the search query
+  const panelResults = query.trim().length >= 1
+    ? PANEL_NAV.filter(p =>
+        p.keywords.some(k => k.includes(query.toLowerCase())) ||
+        p.label.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 3)
+    : [];
 
   // Load search history from localStorage
   useEffect(() => {
@@ -285,13 +313,13 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     }
   }, []);
 
-  // Debounced search
+  // Debounced search — 200ms prevents fetch on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.trim().length >= 2) {
         search(query);
       }
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [query, search]);
 
@@ -353,9 +381,19 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         case 'tweet':
           onNavigate('twitter', result.id);
           break;
+        case 'automation':
+          onNavigate('automations');
+          break;
       }
     }
 
+    onClose();
+  };
+
+  const handlePanelNavigate = (panelId: string) => {
+    if (onNavigate) {
+      onNavigate(panelId);
+    }
     onClose();
   };
 
@@ -536,7 +574,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
           )}
 
           {/* No Results */}
-          {filteredResults.length === 0 && query.length >= 2 && !loading && !showHistory && (
+          {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 2 && !loading && !showHistory && (
             <div className="p-12 text-center text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-lg mb-2">No results found</p>
@@ -544,8 +582,33 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             </div>
           )}
 
-          {/* Empty State */}
-          {filteredResults.length === 0 && query.length < 2 && !showHistory && (
+          {/* Quick Navigation — shown when query is empty (with or without history) */}
+          {query.length === 0 && (
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Compass size={16} className="text-mission-control-text-dim" />
+                <span className="text-sm font-medium text-mission-control-text-dim">Quick Navigation</span>
+              </div>
+              <div className="space-y-1">
+                {PANEL_NAV.slice(0, 5).map(panel => (
+                  <div
+                    key={panel.id}
+                    onClick={() => handlePanelNavigate(panel.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePanelNavigate(panel.id); } }}
+                    role="button"
+                    tabIndex={0}
+                    className="p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 hover:bg-mission-control-bg/50"
+                  >
+                    <Compass size={14} className="text-mission-control-accent" />
+                    <span className="text-sm">Go to {panel.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty State — shown when there is a short query but no history */}
+          {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 1 && query.length < 2 && !showHistory && (
             <div className="p-12 text-center text-mission-control-text-dim">
               <Search size={40} className="mx-auto mb-3 opacity-50" />
               <p className="text-sm mb-4">Type at least 2 characters to search</p>
@@ -556,6 +619,32 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Panel Navigation Results — shown at the top when query matches a panel */}
+          {panelResults.length > 0 && (
+            <div className="border-b border-mission-control-border">
+              <div className="flex items-center gap-2 px-4 pt-3 pb-1">
+                <Compass size={14} className="text-mission-control-text-dim" />
+                <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Navigate to</span>
+              </div>
+              {panelResults.map(panel => (
+                <div
+                  key={panel.id}
+                  onClick={() => handlePanelNavigate(panel.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePanelNavigate(panel.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  className="px-4 py-2.5 cursor-pointer transition-colors flex items-center gap-3 hover:bg-mission-control-bg/50 group"
+                >
+                  <div className="p-1.5 rounded-lg bg-mission-control-accent/10 flex-shrink-0">
+                    <Compass size={14} className="text-mission-control-accent" />
+                  </div>
+                  <span className="text-sm font-medium">Go to {panel.label}</span>
+                  <ChevronRight size={14} className="text-mission-control-text-dim ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              ))}
             </div>
           )}
 

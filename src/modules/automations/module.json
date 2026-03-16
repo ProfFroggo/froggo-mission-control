@@ -1,0 +1,29 @@
+{
+  "id": "automations",
+  "name": "Automations",
+  "version": "1.0.0",
+  "description": "Agentic automation builder — describe what you want in plain English and the agent builds it.",
+  "author": "Mission Control Team",
+  "icon": "Zap",
+  "category": "productivity",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "automations",
+      "label": "Automations",
+      "icon": "Zap",
+      "entrypoint": "./views/AutomationsPanel.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

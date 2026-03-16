@@ -255,11 +255,11 @@ export default function PerformanceBenchmarks() {
         {metrics.map((metric) => (
           <div
             key={metric.label}
-            className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
+            className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
           >
             <div className="text-sm text-mission-control-text-dim mb-1">{metric.label}</div>
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-2xl font-bold">
+              <span className="text-2xl font-bold tabular-nums">
                 {metric.current.toLocaleString()}
               </span>
               <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
@@ -279,9 +279,9 @@ export default function PerformanceBenchmarks() {
                     : 'text-mission-control-text-dim'
                 }`}
               >
-                {metric.change > 0 ? '+' : ''}
+                <span className="tabular-nums">{metric.change > 0 ? '+' : ''}
                 {metric.change.toLocaleString()} ({metric.changePercent > 0 ? '+' : ''}
-                {metric.changePercent.toFixed(1)}%)
+                {metric.changePercent.toFixed(1)}%)</span>
               </span>
             </div>
             <div className="text-xs text-mission-control-text-dim mt-1">
@@ -296,7 +296,8 @@ export default function PerformanceBenchmarks() {
         {/* Tasks Completed Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Tasks Completed Trend</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
@@ -319,12 +320,14 @@ export default function PerformanceBenchmarks() {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Completion Rate Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4">Completion Rate Trend</h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
               <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
@@ -348,13 +351,15 @@ export default function PerformanceBenchmarks() {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Average Time & Total Hours */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <h3 className="font-semibold mb-4">Avg Completion Time</h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
                 <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
@@ -376,11 +381,13 @@ export default function PerformanceBenchmarks() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
             <h3 className="font-semibold mb-4">Total Hours Logged</h3>
-            <ResponsiveContainer width="100%" height={200}>
+            <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--mission-control-border)" />
                 <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
@@ -402,6 +409,7 @@ export default function PerformanceBenchmarks() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -450,7 +458,7 @@ export default function PerformanceBenchmarks() {
                         : metric.trend === 'down'
                         ? 'Decreased'
                         : 'Stable'}{' '}
-                      by {Math.abs(metric.changePercent).toFixed(1)}%
+                      by <span className="tabular-nums">{Math.abs(metric.changePercent).toFixed(1)}%</span>
                     </span>
                   </div>
                 </div>

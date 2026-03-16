@@ -96,7 +96,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
       <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <Award size={20} className="text-teal-400" />
+          <Award size={20} className="text-mission-control-accent" />
           <h2 className="font-bold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
           <select
             value={selectedAgent}

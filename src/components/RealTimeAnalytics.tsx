@@ -212,7 +212,7 @@ export default function RealTimeAnalytics() {
       </div>
 
       {/* Real-time Metrics */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {metrics.map((metric) => {
           const Icon = metric.icon;
           const maxSparkline = Math.max(...metric.sparkline, 1);
@@ -220,7 +220,7 @@ export default function RealTimeAnalytics() {
           return (
             <div
               key={metric.label}
-              className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4"
+              className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <Icon size={16} className={metric.color} />
@@ -302,8 +302,8 @@ export default function RealTimeAnalytics() {
       </div>
 
       {/* System Status */}
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">System Status</div>
@@ -313,7 +313,7 @@ export default function RealTimeAnalytics() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">Uptime</div>
@@ -323,7 +323,7 @@ export default function RealTimeAnalytics() {
           </div>
         </div>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-mission-control-text-dim mb-1">Avg Response</div>

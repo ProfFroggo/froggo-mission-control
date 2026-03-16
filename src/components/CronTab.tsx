@@ -4,6 +4,17 @@ import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { formatTimeAgo, formatTimeUntil } from '../utils/formatting';
 
+interface TaskTemplate {
+  title?: string;
+  description?: string;
+  planningNotes?: string;
+  assignTo?: string;
+  priority?: string;
+  project?: string;
+  tags?: string[];
+  subtasks?: string[];
+}
+
 interface CronJob {
   id: string;
   name: string;
@@ -14,6 +25,7 @@ interface CronJob {
   sessionTarget: string;
   wakeMode?: string;
   payload: { kind: string; text?: string; message?: string; model?: string };
+  taskTemplate?: TaskTemplate;
   state: { nextRunAtMs?: number; lastRunAtMs?: number; lastStatus?: string; lastError?: string; lastDurationMs?: number; runningAtMs?: number };
 }
 
@@ -33,7 +45,11 @@ export default function CronTab() {
   const [runs, setRuns] = useState<Record<string, CronRun[]>>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
-  const [newJob, setNewJob] = useState({ name: '', description: '', scheduleKind: 'cron', expr: '*/5 * * * *', message: '', sessionTarget: 'isolated' });
+  const [newJob, setNewJob] = useState({
+    name: '', description: '', scheduleKind: 'cron', expr: '*/5 * * * *', message: '', sessionTarget: 'isolated',
+    mode: 'task' as 'task' | 'message',
+    taskTitle: '', taskPlanningNotes: '', taskAssignTo: '', taskPriority: 'p2', taskSubtasks: '',
+  });
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   const loadJobs = useCallback(async () => {
@@ -111,6 +127,7 @@ export default function CronTab() {
     const expr = s.kind === 'cron' ? (s.expr ?? '') :
                  s.kind === 'every' ? String((s.everyMs ?? 0) / 60000) :
                  s.kind === 'at' && s.atMs ? new Date(s.atMs).toISOString().slice(0, 16) : '';
+    const tt = job.taskTemplate;
     setNewJob({
       name: job.name,
       description: job.description ?? '',
@@ -118,6 +135,12 @@ export default function CronTab() {
       expr,
       message: job.payload.message ?? job.payload.text ?? '',
       sessionTarget: job.sessionTarget,
+      mode: tt ? 'task' : 'message',
+      taskTitle: tt?.title ?? '',
+      taskPlanningNotes: tt?.planningNotes ?? '',
+      taskAssignTo: tt?.assignTo ?? job.sessionTarget ?? '',
+      taskPriority: tt?.priority ?? 'p2',
+      taskSubtasks: tt?.subtasks?.join('\n') ?? '',
     });
     setEditingJobId(job.id);
     setShowAddModal(true);
@@ -126,7 +149,10 @@ export default function CronTab() {
   const closeModal = () => {
     setShowAddModal(false);
     setEditingJobId(null);
-    setNewJob({ name: '', description: '', scheduleKind: 'cron', expr: '*/5 * * * *', message: '', sessionTarget: 'isolated' });
+    setNewJob({
+      name: '', description: '', scheduleKind: 'cron', expr: '*/5 * * * *', message: '', sessionTarget: 'isolated',
+      mode: 'task', taskTitle: '', taskPlanningNotes: '', taskAssignTo: '', taskPriority: 'p2', taskSubtasks: '',
+    });
   };
 
   const addJob = async () => {
@@ -137,31 +163,38 @@ export default function CronTab() {
       else if (newJob.scheduleKind === 'every') schedule.everyMs = parseInt(newJob.expr) * 60000;
       else if (newJob.scheduleKind === 'at') schedule.atMs = new Date(newJob.expr).getTime();
 
+      const taskTemplate = newJob.mode === 'task' ? {
+        title: newJob.taskTitle.trim() || newJob.name.trim(),
+        planningNotes: newJob.taskPlanningNotes.trim() || newJob.message.trim() || undefined,
+        assignTo: newJob.taskAssignTo.trim() || undefined,
+        priority: newJob.taskPriority,
+        tags: ['scheduled', 'cron'],
+        subtasks: newJob.taskSubtasks.trim()
+          ? newJob.taskSubtasks.trim().split('\n').map(s => s.trim()).filter(Boolean)
+          : undefined,
+      } : undefined;
+
+      const jobData = {
+        name: newJob.name.trim(),
+        description: newJob.description.trim() || undefined,
+        schedule,
+        sessionTarget: newJob.mode === 'task' ? (newJob.taskAssignTo.trim() || 'isolated') : newJob.sessionTarget,
+        payload: { kind: newJob.mode === 'task' ? 'task' : 'agentTurn', message: newJob.message },
+        taskTemplate,
+      };
+
       if (editingJobId) {
         await fetch('/api/cron', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: editingJobId,
-            name: newJob.name.trim(),
-            description: newJob.description.trim() || undefined,
-            schedule,
-            sessionTarget: newJob.sessionTarget,
-            payload: { kind: 'agentTurn', message: newJob.message },
-          }),
+          body: JSON.stringify({ id: editingJobId, ...jobData }),
         });
         showToast('success', 'Job updated');
       } else {
         await fetch('/api/cron', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: newJob.name.trim(),
-            description: newJob.description.trim() || undefined,
-            schedule,
-            sessionTarget: newJob.sessionTarget,
-            payload: { kind: 'agentTurn', message: newJob.message },
-          }),
+          body: JSON.stringify(jobData),
         });
         showToast('success', 'Job created');
       }
@@ -194,10 +227,10 @@ export default function CronTab() {
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-mission-control-text-dim">{jobs.length} cron job{jobs.length !== 1 ? 's' : ''}</div>
         <div className="flex gap-2">
-          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-xl text-sm">
+          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm">
             <Plus size={14} /> Add Job
           </button>
-          <button onClick={loadJobs} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-xl text-sm hover:bg-mission-control-border/80">
+          <button onClick={loadJobs} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
           </button>
         </div>
@@ -218,7 +251,7 @@ export default function CronTab() {
             const isExpanded = expandedJob === job.id;
             const jobRuns = runs[job.id] || [];
             return (
-              <div key={job.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div key={job.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
                   onClick={() => expandJob(job.id)}
@@ -239,7 +272,12 @@ export default function CronTab() {
                     }`} />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{job.name}</div>
+                    <div className="font-medium truncate flex items-center gap-2">
+                      {job.name}
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${job.taskTemplate ? 'bg-mission-control-accent/15 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+                        {job.taskTemplate ? 'Task' : 'Message'}
+                      </span>
+                    </div>
                     <div className="text-xs text-mission-control-text-dim flex items-center gap-3">
                       <span>{formatSchedule(job.schedule)}</span>
                       <span>Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
@@ -321,7 +359,7 @@ export default function CronTab() {
           aria-label="Close add cron modal"
         >
           <div
-            className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 max-w-lg w-full"
+            className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 max-w-lg w-full"
             onClick={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
             role="presentation"
@@ -331,46 +369,114 @@ export default function CronTab() {
               <div>
                 <label htmlFor="cron-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
                 <input id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="My cron job" aria-label="Cron job name" />
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="My cron job" aria-label="Cron job name" />
               </div>
               <div>
                 <label htmlFor="cron-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
                 <input id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="Optional description" aria-label="Cron job description" />
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="Optional description" aria-label="Cron job description" />
               </div>
               <div>
                 <label htmlFor="cron-schedule-kind" className="block text-sm text-mission-control-text-dim mb-1">Schedule</label>
                 <div className="flex gap-2">
                   <select id="cron-schedule-kind" value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
-                    className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" aria-label="Schedule type">
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" aria-label="Schedule type">
                     <option value="cron">Cron</option>
                     <option value="every">Interval (min)</option>
                     <option value="at">One-time</option>
                   </select>
                   <input id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
-                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                    className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                     placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
                     aria-label="Schedule expression" />
                 </div>
               </div>
+              {/* Mode toggle */}
               <div>
-                <label htmlFor="cron-message" className="block text-sm text-mission-control-text-dim mb-1">Message (what to tell the agent)</label>
-                <textarea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
-                  rows={3} className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
-                  placeholder="Check for new emails and summarize..." aria-label="Cron job message" />
+                <label className="block text-sm text-mission-control-text-dim mb-1">Execution Mode</label>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'task' }))}
+                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'task' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                    Create Task
+                  </button>
+                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'message' }))}
+                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'message' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                    Message Agent
+                  </button>
+                </div>
+                <p className="text-xs text-mission-control-text-dim mt-1">
+                  {newJob.mode === 'task' ? 'Creates a task in the pipeline with planning notes, subtasks, and agent assignment.' : 'Sends a message directly to an agent session (bypasses task pipeline).'}
+                </p>
               </div>
-              <div>
-                <label htmlFor="cron-session-target" className="block text-sm text-mission-control-text-dim mb-1">Session Target</label>
-                <select id="cron-session-target" value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" aria-label="Session target">
-                  <option value="isolated">Isolated (new session)</option>
-                  <option value="main">Main (shared session)</option>
-                  <option value="mission-control">mission-control</option>
-                  <option value="inbox">inbox</option>
-                  <option value="chief">chief</option>
-                  <option value="coder">coder</option>
-                </select>
-              </div>
+
+              {newJob.mode === 'task' ? (
+                <>
+                  <div>
+                    <label htmlFor="cron-task-title" className="block text-sm text-mission-control-text-dim mb-1">Task Title <span className="text-xs opacity-60">({'{date}'} = current date)</span></label>
+                    <input id="cron-task-title" type="text" value={newJob.taskTitle} onChange={e => setNewJob(p => ({ ...p, taskTitle: e.target.value }))}
+                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                      placeholder="HR Nightly Training — {date}" />
+                  </div>
+                  <div>
+                    <label htmlFor="cron-task-planning" className="block text-sm text-mission-control-text-dim mb-1">Planning Notes / Instructions</label>
+                    <textarea id="cron-task-planning" value={newJob.taskPlanningNotes} onChange={e => setNewJob(p => ({ ...p, taskPlanningNotes: e.target.value }))}
+                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
+                      placeholder="Visit aitmpl.com, discover new skills, check team health..." />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="cron-task-assign" className="block text-sm text-mission-control-text-dim mb-1">Assign To</label>
+                      <select id="cron-task-assign" value={newJob.taskAssignTo} onChange={e => setNewJob(p => ({ ...p, taskAssignTo: e.target.value }))}
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
+                        <option value="">Auto (Clara assigns)</option>
+                        <option value="mission-control">Mission Control</option>
+                        <option value="hr">HR</option>
+                        <option value="coder">Coder</option>
+                        <option value="inbox">Inbox</option>
+                        <option value="designer">Designer</option>
+                        <option value="clara">Clara (QC)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="cron-task-priority" className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
+                      <select id="cron-task-priority" value={newJob.taskPriority} onChange={e => setNewJob(p => ({ ...p, taskPriority: e.target.value }))}
+                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
+                        <option value="p0">P0 — Critical</option>
+                        <option value="p1">P1 — High</option>
+                        <option value="p2">P2 — Normal</option>
+                        <option value="p3">P3 — Low</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="cron-task-subtasks" className="block text-sm text-mission-control-text-dim mb-1">Subtasks <span className="text-xs opacity-60">(one per line)</span></label>
+                    <textarea id="cron-task-subtasks" value={newJob.taskSubtasks} onChange={e => setNewJob(p => ({ ...p, taskSubtasks: e.target.value }))}
+                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none font-mono"
+                      placeholder={"Check team health metrics\nUpdate drifted soul files\nDocument new skills found"} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="cron-message" className="block text-sm text-mission-control-text-dim mb-1">Message (what to tell the agent)</label>
+                    <textarea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
+                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
+                      placeholder="Check for new emails and summarize..." />
+                  </div>
+                  <div>
+                    <label htmlFor="cron-session-target" className="block text-sm text-mission-control-text-dim mb-1">Session Target</label>
+                    <select id="cron-session-target" value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
+                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
+                      <option value="isolated">Isolated (new session)</option>
+                      <option value="main">Main (shared session)</option>
+                      <option value="mission-control">mission-control</option>
+                      <option value="inbox">inbox</option>
+                      <option value="chief">chief</option>
+                      <option value="coder">coder</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={closeModal} className="flex-1 px-4 py-2 bg-mission-control-border rounded-lg text-sm">Cancel</button>

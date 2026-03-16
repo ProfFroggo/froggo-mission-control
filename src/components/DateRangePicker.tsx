@@ -94,7 +94,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-96 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
+          <div className="absolute right-0 top-full mt-2 w-96 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Select Date Range</h3>
               <button
@@ -135,7 +135,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
                     max={customEnd}
-                    className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <div>
@@ -149,7 +149,7 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                     onChange={(e) => setCustomEnd(e.target.value)}
                     min={customStart}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
                 <button

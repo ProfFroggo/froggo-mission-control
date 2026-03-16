@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, TrendingUp, Award, CheckCircle, Clock, Activity } from 'lucide-react';
+import { X, TrendingUp, Award, CheckCircle, Clock, Activity, Crown, Trophy, Dumbbell, Zap } from 'lucide-react';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 import { agentApi } from '../lib/api';
@@ -129,7 +129,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
       aria-label="Close modal backdrop"
     >
       <div 
-        className={`glass-modal rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+        className={`glass-modal rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`} 
         onClick={handleInnerClick}
@@ -176,7 +176,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                         {(() => {
                           const theme = getAgentTheme(agentId);
                           return theme.pic ? (
-                            <img src={`/api/agents/${agentId}/avatar`} alt={agentData.name} className="w-12 h-12 rounded-xl object-cover mx-auto ring-2 ring-white/10"
+                            <img src={`/api/agents/${agentId}/avatar`} alt={agentData.name} className="w-12 h-12 rounded-lg object-cover mx-auto ring-2 ring-white/10"
                               onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement('span'), { className: 'text-4xl', textContent: agentData.avatar })); }} />
                           ) : (
                             <span className="text-4xl">{agentData.avatar}</span>
@@ -207,7 +207,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                           {Math.round(agentData.successRate * 100)}%
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
-                          {isWinner && '👑 Best'}
+                          {isWinner && <span className="inline-flex items-center gap-1"><Crown size={14} /> Best</span>}
                         </div>
                       </div>
                     );
@@ -258,7 +258,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                           {agentData.totalTasks}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
-                          {isWinner && '👑 Most Productive'}
+                          {isWinner && <span className="inline-flex items-center gap-1"><Crown size={14} /> Most Productive</span>}
                         </div>
                       </div>
                     );
@@ -318,7 +318,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                           {agentData.recentActivity}
                         </div>
                         <div className="text-xs text-mission-control-text-dim">
-                          {isWinner ? '👑 Most Active' : 'recent tasks'}
+                          {isWinner ? <span className="inline-flex items-center gap-1"><Crown size={14} /> Most Active</span> : 'recent tasks'}
                         </div>
                       </div>
                     );
@@ -331,18 +331,18 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                 <h3 className="text-sm font-semibold mb-2 text-info">Summary</h3>
                 <div className="text-sm space-y-1">
                   {getWinner('successRate') && (
-                    <div>
-                      🏆 <strong>{data[getWinner('successRate')!]?.name}</strong> has the highest success rate
+                    <div className="flex items-center gap-1.5">
+                      <Trophy size={16} /> <strong>{data[getWinner('successRate')!]?.name}</strong> has the highest success rate
                     </div>
                   )}
                   {getWinner('totalTasks') && (
-                    <div>
-                      💪 <strong>{data[getWinner('totalTasks')!]?.name}</strong> has completed the most tasks
+                    <div className="flex items-center gap-1.5">
+                      <Dumbbell size={16} /> <strong>{data[getWinner('totalTasks')!]?.name}</strong> has completed the most tasks
                     </div>
                   )}
                   {getWinner('recentActivity') && (
-                    <div>
-                      ⚡ <strong>{data[getWinner('recentActivity')!]?.name}</strong> has been most active recently
+                    <div className="flex items-center gap-1.5">
+                      <Zap size={16} /> <strong>{data[getWinner('recentActivity')!]?.name}</strong> has been most active recently
                     </div>
                   )}
                 </div>

@@ -201,7 +201,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
       {/* Tooltip */}
       <div
-        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-xl shadow-2xl"
+        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,

@@ -96,7 +96,7 @@ export function PriorityExplanation({
       </button>
       
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl p-4 min-w-[320px] z-50">
+        <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-4 min-w-[320px] z-50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-sm">Priority Calculation</h4>
             <button onClick={() => setIsOpen(false)} className="text-mission-control-text-dim hover:text-mission-control-text">
@@ -160,7 +160,7 @@ function formatResponseTime(seconds: number): string {
 // Priority stats card
 export function PriorityStats({ stats }: { stats: any }) {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
         <Star size={16} className="text-mission-control-accent" />
         <h3 className="font-semibold text-sm">Priority Stats</h3>
@@ -222,7 +222,7 @@ export function PrioritySettings({
   ];
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
       <h3 className="font-semibold text-sm mb-4">Priority Weights</h3>
       
       <div className="space-y-3 mb-6">

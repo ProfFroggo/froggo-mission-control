@@ -152,7 +152,7 @@ export default function DraggableVideoWindow({
       className={`fixed z-50 bg-black border-2 shadow-2xl ${
         viewMode === 'fullwidth'
           ? 'border-mission-control-accent rounded-none'
-          : 'border-mission-control-border rounded-xl'
+          : 'border-mission-control-border rounded-lg'
       }`}
       style={
         viewMode === 'fullwidth'

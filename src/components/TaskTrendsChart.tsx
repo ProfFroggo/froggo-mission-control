@@ -21,20 +21,19 @@ import { TrendingUp } from 'lucide-react';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
 
-export default function TaskTrendsChart() {
+export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
   const [data, setData] = useState<TaskCompletionTrend[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<7 | 30 | 90>(30);
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>('area');
 
   useEffect(() => {
     loadData();
-  }, [timeRange]);
+  }, [days]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const trends = await getTaskCompletionTrends(timeRange);
+      const trends = await getTaskCompletionTrends(days);
       setData(trends);
     } catch (error) {
       // 'Failed to load task trends:', error;
@@ -205,36 +204,20 @@ export default function TaskTrendsChart() {
             ))}
           </div>
 
-          {/* Time range selector */}
-          <div className="flex bg-mission-control-border rounded-lg p-1">
-            {([7, 30, 90] as const).map((days) => (
-              <button
-                key={days}
-                onClick={() => setTimeRange(days)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  timeRange === days
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-              >
-                {days}d
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Total Created</div>
           <div className="text-2xl font-bold text-info">{totalCreated}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Total Completed</div>
           <div className="text-2xl font-bold text-success">{totalCompleted}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Avg Completion Rate</div>
           <div className="text-2xl font-bold text-review">{avgCompletionRate}%</div>
         </div>

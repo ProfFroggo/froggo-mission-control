@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Zap, Code } from 'lucide-react';
+import { ChevronDown, ChevronRight, Zap, Code, AlertTriangle, Check } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 
 interface ContentBlockProps {
@@ -101,7 +101,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
           <span className={`text-xs font-medium ${
             isError ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
           }`}>
-            {isError ? '⚠️ Error' : '✓ Result'}
+            {isError ? <span className="inline-flex items-center gap-1"><AlertTriangle size={14} /> Error</span> : <span className="inline-flex items-center gap-1"><Check size={14} /> Result</span>}
           </span>
           <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
             {block.text?.length || 0} chars

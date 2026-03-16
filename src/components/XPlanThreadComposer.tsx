@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Send } from 'lucide-react';
+import { FileText, Send, BookOpen, Megaphone, MessageCircle, Zap } from 'lucide-react';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
 import { scheduleApi } from '../lib/api';
@@ -10,11 +10,11 @@ interface ResearchIdea {
   description: string;
 }
 
-const CONTENT_TYPES = [
-  { value: 'educational', label: 'Educational', emoji: '📚' },
-  { value: 'promotional', label: 'Promotional', emoji: '📣' },
-  { value: 'engagement', label: 'Engagement', emoji: '💬' },
-  { value: 'reactive', label: 'Reactive', emoji: '⚡' },
+const CONTENT_TYPES: { value: string; label: string; icon: React.ReactNode }[] = [
+  { value: 'educational', label: 'Educational', icon: <BookOpen size={20} /> },
+  { value: 'promotional', label: 'Promotional', icon: <Megaphone size={20} /> },
+  { value: 'engagement', label: 'Engagement', icon: <MessageCircle size={20} /> },
+  { value: 'reactive', label: 'Reactive', icon: <Zap size={20} /> },
 ];
 
 const THREAD_LENGTHS = [
@@ -131,7 +131,7 @@ export default function XPlanThreadComposer() {
                 aria-label="Select research idea"
                 value={selectedResearchId}
                 onChange={(e) => setSelectedResearchId(e.target.value)}
-                className="w-full bg-mission-control-bg-alt text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+                className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 disabled={submitting}
               >
                 <option value="">Select a research idea...</option>
@@ -186,7 +186,7 @@ export default function XPlanThreadComposer() {
                     }`}
                     disabled={submitting}
                   >
-                    <span className="text-xl">{type.emoji}</span>
+                    <span className="text-xl">{type.icon}</span>
                     <span className="text-sm font-medium">{type.label}</span>
                   </button>
                 ))}

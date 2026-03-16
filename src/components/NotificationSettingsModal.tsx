@@ -225,7 +225,7 @@ export default function NotificationSettingsModal({
   if (loading) {
     return (
       <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 modal-backdrop-enter">
-        <div className="glass-modal rounded-xl p-8 shadow-xl modal-content-enter">
+        <div className="glass-modal rounded-lg p-8 shadow-xl modal-content-enter">
           <div className="text-center">Loading settings...</div>
         </div>
       </div>
@@ -241,7 +241,7 @@ export default function NotificationSettingsModal({
       tabIndex={0}
       aria-label="Close modal"
     >
-      <div className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
+      <div className="glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border flex items-center justify-between">
           <div>
@@ -339,7 +339,7 @@ export default function NotificationSettingsModal({
               id="notification-level"
               value={notificationLevel}
               onChange={(e) => setNotificationLevel(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="all">All messages</option>
               <option value="mentions">Mentions only</option>
@@ -368,7 +368,7 @@ export default function NotificationSettingsModal({
                 <select
                   value={soundType}
                   onChange={(e) => setSoundType(e.target.value)}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 >
                   <option value="default">Default</option>
                   <option value="subtle">Subtle</option>
@@ -416,14 +416,14 @@ export default function NotificationSettingsModal({
                     type="time"
                     value={quietStart}
                     onChange={(e) => setQuietStart(e.target.value)}
-                    className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                   <span className="text-mission-control-text-dim">to</span>
                   <input
                     type="time"
                     value={quietEnd}
                     onChange={(e) => setQuietEnd(e.target.value)}
-                    className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               )}
@@ -444,7 +444,7 @@ export default function NotificationSettingsModal({
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="Add keyword..."
-                  className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
                 <button
                   onClick={addKeyword}
@@ -484,7 +484,7 @@ export default function NotificationSettingsModal({
               id="priority-level"
               value={priorityLevel}
               onChange={(e) => setPriorityLevel(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="low">Low</option>
               <option value="normal">Normal</option>
@@ -503,7 +503,7 @@ export default function NotificationSettingsModal({
               id="notification-frequency"
               value={notificationFrequency}
               onChange={(e) => setNotificationFrequency(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
             >
               <option value="instant">Instant</option>
               <option value="batched_15m">Batched (15 minutes)</option>
@@ -542,7 +542,7 @@ export default function NotificationSettingsModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes about these settings..."
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
               rows={3}
             />
           </div>

@@ -193,7 +193,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             }`}>
               {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
             </div>
-            <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
+            <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
               msg.role === 'user'
                 ? 'bg-mission-control-accent/20 text-mission-control-text rounded-tr-sm'
                 : msg.role === 'system'
@@ -218,7 +218,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
               <Bot size={12} />
             </div>
-            <div className="max-w-[80%] px-3 py-2 rounded-xl rounded-tl-sm bg-mission-control-surface border border-mission-control-border text-sm">
+            <div className="max-w-[80%] px-3 py-2 rounded-lg rounded-tl-sm bg-mission-control-surface border border-mission-control-border text-sm">
               <p className="whitespace-pre-wrap">{streaming}<span className="animate-pulse">▊</span></p>
             </div>
           </div>
@@ -230,7 +230,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
               <Bot size={12} />
             </div>
-            <div className="px-3 py-2 rounded-xl rounded-tl-sm bg-mission-control-surface border border-mission-control-border">
+            <div className="px-3 py-2 rounded-lg rounded-tl-sm bg-mission-control-surface border border-mission-control-border">
               <div className="flex gap-1 items-center">
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-1.5 h-1.5 bg-mission-control-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

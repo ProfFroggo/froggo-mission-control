@@ -106,7 +106,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-xl bg-mission-control-accent/10 flex items-center justify-center text-xl flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center text-xl flex-shrink-0">
             {module.icon || '🧩'}
           </div>
           <div className="flex-1 min-w-0">

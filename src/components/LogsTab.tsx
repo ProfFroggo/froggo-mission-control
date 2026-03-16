@@ -99,7 +99,7 @@ export default function LogsTab() {
       {/* Log Viewer */}
       <div
         ref={logRef}
-        className="h-[500px] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-xl p-3 font-mono text-xs"
+        className="h-[500px] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-lg p-3 font-mono text-xs"
       >
         {loading ? (
           <div className="flex items-center justify-center h-full text-mission-control-text-dim">

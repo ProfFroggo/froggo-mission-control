@@ -87,7 +87,7 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-mission-control-bg/50 transition-all ${open ? 'bg-mission-control-bg/50' : ''}`}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-mission-control-bg/50 transition-all ${open ? 'bg-mission-control-bg/50' : ''}`}
       >
         <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
         <div className="text-left">
@@ -100,7 +100,7 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-mission-control-surface border border-mission-control-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-3 py-2 text-xs font-medium text-mission-control-text-dim border-b border-mission-control-border">
             Switch Agent {loading && '(loading...)'}
           </div>
@@ -112,7 +112,7 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
                 <button
                   key={agent.id}
                   onClick={() => { onSelect(agent); setOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mission-control-bg/60 transition-colors ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mission-control-border/40 transition-colors ${
                     isSelected ? 'bg-mission-control-bg/40' : ''
                   }`}
                 >

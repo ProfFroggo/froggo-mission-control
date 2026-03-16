@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot } from 'lucide-react';
+import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate } from 'lucide-react';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
 import AgentAvatar from '../AgentAvatar';
 import { PROJECT_ICON_OPTIONS, getProjectIcon } from './projectIcons';
+import { PROJECT_TEMPLATES } from '../../lib/projectTemplates';
 
 const MC_SYSTEM = `You are Mission Control, helping set up a new project in the Mission Control platform.
 Keep responses brief and conversational — 1-2 sentences max. Be warm and direct.
@@ -18,7 +19,7 @@ const COLOR_OPTIONS = [
   '#06b6d4', '#3b82f6', '#a855f7', '#f43f5e',
 ];
 
-type Phase = 'name' | 'goal' | 'identity' | 'agents' | 'confirm' | 'creating' | 'done';
+type Phase = 'template' | 'name' | 'goal' | 'identity' | 'agents' | 'confirm' | 'creating' | 'done';
 
 interface ChatMsg {
   id: string;
@@ -50,7 +51,7 @@ function MCAvatar() {
 
 export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
-  const [phase, setPhase] = useState<Phase>('name');
+  const [phase, setPhase] = useState<Phase>('template');
   const [input, setInput] = useState('');
   const [mcTyping, setMcTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,13 +117,16 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [msgs, mcTyping]);
 
-  // Kick off conversation — ref guard prevents React Strict Mode double-invoke
+  // Kick off conversation when we enter the 'name' phase (after template selection)
   const initCalledRef = useRef(false);
   useEffect(() => {
+    if (phase !== 'name') return;
     if (initCalledRef.current) return;
     initCalledRef.current = true;
-    mcAsk('', undefined, "Hey, let's set up your new project. What should we call it?");
-  }, []);
+    mcAsk('', undefined, projName
+      ? `Great — using the "${projName}" template. You can keep that name or change it below:`
+      : "Let's set up your new project. What should we call it?");
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load agents when entering agents phase
   useEffect(() => {
@@ -236,10 +240,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Identity widget rendered inline in chat
   function IdentityWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
         {/* Preview */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <span className="font-medium text-sm text-mission-control-text">{projName}</span>
@@ -280,7 +284,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Agent picker widget
   function AgentsWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-2">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
         {loadingAgents ? (
           <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></div>
         ) : (
@@ -316,9 +320,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Summary confirm widget
   function ConfirmWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <div>
@@ -347,6 +351,69 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
   const showInput = phase === 'name' || phase === 'goal';
 
+  // ── Template picker (shown before chat starts) ────────────────────────────
+  if (phase === 'template') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+            <div className="flex items-center gap-2">
+              <LayoutTemplate size={16} className="text-mission-control-accent" />
+              <span className="text-sm font-semibold text-mission-control-text">New Project</span>
+            </div>
+            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+            <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
+            {/* Blank */}
+            <button
+              onClick={() => setPhase('name')}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+            >
+              <div className="w-9 h-9 rounded-lg bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
+                <Bot size={16} className="text-mission-control-text-dim" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-mission-control-text">Blank project</div>
+                <div className="text-xs text-mission-control-text-dim">Start with a clean slate.</div>
+              </div>
+            </button>
+            {/* Templates */}
+            {PROJECT_TEMPLATES.map(tmpl => {
+              const TmplIcon = getProjectIcon(tmpl.iconId);
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => {
+                    setProjName(tmpl.name);
+                    setProjGoal(tmpl.goal);
+                    setIconId(tmpl.iconId);
+                    setColor(tmpl.color);
+                    setPhase('name');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${tmpl.color}20`, border: `1px solid ${tmpl.color}40` }}
+                  >
+                    <TmplIcon size={16} style={{ color: tmpl.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-mission-control-text">{tmpl.name}</div>
+                    <div className="text-xs text-mission-control-text-dim truncate">{tmpl.description}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
@@ -373,7 +440,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
                 {msg.from === 'mc' && <MCAvatar />}
                 <div className={`max-w-[82%] ${msg.from === 'user' ? 'flex flex-col items-end' : ''}`}>
-                  <div className={`px-3 py-2 rounded-xl text-sm ${
+                  <div className={`px-3 py-2 rounded-lg text-sm ${
                     msg.from === 'user'
                       ? 'bg-mission-control-accent text-white rounded-br-sm'
                       : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
@@ -391,7 +458,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             {mcTyping && (
               <div className="flex gap-2 items-start">
                 <MCAvatar />
-                <div className="bg-mission-control-surface px-4 py-3 rounded-xl rounded-bl-sm">
+                <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
                   <div className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -407,7 +474,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {phase === 'creating' && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[280px]">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
                 <SelectedIconComp size={20} style={{ color }} />
               </div>
               <div>
@@ -419,7 +486,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
             <div className="space-y-2">
               {steps.map(s => (
-                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                   s.status === 'running' ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
                   s.status === 'done'    ? 'bg-green-500/5 border-green-500/20' :
                   s.status === 'error'   ? 'bg-red-500/5 border-red-500/20' :
@@ -443,7 +510,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
 
             {createError && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                 <div className="text-sm text-red-400 font-medium">Setup failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{createError}</div>
               </div>
@@ -472,11 +539,11 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           {phase === 'done' && created ? (
             <div className="flex gap-2">
               <button onClick={() => onCreated(created)}
-                className="flex-1 py-2.5 bg-mission-control-accent text-white text-sm font-medium rounded-xl hover:bg-mission-control-accent/90 transition-colors flex items-center justify-center gap-2">
+                className="flex-1 py-2.5 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/90 transition-colors flex items-center justify-center gap-2">
                 <Check size={15} /> Open Project
               </button>
               <button onClick={onClose}
-                className="px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim text-sm rounded-xl hover:bg-mission-control-surface transition-colors">
+                className="px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-surface transition-colors">
                 Close
               </button>
             </div>
@@ -499,11 +566,11 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 disabled={mcTyping}
                 placeholder={phase === 'name' ? 'Project name...' : 'Describe the goal...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
+                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
               />
               <button onClick={handleSend} disabled={!input.trim() || mcTyping}
-                className="p-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                 <Send size={18} />
               </button>
             </div>

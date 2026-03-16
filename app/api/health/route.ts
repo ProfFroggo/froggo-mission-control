@@ -8,8 +8,10 @@ import { startDispatcherCron } from '@/lib/taskDispatcherCron';
 import { startClaraReviewCron } from '@/lib/claraReviewCron';
 import { startSessionKeepalive } from '@/lib/sessionKeepalive';
 import { startMemoryDecayCron, getVaultStats } from '@/lib/memoryDecayCron';
+import { startAutomationCron } from '@/lib/automationCron';
 import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
+import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispatcher';
 
 // Start background crons on server boot (once-per-process guard against HMR re-runs)
 if (!(globalThis as any).__healthInitialized) {
@@ -18,6 +20,7 @@ if (!(globalThis as any).__healthInitialized) {
   startClaraReviewCron();
   startSessionKeepalive();
   startMemoryDecayCron();
+  startAutomationCron();
 }
 
 function checkClaudeCli(): { found: boolean; authenticated: boolean; path: string } {
@@ -60,6 +63,8 @@ export async function GET() {
   let tasksInReview = 0;
   let tasksPreReview = 0;
   let agentsActive = 0;
+  let agentsTotal = 0;
+  let modulesTotal = 0;
   try {
     const db = getDb();
     const inProgress = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'in-progress'").get() as { cnt: number };
@@ -67,13 +72,28 @@ export async function GET() {
     const preReview = db.prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'internal-review'").get() as { cnt: number };
     const activeThreshold = Date.now() - 5 * 60 * 1000; // 5 min
     const active = db.prepare(
-      "SELECT COUNT(*) as cnt FROM agents WHERE lastSeen > ?"
+      "SELECT COUNT(*) as cnt FROM agents WHERE lastActivity > ?"
     ).get(activeThreshold) as { cnt: number } | undefined;
+    const totalAgents = db.prepare("SELECT COUNT(*) as cnt FROM agents").get() as { cnt: number } | undefined;
     tasksInProgress = inProgress?.cnt ?? 0;
     tasksInReview = inReview?.cnt ?? 0;
     tasksPreReview = preReview?.cnt ?? 0;
     agentsActive = active?.cnt ?? 0;
+    agentsTotal = totalAgents?.cnt ?? 0;
+    // modules table may not exist in all deployments — fail silently
+    try {
+      const totalModules = db.prepare("SELECT COUNT(*) as cnt FROM catalog_modules").get() as { cnt: number } | undefined;
+      modulesTotal = totalModules?.cnt ?? 0;
+    } catch { /* modules table not present */ }
   } catch { /* DB may not be ready — non-critical */ }
+
+  // Git info — non-critical, fail silently
+  let gitBranch: string | null = null;
+  let gitCommit: string | null = null;
+  try {
+    gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
+    gitCommit = execSync('git rev-parse --short HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
+  } catch { /* not a git repo or git not available */ }
 
   return NextResponse.json({
     cli: claudeStatus.found && claudeStatus.authenticated,
@@ -86,9 +106,39 @@ export async function GET() {
     backend: 'claude-code-cli',
     cronDaemon: cronDaemonInstalled,
     vault: vaultStats,
+    pipeline: {
+      todo: (() => { try { return (getDb().prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'todo'").get() as { cnt: number }).cnt; } catch { return 0; } })(),
+      preReview: tasksPreReview,
+      inProgress: tasksInProgress,
+      review: tasksInReview,
+      humanReview: (() => { try { return (getDb().prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'human-review'").get() as { cnt: number }).cnt; } catch { return 0; } })(),
+      done: (() => { try { return (getDb().prepare("SELECT COUNT(*) as cnt FROM tasks WHERE status = 'done'").get() as { cnt: number }).cnt; } catch { return 0; } })(),
+    },
+    dispatch: {
+      activeDispatches: getActiveDispatchCount(),
+      circuitBreakers: getCircuitBreakerState(),
+    },
+    knowledge: (() => {
+      try {
+        const db = getDb();
+        const total = (db.prepare("SELECT COUNT(*) as cnt FROM knowledge_base").get() as { cnt: number }).cnt;
+        const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const stale = (db.prepare("SELECT COUNT(*) as cnt FROM knowledge_base WHERE updatedAt < ?").get(ninetyDaysAgo) as { cnt: number }).cnt;
+        return { total, stale };
+      } catch { return { total: 0, stale: 0 }; }
+    })(),
     tasksInProgress,
     tasksInReview,
     tasksPreReview,
     agentsActive,
+    agentsTotal,
+    modulesTotal,
+    gitBranch,
+    gitCommit,
+    uptime: process.uptime(),
+  }, {
+    headers: {
+      'Cache-Control': 'public, max-age=10',
+    },
   });
 }

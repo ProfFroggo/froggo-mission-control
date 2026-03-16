@@ -116,7 +116,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
             <h2 className="text-xl font-semibold">Focus Mode</h2>
             <p className="text-sm text-mission-control-text-dim">Control notifications and approvals</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-mission-control-border rounded-xl">
+          <button onClick={onClose} className="p-2 hover:bg-mission-control-border rounded-lg">
             <X size={20} />
           </button>
         </div>
@@ -131,7 +131,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
               <button
                 key={mode.type}
                 onClick={() => handleSelect(mode.type)}
-                className={`w-full p-4 rounded-xl border text-left transition-all ${
+                className={`w-full p-4 rounded-lg border text-left transition-all ${
                   isSelected 
                     ? 'border-mission-control-accent bg-mission-control-accent/10' 
                     : 'border-mission-control-border hover:border-mission-control-accent/50'
@@ -168,7 +168,7 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
           <div className="p-4 border-t border-mission-control-border">
             <button
               onClick={() => handleSelect(null)}
-              className="w-full py-3 bg-mission-control-border rounded-xl text-mission-control-text-dim hover:bg-mission-control-border/80 transition-colors"
+              className="w-full py-3 bg-mission-control-border rounded-lg text-mission-control-text-dim hover:bg-mission-control-border/80 transition-colors"
             >
               Turn off Focus Mode
             </button>

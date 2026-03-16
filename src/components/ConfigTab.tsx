@@ -156,7 +156,7 @@ export default function ConfigTab() {
     <div className="space-y-6">
       {/* Issues Banner */}
       {issues.length > 0 && (
-        <div className="p-4 bg-warning-subtle border border-warning-border rounded-xl">
+        <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-warning" />
             <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
@@ -192,7 +192,7 @@ export default function ConfigTab() {
         <textarea
           value={rawJson}
           onChange={e => { setRawJson(e.target.value); setDirty(true); }}
-          className="w-full h-96 bg-mission-control-bg border border-mission-control-border rounded-xl p-4 font-mono text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+          className="w-full h-96 bg-mission-control-bg border border-mission-control-border rounded-lg p-4 font-mono text-sm resize-none focus:outline-none focus:border-mission-control-accent"
           spellCheck={false}
           aria-label="Raw configuration JSON"
         />
@@ -201,7 +201,7 @@ export default function ConfigTab() {
           {sections.map(section => {
             const isCollapsed = collapsedSections.has(section.key);
             return (
-              <div key={section.key} className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div key={section.key} className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => toggleSection(section.key)}
                   className="w-full p-4 flex items-center justify-between hover:bg-mission-control-bg/50 transition-colors"

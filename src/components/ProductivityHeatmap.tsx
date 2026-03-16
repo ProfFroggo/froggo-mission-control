@@ -9,20 +9,19 @@ import { getProductivityHeatmap, ProductivityHeatmap as HeatmapData } from '../s
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-export default function ProductivityHeatmap() {
+export default function ProductivityHeatmap({ days = 30 }: { days?: number }) {
   const [data, setData] = useState<HeatmapData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<7 | 30 | 90>(30);
   const [selectedCell, setSelectedCell] = useState<HeatmapData | null>(null);
 
   useEffect(() => {
     loadData();
-  }, [timeRange]);
+  }, [days]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const heatmap = await getProductivityHeatmap(timeRange);
+      const heatmap = await getProductivityHeatmap(days);
       setData(heatmap);
     } catch (error) {
       // 'Failed to load productivity heatmap:', error;
@@ -93,34 +92,19 @@ export default function ProductivityHeatmap() {
           </p>
         </div>
 
-        <div className="flex bg-mission-control-border rounded-lg p-1">
-          {([7, 30, 90] as const).map((days) => (
-            <button
-              key={days}
-              onClick={() => setTimeRange(days)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                timeRange === days
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              {days}d
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Total Activity</div>
           <div className="text-2xl font-bold text-success">{totalActivity}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Peak Day</div>
           <div className="text-2xl font-bold text-info">{peakDay}</div>
         </div>
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
           <div className="text-sm text-mission-control-text-dim mb-1">Peak Hour</div>
           <div className="text-2xl font-bold text-review">
             {peakHour}:00 - {peakHour + 1}:00
@@ -129,15 +113,15 @@ export default function ProductivityHeatmap() {
       </div>
 
       {/* Heatmap */}
-      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 overflow-auto">
-        <div className="min-w-max">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+        <div>
           {/* Hour labels */}
-          <div className="flex mb-2">
-            <div className="w-12" /> {/* Day label spacer */}
+          <div className="grid mb-2" style={{ gridTemplateColumns: '3rem repeat(24, 1fr)' }}>
+            <div /> {/* Day label spacer */}
             {HOURS.map((hour) => (
               <div
                 key={hour}
-                className="w-6 text-center text-xs text-mission-control-text-dim"
+                className="text-center text-xs text-mission-control-text-dim"
               >
                 {hour % 3 === 0 ? hour : ''}
               </div>
@@ -146,14 +130,15 @@ export default function ProductivityHeatmap() {
 
           {/* Heatmap grid */}
           {DAYS.map((day, dayIndex) => (
-            <div key={day} className="flex items-center mb-1">
-              <div className="w-12 text-xs text-mission-control-text-dim font-medium">
+            <div key={day} className="grid items-center mb-1" style={{ gridTemplateColumns: '3rem repeat(24, 1fr)' }}>
+              <div className="text-xs text-mission-control-text-dim font-medium">
                 {day}
               </div>
               {aggregatedData[dayIndex].map((value, hour) => (
                 <div
                   key={hour}
-                  className={`w-6 h-6 mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-mission-control-accent ${getColor(value)}`}
+                  className={`aspect-square mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-mission-control-accent ${getColor(value)}`}
+                  style={{ maxHeight: '2rem' }}
                   title={`${day} ${hour}:00 - ${value} activities`}
                   role="presentation"
                   onMouseEnter={() => {
@@ -202,7 +187,7 @@ export default function ProductivityHeatmap() {
           <Calendar size={16} className="text-mission-control-accent" />
           Pattern Insights
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-3 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Most productive day</div>
             <div className="font-medium text-success">{peakDay}</div>
@@ -216,7 +201,7 @@ export default function ProductivityHeatmap() {
           <div className="p-3 bg-mission-control-bg rounded-lg">
             <div className="text-sm text-mission-control-text-dim mb-1">Avg activities/day</div>
             <div className="font-medium text-review">
-              {timeRange > 0 ? Math.round(totalActivity / timeRange) : 0}
+              {days > 0 ? Math.round(totalActivity / days) : 0}
             </div>
           </div>
           <div className="p-3 bg-mission-control-bg rounded-lg">

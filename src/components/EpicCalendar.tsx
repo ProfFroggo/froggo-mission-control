@@ -433,7 +433,7 @@ export default function EpicCalendar({
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
               <Calendar size={24} className="text-mission-control-accent" />
@@ -497,7 +497,7 @@ export default function EpicCalendar({
             {/* Create Event Button */}
             <button
               onClick={onCreateClick || handleCreateEvent}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-xl hover:bg-mission-control-accent-dim transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
             >
               <Plus size={16} />
               {createButtonLabel || 'New Event'}
@@ -855,7 +855,7 @@ function MonthView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-mission-control-border">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -878,7 +878,7 @@ function MonthView({
                 return (
                   <div
                     key={dayIdx}
-                    className={`border-r border-mission-control-border last:border-r-0 p-2 transition-all overflow-hidden ${
+                    className={`border-r border-mission-control-border last:border-r-0 p-2 transition-all overflow-hidden min-h-[80px] ${
                       !inCurrentMonth ? 'bg-mission-control-bg opacity-50' : ''
                     } ${
                       isDragOver 
@@ -991,7 +991,7 @@ function WeekView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-8 border-b border-mission-control-border flex-shrink-0">
           <div className="p-3 text-sm font-semibold text-mission-control-text-dim border-r border-mission-control-border">
@@ -1136,7 +1136,7 @@ function DayView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* All-day events */}
         {allDayEvents.length > 0 && (
           <div className="border-b border-mission-control-border p-4 space-y-2 flex-shrink-0">
@@ -1396,7 +1396,7 @@ function EventDetailPopover({
                 href={meetLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-info/10 border border-info/20 text-info rounded-xl hover:bg-info/20 transition-colors font-medium text-sm"
+                className="flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-info/10 border border-info/20 text-info rounded-lg hover:bg-info/20 transition-colors font-medium text-sm"
               >
                 <Video size={16} />
                 Join with Google Meet
@@ -1666,7 +1666,7 @@ function EventModal({
               id="calendar-account"
               value={formData.account}
               onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
             >
               {accounts.map(acc => (
                 <option key={acc} value={acc}>
@@ -1700,7 +1700,7 @@ function EventModal({
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.start}
                 onChange={(e) => setFormData({ ...formData, start: e.target.value })}
-                className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+                className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
               />
             </div>
             <div>
@@ -1735,7 +1735,7 @@ function EventModal({
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
+              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
               placeholder="Add location"
             />
           </div>
@@ -1749,7 +1749,7 @@ function EventModal({
               id="event-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent resize-none"
+              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               rows={4}
               placeholder="Add description"
             />

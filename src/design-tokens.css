@@ -76,10 +76,19 @@
   /* Text colors */
   --mission-control-text: #fafafa;             /* Primary text */
   --mission-control-text-dim: #a1a1aa;         /* Secondary text, muted content */
-  
+
   /* Accent colors */
   --mission-control-accent: #22c55e;           /* Primary action color (green) */
   --mission-control-accent-dim: #16a34a;       /* Accent hover/active state */
+
+  /* Alternate / alias surface colors */
+  --mission-control-bg-alt: #1a1a1a;           /* Between bg and surface, used for input backgrounds */
+  --mission-control-bg0: #0a0a0a;              /* Deepest background, used for status dots and inactive states */
+  --mission-control-card: #141414;             /* Card background, used for message bubbles and cards */
+
+  /* Typography defaults */
+  --mission-control-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mission-control-font-size: 14px;
   
   /* ============================================
      COLOR TOKENS - INTERACTIVE STATES
@@ -259,7 +268,12 @@
   /* Text colors */
   --mission-control-text: #18181b;
   --mission-control-text-dim: #52525b;
-  
+
+  /* Alternate / alias surface colors */
+  --mission-control-bg-alt: #f4f4f5;           /* Light alternate bg for input backgrounds */
+  --mission-control-bg0: #fafafa;              /* Deepest background in light mode */
+  --mission-control-card: #ffffff;             /* Card background in light mode */
+
   /* Interactive states (light theme specific) */
   --color-hover: color-mix(in srgb, var(--mission-control-bg) 90%, var(--mission-control-text));
   --color-active: color-mix(in srgb, var(--mission-control-bg) 80%, var(--mission-control-text));

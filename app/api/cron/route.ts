@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
     sessionTarget: body.sessionTarget || 'isolated',
     wakeMode: 'now',
     payload: body.payload,
+    taskTemplate: body.taskTemplate || undefined,
     state: {},
     createdAt: Date.now(),
   };

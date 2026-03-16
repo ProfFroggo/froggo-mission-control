@@ -69,7 +69,7 @@ export default function SetupWizard() {
           </div>
 
           {/* Card */}
-          <div className="p-6 rounded-xl border border-mission-control-border bg-mission-control-surface space-y-6">
+          <div className="p-6 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-6">
             {/* Book type selector */}
             <div>
               <span className="block text-xs font-medium text-mission-control-text-dim mb-2">

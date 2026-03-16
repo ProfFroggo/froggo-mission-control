@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare } from 'lucide-react';
+import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare, Gamepad2, MessageCircle, Briefcase, Mail, Globe, Radio, Send as SendPlane } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -32,13 +32,13 @@ interface ChannelInfo {
   defaultAccountId?: string;
 }
 
-const CHANNEL_ICONS: Record<string, string> = {
-  discord: '🎮',
-  telegram: '✈️',
-  whatsapp: '💬',
-  slack: '💼',
-  email: '📧',
-  web: '🌐',
+const CHANNEL_ICONS: Record<string, React.ReactNode> = {
+  discord: <Gamepad2 size={20} />,
+  telegram: <SendPlane size={20} />,
+  whatsapp: <MessageCircle size={20} />,
+  slack: <Briefcase size={20} />,
+  email: <Mail size={20} />,
+  web: <Globe size={20} />,
 };
 
 export default function ChannelsTab() {
@@ -132,7 +132,7 @@ export default function ChannelsTab() {
             const hasError = channel.accounts.some(a => a.lastError);
 
             return (
-              <div key={channel.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <div key={channel.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
                   onClick={() => setExpandedChannel(isExpanded ? null : channel.id)}
@@ -142,7 +142,7 @@ export default function ChannelsTab() {
                   aria-expanded={isExpanded}
                   aria-label={`${channel.label} channel - ${isExpanded ? 'collapse' : 'expand'}`}
                 >
-                  <span className="text-2xl">{CHANNEL_ICONS[channel.id] || '📡'}</span>
+                  <span className="text-2xl">{CHANNEL_ICONS[channel.id] || <Radio size={20} />}</span>
                   <div className="flex-1">
                     <div className="font-medium">{channel.label}</div>
                     <div className="text-xs text-mission-control-text-dim">
@@ -165,7 +165,7 @@ export default function ChannelsTab() {
                     {channel.accounts.length === 0 ? (
                       <div className="p-4 text-sm text-mission-control-text-dim">No accounts configured</div>
                     ) : channel.accounts.map((account, i) => (
-                      <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-bg/30">
+                      <div key={i} className="p-4 border-b border-mission-control-border last:border-b-0 hover:bg-mission-control-border/40">
                         <div className="flex items-center gap-3">
                           <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-mission-control-bg0/20'}`}>
                             {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-mission-control-text-dim" />}

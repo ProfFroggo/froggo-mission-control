@@ -29,11 +29,18 @@ const PORT = process.env.PORT ?? '3000';
 const REDIRECT_URI = `http://localhost:${PORT}`;
 
 export const GOOGLE_SCOPES = [
+  // Gmail
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/calendar.events',
+  // Calendar
+  'https://www.googleapis.com/auth/calendar',
+  // Drive + Docs + Sheets + Slides
+  'https://www.googleapis.com/auth/documents',
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/presentations',
+  // User info
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
 ];

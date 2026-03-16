@@ -52,6 +52,7 @@ export interface Subtask {
   completedBy?: string;
   position?: number;
   createdAt?: number;
+  dueDate?: number | null;
 }
 
 export interface TaskActivity {
@@ -81,6 +82,7 @@ export interface Task {
   reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes' | 'rejected' | 'pre-review' | 'pre-approved' | 'pre-rejected';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
+  scheduledAt?: number; // Unix timestamp — when to start work
   estimatedHours?: number;
   blockedBy?: string[]; // Task IDs this is blocked by
   blocks?: string[]; // Task IDs this blocks
@@ -236,7 +238,7 @@ interface Store {
   // Subtasks (DB-backed)
   loadSubtasksForTask: (taskId: string) => Promise<Subtask[]>;
   addSubtask: (taskId: string, title: string, description?: string, assignedTo?: string) => Promise<Subtask | null>;
-  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => Promise<boolean>;
+  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => Promise<boolean>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<boolean>;
   
   // Task Activity (DB-backed)
@@ -532,6 +534,7 @@ export const useStore = create<Store>()(
             reviewStatus: t.reviewStatus || undefined,
             planningNotes: t.planningNotes || undefined,
             dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+            scheduledAt: t.scheduledAt ? Number(t.scheduledAt) : undefined,
             lastAgentUpdate: t.lastAgentUpdate || undefined,
             createdAt: t.createdAt || Date.now(),
             updatedAt: t.updatedAt || Date.now(),
@@ -652,9 +655,12 @@ export const useStore = create<Store>()(
           'internal-review':  ['todo', 'in-progress'],
           'in-progress':      ['review', 'todo', 'human-review'],
           'review':           ['done', 'in-progress', 'human-review'],
-          'human-review':     ['in-progress', 'todo', 'internal-review'],
+          'human-review':     ['in-progress', 'todo', 'internal-review', 'done'],
           'done':             ['in-progress'],
         };
+        // Same status — no-op
+        if (task.status === status) return;
+
         const allowed = VALID_TRANSITIONS[task.status];
         if (allowed && !allowed.includes(status)) {
           showToast('error', 'Invalid status change', `Cannot move from "${task.status}" to "${status}"`);
@@ -662,29 +668,30 @@ export const useStore = create<Store>()(
         }
 
         // B+C ENFORCEMENT: Both requirements must be met before marking done
-        if (status === 'done') {
+        // Exception: human-review tasks can be marked done directly by human
+        if (status === 'done' && task.status !== 'human-review') {
           const errors: string[] = [];
-          
+
           // REQUIREMENT B: All subtasks must be complete
           const subtasks = task.subtasks || [];
           const hasSubtasks = subtasks.length > 0;
           const incompleteCount = subtasks.filter((st: Subtask) => !st.completed).length;
-          
+
           if (hasSubtasks && incompleteCount > 0) {
             errors.push(`${incompleteCount}/${subtasks.length} subtasks incomplete`);
           }
-          
+
           // REQUIREMENT C: Reviewer approval required
           // Task must have gone through 'review' status first
           if (task.status !== 'review') {
             errors.push('Task must be reviewed before marking done (move to review first)');
           }
-          
+
           // Reviewer must be assigned
           if (!task.reviewerId) {
             errors.push('No reviewer assigned');
           }
-          
+
           // Review status must be 'approved'
           if (task.reviewStatus !== 'approved') {
             errors.push('Review not approved (reviewer must approve first)');
@@ -746,6 +753,10 @@ export const useStore = create<Store>()(
           await taskApi.delete(id);
         } catch (e) {
           const errMsg = e instanceof Error ? e.message : String(e);
+          // 404 = task already gone from DB — treat as success, don't rollback
+          if (errMsg.includes('404')) {
+            return;
+          }
           console.error('Failed to delete task from DB:', e);
           showToast('error', 'Task delete failed', errMsg);
           // Rollback: restore the removed task
@@ -841,7 +852,7 @@ export const useStore = create<Store>()(
         return null;
       },
 
-      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
+      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string; dueDate?: number | null; position?: number }) => {
         try {
           // Find the parent taskId from state
           const parentTask = get().tasks.find((t: Task) => (t.subtasks || []).some((st: Subtask) => st.id === subtaskId));

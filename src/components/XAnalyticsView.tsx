@@ -162,7 +162,7 @@ export function XAnalyticsView() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/10 rounded-xl">
+            <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
             <div>
@@ -209,7 +209,7 @@ export function XAnalyticsView() {
                 return (
                   <div
                     key={card.label}
-                    className="bg-mission-control-surface rounded-xl border border-mission-control-border p-5"
+                    className="bg-mission-control-surface rounded-lg border border-mission-control-border p-5"
                   >
                     <div className={`inline-flex p-2 rounded-lg ${card.bg} mb-3`}>
                       <Icon size={20} className={card.color} />
@@ -224,7 +224,7 @@ export function XAnalyticsView() {
             </div>
 
             {/* Top Content */}
-            <div className="bg-mission-control-surface rounded-xl border border-mission-control-border">
+            <div className="bg-mission-control-surface rounded-lg border border-mission-control-border">
               <div className="p-5 border-b border-mission-control-border">
                 <h2 className="text-sm font-semibold text-mission-control-text">Top Content</h2>
                 <p className="text-sm text-mission-control-text-dim mt-0.5">Recent posted and approved tweets</p>
@@ -261,7 +261,7 @@ export function XAnalyticsView() {
             </div>
 
             {/* Competitor Insights */}
-            <div className="bg-mission-control-surface rounded-xl border border-mission-control-border">
+            <div className="bg-mission-control-surface rounded-lg border border-mission-control-border">
               <div className="p-5 border-b border-mission-control-border flex items-center gap-2">
                 <Users size={18} className="text-mission-control-text-dim" />
                 <div>

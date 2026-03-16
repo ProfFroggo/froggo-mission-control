@@ -1,11 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 /**
  * Hook to announce messages to screen readers
  */
 export function useAnnounce() {
-  const announce = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+  const announce = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
     const announcer = document.getElementById('aria-announcements');
     if (announcer) {
       announcer.setAttribute('aria-live', priority);
@@ -16,7 +16,7 @@ export function useAnnounce() {
         announcer.textContent = '';
       }, 1000);
     }
-  };
+  }, []);
 
   return announce;
 }

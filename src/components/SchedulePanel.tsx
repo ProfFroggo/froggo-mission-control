@@ -70,10 +70,10 @@ export default function SchedulePanel() {
         <div className="flex items-center px-4">
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'calendar'
                 ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
             }`}
           >
             <Calendar size={16} />
@@ -81,10 +81,10 @@ export default function SchedulePanel() {
           </button>
           <button
             onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'tasks'
                 ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
             }`}
           >
             <ListTodo size={16} />
@@ -92,10 +92,10 @@ export default function SchedulePanel() {
           </button>
           <button
             onClick={() => setActiveTab('scheduler')}
-            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'scheduler'
                 ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
             }`}
           >
             <Clock size={16} />
@@ -103,10 +103,10 @@ export default function SchedulePanel() {
           </button>
           <button
             onClick={() => setActiveTab('crons')}
-            className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === 'crons'
                 ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-border/30'
+                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
             }`}
           >
             <RefreshCw size={16} />

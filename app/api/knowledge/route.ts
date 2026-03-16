@@ -3,6 +3,7 @@
 // POST /api/knowledge — create article
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { syncArticleToFilesystem } from '@/lib/knowledgeSync';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,13 @@ export async function GET(req: NextRequest) {
       pinned: Boolean(a.pinned),
     }));
 
-    return NextResponse.json({ success: true, articles: parsed });
+    return NextResponse.json({ success: true, articles: parsed }, {
+      headers: {
+        'Cache-Control': 'private, max-age=30, stale-while-revalidate=60',
+        'Content-Type': 'application/json',
+        'Vary': 'Accept-Encoding',
+      },
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
@@ -70,6 +77,10 @@ export async function POST(req: NextRequest) {
       INSERT INTO knowledge_base (id, title, content, category, tags, scope, pinned, version, createdBy, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'human', ?, ?)
     `).run(id, title.trim(), content.trim(), category, JSON.stringify(tags), scope, pinned ? 1 : 0, now, now);
+
+    // Sync to filesystem
+    syncArticleToFilesystem({ id, title: title.trim(), content: content.trim(), category, tags, scope, createdBy: 'human', updatedAt: now });
+
     return NextResponse.json({ success: true, id });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);

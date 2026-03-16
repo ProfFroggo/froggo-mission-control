@@ -142,7 +142,7 @@ export default function NotificationsPanel() {
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-xl">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
               <Bell size={24} className="text-mission-control-accent" />
             </div>
             <div>
@@ -155,7 +155,7 @@ export default function NotificationsPanel() {
           <button
             onClick={loadNotifications}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -198,7 +198,7 @@ export default function NotificationsPanel() {
               return (
                 <div
                   key={notif.id}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`p-4 rounded-lg border transition-all ${
                     notif.urgent
                       ? 'bg-error-subtle border-error-border'
                       : notif.read

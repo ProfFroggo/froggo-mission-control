@@ -7,109 +7,78 @@ import * as path from 'path';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const HR_DIR = path.join(homedir(), 'mission-control', 'library', 'docs', 'hr');
+const TRAINING_DIR = path.join(HR_DIR, 'training');
+const REPORTS_DIR = path.join(HR_DIR, 'reports');
+// Legacy fallback
 const RESEARCH_DIR = path.join(homedir(), 'mission-control', 'library', 'docs', 'research');
 
-function isTrainingLog(name: string): boolean {
-  return name.includes('hr_training-log');
-}
-
-function isWeeklyReport(name: string): boolean {
-  return name.includes('hr_weekly-report');
-}
-
-function matchesFilter(name: string): boolean {
-  return isTrainingLog(name) || isWeeklyReport(name);
-}
-
 function isSafeFilename(name: string): boolean {
-  // No path separators, no dotdot, must match hr_*.md pattern
+  // No path separators, no dotdot, must be .md
   return (
     !name.includes('/') &&
     !name.includes('\\') &&
     !name.includes('..') &&
-    /^[^/\\]+hr_[^/\\]+\.md$/.test(name)
+    name.endsWith('.md')
   );
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const file = searchParams.get('file');
+  const typeFilter = searchParams.get('type'); // 'training', 'reports', or null (all)
 
-  // Ensure the research directory exists
-  if (!fs.existsSync(RESEARCH_DIR)) {
-    try {
-      fs.mkdirSync(RESEARCH_DIR, { recursive: true });
-    } catch {
-      // If we can't create it, we'll just return empty/error below
+  // Ensure directories exist
+  for (const dir of [TRAINING_DIR, REPORTS_DIR]) {
+    if (!fs.existsSync(dir)) {
+      try { fs.mkdirSync(dir, { recursive: true }); } catch { /* */ }
     }
   }
 
   // Single file read mode
   if (file) {
     if (!isSafeFilename(file)) {
-      return NextResponse.json(
-        { error: 'Invalid filename. Only hr_*.md files are allowed.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid filename.' }, { status: 400 });
     }
-
-    const filePath = path.join(RESEARCH_DIR, file);
-
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: 'File not found.' }, { status: 404 });
-    }
-
-    try {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      return NextResponse.json({ name: file, content });
-    } catch {
-      return NextResponse.json({ error: 'Failed to read file.' }, { status: 500 });
-    }
-  }
-
-  // Directory listing mode
-  if (!fs.existsSync(RESEARCH_DIR)) {
-    return NextResponse.json([]);
-  }
-
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(RESEARCH_DIR, { withFileTypes: true });
-  } catch {
-    return NextResponse.json([]);
-  }
-
-  const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && matchesFilter(entry.name))
-    .map((entry) => {
-      const filePath = path.join(RESEARCH_DIR, entry.name);
-      let size = 0;
-      let createdAt = new Date().toISOString();
-      let modifiedAt = new Date().toISOString();
-
-      try {
-        const stat = fs.statSync(filePath);
-        size = stat.size;
-        createdAt = stat.birthtime.toISOString();
-        modifiedAt = stat.mtime.toISOString();
-      } catch {
-        // Use defaults if stat fails
+    // Search in training, reports, and legacy research dirs
+    for (const dir of [TRAINING_DIR, REPORTS_DIR, RESEARCH_DIR]) {
+      const filePath = path.join(dir, file);
+      if (fs.existsSync(filePath)) {
+        try {
+          return NextResponse.json({ name: file, content: fs.readFileSync(filePath, 'utf-8') });
+        } catch { /* try next */ }
       }
+    }
+    return NextResponse.json({ error: 'File not found.' }, { status: 404 });
+  }
 
-      const type: 'training-log' | 'weekly-report' = isWeeklyReport(entry.name)
-        ? 'weekly-report'
-        : 'training-log';
+  // Directory listing — scan training + reports + legacy research
+  const allFiles: Array<{ name: string; path: string; size: number; createdAt: string; modifiedAt: string; type: string }> = [];
 
-      return {
-        name: entry.name,
-        path: filePath,
-        size,
-        createdAt,
-        modifiedAt,
-        type,
-      };
-    })
-    .sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+  const scanDir = (dir: string, fileType: string) => {
+    if (!fs.existsSync(dir)) return;
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+        const filePath = path.join(dir, entry.name);
+        try {
+          const stat = fs.statSync(filePath);
+          allFiles.push({
+            name: entry.name,
+            path: filePath,
+            size: stat.size,
+            createdAt: stat.birthtime.toISOString(),
+            modifiedAt: stat.mtime.toISOString(),
+            type: fileType,
+          });
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+  };
 
-  return NextResponse.json(files);
+  if (!typeFilter || typeFilter === 'training') scanDir(TRAINING_DIR, 'training-log');
+  if (!typeFilter || typeFilter === 'reports') scanDir(REPORTS_DIR, 'weekly-report');
+
+  allFiles.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+  return NextResponse.json(allFiles);
 }

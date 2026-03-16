@@ -241,7 +241,7 @@ export default function XAutomationsTab() {
         </div>
 
         {/* Basic Info */}
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 space-y-4">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
           <div>
             <label htmlFor="automation-name" className="block text-sm font-medium mb-2">Automation Name</label>
             <input
@@ -250,7 +250,7 @@ export default function XAutomationsTab() {
               value={builderName}
               onChange={(e) => setBuilderName(e.target.value)}
               placeholder="e.g., Auto-thank followers"
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
             />
           </div>
           <div>
@@ -261,13 +261,13 @@ export default function XAutomationsTab() {
               onChange={(e) => setBuilderDescription(e.target.value)}
               placeholder="What does this automation do?"
               rows={2}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
+              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
             />
           </div>
         </div>
 
         {/* Trigger Selection */}
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 space-y-4">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
           <h3 className="font-semibold flex items-center gap-2">
             <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">1</span>
             When this happens (Trigger)
@@ -314,7 +314,7 @@ export default function XAutomationsTab() {
                   keywords: e.target.value.split(',').map(k => k.trim()).filter(Boolean)
                 })}
                 placeholder="e.g., crypto, blockchain, web3"
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
               />
             </div>
           )}
@@ -326,7 +326,7 @@ export default function XAutomationsTab() {
                 id="trigger-interval"
                 value={builderTriggerConfig.interval || '1h'}
                 onChange={(e) => setBuilderTriggerConfig({ ...builderTriggerConfig, interval: e.target.value })}
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
               >
                 <option value="15m">Every 15 minutes</option>
                 <option value="30m">Every 30 minutes</option>
@@ -340,7 +340,7 @@ export default function XAutomationsTab() {
         </div>
 
         {/* Actions */}
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 space-y-4">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
           <h3 className="font-semibold flex items-center gap-2">
             <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">2</span>
             Do this (Actions)
@@ -418,7 +418,7 @@ export default function XAutomationsTab() {
         </div>
 
         {/* Rate Limits */}
-        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 space-y-4">
+        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
           <h3 className="font-semibold">Rate Limits</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -430,7 +430,7 @@ export default function XAutomationsTab() {
                 onChange={(e) => setBuilderMaxHourly(parseInt(e.target.value) || 10)}
                 min="1"
                 max="100"
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
               />
             </div>
             <div>
@@ -442,7 +442,7 @@ export default function XAutomationsTab() {
                 onChange={(e) => setBuilderMaxDaily(parseInt(e.target.value) || 50)}
                 min="1"
                 max="1000"
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
               />
             </div>
           </div>
@@ -491,7 +491,7 @@ export default function XAutomationsTab() {
 
       {/* Automations List */}
       {automations.length === 0 ? (
-        <div className="text-center py-16 bg-mission-control-surface rounded-xl border border-mission-control-border">
+        <div className="text-center py-16 bg-mission-control-surface rounded-lg border border-mission-control-border">
           <Zap size={48} className="mx-auto mb-4 opacity-30" />
           <p className="text-mission-control-text-dim mb-4">No automations yet</p>
           <button
@@ -509,7 +509,7 @@ export default function XAutomationsTab() {
             return (
               <div
                 key={automation.id}
-                className="bg-mission-control-surface rounded-xl border border-mission-control-border p-6 hover:border-mission-control-accent/50 transition-all"
+                className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 hover:border-mission-control-accent/50 transition-all"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">

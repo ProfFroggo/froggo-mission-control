@@ -49,13 +49,13 @@ export default function LibrarySkillsTab() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search skills..."
-              className="w-full pl-9 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-xl focus:outline-none focus:border-mission-control-accent"
+              className="w-full pl-9 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
             />
           </div>
           <button
             onClick={loadSkills}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-xl hover:bg-mission-control-border/80 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -78,7 +78,7 @@ export default function LibrarySkillsTab() {
             {filtered.map(skill => (
               <div
                 key={skill.id}
-                className="p-4 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30 transition-colors"
+                className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30 transition-colors"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
