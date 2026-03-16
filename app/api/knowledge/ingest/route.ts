@@ -163,7 +163,20 @@ Return ONLY valid JSON, no markdown fences.` }];
   }
 
   // Step 2: Full document rewrite as markdown (separate call, full token budget)
-  const rewriteParts = [...parts, { text: `Rewrite this entire document as a clean, well-structured markdown document.
+  const isHtmlFile = filename.toLowerCase().endsWith('.html') || filename.toLowerCase().endsWith('.htm');
+  const rewritePrompt = isHtmlFile
+    ? `This is an HTML file. Extract ONLY the visible text content — NOT the source code.
+
+Rules:
+- Extract the text that a human would see when viewing this page in a browser
+- Convert it to clean, well-structured markdown
+- Ignore all HTML tags, CSS, JavaScript, SVG code — only extract readable text
+- Preserve headings, paragraphs, lists, tables, and data
+- For charts/graphs: describe the data they show
+- For navigation elements: skip them
+- Do NOT output any HTML, CSS, or JavaScript code
+- Output ONLY the markdown content document`
+    : `Rewrite this entire document as a clean, well-structured markdown document.
 
 Rules:
 - Convert ALL content — every heading, paragraph, list, table, footnote, caption
@@ -174,7 +187,9 @@ Rules:
 - For images/figures: describe them in [brackets]
 - Output ONLY the markdown document, no JSON, no explanation
 
-This is the COMPLETE rewrite — if the original has 10 pages, your output should cover all 10 pages.` }];
+This is the COMPLETE rewrite — if the original has 10 pages, your output should cover all 10 pages.`;
+
+  const rewriteParts = [...parts, { text: rewritePrompt }];
 
   const rewriteRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
