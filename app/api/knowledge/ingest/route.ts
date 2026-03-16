@@ -164,34 +164,34 @@ Return ONLY valid JSON, no markdown fences.` }];
 
   // Step 2: Full document rewrite as markdown (separate call, full token budget)
   const isHtmlFile = filename.toLowerCase().endsWith('.html') || filename.toLowerCase().endsWith('.htm');
+  const knowledgeArticleRules = `
+Structure the output as a professional knowledge base article that someone can quickly scan and deeply reference:
+
+## FORMAT REQUIREMENTS:
+1. **Executive Summary** (3-5 bullet points) — the key takeaways a busy reader needs in 10 seconds
+2. **Context** — one paragraph explaining what this document is, when it's from, and why it matters
+3. **Main Content** — the full document content, restructured for readability:
+   - Use ## for major sections, ### for subsections
+   - **Bold** key metrics, names, dates, and important terms
+   - Present data as markdown tables with clear headers — never as inline comma-separated values
+   - Use > blockquotes for notable quotes or critical callouts
+   - Use bullet points for lists, not paragraphs
+4. **Key Metrics** (if applicable) — a single reference table at the end with all important numbers
+5. **Action Items / Next Steps** (if applicable) — bullet list of what was decided or planned
+
+## QUALITY RULES:
+- Include ALL content from the original — every data point, every section, every detail
+- Do NOT summarize or skip sections — restructure for clarity, don't compress
+- Write in clear, professional prose — not a raw text dump
+- Add transition sentences between sections so it flows as an article
+- The article should be useful 6 months from now to someone who never saw the original
+- Output ONLY the markdown, no JSON, no code fences, no explanation`;
+
   const rewritePrompt = isHtmlFile
-    ? `This is an HTML file. Your job is to create a proper knowledge base article from it.
-
-Step 1: Extract all visible text content (what a human sees in a browser — ignore HTML/CSS/JS/SVG code)
-Step 2: Rewrite it as a clean, well-structured markdown knowledge document
-
-Rules:
-- Extract ALL visible text: headings, paragraphs, data, stats, quotes, labels, captions
-- Rewrite into proper markdown with clear structure: # headings, ## sections, bullet points, tables
-- For data/metrics: present as markdown tables or bold key figures
-- For charts/graphs: describe the data and insights they show
-- Add context and structure — don't just dump text, organize it so a reader can learn from it
-- Skip navigation elements, buttons, footers — only meaningful content
-- Do NOT output any HTML, CSS, or JavaScript
-- The output should read like a well-written article, not a text dump`
-    : `Rewrite this entire document as a proper knowledge base article in markdown.
-
-Rules:
-- Include ALL content — every heading, paragraph, list, table, data point, footnote
-- Structure it as a well-organized knowledge article with clear # headings and ## sections
-- Use proper markdown: **bold** for key terms, bullet points for lists, | tables | for data
-- For data/metrics: present as markdown tables with clear column headers
-- Preserve the document's full depth — do NOT summarize or skip sections
-- Add section breaks between major topics
-- The output should read like a well-written reference document
-- Output ONLY the markdown, no JSON, no explanation
-
-This is the COMPLETE document — every page, every section, every detail.`;
+    ? `This is an HTML file. Extract the visible text content (what a human sees in a browser — ignore all HTML/CSS/JS/SVG source code) and rewrite it as a knowledge base article.
+${knowledgeArticleRules}`
+    : `Rewrite this entire document as a knowledge base article.
+${knowledgeArticleRules}`;
 
   const rewriteParts = [...parts, { text: rewritePrompt }];
 
