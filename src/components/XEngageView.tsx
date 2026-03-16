@@ -27,7 +27,7 @@ import {
   Check,
 } from 'lucide-react';
 import { showToast } from './Toast';
-import { inboxApi, approvalApi } from '../lib/api';
+import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -296,8 +296,8 @@ export const XEngageView: React.FC = () => {
   const [settings, setSettings] = useState<EngageSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
 
-  // AI-generated reply suggestions per mention: { replies: string[], recommended: number }
-  const [aiReplies, setAiReplies] = useState<Record<string, { replies: string[]; recommended: number }>>({});
+  // AI-generated reply suggestions per mention
+  const [aiReplies, setAiReplies] = useState<Record<string, { replies: string[]; recommended: number; replies_english?: (string | null)[] | null; detected_language?: string }>>({});
   const [aiLoading, setAiLoading] = useState<Set<string>>(new Set());
 
   // Notes
@@ -310,69 +310,52 @@ export const XEngageView: React.FC = () => {
 
   const loadMentions = useCallback(async () => {
     try {
-      // Primary source: inbox items of type x-mention
-      const allItems = await inboxApi.getAll();
-      const inboxMentions = (Array.isArray(allItems) ? allItems : [])
-        .filter((item: any) => item.type === 'x-mention')
-        .map((item: any) => {
-          // Inbox items store mention data in metadata
-          const meta = typeof item.metadata === 'string'
-            ? (() => { try { return JSON.parse(item.metadata); } catch { return {}; } })()
-            : (item.metadata || {});
-          return normalizeMention({
-            id: String(item.id),
-            tweet_id: meta.tweet_id || String(item.id),
-            author_id: meta.author_id || '',
-            author_username: meta.author_username || 'unknown',
-            author_name: meta.author_name || 'Unknown',
-            author: meta.author_followers != null ? { public_metrics: { followers_count: meta.author_followers } } : undefined,
-            text: item.content || meta.text || '',
-            created_at: meta.created_at || item.createdAt || Date.now(),
-            conversation_id: meta.conversation_id || '',
-            in_reply_to_user_id: meta.in_reply_to_user_id || '',
-            reply_status: meta.reply_status || item.status || 'pending',
-            replied_at: meta.replied_at,
-            fetched_at: item.createdAt || Date.now(),
-            metadata: item.metadata,
-            mention_type: meta.mention_type || 'mention',
-            is_reply_to_us: meta.is_reply_to_us || false,
-            parent_tweet: meta.parent_tweet || null,
-            // AI suggestions stored in metadata
-            ai_replies: meta.ai_replies || null,
-          });
+      // Load from dedicated x_mentions table
+      const res = await fetch('/api/x/mentions/data');
+      if (!res.ok) { setLoading(false); return; }
+      const data = await res.json();
+      const items = data.mentions || [];
+
+      const preGenerated: Record<string, { replies: string[]; recommended: number; replies_english?: (string | null)[] | null; detected_language?: string }> = {};
+
+      const mentions = items.map((item: any) => {
+        // Load pre-generated AI replies from columns
+        if (item.ai_replies?.length) {
+          preGenerated[String(item.id)] = {
+            replies: item.ai_replies,
+            recommended: item.ai_recommended ?? 0,
+            replies_english: item.ai_replies_english || null,
+            detected_language: item.detected_language || 'en',
+          };
+        }
+
+        return normalizeMention({
+          id: String(item.id),
+          tweet_id: item.tweet_id,
+          author_id: item.author_id,
+          author_username: item.author_username,
+          author_name: item.author_name,
+          author: item.author_followers != null ? { public_metrics: { followers_count: item.author_followers } } : undefined,
+          text: item.text,
+          created_at: item.tweet_created_at,
+          conversation_id: item.conversation_id || '',
+          in_reply_to_user_id: item.in_reply_to_user_id || '',
+          reply_status: item.reply_status || 'pending',
+          replied_at: item.replied_at,
+          fetched_at: item.fetched_at,
+          metadata: JSON.stringify({
+            ai_judgment: item.ai_triage ? { triage: item.ai_triage, triage_reason: item.ai_triage_reason, confidence: item.ai_confidence, safety_flags: item.ai_safety_flags } : null,
+            ai_replies: item.ai_replies ? { replies: item.ai_replies, replies_english: item.ai_replies_english, recommended: item.ai_recommended, reasoning: item.ai_reasoning, detected_language: item.detected_language, mention_translation: item.mention_translation } : null,
+          }),
+          mention_type: item.mention_type || 'mention',
+          is_reply_to_us: item.is_reply_to_us,
+          parent_tweet: item.parent_tweet_text ? { type: 'replied_to', id: item.parent_tweet_id, text: item.parent_tweet_text, author: item.parent_tweet_author ? { id: '', username: item.parent_tweet_author, name: item.parent_tweet_author } : null } : null,
         });
+      });
 
-      if (inboxMentions.length > 0) {
-        setAllMentions(inboxMentions);
-        setLoading(false);
-        // Load pre-generated AI replies from inbox metadata (from background cron)
-        const preGenerated: Record<string, { replies: string[]; recommended: number }> = {};
-        for (const m of inboxMentions) {
-          try {
-            const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
-            if (meta.ai_replies?.replies?.length) {
-              preGenerated[m.id] = {
-                replies: meta.ai_replies.replies,
-                recommended: meta.ai_replies.recommended ?? 0,
-              };
-            }
-          } catch { /* noop */ }
-        }
-        if (Object.keys(preGenerated).length > 0) {
-          setAiReplies(prev => ({ ...prev, ...preGenerated }));
-        }
-        // Background cron handles AI reply generation — don't fire on page load
-        return;
-      }
-
-      // Fallback: fetch directly from X API
-      const res = await fetch('/api/x/mentions');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.mentions?.length > 0) {
-          const mapped = data.mentions.map((m: any) => normalizeMention(m));
-          setAllMentions(mapped);
-        }
+      setAllMentions(mentions);
+      if (Object.keys(preGenerated).length > 0) {
+        setAiReplies(prev => ({ ...prev, ...preGenerated }));
       }
       setLoading(false);
     } catch {
@@ -477,7 +460,11 @@ export const XEngageView: React.FC = () => {
   const updateStatus = async (id: string, status: 'pending' | 'considering' | 'ignored' | 'replied') => {
     setAllMentions(prev => prev.map(m => m.id === id ? { ...m, reply_status: status } : m));
     try {
-      await inboxApi.update(Number(id), { reply_status: status });
+      await fetch('/api/x/mentions/data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, reply_status: status }),
+      });
     } catch {
       await loadMentions();
     }
@@ -487,9 +474,13 @@ export const XEngageView: React.FC = () => {
 
   const saveNotes = async (id: string, noteText: string) => {
     try {
-      await inboxApi.update(Number(id), { notes: noteText });
+      await fetch('/api/x/mentions/data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, notes: noteText }),
+      });
       setNotes(prev => ({ ...prev, [id]: noteText }));
-      showToast('success', 'Note saved', 'Note updated successfully');
+      showToast('success', 'Note saved');
     } catch {
       // Keep note text in local state even if persist fails
     }
@@ -594,11 +585,17 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
             // Persist to DB so it doesn't regenerate on next page load
             try {
-              let existingMeta: any = {};
-              try { existingMeta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { /* noop */ }
-              existingMeta.ai_replies = { ...aiResult, generated_at: Date.now() };
-              await inboxApi.update(Number(mention.id), { metadata: existingMeta });
-            } catch { /* non-critical — will regenerate next time if persist fails */ }
+              await fetch('/api/x/mentions/data', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: mention.id,
+                  ai_replies: aiResult.replies,
+                  ai_recommended: aiResult.recommended,
+                  ai_processed_at: Date.now(),
+                }),
+              });
+            } catch { /* non-critical */ }
           }
         }
       } catch { /* non-critical */ }
@@ -897,7 +894,29 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
         )}
 
-        <div className="text-sm text-mission-control-text mb-3 whitespace-pre-wrap">{mention.text}</div>
+        {/* Tweet text + language */}
+        {(() => {
+          let mentionMeta: any = {};
+          try { mentionMeta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { /* noop */ }
+          const lang = mentionMeta.ai_replies?.detected_language;
+          const translation = mentionMeta.ai_replies?.mention_translation;
+          return (
+            <>
+              <div className="text-sm text-mission-control-text mb-1 whitespace-pre-wrap">{mention.text}</div>
+              {lang && lang !== 'en' && (
+                <div className="mb-3">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-info-subtle text-info font-medium mr-2">
+                    {lang.toUpperCase()}
+                  </span>
+                  {translation && (
+                    <span className="text-xs text-mission-control-text-dim italic">{translation}</span>
+                  )}
+                </div>
+              )}
+              {(!lang || lang === 'en') && <div className="mb-3" />}
+            </>
+          );
+        })()}
 
         {/* Engagement metrics */}
         <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mb-3">
@@ -1085,6 +1104,19 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                           )}
                           <span className="text-mission-control-text">{reply}</span>
                         </div>
+                        {/* English translation for non-English replies */}
+                        {(() => {
+                          const replyData = aiReplies[mention.id] as any;
+                          const eng = replyData?.replies_english?.[idx];
+                          if (eng && replyData?.detected_language && replyData.detected_language !== 'en') {
+                            return (
+                              <div className="text-[11px] text-mission-control-text-dim mt-1 italic pl-0.5">
+                                EN: {eng}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </button>
                       {!alreadyQueued && (
                         <button

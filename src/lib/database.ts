@@ -574,8 +574,111 @@ function initSchema(db: Database.Database) {
     );
 
     -- ══════════════════════════════════════════
+    -- X/Twitter Social Module
+    -- ══════════════════════════════════════════
+    CREATE TABLE IF NOT EXISTS x_mentions (
+      id TEXT PRIMARY KEY,
+      tweet_id TEXT UNIQUE NOT NULL,
+      author_id TEXT NOT NULL,
+      author_username TEXT NOT NULL,
+      author_name TEXT DEFAULT '',
+      author_followers INTEGER,
+      text TEXT NOT NULL,
+      mention_type TEXT DEFAULT 'mention',
+      is_reply_to_us INTEGER DEFAULT 0,
+      parent_tweet_id TEXT,
+      parent_tweet_text TEXT,
+      parent_tweet_author TEXT,
+      conversation_id TEXT,
+      in_reply_to_user_id TEXT,
+      like_count INTEGER DEFAULT 0,
+      retweet_count INTEGER DEFAULT 0,
+      reply_count INTEGER DEFAULT 0,
+      reply_status TEXT DEFAULT 'pending',
+      is_spam INTEGER DEFAULT 0,
+      detected_language TEXT DEFAULT 'en',
+      mention_translation TEXT,
+      ai_triage TEXT,
+      ai_triage_reason TEXT,
+      ai_confidence REAL,
+      ai_safety_flags TEXT DEFAULT '[]',
+      ai_replies TEXT,
+      ai_replies_english TEXT,
+      ai_recommended INTEGER,
+      ai_reasoning TEXT,
+      ai_processed_at INTEGER,
+      replied_at INTEGER,
+      replied_with_id TEXT,
+      notes TEXT,
+      tweet_created_at INTEGER NOT NULL,
+      fetched_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS x_posts (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      type TEXT DEFAULT 'tweet',
+      status TEXT DEFAULT 'draft',
+      thread_tweets TEXT,
+      media_ids TEXT,
+      scheduled_for INTEGER,
+      published_at INTEGER,
+      published_tweet_id TEXT,
+      like_count INTEGER DEFAULT 0,
+      retweet_count INTEGER DEFAULT 0,
+      reply_count INTEGER DEFAULT 0,
+      impression_count INTEGER DEFAULT 0,
+      campaign_id TEXT,
+      proposed_by TEXT DEFAULT 'user',
+      approval_id TEXT,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS x_campaigns (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      subject TEXT,
+      status TEXT DEFAULT 'draft',
+      start_date TEXT,
+      stages TEXT DEFAULT '[]',
+      total_posts INTEGER DEFAULT 0,
+      posts_published INTEGER DEFAULT 0,
+      proposed_by TEXT DEFAULT 'user',
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS x_analytics_snapshots (
+      id TEXT PRIMARY KEY,
+      snapshot_date TEXT NOT NULL,
+      followers INTEGER,
+      following INTEGER,
+      tweet_count INTEGER,
+      impressions INTEGER,
+      engagement_rate REAL,
+      top_tweet_id TEXT,
+      top_tweet_likes INTEGER,
+      content_mix TEXT DEFAULT '{}',
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    -- ══════════════════════════════════════════
     -- INDEXES
     -- ══════════════════════════════════════════
+    CREATE INDEX IF NOT EXISTS idx_x_mentions_tweet_id ON x_mentions(tweet_id);
+    CREATE INDEX IF NOT EXISTS idx_x_mentions_reply_status ON x_mentions(reply_status);
+    CREATE INDEX IF NOT EXISTS idx_x_mentions_mention_type ON x_mentions(mention_type);
+    CREATE INDEX IF NOT EXISTS idx_x_mentions_created ON x_mentions(tweet_created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_x_posts_status ON x_posts(status);
+    CREATE INDEX IF NOT EXISTS idx_x_posts_scheduled ON x_posts(scheduled_for) WHERE scheduled_for IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_x_posts_campaign ON x_posts(campaign_id) WHERE campaign_id IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_x_campaigns_status ON x_campaigns(status);
+    CREATE INDEX IF NOT EXISTS idx_x_analytics_date ON x_analytics_snapshots(snapshot_date DESC);
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo ON tasks(assignedTo);
     CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);
