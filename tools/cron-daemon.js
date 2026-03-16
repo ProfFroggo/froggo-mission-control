@@ -603,10 +603,11 @@ async function processScheduledItems() {
     const now = Date.now();
     const nowIso = new Date().toISOString();
 
-    // Find pending items where scheduledFor <= now
+    // Find approved/scheduled items where scheduledFor <= now
+    // Only post items that have been through human approval
     // scheduledFor can be ISO string or unix timestamp
     const pending = database.prepare(
-      `SELECT * FROM scheduled_items WHERE status = 'pending' AND (
+      `SELECT * FROM scheduled_items WHERE status IN ('approved', 'scheduled') AND (
         (typeof(scheduledFor) = 'text' AND scheduledFor <= ?) OR
         (typeof(scheduledFor) = 'integer' AND scheduledFor <= ?) OR
         (scheduledAt IS NOT NULL AND scheduledAt <= ?)
