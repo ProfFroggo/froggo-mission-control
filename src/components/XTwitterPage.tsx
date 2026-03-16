@@ -10,7 +10,6 @@ export type XTab = 'pipeline' | 'engage' | 'intelligence' | 'measure' | 'configu
 // Content routing
 import XPipelineView from './XPipelineView';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
-import { XMentionsView } from './XMentionsView';
 import { XEngageView } from './XEngageView';
 import XIntelligenceView from './XIntelligenceView';
 import XConfigureView from './XConfigureView';
