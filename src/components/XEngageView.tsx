@@ -761,8 +761,8 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
         </div>
 
-        {/* Mention type badge + tweet text */}
-        <div className="flex items-center gap-2 mb-2">
+        {/* Mention type badge + AI judgment + tweet text */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
             mention.mention_type === 'reply'
               ? mention.is_reply_to_us
@@ -783,6 +783,36 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               {mention.author_followers.toLocaleString()} followers
             </span>
           )}
+          {/* AI judgment badges */}
+          {(() => {
+            let meta: any = {};
+            try { meta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { /* noop */ }
+            const judgment = meta.ai_judgment;
+            if (!judgment) return null;
+            return (
+              <>
+                {judgment.triage === 'escalate' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning font-medium">
+                    Needs human review
+                  </span>
+                )}
+                {judgment.confidence != null && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    judgment.confidence >= 0.8 ? 'bg-success-subtle text-success'
+                    : judgment.confidence >= 0.5 ? 'bg-info-subtle text-info'
+                    : 'bg-warning-subtle text-warning'
+                  }`}>
+                    {Math.round(judgment.confidence * 100)}% confident
+                  </span>
+                )}
+                {judgment.safety_flags?.length > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-error-subtle text-error font-medium" title={judgment.safety_flags.join(', ')}>
+                    {judgment.safety_flags.length} safety flag{judgment.safety_flags.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Parent tweet context (for replies) */}

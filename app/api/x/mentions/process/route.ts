@@ -190,27 +190,52 @@ export async function POST() {
         ? `\nAuthor has ${meta.author_followers} followers (${meta.author_followers > 10000 ? 'HIGH PROFILE — take extra care' : meta.author_followers > 1000 ? 'medium following' : 'smaller account'}).`
         : '';
 
-      const prompt = `You are a social media manager crafting reply options for an X/Twitter mention. Generate exactly 3 reply options.
+      const prompt = `You are a social media manager with strict judgment about what is appropriate for customer-facing communication.
+
+STEP 1 — TRIAGE THIS MENTION. Decide:
+- "reply" — worth replying to (genuine question, feedback, engagement opportunity)
+- "ignore" — not worth replying (spam, trolling, irrelevant, bot-like)
+- "escalate" — needs human review (complaint, legal mention, competitor attack, sensitive topic, angry customer)
+
+STEP 2 — If "reply", generate exactly 3 reply options. If "ignore" or "escalate", skip replies.
+
+STEP 3 — VALIDATE each reply against the knowledge base:
+- Does it contain accurate information? (Don't make promises the product can't keep)
+- Does it accidentally reveal internal information? (roadmaps, pricing changes, unreleased features)
+- Could it be misinterpreted as a commitment, guarantee, or legal statement?
+- Is the tone appropriate for a public, customer-facing response?
+- Would you be comfortable if this was screenshotted and went viral?
+
+Flag any reply that fails validation as "unsafe" with a reason.
 
 MENTION:
 @${meta.author_username}: "${row.content}"${parentContext}
 ${typeContext}${followerContext}
 ${brandContext}${brandGuidelines}${replyHistory}
 
-RULES:
+REPLY GUIDELINES:
 - Each reply MUST be under 200 characters
 - Reference specific details from their tweet (never generic)
-- If they asked a question, answer it with real information from the knowledge base
-- If they gave feedback, acknowledge the specific point
-- Match the brand voice from the knowledge base
-- Learn from recently approved replies for tone consistency
+- If they asked a question, answer ONLY with information from the knowledge base — never fabricate
+- If the knowledge base doesn't have the answer, say "DM us and we'll help" instead of guessing
+- Never mention competitors by name
+- Never make promises about timelines, features, or pricing
+- Never engage with trolls or hostile mentions — mark as "ignore"
+- For complaints: acknowledge, empathize, offer DM — never get defensive
 - Option 1: Professional/informative — lead with value
 - Option 2: Casual/engaging — conversational and warm
-- Option 3: Bold/witty — memorable and shareable
+- Option 3: Bold/witty — memorable but safe
 
-Pick the best option based on: mention type, author profile size, sentiment, and brand fit.
-
-Return ONLY JSON: {"replies": ["reply1", "reply2", "reply3"], "recommended": 0, "reasoning": "brief reason for recommendation"}`;
+Return ONLY JSON:
+{
+  "triage": "reply" | "ignore" | "escalate",
+  "triage_reason": "brief explanation",
+  "replies": ["reply1", "reply2", "reply3"],
+  "recommended": 0,
+  "reasoning": "why this option is best",
+  "safety_flags": ["any concerns about specific replies"],
+  "confidence": 0.0-1.0
+}`;
 
       try {
         const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
@@ -225,61 +250,107 @@ Return ONLY JSON: {"replies": ["reply1", "reply2", "reply3"], "recommended": 0, 
           const objMatch = reply.match(/\{[\s\S]*"replies"[\s\S]*\}/);
           const arrMatch = reply.match(/\[[\s\S]*?\]/);
 
-          let aiReplies: any = null;
+          let aiResult: any = null;
           if (objMatch) {
-            try { aiReplies = JSON.parse(objMatch[0]); } catch { /* skip */ }
+            try { aiResult = JSON.parse(objMatch[0]); } catch { /* skip */ }
           } else if (arrMatch) {
             try {
               const arr = JSON.parse(arrMatch[0]);
-              if (Array.isArray(arr)) aiReplies = { replies: arr.slice(0, 3), recommended: 0, reasoning: '' };
+              if (Array.isArray(arr)) aiResult = { triage: 'reply', replies: arr.slice(0, 3), recommended: 0 };
             } catch { /* skip */ }
           }
 
-          if (aiReplies?.replies?.length) {
-            const recIdx = typeof aiReplies.recommended === 'number' ? aiReplies.recommended : 0;
+          if (!aiResult) continue;
+
+          const triage = aiResult.triage || 'reply';
+          const confidence = typeof aiResult.confidence === 'number' ? aiResult.confidence : 0.5;
+
+          // Store AI judgment in metadata
+          meta.ai_judgment = {
+            triage,
+            triage_reason: aiResult.triage_reason || '',
+            confidence,
+            safety_flags: aiResult.safety_flags || [],
+            judged_at: Date.now(),
+          };
+
+          if (triage === 'ignore') {
+            // Auto-mark as ignored with reason
+            meta.reply_status = 'ignored';
+            meta.auto_ignored_reason = aiResult.triage_reason || 'AI determined not worth replying';
+            db.prepare('UPDATE inbox SET status = ?, metadata = ? WHERE id = ?')
+              .run('ignored', JSON.stringify(meta), row.id);
+            continue;
+          }
+
+          if (triage === 'escalate') {
+            // Mark for human review — don't auto-reply
+            meta.reply_status = 'considering';
+            meta.escalation_reason = aiResult.triage_reason || 'Needs human judgment';
+            meta.ai_replies = null; // Don't suggest replies for escalated items
+            db.prepare('UPDATE inbox SET status = ?, metadata = ? WHERE id = ?')
+              .run('pending', JSON.stringify(meta), row.id);
+            continue;
+          }
+
+          // triage === 'reply' — generate and queue
+          if (aiResult.replies?.length) {
+            const recIdx = typeof aiResult.recommended === 'number' ? aiResult.recommended : 0;
+            const safetyFlags = aiResult.safety_flags || [];
+            const hasSafetyIssues = safetyFlags.length > 0;
+
             meta.ai_replies = {
-              replies: aiReplies.replies.slice(0, 3),
+              replies: aiResult.replies.slice(0, 3),
               recommended: recIdx,
-              reasoning: aiReplies.reasoning || '',
+              reasoning: aiResult.reasoning || '',
+              safety_flags: safetyFlags,
+              confidence,
               generated_at: Date.now(),
             };
             db.prepare('UPDATE inbox SET metadata = ? WHERE id = ?').run(JSON.stringify(meta), row.id);
             result.aiRepliesGenerated++;
 
-            // Auto-queue the recommended reply into the approval pipeline
-            const bestReply = aiReplies.replies[recIdx] || aiReplies.replies[0];
-            if (bestReply) {
-              try {
-                // Check if an approval already exists for this mention
-                const existingApproval = db.prepare(
-                  `SELECT id FROM approvals WHERE type = 'x-reply' AND json_extract(payload, '$.mentionId') = ? AND status = 'pending'`
-                ).get(String(row.id));
+            // Only auto-queue to approval pipeline if:
+            // 1. Confidence >= 0.7
+            // 2. No safety flags
+            // 3. Triage is definitively "reply"
+            if (confidence >= 0.7 && !hasSafetyIssues) {
+              const bestReply = aiResult.replies[recIdx] || aiResult.replies[0];
+              if (bestReply) {
+                try {
+                  const existingApproval = db.prepare(
+                    `SELECT id FROM approvals WHERE type = 'x-reply' AND json_extract(payload, '$.mentionId') = ? AND status = 'pending'`
+                  ).get(String(row.id));
 
-                if (!existingApproval) {
-                  db.prepare(`
-                    INSERT INTO approvals (type, tier, status, payload, metadata, requestedBy, created_at)
-                    VALUES (?, ?, 'pending', ?, ?, ?, ?)
-                  `).run(
-                    'x-reply',
-                    3, // standard tier — human reviews
-                    JSON.stringify({
-                      mentionId: String(row.id),
-                      tweetId: meta.tweet_id,
-                      replyText: bestReply,
-                    }),
-                    JSON.stringify({
-                      auto_generated: true,
-                      mention_author: meta.author_username,
-                      mention_text: (row.content || '').slice(0, 100),
-                      reasoning: aiReplies.reasoning || '',
-                      all_options: aiReplies.replies.slice(0, 3),
-                      recommended_index: recIdx,
-                    }),
-                    'ai-social-manager',
-                    Date.now(),
-                  );
-                }
-              } catch { /* approval table might have different schema — non-fatal */ }
+                  if (!existingApproval) {
+                    db.prepare(`
+                      INSERT INTO approvals (type, tier, status, payload, metadata, requestedBy, created_at)
+                      VALUES (?, ?, 'pending', ?, ?, ?, ?)
+                    `).run(
+                      'x-reply',
+                      confidence >= 0.9 ? 1 : 3, // High confidence → fast-track tier 1
+                      JSON.stringify({
+                        mentionId: String(row.id),
+                        tweetId: meta.tweet_id,
+                        replyText: bestReply,
+                      }),
+                      JSON.stringify({
+                        auto_generated: true,
+                        mention_author: meta.author_username,
+                        mention_text: (row.content || '').slice(0, 100),
+                        reasoning: aiResult.reasoning || '',
+                        all_options: aiResult.replies.slice(0, 3),
+                        recommended_index: recIdx,
+                        confidence,
+                        safety_flags: safetyFlags,
+                        triage_reason: aiResult.triage_reason || '',
+                      }),
+                      'ai-social-manager',
+                      Date.now(),
+                    );
+                  }
+                } catch { /* non-fatal */ }
+              }
             }
           }
         }
