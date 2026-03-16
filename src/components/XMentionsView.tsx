@@ -38,14 +38,43 @@ export const XMentionsView: React.FC = () => {
 
   const loadMentions = async () => {
     try {
+      // Try inbox first (cached mentions)
       const allItems = await inboxApi.getAll();
-      const items = (Array.isArray(allItems) ? allItems : [])
+      const inboxMentions = (Array.isArray(allItems) ? allItems : [])
         .filter((item: any) => item.type === 'x-mention')
         .filter((item: any) => filter === 'all' || item.reply_status === filter);
-      setMentions(items as Mention[]);
+
+      if (inboxMentions.length > 0) {
+        setMentions(inboxMentions as Mention[]);
+        setLoading(false);
+        return;
+      }
+
+      // No cached mentions — fetch directly from X API
+      const res = await fetch('/api/x/mentions');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.mentions?.length > 0) {
+          const mapped = data.mentions.map((m: any) => ({
+            id: m.id,
+            tweet_id: m.id,
+            author_id: m.author?.id || m.author_id || '',
+            author_username: m.author?.username || 'unknown',
+            author_name: m.author?.name || 'Unknown',
+            text: m.text || '',
+            created_at: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+            conversation_id: m.conversation_id || '',
+            in_reply_to_user_id: '',
+            reply_status: 'pending' as const,
+            fetched_at: Date.now(),
+            metadata: m.public_metrics || {},
+          }));
+          const filtered = filter === 'all' ? mapped : mapped.filter((m: Mention) => m.reply_status === filter);
+          setMentions(filtered);
+        }
+      }
       setLoading(false);
-    } catch (error) {
-      // 'Error loading mentions:', error;
+    } catch {
       setLoading(false);
     }
   };
