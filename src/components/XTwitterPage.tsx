@@ -16,13 +16,15 @@ export default function XTwitterPage() {
   const [scheduledCount, setScheduledCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
 
-  // Check if X API is configured on mount (keys stored in OS keychain)
+  // Check if X API is configured on mount
   useEffect(() => {
     Promise.all([
-      fetch('/api/settings/twitter_api_key').then(r => r.json()).catch(() => ({})),
-      fetch('/api/settings/twitter_bearer_token').then(r => r.json()).catch(() => ({})),
+      fetch('/api/settings/twitter_api_key').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/settings/twitter_bearer_token').then(r => r.ok ? r.json() : null).catch(() => null),
     ]).then(([apiKey, bearer]) => {
-      setSetupComplete(!!(apiKey?.value || bearer?.value));
+      const hasKey = !!(apiKey?.value || bearer?.value);
+      console.log('[XTwitterPage] Setup check:', { hasApiKey: !!apiKey?.value, hasBearer: !!bearer?.value, setupComplete: hasKey });
+      setSetupComplete(hasKey);
     }).catch(() => setSetupComplete(false));
   }, []);
 
@@ -57,7 +59,16 @@ export default function XTwitterPage() {
   }, [activeTab]); // refresh when tab changes so counts stay current
 
   // Show setup wizard if not configured (after all hooks)
-  if (setupComplete === null) return null;
+  if (setupComplete === null) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-mission-control-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-mission-control-text-dim">Loading Social Media module...</p>
+        </div>
+      </div>
+    );
+  }
   if (!setupComplete) {
     return <XSetupWizard onComplete={() => setSetupComplete(true)} />;
   }
