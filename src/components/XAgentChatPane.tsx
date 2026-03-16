@@ -20,24 +20,14 @@ interface ChatMessage {
 }
 
 // Agent routing mapping: tab -> primary agent ID
-const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
-  pipeline: { agentId: 'social-manager', displayName: 'Social Manager' },
-  publish: { agentId: 'writer', displayName: 'Writer' },
-  research: { agentId: 'researcher', displayName: 'Researcher' },
-  plan: { agentId: 'writer', displayName: 'Writer' },
-  drafts: { agentId: 'writer', displayName: 'Writer' },
-  calendar: { agentId: 'social-manager', displayName: 'Social Manager' },
-  mentions: { agentId: 'social-manager', displayName: 'Social Manager' },
-  'reply-guy': { agentId: 'writer', displayName: 'Writer' },
-  'content-mix': { agentId: 'social-manager', displayName: 'Social Manager' },
-  automations: { agentId: 'social-manager', displayName: 'Social Manager' },
-  analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
-  reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
-  campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
-  'agent-mode': { agentId: 'social-manager', displayName: 'Social Manager' },
-  competitors: { agentId: 'researcher', displayName: 'Researcher' },
-  hashtags: { agentId: 'writer', displayName: 'Writer' },
-};
+// All social media chat surfaces use social-manager as the single agent
+const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = Object.fromEntries(
+  (['pipeline', 'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
+    'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns',
+    'agent-mode', 'competitors', 'hashtags'] as XTab[]).map(tab => [
+    tab, { agentId: 'social-manager', displayName: 'Social Manager' }
+  ])
+) as Record<XTab, { agentId: string; displayName: string }>;
 
 // Quick prompts for each tab — contextual one-click prompts that auto-send
 const QUICK_PROMPTS: Record<XTab, string[]> = {
@@ -150,19 +140,37 @@ const tabsWithoutUndefined = new Set<XTab>([
 const TAB_CONTEXT: Record<XTab, string> = {
   pipeline: `You are the Social Manager agent overseeing the content pipeline. Current context: Pipeline (Kanban) View. Your role: Help move content through the production stages, advise on approval decisions, suggest scheduling strategy, and identify bottlenecks in the content workflow.`,
 
-  publish: `You are the Writer agent helping compose and publish X/Twitter posts. Current context: X/Twitter Publish Tab. Your role: Help craft engaging tweets, suggest improvements to copy, recommend hashtags, and assist with thread composition.`,
+  publish: `You are the Social Manager agent helping compose and publish X/Twitter posts. Current context: X/Twitter Publish Tab. Your role: Help craft engaging tweets, suggest improvements to copy, recommend hashtags, and assist with thread composition.`,
 
-  research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
+  research: `You are the Social Manager agent doing X/Twitter research. Current context: X/Twitter Research Tab.
 
-  plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
+Your role: Search X for trending topics, find high-performing tweets, identify content opportunities, and gather competitive insights.
 
-  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
+Research capabilities:
+- Search recent tweets (last 7 days) with engagement filtering
+- Filter by minimum likes, retweets, impressions
+- Track specific accounts (watchlist)
+- Analyze content patterns and engagement rates
+- Cost: ~$0.50 per search page (~100 posts), $0.005 per post read
+
+When presenting research results, format as:
+- Tweet text (truncated if long)
+- Author @handle + follower count
+- Engagement: likes/retweets/replies/impressions
+- Link to original tweet
+- Why it's relevant
+
+Always suggest actionable next steps: draft similar content, engage with the thread, save to content pipeline.`,
+
+  plan: `You are the Social Manager agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
+
+  drafts: `You are the Social Manager agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
 
   calendar: `You are the Social Manager agent managing the X/Twitter content calendar. Current context: X/Twitter Calendar Tab. Your role: Help schedule content, optimize posting times, manage the editorial calendar.`,
 
   mentions: `You are the Social Manager agent monitoring X/Twitter mentions. Current context: X/Twitter Mentions Tab. Your role: Help monitor brand mentions, suggest responses, identify engagement opportunities.`,
 
-  'reply-guy': `You are the Writer agent specializing in reply-style content for X/Twitter. Current context: X/Twitter Reply Guy Tab. Your role: Help craft clever replies, quote tweets, and engagement responses.`,
+  'reply-guy': `You are the Social Manager agent specializing in reply-style content for X/Twitter. Current context: X/Twitter Reply Guy Tab. Your role: Help craft clever replies, quote tweets, and engagement responses.`,
 
   'content-mix': `You are the Social Manager agent helping manage the X/Twitter content mix. Current context: X/Twitter Content Mix Tracker Tab. Your role: Help balance content types, track content distribution.`,
 
@@ -174,9 +182,9 @@ const TAB_CONTEXT: Record<XTab, string> = {
 
   'agent-mode': `You are the Social Manager agent helping configure and oversee the agentic social media workflow. Current context: Agent Mode Tab. Your role: Help define content briefs, review agent-generated drafts, suggest approval strategies, and optimize the automated content pipeline.`,
 
-  competitors: `You are the Researcher agent analyzing competitor social media strategies. Current context: Competitor Tracker Tab. Your role: Help analyze competitor content patterns, identify gaps and opportunities, and suggest counter-strategies to gain competitive advantage.`,
+  competitors: `You are the Social Manager agent analyzing competitor social media strategies. Current context: Competitor Tracker Tab. Your role: Help analyze competitor content patterns, identify gaps and opportunities, and suggest counter-strategies to gain competitive advantage.`,
 
-  hashtags: `You are the Writer agent helping discover and manage hashtags for maximum reach. Current context: Hashtag Intelligence Tab. Your role: Suggest relevant hashtags, explain trending tags, help build hashtag sets for campaigns, and advise on hashtag strategy.`,
+  hashtags: `You are the Social Manager agent helping discover and manage hashtags for maximum reach. Current context: Hashtag Intelligence Tab. Your role: Suggest relevant hashtags, explain trending tags, help build hashtag sets for campaigns, and advise on hashtag strategy.`,
 
   campaigns: `You are the Social Manager agent helping plan multi-stage social media campaigns. Current context: Campaigns Tab.
 
