@@ -484,42 +484,67 @@ function LeftPane({
         )}
       </button>
 
-      {/* Accounts Section */}
+      {/* Accounts Section — grouped by channel type */}
       <div className="border-b border-mission-control-border">
         <button
           onClick={() => setAccountsExpanded(!accountsExpanded)}
           className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Accounts
+          Channels
           {loadingAccounts && <RefreshCw size={10} className="animate-spin ml-auto" />}
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {accounts.map(account => (
-              <button
-                key={account.id}
-                onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
-                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors ${
-                  selectedAccount === account.id
-                    ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
-                    : 'hover:bg-mission-control-border/50'
-                }`}
-              >
-                <span className={account.color}>{account.icon}</span>
-                <div className="flex flex-col items-start flex-1 min-w-0">
-                  <span className="truncate w-full text-left">{account.label}</span>
-                  {account.address && (
-                    <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
-                  )}
-                </div>
-                {(accountCounts[account.id] || 0) > 0 && (
-                  <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    {accountCounts[account.id]}
-                  </span>
-                )}
-              </button>
-            ))}
+            {/* Group accounts by platform */}
+            {(() => {
+              const emailAccts = accounts.filter(a => a.platform === 'email');
+              const twitterAccts = accounts.filter(a => a.platform === 'twitter');
+              const systemAccts = accounts.filter(a => a.platform === 'system');
+
+              const renderGroup = (label: string, groupAccounts: Account[]) => {
+                if (groupAccounts.length === 0) return null;
+                return (
+                  <div key={label}>
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim">
+                      {label}
+                    </div>
+                    {groupAccounts.map(account => (
+                      <button
+                        key={account.id}
+                        onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
+                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors ${
+                          selectedAccount === account.id
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
+                            : 'hover:bg-mission-control-border/50'
+                        }`}
+                      >
+                        <span className={account.color}>{account.icon}</span>
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                          <span className="truncate w-full text-left">{account.label}</span>
+                          {account.address && (
+                            <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
+                          )}
+                        </div>
+                        {(accountCounts[account.id] || 0) > 0 && (
+                          <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            {accountCounts[account.id]}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                );
+              };
+
+              return (
+                <>
+                  {renderGroup('Email', emailAccts)}
+                  {renderGroup('X / Twitter', twitterAccts)}
+                  {renderGroup('System', systemAccts)}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
