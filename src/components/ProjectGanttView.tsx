@@ -117,7 +117,7 @@ function TaskBar({ task, startMs, pxPerDay, rowHeight, color, onClick }: TaskBar
 
 function DayHeader({ startMs, days, pxPerDay }: { startMs: number; days: number; pxPerDay: number }) {
   const DAY_MS = 86_400_000;
-  const cells: JSX.Element[] = [];
+  const cells: React.ReactElement[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
