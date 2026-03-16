@@ -119,7 +119,6 @@ export async function POST(request: NextRequest) {
       status = 'todo',
       priority = 'p2',
       project,
-      project_id,
       assignedTo,
       reviewerId,
       reviewStatus,
@@ -143,6 +142,18 @@ export async function POST(request: NextRequest) {
       recurrenceParentId,
       moduleId,
     } = body;
+
+    // Auto-resolve project_id from project name if not provided
+    let project_id = body.project_id || null;
+    if (!project_id && project) {
+      const projectName = String(project).trim();
+      const match = db.prepare(
+        `SELECT id FROM projects WHERE LOWER(name) = LOWER(?) LIMIT 1`
+      ).get(projectName) as { id: string } | undefined;
+      if (match) {
+        project_id = match.id;
+      }
+    }
 
     db.prepare(`
       INSERT INTO tasks (

@@ -324,35 +324,33 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
 
     try {
       // Build prompt with tab context
-      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
-      const contextPrompt = `${TAB_CONTEXT[contextTab]}\n\nUser message: ${text}`;
-
-      // Send to agent via chat room API (no gateway needed)
-      const roomId = `agent:${safeAgentId}`;
-      await chatApi.saveMessage(roomId, {
+      // Save user message to chat history
+      chatApi.saveMessage(sessionKey, {
         role: 'user',
-        content: contextPrompt,
+        content: text,
         timestamp: Date.now(),
         channel: 'xtwitter',
       });
 
-      // Get agent response via REST
-      const response = await fetch('/api/chat/agent', {
+      // Get AI response via generate-reply (spawns Claude)
+      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
+      const contextPrompt = `${TAB_CONTEXT[contextTab]}\n\nUser message: ${text}`;
+
+      const response = await fetch('/api/chat/generate-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: contextPrompt,
-          agentId: safeAgentId,
-          sessionKey,
+          message: text,
+          context: TAB_CONTEXT[contextTab],
+          tone: 'professional',
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        agentContent = data.response || data.content || 'No response';
+        agentContent = data.reply || 'No response';
       } else {
-        // Fallback: post to chat room and show acknowledgment
-        agentContent = `Message sent to ${safeDisplayName}. The agent will respond when processing tasks.`;
+        agentContent = 'Failed to get a response. Check that Claude CLI is configured.';
       }
 
       setMessages((prev) =>

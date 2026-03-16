@@ -71,12 +71,10 @@ export default function MentionText({ text, agentIds, agentNames, currentUserId 
       parts.push(
         <span
           key={`mention-${i}`}
-          className={`font-medium px-1.5 py-0.5 rounded ${
-            isAll
+          className={`font-medium px-1 py-0.5 rounded ${
+            isSelf
               ? 'bg-mission-control-accent/20 text-mission-control-accent'
-              : isSelf
-              ? 'bg-mission-control-accent/20 text-mission-control-accent'
-              : 'bg-mission-control-border/50 text-mission-control-text'
+              : 'bg-mission-control-border/40 text-mission-control-text'
           }`}
         >
           {mention.text}

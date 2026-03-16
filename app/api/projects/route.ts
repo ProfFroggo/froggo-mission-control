@@ -86,6 +86,27 @@ export async function POST(request: NextRequest) {
       now
     );
 
+    // Auto-create project directory structure
+    try {
+      const { mkdirSync, writeFileSync, existsSync } = await import('fs');
+      const { join } = await import('path');
+      const { homedir } = await import('os');
+      const projDir = join(homedir(), 'mission-control', 'library', 'projects', id);
+      for (const sub of ['images', 'docs', 'code', 'design']) {
+        mkdirSync(join(projDir, sub), { recursive: true });
+      }
+      // Create project context files
+      if (!existsSync(join(projDir, 'GOAL.md'))) {
+        writeFileSync(join(projDir, 'GOAL.md'), `# ${name.trim()}\n\n${goal || description || 'Project goal TBD.'}\n`, 'utf-8');
+      }
+      if (!existsSync(join(projDir, 'STATUS.md'))) {
+        writeFileSync(join(projDir, 'STATUS.md'), `# Status\n\nProject created ${new Date().toISOString().slice(0, 10)}.\n`, 'utf-8');
+      }
+      if (!existsSync(join(projDir, 'CONTEXT.md'))) {
+        writeFileSync(join(projDir, 'CONTEXT.md'), `# Context\n\n${description || 'No additional context yet.'}\n`, 'utf-8');
+      }
+    } catch { /* non-critical — directory creation failure doesn't block project creation */ }
+
     // Add members
     if (Array.isArray(memberAgentIds) && memberAgentIds.length > 0) {
       const addMember = db.prepare(`

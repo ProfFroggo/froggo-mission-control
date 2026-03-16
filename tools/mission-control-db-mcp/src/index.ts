@@ -372,6 +372,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: 'task_add_dependency',
+      description: 'Add a dependency between tasks. The first task (taskId) will be BLOCKED until the dependency (dependsOnId) is marked done. Use when one task must complete before another can start.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          taskId: { type: 'string', description: 'The task that is blocked (waits)' },
+          dependsOnId: { type: 'string', description: 'The task it depends on (must finish first)' },
+        },
+        required: ['taskId', 'dependsOnId'],
+      },
+    },
+    {
       name: 'project_phase_list',
       description: 'List all phases for a project. Use this to understand the project structure and what work has been planned.',
       inputSchema: {
@@ -421,6 +433,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           prompt: { type: 'string', description: 'Detailed description of the image to generate' },
           agentId: { type: 'string', description: 'Your agent ID' },
           filename: { type: 'string', description: 'Optional short filename (letters/numbers/hyphens, no extension)' },
+          projectId: { type: 'string', description: 'Project ID — if provided, image saves to project folder instead of general library' },
         },
         required: ['prompt', 'agentId'],
       },
@@ -972,6 +985,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_phase_list ─────────────────────────────────────────────────
+      case 'task_add_dependency': {
+        const taskId = String(args?.taskId ?? '');
+        const dependsOnId = String(args?.dependsOnId ?? '');
+        if (!taskId || !dependsOnId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'taskId and dependsOnId required' }) }], isError: true };
+        const depId = `dep-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const res = await apiCall('POST', `/api/tasks/${encodeURIComponent(taskId)}/dependencies`, { dependsOnId });
+        // Also try direct DB insert as fallback
+        if (!res || res.error) {
+          try {
+            const db = require('better-sqlite3')(process.env.DB_PATH || require('path').join(require('os').homedir(), 'mission-control/data/mission-control.db'));
+            db.prepare('INSERT OR IGNORE INTO task_dependencies (id, taskId, dependsOnId) VALUES (?, ?, ?)').run(depId, taskId, dependsOnId);
+            db.close();
+            return { content: [{ type: 'text', text: JSON.stringify({ success: true, id: depId, taskId, dependsOnId }) }] };
+          } catch (e: any) {
+            return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };
+          }
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(res) }] };
+      }
+
       case 'project_phase_list': {
         const projectId = String(args?.projectId ?? '');
         if (!projectId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectId is required' }) }], isError: true };
@@ -1013,6 +1046,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           prompt,
           agentId: args?.agentId ?? 'unknown',
           filename: args?.filename ?? '',
+          projectId: args?.projectId ?? undefined,
         });
 
         const result = await new Promise<string>((resolve) => {

@@ -105,6 +105,7 @@ const MCP_DB = [
   'mcp__mission-control_db__project_phase_list',
   'mcp__mission-control_db__project_phase_create',
   'mcp__mission-control_db__project_phase_update',
+  'mcp__mission-control_db__task_add_dependency',
 ];
 
 const MCP_MEMORY = [

@@ -80,12 +80,15 @@ export async function POST(req: NextRequest) {
       }, { status: 502 });
     }
 
-    // Save PNG to library/design/images/
+    // Save PNG — to project folder if projectId provided, otherwise design/images/
     const date = new Date().toISOString().slice(0, 10);
     const fname = `${date}_${filename}.png`;
-    const relPath = join('design', 'images', fname);
+    const projectId = body.projectId as string | undefined;
+    const relPath = projectId
+      ? join('projects', projectId, 'images', fname)
+      : join('design', 'images', fname);
     const absPath = join(LIBRARY_PATH, relPath);
-    mkdirSync(join(LIBRARY_PATH, 'design', 'images'), { recursive: true });
+    mkdirSync(join(LIBRARY_PATH, projectId ? join('projects', projectId, 'images') : join('design', 'images')), { recursive: true });
     writeFileSync(absPath, new Uint8Array(Buffer.from(b64, 'base64')));
 
     // Register in library_files DB

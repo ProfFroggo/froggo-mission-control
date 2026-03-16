@@ -387,7 +387,14 @@ export default function XPipelineView() {
       setLoading(true);
       setError(null);
       const raw = await scheduleApi.getAll();
-      const all: ScheduledItem[] = Array.isArray(raw) ? raw : [];
+      const allRaw: ScheduledItem[] = Array.isArray(raw) ? raw : [];
+      // Only show social/twitter content — not meetings, events, or other scheduled items
+      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social']);
+      const all = allRaw.filter(item =>
+        item.platform === 'twitter' || item.platform === 'x' ||
+        SOCIAL_TYPES.has(item.type?.toLowerCase() || '') ||
+        SOCIAL_TYPES.has(item.status?.toLowerCase() || '')
+      );
       const mapped: PipelineItem[] = all.map(item => ({
         ...item,
         parsedMeta: parseMeta(item.metadata),

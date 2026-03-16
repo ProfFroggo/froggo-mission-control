@@ -593,19 +593,7 @@ function App() {
           </ErrorBoundary>
         )}
 
-<<<<<<< HEAD
-        {/* Onboarding Flow (first-run simplified welcome) */}
-        {showOnboardingFlow && (
-          <ErrorBoundary panelName="Onboarding Flow">
-            <OnboardingFlow
-              onComplete={completeFlow}
-              onNavigate={(view) => setCurrentView(view as View)}
-            />
-          </ErrorBoundary>
-        )}
-=======
         {/* OnboardingFlow disabled — OnboardingWizard is the real setup wizard */}
->>>>>>> dev
 
         {/* Quick Tips (post-onboarding tooltip sequence) */}
         {showTips && (

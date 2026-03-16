@@ -647,6 +647,16 @@ export function runReviewCycle(): { queued: number } {
     if (todoWithAgent.length > 0) {
       const now = Date.now();
       for (const { id } of todoWithAgent) {
+        // Check dependencies — don't advance if blocking tasks aren't done
+        const blockers = getDb().prepare(
+          `SELECT d.dependsOnId, t.status FROM task_dependencies d
+           JOIN tasks t ON t.id = d.dependsOnId
+           WHERE d.taskId = ? AND t.status != 'done'`
+        ).all(id) as { dependsOnId: string; status: string }[];
+        if (blockers.length > 0) {
+          // Still blocked — skip this task
+          continue;
+        }
         getDb().prepare(`UPDATE tasks SET status = 'internal-review', updatedAt = ? WHERE id = ?`).run(now, id);
       }
       advanced = todoWithAgent.length;
