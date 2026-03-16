@@ -7,33 +7,26 @@ import XSetupWizard from './XSetupWizard';
 // New consolidated tab type: 5 tabs instead of 15
 export type XTab = 'pipeline' | 'engage' | 'intelligence' | 'measure' | 'configure';
 
-// Content routing — lazy imports for each tab
+// Content routing
 import XPipelineView from './XPipelineView';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
-import XResearchView from './XResearchView';
-import XCompetitorTracker from './XCompetitorTracker';
-import XHashtagIntelligence from './XHashtagIntelligence';
 import { XMentionsView } from './XMentionsView';
-import { XReplyGuyView } from './XReplyGuyView';
-import XAutomationsTab from './XAutomationsTab';
-import XAgentContentQueue from './XAgentContentQueue';
+import XIntelligenceView from './XIntelligenceView';
+import XConfigureView from './XConfigureView';
 
-// Temporary: render existing components under new tabs until consolidated views are built
 function ContentRouter({ tab }: { tab: XTab }) {
   switch (tab) {
     case 'pipeline':
       return <XPipelineView />;
     case 'engage':
-      // Phase 20.3 will build XEngageView — for now show mentions
+      // XEngageView being built by parallel agent — XMentionsView as fallback
       return <XMentionsView />;
     case 'intelligence':
-      // Phase 20.4 will build XIntelligenceView — for now show research
-      return <XResearchView />;
+      return <XIntelligenceView />;
     case 'measure':
       return <XEnhancedAnalyticsView />;
     case 'configure':
-      // Phase 20.5 will build XConfigureView — for now show agent mode
-      return <XAgentContentQueue />;
+      return <XConfigureView />;
     default:
       return null;
   }
