@@ -158,6 +158,7 @@ function typeBadgeLabel(type: string): string {
     case 'draft': return 'Draft';
     case 'idea': return 'Idea';
     case 'plan': return 'Plan';
+    case 'mention': return 'Mention Reply';
     default: return 'Tweet';
   }
 }
@@ -887,7 +888,7 @@ export default function XPipelineView() {
       const raw = await scheduleApi.getAll();
       const allRaw: ScheduledItem[] = Array.isArray(raw) ? raw : [];
       // Only show social/twitter content — not meetings, events, or other scheduled items
-      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social', 'plan']);
+      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social', 'plan', 'mention']);
       const all = allRaw.filter(item =>
         item.platform === 'twitter' || item.platform === 'x' ||
         SOCIAL_TYPES.has(item.type?.toLowerCase() || '') ||

@@ -71,12 +71,15 @@ export async function POST() {
       const mentionType = (isReplyToUs || isReplyToOther) ? 'reply' : hasQuote ? 'quote' : 'mention';
       const parentRef = refTweets.find((r: any) => r.type === 'replied_to') || null;
 
-      // Check if already exists (by tweet_id in metadata)
-      const existing = db.prepare(
+      // Check if already exists (by tweet_id in metadata — check both inbox and scheduled_items)
+      const existingInbox = db.prepare(
         `SELECT id FROM inbox WHERE type = 'x-mention' AND json_extract(metadata, '$.tweet_id') = ?`
       ).get(tweet.id) as { id: number } | undefined;
+      const existingSched = db.prepare(
+        `SELECT id FROM scheduled_items WHERE type = 'mention' AND platform = 'twitter' AND json_extract(metadata, '$.tweet_id') = ?`
+      ).get(tweet.id) as { id: string } | undefined;
 
-      if (existing) continue;
+      if (existingInbox || existingSched) continue;
 
       const metadata = {
         tweet_id: tweet.id,
@@ -108,6 +111,25 @@ export async function POST() {
           JSON.stringify(metadata),
         );
         result.newMentions++;
+
+        // Also store in scheduled_items so Pipeline shows mentions
+        try {
+          const mentionSchedId = `xm-${tweet.id}`;
+          db.prepare(`
+            INSERT OR IGNORE INTO scheduled_items (id, type, content, status, platform, scheduledFor, metadata, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            mentionSchedId,
+            'mention',
+            tweet.text || '',
+            'pending',
+            'twitter',
+            String(new Date(tweet.created_at as string).getTime()),
+            JSON.stringify(metadata),
+            Date.now(),
+            Date.now(),
+          );
+        } catch { /* non-critical */ }
       } catch {
         // Duplicate or DB error — skip
       }
@@ -119,8 +141,8 @@ export async function POST() {
       WHERE type = 'x-mention'
       AND status = 'pending'
       AND json_extract(metadata, '$.ai_replies') IS NULL
+      AND json_extract(metadata, '$.ai_judgment.triage') IS NULL
       ORDER BY createdAt DESC
-      LIMIT 10
     `).all() as Array<{ id: number; content: string; metadata: string }>;
 
     // Load knowledge base for brand context — get comprehensive brand knowledge
@@ -350,6 +372,33 @@ Return ONLY JSON:
                       'ai-social-manager',
                       Date.now(),
                     );
+
+                    // Also create a schedule item so it shows in Pipeline view
+                    try {
+                      const schedId = `si-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                      db.prepare(`
+                        INSERT INTO scheduled_items (id, type, content, status, platform, scheduledFor, metadata, createdAt, updatedAt)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                      `).run(
+                        schedId,
+                        'draft',
+                        bestReply,
+                        'pending',
+                        'twitter',
+                        String(Date.now()),
+                        JSON.stringify({
+                          proposed_by: 'ai-social-manager',
+                          mention_reply: true,
+                          mention_id: String(row.id),
+                          mention_author: meta.author_username,
+                          tweet_id: meta.tweet_id,
+                          approval_id: approvalId,
+                          confidence,
+                        }),
+                        Date.now(),
+                        Date.now(),
+                      );
+                    } catch { /* schedule table might differ — non-fatal */ }
                   }
                 } catch (e) {
                   result.errors.push(`Approval for mention ${row.id}: ${e instanceof Error ? e.message : String(e)}`);

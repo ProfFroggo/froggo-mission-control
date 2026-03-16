@@ -246,6 +246,39 @@ export async function PATCH(
       }
     }
 
+    // ── Downstream: x-reply posting on approval ─────────────────────────────
+    if (existing.type === 'x-reply' && action === 'approved') {
+      try {
+        const meta = typeof existing.metadata === 'string' ? JSON.parse(existing.metadata) : (existing.metadata || {});
+        const replyText = adjustedContent || meta.replyText || existing.content;
+        const tweetId = meta.tweetId;
+
+        if (replyText && tweetId) {
+          const replyRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: replyText, reply_to: tweetId }),
+          });
+          const replyData = await replyRes.json().catch(() => ({}));
+
+          if (replyData.ok || replyData.id) {
+            console.log(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
+            // Update the inbox mention status to 'replied'
+            if (meta.mentionId) {
+              try {
+                db.prepare(`UPDATE inbox SET status = 'replied', metadata = json_set(metadata, '$.reply_status', 'replied', '$.replied_at', ?, '$.replied_with_id', ?) WHERE id = ?`)
+                  .run(Date.now(), replyData.id, meta.mentionId);
+              } catch { /* non-critical */ }
+            }
+          } else {
+            console.error(`[approvals] Reply post failed:`, replyData.error);
+          }
+        }
+      } catch (err) {
+        console.error('[approvals] Reply post error:', err);
+      }
+    }
+
     // Emit inbox.count SSE event so sidebar badge updates immediately
     try {
       const pendingCount = (db.prepare(
