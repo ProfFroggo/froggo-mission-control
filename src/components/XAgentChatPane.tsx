@@ -460,8 +460,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {!historyLoaded ? (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <Loader2 className="w-6 h-6 animate-spin mb-2" />
-            <p className="text-sm">Loading history...</p>
+            <div className="flex gap-1 mb-2">
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
@@ -492,8 +495,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                       <span>{msg.agentName}</span>
                       {msg.streaming && (
                         <span className="flex items-center gap-1">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          typing...
+                          <span className="flex gap-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </span>
                         </span>
                       )}
                     </div>
