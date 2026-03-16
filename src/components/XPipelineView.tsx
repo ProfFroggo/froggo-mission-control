@@ -26,10 +26,10 @@ import {
   Repeat2,
   MessageCircle,
 } from 'lucide-react';
-import { scheduleApi, approvalApi } from '../lib/api';
+import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 import EpicCalendar from './EpicCalendar';
-import XCampaignView from './XCampaignView';
 import { showToast } from './Toast';
+import XCampaignView from './XCampaignView';
 
 // ─────────────────────────────────────────────
 // Types
@@ -305,6 +305,217 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
 }
 
 // ─────────────────────────────────────────────
+// Detail Modal — full mention context + AI replies + reply composer
+// ─────────────────────────────────────────────
+
+function PipelineDetailModal({ item, onClose, onAction }: {
+  item: PipelineItem;
+  onClose: () => void;
+  onAction: (id: string, action: string, payload?: Record<string, unknown>) => Promise<void>;
+}) {
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const meta = item.parsedMeta as any;
+  const isMention = item.type === 'mention' || meta.mention_reply;
+  const mentionAuthor = meta.author_username || meta.mention_author || '';
+  const parentTweet = meta.parent_tweet;
+  const mentionType = meta.mention_type || (meta.mention_reply ? 'reply' : '');
+  const isReplyToUs = meta.is_reply_to_us;
+  const aiReplies = meta.ai_replies;
+  const aiJudgment = meta.ai_judgment;
+  const tweetId = meta.tweet_id;
+  const confidence = aiJudgment?.confidence ?? aiReplies?.confidence;
+
+  const handleSendReply = async (text: string) => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+    try {
+      await approvalApi.create({
+        type: 'x-reply',
+        tier: (confidence && confidence >= 0.9) ? 1 : 3,
+        title: `Reply to @${mentionAuthor}`,
+        content: text,
+        metadata: {
+          mentionId: item.id,
+          tweetId,
+          replyText: text,
+          mention_author: mentionAuthor,
+        },
+        requester: 'user',
+      });
+      showToast('success', 'Sent for approval');
+      onClose();
+    } catch {
+      showToast('error', 'Failed to queue reply');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-xl max-h-[85vh] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl z-10">
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
+              {typeBadgeLabel(item.type)}
+            </span>
+            {mentionType && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                mentionType === 'reply'
+                  ? isReplyToUs ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'
+                  : mentionType === 'quote' ? 'bg-warning-subtle text-warning'
+                  : 'bg-mission-control-surface text-mission-control-text-dim border border-mission-control-border'
+              }`}>
+                {mentionType === 'reply'
+                  ? isReplyToUs ? 'Reply to you' : 'Reply (tagged)'
+                  : mentionType === 'quote' ? 'Quote tweet' : 'Mention'}
+              </span>
+            )}
+            {confidence != null && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                confidence >= 0.8 ? 'bg-success-subtle text-success'
+                : confidence >= 0.5 ? 'bg-info-subtle text-info'
+                : 'bg-warning-subtle text-warning'
+              }`}>{Math.round(confidence * 100)}%</span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-bg-alt">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Author */}
+          {mentionAuthor && (
+            <div className="flex items-center gap-2">
+              <div className="font-medium text-mission-control-text">@{mentionAuthor}</div>
+              {meta.author_followers != null && (
+                <span className="text-xs text-mission-control-text-dim">{meta.author_followers.toLocaleString()} followers</span>
+              )}
+              {tweetId && (
+                <a href={`https://twitter.com/${mentionAuthor}/status/${tweetId}`} target="_blank" rel="noopener noreferrer" className="ml-auto text-xs text-info hover:underline">
+                  View on X
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Parent tweet context */}
+          {parentTweet?.text && (
+            <div className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-sm">
+              <div className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1">
+                <MessageCircle size={10} />
+                Replying to {parentTweet.author?.username ? `@${parentTweet.author.username}` : 'original post'}
+              </div>
+              <div className="text-mission-control-text">{parentTweet.text}</div>
+            </div>
+          )}
+
+          {/* Full content */}
+          <div className="text-sm text-mission-control-text whitespace-pre-wrap leading-relaxed bg-mission-control-surface p-4 rounded-xl border border-mission-control-border">
+            {item.content}
+          </div>
+
+          {/* AI Judgment */}
+          {aiJudgment && (
+            <div className="text-xs text-mission-control-text-dim bg-mission-control-surface p-3 rounded-lg border border-mission-control-border">
+              <div className="font-medium text-mission-control-text mb-1">AI Assessment</div>
+              <div>{aiJudgment.triage_reason}</div>
+              {aiJudgment.safety_flags?.length > 0 && (
+                <div className="mt-1 text-error">Safety flags: {aiJudgment.safety_flags.join(', ')}</div>
+              )}
+            </div>
+          )}
+
+          {/* AI Reply Options */}
+          {aiReplies?.replies?.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-mission-control-text-dim">AI-Suggested Replies</div>
+              {aiReplies.replies.map((reply: string, idx: number) => {
+                const isRec = idx === (aiReplies.recommended ?? 0);
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setReplyText(reply)}
+                    className={`w-full text-left px-4 py-3 text-sm rounded-xl border transition-colors ${
+                      isRec
+                        ? 'border-info bg-info-subtle/40 hover:bg-info-subtle/60'
+                        : 'border-mission-control-border bg-mission-control-surface hover:border-info'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isRec && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info text-white flex-shrink-0">BEST</span>}
+                      <span className="text-mission-control-text">{reply}</span>
+                    </div>
+                  </button>
+                );
+              })}
+              {aiReplies.reasoning && (
+                <div className="text-[11px] text-mission-control-text-dim italic px-1">{aiReplies.reasoning}</div>
+              )}
+            </div>
+          )}
+
+          {/* Reply composer */}
+          {isMention && (
+            <div className="space-y-2 pt-2 border-t border-mission-control-border">
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write or edit your reply..."
+                className="w-full px-4 py-3 text-sm border border-mission-control-border rounded-xl resize-none bg-mission-control-bg text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
+                rows={3}
+                maxLength={280}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-mission-control-text-dim">{replyText.length}/280</span>
+                <div className="flex gap-2">
+                  <button onClick={onClose} className="px-4 py-2 text-sm border border-mission-control-border rounded-lg text-mission-control-text hover:bg-mission-control-surface">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSendReply(replyText)}
+                    disabled={!replyText.trim() || replyText.length > 280 || sending}
+                    className="px-4 py-2 text-sm bg-info text-white rounded-lg hover:bg-info/80 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <Send size={14} />
+                    {sending ? 'Sending...' : 'Send for Approval'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Non-mention actions */}
+          {!isMention && (
+            <div className="flex gap-2 pt-2 border-t border-mission-control-border">
+              {item.column === 'in-review' && (
+                <>
+                  <button onClick={() => { onAction(item.id, 'approve'); onClose(); }} className="flex-1 py-2 text-sm bg-success/10 text-success rounded-lg hover:bg-success/20 flex items-center justify-center gap-1.5">
+                    <Check size={14} /> Approve
+                  </button>
+                  <button onClick={() => { onAction(item.id, 'reject'); onClose(); }} className="flex-1 py-2 text-sm bg-error/10 text-error rounded-lg hover:bg-error/20 flex items-center justify-center gap-1.5">
+                    <X size={14} /> Reject
+                  </button>
+                </>
+              )}
+              {item.column === 'ideas' && (
+                <button onClick={() => { onAction(item.id, 'draft'); onClose(); }} className="flex-1 py-2 text-sm bg-warning/10 text-warning rounded-lg hover:bg-warning/20 flex items-center justify-center gap-1.5">
+                  <Edit3 size={14} /> Move to Drafting
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Content Card (Board view)
 // ─────────────────────────────────────────────
 
@@ -314,7 +525,7 @@ interface CardProps {
   hasPendingApproval?: boolean;
 }
 
-function PipelineCard({ item, onAction, hasPendingApproval }: CardProps) {
+function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProps & { onSelect?: (item: PipelineItem) => void }) {
   const [hovered, setHovered] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [acting, setActing] = useState(false);
@@ -335,7 +546,8 @@ function PipelineCard({ item, onAction, hasPendingApproval }: CardProps) {
       ref={ref}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setShowDatePicker(false); }}
-      className="relative bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-3 cursor-default transition-shadow hover:shadow-md"
+      onClick={() => onSelect?.(item)}
+      className="relative bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-3 cursor-pointer transition-shadow hover:shadow-md"
       style={{ opacity: acting ? 0.6 : 1 }}
     >
       {/* Type badge */}
@@ -385,9 +597,9 @@ function PipelineCard({ item, onAction, hasPendingApproval }: CardProps) {
         </div>
       )}
 
-      {/* Hover actions */}
+      {/* Hover actions — stopPropagation so clicks don't open modal */}
       {hovered && (
-        <div className="mt-2 pt-2 border-t border-mission-control-border flex flex-wrap gap-1.5">
+        <div className="mt-2 pt-2 border-t border-mission-control-border flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
           {item.column === 'ideas' && (
             <button
               onClick={() => doAction('draft')}
@@ -880,6 +1092,7 @@ export default function XPipelineView() {
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
   const [showQuickCompose, setShowQuickCompose] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PipelineItem | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -1051,7 +1264,7 @@ export default function XPipelineView() {
                       <p className="text-xs text-mission-control-text-dim text-center mt-6 px-2">{col.emptyLabel}</p>
                     ) : (
                       colItems.map(item => (
-                        <PipelineCard key={item.id} item={item} onAction={handleAction} hasPendingApproval={pendingApprovalIds.has(item.id)} />
+                        <PipelineCard key={item.id} item={item} onAction={handleAction} hasPendingApproval={pendingApprovalIds.has(item.id)} onSelect={setSelectedItem} />
                       ))
                     )}
                   </div>
@@ -1104,6 +1317,18 @@ export default function XPipelineView() {
           </button>
         )}
       </div>
+
+      {/* Detail modal */}
+      {selectedItem && (
+        <PipelineDetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onAction={async (id, action, payload) => {
+            await handleAction(id, action, payload);
+            setSelectedItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }
