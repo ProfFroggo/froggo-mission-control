@@ -236,14 +236,51 @@ Return ONLY JSON: {"replies": ["reply1", "reply2", "reply3"], "recommended": 0, 
           }
 
           if (aiReplies?.replies?.length) {
+            const recIdx = typeof aiReplies.recommended === 'number' ? aiReplies.recommended : 0;
             meta.ai_replies = {
               replies: aiReplies.replies.slice(0, 3),
-              recommended: typeof aiReplies.recommended === 'number' ? aiReplies.recommended : 0,
+              recommended: recIdx,
               reasoning: aiReplies.reasoning || '',
               generated_at: Date.now(),
             };
             db.prepare('UPDATE inbox SET metadata = ? WHERE id = ?').run(JSON.stringify(meta), row.id);
             result.aiRepliesGenerated++;
+
+            // Auto-queue the recommended reply into the approval pipeline
+            const bestReply = aiReplies.replies[recIdx] || aiReplies.replies[0];
+            if (bestReply) {
+              try {
+                // Check if an approval already exists for this mention
+                const existingApproval = db.prepare(
+                  `SELECT id FROM approvals WHERE type = 'x-reply' AND json_extract(payload, '$.mentionId') = ? AND status = 'pending'`
+                ).get(String(row.id));
+
+                if (!existingApproval) {
+                  db.prepare(`
+                    INSERT INTO approvals (type, tier, status, payload, metadata, requestedBy, created_at)
+                    VALUES (?, ?, 'pending', ?, ?, ?, ?)
+                  `).run(
+                    'x-reply',
+                    3, // standard tier — human reviews
+                    JSON.stringify({
+                      mentionId: String(row.id),
+                      tweetId: meta.tweet_id,
+                      replyText: bestReply,
+                    }),
+                    JSON.stringify({
+                      auto_generated: true,
+                      mention_author: meta.author_username,
+                      mention_text: (row.content || '').slice(0, 100),
+                      reasoning: aiReplies.reasoning || '',
+                      all_options: aiReplies.replies.slice(0, 3),
+                      recommended_index: recIdx,
+                    }),
+                    'ai-social-manager',
+                    Date.now(),
+                  );
+                }
+              } catch { /* approval table might have different schema — non-fatal */ }
+            }
           }
         }
       } catch (err) {

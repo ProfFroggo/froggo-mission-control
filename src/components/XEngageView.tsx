@@ -934,9 +934,16 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               </div>
             ) : aiReplies[mention.id]?.replies?.length ? (
               <div className="space-y-1.5">
-                <div className="text-xs text-mission-control-text-dim font-medium flex items-center gap-1">
-                  <Zap size={11} className="text-info" />
-                  Smart replies
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-mission-control-text-dim font-medium flex items-center gap-1">
+                    <Zap size={11} className="text-info" />
+                    Smart replies
+                  </div>
+                  {aiReplies[mention.id]?.replies?.[aiReplies[mention.id]?.recommended] && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-success-subtle text-success">
+                      Best pick queued for approval
+                    </span>
+                  )}
                 </div>
                 {aiReplies[mention.id].replies.map((reply, idx) => {
                   const isRecommended = idx === aiReplies[mention.id].recommended;
