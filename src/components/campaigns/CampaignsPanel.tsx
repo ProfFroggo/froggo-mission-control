@@ -31,6 +31,7 @@ const STATUS_FILTERS = [
   { value: 'planning', label: 'Planning' },
   { value: 'draft', label: 'Draft' },
   { value: 'completed', label: 'Completed' },
+  { value: 'archived', label: 'Archived' },
 ];
 
 function EmptyCampaigns({ onNew }: { onNew: () => void }) {
@@ -83,6 +84,8 @@ export default function CampaignsPanel() {
   useEffect(() => { load(); }, [load]);
 
   const filtered = campaigns.filter(c => {
+    // Hide archived from "All" — only show when explicitly filtering by archived
+    if (!statusFilter && c.status === 'archived') return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -250,6 +253,14 @@ export default function CampaignsPanel() {
                 key={c.id}
                 campaign={c}
                 onClick={() => setSelectedCampaign(c)}
+                onArchive={async () => {
+                  if (!confirm(`Archive "${c.name}"?`)) return;
+                  try {
+                    await campaignsApi.update(c.id, { status: 'archived' });
+                    load();
+                    showToast('Campaign archived', 'success');
+                  } catch { showToast('Archive failed', 'error'); }
+                }}
                 viewMode={viewMode}
               />
             ))}
