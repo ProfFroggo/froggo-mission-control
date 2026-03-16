@@ -185,13 +185,29 @@ export const XReplyGuyView: React.FC = () => {
     }
   };
 
-  const handlePostNow = async (_draftId: string) => {
+  const handlePostNow = async (mentionId: string) => {
+    const mention = mentions.find(m => m.id === mentionId);
+    if (!mention || !replyText.trim()) {
+      showToast('error', 'Error', 'No mention or reply text found');
+      return;
+    }
     setPosting(true);
     try {
-      // External posting MUST go through approval — cannot post directly
-      showToast('info', 'Approval Required', 'Reply submitted for approval before posting');
+      const res = await fetch('/api/x/tweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: replyText, reply_to: mention.tweet_id }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `API error: ${res.status}`);
+      }
+      showToast('success', 'Reply Posted', 'Your reply has been posted to X');
+      setReplyText('');
+      setSelectedMention(null);
+      await loadHotMentions();
     } catch (error) {
-      showToast('error', 'Error', 'Failed to post tweet');
+      showToast('error', 'Error', error instanceof Error ? error.message : 'Failed to post tweet');
     } finally {
       setPosting(false);
     }
