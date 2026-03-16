@@ -21,6 +21,10 @@ import {
   CheckCheck,
   Loader2,
   Search,
+  AlertCircle,
+  Heart,
+  Repeat2,
+  MessageCircle,
 } from 'lucide-react';
 import { scheduleApi, approvalApi } from '../lib/api';
 import EpicCalendar from './EpicCalendar';
@@ -44,6 +48,11 @@ interface ScheduledItem {
 interface ParsedMeta {
   proposed_by?: string;
   scheduled_time?: string;
+  public_metrics?: {
+    like_count?: number;
+    retweet_count?: number;
+    reply_count?: number;
+  };
   [key: string]: unknown;
 }
 
@@ -301,9 +310,10 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
 interface CardProps {
   item: PipelineItem;
   onAction: (id: string, action: string, payload?: Record<string, unknown>) => Promise<void>;
+  hasPendingApproval?: boolean;
 }
 
-function PipelineCard({ item, onAction }: CardProps) {
+function PipelineCard({ item, onAction, hasPendingApproval }: CardProps) {
   const [hovered, setHovered] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [acting, setActing] = useState(false);
@@ -350,6 +360,29 @@ function PipelineCard({ item, onAction }: CardProps) {
         )}
         {ts && <span>{ts}</span>}
       </div>
+
+      {/* Pending approval indicator */}
+      {hasPendingApproval && (item.column === 'in-review' || item.column === 'approved') && (
+        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-info">
+          <Clock size={10} />
+          Pending approval
+        </div>
+      )}
+
+      {/* Published metrics */}
+      {item.column === 'published' && item.parsedMeta.public_metrics && (
+        <div className="mt-1.5 flex items-center gap-3 text-[10px] text-mission-control-text-dim">
+          {item.parsedMeta.public_metrics.like_count != null && (
+            <span className="flex items-center gap-0.5"><Heart size={9} /> {item.parsedMeta.public_metrics.like_count}</span>
+          )}
+          {item.parsedMeta.public_metrics.retweet_count != null && (
+            <span className="flex items-center gap-0.5"><Repeat2 size={9} /> {item.parsedMeta.public_metrics.retweet_count}</span>
+          )}
+          {item.parsedMeta.public_metrics.reply_count != null && (
+            <span className="flex items-center gap-0.5"><MessageCircle size={9} /> {item.parsedMeta.public_metrics.reply_count}</span>
+          )}
+        </div>
+      )}
 
       {/* Hover actions */}
       {hovered && (
@@ -492,6 +525,7 @@ interface StatsBarProps {
 }
 
 function StatsBar({ counts, total }: StatsBarProps) {
+  const needsAction = (counts['in-review'] || 0) + (counts['ideas'] || 0);
   return (
     <div className="flex items-center gap-4 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim overflow-x-auto">
       <span className="text-mission-control-text font-medium whitespace-nowrap">Total: {total}</span>
@@ -500,6 +534,11 @@ function StatsBar({ counts, total }: StatsBarProps) {
           {col.label}: <span className="text-mission-control-text font-medium">{counts[col.id]}</span>
         </span>
       ))}
+      {needsAction > 0 && (
+        <span className="whitespace-nowrap flex items-center gap-1 text-warning font-medium">
+          <AlertCircle size={11} /> Needs action: {needsAction}
+        </span>
+      )}
     </div>
   );
 }
@@ -775,6 +814,61 @@ function PipelineListView({ items, onAction }: ListViewProps) {
 }
 
 // ─────────────────────────────────────────────
+// Floating Quick Compose
+// ─────────────────────────────────────────────
+
+interface FloatingQuickComposeProps {
+  onAdd: (content: string) => Promise<void>;
+  onClose: () => void;
+}
+
+function FloatingQuickCompose({ onAdd, onClose }: FloatingQuickComposeProps) {
+  const [text, setText] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!text.trim()) return;
+    setSaving(true);
+    try {
+      await onAdd(text.trim());
+      setText('');
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="w-72 bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
+      <textarea
+        autoFocus
+        value={text}
+        onChange={e => setText(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') onClose(); }}
+        placeholder="Quick idea..."
+        rows={3}
+        className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded px-2 py-1.5 text-mission-control-text resize-none mb-2 placeholder:text-mission-control-text-dim focus:outline-none focus:border-info"
+      />
+      <div className="flex gap-1.5">
+        <button
+          onClick={submit}
+          disabled={saving || !text.trim()}
+          className="flex-1 text-xs px-2 py-1.5 bg-info hover:bg-info/80 text-white rounded transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Adding...' : 'Add idea'}
+        </button>
+        <button
+          onClick={onClose}
+          className="px-2 py-1.5 text-xs bg-mission-control-bg-alt hover:bg-mission-control-border text-mission-control-text rounded transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────
 
@@ -783,6 +877,8 @@ export default function XPipelineView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
+  const [pendingApprovalIds, setPendingApprovalIds] = useState<Set<string>>(new Set());
+  const [showQuickCompose, setShowQuickCompose] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -811,6 +907,22 @@ export default function XPipelineView() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load pending approvals for pipeline items
+  const loadApprovals = useCallback(async () => {
+    try {
+      const pending = await approvalApi.getAll('pending');
+      const ids = new Set<string>();
+      for (const a of (Array.isArray(pending) ? pending : [])) {
+        if (a.payload?.itemId) ids.add(String(a.payload.itemId));
+        // Also match by title or description containing the item id
+        if (a.payload?.scheduleId) ids.add(String(a.payload.scheduleId));
+      }
+      setPendingApprovalIds(ids);
+    } catch { /* non-critical */ }
+  }, []);
+
+  useEffect(() => { loadApprovals(); }, [loadApprovals]);
 
   const handleAction = useCallback(async (id: string, action: string, payload?: Record<string, unknown>) => {
     if (action === 'noop') {
@@ -896,7 +1008,7 @@ export default function XPipelineView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
+    <div className="relative flex flex-col h-full bg-mission-control-bg overflow-hidden">
       {/* Stats bar */}
       <StatsBar counts={counts} total={items.length} />
 
@@ -938,7 +1050,7 @@ export default function XPipelineView() {
                       <p className="text-xs text-mission-control-text-dim text-center mt-6 px-2">{col.emptyLabel}</p>
                     ) : (
                       colItems.map(item => (
-                        <PipelineCard key={item.id} item={item} onAction={handleAction} />
+                        <PipelineCard key={item.id} item={item} onAction={handleAction} hasPendingApproval={pendingApprovalIds.has(item.id)} />
                       ))
                     )}
                   </div>
@@ -973,6 +1085,24 @@ export default function XPipelineView() {
           <XCampaignView />
         </div>
       )}
+
+      {/* Floating quick-compose button + panel */}
+      <div className="absolute bottom-4 right-4 z-30">
+        {showQuickCompose ? (
+          <FloatingQuickCompose
+            onAdd={handleAddIdea}
+            onClose={() => setShowQuickCompose(false)}
+          />
+        ) : (
+          <button
+            onClick={() => setShowQuickCompose(true)}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-info hover:bg-info/80 text-white shadow-lg transition-colors"
+            title="Quick add idea"
+          >
+            <Plus size={20} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

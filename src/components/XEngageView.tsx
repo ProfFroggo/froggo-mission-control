@@ -2,7 +2,7 @@
 // Unified engagement inbox — merges XMentionsView and XReplyGuyView into a single stream.
 // Phase 20.3 consolidation. All replies go through approval gate — no direct posting bypass.
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Heart,
   Repeat2,
@@ -24,6 +24,7 @@ import {
   Settings,
   EyeOff,
   UserX,
+  Check,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { inboxApi, approvalApi } from '../lib/api';
@@ -302,6 +303,9 @@ export const XEngageView: React.FC = () => {
   // Notes
   const [notes, setNotes] = useState<Record<string, string>>({});
 
+  // Reply status tracking — loaded from approval api
+  const [pendingReplies, setPendingReplies] = useState<Record<string, { text: string; status: 'queued' | 'approved' | 'sent' }>>({});
+
   // ─── Data loading ──────────────────────────────────────────────────────────
 
   const loadMentions = useCallback(async () => {
@@ -386,6 +390,34 @@ export const XEngageView: React.FC = () => {
     const interval = setInterval(loadMentions, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [loadMentions]);
+
+  // Load reply approvals to show status on cards
+  const loadReplyApprovals = useCallback(async () => {
+    try {
+      const [pending, approved] = await Promise.all([
+        approvalApi.getAll('pending'),
+        approvalApi.getAll('approved'),
+      ]);
+      const allApprovals = [
+        ...(Array.isArray(pending) ? pending : []),
+        ...(Array.isArray(approved) ? approved : []),
+      ];
+      const replyMap: Record<string, { text: string; status: 'queued' | 'approved' | 'sent' }> = {};
+      for (const a of allApprovals) {
+        if (a.type === 'x-reply' && a.payload?.mentionId) {
+          const mentionId = String(a.payload.mentionId);
+          const status: 'queued' | 'approved' | 'sent' =
+            a.status === 'approved' ? 'approved' : 'queued';
+          replyMap[mentionId] = { text: a.payload.replyText || '', status };
+        }
+      }
+      setPendingReplies(replyMap);
+    } catch { /* non-critical */ }
+  }, []);
+
+  useEffect(() => {
+    loadReplyApprovals();
+  }, [loadReplyApprovals]);
 
   // Listen for agent draft replies — when agent suggests reply text, inject into composer
   useEffect(() => {
@@ -600,14 +632,38 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         payload: { mentionId, tweetId, replyText },
         requestedBy: 'user',
       });
+      // Update local reply status immediately
+      setPendingReplies(prev => ({ ...prev, [mentionId]: { text: replyText.trim(), status: 'queued' } }));
       showToast('success', 'Sent for approval', fastTrack ? 'Fast-tracked (tier 1)' : 'Queued for review (tier 3)');
       setReplyText('');
       setSelectedMention(null);
       setShowTemplates(false);
       setReplyError(null);
       await loadMentions();
+      await loadReplyApprovals();
     } catch (error) {
       setReplyError(error instanceof Error ? error.message : 'Failed to submit reply for approval');
+    }
+  };
+
+  // ─── One-click send from smart reply ────────────────────────────────────────
+
+  const handleQuickSendReply = async (mention: Mention, text: string) => {
+    if (!text.trim() || text.length > 280) return;
+    try {
+      await approvalApi.create({
+        type: 'x-reply',
+        tier: fastTrack ? 1 : 3,
+        title: `Reply to @${mention.author_username}`,
+        description: text,
+        payload: { mentionId: mention.id, tweetId: mention.tweet_id, replyText: text },
+        requestedBy: 'user',
+      });
+      setPendingReplies(prev => ({ ...prev, [mention.id]: { text, status: 'queued' } }));
+      showToast('success', 'Reply queued', `Reply to @${mention.author_username} sent for approval`);
+      await loadReplyApprovals();
+    } catch (error) {
+      showToast('error', 'Failed', error instanceof Error ? error.message : 'Could not queue reply');
     }
   };
 
@@ -725,6 +781,18 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     quotes: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'quote').length,
     direct: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'mention').length,
   };
+
+  // ─── Stats bar data ────────────────────────────────────────────────────────
+
+  const engageStats = useMemo(() => {
+    const total = nonIgnored.length;
+    const pendingNoApproval = nonIgnored.filter(
+      m => m.reply_status === 'pending' && !pendingReplies[m.id]
+    ).length;
+    const queued = Object.values(pendingReplies).filter(r => r.status === 'queued').length;
+    const replied = nonIgnored.filter(m => m.reply_status === 'replied').length;
+    return { total, pendingNoApproval, queued, replied };
+  }, [nonIgnored, pendingReplies]);
 
   // ─── Render: mention card ──────────────────────────────────────────────────
 
@@ -922,17 +990,6 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               }
             </button>
 
-            {/* Suggest Reply */}
-            <button
-              onClick={() => {
-                const prompt = `Please suggest 2-3 reply options for this mention:\n\n@${mention.author_username}: ${mention.text}\n\nKeep replies concise, engaging, and on-brand. Each reply should be under 280 characters.`;
-                window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: prompt } }));
-              }}
-              className="px-3 py-1 text-sm border border-mission-control-accent text-mission-control-accent rounded hover:bg-mission-control-accent/10 flex items-center gap-1"
-            >
-              <MessageCircle size={14} /> Suggest Reply
-            </button>
-
             {/* Reply toggle */}
             {mention.reply_status !== 'replied' && mention.reply_status !== 'ignored' && (
               <button
@@ -961,6 +1018,28 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
         </div>
 
+        {/* Reply status bar */}
+        {pendingReplies[mention.id] && (
+          <div className={`mb-3 px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 ${
+            pendingReplies[mention.id].status === 'sent'
+              ? 'bg-success-subtle text-success'
+              : pendingReplies[mention.id].status === 'approved'
+              ? 'bg-success-subtle text-success'
+              : 'bg-info-subtle text-info'
+          }`}>
+            {pendingReplies[mention.id].status === 'sent' ? (
+              <><Check size={12} /> Reply sent</>
+            ) : pendingReplies[mention.id].status === 'approved' ? (
+              <><CheckCircle size={12} /> Reply approved</>
+            ) : (
+              <><Clock size={12} /> Reply queued</>
+            )}
+            <span className="text-mission-control-text-dim ml-1 truncate max-w-[200px]">
+              {pendingReplies[mention.id].text}
+            </span>
+          </div>
+        )}
+
         {/* AI-generated reply suggestions — auto-shown */}
         {mention.reply_status !== 'replied' && mention.reply_status !== 'ignored' && (
           <div className="mb-3">
@@ -984,29 +1063,46 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 </div>
                 {aiReplies[mention.id].replies.map((reply, idx) => {
                   const isRecommended = idx === aiReplies[mention.id].recommended;
+                  const alreadyQueued = !!pendingReplies[mention.id];
                   return (
-                    <button
+                    <div
                       key={idx}
-                      onClick={() => {
-                        setSelectedMention(mention.id);
-                        setReplyText(reply);
-                        setShowTemplates(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm rounded-lg border transition-colors group ${
+                      className={`flex items-center gap-0 w-full rounded-lg border transition-colors ${
                         isRecommended
                           ? 'border-info bg-info-subtle/40 hover:bg-info-subtle/60'
                           : 'border-mission-control-border bg-mission-control-bg hover:border-info hover:bg-info-subtle/30'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        {isRecommended && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info text-white flex-shrink-0">
-                            BEST
-                          </span>
-                        )}
-                        <span className="text-mission-control-text">{reply}</span>
-                      </div>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setSelectedMention(mention.id);
+                          setReplyText(reply);
+                          setShowTemplates(false);
+                        }}
+                        className="flex-1 text-left px-3 py-2 text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isRecommended && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info text-white flex-shrink-0">
+                              BEST
+                            </span>
+                          )}
+                          <span className="text-mission-control-text">{reply}</span>
+                        </div>
+                      </button>
+                      {!alreadyQueued && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQuickSendReply(mention, reply);
+                          }}
+                          title="Send for approval"
+                          className="flex-shrink-0 p-2 mr-1 rounded hover:bg-info/20 text-mission-control-text-dim hover:text-info transition-colors"
+                        >
+                          <Send size={13} />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -1196,6 +1292,14 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
             )}
           </button>
           </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="flex items-center gap-4 px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
+          <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
+          <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
+          <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
+          <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
         </div>
 
         {/* Filter pills — two rows: status + type */}
