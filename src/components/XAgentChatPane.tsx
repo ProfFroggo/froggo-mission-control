@@ -369,6 +369,24 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           timestamp: Date.now(),
           channel: 'xtwitter',
         });
+
+        // Extract actionable content from response and dispatch to editor
+        // Campaign JSON blocks → campaign view
+        if (validTab === 'campaigns') {
+          const campaignMatch = agentContent.match(/```campaign\s*\n([\s\S]*?)```/);
+          if (campaignMatch) {
+            try {
+              const campaignData = JSON.parse(campaignMatch[1].trim());
+              window.dispatchEvent(new CustomEvent('x-campaign-proposal', { detail: campaignData }));
+            } catch { /* invalid JSON, ignore */ }
+          }
+        }
+
+        // Tweet drafts → publish composer (detect ```tweet blocks or quoted tweets)
+        const tweetMatch = agentContent.match(/```tweet\s*\n([\s\S]*?)```/);
+        if (tweetMatch) {
+          window.dispatchEvent(new CustomEvent('x-draft-proposal', { detail: { content: tweetMatch[1].trim(), tab: validTab } }));
+        }
       }
       setLoading(false);
     } catch (err) {

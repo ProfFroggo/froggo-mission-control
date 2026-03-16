@@ -63,18 +63,36 @@ export async function loadCredentials(): Promise<TwitterCredentials> {
 }
 
 // Server-side credential loading (for API routes)
+// Checks: DB settings → keychain → env vars
 export async function loadCredentialsServer(): Promise<TwitterCredentials> {
   const creds: TwitterCredentials = {};
+
+  // 1. Try DB settings (where the wizard saves them)
+  try {
+    const { getDb } = await import('./database');
+    const db = getDb();
+    const get = (key: string) => {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+      return row?.value || undefined;
+    };
+    creds.apiKey = get('twitter_api_key');
+    creds.apiSecret = get('twitter_api_secret');
+    creds.bearerToken = get('twitter_bearer_token');
+    creds.oauthClientId = get('twitter_oauth_client_id');
+    creds.oauthClientSecret = get('twitter_oauth_client_secret');
+  } catch { /* DB not ready */ }
+
+  // 2. Try keychain for any missing
   try {
     const { keychainGet } = await import('./keychain');
-    creds.apiKey = await keychainGet('twitter_api_key') ?? undefined;
-    creds.apiSecret = await keychainGet('twitter_api_secret') ?? undefined;
-    creds.bearerToken = await keychainGet('twitter_bearer_token') ?? undefined;
-    creds.oauthClientId = await keychainGet('twitter_oauth_client_id') ?? undefined;
-    creds.oauthClientSecret = await keychainGet('twitter_oauth_client_secret') ?? undefined;
+    if (!creds.apiKey) creds.apiKey = await keychainGet('twitter_api_key') ?? undefined;
+    if (!creds.apiSecret) creds.apiSecret = await keychainGet('twitter_api_secret') ?? undefined;
+    if (!creds.bearerToken) creds.bearerToken = await keychainGet('twitter_bearer_token') ?? undefined;
+    if (!creds.oauthClientId) creds.oauthClientId = await keychainGet('twitter_oauth_client_id') ?? undefined;
+    if (!creds.oauthClientSecret) creds.oauthClientSecret = await keychainGet('twitter_oauth_client_secret') ?? undefined;
   } catch { /* fallback silently */ }
 
-  // Fallback to env vars
+  // 3. Fallback to env vars
   if (!creds.bearerToken) creds.bearerToken = process.env.TWITTER_BEARER_TOKEN;
   if (!creds.apiKey) creds.apiKey = process.env.TWITTER_API_KEY;
   if (!creds.apiSecret) creds.apiSecret = process.env.TWITTER_API_SECRET;
