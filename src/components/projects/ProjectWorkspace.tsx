@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { formatTimeAgo } from '../../utils/formatting';
 import {
   ArrowLeft, MessageSquare, LayoutGrid, Zap, FolderOpen, Bot,
@@ -830,30 +830,18 @@ function ApprovalsTab({ project }: { project: Project }) {
   );
 }
 
-// ─── HTML Preview via Blob URL (escapes parent CSP) ──────────────────────────
+// ─── Stable iframe — prevents HMR re-render flicker ─────────────────────────
 
-function HtmlPreviewFrame({ content, title }: { content: string; title: string }) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [content]);
-
-  if (!blobUrl) return null;
-
+const StableIframe = memo(function StableIframe({ src, title }: { src: string; title: string }) {
   return (
     <iframe
-      src={blobUrl}
+      src={src}
       className="w-full h-full border border-mission-control-border rounded-lg bg-white"
-      sandbox="allow-scripts allow-forms allow-popups"
       title={title}
       style={{ minHeight: 500 }}
     />
   );
-}
+}, (prev, next) => prev.src === next.src);
 
 // ─── File Artifact Dashboard ──────────────────────────────────────────────────
 
@@ -1004,11 +992,10 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
             ) : previewContent?.startsWith('__IMAGE__') ? (
               <img src={previewContent.slice(9)} alt={selectedFile.name} className="max-w-full max-h-full mx-auto rounded-lg" />
             ) : isHtml(selectedFile.name) ? (
-              <iframe
+              <StableIframe
+                key={`html-${selectedFile.name}`}
                 src={`/api/projects/${projectId}/file?name=${encodeURIComponent(selectedFile.name)}`}
-                className="w-full h-full border border-mission-control-border rounded-lg bg-white"
                 title={selectedFile.name}
-                style={{ minHeight: 500 }}
               />
             ) : isMd(selectedFile.name) ? (
               <div className="max-w-2xl">

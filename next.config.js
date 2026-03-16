@@ -31,7 +31,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com ws://127.0.0.1:*",
+              "connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com ws://127.0.0.1:* https://unpkg.com https://cdn.tailwindcss.com",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "worker-src 'self' blob:",
