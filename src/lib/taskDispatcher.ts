@@ -344,17 +344,20 @@ After 2 real attempts to solve something, move to human-review immediately:
 task_update({ status: "human-review", lastAgentUpdate: "Blocked: <reason>. Tried: <approach 1>, <approach 2>. Need: <what would unblock you>." })
 Do not loop silently — move to human-review so the human can help.
 
-## FILE ROUTING
+## FILE ROUTING — CRITICAL
+**If this task has a project_id, ALL files MUST go in the project directory:**
+  ~/mission-control/library/projects/{project_id}/
+  Use subdirectories: images/, docs/, code/, design/
+  For image_generate: ALWAYS pass projectId parameter.
+  For HTML: reference images as images/filename.png (relative path).
+
+**ONLY if there is NO project_id**, use the general library:
 | File type | Save to |
 |-----------|---------|
 | Research, analysis, notes | ~/mission-control/library/docs/research/ |
 | Strategy, plans, roadmaps | ~/mission-control/library/docs/strategies/ |
-| Presentations, reports | ~/mission-control/library/docs/presentations/ |
-| Platform/technical docs | ~/mission-control/library/docs/platform/ |
 | Code, scripts | ~/mission-control/library/code/ |
-| UI designs | ~/mission-control/library/design/ui/ |
 | Images | ~/mission-control/library/design/images/ |
-| Video/media | ~/mission-control/library/design/media/ |
 
 After saving any file: task_add_attachment({ taskId, filePath, fileName, category, uploadedBy })
 
@@ -567,6 +570,40 @@ function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
       } catch { /* non-critical */ }
     }
 
+    // Completed dependency outputs — inject files and context from tasks this one depends on
+    try {
+      const deps = db.prepare(
+        `SELECT d.dependsOnId, t.title, t.assignedTo, t.lastAgentUpdate, t.status
+         FROM task_dependencies d
+         JOIN tasks t ON t.id = d.dependsOnId
+         WHERE d.taskId = ?`
+      ).all(task.id as string) as Array<{ dependsOnId: string; title: string; assignedTo: string; lastAgentUpdate: string; status: string }>;
+
+      if (deps.length > 0) {
+        lines.push(`\n### Dependencies`);
+        for (const dep of deps) {
+          const status = dep.status === 'done' ? 'COMPLETED' : `IN PROGRESS (${dep.status})`;
+          lines.push(`- **${dep.title}** (${dep.assignedTo}) — ${status}`);
+          if (dep.status === 'done' && dep.lastAgentUpdate) {
+            lines.push(`  Output: ${dep.lastAgentUpdate.slice(0, 200)}`);
+          }
+
+          // Get files/attachments from the dependency task
+          const attachments = db.prepare(
+            `SELECT fileName, filePath, category FROM task_attachments WHERE taskId = ?`
+          ).all(dep.dependsOnId) as Array<{ fileName: string; filePath: string; category: string }>;
+
+          if (attachments.length > 0) {
+            lines.push(`  Files produced:`);
+            for (const att of attachments) {
+              lines.push(`  - ${att.fileName} (${att.category}) → ${att.filePath}`);
+            }
+            lines.push(`  **Use these exact file paths in your work.**`);
+          }
+        }
+      }
+    } catch { /* non-critical */ }
+
     if (lines.length === 0) return '';
     return `\n\n## Task Context\n${lines.join('\n')}`;
   } catch {
@@ -640,9 +677,15 @@ function buildProjectContext(projectId: string): string {
     const lines = [
       `\n\n## Project Context`,
       `**Project directory**: \`${projectDir}\``,
-      `**IMPORTANT**: Save ALL output files (code, designs, docs, scripts) to this directory.`,
-      `Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\``,
-      `After saving any file, log it: \`mcp__mission-control_db__task_add_attachment\``,
+      `**CRITICAL**: ALL files for this project go in this directory. No exceptions.`,
+      `- Code/HTML/CSS → \`${projectDir}/\``,
+      `- Images → \`${projectDir}/images/\``,
+      `- Docs → \`${projectDir}/docs/\``,
+      `- Design → \`${projectDir}/design/\``,
+      `- For image_generate: pass \`projectId: "${projectId}"\` so images save to the project.`,
+      `- Use the Write tool to save files — it works anywhere in ~/mission-control/.`,
+      `- Use descriptive filenames: \`YYYY-MM-DD_brief-description.ext\``,
+      `- After saving any file, log it: \`mcp__mission-control_db__task_add_attachment\``,
     ];
     if (goal)    lines.push(`\n### GOAL.md\n${goal}`);
     if (status)  lines.push(`\n### STATUS.md\n${status}`);

@@ -11,6 +11,13 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Artifact preview files — no CSP so CDN scripts work in iframe
+        source: '/api/projects/:id/file',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           { key: 'X-Frame-Options',       value: 'DENY' },
@@ -21,14 +28,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
+              "font-src 'self' https://fonts.gstatic.com",
               "connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com ws://127.0.0.1:*",
-              "img-src 'self' data: blob:",
+              "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "worker-src 'self' blob:",
-              "font-src 'self'",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
             ].join('; '),
           },
         ],

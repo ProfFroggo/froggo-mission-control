@@ -13,6 +13,7 @@ import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project, ProjectMember, ProjectFile, ProjectMilestone } from '../../types/projects';
 import AgentAvatar from '../AgentAvatar';
+import MarkdownMessage from '../MarkdownMessage';
 import { showToast } from '../Toast';
 import { Spinner } from '../LoadingStates';
 import { useChatRoomStore } from '../../store/chatRoomStore';
@@ -829,6 +830,204 @@ function ApprovalsTab({ project }: { project: Project }) {
   );
 }
 
+// ─── HTML Preview via Blob URL (escapes parent CSP) ──────────────────────────
+
+function HtmlPreviewFrame({ content, title }: { content: string; title: string }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [content]);
+
+  if (!blobUrl) return null;
+
+  return (
+    <iframe
+      src={blobUrl}
+      className="w-full h-full border border-mission-control-border rounded-lg bg-white"
+      sandbox="allow-scripts allow-forms allow-popups"
+      title={title}
+      style={{ minHeight: 500 }}
+    />
+  );
+}
+
+// ─── File Artifact Dashboard ──────────────────────────────────────────────────
+
+function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
+  files: ProjectFile[];
+  loading: boolean;
+  projectId: string;
+  onRefresh: () => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const loadPreview = useCallback(async (file: ProjectFile) => {
+    setSelectedFile(file);
+    setPreviewContent(null);
+    setPreviewLoading(true);
+
+    try {
+      // Use the project file serving endpoint
+      const res = await fetch(`/api/projects/${projectId}/file?name=${encodeURIComponent(file.name)}`);
+      if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.startsWith('image/')) {
+          const blob = await res.blob();
+          setPreviewContent(`__IMAGE__${URL.createObjectURL(blob)}`);
+        } else {
+          let text = await res.text();
+
+          // For HTML files: inline linked CSS and convert image paths to absolute API URLs
+          if (isHtml(file.name)) {
+            // Replace relative CSS links with inline <style>
+            const cssMatches = text.match(/<link[^>]+href=["']([^"']+\.css)["'][^>]*>/gi) || [];
+            for (const tag of cssMatches) {
+              const hrefMatch = tag.match(/href=["']([^"']+)["']/);
+              if (hrefMatch) {
+                try {
+                  const cssRes = await fetch(`/api/projects/${projectId}/file?name=${encodeURIComponent(hrefMatch[1])}`);
+                  if (cssRes.ok) {
+                    const css = await cssRes.text();
+                    text = text.replace(tag, `<style>${css}</style>`);
+                  }
+                } catch { /* keep original link */ }
+              }
+            }
+
+            // Replace relative image paths with absolute API URLs
+            text = text.replace(/(?:src|href)=["'](?!https?:\/\/|data:|blob:|#)([^"']+\.(png|jpg|jpeg|gif|webp|svg))["']/gi,
+              (match, path) => {
+                const absUrl = `/api/projects/${projectId}/file?name=${encodeURIComponent(path)}`;
+                return match.replace(path, absUrl);
+              }
+            );
+          }
+
+          setPreviewContent(text);
+        }
+      } else {
+        setPreviewContent('Unable to load preview — file may not exist on disk');
+      }
+    } catch {
+      setPreviewContent('Unable to load preview');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [projectId]);
+
+  const isImage = (name: string) => /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(name);
+  const isHtml = (name: string) => /\.(html|htm)$/i.test(name);
+  const isCode = (name: string) => /\.(js|ts|tsx|jsx|css|json|py|sh|sql|yml|yaml)$/i.test(name);
+  const isMd = (name: string) => /\.(md|txt)$/i.test(name);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>;
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+        <FolderOpen size={28} className="text-mission-control-text-dim" />
+        <p className="text-sm font-medium text-mission-control-text-dim">No files yet</p>
+        <p className="text-xs text-mission-control-text-dim">Upload files or agents will save outputs here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      {/* Left: File list */}
+      <div className={`${selectedFile ? 'w-72' : 'flex-1'} border-r border-mission-control-border overflow-y-auto shrink-0 transition-all`}>
+        <div className="divide-y divide-mission-control-border/50">
+          {files.map(file => {
+            const Icon = fileIcon(file.type);
+            const isActive = selectedFile?.name === file.name;
+            return (
+              <button
+                key={file.name}
+                onClick={() => loadPreview(file)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                  isActive
+                    ? 'bg-mission-control-accent/10 border-l-2 border-l-mission-control-accent'
+                    : 'hover:bg-mission-control-surface/50 border-l-2 border-l-transparent'
+                }`}
+              >
+                {isImage(file.name) ? (
+                  <div className="w-8 h-8 rounded bg-mission-control-bg flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src={`/api/projects/${projectId}/file?name=${encodeURIComponent(file.name)}`}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                ) : (
+                  <Icon size={16} className="text-mission-control-text-dim shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-mission-control-text truncate">{file.name}</p>
+                  <p className="text-xs text-mission-control-text-dim">{formatBytes(file.size)} · {formatTimeAgo(file.modifiedAt)}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Right: Artifact preview */}
+      {selectedFile && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border shrink-0">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-mission-control-text truncate">{selectedFile.name}</p>
+              <p className="text-xs text-mission-control-text-dim">{formatBytes(selectedFile.size)} · {selectedFile.type}</p>
+            </div>
+            <button
+              onClick={() => setSelectedFile(null)}
+              className="p-1.5 hover:bg-mission-control-surface rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* Preview */}
+          <div className="flex-1 overflow-auto p-4">
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
+            ) : previewContent?.startsWith('__IMAGE__') ? (
+              <img src={previewContent.slice(9)} alt={selectedFile.name} className="max-w-full max-h-full mx-auto rounded-lg" />
+            ) : isHtml(selectedFile.name) ? (
+              <iframe
+                src={`/api/projects/${projectId}/file?name=${encodeURIComponent(selectedFile.name)}`}
+                className="w-full h-full border border-mission-control-border rounded-lg bg-white"
+                title={selectedFile.name}
+                style={{ minHeight: 500 }}
+              />
+            ) : isMd(selectedFile.name) ? (
+              <div className="max-w-2xl">
+                <MarkdownMessage content={previewContent || ''} />
+              </div>
+            ) : isCode(selectedFile.name) ? (
+              <pre className="text-sm font-mono bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-auto whitespace-pre-wrap text-mission-control-text">
+                {previewContent}
+              </pre>
+            ) : (
+              <pre className="text-sm whitespace-pre-wrap text-mission-control-text">{previewContent}</pre>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Files & Memory Tab ────────────────────────────────────────────────────────
 
 function FilesTab({ project }: { project: Project }) {
@@ -942,40 +1141,7 @@ function FilesTab({ project }: { project: Project }) {
       </div>
 
       {activeSection === 'files' && (
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
-          ) : files.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-2">
-              <FolderOpen size={28} className="text-mission-control-text-dim" />
-              <p className="text-sm font-medium text-mission-control-text-dim">No files yet</p>
-              <p className="text-xs text-mission-control-text-dim">Upload files or agents will save outputs here.</p>
-            </div>
-          ) : (
-            <div>
-              {/* Column headers */}
-              <div className="flex items-center gap-3 px-4 py-2 border-b border-mission-control-border text-xs text-mission-control-text-dim uppercase tracking-wider">
-                <span className="w-4" />
-                <span className="flex-1">Name</span>
-                <span className="w-20 text-right">Size</span>
-                <span className="w-28 text-right">Modified</span>
-              </div>
-              <div className="divide-y divide-mission-control-border">
-                {files.map(file => {
-                  const Icon = fileIcon(file.type);
-                  return (
-                    <div key={file.name} className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-surface/50 transition-colors">
-                      <Icon size={16} className="text-mission-control-text-dim flex-shrink-0" />
-                      <p className="flex-1 min-w-0 text-sm text-mission-control-text truncate">{file.name}</p>
-                      <span className="w-20 text-right text-xs text-mission-control-text-dim tabular-nums">{formatBytes(file.size)}</span>
-                      <span className="w-28 text-right text-xs text-mission-control-text-dim">{formatTimeAgo(file.modifiedAt)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        <FileArtifactDashboard files={files} loading={loading} projectId={project.id} onRefresh={load} />
       )}
 
       {activeSection === 'memory' && (

@@ -88,7 +88,12 @@ function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
     timestamp: Date.now(),
   };
   const updated = [next, ...log].slice(0, 20);
-  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
+  try {
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
+  } catch {
+    // localStorage full — clear and retry
+    try { localStorage.removeItem(ACTIVITY_KEY); localStorage.setItem(ACTIVITY_KEY, JSON.stringify([next])); } catch { /* skip */ }
+  }
 }
 
 function formatRelativeTime(ts: number): string {
