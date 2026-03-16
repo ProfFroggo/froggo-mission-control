@@ -679,6 +679,42 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_x_posts_campaign ON x_posts(campaign_id) WHERE campaign_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_x_campaigns_status ON x_campaigns(status);
     CREATE INDEX IF NOT EXISTS idx_x_analytics_date ON x_analytics_snapshots(snapshot_date DESC);
+
+    CREATE TABLE IF NOT EXISTS x_automations (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      enabled INTEGER DEFAULT 1,
+      trigger_type TEXT NOT NULL,
+      trigger_config TEXT DEFAULT '{}',
+      conditions TEXT,
+      actions TEXT DEFAULT '[]',
+      max_per_hour INTEGER DEFAULT 5,
+      max_per_day INTEGER DEFAULT 20,
+      total_executions INTEGER DEFAULT 0,
+      executions_today INTEGER DEFAULT 0,
+      executions_this_hour INTEGER DEFAULT 0,
+      last_executed_at INTEGER,
+      last_reset_hour INTEGER,
+      last_reset_day INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS x_automation_log (
+      id TEXT PRIMARY KEY,
+      automation_id TEXT NOT NULL,
+      trigger_type TEXT NOT NULL,
+      trigger_data TEXT DEFAULT '{}',
+      actions_taken TEXT DEFAULT '[]',
+      approval_ids TEXT DEFAULT '[]',
+      status TEXT DEFAULT 'executed',
+      error TEXT,
+      executed_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_x_automations_enabled ON x_automations(enabled);
+    CREATE INDEX IF NOT EXISTS idx_x_automation_log_auto ON x_automation_log(automation_id, executed_at DESC);
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo ON tasks(assignedTo);
     CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);

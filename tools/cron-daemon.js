@@ -791,6 +791,49 @@ async function processMentions() {
 setTimeout(processMentions, 30_000);
 setInterval(processMentions, MENTION_PROCESS_INTERVAL);
 
+// ── Social Media: Automation Execution ───────────────────────────────────────
+// Evaluate and fire enabled automations (all actions queue approvals)
+const AUTOMATION_INTERVAL = 5 * 60_000; // every 5 minutes
+
+async function executeAutomations() {
+  try {
+    const flagResult = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+    if (!flagResult || flagResult.value !== 'true') return;
+
+    const result = await new Promise((resolve) => {
+      const req = http.request({
+        host: '127.0.0.1', port: 3000,
+        path: '/api/x/automations/execute',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ error: data }); } });
+      });
+      req.on('error', (e) => resolve({ error: e.message }));
+      req.setTimeout(30000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+      req.write('{}');
+      req.end();
+    });
+
+    if (result.ok && result.fired > 0) {
+      log(`[social] Automations: ${result.fired} fired, ${result.skipped} skipped`);
+    }
+  } catch (e) {
+    log(`[social] Automation execution failed: ${e.message || e}`);
+  }
+}
+
+setTimeout(executeAutomations, 60_000); // first run after 60s
+setInterval(executeAutomations, AUTOMATION_INTERVAL);
+
 function shutdown() {
   log('Cron daemon shutting down.');
   try { fs.unlinkSync(PID_PATH); } catch {}

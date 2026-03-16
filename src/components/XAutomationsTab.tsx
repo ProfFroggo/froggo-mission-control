@@ -97,27 +97,13 @@ const ACTION_OPTIONS: ActionOption[] = [
   },
 ];
 
-// ─── localStorage persistence ─────────────────────────────────────────────────
+// ─── API persistence ──────────────────────────────────────────────────────────
 
-const LS_AUTOMATIONS_KEY = 'x-automations';
-
-function loadAutomationsFromLS(): Automation[] {
-  try {
-    const raw = localStorage.getItem(LS_AUTOMATIONS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAutomationsToLS(automations: Automation[]): void {
-  try {
-    localStorage.setItem(LS_AUTOMATIONS_KEY, JSON.stringify(automations));
-  } catch {}
-}
+const API_BASE = '/api/x/automations';
 
 export default function XAutomationsTab() {
   const [automations, setAutomations] = useState<Automation[]>([]);
+  const [executionLog, setExecutionLog] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null);
@@ -135,38 +121,57 @@ export default function XAutomationsTab() {
     loadAutomations();
   }, []);
 
-  const loadAutomations = () => {
+  const loadAutomations = async () => {
     setLoading(true);
     try {
-      const stored = loadAutomationsFromLS();
-      setAutomations(stored);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(API_BASE);
+      if (res.ok) {
+        const data = await res.json();
+        setAutomations(data.automations || []);
+        setExecutionLog(data.recentLogs || []);
+      }
+    } catch { /* non-fatal */ }
+    setLoading(false);
   };
 
-  const toggleAutomation = (id: string, currentState: boolean) => {
+  const toggleAutomation = async (id: string, currentState: boolean) => {
+    // Optimistic update
     const updated = automations.map(a =>
       a.id === id ? { ...a, enabled: !currentState } : a,
     );
     setAutomations(updated);
-    saveAutomationsToLS(updated);
+    fetch(API_BASE, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, enabled: !currentState }),
+    }).catch(() => loadAutomations());
   };
 
-  const deleteAutomation = (id: string) => {
+  const deleteAutomation = async (id: string) => {
     if (!confirm('Are you sure you want to delete this automation?')) return;
-    const updated = automations.filter(a => a.id !== id);
-    setAutomations(updated);
-    saveAutomationsToLS(updated);
-    showToast('success', 'Deleted', 'Automation removed');
+    setAutomations(prev => prev.filter(a => a.id !== id));
+    try {
+      await fetch(API_BASE, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      showToast('success', 'Deleted', 'Automation removed');
+    } catch {
+      showToast('error', 'Error', 'Failed to delete');
+      loadAutomations();
+    }
   };
 
-  const testAutomation = (_id: string) => {
-    showToast(
-      'info',
-      'Not Available',
-      'Automation testing requires the server-side engine.',
-    );
+  const testAutomation = async (_id: string) => {
+    try {
+      const res = await fetch('/api/x/automations/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json();
+      showToast('success', 'Engine Run', `Checked ${data.checked}, fired ${data.fired}, skipped ${data.skipped}`);
+      loadAutomations();
+    } catch {
+      showToast('error', 'Error', 'Failed to run automation engine');
+    }
   };
 
   const openBuilder = (automation?: Automation) => {
@@ -197,42 +202,46 @@ export default function XAutomationsTab() {
     setEditingAutomation(null);
   };
 
-  const saveAutomation = () => {
+  const saveAutomation = async () => {
     if (!builderName || !builderTriggerType || builderActions.length === 0) {
       showToast('warning', 'Missing Fields', 'Please fill in all required fields');
       return;
     }
 
-    const automationData: Automation = {
-      id: editingAutomation?.id || `auto-${Date.now()}`,
+    const payload = {
       name: builderName,
       description: builderDescription,
-      enabled: editingAutomation?.enabled ?? false,
-      trigger_type: builderTriggerType as Automation['trigger_type'],
+      trigger_type: builderTriggerType,
       trigger_config: builderTriggerConfig,
-      conditions: null,
       actions: builderActions,
-      max_executions_per_hour: builderMaxHourly,
-      max_executions_per_day: builderMaxDaily,
-      total_executions: editingAutomation?.total_executions ?? 0,
-      last_executed_at: editingAutomation?.last_executed_at ?? null,
+      max_per_hour: builderMaxHourly,
+      max_per_day: builderMaxDaily,
     };
 
-    let updated: Automation[];
-    if (editingAutomation) {
-      updated = automations.map(a => (a.id === automationData.id ? automationData : a));
-    } else {
-      updated = [...automations, automationData];
+    try {
+      if (editingAutomation) {
+        // Update existing
+        const res = await fetch(API_BASE, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingAutomation.id, ...payload }),
+        });
+        if (!res.ok) throw new Error('Update failed');
+      } else {
+        // Create new
+        const res = await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Create failed');
+      }
+      closeBuilder();
+      loadAutomations();
+      showToast('success', 'Saved', editingAutomation ? 'Automation updated' : 'Automation created');
+    } catch {
+      showToast('error', 'Error', 'Failed to save automation');
     }
-
-    setAutomations(updated);
-    saveAutomationsToLS(updated);
-    closeBuilder();
-    showToast(
-      'success',
-      'Automation Saved',
-      editingAutomation ? 'Changes saved successfully' : 'New automation created',
-    );
   };
 
   const addAction = (actionType: string) => {
