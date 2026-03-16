@@ -360,7 +360,15 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 Your account is verified, credentials are in the keychain, and the social agent is configured.
               </p>
             </div>
-            <button onClick={onComplete}
+            <button onClick={async () => {
+                // Save setup completion flag
+                await fetch('/api/settings/twitter_setup_complete', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ value: 'true' }),
+                }).catch(() => {});
+                onComplete();
+              }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
               <BarChart2 size={14} /> Open Social Dashboard
             </button>

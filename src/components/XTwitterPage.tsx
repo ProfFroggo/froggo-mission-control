@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, Plus, Clock, FileText } from 'lucide-react';
+import { Share2, Plus, Clock, FileText, Settings } from 'lucide-react';
 import ThreePaneLayout from './XThreePaneLayout';
 import XTabBar from './XTabBar';
 import XAgentChatPane from './XAgentChatPane';
@@ -16,16 +16,28 @@ export default function XTwitterPage() {
   const [scheduledCount, setScheduledCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
 
-  // Check if X API is configured on mount
+  // Check if X API is configured — check setup_complete flag first, then keys
   useEffect(() => {
-    Promise.all([
-      fetch('/api/settings/twitter_api_key').then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch('/api/settings/twitter_bearer_token').then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([apiKey, bearer]) => {
-      const hasKey = !!(apiKey?.value || bearer?.value);
-      console.log('[XTwitterPage] Setup check:', { hasApiKey: !!apiKey?.value, hasBearer: !!bearer?.value, setupComplete: hasKey });
-      setSetupComplete(hasKey);
-    }).catch(() => setSetupComplete(false));
+    (async () => {
+      try {
+        // Check dedicated setup flag first
+        const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
+        if (flagRes?.value === 'true') {
+          setSetupComplete(true);
+          return;
+        }
+        // Fall back to checking if keys exist
+        const [apiKey, bearer, oauthId] = await Promise.all([
+          fetch('/api/settings/twitter_api_key').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/settings/twitter_bearer_token').then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('/api/settings/twitter_oauth_client_id').then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        const hasKeys = !!(apiKey?.value || bearer?.value || oauthId?.value);
+        setSetupComplete(hasKeys);
+      } catch {
+        setSetupComplete(false);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -112,14 +124,29 @@ export default function XTwitterPage() {
           </div>
         </div>
 
-        {/* Create button */}
-        <button
-          onClick={() => setActiveTab('publish')}
-          className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <Plus size={16} />
-          Create
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              await fetch('/api/settings/twitter_setup_complete', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value: '' }),
+              }).catch(() => {});
+              setSetupComplete(false);
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 text-mission-control-text-dim hover:text-mission-control-text text-sm border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
+            title="Reconfigure X/Twitter credentials"
+          >
+            <Settings size={14} />
+          </button>
+          <button
+            onClick={() => setActiveTab('publish')}
+            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus size={16} />
+            Create
+          </button>
+        </div>
       </div>
 
       {/* Tab Bar */}
