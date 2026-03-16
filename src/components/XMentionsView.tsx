@@ -67,7 +67,7 @@ export const XMentionsView: React.FC = () => {
             in_reply_to_user_id: '',
             reply_status: 'pending' as const,
             fetched_at: Date.now(),
-            metadata: m.public_metrics || {},
+            metadata: JSON.stringify(m.public_metrics || {}),
           }));
           const filtered = filter === 'all' ? mapped : mapped.filter((m: Mention) => m.reply_status === filter);
           setMentions(filtered);
@@ -155,8 +155,9 @@ export const XMentionsView: React.FC = () => {
   };
 
   const renderMention = (mention: Mention) => {
-    const metadata = mention.metadata ? JSON.parse(mention.metadata) : {};
-    const metrics = metadata.public_metrics || {};
+    let metadata: any = {};
+    try { metadata = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { metadata = {}; }
+    const metrics = metadata.public_metrics || metadata || {};
     const isSelected = selectedMention === mention.id;
     
     return (
