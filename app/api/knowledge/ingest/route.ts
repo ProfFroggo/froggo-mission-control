@@ -123,50 +123,78 @@ async function analyzeWithGemini(
   filename: string,
   apiKey: string
 ): Promise<GeminiAnalysis> {
-  const prompt = `You are a knowledge base organizer. Analyze this file and return a JSON object with:
+  // Step 1: Get metadata (title, category, tags, summary)
+  const metaParts = [...parts, { text: `Analyze this file and return a JSON object with:
 - "title": A clear, descriptive title (not the filename)
 - "category": One of: ${CATEGORIES.join(', ')}
 - "tags": Array of 3-8 relevant tags (lowercase, hyphens)
 - "summary": 1-2 sentence summary
 - "scope": "all" (everyone), "agents" (agent-only), or "human" (human-only)
-- "extractedContent": COMPLETE markdown extraction of the ENTIRE document. Extract ALL text, not just a summary. For text docs: full text as clean markdown. For PDFs: every page, every section, every table, every bullet point. For images: detailed description. For spreadsheets: all data as markdown tables. This MUST be the full readable version — do NOT truncate or summarize. Include ALL headings, ALL paragraphs, ALL lists, ALL tables from the original.
 
 Filename: ${filename}
+Return ONLY valid JSON, no markdown fences.` }];
 
-Return ONLY valid JSON, no markdown fences.`;
-
-  parts.push({ text: prompt });
-
-  const res = await fetch(
+  const metaRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 32768 },
+        contents: [{ parts: metaParts }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
       }),
     }
   );
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${err.slice(0, 200)}`);
+  if (!metaRes.ok) {
+    const err = await metaRes.text();
+    throw new Error(`Gemini API error: ${metaRes.status} ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const parsed = JSON.parse(cleaned) as GeminiAnalysis;
+  const metaData = await metaRes.json();
+  const metaText = metaData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const metaCleaned = metaText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const meta = JSON.parse(metaCleaned) as Omit<GeminiAnalysis, 'extractedContent'>;
 
-  // Normalize category to lowercase to match UI filters
-  parsed.category = parsed.category.toLowerCase();
+  meta.category = meta.category.toLowerCase();
   const validCats = CATEGORIES.map(c => c.toLowerCase());
-  if (!validCats.includes(parsed.category)) {
-    parsed.category = 'reference';
+  if (!validCats.includes(meta.category)) {
+    meta.category = 'reference';
   }
 
-  return parsed;
+  // Step 2: Full document rewrite as markdown (separate call, full token budget)
+  const rewriteParts = [...parts, { text: `Rewrite this entire document as a clean, well-structured markdown document.
+
+Rules:
+- Convert ALL content — every heading, paragraph, list, table, footnote, caption
+- Use proper markdown: # headings, **bold**, *italic*, - lists, | tables |
+- Preserve the document's structure and hierarchy
+- Do NOT summarize or skip sections — include EVERYTHING
+- For tables: use markdown table format with | separators
+- For images/figures: describe them in [brackets]
+- Output ONLY the markdown document, no JSON, no explanation
+
+This is the COMPLETE rewrite — if the original has 10 pages, your output should cover all 10 pages.` }];
+
+  const rewriteRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: rewriteParts }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
+      }),
+    }
+  );
+
+  let extractedContent = '';
+  if (rewriteRes.ok) {
+    const rewriteData = await rewriteRes.json();
+    extractedContent = rewriteData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+  }
+
+  return { ...meta, extractedContent };
 }
 
 function saveOriginalFile(buffer: Buffer, filename: string, category: string): string {
