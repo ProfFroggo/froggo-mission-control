@@ -228,15 +228,6 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     ]);
 
     try {
-      // Build prompt with tab context
-      // Save user message to chat history
-      chatApi.saveMessage(sessionKey, {
-        role: 'user',
-        content: text,
-        timestamp: Date.now(),
-        channel: 'xtwitter',
-      });
-
       // Send to agent chat room — the social-manager agent has MCP tools
       // and can call X API endpoints, search, create tasks, etc.
       const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'pipeline';

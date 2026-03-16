@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot, Zap, KeyRound } from 'lucide-react';
 import XAgentContentQueue from './XAgentContentQueue';
 import XAutomationsTab from './XAutomationsTab';
@@ -16,7 +16,8 @@ function CredentialsPanel() {
   const [loading, setLoading] = useState(true);
 
   // Check which credentials are configured
-  useState(() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
     const checkKeys = async () => {
       const keyNames = ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token', 'twitter_access_token', 'twitter_access_token_secret', 'twitter_oauth_client_id'];
       const results: Record<string, boolean> = {};
