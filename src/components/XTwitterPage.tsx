@@ -40,18 +40,9 @@ export default function XTwitterPage() {
   useEffect(() => {
     (async () => {
       try {
+        // Only check the setup flag — don't hit keychain for individual keys (slow)
         const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
-        if (flagRes?.value === 'true') {
-          setSetupComplete(true);
-          return;
-        }
-        const [apiKey, bearer, oauthId] = await Promise.all([
-          fetch('/api/settings/twitter_api_key').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/settings/twitter_bearer_token').then(r => r.ok ? r.json() : null).catch(() => null),
-          fetch('/api/settings/twitter_oauth_client_id').then(r => r.ok ? r.json() : null).catch(() => null),
-        ]);
-        const hasKeys = !!(apiKey?.value || bearer?.value || oauthId?.value);
-        setSetupComplete(hasKeys);
+        setSetupComplete(flagRes?.value === 'true');
       } catch {
         setSetupComplete(false);
       }

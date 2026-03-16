@@ -361,11 +361,7 @@ export const XEngageView: React.FC = () => {
         if (Object.keys(preGenerated).length > 0) {
           setAiReplies(prev => ({ ...prev, ...preGenerated }));
         }
-        // Generate for any remaining mentions without suggestions
-        const needsGeneration = inboxMentions.filter(m => !preGenerated[m.id]);
-        if (needsGeneration.length > 0) {
-          generateAIReplies(needsGeneration);
-        }
+        // Background cron handles AI reply generation — don't fire on page load
         return;
       }
 
