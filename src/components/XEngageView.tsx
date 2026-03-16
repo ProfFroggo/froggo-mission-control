@@ -30,12 +30,20 @@ import { inboxApi, approvalApi } from '../lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface ParentTweet {
+  type: string; // 'replied_to' | 'quoted'
+  id: string;
+  text: string | null;
+  author: { id: string; username: string; name: string } | null;
+}
+
 interface Mention {
   id: string;
   tweet_id: string;
   author_id: string;
   author_username: string;
   author_name: string;
+  author_followers?: number;
   text: string;
   created_at: number;
   conversation_id: string;
@@ -45,14 +53,19 @@ interface Mention {
   replied_with_id?: string;
   fetched_at: number;
   metadata: any;
-  // Flattened engagement metrics (parsed from metadata or top-level)
+  // Engagement metrics
   like_count: number;
   retweet_count: number;
   reply_count: number;
   sentiment: 'positive' | 'negative' | 'neutral';
+  // Context: what kind of mention is this?
+  mention_type: 'reply' | 'quote' | 'mention';
+  is_reply_to_us: boolean;
+  parent_tweet: ParentTweet | null;
+  is_spam: boolean;
 }
 
-type FilterTab = 'all' | 'hot' | 'pending' | 'replied' | 'ignored';
+type FilterTab = 'all' | 'hot' | 'pending' | 'replied' | 'ignored' | 'replies' | 'quotes' | 'direct' | 'spam';
 
 interface ReplyTemplate {
   id: string;
@@ -141,6 +154,31 @@ function extractTopic(text: string): string {
   return words.length > 30 ? words.slice(0, 30) + '...' : words;
 }
 
+/** Simple spam detection heuristics */
+function isLikelySpam(text: string, username: string, followers?: number): boolean {
+  const lower = text.toLowerCase();
+  const spamSignals = [
+    // Crypto/money spam
+    /\b(airdrop|giveaway|free (money|crypto|nft)|send \d+ (sol|eth|btc))\b/i.test(lower),
+    // Excessive caps (>60% uppercase)
+    text.replace(/[^A-Z]/g, '').length > text.length * 0.6 && text.length > 20,
+    // Excessive hashtags (>5)
+    (text.match(/#/g) || []).length > 5,
+    // Suspicious URLs
+    /\b(bit\.ly|tinyurl|t\.co\/\w+.*t\.co\/\w+)\b/i.test(lower),
+    // Bot-like patterns
+    /\b(dm me|check (my|the) (bio|link|pinned))\b/i.test(lower),
+    // Very low followers + promotional content
+    (followers != null && followers < 5 && /\b(follow|subscribe|join)\b/i.test(lower)),
+    // Repeated characters
+    /(.)\1{5,}/.test(text),
+    // Common spam usernames
+    /^\w+\d{5,}$/.test(username),
+  ];
+  // If 2+ signals trigger, it's likely spam
+  return spamSignals.filter(Boolean).length >= 2;
+}
+
 function sentimentBadgeClasses(s: 'positive' | 'negative' | 'neutral'): string {
   if (s === 'positive') return 'bg-success-subtle text-success';
   if (s === 'negative') return 'bg-error-subtle text-error';
@@ -173,25 +211,52 @@ function parseMetrics(item: any): { like_count: number; retweet_count: number; r
 /** Normalize raw inbox/API items into a consistent Mention shape */
 function normalizeMention(item: any): Mention {
   const metrics = parseMetrics(item);
+
+  // Parse metadata for stored mention context
+  let meta: any = {};
+  try {
+    meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {});
+  } catch { /* noop */ }
+
+  // Determine mention type from API data or stored metadata
+  const mentionType: 'reply' | 'quote' | 'mention' =
+    item.mention_type || meta.mention_type || 'mention';
+  const isReplyToUs = item.is_reply_to_us ?? meta.is_reply_to_us ?? false;
+  const parentTweet: ParentTweet | null =
+    item.parent_tweet || meta.parent_tweet || null;
+
+  // Author followers from expanded user data
+  const authorFollowers = item.author?.public_metrics?.followers_count
+    ?? meta.author_followers ?? undefined;
+
   return {
     id: item.id,
     tweet_id: item.tweet_id || item.id,
-    author_id: item.author_id || '',
-    author_username: item.author_username || 'unknown',
-    author_name: item.author_name || 'Unknown',
-    text: item.text || '',
+    author_id: item.author_id || item.author?.id || '',
+    author_username: item.author_username || item.author?.username || 'unknown',
+    author_name: item.author_name || item.author?.name || 'Unknown',
+    author_followers: authorFollowers,
+    text: item.text || item.content || '',
     created_at: item.created_at ? (typeof item.created_at === 'number' ? item.created_at : new Date(item.created_at).getTime()) : Date.now(),
-    conversation_id: item.conversation_id || '',
-    in_reply_to_user_id: item.in_reply_to_user_id || '',
-    reply_status: item.reply_status || 'pending',
-    replied_at: item.replied_at,
-    replied_with_id: item.replied_with_id,
+    conversation_id: item.conversation_id || meta.conversation_id || '',
+    in_reply_to_user_id: item.in_reply_to_user_id || meta.in_reply_to_user_id || '',
+    reply_status: item.reply_status || meta.reply_status || 'pending',
+    replied_at: item.replied_at || meta.replied_at,
+    replied_with_id: item.replied_with_id || meta.replied_with_id,
     fetched_at: item.fetched_at || Date.now(),
     metadata: item.metadata,
     like_count: metrics.like_count,
     retweet_count: metrics.retweet_count,
     reply_count: metrics.reply_count,
-    sentiment: inferSentiment(item.text || ''),
+    sentiment: inferSentiment(item.text || item.content || ''),
+    mention_type: mentionType,
+    is_reply_to_us: isReplyToUs,
+    parent_tweet: parentTweet,
+    is_spam: isLikelySpam(
+      item.text || item.content || '',
+      item.author_username || item.author?.username || '',
+      authorFollowers,
+    ),
   };
 }
 
@@ -230,6 +295,10 @@ export const XEngageView: React.FC = () => {
   const [settings, setSettings] = useState<EngageSettings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
 
+  // AI-generated reply suggestions per mention: { replies: string[], recommended: number }
+  const [aiReplies, setAiReplies] = useState<Record<string, { replies: string[]; recommended: number }>>({});
+  const [aiLoading, setAiLoading] = useState<Set<string>>(new Set());
+
   // Notes
   const [notes, setNotes] = useState<Record<string, string>>({});
 
@@ -241,11 +310,39 @@ export const XEngageView: React.FC = () => {
       const allItems = await inboxApi.getAll();
       const inboxMentions = (Array.isArray(allItems) ? allItems : [])
         .filter((item: any) => item.type === 'x-mention')
-        .map(normalizeMention);
+        .map((item: any) => {
+          // Inbox items store mention data in metadata
+          const meta = typeof item.metadata === 'string'
+            ? (() => { try { return JSON.parse(item.metadata); } catch { return {}; } })()
+            : (item.metadata || {});
+          return normalizeMention({
+            id: String(item.id),
+            tweet_id: meta.tweet_id || String(item.id),
+            author_id: meta.author_id || '',
+            author_username: meta.author_username || 'unknown',
+            author_name: meta.author_name || 'Unknown',
+            author: meta.author_followers != null ? { public_metrics: { followers_count: meta.author_followers } } : undefined,
+            text: item.content || meta.text || '',
+            created_at: meta.created_at || item.createdAt || Date.now(),
+            conversation_id: meta.conversation_id || '',
+            in_reply_to_user_id: meta.in_reply_to_user_id || '',
+            reply_status: meta.reply_status || item.status || 'pending',
+            replied_at: meta.replied_at,
+            fetched_at: item.createdAt || Date.now(),
+            metadata: item.metadata,
+            mention_type: meta.mention_type || 'mention',
+            is_reply_to_us: meta.is_reply_to_us || false,
+            parent_tweet: meta.parent_tweet || null,
+            // AI suggestions stored in metadata
+            ai_replies: meta.ai_replies || null,
+          });
+        });
 
       if (inboxMentions.length > 0) {
         setAllMentions(inboxMentions);
         setLoading(false);
+        // Trigger AI reply generation for mentions that don't have suggestions yet
+        generateAIReplies(inboxMentions);
         return;
       }
 
@@ -254,20 +351,7 @@ export const XEngageView: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.mentions?.length > 0) {
-          const mapped = data.mentions.map((m: any) => normalizeMention({
-            id: m.id,
-            tweet_id: m.id,
-            author_id: m.author?.id || m.author_id || '',
-            author_username: m.author?.username || 'unknown',
-            author_name: m.author?.name || 'Unknown',
-            text: m.text || '',
-            created_at: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
-            conversation_id: m.conversation_id || '',
-            in_reply_to_user_id: '',
-            reply_status: 'pending',
-            fetched_at: Date.now(),
-            metadata: JSON.stringify(m.public_metrics || {}),
-          }));
+          const mapped = data.mentions.map((m: any) => normalizeMention(m));
           setAllMentions(mapped);
         }
       }
@@ -309,15 +393,25 @@ export const XEngageView: React.FC = () => {
             try {
               await inboxApi.create({
                 type: 'x-mention',
-                tweet_id: m.id,
-                author_id: m.author?.id || m.author_id,
-                author_username: m.author?.username || 'unknown',
-                author_name: m.author?.name || 'Unknown',
-                text: m.text,
-                created_at: new Date(m.created_at).getTime(),
-                conversation_id: m.conversation_id,
-                reply_status: 'pending',
-                metadata: JSON.stringify(m.public_metrics || {}),
+                title: `@${m.author?.username || 'unknown'}: ${(m.text || '').slice(0, 80)}`,
+                content: m.text,
+                channel: 'x-twitter',
+                status: 'pending',
+                metadata: {
+                  tweet_id: m.id,
+                  author_id: m.author?.id || m.author_id,
+                  author_username: m.author?.username || 'unknown',
+                  author_name: m.author?.name || 'Unknown',
+                  author_followers: m.author?.public_metrics?.followers_count,
+                  conversation_id: m.conversation_id,
+                  in_reply_to_user_id: m.in_reply_to_user_id || '',
+                  mention_type: m.mention_type || 'mention',
+                  is_reply_to_us: m.is_reply_to_us || false,
+                  parent_tweet: m.parent_tweet || null,
+                  reply_status: 'pending',
+                  public_metrics: m.public_metrics || {},
+                  created_at: new Date(m.created_at).getTime(),
+                },
               });
             } catch { /* duplicate or DB error — skip */ }
           }
@@ -353,6 +447,115 @@ export const XEngageView: React.FC = () => {
       // Keep note text in local state even if persist fails
     }
   };
+
+  // ─── AI reply generation (background) ──────────────────────────────────────
+
+  const generateAIReplies = useCallback(async (mentions: Mention[]) => {
+    // Only generate for pending mentions without existing suggestions
+    const pending = mentions.filter(m =>
+      m.reply_status === 'pending' &&
+      !aiReplies[m.id] &&
+      !aiLoading.has(m.id)
+    ).slice(0, 5); // Max 5 at a time
+
+    if (pending.length === 0) return;
+
+    for (const mention of pending) {
+      setAiLoading(prev => new Set(prev).add(mention.id));
+
+      try {
+        const parentContext = mention.parent_tweet?.text
+          ? `\n\nThis is a reply to: "${mention.parent_tweet.text}" by @${mention.parent_tweet.author?.username || 'unknown'}`
+          : '';
+
+        const typeContext = mention.mention_type === 'reply'
+          ? (mention.is_reply_to_us ? 'This is a reply to YOUR tweet.' : 'This is a reply in a conversation where you were mentioned.')
+          : mention.mention_type === 'quote'
+          ? 'This is a quote tweet of your content.'
+          : 'This is a direct mention of you.';
+
+        // Fetch brand context from knowledge base for smarter replies
+        let brandContext = '';
+        try {
+          const kbRes = await fetch('/api/knowledge?scope=agents&limit=3');
+          if (kbRes.ok) {
+            const kbData = await kbRes.json();
+            const articles = Array.isArray(kbData) ? kbData : kbData.articles || [];
+            if (articles.length > 0) {
+              brandContext = `\n\nBrand context from knowledge base:\n${articles.slice(0, 3).map((a: any) => `- ${a.title}: ${(a.summary || a.content || '').slice(0, 150)}`).join('\n')}`;
+            }
+          }
+        } catch { /* non-critical */ }
+
+        const prompt = `Generate exactly 3 reply options for this X/Twitter mention. Each reply must be under 200 characters, on-brand, engaging, and contextually appropriate.
+
+Mention from @${mention.author_username} (${mention.author_followers ? mention.author_followers + ' followers' : 'unknown followers'}): "${mention.text}"
+${parentContext}
+${typeContext}
+Sentiment: ${mention.sentiment}
+${brandContext}
+
+Guidelines:
+- Option 1: Professional/informative response
+- Option 2: Casual/engaging response
+- Option 3: Bold/witty response
+- Reference specific details from their tweet
+- If they asked a question, answer it
+- If they shared feedback, acknowledge it specifically
+- Never be generic — make each reply feel personal
+
+Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" (0-indexed number of the best option). Example: {"replies": ["reply 1", "reply 2", "reply 3"], "recommended": 0}`;
+
+        const res = await fetch('/api/chat/generate-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: prompt,
+            context: 'You are a social media manager. Generate concise, engaging reply options. Return ONLY a JSON array of 3 strings.',
+            tone: 'professional',
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const reply = data.reply || '';
+          // Parse JSON object or array from response
+          const objMatch = reply.match(/\{[\s\S]*"replies"[\s\S]*\}/);
+          const arrMatch = reply.match(/\[[\s\S]*?\]/);
+          if (objMatch) {
+            try {
+              const parsed = JSON.parse(objMatch[0]);
+              if (parsed.replies?.length > 0) {
+                setAiReplies(prev => ({
+                  ...prev,
+                  [mention.id]: {
+                    replies: parsed.replies.slice(0, 3),
+                    recommended: typeof parsed.recommended === 'number' ? parsed.recommended : 0,
+                  },
+                }));
+              }
+            } catch { /* parse failed, try array fallback */ }
+          } else if (arrMatch) {
+            try {
+              const options = JSON.parse(arrMatch[0]) as string[];
+              if (Array.isArray(options) && options.length > 0) {
+                setAiReplies(prev => ({
+                  ...prev,
+                  [mention.id]: { replies: options.slice(0, 3), recommended: 0 },
+                }));
+              }
+            } catch { /* parse failed, skip */ }
+          }
+        }
+      } catch { /* non-critical */ }
+
+      setAiLoading(prev => {
+        const next = new Set(prev);
+        next.delete(mention.id);
+        return next;
+      });
+    }
+  }, [aiReplies, aiLoading]);
 
   // ─── Reply handling (approval gate) ────────────────────────────────────────
 
@@ -453,11 +656,11 @@ export const XEngageView: React.FC = () => {
 
   const isHot = (m: Mention): boolean => m.like_count >= minLikes || m.retweet_count >= minRetweets;
 
-  // Filter out ignored accounts first (unless viewing the "ignored" filter)
+  // Filter out ignored accounts + spam (unless explicitly viewing those filters)
   const visibleMentions = allMentions.filter(m => {
     const handle = m.author_username.toLowerCase();
-    // Always hide ignored accounts unless viewing ignored filter
-    if (activeFilter !== 'ignored' && ignoredAccounts.includes(handle)) return false;
+    if (activeFilter !== 'ignored' && activeFilter !== 'spam' && ignoredAccounts.includes(handle)) return false;
+    if (activeFilter !== 'spam' && m.is_spam) return false;
     return true;
   });
 
@@ -467,6 +670,10 @@ export const XEngageView: React.FC = () => {
       case 'pending': return m.reply_status === 'pending';
       case 'replied': return m.reply_status === 'replied';
       case 'ignored': return m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase());
+      case 'spam': return m.is_spam;
+      case 'replies': return m.mention_type === 'reply';
+      case 'quotes': return m.mention_type === 'quote';
+      case 'direct': return m.mention_type === 'mention';
       default: return true;
     }
   });
@@ -487,6 +694,10 @@ export const XEngageView: React.FC = () => {
     pending: nonIgnored.filter(m => m.reply_status === 'pending').length,
     replied: nonIgnored.filter(m => m.reply_status === 'replied').length,
     ignored: allMentions.filter(m => m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase())).length,
+    spam: allMentions.filter(m => m.is_spam).length,
+    replies: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'reply').length,
+    quotes: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'quote').length,
+    direct: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'mention').length,
   };
 
   // ─── Render: mention card ──────────────────────────────────────────────────
@@ -531,7 +742,41 @@ export const XEngageView: React.FC = () => {
           </div>
         </div>
 
-        {/* Tweet text */}
+        {/* Mention type badge + tweet text */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+            mention.mention_type === 'reply'
+              ? mention.is_reply_to_us
+                ? 'bg-success-subtle text-success'
+                : 'bg-info-subtle text-info'
+              : mention.mention_type === 'quote'
+              ? 'bg-warning-subtle text-warning'
+              : 'bg-mission-control-surface text-mission-control-text-dim border border-mission-control-border'
+          }`}>
+            {mention.mention_type === 'reply'
+              ? mention.is_reply_to_us ? 'Reply to you' : 'Reply (tagged)'
+              : mention.mention_type === 'quote'
+              ? 'Quote tweet'
+              : 'Mention'}
+          </span>
+          {mention.author_followers != null && (
+            <span className="text-xs text-mission-control-text-dim">
+              {mention.author_followers.toLocaleString()} followers
+            </span>
+          )}
+        </div>
+
+        {/* Parent tweet context (for replies) */}
+        {mention.parent_tweet?.text && (
+          <div className="mb-2 p-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs">
+            <div className="text-mission-control-text-dim mb-1 flex items-center gap-1">
+              <MessageCircle size={10} />
+              Replying to {mention.parent_tweet.author?.username ? `@${mention.parent_tweet.author.username}` : 'original post'}
+            </div>
+            <div className="text-mission-control-text line-clamp-3">{mention.parent_tweet.text}</div>
+          </div>
+        )}
+
         <div className="text-sm text-mission-control-text mb-3 whitespace-pre-wrap">{mention.text}</div>
 
         {/* Engagement metrics */}
@@ -660,7 +905,61 @@ export const XEngageView: React.FC = () => {
           </div>
         </div>
 
-        {/* Notes (conditional) */}
+        {/* AI-generated reply suggestions — auto-shown */}
+        {mention.reply_status !== 'replied' && mention.reply_status !== 'ignored' && (
+          <div className="mb-3">
+            {aiLoading.has(mention.id) ? (
+              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+                <div className="w-3 h-3 border border-info border-t-transparent rounded-full animate-spin" />
+                Generating smart replies...
+              </div>
+            ) : aiReplies[mention.id]?.replies?.length ? (
+              <div className="space-y-1.5">
+                <div className="text-xs text-mission-control-text-dim font-medium flex items-center gap-1">
+                  <Zap size={11} className="text-info" />
+                  Smart replies
+                </div>
+                {aiReplies[mention.id].replies.map((reply, idx) => {
+                  const isRecommended = idx === aiReplies[mention.id].recommended;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedMention(mention.id);
+                        setReplyText(reply);
+                        setShowTemplates(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded-lg border transition-colors group ${
+                        isRecommended
+                          ? 'border-info bg-info-subtle/40 hover:bg-info-subtle/60'
+                          : 'border-mission-control-border bg-mission-control-bg hover:border-info hover:bg-info-subtle/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isRecommended && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info text-white flex-shrink-0">
+                            BEST
+                          </span>
+                        )}
+                        <span className="text-mission-control-text">{reply}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <button
+                onClick={() => generateAIReplies([mention])}
+                className="flex items-center gap-1.5 text-xs text-info hover:underline"
+              >
+                <Zap size={11} />
+                Generate smart replies
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Notes (below smart replies) */}
         {settings.showNotes && (
         <div className="mb-3">
           <div className="flex items-center gap-2">
@@ -831,25 +1130,51 @@ export const XEngageView: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter pills */}
-        <div className="flex gap-2 flex-wrap mb-3">
-          {(['all', 'hot', 'pending', 'replied', 'ignored'] as FilterTab[]).map(tab => {
-            const label = tab === 'hot' ? 'Hot' : tab.charAt(0).toUpperCase() + tab.slice(1);
-            const icon = tab === 'hot' ? <TrendingUp size={12} className="mr-0.5" /> : null;
-            return (
+        {/* Filter pills — two rows: status + type */}
+        <div className="space-y-2 mb-3">
+          {/* Status filters */}
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'hot', 'pending', 'replied', 'ignored', 'spam'] as FilterTab[]).map(tab => {
+              const label = tab === 'hot' ? 'Hot' : tab === 'spam' ? 'Spam' : tab.charAt(0).toUpperCase() + tab.slice(1);
+              const icon = tab === 'hot' ? <TrendingUp size={12} className="mr-0.5" />
+                : tab === 'spam' ? <Ban size={12} className="mr-0.5" />
+                : null;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveFilter(tab)}
+                  className={`px-3 py-1 text-sm rounded-lg transition-colors flex items-center ${
+                    activeFilter === tab
+                      ? 'bg-info-subtle text-info font-medium'
+                      : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
+                  }`}
+                >
+                  {icon}{label} ({counts[tab]})
+                </button>
+              );
+            })}
+          </div>
+          {/* Type filters */}
+          <div className="flex gap-2 flex-wrap">
+            <span className="text-xs text-mission-control-text-dim self-center mr-1">Type:</span>
+            {([
+              { id: 'replies' as FilterTab, label: 'Replies', icon: <MessageCircle size={12} className="mr-0.5" /> },
+              { id: 'quotes' as FilterTab, label: 'Quotes', icon: <Repeat2 size={12} className="mr-0.5" /> },
+              { id: 'direct' as FilterTab, label: 'Direct Mentions', icon: <Heart size={12} className="mr-0.5" /> },
+            ]).map(tab => (
               <button
-                key={tab}
-                onClick={() => setActiveFilter(tab)}
-                className={`px-3 py-1 text-sm rounded transition-colors flex items-center ${
-                  activeFilter === tab
+                key={tab.id}
+                onClick={() => setActiveFilter(tab.id)}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors flex items-center ${
+                  activeFilter === tab.id
                     ? 'bg-info-subtle text-info font-medium'
                     : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
                 }`}
               >
-                {icon}{label} ({counts[tab]})
+                {tab.icon}{tab.label} ({counts[tab.id]})
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
 
         {/* Hot filter thresholds — only visible when Hot is active */}

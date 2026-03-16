@@ -45,7 +45,7 @@ const X_CHAR_LIMIT = 280;
 
 interface ActivityEntry {
   id: string;
-  action: 'Posted' | 'Scheduled' | 'Drafted' | 'Rejected';
+  action: 'Posted' | 'Scheduled' | 'Drafted' | 'Rejected' | 'Approved';
   summary: string;
   timestamp: number;
 }
@@ -122,6 +122,8 @@ function actionColor(action: ActivityEntry['action']): string {
     case 'Scheduled': return 'var(--color-info)';
     case 'Drafted': return 'var(--color-warning)';
     case 'Rejected': return 'var(--color-error)';
+    case 'Approved': return 'var(--color-success)';
+    default: return 'var(--color-info)';
   }
 }
 
@@ -340,8 +342,8 @@ function DraftCard({
 
 export function XAgentContentQueue() {
   const [settings, setSettings] = useState<AgentModeSettings>({ enabled: false, brief: '', autoApprove: false });
-  const [drafts, setDrafts] = useState<AgentDraft[]>(MOCK_DRAFTS);
-  const [activity] = useState<ActivityEntry[]>(MOCK_ACTIVITY);
+  const [drafts, setDrafts] = useState<AgentDraft[]>([]);
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [briefText, setBriefText] = useState('');
   const [briefContext, setBriefContext] = useState('');
   const [saving, setSaving] = useState(false);
@@ -363,7 +365,52 @@ export function XAgentContentQueue() {
     }
   }, []);
 
-  useEffect(() => { loadSettings(); }, [loadSettings]);
+  // Load real drafts from schedule API (agent-generated content)
+  const loadDrafts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/schedule');
+      if (res.ok) {
+        const items = await res.json();
+        const all = Array.isArray(items) ? items : [];
+        // Agent-generated drafts: proposed_by contains 'agent' or 'social-manager'
+        const agentItems = all.filter((item: any) =>
+          (item.platform === 'twitter' || item.platform === 'x') &&
+          (item.type === 'draft' || item.type === 'idea')
+        );
+        const mapped: AgentDraft[] = agentItems.map((item: any) => {
+          let meta: any = {};
+          try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch { /* noop */ }
+          return {
+            id: String(item.id),
+            content: item.content || '',
+            scheduledAt: item.scheduledFor ? new Date(item.scheduledFor).toISOString() : new Date(Date.now() + 3_600_000).toISOString(),
+            topic: meta.topic || meta.content_type || 'General',
+            status: item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'rejected' : 'pending',
+            feedback: meta.feedback,
+          };
+        });
+        setDrafts(mapped);
+
+        // Build activity from recent schedule events
+        const activityEntries: ActivityEntry[] = all
+          .filter((item: any) => item.platform === 'twitter' || item.platform === 'x')
+          .slice(0, 10)
+          .map((item: any) => ({
+            id: `act-${item.id}`,
+            action: item.status === 'published' ? 'Posted'
+              : item.status === 'scheduled' ? 'Scheduled'
+              : item.status === 'approved' ? 'Approved'
+              : item.status === 'rejected' ? 'Rejected'
+              : 'Drafted',
+            summary: (item.content || '').slice(0, 80) + ((item.content || '').length > 80 ? '...' : ''),
+            timestamp: item.scheduledFor || item.createdAt || Date.now(),
+          }));
+        setActivity(activityEntries);
+      }
+    } catch { /* non-critical */ }
+  }, []);
+
+  useEffect(() => { loadSettings(); loadDrafts(); }, [loadSettings, loadDrafts]);
 
   const patchSettings = async (updates: Partial<AgentModeSettings>) => {
     setSaving(true);
@@ -618,7 +665,7 @@ export function XAgentContentQueue() {
                 </button>
               )}
               <button
-                onClick={() => setDrafts(MOCK_DRAFTS)}
+                onClick={loadDrafts}
                 className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
               >
                 <RefreshCw size={12} />
