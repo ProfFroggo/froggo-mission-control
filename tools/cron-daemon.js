@@ -735,6 +735,61 @@ setInterval(checkStuckTasks, STUCK_CHECK_INTERVAL);
 processScheduledItems();
 setInterval(processScheduledItems, CHECK_INTERVAL);
 
+// ── Social Media: Mention Processing ─────────────────────────────────────────
+// Fetch new mentions from X API, store in inbox, generate AI reply suggestions
+const MENTION_PROCESS_INTERVAL = 15 * 60_000; // every 15 minutes
+
+async function processMentions() {
+  try {
+    // Check if X is configured first
+    const flagResult = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+    if (!flagResult || flagResult.value !== 'true') return;
+
+    log('[social] Processing mentions...');
+    const result = await new Promise((resolve) => {
+      const req = http.request({
+        host: '127.0.0.1', port: 3000,
+        path: '/api/x/mentions/process',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ error: data }); } });
+      });
+      req.on('error', (e) => resolve({ error: e.message }));
+      req.setTimeout(55000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+      req.write('{}');
+      req.end();
+    });
+
+    if (result.ok) {
+      const parts = [];
+      if (result.newMentions > 0) parts.push(`${result.newMentions} new`);
+      if (result.aiRepliesGenerated > 0) parts.push(`${result.aiRepliesGenerated} AI replies`);
+      if (parts.length > 0) {
+        log(`[social] Mentions processed: ${parts.join(', ')}`);
+      } else {
+        log(`[social] Mentions checked: ${result.fetched} fetched, no new`);
+      }
+    } else if (result.error) {
+      log(`[social] Mention processing error: ${result.error}`);
+    }
+  } catch (e) {
+    log(`[social] Mention processing failed: ${e.message || e}`);
+  }
+}
+
+// Initial run after 30s delay (let server start), then every 15 min
+setTimeout(processMentions, 30_000);
+setInterval(processMentions, MENTION_PROCESS_INTERVAL);
+
 function shutdown() {
   log('Cron daemon shutting down.');
   try { fs.unlinkSync(PID_PATH); } catch {}

@@ -341,8 +341,27 @@ export const XEngageView: React.FC = () => {
       if (inboxMentions.length > 0) {
         setAllMentions(inboxMentions);
         setLoading(false);
-        // Trigger AI reply generation for mentions that don't have suggestions yet
-        generateAIReplies(inboxMentions);
+        // Load pre-generated AI replies from inbox metadata (from background cron)
+        const preGenerated: Record<string, { replies: string[]; recommended: number }> = {};
+        for (const m of inboxMentions) {
+          try {
+            const meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : (m.metadata || {});
+            if (meta.ai_replies?.replies?.length) {
+              preGenerated[m.id] = {
+                replies: meta.ai_replies.replies,
+                recommended: meta.ai_replies.recommended ?? 0,
+              };
+            }
+          } catch { /* noop */ }
+        }
+        if (Object.keys(preGenerated).length > 0) {
+          setAiReplies(prev => ({ ...prev, ...preGenerated }));
+        }
+        // Generate for any remaining mentions without suggestions
+        const needsGeneration = inboxMentions.filter(m => !preGenerated[m.id]);
+        if (needsGeneration.length > 0) {
+          generateAIReplies(needsGeneration);
+        }
         return;
       }
 
@@ -948,13 +967,18 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 })}
               </div>
             ) : (
-              <button
-                onClick={() => generateAIReplies([mention])}
-                className="flex items-center gap-1.5 text-xs text-info hover:underline"
-              >
-                <Zap size={11} />
-                Generate smart replies
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => generateAIReplies([mention])}
+                  className="flex items-center gap-1.5 text-xs text-info hover:underline"
+                >
+                  <Zap size={11} />
+                  Generate smart replies
+                </button>
+                <span className="text-[10px] text-mission-control-text-dim">
+                  or wait for background processing
+                </span>
+              </div>
             )}
           </div>
         )}
