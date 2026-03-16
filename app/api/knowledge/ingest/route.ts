@@ -178,7 +178,7 @@ function saveOriginalFile(buffer: Buffer, filename: string, category: string): s
   const savedName = `${date}_${safeName}`;
   const savedPath = path.join(categoryDir, savedName);
 
-  fs.writeFileSync(savedPath, buffer);
+  fs.writeFileSync(savedPath, new Uint8Array(buffer));
   return savedPath;
 }
 
