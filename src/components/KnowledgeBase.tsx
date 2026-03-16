@@ -724,13 +724,14 @@ export default function KnowledgeBase() {
 
   const del = async (id: string) => {
     if (!confirm('Delete this article?')) return;
-    await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
+    // Remove from UI immediately
+    setArticles(prev => prev.filter(a => a.id !== id));
     if (viewing?.id === id) setViewing(null);
-    // Remove from starred if present
     if (starred.has(id)) {
       setStarred(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
-    load();
+    // Then delete from DB
+    await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
   };
 
   const togglePin = async (article: KBArticle) => {
