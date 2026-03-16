@@ -125,22 +125,41 @@ export async function verifyCredentials(bearerToken: string): Promise<{
   error?: string;
 }> {
   try {
+    // Try /users/me first (requires user-context OAuth 2.0, not app-only bearer)
     const res = await bearerFetch(
       '/users/me?user.fields=profile_image_url,public_metrics,description,verified',
       bearerToken
     );
     const data = await res.json();
 
-    if (data.errors) {
-      const err = data.errors[0] as TwitterError;
-      return { success: false, error: err.detail || err.title || 'Authentication failed' };
+    if (data.data) {
+      return { success: true, user: data.data as TwitterUser };
     }
 
-    if (!data.data) {
-      return { success: false, error: 'No user data returned — check your Bearer token permissions' };
+    // /users/me failed — bearer token is app-only. Verify it works by searching for a known account.
+    // This confirms the token is valid even though we can't get "me".
+    const testRes = await bearerFetch(
+      '/tweets/search/recent?query=from:X&max_results=10',
+      bearerToken
+    );
+
+    if (testRes.ok) {
+      // Token is valid but app-only — we can read but not identify the user
+      return {
+        success: true,
+        user: {
+          id: 'app-only',
+          name: 'App-Only Token',
+          username: 'verified',
+          public_metrics: { followers_count: 0, following_count: 0, tweet_count: 0, listed_count: 0 },
+        },
+        error: undefined,
+      };
     }
 
-    return { success: true, user: data.data as TwitterUser };
+    const errData = await testRes.json().catch(() => ({}));
+    const errMsg = errData?.errors?.[0]?.detail || errData?.detail || `Token rejected (${testRes.status})`;
+    return { success: false, error: errMsg };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : 'Network error' };
   }
