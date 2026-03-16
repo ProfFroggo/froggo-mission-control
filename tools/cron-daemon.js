@@ -623,15 +623,69 @@ async function processScheduledItems() {
         const content = item.content || '';
         const title = item.title || content.slice(0, 80);
 
-        if (type === 'post' || type === 'social') {
-          // Create a task for social-manager to post
+        if (type === 'tweet' || type === 'thread' || ((type === 'post' || type === 'social') && (item.platform === 'twitter' || item.platform === 'x'))) {
+          // Post tweet directly to X API
+          let tweetContent = content;
+          try { const parsed = JSON.parse(content); if (parsed.tweets) tweetContent = parsed.tweets[0]; } catch { /* use raw */ }
+
+          const tweetBody = JSON.stringify({ text: tweetContent });
+          const postResult = await new Promise((resolve) => {
+            const req = http.request({
+              host: '127.0.0.1', port: 3000,
+              path: '/api/x/tweet', method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(tweetBody) },
+            }, (res) => {
+              let data = '';
+              res.on('data', c => { data += c; });
+              res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ error: data }); } });
+            });
+            req.on('error', (e) => resolve({ error: e.message }));
+            req.setTimeout(30000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+            req.write(tweetBody);
+            req.end();
+          });
+
+          if (postResult.ok || postResult.id) {
+            log(`[scheduled] Tweet posted: ${postResult.id || 'ok'}`);
+            database.prepare(`UPDATE scheduled_items SET status = 'published', updatedAt = ? WHERE id = ?`).run(now, item.id);
+
+            // If thread, post remaining tweets as replies
+            try {
+              const parsed = JSON.parse(content);
+              if (parsed.tweets && parsed.tweets.length > 1) {
+                let replyTo = postResult.id;
+                for (let i = 1; i < parsed.tweets.length; i++) {
+                  const replyBody = JSON.stringify({ text: parsed.tweets[i], reply_to: replyTo });
+                  const replyResult = await new Promise((resolve) => {
+                    const req = http.request({
+                      host: '127.0.0.1', port: 3000,
+                      path: '/api/x/tweet', method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(replyBody) },
+                    }, (res) => { let d = ''; res.on('data', c => { d += c; }); res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve({}); } }); });
+                    req.on('error', () => resolve({}));
+                    req.write(replyBody);
+                    req.end();
+                  });
+                  if (replyResult.id) replyTo = replyResult.id;
+                }
+                log(`[scheduled] Thread posted: ${parsed.tweets.length} tweets`);
+              }
+            } catch { /* not a thread */ }
+            continue; // skip the generic status update below
+          } else {
+            log(`[scheduled] Tweet post failed: ${postResult.error || 'unknown'}`);
+            database.prepare(`UPDATE scheduled_items SET status = 'failed', updatedAt = ? WHERE id = ?`).run(now, item.id);
+            continue;
+          }
+        } else if (type === 'post' || type === 'social') {
+          // Non-twitter social post — create task for agent
           const taskBody = JSON.stringify({
             title: `Post: ${title}`,
             description: content,
             status: 'todo',
             priority: 'p2',
             assignedTo: 'social-manager',
-            planningNotes: `Scheduled social post. Content:\n\n${content}\n\nPlatform: ${item.platform || 'twitter'}`,
+            planningNotes: `Scheduled social post. Content:\n\n${content}\n\nPlatform: ${item.platform || 'unknown'}`,
             tags: ['scheduled', 'social'],
           });
           const req = http.request({

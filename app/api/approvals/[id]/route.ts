@@ -206,6 +206,46 @@ export async function PATCH(
       try { updated.metadata = JSON.parse(updated.metadata as string); } catch { updated.metadata = {}; }
     }
 
+    // ── Downstream: tweet posting on approval ───────────────────────────────
+    if (existing.type === 'tweet' && action === 'approved') {
+      try {
+        const tweetContent = adjustedContent || existing.content;
+        // Parse thread format or use as single tweet
+        let tweets: string[] = [];
+        try {
+          const parsed = JSON.parse(tweetContent);
+          tweets = Array.isArray(parsed.tweets) ? parsed.tweets : [tweetContent];
+        } catch { tweets = [tweetContent]; }
+
+        // Post first tweet
+        const firstRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: tweets[0] }),
+        });
+        const firstData = await firstRes.json().catch(() => ({}));
+
+        if (firstData.ok || firstData.id) {
+          // Post thread replies if multiple tweets
+          let replyTo = firstData.id;
+          for (let i = 1; i < tweets.length; i++) {
+            const replyRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: tweets[i], reply_to: replyTo }),
+            });
+            const replyData = await replyRes.json().catch(() => ({}));
+            if (replyData.id) replyTo = replyData.id;
+          }
+          console.log(`[approvals] Tweet posted: ${firstData.id} (${tweets.length} tweet${tweets.length > 1 ? 's' : ''})`);
+        } else {
+          console.error(`[approvals] Tweet post failed:`, firstData.error);
+        }
+      } catch (err) {
+        console.error('[approvals] Tweet post error:', err);
+      }
+    }
+
     // Emit inbox.count SSE event so sidebar badge updates immediately
     try {
       const pendingCount = (db.prepare(

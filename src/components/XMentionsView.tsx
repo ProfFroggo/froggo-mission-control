@@ -53,10 +53,34 @@ export const XMentionsView: React.FC = () => {
   const fetchNewMentions = async () => {
     setFetching(true);
     try {
-      // Fetch is server-side — just reload from inbox
+      // Fetch real mentions from X API
+      const res = await fetch('/api/x/mentions');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.mentions?.length > 0) {
+          // Save to inbox as x-mention items
+          for (const m of data.mentions) {
+            try {
+              await inboxApi.create({
+                type: 'x-mention',
+                tweet_id: m.id,
+                author_id: m.author?.id || m.author_id,
+                author_username: m.author?.username || 'unknown',
+                author_name: m.author?.name || 'Unknown',
+                text: m.text,
+                created_at: new Date(m.created_at).getTime(),
+                conversation_id: m.conversation_id,
+                reply_status: 'pending',
+                metadata: JSON.stringify(m.public_metrics || {}),
+              });
+            } catch { /* duplicate or DB error — skip */ }
+          }
+        }
+      }
       await loadMentions();
-    } catch (error) {
-      // 'Error fetching mentions:', error;
+    } catch {
+      // Error fetching — just reload existing
+      await loadMentions();
     } finally {
       setFetching(false);
     }
