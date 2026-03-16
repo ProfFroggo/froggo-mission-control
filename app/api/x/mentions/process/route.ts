@@ -319,23 +319,25 @@ Return ONLY JSON:
               if (bestReply) {
                 try {
                   const existingApproval = db.prepare(
-                    `SELECT id FROM approvals WHERE type = 'x-reply' AND json_extract(payload, '$.mentionId') = ? AND status = 'pending'`
+                    `SELECT id FROM approvals WHERE type = 'x-reply' AND json_extract(metadata, '$.mentionId') = ? AND status = 'pending'`
                   ).get(String(row.id));
 
                   if (!existingApproval) {
+                    const approvalId = `xr-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                     db.prepare(`
-                      INSERT INTO approvals (type, tier, status, payload, metadata, requestedBy, created_at)
-                      VALUES (?, ?, 'pending', ?, ?, ?, ?)
+                      INSERT INTO approvals (id, type, title, content, tier, status, metadata, requester, createdAt)
+                      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)
                     `).run(
+                      approvalId,
                       'x-reply',
-                      confidence >= 0.9 ? 1 : 3, // High confidence → fast-track tier 1
+                      `Reply to @${meta.author_username}`,
+                      bestReply,
+                      confidence >= 0.9 ? 1 : 3,
                       JSON.stringify({
+                        auto_generated: true,
                         mentionId: String(row.id),
                         tweetId: meta.tweet_id,
                         replyText: bestReply,
-                      }),
-                      JSON.stringify({
-                        auto_generated: true,
                         mention_author: meta.author_username,
                         mention_text: (row.content || '').slice(0, 100),
                         reasoning: aiResult.reasoning || '',
@@ -349,7 +351,9 @@ Return ONLY JSON:
                       Date.now(),
                     );
                   }
-                } catch { /* non-fatal */ }
+                } catch (e) {
+                  result.errors.push(`Approval for mention ${row.id}: ${e instanceof Error ? e.message : String(e)}`);
+                }
               }
             }
           }
