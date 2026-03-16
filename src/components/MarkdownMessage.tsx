@@ -107,7 +107,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
 
           // Images
           img: (props: ComponentPropsWithoutRef<'img'>) => {
-            const safe = props.src ? sanitizeUrl(props.src) : null;
+            const safe = typeof props.src === 'string' ? sanitizeUrl(props.src) : null;
             if (!safe) return null;
             return <img {...props} src={safe} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
           },
