@@ -541,29 +541,36 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           // Parse JSON object or array from response
           const objMatch = reply.match(/\{[\s\S]*"replies"[\s\S]*\}/);
           const arrMatch = reply.match(/\[[\s\S]*?\]/);
+          let aiResult: { replies: string[]; recommended: number } | null = null;
           if (objMatch) {
             try {
               const parsed = JSON.parse(objMatch[0]);
               if (parsed.replies?.length > 0) {
-                setAiReplies(prev => ({
-                  ...prev,
-                  [mention.id]: {
-                    replies: parsed.replies.slice(0, 3),
-                    recommended: typeof parsed.recommended === 'number' ? parsed.recommended : 0,
-                  },
-                }));
+                aiResult = {
+                  replies: parsed.replies.slice(0, 3),
+                  recommended: typeof parsed.recommended === 'number' ? parsed.recommended : 0,
+                };
               }
             } catch { /* parse failed, try array fallback */ }
           } else if (arrMatch) {
             try {
               const options = JSON.parse(arrMatch[0]) as string[];
               if (Array.isArray(options) && options.length > 0) {
-                setAiReplies(prev => ({
-                  ...prev,
-                  [mention.id]: { replies: options.slice(0, 3), recommended: 0 },
-                }));
+                aiResult = { replies: options.slice(0, 3), recommended: 0 };
               }
             } catch { /* parse failed, skip */ }
+          }
+
+          if (aiResult) {
+            setAiReplies(prev => ({ ...prev, [mention.id]: aiResult! }));
+
+            // Persist to DB so it doesn't regenerate on next page load
+            try {
+              let existingMeta: any = {};
+              try { existingMeta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { /* noop */ }
+              existingMeta.ai_replies = { ...aiResult, generated_at: Date.now() };
+              await inboxApi.update(Number(mention.id), { metadata: existingMeta });
+            } catch { /* non-critical — will regenerate next time if persist fails */ }
           }
         }
       } catch { /* non-critical */ }
