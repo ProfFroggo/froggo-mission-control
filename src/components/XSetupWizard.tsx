@@ -231,6 +231,27 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {/* Step 2: Verify */}
         {step === 'verify' && (
           <div className="space-y-4">
+            {/* OAuth Connect Button — uses OAuth 2.0 PKCE to get user token */}
+            {!verifyResult?.success && !verifying && (
+              <button
+                onClick={() => {
+                  // Open X OAuth in popup
+                  const w = window.open('/api/x/oauth', 'x-oauth', 'width=600,height=700');
+                  // Listen for popup close
+                  const check = setInterval(() => {
+                    if (w?.closed) {
+                      clearInterval(check);
+                      handleVerify();
+                    }
+                  }, 500);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#000] text-white rounded-lg text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
+              >
+                <Twitter size={16} />
+                Connect with X
+              </button>
+            )}
+
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
               {verifying ? (
                 <div className="text-center py-4">
