@@ -1,13 +1,53 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // POST /api/x/mentions/process — Background job: fetch mentions, store in inbox, generate AI replies
 // Called by cron daemon every 15 minutes or manually via Engage tab
+// Uses Gemini Flash Lite for AI reply generation (fast, cheap, no CLI spawn overhead)
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { getTwitterClient } from '@/lib/twitterClient';
-// ENV imported but PORT accessed via process.env directly
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // Allow up to 60s for AI generation
+export const maxDuration = 120; // Allow up to 120s for full batch
+
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
+const GEMINI_FALLBACK = 'gemini-2.5-flash-preview-05-20';
+
+async function getGeminiKey(): Promise<string | null> {
+  try {
+    const { keychainGet } = await import('@/lib/keychain');
+    const val = await keychainGet('gemini_api_key');
+    if (val) return val;
+  } catch { /* ignore */ }
+  return process.env.GEMINI_API_KEY ?? null;
+}
+
+async function geminiGenerate(prompt: string, apiKey: string): Promise<string | null> {
+  for (const model of [GEMINI_MODEL, GEMINI_FALLBACK]) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
+          }),
+        }
+      );
+      if (!res.ok) {
+        if (model === GEMINI_MODEL) continue; // try fallback
+        return null;
+      }
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    } catch {
+      if (model === GEMINI_MODEL) continue;
+      return null;
+    }
+  }
+  return null;
+}
 
 interface ProcessResult {
   fetched: number;
@@ -277,15 +317,15 @@ Return ONLY JSON:
 }`;
 
       try {
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: prompt, context: 'Social media reply generator. Return ONLY JSON.', tone: 'professional' }),
-        });
+        // Use Gemini Flash Lite directly — faster and cheaper than Claude CLI spawn
+        const geminiKey = await getGeminiKey();
+        if (!geminiKey) {
+          result.errors.push('No Gemini API key configured');
+          break; // Can't generate without a key
+        }
+        const reply = await geminiGenerate(prompt, geminiKey);
 
-        if (res.ok) {
-          const data = await res.json();
-          const reply = data.reply || '';
+        if (reply) {
           const objMatch = reply.match(/\{[\s\S]*"replies"[\s\S]*\}/);
           const arrMatch = reply.match(/\[[\s\S]*?\]/);
 

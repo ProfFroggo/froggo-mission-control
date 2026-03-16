@@ -1231,14 +1231,14 @@ export default function XPipelineView() {
 
       {/* View content */}
       {viewMode === 'board' && (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex h-full gap-0 min-w-max">
+        <div className="flex-1 overflow-hidden">
+          <div className="grid h-full" style={{ gridTemplateColumns: `repeat(${COLUMNS.length}, 1fr)` }}>
             {COLUMNS.map((col) => {
               const colItems = byColumn(col.id);
               return (
                 <div
                   key={col.id}
-                  className="flex flex-col w-64 flex-shrink-0 border-r border-mission-control-border last:border-r-0"
+                  className="flex flex-col border-r border-mission-control-border last:border-r-0 min-w-0"
                   style={{ height: '100%' }}
                 >
                   {/* Column accent + header */}
