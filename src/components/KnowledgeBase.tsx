@@ -548,6 +548,14 @@ export default function KnowledgeBase() {
       if (data.success) {
         setIngestStep('done');
         setIngestResult({ title: data.analysis.title, category: data.analysis.category, tags: data.analysis.tags });
+        // Force fetch ALL articles directly (don't rely on category state)
+        try {
+          const params = new URLSearchParams();
+          if (debouncedSearch) params.set('search', debouncedSearch);
+          const freshRes = await fetch(`/api/knowledge?${params}`);
+          const freshData = await freshRes.json();
+          if (freshData.success) setArticles(freshData.articles);
+        } catch { /* fall back to normal load */ }
         setCategory(data.analysis.category || 'all');
       } else {
         setIngestError(data.error || 'Processing failed');
