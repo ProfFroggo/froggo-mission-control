@@ -136,8 +136,9 @@ When the user wants to create an automation, help them define it conversationall
 }
 \`\`\`
 
-Trigger types: mention, keyword, time, follower, dm
-Action types: reply, like, retweet, dm, add_to_list
+Trigger types: mention, keyword, time, follower, dm, engagement (min_likes + min_retweets config)
+Action types: reply, like, retweet, dm, add_to_list, process_mentions, report (report_type: competitor-analysis|weekly-summary), post_content (template config), custom_prompt (prompt config)
+AI engine field: "gemini" (Gemini Flash Lite — fast background) or "claude" (Claude Haiku — nuanced replies)
 All actions go through human approval — nothing posts directly.`,
 };
 
