@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
-  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList,
+  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList, BookOpen,
 } from 'lucide-react';
 import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
@@ -24,8 +24,9 @@ import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 import CampaignROIDashboard from '../CampaignROIDashboard';
 import CampaignCommentsPanel from '../CampaignCommentsPanel';
 import ReactMarkdown from 'react-markdown';
+import ContextPanel from '../ContextPanel';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -38,6 +39,7 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'roi',         label: 'ROI',         icon: TrendingUp },
   { id: 'comments',    label: 'Comments',    icon: MessageSquare },
   { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
+  { id: 'context',     label: 'Context',     icon: BookOpen },
 ];
 
 const KPI_LABELS: Record<string, string> = {
@@ -1525,7 +1527,41 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
-        {activeTab === 'timeline'    && <EpicCalendar />}
+        {activeTab === 'timeline'    && (() => {
+          // Build campaign events for the calendar
+          const campaignEvents: CalendarEvent[] = [];
+          if (campaign.startDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-start`,
+              summary: `${campaign.name} — Start`,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+            });
+          }
+          if (campaign.endDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-end`,
+              summary: `${campaign.name} — End`,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+            });
+          }
+          if (campaign.startDate && campaign.endDate && campaign.endDate > campaign.startDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-span`,
+              summary: campaign.name,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+            });
+          }
+          return <EpicCalendar externalEvents={campaignEvents} createButtonLabel="Add Campaign Event" />;
+        })()}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'performance' && <PerformanceTab campaign={campaign} onUpdate={reload} />}
@@ -1544,6 +1580,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
             <ChecklistTab campaign={campaign} />
           </div>
         )}
+        {activeTab === 'context'     && <ContextPanel entityType="campaign" entityId={campaign.id} />}
       </div>
 
       {showDispatch && (
