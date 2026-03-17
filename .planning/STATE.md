@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Tasks flow from creation to completion autonomously with self-healing at every failure point.
-**Current focus:** Phase 20.11 — Social Module Automation Builder
+**Current focus:** Phase 20.12 — Final Polish (complete)
 
 ## Current Position
 
-Phase: 20.11 of 20.12 (Automation Builder)
-Plan: 1 of 1 (complete)
-Status: Phase complete
-Last activity: 2026-03-17 — Completed 20.11-01-PLAN.md
+Phase: 21.5 of 21.5 (Session Architecture — complete)
+Plan: 21.2-01 (complete)
+Status: Phase 21 complete — all session architecture plans executed
+Last activity: 2026-03-17 — Completed 21.2-01-PLAN.md (memory + knowledge injection)
 
 Progress (Agent Autonomy): ███░░░░░░░ 30% (Phases 1-10, paused at Phase 4)
-Progress (Social Module):  ██████████ 92% (11/12 phases complete)
+Progress (Social Module):  ██████████ 100% (12/12 phases complete)
 
 ## Accumulated Context
 
-### Social Module — Completed Work (72 commits)
+### Social Module — Completed Work (76 commits)
 
 **Layout**: 15 tabs → 5 (Pipeline, Engage, Intelligence, Measure, Configure) + floating Compose
 **DB**: 7 dedicated tables (x_mentions, x_posts, x_campaigns, x_automations, x_automation_log, x_reports, x_analytics_snapshots)
@@ -28,21 +28,7 @@ Progress (Social Module):  ██████████ 92% (11/12 phases comp
 **Automation**: x_automations table IS the cron system — mention processing, competitor reports, all driven by DB entries
 **Credentials**: Settings API always saves to DB (keychain writes fail on Kandji). Consumer Key regenerated March 17.
 **Posting**: Tweet posting confirmed working. All posts require human approval.
-
-### What's Next
-
-Phase 20.11 — Automation Builder:
-- More action types (process_mentions, report, reply, like, retweet, dm, post_content, tag/categorize)
-- AI engine selector (Claude Haiku vs Gemini Flash Lite per automation)
-- Conversational automation creation via agent chat (```automation blocks)
-- Automation execution history UI
-- Pre-built automation templates
-
-Phase 20.12 — Final Polish:
-- Competitor cards stats loading issue
-- UI consistency pass
-- Merge dev → main
-- npm publish
+**Published**: v1.9.4 on npm (already published)
 
 ### Key Decisions
 
@@ -55,5 +41,5 @@ Phase 20.12 — Final Polish:
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Phase 20.11 complete, Phase 20.12 is next
-Resume with: `/gsd:plan-phase 20.12`
+Stopped at: Phase 21.5 complete — Session Architecture milestone done
+Resume with: Next milestone (Agent Autonomy phases 5+ or Phase 22)

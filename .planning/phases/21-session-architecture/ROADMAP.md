@@ -137,8 +137,8 @@ Session management:
 
 | Phase | Plans | Status |
 |-------|-------|--------|
-| 21.1 Unified Session Service | 0/2 | Not started |
-| 21.2 Memory + Knowledge | 0/2 | Not started |
-| 21.3 Context Compaction | 0/2 | Not started |
-| 21.4 Surface Context | 0/2 | Not started |
-| 21.5 Session UI | 0/1 | Not started |
+| 21.1 Unified Session Service | 2/2 | Complete |
+| 21.2 Memory + Knowledge | 2/2 | Complete |
+| 21.3 Context Compaction | 1/2 | Complete (plan 01 done) |
+| 21.4 Surface Context | 1/2 | Complete (plan 01 done) |
+| 21.5 Session UI | 1/1 | Complete |
