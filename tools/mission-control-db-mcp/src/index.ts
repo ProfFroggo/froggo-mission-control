@@ -194,6 +194,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           id: { type: 'string', description: 'Task ID' },
           status: { type: 'string', description: 'New status: todo | in-progress | review | human-review | done. Do NOT set internal-review — the system manages Pre-review automatically.' },
+          description: { type: 'string', description: '1-2 sentence summary of what this task is. Use this to fix a "Needs description" pre-rejection from Clara.' },
           progress: { type: 'number', description: 'Progress 0-100' },
           lastAgentUpdate: { type: 'string', description: 'One-line update message visible to the team' },
           planningNotes: { type: 'string', description: 'Full plan details (replaces existing planningNotes)' },
@@ -874,6 +875,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         if (newStatus !== undefined)               { sets.push('status = ?');          vals.push(newStatus); }
+        if (args?.description !== undefined)        { sets.push('description = ?');      vals.push(args.description); }
         if (args?.progress !== undefined)           { const progress = Math.max(0, Math.min(100, Number(args.progress))); sets.push('progress = ?'); vals.push(progress); }
         if (args?.lastAgentUpdate)                  { sets.push('lastAgentUpdate = ?');  vals.push(args.lastAgentUpdate); }
         if (args?.planningNotes !== undefined)      { sets.push('planningNotes = ?');    vals.push(args.planningNotes); }
@@ -881,6 +883,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args?.reviewerId !== undefined)         { sets.push('reviewerId = ?');       vals.push(args.reviewerId); }
         if (newReviewStatus !== undefined)          { sets.push('reviewStatus = ?');     vals.push(newReviewStatus); }
         if (args?.reviewNotes !== undefined)        { sets.push('reviewNotes = ?');      vals.push(args.reviewNotes); }
+
+        // Auto-clear pre-rejected state when agent fixes the blocking fields.
+        // Clara rejected because description/planningNotes/assignedTo was missing — once
+        // any of these is fixed, clear the rejection so auto-advance re-queues for review.
+        if (!args?.reviewStatus && !args?.status && current.reviewStatus === 'pre-rejected') {
+          if (args?.description !== undefined || args?.planningNotes !== undefined || args?.assignedTo !== undefined) {
+            sets.push('reviewStatus = ?', 'reviewNotes = ?');
+            vals.push(null, null);
+          }
+        }
 
         // Set completedAt when task reaches done
         if (newStatus === 'done')                   { sets.push('completedAt = ?');      vals.push(now); }
