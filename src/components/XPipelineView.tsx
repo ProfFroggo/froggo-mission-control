@@ -26,7 +26,7 @@ import {
   Repeat2,
   MessageCircle,
 } from 'lucide-react';
-import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
+import { approvalApi } from '../lib/api';
 import EpicCalendar from './EpicCalendar';
 import { showToast } from './Toast';
 import XCampaignView from './XCampaignView';
@@ -1098,15 +1098,50 @@ export default function XPipelineView() {
     try {
       setLoading(true);
       setError(null);
-      const raw = await scheduleApi.getAll();
-      const allRaw: ScheduledItem[] = Array.isArray(raw) ? raw : [];
-      // Only show social/twitter content — not meetings, events, or other scheduled items
-      const SOCIAL_TYPES = new Set(['tweet', 'thread', 'post', 'campaign', 'idea', 'draft', 'social', 'plan', 'mention']);
-      const all = allRaw.filter(item =>
-        item.platform === 'twitter' || item.platform === 'x' ||
-        SOCIAL_TYPES.has(item.type?.toLowerCase() || '') ||
-        SOCIAL_TYPES.has(item.status?.toLowerCase() || '')
-      );
+
+      // Fetch posts from dedicated x_posts table
+      const postsRes = await fetch('/api/x/posts');
+      if (!postsRes.ok) throw new Error(`Posts API error: ${postsRes.status}`);
+      const postsData = await postsRes.json();
+      const posts: ScheduledItem[] = (postsData.posts || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        type: p.type as string || 'tweet',
+        content: p.content as string || '',
+        scheduledFor: String(p.scheduled_for || p.created_at || ''),
+        metadata: typeof p.metadata === 'string' ? p.metadata : JSON.stringify(p.metadata || {}),
+        status: p.status as string || 'draft',
+        platform: 'twitter',
+      }));
+
+      // Fetch mentions for the "In Review" column (pending reply mentions)
+      let mentionItems: ScheduledItem[] = [];
+      try {
+        const mentionsRes = await fetch('/api/x/mentions/data?status=pending');
+        if (mentionsRes.ok) {
+          const mentionsData = await mentionsRes.json();
+          mentionItems = (mentionsData.mentions || []).map((m: Record<string, unknown>) => ({
+            id: m.id as string,
+            type: 'mention',
+            content: m.mention_text as string || '',
+            scheduledFor: String(m.tweet_created_at || ''),
+            metadata: JSON.stringify({
+              mention_reply: true,
+              author_username: m.author_username,
+              author_followers: m.author_followers,
+              mention_type: m.mention_type,
+              is_reply_to_us: m.is_reply_to_us,
+              tweet_id: m.tweet_id,
+              ai_replies: m.ai_replies,
+              ai_judgment: m.ai_triage ? { triage_reason: m.ai_triage_reason, confidence: m.ai_confidence, safety_flags: m.ai_safety_flags } : null,
+              parent_tweet: m.parent_tweet_text ? { text: m.parent_tweet_text } : null,
+            }),
+            status: 'pending',
+            platform: 'twitter',
+          }));
+        }
+      } catch { /* mentions are non-critical */ }
+
+      const all = [...posts, ...mentionItems];
       const mapped: PipelineItem[] = all.map(item => ({
         ...item,
         parsedMeta: parseMeta(item.metadata),
@@ -1143,35 +1178,41 @@ export default function XPipelineView() {
       await load();
       return;
     }
-    const actionMap: Record<string, { status?: string; type?: string; metadata?: Record<string, unknown>; scheduledFor?: string }> = {
+    const actionMap: Record<string, Record<string, unknown>> = {
       draft:   { status: 'draft',     type: 'draft' },
       submit:  { status: 'pending' },
       approve: { status: 'approved' },
       reject:  { status: 'draft' },
       schedule: {
         status: 'scheduled',
-        scheduledFor: payload?.scheduledTime as string,
-        metadata: { scheduled_time: payload?.scheduledTime },
+        scheduled_for: payload?.scheduledTime ? new Date(payload.scheduledTime as string).getTime() : null,
       },
-      publish: { status: 'published' },
+      publish: { status: 'published', published_at: Date.now() },
     };
     const update = actionMap[action];
     if (!update) return;
-    const body: Record<string, unknown> = {};
-    if (update.status) body.status = update.status;
-    if (update.type) body.type = update.type;
-    if (update.scheduledFor) body.scheduledFor = String(new Date(update.scheduledFor).getTime());
-    if (update.metadata) body.metadata = update.metadata;
-    await scheduleApi.update(id, body);
+    const body: Record<string, unknown> = { id };
+    for (const [k, v] of Object.entries(update)) {
+      if (v != null) body[k] = v;
+    }
+    await fetch('/api/x/posts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     await load();
   }, [load]);
 
   const handleAddIdea = useCallback(async (content: string) => {
-    await scheduleApi.create({
-      type: 'idea',
-      content,
-      status: 'idea',
-      scheduledFor: String(Date.now()),
+    await fetch('/api/x/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'idea',
+        content,
+        status: 'idea',
+        proposed_by: 'user',
+      }),
     });
     await load();
   }, [load]);

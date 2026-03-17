@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
 import { showToast } from './Toast';
-import { scheduleApi, approvalApi } from '../lib/api';
 
 interface CampaignStage {
   id: string;
@@ -67,10 +66,19 @@ export default function XCampaignView() {
   const loadCampaigns = useCallback(async () => {
     try {
       setLoading(true);
-      const allItems = await scheduleApi.getAll();
-      const campaigns = (Array.isArray(allItems) ? allItems : [])
-        .filter((item: any) => item.type === 'campaign');
-      setCampaigns(campaigns as Campaign[]);
+      const res = await fetch('/api/x/campaigns');
+      if (!res.ok) throw new Error(`Campaigns API error: ${res.status}`);
+      const data = await res.json();
+      const raw = data.campaigns || [];
+      setCampaigns(raw.map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        title: c.title as string || '',
+        subject: c.subject as string || '',
+        stages: hydrateStages(Array.isArray(c.stages) ? c.stages : []),
+        status: (c.status as Campaign['status']) || 'draft',
+        created_at: c.created_at as number || Date.now(),
+        start_date: c.start_date as string | undefined,
+      })));
     } catch {
       setCampaigns([]);
     } finally {
@@ -183,16 +191,25 @@ export default function XCampaignView() {
     }
 
     try {
-      await scheduleApi.create({
-        type: 'campaign',
-        ...editingCampaign,
-        stages: JSON.stringify(editingCampaign.stages),
+      const res = await fetch('/api/x/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingCampaign.id,
+          title: editingCampaign.title,
+          subject: editingCampaign.subject,
+          status: editingCampaign.status,
+          start_date: editingCampaign.start_date || null,
+          stages: editingCampaign.stages,
+          proposed_by: 'user',
+        }),
       });
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       showToast('success', 'Campaign saved');
       setEditingCampaign(null);
       loadCampaigns();
-    } catch (error: any) {
-      showToast('error', `Save failed: ${error.message}`);
+    } catch (error: unknown) {
+      showToast('error', `Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -202,13 +219,23 @@ export default function XCampaignView() {
       return;
     }
     try {
-      const toSave = { ...editingCampaign, status: 'scheduled' as const };
-      await scheduleApi.create({
-        type: 'campaign',
-        ...toSave,
-        stages: JSON.stringify(toSave.stages),
+      // Save campaign with scheduled status
+      const campaignRes = await fetch('/api/x/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingCampaign.id,
+          title: editingCampaign.title,
+          subject: editingCampaign.subject,
+          status: 'scheduled',
+          start_date: editingCampaign.start_date,
+          stages: editingCampaign.stages,
+          proposed_by: 'user',
+        }),
       });
+      if (!campaignRes.ok) throw new Error(`Campaign save failed: ${campaignRes.status}`);
 
+      // Create individual x_posts for each stage (with auto-approval)
       const startDate = new Date(editingCampaign.start_date);
       let scheduled = 0;
       for (const stage of editingCampaign.stages) {
@@ -219,11 +246,18 @@ export default function XCampaignView() {
         const timestamp = stageDate.getTime();
 
         if (timestamp > Date.now()) {
-          await approvalApi.create({
-            type: 'tweet',
-            content: stage.content,
-            tier: 3,
-            metadata: { campaignId: editingCampaign.id, scheduledTime: timestamp },
+          await fetch('/api/x/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: stage.type || 'tweet',
+              content: stage.content,
+              status: 'scheduled',
+              scheduled_for: timestamp,
+              campaign_id: editingCampaign.id,
+              proposed_by: 'user',
+              metadata: { stageId: stage.id, dayOffset: stage.dayOffset },
+            }),
           });
           scheduled++;
         }
@@ -232,18 +266,19 @@ export default function XCampaignView() {
       showToast('success', `Campaign scheduled! ${scheduled}/${editingCampaign.stages.length} stages queued`);
       setEditingCampaign(null);
       loadCampaigns();
-    } catch (error: any) {
-      showToast('error', `Schedule failed: ${error.message}`);
+    } catch (error: unknown) {
+      showToast('error', `Schedule failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const deleteCampaign = async (id: string) => {
     try {
-      await scheduleApi.delete(id);
+      const res = await fetch(`/api/x/campaigns?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
       showToast('success', 'Campaign deleted');
       loadCampaigns();
-    } catch (error: any) {
-      showToast('error', `Delete failed: ${error.message}`);
+    } catch (error: unknown) {
+      showToast('error', `Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
