@@ -139,6 +139,6 @@ Session management:
 |-------|-------|--------|
 | 21.1 Unified Session Service | 2/2 | Complete |
 | 21.2 Memory + Knowledge | 2/2 | Complete |
-| 21.3 Context Compaction | 1/2 | Complete (plan 01 done) |
+| 21.3 Context Compaction | 1/2 | Complete (plan 01 done, SUMMARY written) |
 | 21.4 Surface Context | 1/2 | Complete (plan 01 done) |
 | 21.5 Session UI | 1/1 | Complete |
