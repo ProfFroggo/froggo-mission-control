@@ -78,11 +78,11 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
     return () => window.removeEventListener('keydown', handleEsc);
   }, [handleClose]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || sending) return;
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const userText = (overrideText ?? input).trim();
+    if (!userText || sending) return;
 
-    const userText = input.trim();
-    setInput('');
+    if (!overrideText) setInput('');
     setSending(true);
     setStreamingContent('');
 
@@ -240,7 +240,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               <p className="text-xs text-mission-control-text-dim">
                 Persistent session — history restored on reconnect
               </p>
-              <SessionStatsBar sessionKey={sessionKey} onReset={() => setMessages([])} className="mt-1" />
+              <SessionStatsBar sessionKey={sessionKey} onCompact={() => sendMessage('/compact')} className="mt-1" />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -377,7 +377,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
                 className="flex-1 resize-none rounded-lg border border-mission-control-border bg-mission-control-bg2 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
               />
               <button
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={!input.trim() || sending}
                 className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >

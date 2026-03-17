@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Brain, BookOpen, Archive, RotateCcw } from 'lucide-react';
+import { Archive } from 'lucide-react';
 
 interface SessionStats {
   messageCount: number;
@@ -13,14 +13,12 @@ interface SessionStats {
 
 interface SessionStatsBarProps {
   sessionKey: string;
-  /** Show "New session" reset button. Default true. */
-  showReset?: boolean;
-  /** Called after a successful session reset */
-  onReset?: () => void;
+  /** Called when user clicks the compact button */
+  onCompact?: () => void;
   className?: string;
 }
 
-export default function SessionStatsBar({ sessionKey, showReset = true, onReset, className = '' }: SessionStatsBarProps) {
+export default function SessionStatsBar({ sessionKey, onCompact, className = '' }: SessionStatsBarProps) {
   const [stats, setStats] = useState<SessionStats | null>(null);
 
   const fetchStats = useCallback(async () => {
@@ -33,67 +31,40 @@ export default function SessionStatsBar({ sessionKey, showReset = true, onReset,
 
   useEffect(() => {
     fetchStats();
+    const id = setInterval(fetchStats, 30_000);
+    return () => clearInterval(id);
   }, [fetchStats]);
-
-  const handleReset = useCallback(async () => {
-    try {
-      const res = await fetch('/api/sessions/stats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset', key: sessionKey }),
-      });
-      if (res.ok) {
-        setStats(null);
-        onReset?.();
-      }
-    } catch { /* ignore */ }
-  }, [sessionKey, onReset]);
 
   if (!stats) return null;
 
   const contextPct = Math.round((stats.tokenEstimate / 32000) * 100);
   const barColor = contextPct > 80 ? 'bg-error' : contextPct > 50 ? 'bg-warning' : 'bg-success';
 
+  const parts: string[] = [];
+  if (stats.messageCount > 0) parts.push(`${stats.messageCount} msgs`);
+  if (stats.memoryFileCount > 0) parts.push(`${stats.memoryFileCount} mem`);
+  if (stats.kbArticleCount > 0) parts.push(`${stats.kbArticleCount} KB`);
+
   return (
-    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 ${className}`}>
-      <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
-        <MessageSquare className="w-3 h-3" />
-        {stats.messageCount} msgs
-      </span>
-      <span className={`flex items-center gap-1 text-[10px] ${stats.memoryFileCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
-        <Brain className="w-3 h-3" />
-        {stats.memoryFileCount > 0 ? `${stats.memoryFileCount} memory files` : 'No memory'}
-      </span>
-      <span className={`flex items-center gap-1 text-[10px] ${stats.kbArticleCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
-        <BookOpen className="w-3 h-3" />
-        {stats.kbArticleCount > 0 ? `${stats.kbArticleCount} KB articles` : 'No KB'}
-      </span>
-      {stats.compacted && (
-        <span className="flex items-center gap-1 text-[10px] text-info">
-          <Archive className="w-3 h-3" />
-          Compacted
-        </span>
+    <button
+      onClick={onCompact}
+      title="Click to /compact — summarize context and free up space"
+      className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors ${className}`}
+    >
+      {stats.compacted && <Archive className="w-3 h-3 text-info flex-shrink-0" />}
+      {parts.length > 0 && (
+        <span className="opacity-70">{parts.join(' · ')}</span>
       )}
-      <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
-        <span>Context:</span>
-        <div className="w-16 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+      {/* Context bar + % */}
+      <span className="flex items-center gap-1">
+        <div className="w-10 h-1 bg-mission-control-border rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${barColor}`}
             style={{ width: `${Math.min(100, contextPct)}%` }}
           />
         </div>
         <span>{contextPct}%</span>
-      </div>
-      {showReset && (
-        <button
-          onClick={handleReset}
-          title="New session"
-          className="flex items-center gap-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-        >
-          <RotateCcw className="w-3 h-3" />
-          New session
-        </button>
-      )}
-    </div>
+      </span>
+    </button>
   );
 }

@@ -766,8 +766,8 @@ export default function ChatPanel() {
     inputRef.current?.focus();
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text && attachments.length === 0) return;
     if (!selectedAgent) return;
     
@@ -854,7 +854,7 @@ export default function ChatPanel() {
       streaming: true,
     }]);
     
-    setInput('');
+    if (!overrideText) setInput('');
     setLoading(true);
     addActivity({ type: 'chat', message: `You: ${text.slice(0, 50)}...`, timestamp: Date.now() });
 
@@ -1128,6 +1128,12 @@ export default function ChatPanel() {
                 <RefreshCw size={10} /> Reconnect
               </button>
             )}
+            {selectedAgent?.dbSessionKey && (
+              <SessionStatsBar
+                sessionKey={selectedAgent.dbSessionKey}
+                onCompact={() => sendMessage('/compact')}
+              />
+            )}
           </div>
         </div>
         
@@ -1198,13 +1204,6 @@ export default function ChatPanel() {
           </button>
         </div>
       </div>
-
-      {/* Session stats bar */}
-      {selectedAgent?.dbSessionKey && (
-        <div className="px-4 py-1.5 border-b border-mission-control-border bg-mission-control-bg">
-          <SessionStatsBar sessionKey={selectedAgent.dbSessionKey} showReset={false} />
-        </div>
-      )}
 
       {/* Body — below header: chat left, artifact panel right */}
       <div className="flex-1 flex min-h-0">
@@ -1523,7 +1522,7 @@ export default function ChatPanel() {
           </div>
 
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
             title="Send message (Enter)"
             className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"

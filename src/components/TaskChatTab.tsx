@@ -51,10 +51,10 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || sending || !agentId) return;
-    const text = input.trim();
-    setInput('');
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || sending || !agentId) return;
+    if (!overrideText) setInput('');
     setSending(true);
 
     setMessages(prev => [...prev, { role: 'user', content: text, timestamp: Date.now() }]);
@@ -121,7 +121,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
           <Bot size={12} />
           <span>Direct session — {agentName} has full task context and memory</span>
         </div>
-        <SessionStatsBar sessionKey={sessionKey} onReset={() => setMessages([])} />
+        <SessionStatsBar sessionKey={sessionKey} onCompact={() => sendMessage('/compact')} />
       </div>
 
       {/* Messages */}
@@ -199,7 +199,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             disabled={sending}
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || sending}
             className="p-2 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40 self-end"
             aria-label="Send message"
