@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ENV, calcCostUsd } from '@/lib/env';
 import { getDb } from '@/lib/database';
+import { loadAgentIdentity, saveMessage } from '@/lib/sessionService';
 import { existsSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { homedir, userInfo, tmpdir } from 'os';
@@ -95,18 +96,10 @@ function soulMtime(id: string): number {
 }
 
 // ── Soul / system prompt ─────────────────────────────────────────────────────
-interface CacheEntry { content: string; mtime: number; }
-const soulCache = new Map<string, CacheEntry>();
-
-function readCached(path: string): string | null {
-  if (!existsSync(path)) return null;
-  const mtime = statSync(path).mtimeMs;
-  const hit = soulCache.get(path);
-  if (hit && hit.mtime === mtime) return hit.content;
-  const content = readFileSync(path, 'utf-8').trim();
-  soulCache.set(path, { content, mtime });
-  return content;
-}
+// Identity loading delegated to sessionService.loadAgentIdentity() which checks:
+//   1. catalog/agents/{id}/soul.md
+//   2. .claude/agents/{id}.md
+//   3. DB agents table fallback
 
 const CHAT_SUFFIX = `\n\n---
 You are in chat mode. Respond conversationally and stay in character.
@@ -124,22 +117,9 @@ After EVERY message, call mcp__memory__memory_write if ANY of the following are 
 Use mcp__memory__memory_recall at the START of each conversation to load relevant context before responding.`;
 
 function buildSystemPrompt(id: string): string | null {
-  const dir = join(HOME, 'mission-control', 'agents', id);
-  const soul = readCached(join(dir, 'SOUL.md'));
-  if (soul) return soul + CHAT_SUFFIX;
-  try {
-    const agent = getDb().prepare('SELECT name, role, personality FROM agents WHERE id = ?').get(id) as {
-      personality?: string; role?: string; name?: string;
-    } | undefined;
-    if (agent) {
-      const parts: string[] = [];
-      if (agent.role) parts.push(`You are ${agent.name || id}, a ${agent.role}.`);
-      if (agent.personality) parts.push(agent.personality);
-      parts.push(CHAT_SUFFIX);
-      return parts.join('\n');
-    }
-  } catch { /* DB not available */ }
-  return null;
+  const identity = loadAgentIdentity(id);
+  if (!identity) return null;
+  return identity + CHAT_SUFFIX;
 }
 
 // ── Tool permissions (mirrors stream route) ──────────────────────────────────
