@@ -132,7 +132,7 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
               disabled={disabled}
               className={`w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 resize-none transition-colors ${
                 isOverLimit
-                  ? 'border-red-500 focus:ring-red-500'
+                  ? 'border-error focus:ring-error'
                   : 'border-mission-control-border focus:ring-mission-control-accent'
               }`}
               style={{ minHeight: '72px' }}
