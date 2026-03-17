@@ -6,6 +6,9 @@ export const runtime = 'nodejs';
 
 // POST /api/x/tweet — post a tweet via X API v2
 export async function POST(req: NextRequest) {
+  // Force fresh credentials on every write operation
+  const { invalidateTwitterClient } = await import('@/lib/twitterClient');
+  invalidateTwitterClient();
   const client = await getTwitterClient();
   if (!client) {
     return NextResponse.json(
@@ -15,6 +18,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Debug auth
+    const rm = (client as any)?._requestMaker || {};
+    console.log('[x/tweet] consumerToken:', rm.consumerToken ? rm.consumerToken.substring(0, 8) + '...' : 'MISSING');
+    console.log('[x/tweet] accessToken:', rm.accessToken ? rm.accessToken.substring(0, 12) + '...' : 'MISSING');
+    console.log('[x/tweet] accessSecret length:', rm.accessSecret?.length || 'MISSING');
+
     const { text, reply_to } = await req.json();
     if (!text) return NextResponse.json({ error: 'text is required' }, { status: 400 });
 

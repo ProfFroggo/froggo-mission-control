@@ -20,16 +20,18 @@ export async function getTwitterClient(): Promise<TwitterApi | null> {
 
   const creds = await loadCredentialsServer();
 
-  // Also check for access tokens in keychain/DB
+  // Load access tokens — keychain first (wizard saves here), then DB, then env
   let accessToken = '';
   let accessSecret = '';
+
+  // Keychain first (where the setup wizard stores them)
   try {
     const { keychainGet } = await import('./keychain');
     accessToken = await keychainGet('twitter_access_token') ?? '';
     accessSecret = await keychainGet('twitter_access_token_secret') ?? '';
   } catch {}
 
-  // Fallback to DB
+  // DB fallback
   if (!accessToken || !accessSecret) {
     try {
       const { getDb } = await import('./database');

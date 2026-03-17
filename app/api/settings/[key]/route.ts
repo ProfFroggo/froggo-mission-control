@@ -51,22 +51,17 @@ export async function PUT(
 
     const value = typeof body.value === 'string' ? body.value : JSON.stringify(body.value);
 
-    // For sensitive keys, save to keychain and remove from DB
-    if (KEYCHAIN_KEYS.has(key)) {
-      const saved = await keychainSet(key, value);
-      if (saved) {
-        // Remove from DB if it was previously stored there
-        db.prepare('DELETE FROM settings WHERE key = ?').run(key);
-        return NextResponse.json({ key, value });
-      }
-      // Fall through to DB storage if keychain unavailable
-    }
-
+    // ALWAYS save to DB (reliable). Also try keychain as secondary store.
     db.prepare(`
       INSERT INTO settings (key, value)
       VALUES (?, ?)
       ON CONFLICT (key) DO UPDATE SET value = excluded.value
     `).run(key, value);
+
+    // Try keychain too (best-effort, non-blocking)
+    if (KEYCHAIN_KEYS.has(key)) {
+      await keychainSet(key, value).catch(() => {});
+    }
 
     return NextResponse.json({ key, value });
   } catch (error) {
