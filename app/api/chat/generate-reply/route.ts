@@ -114,6 +114,13 @@ async function fetchTabData(tab: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  // ── DEPRECATED ──────────────────────────────────────────────────────────────
+  // This endpoint is superseded by POST /api/sessions/chat for agent chat.
+  // Remaining callers: CommsInbox3Pane, XEngageView, x/automations/execute.
+  // These use a different API shape (threadMessages, platform, tone) and will be
+  // migrated in a future phase. Until then, this endpoint remains functional.
+  console.warn('[DEPRECATED] /api/chat/generate-reply called — use /api/sessions/chat for agent chat instead');
+
   try {
     const { message, context, tone = 'professional', tab, agentId, sessionKey } = await request.json();
     if (!message) {
