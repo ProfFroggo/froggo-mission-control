@@ -108,6 +108,17 @@ const MCP_DB = [
   'mcp__mission-control_db__task_add_dependency',
 ];
 
+const MCP_SOCIAL = [
+  'mcp__mission-control_db__x_mentions_list',
+  'mcp__mission-control_db__x_mention_update',
+  'mcp__mission-control_db__x_posts_list',
+  'mcp__mission-control_db__x_post_create',
+  'mcp__mission-control_db__x_analytics',
+  'mcp__mission-control_db__x_reply_queue',
+  'mcp__mission-control_db__x_search',
+  'mcp__mission-control_db__x_campaign_create',
+];
+
 const MCP_MEMORY = [
   'mcp__memory__memory_search',
   'mcp__memory__memory_recall',
@@ -208,6 +219,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
   apprentice: [
     'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch',
     ...MCP_DB,
+    ...MCP_SOCIAL,
     ...MCP_MEMORY,
   ],
   // worker: + safe bash commands + WebFetch + Agent subagents + Google Workspace
@@ -215,6 +227,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent',
     ...BASH_SAFE,
     ...MCP_DB,
+    ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
   ],
@@ -223,6 +236,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit',
     ...BASH_SAFE,
     ...MCP_DB,
+    ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
   ],
@@ -231,6 +245,7 @@ export const TIER_TOOLS: Record<string, string[]> = {
     'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit',
     ...BASH_SAFE,
     ...MCP_DB,
+    ...MCP_SOCIAL,
     ...MCP_MEMORY,
     ...MCP_GOOGLE,
   ],
