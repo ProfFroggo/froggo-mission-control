@@ -1381,6 +1381,32 @@ function initSchema(db: Database.Database) {
     db.exec(`ALTER TABLE campaigns ADD COLUMN types TEXT`);
   } catch { /* column already exists */ }
 
+  // Context files table
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS context_files (
+      id TEXT PRIMARY KEY,
+      entityType TEXT NOT NULL,
+      entityId TEXT NOT NULL,
+      originalName TEXT NOT NULL,
+      filePath TEXT NOT NULL,
+      fileType TEXT NOT NULL DEFAULT 'document',
+      mimeType TEXT,
+      fileSize INTEGER,
+      processedContent TEXT,
+      summary TEXT,
+      createdAt INTEGER NOT NULL,
+      processedAt INTEGER
+    )`);
+  } catch { /* already exists */ }
+
+  try {
+    db.exec(`ALTER TABLE projects ADD COLUMN contextNotes TEXT`);
+  } catch { /* already exists */ }
+
+  try {
+    db.exec(`ALTER TABLE campaigns ADD COLUMN contextNotes TEXT`);
+  } catch { /* already exists */ }
+
   syncCatalogAgents(db);
   syncCatalogModules(db);
 

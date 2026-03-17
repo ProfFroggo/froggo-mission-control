@@ -17,7 +17,7 @@ interface TranscriptionResult {
 
 export default function MeetingTranscriptionPanel() {
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summarizingIds, setSummarizingIds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<TranscriptionResult[]>(() => {
     try {
       const saved = localStorage.getItem('mission-control-meeting-transcriptions');
@@ -25,6 +25,7 @@ export default function MeetingTranscriptionPanel() {
     } catch { return []; }
   });
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getService = useCallback(async () => {
@@ -72,8 +73,10 @@ export default function MeetingTranscriptionPanel() {
     const result = results.find(r => r.id === resultId);
     if (!result) return;
 
-    setIsSummarizing(true);
-    setError('');
+    // Clear any previous error for this result before starting (so retry shows clean state immediately)
+    setErrors(prev => { const next = { ...prev }; delete next[resultId]; return next; });
+    // Mark this result as in-flight
+    setSummarizingIds(prev => new Set(prev).add(resultId));
 
     try {
       const service = await getService();
@@ -85,9 +88,12 @@ export default function MeetingTranscriptionPanel() {
         return updated;
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Summarization failed');
+      // Record per-result error; other results are unaffected
+      const message = err instanceof Error ? err.message : 'Summarization failed';
+      setErrors(prev => ({ ...prev, [resultId]: message }));
     } finally {
-      setIsSummarizing(false);
+      // Always remove from in-flight set, whether success or error
+      setSummarizingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
     }
   }, [results, getService]);
 
@@ -180,11 +186,11 @@ export default function MeetingTranscriptionPanel() {
                   {!result.summary && (
                     <button
                       onClick={() => summarize(result.id)}
-                      disabled={isSummarizing}
+                      disabled={summarizingIds.has(result.id)}
                       className="p-2 hover:bg-mission-control-border rounded transition-colors text-emerald-400"
                       title="AI Summarize"
                     >
-                      {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {summarizingIds.has(result.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     </button>
                   )}
                   <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-mission-control-border rounded transition-colors" title="Download">
@@ -199,6 +205,10 @@ export default function MeetingTranscriptionPanel() {
               <div className="text-sm text-mission-control-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg rounded p-3">
                 {result.transcript}
               </div>
+
+              {errors[result.id] && (
+                <div className="p-2 bg-error-subtle text-error rounded text-xs">{errors[result.id]}</div>
+              )}
 
               {result.summary && (
                 <div className="space-y-2 border-t border-mission-control-border pt-3">

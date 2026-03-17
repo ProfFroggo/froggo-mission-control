@@ -7,7 +7,7 @@ import {
   Settings, Users, Plus, Trash2, Target, Edit3, X,
   FileText, Image, File as FileIcon, Upload, RefreshCw,
   ChevronDown, ShieldAlert, ShieldCheck, Check, Flag,
-  Activity, Calendar
+  Activity, Calendar, BookOpen
 } from 'lucide-react';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
@@ -21,8 +21,9 @@ import ChatRoomView from '../ChatRoomView';
 import ProjectDispatchModal from './ProjectDispatchModal';
 import Kanban from '../Kanban';
 import ProjectGanttView from '../ProjectGanttView';
+import ContextPanel from '../ContextPanel';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline';
+type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: LayoutGrid },
@@ -32,6 +33,7 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'automations', label: 'Automations', icon: Zap },
   { id: 'approvals',   label: 'Approvals',   icon: ShieldAlert },
   { id: 'files',       label: 'Files',       icon: FolderOpen },
+  { id: 'context',     label: 'Context',     icon: BookOpen },
 ];
 
 const STATUS_CONFIG = {
@@ -1538,6 +1540,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         {activeTab === 'automations' && <AutomationsTab project={project} />}
         {activeTab === 'approvals'   && <ApprovalsTab project={project} />}
         {activeTab === 'files'       && <FilesTab project={project} />}
+        {activeTab === 'context'     && <ContextPanel entityType="project" entityId={project.id} />}
       </div>
 
       {/* Dispatch modal */}

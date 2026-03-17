@@ -6,7 +6,7 @@ import {
   X, Send, Check, Loader2, Bot,
   DollarSign, Leaf, Share2, Mail, Users, FileText, Megaphone, Star, Search, Briefcase,
   Eye, Target, ShoppingCart, Heart, TrendingUp, MessageCircle, Rocket,
-  SkipForward, Wand2,
+  SkipForward, Wand2, Sparkles, Upload, Trash2,
 } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign } from '../../types/campaigns';
@@ -107,6 +107,71 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // ── Discovery phase (AI wizard chat, shown before main wizard) ───────────────
+  interface DiscoveryMsg { role: 'user' | 'model'; text: string; widget?: string; }
+  const [wizardPhase, setWizardPhase] = useState<'discovery' | 'main' | 'context-files'>('discovery');
+  const [discoveryMsgs, setDiscoveryMsgs] = useState<DiscoveryMsg[]>([
+    { role: 'model', text: "Tell me about this campaign. What are you trying to achieve?" },
+  ]);
+  const [discoveryInput, setDiscoveryInput] = useState('');
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryReady, setDiscoveryReady] = useState(false);
+  const [discoveryStructuredData, setDiscoveryStructuredData] = useState<Record<string, unknown> | null>(null);
+  const discoveryScrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Context files (staged for upload after campaign creation) ────────────────
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [contextFilesDragging, setContextFilesDragging] = useState(false);
+  const contextFilesInputRef = useRef<HTMLInputElement>(null);
+  const [_createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
+
+  useEffect(() => {
+    discoveryScrollRef.current?.scrollTo({ top: discoveryScrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [discoveryMsgs, discoveryLoading]);
+
+  const sendDiscoveryMessage = useCallback(async (text: string, baseOverride?: Array<{ role: 'user' | 'model'; text: string; widget?: string }>) => {
+    const base = baseOverride ?? discoveryMsgs;
+    const newUserMsg = { role: 'user' as const, text };
+    const newMsgs = [...base, newUserMsg];
+    setDiscoveryMsgs(newMsgs);
+    setDiscoveryLoading(true);
+    try {
+      const res = await fetch('/api/campaigns/wizard-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, text: m.text })) }),
+      });
+      const data = await res.json();
+      if (data.ready && data.structuredData) {
+        setDiscoveryReady(true);
+        setDiscoveryStructuredData(data.structuredData);
+      }
+      setDiscoveryMsgs(prev => [...prev, { role: 'model' as const, text: data.text || '', widget: data.widget }]);
+    } catch { /* non-critical */ }
+    finally { setDiscoveryLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discoveryMsgs]);
+
+  const handleDiscoverySend = useCallback(async () => {
+    const text = discoveryInput.trim();
+    if (!text || discoveryLoading) return;
+    setDiscoveryInput('');
+    await sendDiscoveryMessage(text);
+  }, [discoveryInput, discoveryLoading, sendDiscoveryMessage]);
+
+  const handleDiscoveryConfirm = () => {
+    if (discoveryStructuredData) {
+      if (typeof discoveryStructuredData.name === 'string') setName(discoveryStructuredData.name);
+      if (typeof discoveryStructuredData.goal === 'string') setGoal(discoveryStructuredData.goal);
+      if (Array.isArray(discoveryStructuredData.types)) setTypes(discoveryStructuredData.types as string[]);
+      if (Array.isArray(discoveryStructuredData.channels)) setChannels(discoveryStructuredData.channels as string[]);
+      if (typeof discoveryStructuredData.targetAudience === 'string') setTargetAudience(discoveryStructuredData.targetAudience);
+      if (typeof discoveryStructuredData.budget === 'string') setBudget(discoveryStructuredData.budget.replace(/[^0-9.]/g, ''));
+      if (typeof discoveryStructuredData.brief === 'string') setBrief(discoveryStructuredData.brief);
+    }
+    setWizardPhase('main');
+  };
 
   // ── Scroll to bottom on new messages ────────────────────────────────────────
   useEffect(() => {
@@ -263,16 +328,42 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         color: '#6366f1',
         memberAgentIds: selectedAgents,
       }) as { success: boolean; id: string; campaign: Campaign };
-      onCreated(result.campaign ?? {
-        id: result.id, name, type: types[0] ?? 'general', types, goal,
-        status: 'draft', channels, budgetSpent: 0, currency: 'USD',
-        kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
-      });
+
+      const campaignId = result.campaign?.id ?? result.id;
+      setCreatedCampaignId(campaignId);
+
+      // If there are staged context files, show context-files phase
+      if (stagedFiles.length > 0) {
+        setCreating(false);
+        setWizardPhase('context-files');
+        // Upload files in background
+        for (const file of stagedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('entityType', 'campaign');
+          formData.append('entityId', campaignId);
+          fetch('/api/context-files/upload', { method: 'POST', body: formData }).catch(() => {});
+        }
+        // Give it a moment then close and call onCreated
+        setTimeout(() => {
+          onCreated(result.campaign ?? {
+            id: campaignId, name, type: types[0] ?? 'general', types, goal,
+            status: 'draft', channels, budgetSpent: 0, currency: 'USD',
+            kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
+          });
+        }, 500);
+      } else {
+        onCreated(result.campaign ?? {
+          id: campaignId, name, type: types[0] ?? 'general', types, goal,
+          status: 'draft', channels, budgetSpent: 0, currency: 'USD',
+          kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
+        });
+      }
     } catch (err) {
       setCreationError(err instanceof Error ? err.message : 'Failed to create campaign');
       setCreating(false);
     }
-  }, [name, types, goal, channels, brief, targetAudience, startDate, endDate, budget, selectedAgents, onCreated]);
+  }, [name, types, goal, channels, brief, targetAudience, startDate, endDate, budget, selectedAgents, stagedFiles, onCreated]);
 
   // ── Toggle helpers ───────────────────────────────────────────────────────────
   const toggleType = (v: string) => setTypes(prev => prev.includes(v) ? prev.filter(t => t !== v) : [...prev, v]);
@@ -553,7 +644,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
               const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
               setMessages(prev => [...prev, userMsg(label)]);
-              advanceTo('review');
+              setWizardPhase('context-files');
             }}
             className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
           >
@@ -651,6 +742,305 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       default:
         return null;
     }
+  }
+
+  // ── Discovery widget renderer (reuses form state, sends selection as message) ─
+  function renderDiscoveryWidget(widget: string) {
+    switch (widget) {
+      case 'types': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <div className="grid grid-cols-2 gap-1.5">
+            {TYPE_OPTIONS.map(t => {
+              const Icon = t.icon;
+              const sel = types.includes(t.value);
+              return (
+                <button key={t.value} onClick={() => toggleType(t.value)}
+                  className={`flex flex-col gap-1 p-2.5 rounded-lg border text-left transition-all ${sel ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
+                >
+                  <Icon size={13} />
+                  <span className="text-xs font-medium">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {types.length > 0 && (
+            <button onClick={() => sendDiscoveryMessage(types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', '))}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+              <Check size={12} /> Confirm ({types.length} selected)
+            </button>
+          )}
+        </div>
+      );
+      case 'goal': return (
+        <div className="mt-2 grid grid-cols-2 gap-1.5 max-w-[82%]">
+          {GOAL_OPTIONS.map(g => {
+            const Icon = g.icon;
+            return (
+              <button key={g.value} onClick={() => { setGoal(g.value); sendDiscoveryMessage(g.label); }}
+                className={`flex flex-col gap-1 p-2.5 rounded-lg border text-left transition-all ${goal === g.value ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
+              >
+                <Icon size={13} />
+                <span className="text-xs font-medium">{g.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      );
+      case 'channels': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <div className="grid grid-cols-2 gap-1.5">
+            {ALL_CHANNELS.map(ch => {
+              const Icon = CHANNEL_ICONS[ch];
+              const sel = channels.includes(ch);
+              return (
+                <button key={ch} onClick={() => toggleChannel(ch)}
+                  className={`flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all ${sel ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'}`}
+                >
+                  {Icon && <Icon size={13} />}
+                  <span className="text-xs font-medium">{CHANNEL_LABELS[ch]}</span>
+                  {sel && <Check size={10} className="ml-auto flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+          {channels.length > 0 && (
+            <button onClick={() => sendDiscoveryMessage(channels.map(c => CHANNEL_LABELS[c] ?? c).join(', '))}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+              <Check size={12} /> Confirm ({channels.length} selected)
+            </button>
+          )}
+        </div>
+      );
+      case 'dates': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-mission-control-text-dim mb-1 block">Start</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-mission-control-text-dim mb-1 block">End</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => sendDiscoveryMessage(startDate || endDate ? `${startDate || 'TBD'} → ${endDate || 'TBD'}` : 'No specific dates')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+              <Check size={12} /> Confirm dates
+            </button>
+            <button onClick={() => sendDiscoveryMessage('No specific dates yet')}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+              <SkipForward size={12} /> Skip
+            </button>
+          </div>
+        </div>
+      );
+      case 'budget': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <input type="number" placeholder="e.g. 50000" value={budget} onChange={e => setBudget(e.target.value)}
+            className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
+            onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')} />
+          <div className="flex gap-2">
+            <button onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+              <Check size={12} /> Confirm budget
+            </button>
+            <button onClick={() => sendDiscoveryMessage('No budget defined yet')}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+              <SkipForward size={12} /> Skip
+            </button>
+          </div>
+        </div>
+      );
+      default: return null;
+    }
+  }
+
+  // ── Active discovery widget — shown below the last model message ──────────────
+  const activeDiscoveryWidget = (() => {
+    if (discoveryLoading || discoveryReady) return null;
+    const last = discoveryMsgs[discoveryMsgs.length - 1];
+    return (last?.role === 'model' && last.widget) ? last.widget : null;
+  })();
+
+  // ── Discovery phase (AI wizard) ───────────────────────────────────────────────
+  if (wizardPhase === 'discovery') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+            <div className="flex items-center gap-2">
+              <Sparkles size={15} className="text-mission-control-accent" />
+              <span className="text-sm font-semibold text-mission-control-text">New Campaign</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setWizardPhase('main')}
+                className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              >
+                Skip
+              </button>
+              <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div ref={discoveryScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px]">
+            {discoveryMsgs.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'} w-full`}>
+                  {msg.role === 'model' && (
+                    <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot size={14} className="text-mission-control-accent" />
+                    </div>
+                  )}
+                  <div className={`max-w-[82%] px-3 py-2 rounded-lg text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-mission-control-accent text-white rounded-br-sm'
+                      : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+                {/* Render widget below the last model message that has one */}
+                {msg.role === 'model' && i === discoveryMsgs.length - 1 && activeDiscoveryWidget && (
+                  <div className="pl-9 w-full">
+                    {renderDiscoveryWidget(activeDiscoveryWidget)}
+                  </div>
+                )}
+              </div>
+            ))}
+            {discoveryLoading && (
+              <div className="flex gap-2 items-start">
+                <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0">
+                  <Bot size={14} className="text-mission-control-accent" />
+                </div>
+                <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            {discoveryReady && discoveryStructuredData && (
+              <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-accent/30 rounded-lg">
+                <p className="text-xs text-mission-control-text-dim mb-1 font-medium">Ready to create:</p>
+                <p className="text-sm font-semibold text-mission-control-text">{String(discoveryStructuredData.name ?? '')}</p>
+                {!!discoveryStructuredData.goal && (
+                  <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{String(discoveryStructuredData.goal)}</p>
+                )}
+                <button
+                  onClick={handleDiscoveryConfirm}
+                  className="mt-2 w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
+                >
+                  Looks good →
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 border-t border-mission-control-border">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={discoveryInput}
+                onChange={e => setDiscoveryInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
+                placeholder="Tell me about your campaign..."
+                disabled={discoveryLoading}
+                className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-1 focus:ring-mission-control-accent disabled:opacity-50"
+              />
+              <button
+                onClick={handleDiscoverySend}
+                disabled={!discoveryInput.trim() || discoveryLoading}
+                className="px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Context files phase ────────────────────────────────────────────────────────
+  if (wizardPhase === 'context-files') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
+            <div>
+              <div className="text-sm font-semibold text-mission-control-text">Add Context Files</div>
+              <div className="text-xs text-mission-control-text-dim">Optional — upload files Gemini should use as context</div>
+            </div>
+            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div
+              onDragOver={e => { e.preventDefault(); setContextFilesDragging(true); }}
+              onDragLeave={() => setContextFilesDragging(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setContextFilesDragging(false);
+                if (e.dataTransfer.files) setStagedFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+              }}
+              onClick={() => contextFilesInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${
+                contextFilesDragging
+                  ? 'border-mission-control-accent bg-mission-control-accent/10'
+                  : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface'
+              }`}
+            >
+              <input
+                ref={contextFilesInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={e => { if (e.target.files) setStagedFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+              />
+              <Upload size={20} className="mx-auto text-mission-control-text-dim mb-2" />
+              <p className="text-sm text-mission-control-text-dim">Drop files here or click to upload</p>
+              <p className="text-xs text-mission-control-text-dim mt-1">Docs, images, PDFs, briefs — any file</p>
+            </div>
+
+            {stagedFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {stagedFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                    <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
+                    <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
+                    <button onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-mission-control-text-dim hover:text-red-400 transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 border-t border-mission-control-border">
+            <button
+              onClick={() => {
+                setWizardPhase('main');
+                advanceTo('review');
+              }}
+              className="w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
+            >
+              {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────

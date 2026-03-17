@@ -499,6 +499,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
 
+    {
+      name: 'context_files_get',
+      description: 'Get context files and notes attached to a project or campaign. Returns processed markdown content from uploaded files (docs, images, briefs, etc.) that the human attached as context for AI agents working on this entity.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          entityType: { type: 'string', description: 'project or campaign' },
+          entityId: { type: 'string', description: 'The project or campaign ID' },
+        },
+        required: ['entityType', 'entityId'],
+      },
+    },
+
+    {
+      name: 'knowledge_update',
+      description: 'Update an existing knowledge base article by ID. Use to correct, expand, or replace the content of an article you found via knowledge_search. Increments the version number and records the updatedAt timestamp.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Article ID from knowledge_search or knowledge_write' },
+          title: { type: 'string', description: 'Updated title (omit to keep existing)' },
+          content: { type: 'string', description: 'Full replacement markdown content' },
+          category: { type: 'string', description: 'brand | guidelines | reference | onboarding | technical | tone' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Replacement tag list (omit to keep existing)' },
+        },
+        required: ['id', 'content'],
+      },
+    },
+
     // ── Social Media Module Tools ────────────────────────────────────────────
     {
       name: 'x_mentions_list',
@@ -1308,11 +1337,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const doneTaskCount = (db.prepare(
             "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status = 'done'"
           ).get(projectId) as { c: number }).c;
+
+          // Detect GSD planning files
+          let gsdPlanning: Record<string, any> | null = null;
+          try {
+            const gsdFiles = db.prepare(
+              `SELECT originalName, processedContent FROM context_files
+               WHERE entityType = 'project' AND entityId = ? AND originalName LIKE 'GSD-%'
+               ORDER BY createdAt ASC`
+            ).all(projectId) as Array<{ originalName: string; processedContent: string | null }>;
+            if (gsdFiles.length > 0) {
+              gsdPlanning = {
+                active: true,
+                files: gsdFiles.map(f => f.originalName),
+                guide: 'Use context_files_get({entityType:"project",entityId:"' + projectId + '"}) to read the GSD planning files. Follow GSD methodology: call context_files_get → read GSD-ROADMAP.md → find next unchecked phase → work → mark done.',
+                planningFiles: gsdFiles.reduce((acc, f) => {
+                  if (f.processedContent) acc[f.originalName] = f.processedContent.slice(0, 2000);
+                  return acc;
+                }, {} as Record<string, string>),
+              };
+            }
+          } catch { /* non-critical */ }
+
           return { content: [{ type: 'text', text: JSON.stringify({
             id: project.id, name: project.name, description: project.description,
             goal: project.goal, status: project.status, color: project.color,
+            contextNotes: project.contextNotes ?? null,
             createdAt: project.createdAt, updatedAt: project.updatedAt,
             members, milestones, openTasks: openTaskCount, doneTasks: doneTaskCount,
+            ...(gsdPlanning ? { gsdPlanning } : {}),
           }, null, 2) }] };
         } else {
           // All active projects — summary list
@@ -1464,6 +1517,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, hint: 'Knowledge saved. Other agents and future sessions can now find this via knowledge_search.' }) }] };
       }
 
+      // ── knowledge_update ────────────────────────────────────────────────────
+      case 'knowledge_update': {
+        const id = String(args?.id ?? '').trim();
+        if (!id) return { content: [{ type: 'text', text: JSON.stringify({ error: 'id required' }) }], isError: true };
+
+        const existing = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+        if (!existing) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Article not found. Use knowledge_search to find the correct id.' }) }], isError: true };
+
+        const content = String(args?.content ?? '').trim();
+        if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content required' }) }], isError: true };
+
+        const title    = args?.title    ? String(args.title).trim()    : (existing.title as string);
+        const category = args?.category ? String(args.category).trim() : (existing.category as string);
+        const tags     = Array.isArray(args?.tags) ? JSON.stringify(args.tags) : (existing.tags as string);
+        const version  = ((existing.version as number) ?? 1) + 1;
+        const now      = Date.now();
+
+        // Save current content to version history before overwriting
+        if (content !== existing.content) {
+          db.prepare(
+            `INSERT INTO knowledge_versions (articleId, content, editedBy, editedAt, versionNote) VALUES (?, ?, ?, ?, ?)`
+          ).run(id, existing.content as string, 'agent', now, 'Updated via knowledge_update MCP tool');
+        }
+
+        db.prepare(`
+          UPDATE knowledge_base
+          SET title = ?, content = ?, category = ?, tags = ?, version = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(title, content, category, tags, version, now, id);
+
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, version, hint: 'Article updated. Version incremented.' }) }] };
+      }
+
+      // ── context_files_get ───────────────────────────────────────────────────
+      case 'context_files_get': {
+        const entityType = String(args?.entityType ?? '');
+        const entityId = String(args?.entityId ?? '');
+        if (!entityType || !entityId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'entityType and entityId required' }) }], isError: true };
+
+        // Check if context_files table exists (may not exist on older DBs)
+        const hasContextTable = db.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='context_files'"
+        ).get();
+
+        const files = hasContextTable
+          ? db.prepare(
+              'SELECT id, originalName, fileType, mimeType, processedContent, summary, createdAt FROM context_files WHERE entityType = ? AND entityId = ? ORDER BY createdAt ASC'
+            ).all(entityType, entityId) as Record<string, unknown>[]
+          : [];
+
+        // Get contextNotes from the entity
+        let notes: string | null = null;
+        if (entityType === 'project') {
+          const p = db.prepare('SELECT contextNotes FROM projects WHERE id = ?').get(entityId) as { contextNotes: string } | undefined;
+          notes = p?.contextNotes ?? null;
+        } else if (entityType === 'campaign') {
+          const c = db.prepare('SELECT contextNotes FROM campaigns WHERE id = ?').get(entityId) as { contextNotes: string } | undefined;
+          notes = c?.contextNotes ?? null;
+        }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          entityType,
+          entityId,
+          notes,
+          files: files.map(f => ({
+            id: f.id,
+            name: f.originalName,
+            type: f.fileType,
+            summary: f.summary,
+            content: f.processedContent,
+          })),
+          hint: files.length === 0 && !notes ? 'No context files attached yet.' : `${files.length} context file(s) attached.`,
+        }, null, 2) }] };
+      }
+
       // ── project_context ─────────────────────────────────────────────────────
       case 'project_context': {
         if (args?.projectId) {
@@ -1497,6 +1625,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             description: project.description,
             goal: project.goal,
             status: project.status,
+            contextNotes: project.contextNotes ?? null,
             assignedAgents: members,
             openTaskCount: openTasks?.c ?? 0,
             tasksByStatus: statusBreakdown,
@@ -1601,6 +1730,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               goal: c.goal ?? null,
               status: c.status,
               channels: (() => { try { return JSON.parse(c.channels ?? '[]'); } catch { return []; } })(),
+              contextNotes: c.contextNotes ?? null,
               updatedAt: c.updatedAt,
             };
             if (hasMembersTable) {

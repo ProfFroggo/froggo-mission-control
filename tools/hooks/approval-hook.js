@@ -60,19 +60,20 @@ function logAnalytics(toolName, tier, decision, agentTrustTier) {
   } catch (e) { /* non-critical */ }
 }
 
-function createApprovalRecord(toolName, toolInput) {
+function createApprovalRecord(toolName, toolInput, status = 'pending') {
   try {
     const database = getDb();
     if (database) {
       const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       database.prepare(`
         INSERT INTO approvals (id, type, title, content, metadata, status, requester, tier, category, createdAt)
-        VALUES (?, 'tool_use', ?, ?, ?, 'pending', 'agent', 2, 'agent_approval', ?)
+        VALUES (?, 'tool_use', ?, ?, ?, ?, 'agent', 2, 'agent_approval', ?)
       `).run(
         id,
         `Tool: ${toolName}`,
         JSON.stringify(toolInput),
         JSON.stringify({ toolName, toolInput }),
+        status,
         Date.now()
       );
     }
@@ -187,7 +188,7 @@ async function main() {
   const decision = makeDecision(toolTier, trustTier);
 
   if (decision === 'block') {
-    createApprovalRecord(toolName, toolInput);
+    createApprovalRecord(toolName, toolInput, 'pending');
     logAnalytics(toolName, toolTier, 'block', trustTier);
     process.stdout.write(JSON.stringify({
       decision: 'block',
@@ -195,7 +196,8 @@ async function main() {
     }));
 
   } else if (decision === 'queue') {
-    createApprovalRecord(toolName, toolInput);
+    // Tool already ran — record as 'approved' audit log, not pending inbox item
+    createApprovalRecord(toolName, toolInput, 'approved');
     logAnalytics(toolName, toolTier, 'queue', trustTier);
     process.stdout.write(JSON.stringify({ decision: 'approve' }));
 
