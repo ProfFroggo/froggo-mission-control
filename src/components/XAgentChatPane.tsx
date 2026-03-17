@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, Users, AlertCircle, Zap } from 'lucide-react';
+import { Send, Loader2, Users, AlertCircle, Zap, RotateCcw, Brain, BookOpen, MessageSquare, Archive } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 import MarkdownMessage from './MarkdownMessage';
 import { chatApi } from '../lib/api';
+import { showToast } from './Toast';
 
 interface XAgentChatPaneProps {
   tab: XTab;
@@ -17,6 +18,16 @@ interface ChatMessage {
   timestamp: number;
   streaming?: boolean;
   error?: boolean;
+}
+
+interface SessionStatsData {
+  messageCount: number;
+  age: number;
+  compacted: boolean;
+  lastActivity: number;
+  tokenEstimate: number;
+  memoryFileCount: number;
+  kbArticleCount: number;
 }
 
 // Agent routing mapping: all tabs use social-manager
@@ -138,6 +149,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [sessionStats, setSessionStats] = useState<SessionStatsData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   // Per-tab message cache to preserve messages across tab switches
@@ -158,6 +170,42 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   useEffect(() => {
     setIsConnected(true);
   }, []);
+
+  // Fetch session stats
+  const fetchSessionStats = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sessions/stats?key=${encodeURIComponent(sessionKey)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSessionStats(data);
+      }
+    } catch { /* non-critical */ }
+  }, [sessionKey]);
+
+  // Load stats on mount and when tab changes
+  useEffect(() => {
+    fetchSessionStats();
+  }, [fetchSessionStats]);
+
+  // Handle new session reset
+  const handleNewSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sessions/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset', key: sessionKey }),
+      });
+      if (res.ok) {
+        setMessages([]);
+        tabMessagesRef.current[validTab] = [];
+        setSessionStats(null);
+        showToast('Session reset', 'success');
+        fetchSessionStats();
+      }
+    } catch {
+      showToast('Failed to reset session', 'error');
+    }
+  }, [sessionKey, validTab, fetchSessionStats]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -311,6 +359,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         }
       }
       setLoading(false);
+      fetchSessionStats(); // Refresh stats after message
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to send message';
       setMessages((prev) =>
@@ -323,7 +372,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       setError(errorMsg);
       setLoading(false);
     }
-  }, [input, loading, tab, validTab, safeAgentId, safeDisplayName, sessionKey]);
+  }, [input, loading, tab, validTab, safeAgentId, safeDisplayName, sessionKey, fetchSessionStats]);
 
   // Auto-send when flagged by external injection
   useEffect(() => {
@@ -355,11 +404,21 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             <Users className="w-5 h-5 text-info" />
             <h3 className="text-sm font-semibold text-mission-control-text">Agent Chat</h3>
           </div>
-          <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
-            isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
-            {isConnected ? 'Connected' : 'Disconnected'}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleNewSession}
+              title="New session"
+              className="flex items-center gap-1 px-2 py-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border rounded-full transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              New session
+            </button>
+            <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
+              isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -370,6 +429,46 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             {tab}
           </span>
         </div>
+        {/* Session stats indicators */}
+        {sessionStats && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+              <MessageSquare className="w-3 h-3" />
+              {sessionStats.messageCount} msgs
+            </span>
+            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.memoryFileCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
+              <Brain className="w-3 h-3" />
+              {sessionStats.memoryFileCount > 0 ? `${sessionStats.memoryFileCount} memory files` : 'No memory'}
+            </span>
+            <span className={`flex items-center gap-1 text-[10px] ${sessionStats.kbArticleCount > 0 ? 'text-mission-control-text-dim' : 'text-mission-control-text-dim/50'}`}>
+              <BookOpen className="w-3 h-3" />
+              {sessionStats.kbArticleCount > 0 ? `${sessionStats.kbArticleCount} KB articles` : 'No KB'}
+            </span>
+            {sessionStats.compacted && (
+              <span className="flex items-center gap-1 text-[10px] text-info">
+                <Archive className="w-3 h-3" />
+                Compacted
+              </span>
+            )}
+            {/* Context usage bar */}
+            <div className="flex items-center gap-1 text-[10px] text-mission-control-text-dim">
+              <span>Context:</span>
+              <div className="w-16 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    (sessionStats.tokenEstimate / 32000) > 0.8
+                      ? 'bg-error'
+                      : (sessionStats.tokenEstimate / 32000) > 0.5
+                      ? 'bg-warning'
+                      : 'bg-success'
+                  }`}
+                  style={{ width: `${Math.min(100, (sessionStats.tokenEstimate / 32000) * 100)}%` }}
+                />
+              </div>
+              <span>{Math.round((sessionStats.tokenEstimate / 32000) * 100)}%</span>
+            </div>
+          </div>
+        )}
         {error && (
           <div className="mt-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2 text-xs text-error">
             <AlertCircle className="w-4 h-4" />

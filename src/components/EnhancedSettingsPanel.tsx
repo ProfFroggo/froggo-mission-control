@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
   ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink,
-  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins, CheckCircle,
+  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins, CheckCircle, MessageSquare, Loader2,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
@@ -234,7 +234,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--mission-control-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform';
+type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform' | 'sessions';
 
 // Collapsible section component
 interface SectionProps {
@@ -481,6 +481,219 @@ function PlatformUpdateTab() {
           <ExternalLink size={11} /> View all releases on GitHub
         </a>
       </div>
+    </div>
+  );
+}
+
+// ─── Sessions Management Section ──────────────────────────────────────────────
+
+interface SessionItem {
+  key: string;
+  agentId: string;
+  agentName: string;
+  surface: string;
+  messageCount: number;
+  lastActivity: number;
+  createdAt: number;
+  compacted: boolean;
+}
+
+interface SessionsSummary {
+  totalSessions: number;
+  totalMessages: number;
+  oldestSession: number | null;
+  mostActiveAgent: string | null;
+}
+
+function SessionsManagementSection() {
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [summary, setSummary] = useState<SessionsSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
+
+  const fetchSessions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/sessions/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+        setSummary(data.summary || null);
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  const handleDelete = async (key: string) => {
+    if (!confirm('Delete this session and all its messages?')) return;
+    setDeletingKey(key);
+    try {
+      const res = await fetch(`/api/sessions/stats?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.key !== key));
+        showToast('Session deleted', 'success');
+        fetchSessions(); // refresh summary
+      }
+    } catch {
+      showToast('Failed to delete session', 'error');
+    }
+    setDeletingKey(null);
+  };
+
+  const handleExport = async (key: string) => {
+    setExportingKey(key);
+    try {
+      const res = await fetch('/api/sessions/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'export', key }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.markdown) {
+          const blob = new Blob([data.markdown], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `session-${key.replace(/[:/]/g, '-')}.md`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('Session exported', 'success');
+        }
+      }
+    } catch {
+      showToast('Failed to export session', 'error');
+    }
+    setExportingKey(null);
+  };
+
+  const formatAge = (ms: number) => {
+    const diff = Date.now() - ms;
+    const mins = Math.floor(diff / 60_000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  // Group sessions by surface
+  const grouped: Record<string, SessionItem[]> = {};
+  for (const s of sessions) {
+    const group = s.surface || 'other';
+    if (!grouped[group]) grouped[group] = [];
+    grouped[group].push(s);
+  }
+
+  const surfaceLabels: Record<string, string> = {
+    chat: 'Chat',
+    social: 'Social',
+    task: 'Task',
+    room: 'Room',
+    cron: 'Cron',
+    library: 'Library',
+    other: 'Other',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+        Loading sessions...
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary stats */}
+      {summary && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3">
+            <div className="text-lg font-semibold text-mission-control-text">{summary.totalSessions}</div>
+            <div className="text-xs text-mission-control-text-dim">Total sessions</div>
+          </div>
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3">
+            <div className="text-lg font-semibold text-mission-control-text">{summary.totalMessages}</div>
+            <div className="text-xs text-mission-control-text-dim">Total messages</div>
+          </div>
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3">
+            <div className="text-lg font-semibold text-mission-control-text">
+              {summary.oldestSession ? formatAge(summary.oldestSession) : '--'}
+            </div>
+            <div className="text-xs text-mission-control-text-dim">Oldest session</div>
+          </div>
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3">
+            <div className="text-lg font-semibold text-mission-control-text truncate">
+              {summary.mostActiveAgent || '--'}
+            </div>
+            <div className="text-xs text-mission-control-text-dim">Most active agent</div>
+          </div>
+        </div>
+      )}
+
+      {/* Sessions grouped by surface */}
+      {sessions.length === 0 ? (
+        <div className="text-center py-8 text-mission-control-text-dim">
+          <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No sessions yet</p>
+        </div>
+      ) : (
+        Object.entries(grouped).map(([surface, items]) => (
+          <div key={surface}>
+            <h3 className="text-sm font-semibold text-mission-control-text mb-2">
+              {surfaceLabels[surface] || surface} ({items.length})
+            </h3>
+            <div className="space-y-1">
+              {items.map(s => (
+                <div
+                  key={s.key}
+                  className="flex items-center justify-between p-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/30 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-mission-control-text truncate">{s.agentName}</span>
+                      {s.compacted && (
+                        <span className="px-1.5 py-0.5 text-[10px] bg-info-subtle text-info rounded">compacted</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-mission-control-text-dim truncate">
+                      {s.key}
+                    </div>
+                    <div className="flex gap-3 text-[10px] text-mission-control-text-dim mt-0.5">
+                      <span>{s.messageCount} msgs</span>
+                      <span>Last: {formatAge(s.lastActivity)}</span>
+                      <span>Created: {formatAge(s.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleExport(s.key)}
+                      disabled={exportingKey === s.key}
+                      title="Export as markdown"
+                      className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s.key)}
+                      disabled={deletingKey === s.key}
+                      title="Delete session"
+                      className="p-1.5 text-mission-control-text-dim hover:text-error rounded transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }
@@ -1431,6 +1644,7 @@ export default function EnhancedSettingsPanel() {
               { id: 'accounts', label: 'Accounts', icon: <LinkIcon size={14} /> },
               { id: 'security', label: 'Security', icon: <Shield size={14} /> },
               { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
+              { id: 'sessions', label: 'Sessions', icon: <Terminal size={14} /> },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -2311,8 +2525,11 @@ export default function EnhancedSettingsPanel() {
           </div>
         )}
 
+        {/* SESSIONS TAB */}
+        {activeTab === 'sessions' && !searchQuery && <SessionsManagementSection />}
+
         {/* Actions */}
-        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform'].includes(activeTab) && (
+        {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'sessions'].includes(activeTab) && (
           <div className="flex gap-3 mt-8 sticky bottom-0 bg-mission-control-bg/95 backdrop-blur-sm pt-4 pb-2 border-t border-mission-control-border">
             <button
               onClick={handleSave}
