@@ -61,27 +61,8 @@ const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// ---------------------------------------------------------------------------
-// Mock data for new analytics sections (labeled clearly — no live API for these)
-// ---------------------------------------------------------------------------
-
-// 7-day engagement rate trend — mock historical averages (%)
-const MOCK_ENGAGEMENT_TREND_7D = [2.1, 3.4, 2.8, 4.2, 3.9, 5.1, 4.7];
-const MOCK_ENGAGEMENT_TREND_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-// Best posting time heatmap — engagement score 0–100 per time slot
-// Keys: dayIndex (0=Sun…6=Sat), time-of-day bucket
-const MOCK_POSTING_HEATMAP: Record<number, Record<string, number>> = {
-  0: { morning: 20, noon: 45, afternoon: 60, evening: 80, night: 30 }, // Sun
-  1: { morning: 35, noon: 70, afternoon: 75, evening: 65, night: 20 }, // Mon
-  2: { morning: 40, noon: 65, afternoon: 80, evening: 70, night: 25 }, // Tue
-  3: { morning: 30, noon: 60, afternoon: 85, evening: 75, night: 15 }, // Wed
-  4: { morning: 45, noon: 55, afternoon: 70, evening: 90, night: 35 }, // Thu
-  5: { morning: 50, noon: 80, afternoon: 65, evening: 55, night: 40 }, // Fri
-  6: { morning: 25, noon: 50, afternoon: 55, evening: 85, night: 45 }, // Sat
-};
-const MOCK_HEATMAP_TIME_SLOTS = ['morning', 'noon', 'afternoon', 'evening', 'night'] as const;
-const MOCK_HEATMAP_SLOT_LABELS: Record<string, string> = {
+const HEATMAP_TIME_SLOTS = ['morning', 'noon', 'afternoon', 'evening', 'night'] as const;
+const HEATMAP_SLOT_LABELS: Record<string, string> = {
   morning: 'Morning',
   noon: 'Noon',
   afternoon: 'Afternoon',
@@ -89,37 +70,30 @@ const MOCK_HEATMAP_SLOT_LABELS: Record<string, string> = {
   night: 'Night',
 };
 
-// Mock recent posts for the content performance mini-table
-interface MockPost {
-  content: string;
-  date: string;
-  likes: number;
-  replies: number;
-  impressions: number;
+function getTimeSlot(hour: number): typeof HEATMAP_TIME_SLOTS[number] {
+  if (hour >= 5 && hour < 11) return 'morning';
+  if (hour >= 11 && hour < 14) return 'noon';
+  if (hour >= 14 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
 }
-const MOCK_RECENT_POSTS: MockPost[] = [
-  { content: 'Shipped a massive update to our analytics pipeline today. Real-time insights incoming for everyone.', date: '2026-03-12', likes: 142, replies: 18, impressions: 4800 },
-  { content: 'Thread: How we reduced onboarding drop-off by 34% using targeted activation nudges.', date: '2026-03-10', likes: 98, replies: 31, impressions: 3200 },
-  { content: 'Growth tip: Your best-performing content from 6 months ago is worth reposting. Audiences forget.', date: '2026-03-08', likes: 211, replies: 9, impressions: 7100 },
-  { content: 'Excited to announce we crossed 1,000 active users this week. Grateful for the community support.', date: '2026-03-06', likes: 87, replies: 42, impressions: 2900 },
-  { content: 'The underrated growth lever nobody talks about: improving your existing users experience first.', date: '2026-03-04', likes: 163, replies: 22, impressions: 5500 },
-];
 
-function exportMockPostsCSV(posts: MockPost[]) {
-  const header = ['Content', 'Date', 'Likes', 'Replies', 'Impressions', 'Engagement %'];
+function exportPostsCSV(posts: PostMetrics[]) {
+  const header = ['Content', 'Date', 'Likes', 'Retweets', 'Replies', 'Impressions', 'Engagement %'];
   const rows = posts.map((p) => {
     const preview = p.content.slice(0, 80).replace(/"/g, '""') + (p.content.length > 80 ? '...' : '');
+    const dateStr = new Date(p.created_at).toISOString().slice(0, 10);
     const engPct = p.impressions > 0
-      ? (((p.likes + p.replies) / p.impressions) * 100).toFixed(2)
+      ? (((p.likes + p.retweets + p.replies) / p.impressions) * 100).toFixed(2)
       : '0.00';
-    return [`"${preview}"`, p.date, p.likes, p.replies, p.impressions, engPct].join(',');
+    return [`"${preview}"`, dateStr, p.likes, p.retweets, p.replies, p.impressions, engPct].join(',');
   });
   const csv = [header.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `x-post-performance-mock-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `x-post-performance-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -324,6 +298,52 @@ export function XEnhancedAnalyticsView() {
     return { day: bestDay, hour: bestHourLabel, combined: bestCombined };
   }, [data]);
 
+  // Compute 7-day engagement rate trend from real tweet data
+  const engagementTrend = useMemo(() => {
+    if (!data?.postMetrics.length) return { values: [] as number[], labels: [] as string[] };
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const buckets: Record<number, { engagement: number; impressions: number }> = {};
+    for (const t of data.postMetrics) {
+      const dayOfWeek = new Date(t.created_at).getDay();
+      if (!buckets[dayOfWeek]) buckets[dayOfWeek] = { engagement: 0, impressions: 0 };
+      buckets[dayOfWeek].engagement += t.likes + t.retweets + t.replies;
+      buckets[dayOfWeek].impressions += t.impressions;
+    }
+    // Return Mon–Sun order (1,2,3,4,5,6,0)
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const values = order.map((d) => {
+      const b = buckets[d];
+      if (!b || b.impressions === 0) return 0;
+      return Number(((b.engagement / b.impressions) * 100).toFixed(2));
+    });
+    const labels = order.map((d) => dayLabels[d]);
+    return { values, labels };
+  }, [data]);
+
+  // Compute posting heatmap from real tweet timestamps (day x time-slot)
+  const postingHeatmap = useMemo(() => {
+    if (!data?.postMetrics.length) return {} as Record<number, Record<string, number>>;
+    const heatmap: Record<number, Record<string, number>> = {};
+    for (let d = 0; d < 7; d++) {
+      heatmap[d] = { morning: 0, noon: 0, afternoon: 0, evening: 0, night: 0 };
+    }
+    for (const t of data.postMetrics) {
+      const date = new Date(t.created_at);
+      const dayOfWeek = date.getDay();
+      const slot = getTimeSlot(date.getHours());
+      heatmap[dayOfWeek][slot] += t.likes + t.retweets + t.replies + 1;
+    }
+    return heatmap;
+  }, [data]);
+
+  // Top 5 recent posts sorted by engagement, from real data
+  const recentTopPosts = useMemo(() => {
+    if (!data?.postMetrics.length) return [];
+    return [...data.postMetrics]
+      .sort((a, b) => (b.likes + b.retweets + b.replies) - (a.likes + a.retweets + a.replies))
+      .slice(0, 5);
+  }, [data]);
+
   const getPerformanceClass = (value: number, avg: number) => {
     const ratio = value / avg;
     if (ratio >= 1.5) return 'text-success';
@@ -403,6 +423,21 @@ export function XEnhancedAnalyticsView() {
             >
               <RefreshCw size={16} />
             </button>
+            <div className="h-4 border-l border-mission-control-border" />
+            {[
+              { label: 'Weekly report', prompt: 'Generate a weekly performance report. Summarize post performance, engagement trends, top content, follower growth, and key insights. Use markdown tables.' },
+              { label: 'Best times', prompt: 'Analyze my posting times vs engagement. When do my posts perform best? Recommend an optimal posting schedule for next week.' },
+              { label: 'Content audit', prompt: 'Audit my content mix. What types of content get the most engagement? What should I post more/less of? Present findings as a table.' },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: action.prompt } }))}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+              >
+                <Sparkles size={10} />
+                {action.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -617,7 +652,7 @@ export function XEnhancedAnalyticsView() {
             </div>
 
             {/* ============================================================
-                NEW: Engagement Rate Trend Sparkline (7-day, mock data)
+                Engagement Rate Trend Sparkline (7-day, from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
               <div className="flex items-center justify-between mb-1">
@@ -625,92 +660,99 @@ export function XEnhancedAnalyticsView() {
                   <TrendingUp size={16} className="text-success" />
                   Engagement Rate Trend
                 </h3>
-                <span className="text-xs text-mission-control-text-dim italic">Mock data — historical averages</span>
               </div>
-              <p className="text-xs text-mission-control-text-dim mb-4">Last 7 days</p>
+              <p className="text-xs text-mission-control-text-dim mb-4">Engagement rate by day of week</p>
 
-              {/* SVG sparkline */}
-              <div className="w-full" style={{ height: 80 }}>
-                <svg
-                  viewBox="0 0 420 80"
-                  width="100%"
-                  height="80"
-                  preserveAspectRatio="none"
-                  aria-label="7-day engagement rate trend"
-                >
-                  {/* Horizontal grid lines */}
-                  {[0.25, 0.5, 0.75].map((t) => (
-                    <line
-                      key={t}
-                      x1={0}
-                      x2={420}
-                      y1={t * 80}
-                      y2={t * 80}
-                      stroke="currentColor"
-                      strokeOpacity={0.08}
-                      strokeWidth={1}
-                    />
-                  ))}
-                  {(() => {
-                    const vals = MOCK_ENGAGEMENT_TREND_7D;
-                    const min = Math.min(...vals);
-                    const max = Math.max(...vals);
-                    const range = max - min || 0.01;
-                    const pad = 6;
-                    const W = 420;
-                    const H = 80;
-                    const pts = vals.map((v, i) => {
-                      const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
-                      const y = pad + (1 - (v - min) / range) * (H - pad * 2);
-                      return [x, y] as [number, number];
-                    });
-                    const polyPoints = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-                    // Fill area under line
-                    const fillPath =
-                      `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} ` +
-                      pts.slice(1).map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ') +
-                      ` L${pts[pts.length - 1][0].toFixed(1)},${H - pad} L${pts[0][0].toFixed(1)},${H - pad} Z`;
-                    return (
-                      <>
-                        <path d={fillPath} fill={CHART_COLORS.green} fillOpacity={0.12} />
-                        <polyline
-                          points={polyPoints}
-                          fill="none"
-                          stroke={CHART_COLORS.green}
-                          strokeWidth={2.5}
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
+              {engagementTrend.values.length > 0 && engagementTrend.values.some(v => v > 0) ? (
+                <>
+                  {/* SVG sparkline */}
+                  <div className="w-full" style={{ height: 80 }}>
+                    <svg
+                      viewBox="0 0 420 80"
+                      width="100%"
+                      height="80"
+                      preserveAspectRatio="none"
+                      aria-label="7-day engagement rate trend"
+                    >
+                      {/* Horizontal grid lines */}
+                      {[0.25, 0.5, 0.75].map((t) => (
+                        <line
+                          key={t}
+                          x1={0}
+                          x2={420}
+                          y1={t * 80}
+                          y2={t * 80}
+                          stroke="currentColor"
+                          strokeOpacity={0.08}
+                          strokeWidth={1}
                         />
-                        {pts.map(([x, y], i) => (
-                          <circle
-                            key={i}
-                            cx={x.toFixed(1)}
-                            cy={y.toFixed(1)}
-                            r={3}
-                            fill={CHART_COLORS.green}
-                          />
-                        ))}
-                      </>
-                    );
-                  })()}
-                </svg>
-              </div>
-
-              {/* Day labels + values */}
-              <div className="flex justify-between mt-2 px-1">
-                {MOCK_ENGAGEMENT_TREND_LABELS.map((label, i) => (
-                  <div key={label} className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs font-semibold text-success">
-                      {MOCK_ENGAGEMENT_TREND_7D[i].toFixed(1)}%
-                    </span>
-                    <span className="text-xs text-mission-control-text-dim">{label}</span>
+                      ))}
+                      {(() => {
+                        const vals = engagementTrend.values;
+                        const min = Math.min(...vals);
+                        const max = Math.max(...vals);
+                        const range = max - min || 0.01;
+                        const pad = 6;
+                        const W = 420;
+                        const H = 80;
+                        const pts = vals.map((v, i) => {
+                          const x = pad + (i / (vals.length - 1)) * (W - pad * 2);
+                          const y = pad + (1 - (v - min) / range) * (H - pad * 2);
+                          return [x, y] as [number, number];
+                        });
+                        const polyPoints = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+                        // Fill area under line
+                        const fillPath =
+                          `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} ` +
+                          pts.slice(1).map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ') +
+                          ` L${pts[pts.length - 1][0].toFixed(1)},${H - pad} L${pts[0][0].toFixed(1)},${H - pad} Z`;
+                        return (
+                          <>
+                            <path d={fillPath} fill={CHART_COLORS.green} fillOpacity={0.12} />
+                            <polyline
+                              points={polyPoints}
+                              fill="none"
+                              stroke={CHART_COLORS.green}
+                              strokeWidth={2.5}
+                              strokeLinejoin="round"
+                              strokeLinecap="round"
+                            />
+                            {pts.map(([x, y], i) => (
+                              <circle
+                                key={i}
+                                cx={x.toFixed(1)}
+                                cy={y.toFixed(1)}
+                                r={3}
+                                fill={CHART_COLORS.green}
+                              />
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </svg>
                   </div>
-                ))}
-              </div>
+
+                  {/* Day labels + values */}
+                  <div className="flex justify-between mt-2 px-1">
+                    {engagementTrend.labels.map((label, i) => (
+                      <div key={label} className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs font-semibold text-success">
+                          {engagementTrend.values[i].toFixed(1)}%
+                        </span>
+                        <span className="text-xs text-mission-control-text-dim">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                  No engagement data available for this period
+                </div>
+              )}
             </div>
 
             {/* ============================================================
-                NEW: Best Posting Times Heatmap (mock data)
+                Best Posting Times Heatmap (from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
               <div className="flex items-center justify-between mb-1">
@@ -718,67 +760,77 @@ export function XEnhancedAnalyticsView() {
                   <Clock size={16} className="text-info" />
                   Best Posting Times
                 </h3>
-                <span className="text-xs text-mission-control-text-dim italic">Mock data — historical averages</span>
               </div>
               <p className="text-xs text-mission-control-text-dim mb-4">
-                Based on historical engagement data. Darker cells = higher engagement.
+                Based on your tweet engagement data. Darker cells = higher engagement.
               </p>
 
-              <div className="overflow-x-auto">
-                <div className="min-w-[360px]">
-                  {/* Day headers */}
-                  <div className="flex ml-24 mb-1.5 gap-1">
-                    {DAYS_SHORT.map((d) => (
-                      <div
-                        key={d}
-                        className="flex-1 text-center text-xs font-medium text-mission-control-text-dim"
-                      >
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Time slot rows */}
-                  {MOCK_HEATMAP_TIME_SLOTS.map((slot) => (
-                    <div key={slot} className="flex items-center gap-1 mb-1">
-                      <div className="w-24 shrink-0 text-right pr-3 text-xs text-mission-control-text-dim font-medium">
-                        {MOCK_HEATMAP_SLOT_LABELS[slot]}
-                      </div>
-                      {DAYS_SHORT.map((_, dayIdx) => {
-                        const score = MOCK_POSTING_HEATMAP[dayIdx][slot];
-                        const cellClass =
-                          score < 30
-                            ? 'bg-info/10'
-                            : score < 60
-                            ? 'bg-info/40'
-                            : 'bg-info/70';
-                        return (
-                          <div
-                            key={dayIdx}
-                            className={`flex-1 h-9 rounded-md transition-colors ${cellClass}`}
-                            title={`${DAYS_SHORT[dayIdx]} ${MOCK_HEATMAP_SLOT_LABELS[slot]} — score: ${score}`}
-                          />
-                        );
-                      })}
+              {Object.keys(postingHeatmap).length > 0 ? (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[360px]">
+                    {/* Day headers */}
+                    <div className="flex ml-24 mb-1.5 gap-1">
+                      {DAYS_SHORT.map((d) => (
+                        <div
+                          key={d}
+                          className="flex-1 text-center text-xs font-medium text-mission-control-text-dim"
+                        >
+                          {d}
+                        </div>
+                      ))}
                     </div>
-                  ))}
 
-                  {/* Legend */}
-                  <div className="flex items-center justify-end gap-2 mt-3">
-                    <span className="text-xs text-mission-control-text-dim">Low</span>
-                    <div className="flex gap-1">
-                      <div className="w-5 h-4 rounded-sm bg-info/10" />
-                      <div className="w-5 h-4 rounded-sm bg-info/40" />
-                      <div className="w-5 h-4 rounded-sm bg-info/70" />
+                    {/* Time slot rows */}
+                    {HEATMAP_TIME_SLOTS.map((slot) => {
+                      const allScores = DAYS_SHORT.map((_, dayIdx) => postingHeatmap[dayIdx]?.[slot] ?? 0);
+                      const maxScore = Math.max(...allScores, 1);
+                      return (
+                        <div key={slot} className="flex items-center gap-1 mb-1">
+                          <div className="w-24 shrink-0 text-right pr-3 text-xs text-mission-control-text-dim font-medium">
+                            {HEATMAP_SLOT_LABELS[slot]}
+                          </div>
+                          {DAYS_SHORT.map((_, dayIdx) => {
+                            const score = postingHeatmap[dayIdx]?.[slot] ?? 0;
+                            const normalized = maxScore > 0 ? (score / maxScore) * 100 : 0;
+                            const cellClass =
+                              normalized < 30
+                                ? 'bg-info/10'
+                                : normalized < 60
+                                ? 'bg-info/40'
+                                : 'bg-info/70';
+                            return (
+                              <div
+                                key={dayIdx}
+                                className={`flex-1 h-9 rounded-md transition-colors ${cellClass}`}
+                                title={`${DAYS_SHORT[dayIdx]} ${HEATMAP_SLOT_LABELS[slot]} — engagement: ${score}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+
+                    {/* Legend */}
+                    <div className="flex items-center justify-end gap-2 mt-3">
+                      <span className="text-xs text-mission-control-text-dim">Low</span>
+                      <div className="flex gap-1">
+                        <div className="w-5 h-4 rounded-sm bg-info/10" />
+                        <div className="w-5 h-4 rounded-sm bg-info/40" />
+                        <div className="w-5 h-4 rounded-sm bg-info/70" />
+                      </div>
+                      <span className="text-xs text-mission-control-text-dim">High</span>
                     </div>
-                    <span className="text-xs text-mission-control-text-dim">High</span>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                  No posting data available for this period
+                </div>
+              )}
             </div>
 
             {/* ============================================================
-                NEW: Content Performance Mini-Table (top 5 posts, mock data)
+                Content Performance Mini-Table (top 5 posts, real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
@@ -787,96 +839,104 @@ export function XEnhancedAnalyticsView() {
                     <BarChart2 size={15} className="text-mission-control-accent" />
                     Content Performance
                   </h3>
-                  <p className="text-xs text-mission-control-text-dim mt-0.5 italic">
-                    Recent 5 posts — mock data (no live post metrics on free tier)
+                  <p className="text-xs text-mission-control-text-dim mt-0.5">
+                    Top 5 posts by engagement
                   </p>
                 </div>
-                <button
-                  onClick={() => exportMockPostsCSV(MOCK_RECENT_POSTS)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
-                  title="Export CSV"
-                >
-                  <Download size={13} />
-                  Export CSV
-                </button>
+                {recentTopPosts.length > 0 && (
+                  <button
+                    onClick={() => exportPostsCSV(recentTopPosts)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                    title="Export CSV"
+                  >
+                    <Download size={13} />
+                    Export CSV
+                  </button>
+                )}
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-mission-control-border bg-mission-control-bg/50">
-                      <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                        Content
-                      </th>
-                      <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
-                        Date
-                      </th>
-                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                        Likes
-                      </th>
-                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
-                        Replies
-                      </th>
-                      <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
-                        Eng %
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-mission-control-border">
-                    {MOCK_RECENT_POSTS.map((post, i) => {
-                      const engPct = post.impressions > 0
-                        ? (((post.likes + post.replies) / post.impressions) * 100).toFixed(2)
-                        : '0.00';
-                      const preview = post.content.length > 50
-                        ? post.content.slice(0, 50) + '…'
-                        : post.content;
-                      return (
-                        <tr
-                          key={i}
-                          className="hover:bg-mission-control-bg/50 transition-colors"
-                        >
-                          <td className="p-3 max-w-xs">
-                            <span
-                              className="text-mission-control-text text-xs leading-relaxed block truncate"
-                              title={post.content}
-                            >
-                              {preview}
-                            </span>
-                          </td>
-                          <td className="p-3 text-xs text-mission-control-text-dim whitespace-nowrap">
-                            {new Date(post.date).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </td>
-                          <td className="p-3 text-right text-xs text-mission-control-text font-medium">
-                            {post.likes}
-                          </td>
-                          <td className="p-3 text-right text-xs text-mission-control-text font-medium">
-                            {post.replies}
-                          </td>
-                          <td className="p-3 text-right">
-                            <span
-                              className={`text-xs font-semibold ${
-                                Number(engPct) >= 5
-                                  ? 'text-success'
-                                  : Number(engPct) >= 2
-                                  ? 'text-info'
-                                  : Number(engPct) >= 0.5
-                                  ? 'text-warning'
-                                  : 'text-mission-control-text-dim'
-                              }`}
-                            >
-                              {engPct}%
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {recentTopPosts.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-mission-control-border bg-mission-control-bg/50">
+                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                          Content
+                        </th>
+                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                          Date
+                        </th>
+                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                          Likes
+                        </th>
+                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                          Replies
+                        </th>
+                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                          Eng %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-mission-control-border">
+                      {recentTopPosts.map((post) => {
+                        const engPct = post.impressions > 0
+                          ? (((post.likes + post.retweets + post.replies) / post.impressions) * 100).toFixed(2)
+                          : '0.00';
+                        const preview = post.content.length > 50
+                          ? post.content.slice(0, 50) + '...'
+                          : post.content;
+                        return (
+                          <tr
+                            key={post.id}
+                            className="hover:bg-mission-control-bg/50 transition-colors"
+                          >
+                            <td className="p-3 max-w-xs">
+                              <span
+                                className="text-mission-control-text text-xs leading-relaxed block truncate"
+                                title={post.content}
+                              >
+                                {preview}
+                              </span>
+                            </td>
+                            <td className="p-3 text-xs text-mission-control-text-dim whitespace-nowrap">
+                              {new Date(post.created_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </td>
+                            <td className="p-3 text-right text-xs text-mission-control-text font-medium">
+                              {post.likes}
+                            </td>
+                            <td className="p-3 text-right text-xs text-mission-control-text font-medium">
+                              {post.replies}
+                            </td>
+                            <td className="p-3 text-right">
+                              <span
+                                className={`text-xs font-semibold ${
+                                  Number(engPct) >= 5
+                                    ? 'text-success'
+                                    : Number(engPct) >= 2
+                                    ? 'text-info'
+                                    : Number(engPct) >= 0.5
+                                    ? 'text-warning'
+                                    : 'text-mission-control-text-dim'
+                                }`}
+                              >
+                                {engPct}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                  No posts available for this period
+                </div>
+              )}
             </div>
 
           </div>

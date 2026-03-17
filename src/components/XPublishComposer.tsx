@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image, Calendar, Clock, X, Lightbulb } from 'lucide-react';
-import { approvalApi, scheduleApi } from '../lib/api';
+import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 
 type PostMode = 'single' | 'thread';
@@ -157,7 +157,11 @@ function TweetEditor({ index, total, value, onChange, onRemove, disabled, showTh
   );
 }
 
-export default function XPublishComposer() {
+interface XPublishComposerProps {
+  onPostSuccess?: () => void;
+}
+
+export default function XPublishComposer({ onPostSuccess }: XPublishComposerProps = {}) {
   const [mode, setMode] = useState<PostMode>('single');
   const [tweets, setTweets] = useState<string[]>(['']);
   const [posting, setPosting] = useState(false);
@@ -269,16 +273,17 @@ export default function XPublishComposer() {
   const loadScheduledList = async () => {
     try {
       setLoadingScheduled(true);
-      const result = await scheduleApi.getAll();
-      const posts = (Array.isArray(result) ? result : [])
-        .filter((item: any) => item.platform === 'twitter' && item.scheduledTime);
-      setScheduled(posts.map((p: any) => ({
-        id: p.id,
-        content: p.content,
-        scheduled_time: p.scheduledTime,
-        status: p.status || 'pending',
-        media_id: p.mediaId || null,
-        metadata: p.metadata || null,
+      const res = await fetch('/api/x/posts?status=scheduled');
+      if (!res.ok) throw new Error(`Posts API error: ${res.status}`);
+      const data = await res.json();
+      const posts = data.posts || [];
+      setScheduled(posts.map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        content: p.content as string || '',
+        scheduled_time: p.scheduled_for as number || 0,
+        status: p.status as string || 'scheduled',
+        media_id: Array.isArray(p.media_ids) && p.media_ids.length > 0 ? p.media_ids[0] : null,
+        metadata: typeof p.metadata === 'object' ? JSON.stringify(p.metadata) : (p.metadata as string) || null,
       })));
     } catch {
       setScheduled([]);
@@ -378,6 +383,7 @@ export default function XPublishComposer() {
       // Clear draft on successful approval creation
       localStorage.removeItem(DRAFT_KEY);
       setResult({ success: true });
+      onPostSuccess?.();
       setTimeout(() => {
         setTweets(['']);
         setResult(null);
@@ -394,13 +400,18 @@ export default function XPublishComposer() {
     const content = mode === 'single' ? tweets[0] : JSON.stringify({ type: 'thread', tweets: tweets.filter(t => t.trim()) });
     if (!content.trim()) return;
     try {
-      await scheduleApi.create({
-        type: 'idea',
-        content,
-        platform: 'twitter',
-        status: 'idea',
-        metadata: JSON.stringify({ capturedAt: Date.now() }),
+      const res = await fetch('/api/x/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'idea',
+          content,
+          status: 'idea',
+          proposed_by: 'user',
+          metadata: { capturedAt: Date.now() },
+        }),
       });
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       localStorage.removeItem(DRAFT_KEY);
       setTweets(['']);
       showToast('success', 'Idea saved to drafts');
@@ -423,13 +434,38 @@ export default function XPublishComposer() {
 
     try {
       const content = mode === 'single' ? tweets[0] : JSON.stringify({ type: 'thread', tweets: tweets.filter(t => t.trim()) });
-      await scheduleApi.create({
-        type: 'draft',
-        content,
-        platform: 'twitter',
-        scheduledTime: timestampMs,
-        metadata: editingScheduledId ? JSON.stringify({ replacesId: editingScheduledId }) : undefined,
-      });
+      const threadTweets = mode === 'thread' ? tweets.filter(t => t.trim()) : null;
+
+      // If editing, update existing post; otherwise create new
+      if (editingScheduledId) {
+        const res = await fetch('/api/x/posts', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingScheduledId,
+            content,
+            type: mode === 'thread' ? 'thread' : 'tweet',
+            status: 'scheduled',
+            scheduled_for: timestampMs,
+            thread_tweets: threadTweets,
+          }),
+        });
+        if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+      } else {
+        const res = await fetch('/api/x/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: mode === 'thread' ? 'thread' : 'tweet',
+            content,
+            status: 'scheduled',
+            scheduled_for: timestampMs,
+            thread_tweets: threadTweets,
+            proposed_by: 'user',
+          }),
+        });
+        if (!res.ok) throw new Error(`Schedule failed: ${res.status}`);
+      }
 
       // Clear draft on successful schedule
       localStorage.removeItem(DRAFT_KEY);
@@ -451,7 +487,7 @@ export default function XPublishComposer() {
 
   const handleCancelScheduled = async (id: string) => {
     try {
-      await scheduleApi.delete(id);
+      await fetch(`/api/x/posts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       await loadScheduledList();
     } catch {
       await loadScheduledList();

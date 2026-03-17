@@ -123,50 +123,120 @@ async function analyzeWithGemini(
   filename: string,
   apiKey: string
 ): Promise<GeminiAnalysis> {
-  const prompt = `You are a knowledge base organizer. Analyze this file and return a JSON object with:
+  // Step 1: Get metadata (title, category, tags, summary)
+  const metaParts = [...parts, { text: `Analyze this file and return a JSON object with:
 - "title": A clear, descriptive title (not the filename)
 - "category": One of: ${CATEGORIES.join(', ')}
 - "tags": Array of 3-8 relevant tags (lowercase, hyphens)
 - "summary": 1-2 sentence summary
 - "scope": "all" (everyone), "agents" (agent-only), or "human" (human-only)
-- "extractedContent": COMPLETE markdown extraction of the ENTIRE document. Extract ALL text, not just a summary. For text docs: full text as clean markdown. For PDFs: every page, every section, every table, every bullet point. For images: detailed description. For spreadsheets: all data as markdown tables. This MUST be the full readable version — do NOT truncate or summarize. Include ALL headings, ALL paragraphs, ALL lists, ALL tables from the original.
 
 Filename: ${filename}
+Return ONLY valid JSON, no markdown fences.` }];
 
-Return ONLY valid JSON, no markdown fences.`;
-
-  parts.push({ text: prompt });
-
-  const res = await fetch(
+  const metaRes = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 32768 },
+        contents: [{ parts: metaParts }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
       }),
     }
   );
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${err.slice(0, 200)}`);
+  if (!metaRes.ok) {
+    const err = await metaRes.text();
+    throw new Error(`Gemini API error: ${metaRes.status} ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const parsed = JSON.parse(cleaned) as GeminiAnalysis;
+  const metaData = await metaRes.json();
+  const metaText = metaData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const metaCleaned = metaText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const meta = JSON.parse(metaCleaned) as Omit<GeminiAnalysis, 'extractedContent'>;
 
-  // Normalize category to lowercase to match UI filters
-  parsed.category = parsed.category.toLowerCase();
+  meta.category = meta.category.toLowerCase();
   const validCats = CATEGORIES.map(c => c.toLowerCase());
-  if (!validCats.includes(parsed.category)) {
-    parsed.category = 'reference';
+  if (!validCats.includes(meta.category)) {
+    meta.category = 'reference';
   }
 
-  return parsed;
+  // Step 2: Full document rewrite as markdown (separate call, full token budget)
+  const isHtmlFile = filename.toLowerCase().endsWith('.html') || filename.toLowerCase().endsWith('.htm');
+  const knowledgeArticleRules = `
+Structure the output as a professional knowledge base article that someone can quickly scan and deeply reference:
+
+## FORMAT REQUIREMENTS:
+1. **Executive Summary** (3-5 bullet points) — the key takeaways a busy reader needs in 10 seconds
+2. **Context** — one paragraph explaining what this document is, when it's from, and why it matters
+3. **Main Content** — the full document content, restructured for readability:
+   - Use ## for major sections, ### for subsections
+   - **Bold** key metrics, names, dates, and important terms
+   - Present data as markdown tables with clear headers — never as inline comma-separated values
+   - Use > blockquotes for notable quotes or critical callouts
+   - Use bullet points for lists, not paragraphs
+4. **Key Metrics** (if applicable) — a single reference table at the end with all important numbers
+5. **Action Items / Next Steps** (if applicable) — bullet list of what was decided or planned
+
+## QUALITY RULES:
+- Include ALL content from the original — every data point, every section, every detail
+- Do NOT summarize or skip sections — restructure for clarity, don't compress
+- Write in clear, professional prose — not a raw text dump
+- Add transition sentences between sections so it flows as an article
+- The article should be useful 6 months from now to someone who never saw the original
+- Output ONLY the markdown, no JSON, no code fences, no explanation`;
+
+  const rewritePrompt = isHtmlFile
+    ? `This is an HTML file. Extract the visible text content (what a human sees in a browser — ignore all HTML/CSS/JS/SVG source code) and rewrite it as a knowledge base article.
+${knowledgeArticleRules}`
+    : `Rewrite this entire document as a knowledge base article.
+${knowledgeArticleRules}`;
+
+  const rewriteParts = [...parts, { text: rewritePrompt }];
+
+  // Use gemini-3.1-flash-lite for rewrite — higher output token support
+  const rewriteRes = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: rewriteParts }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
+      }),
+    }
+  );
+
+  let extractedContent = '';
+  if (rewriteRes.ok) {
+    const rewriteData = await rewriteRes.json();
+    extractedContent = rewriteData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    const finishReason = rewriteData?.candidates?.[0]?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      console.warn(`[knowledge/ingest] Rewrite truncated: finishReason=${finishReason}, content length=${extractedContent.length}`);
+    }
+  } else {
+    // Fall back to gemini-2.5-flash
+    console.warn('[knowledge/ingest] 3.1-flash-lite failed, falling back to 2.5-flash');
+    const fallbackRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: rewriteParts }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 65536 },
+        }),
+      }
+    );
+    if (fallbackRes.ok) {
+      const fallbackData = await fallbackRes.json();
+      extractedContent = fallbackData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+    }
+  }
+
+  return { ...meta, extractedContent };
 }
 
 function saveOriginalFile(buffer: Buffer, filename: string, category: string): string {
@@ -232,7 +302,7 @@ export async function POST(req: NextRequest) {
 
     if (textContent) {
       // Text-based file — send as text
-      parts.push({ text: `File content:\n${textContent.slice(0, 30000)}` });
+      parts.push({ text: `File content:\n${textContent}` });
     } else if (GEMINI_INLINE_TYPES.has(mimeType) && fileBuffer.length < 20 * 1024 * 1024) {
       // Binary file Gemini can read inline (PDF, images)
       parts.push({
@@ -291,7 +361,7 @@ export async function POST(req: NextRequest) {
       ``,
       `---`,
       ``,
-      analysis.extractedContent || textContent?.slice(0, 10000) || '*No content extracted*',
+      analysis.extractedContent || textContent || '*No content extracted*',
     ].join('\n');
 
     // Save to database

@@ -1,7 +1,7 @@
 'use client';
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { ChevronRight, Clock, Users, Zap, CalendarDays } from 'lucide-react';
+import { ChevronRight, Clock, Users, Zap, CalendarDays, Archive } from 'lucide-react';
 import { formatTimeAgo } from '../../utils/formatting';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
@@ -53,10 +53,11 @@ function formatBudget(val: number): string {
 interface CampaignCardProps {
   campaign: Campaign;
   onClick: () => void;
+  onArchive?: () => void;
   viewMode?: 'grid' | 'list';
 }
 
-export default function CampaignCard({ campaign, onClick, viewMode = 'grid' }: CampaignCardProps) {
+export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 'grid' }: CampaignCardProps) {
   const sc = STATUS_CONFIG[campaign.status] ?? STATUS_CONFIG.draft;
   // Support both legacy `type: string` and new `types: string[]`
   const primaryType = (campaign.types && campaign.types.length > 0) ? campaign.types[0] : campaign.type;
@@ -171,6 +172,11 @@ export default function CampaignCard({ campaign, onClick, viewMode = 'grid' }: C
             <span className="flex items-center gap-1"><Clock size={11} /> {formatTimeAgo(lastActivity)}</span>
           </div>
 
+          {onArchive && campaign.status !== 'archived' && (
+            <button onClick={(e) => { e.stopPropagation(); onArchive(); }} className="p-1 rounded hover:bg-mission-control-surface text-mission-control-text-dim hover:text-warning transition-colors" title="Archive">
+              <Archive size={13} />
+            </button>
+          )}
           <ChevronRight size={14} className="flex-shrink-0 text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
         </div>
       </button>

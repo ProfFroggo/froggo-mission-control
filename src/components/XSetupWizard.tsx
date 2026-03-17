@@ -10,11 +10,13 @@ interface XSetupWizardProps {
 type Step = 'keys' | 'verify' | 'agent' | 'done';
 
 const TWITTER_KEYS = [
-  { id: 'twitter_api_key', label: 'API Key (Consumer Key)', placeholder: 'Enter your X API key...', required: false },
-  { id: 'twitter_api_secret', label: 'API Secret (Consumer Secret)', placeholder: 'Enter your API secret...', required: false },
-  { id: 'twitter_oauth_client_id', label: 'OAuth 2.0 Client ID', placeholder: 'Client ID...', required: true },
-  { id: 'twitter_oauth_client_secret', label: 'OAuth 2.0 Client Secret', placeholder: 'Client secret...', required: true },
-  { id: 'twitter_bearer_token', label: 'Bearer Token', placeholder: 'AAAA...', required: true },
+  { id: 'twitter_api_key', label: 'API Key (Consumer Key)', placeholder: 'Enter your X API key...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_api_secret', label: 'API Secret (Consumer Secret)', placeholder: 'Enter your API secret...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_access_token', label: 'Access Token', placeholder: 'Your user access token...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_access_token_secret', label: 'Access Token Secret', placeholder: 'Your access token secret...', required: true, group: 'OAuth 1.0a' },
+  { id: 'twitter_bearer_token', label: 'Bearer Token', placeholder: 'AAAA...', required: true, group: 'App' },
+  { id: 'twitter_oauth_client_id', label: 'OAuth 2.0 Client ID', placeholder: 'Client ID...', required: false, group: 'OAuth 2.0' },
+  { id: 'twitter_oauth_client_secret', label: 'OAuth 2.0 Client Secret', placeholder: 'Client secret...', required: false, group: 'OAuth 2.0' },
 ] as const;
 
 async function getKey(key: string): Promise<string> {
@@ -231,6 +233,27 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {/* Step 2: Verify */}
         {step === 'verify' && (
           <div className="space-y-4">
+            {/* OAuth Connect Button — uses OAuth 2.0 PKCE to get user token */}
+            {!verifyResult?.success && !verifying && (
+              <button
+                onClick={() => {
+                  // Open X OAuth in popup
+                  const w = window.open('/api/x/oauth', 'x-oauth', 'width=600,height=700');
+                  // Listen for popup close
+                  const check = setInterval(() => {
+                    if (w?.closed) {
+                      clearInterval(check);
+                      handleVerify();
+                    }
+                  }, 500);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#000] text-white rounded-lg text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
+              >
+                <Twitter size={16} />
+                Connect with X
+              </button>
+            )}
+
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
               {verifying ? (
                 <div className="text-center py-4">
@@ -360,7 +383,15 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 Your account is verified, credentials are in the keychain, and the social agent is configured.
               </p>
             </div>
-            <button onClick={onComplete}
+            <button onClick={async () => {
+                // Save setup completion flag
+                await fetch('/api/settings/twitter_setup_complete', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ value: 'true' }),
+                }).catch(() => {});
+                onComplete();
+              }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
               <BarChart2 size={14} /> Open Social Dashboard
             </button>

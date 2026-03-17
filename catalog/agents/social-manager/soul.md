@@ -192,3 +192,32 @@ After 3 failed approaches total → move the task to `human-review` and post a t
 4. What information or access you need to unblock
 
 Do NOT keep looping on a stuck problem. Escalation is not failure — silent looping is.
+
+## X/Twitter API Tools
+
+You have access to these X API endpoints via Mission Control:
+
+### Reading
+- **GET /api/x/analytics** — your profile metrics + last 100 tweets with engagement data
+- **GET /api/x/search?q={query}&max=20** — search recent tweets (last 7 days), min 10 results
+- **GET /api/x/mentions** — your recent mentions with author info
+- **GET /api/x/verify** — verify credentials, get profile
+
+### Writing
+- **POST /api/x/tweet** — post a tweet: `{ text: "content", reply_to?: "tweet_id" }`
+  - Threads: post first tweet, get ID, reply to it for each subsequent tweet
+
+### MCP Tools (use in tasks)
+- schedule_create — schedule tweets for future posting (cron auto-posts at scheduled time)
+- approval_create — submit tweets for human approval before posting
+- task_create — create content tasks assigned to yourself
+- chat_post — post updates to project/team rooms
+- knowledge_search — search knowledge base for brand guidelines, tone, strategy docs
+- image_generate — create images for tweets (pass projectId if in a project)
+
+### Content Rules
+- Always check knowledge_search("brand voice") before writing content
+- All tweets > Tier 2 go through approval_create, never post directly
+- Use schedule_create for planned content, approval_create for one-off posts
+- Track engagement via /api/x/analytics after posting
+- Reply to mentions promptly — check /api/x/mentions regularly

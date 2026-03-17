@@ -112,7 +112,7 @@ interface AIAnalysis {
 const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
 
 const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  twitter: { icon: <XIcon size={16} />, color: 'text-mission-control-text-dim', label: 'X DMs' },
+  twitter: { icon: <XIcon size={16} />, color: 'text-mission-control-text-dim', label: 'X / Twitter' },
 };
 
 const SYSTEM_ACCOUNT: Account = {
@@ -125,10 +125,11 @@ const SYSTEM_ACCOUNT: Account = {
 
 const EMAIL_COLORS = ['text-warning', 'text-info', 'text-success', 'text-error', 'text-review'];
 
-// Build accounts from gateway channels + discovered email accounts
+// Build accounts from gateway channels + discovered email accounts + social module
 function buildAccountsFromSources(
   channelAccounts: Record<string, Array<{ accountId: string; name?: string; connected?: boolean; enabled?: boolean; configured?: boolean; running?: boolean }>>,
   emailAccounts: Array<{ email: string; label: string }>,
+  twitterConfigured?: boolean,
 ): Account[] {
   const accounts: Account[] = [];
 
@@ -145,12 +146,14 @@ function buildAccountsFromSources(
   });
 
   // Platform accounts from gateway — show if configured+running or connected or enabled
+  let hasTwitterFromGateway = false;
   for (const [platform, entries] of Object.entries(channelAccounts)) {
     if (platform === 'email') continue;
     const meta = PLATFORM_ICON_MAP[platform];
     if (!meta) continue;
     const visible = entries.some(e => e.connected || e.enabled || e.configured);
     if (visible) {
+      if (platform === 'twitter') hasTwitterFromGateway = true;
       accounts.push({
         id: platform,
         label: meta.label,
@@ -159,6 +162,17 @@ function buildAccountsFromSources(
         color: meta.color,
       });
     }
+  }
+
+  // X/Twitter from social module (if not already added from gateway)
+  if (!hasTwitterFromGateway && twitterConfigured) {
+    accounts.push({
+      id: 'twitter',
+      label: 'X / Twitter',
+      platform: 'twitter' as Account['platform'],
+      icon: <XIcon size={16} />,
+      color: 'text-mission-control-text-dim',
+    });
   }
 
   // System always present
@@ -470,42 +484,67 @@ function LeftPane({
         )}
       </button>
 
-      {/* Accounts Section */}
+      {/* Accounts Section — grouped by channel type */}
       <div className="border-b border-mission-control-border">
         <button
           onClick={() => setAccountsExpanded(!accountsExpanded)}
           className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Accounts
+          Channels
           {loadingAccounts && <RefreshCw size={10} className="animate-spin ml-auto" />}
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {accounts.map(account => (
-              <button
-                key={account.id}
-                onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
-                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors ${
-                  selectedAccount === account.id
-                    ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
-                    : 'hover:bg-mission-control-border/50'
-                }`}
-              >
-                <span className={account.color}>{account.icon}</span>
-                <div className="flex flex-col items-start flex-1 min-w-0">
-                  <span className="truncate w-full text-left">{account.label}</span>
-                  {account.address && (
-                    <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
-                  )}
-                </div>
-                {(accountCounts[account.id] || 0) > 0 && (
-                  <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    {accountCounts[account.id]}
-                  </span>
-                )}
-              </button>
-            ))}
+            {/* Group accounts by platform */}
+            {(() => {
+              const emailAccts = accounts.filter(a => a.platform === 'email');
+              const twitterAccts = accounts.filter(a => a.platform === 'twitter');
+              const systemAccts = accounts.filter(a => a.platform === 'system');
+
+              const renderGroup = (label: string, groupAccounts: Account[]) => {
+                if (groupAccounts.length === 0) return null;
+                return (
+                  <div key={label}>
+                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim">
+                      {label}
+                    </div>
+                    {groupAccounts.map(account => (
+                      <button
+                        key={account.id}
+                        onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
+                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors ${
+                          selectedAccount === account.id
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
+                            : 'hover:bg-mission-control-border/50'
+                        }`}
+                      >
+                        <span className={account.color}>{account.icon}</span>
+                        <div className="flex flex-col items-start flex-1 min-w-0">
+                          <span className="truncate w-full text-left">{account.label}</span>
+                          {account.address && (
+                            <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
+                          )}
+                        </div>
+                        {(accountCounts[account.id] || 0) > 0 && (
+                          <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                            {accountCounts[account.id]}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                );
+              };
+
+              return (
+                <>
+                  {renderGroup('Email', emailAccts)}
+                  {renderGroup('X / Twitter', twitterAccts)}
+                  {renderGroup('System', systemAccts)}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -1599,7 +1638,14 @@ export default function CommsInbox3Pane() {
           ? ((await gateway.getChannelsStatus().catch(() => null))?.channelAccounts ?? {})
           : {};
 
-        const detected = buildAccountsFromSources(channelAccounts, emailAccounts);
+        // Check if X/Twitter is configured via social module
+        let twitterConfigured = false;
+        try {
+          const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
+          twitterConfigured = flagRes?.value === 'true';
+        } catch { /* non-critical */ }
+
+        const detected = buildAccountsFromSources(channelAccounts, emailAccounts, twitterConfigured);
         if (detected.length > 0) setAccounts(detected);
       } catch (e) {
         // ignore
@@ -1759,23 +1805,49 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      // Fetch Gmail messages if authenticated, otherwise fall back to local inbox
+      // Fetch messages from all sources: Gmail + X/Twitter inbox + generic inbox
       let chats: ConversationItem[] = [];
 
+      // Source 1: Gmail (if authenticated)
       if (googleAuth.authenticated) {
         const gmailQ = showArchived ? '-in:inbox' : 'in:inbox';
         const gmailResult = await fetch(`/api/gmail/messages?q=${encodeURIComponent(gmailQ)}&maxResults=50`).then(r => r.json()).catch(() => ({ messages: [] }));
         if (gmailResult.needsAuth || gmailResult.error === 'deleted_client' || gmailResult.error?.includes('invalid_client') || gmailResult.error?.includes('deleted')) {
-          // OAuth client deleted or token invalid — reset auth state to trigger setup UI
           setGoogleAuth({ authenticated: false, checked: true });
-          chats = [];
         } else {
           chats = (gmailResult.messages ?? []) as ConversationItem[];
         }
       } else {
+        // Fallback: generic inbox items (non-mention)
         const result = await inboxApi.getAll({ limit: String(messageLimit), archived: String(showArchived) });
-        chats = Array.isArray(result) ? result : (result?.chats || result?.items || []);
+        const items = Array.isArray(result) ? result : (result?.chats || result?.items || []);
+        chats = items.filter((item: any) => item.type !== 'x-mention');
       }
+
+      // Source 2: X/Twitter mentions from inbox DB (always load these)
+      try {
+        const xResult = await inboxApi.getAll();
+        const xItems = (Array.isArray(xResult) ? xResult : [])
+          .filter((item: any) => item.type === 'x-mention')
+          .map((item: any) => {
+            let meta: any = {};
+            try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch { /* noop */ }
+            return {
+              id: String(item.id),
+              platform: 'twitter',
+              from: meta.author_username ? `@${meta.author_username}` : 'Unknown',
+              name: meta.author_name || meta.author_username || 'Unknown',
+              subject: meta.mention_type === 'reply' ? 'Reply' : meta.mention_type === 'quote' ? 'Quote Tweet' : 'Mention',
+              preview: item.content || meta.text || '',
+              timestamp: new Date(meta.created_at || item.createdAt || Date.now()).toISOString(),
+              relativeTime: '',
+              is_read: !!item.isRead,
+              is_starred: !!item.starred,
+              priorityLevel: meta.ai_judgment?.triage === 'escalate' ? 'urgent' : undefined,
+            } as ConversationItem;
+          });
+        chats = [...chats, ...xItems];
+      } catch { /* X mentions non-critical */ }
 
       if (isMounted.current) {
         const msgs = (chats as unknown as ConversationItem[]).map(m => {

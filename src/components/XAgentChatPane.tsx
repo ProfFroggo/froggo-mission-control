@@ -19,183 +19,115 @@ interface ChatMessage {
   error?: boolean;
 }
 
-// Agent routing mapping: tab -> primary agent ID
+// Agent routing mapping: all tabs use social-manager
 const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   pipeline: { agentId: 'social-manager', displayName: 'Social Manager' },
-  publish: { agentId: 'writer', displayName: 'Writer' },
-  research: { agentId: 'researcher', displayName: 'Researcher' },
-  plan: { agentId: 'writer', displayName: 'Writer' },
-  drafts: { agentId: 'writer', displayName: 'Writer' },
-  calendar: { agentId: 'social-manager', displayName: 'Social Manager' },
-  mentions: { agentId: 'social-manager', displayName: 'Social Manager' },
-  'reply-guy': { agentId: 'writer', displayName: 'Writer' },
-  'content-mix': { agentId: 'social-manager', displayName: 'Social Manager' },
-  automations: { agentId: 'social-manager', displayName: 'Social Manager' },
-  analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
-  reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
-  campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
-  'agent-mode': { agentId: 'social-manager', displayName: 'Social Manager' },
-  competitors: { agentId: 'researcher', displayName: 'Researcher' },
-  hashtags: { agentId: 'writer', displayName: 'Writer' },
+  engage: { agentId: 'social-manager', displayName: 'Social Manager' },
+  intelligence: { agentId: 'social-manager', displayName: 'Social Manager' },
+  measure: { agentId: 'social-manager', displayName: 'Social Manager' },
+  configure: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
-// Quick prompts for each tab — contextual one-click prompts that auto-send
+// Quick prompts for each consolidated tab
 const QUICK_PROMPTS: Record<XTab, string[]> = {
   pipeline: [
     'What content is stuck and needs attention?',
-    'Move ready drafts to the approval queue',
     'Suggest scheduling for approved posts',
-    'Show me bottlenecks in the content pipeline',
-  ],
-  publish: [
-    'Write 3 tweet variations for my latest post',
-    'Suggest the best hashtags for this content',
-    'Rewrite this for maximum engagement',
-    'Create a thread version of this tweet',
-  ],
-  research: [
-    'What are the trending topics in my niche today?',
-    'Find top-performing tweets about this topic this week',
-    'Analyze my competitors\' content strategy',
-    'What content format gets most engagement?',
-  ],
-  plan: [
     'Generate a 2-week content calendar',
-    'Suggest 10 tweet ideas for this week',
-    'What topics should I cover based on trends?',
-    'Create a thread series plan',
+    'Show me bottlenecks in the pipeline',
   ],
-  drafts: [
-    'Review all my drafts and suggest improvements',
-    'Which draft is ready to publish?',
-    'Improve the hooks on my draft tweets',
-    'Rewrite my weakest draft',
-  ],
-  analytics: [
-    'What\'s my best performing content type?',
-    'When should I post for maximum reach?',
-    'What topics should I post more about?',
-    'Summarize my performance this week',
-  ],
-  campaigns: [
-    'Plan a product launch tweet campaign',
-    'Create a 5-day announcement sequence',
-    'Write campaign hooks for A/B testing',
-    'What\'s the ideal campaign structure for my niche?',
-  ],
-  calendar: [
-    'What should I post this week?',
-    'Find gaps in my content schedule',
-    'Optimize my posting times',
-    'Plan content for the next 7 days',
-  ],
-  mentions: [
+  engage: [
     'Summarize recent mentions and sentiment',
     'Draft replies to my top mentions',
-    'Identify engagement opportunities',
     'Who should I prioritize responding to?',
+    'Find trending conversations to join',
   ],
-  'reply-guy': [
-    'Find tweets I should reply to today',
-    'Write 5 clever reply hooks',
-    'Identify trending conversations to join',
-    'Draft a quote tweet for a trending post',
-  ],
-  'content-mix': [
-    'Analyze my current content distribution',
-    'Suggest a better content mix ratio',
-    'What content type am I underusing?',
-    'Plan a balanced content week',
-  ],
-  automations: [
-    'Suggest automations for my workflow',
-    'What should I automate first?',
-    'Review my existing automation rules',
-    'Create a welcome reply automation',
-  ],
-  reddit: [
-    'Find relevant subreddits for my niche',
-    'Draft an authentic Reddit comment',
-    'Summarize this week\'s Reddit mentions',
-    'Find threads I should engage with',
-  ],
-  'agent-mode': [
-    'Suggest a content brief for a SaaS growth account',
-    'What posting frequency works best for B2B?',
-    'Review my agent brief and suggest improvements',
-    'What topics should the agent focus on this week?',
-  ],
-  competitors: [
-    'Analyze what my top competitor does well',
+  intelligence: [
+    'What are the trending topics in my niche?',
+    'Analyze my competitors\' content strategy',
+    'Suggest hashtags for my next post',
     'What content gaps can I exploit?',
-    'Suggest a counter-strategy to their approach',
-    'What would make my content stand out from theirs?',
   ],
-  hashtags: [
-    'Suggest hashtags for a product launch tweet',
-    'What hashtags work best for growth content?',
-    'Which hashtags are trending in the SaaS space?',
-    'Create a hashtag set for a weekly series',
+  measure: [
+    'What\'s my best performing content type?',
+    'When should I post for maximum reach?',
+    'Summarize my performance this week',
+    'Analyze my current content mix',
+  ],
+  configure: [
+    'Create an automation that auto-replies to mentions with 50+ likes',
+    'Set up a daily posting schedule automation',
+    'What automations should I have running?',
+    'Review my agent brief and improve it',
   ],
 };
 
 // Set of valid tabs for validation
 const tabsWithoutUndefined = new Set<XTab>([
-  'pipeline', 'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
-  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns',
-  'agent-mode', 'competitors', 'hashtags',
+  'pipeline', 'engage', 'intelligence', 'measure', 'configure',
 ]);
 
-// System prompts for each tab to give context to the agent
+// System prompts for each consolidated tab
 const TAB_CONTEXT: Record<XTab, string> = {
-  pipeline: `You are the Social Manager agent overseeing the content pipeline. Current context: Pipeline (Kanban) View. Your role: Help move content through the production stages, advise on approval decisions, suggest scheduling strategy, and identify bottlenecks in the content workflow.`,
+  pipeline: `You are the Social Manager agent overseeing the content pipeline. Current context: Pipeline — unified content workflow (Kanban board, calendar, list, campaigns).
 
-  publish: `You are the Writer agent helping compose and publish X/Twitter posts. Current context: X/Twitter Publish Tab. Your role: Help craft engaging tweets, suggest improvements to copy, recommend hashtags, and assist with thread composition.`,
+Your role: Help move content through production stages (Ideas → Drafting → Review → Approved → Scheduled → Published), advise on approval decisions, suggest scheduling strategy, plan campaigns, and identify bottlenecks.
 
-  research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
-
-  plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
-
-  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
-
-  calendar: `You are the Social Manager agent managing the X/Twitter content calendar. Current context: X/Twitter Calendar Tab. Your role: Help schedule content, optimize posting times, manage the editorial calendar.`,
-
-  mentions: `You are the Social Manager agent monitoring X/Twitter mentions. Current context: X/Twitter Mentions Tab. Your role: Help monitor brand mentions, suggest responses, identify engagement opportunities.`,
-
-  'reply-guy': `You are the Writer agent specializing in reply-style content for X/Twitter. Current context: X/Twitter Reply Guy Tab. Your role: Help craft clever replies, quote tweets, and engagement responses.`,
-
-  'content-mix': `You are the Social Manager agent helping manage the X/Twitter content mix. Current context: X/Twitter Content Mix Tracker Tab. Your role: Help balance content types, track content distribution.`,
-
-  automations: `You are the Social Manager agent managing X/Twitter automations. Current context: X/Twitter Automations Tab. Your role: Help set up automated workflows, schedule recurring content, manage bot behaviors.`,
-
-  analytics: `You are the Social Manager agent reviewing X/Twitter analytics. Current context: X/Twitter Analytics Tab. Your role: Help interpret performance data, identify trends, suggest content optimizations.`,
-
-  reddit: `You are the Social Manager agent monitoring Reddit for product mentions. Current context: Reddit Monitor Tab. Your role: Help monitor subreddits for mentions of a product, analyze threads, and draft authentic Reddit replies. Use natural, conversational Reddit tone.`,
-
-  'agent-mode': `You are the Social Manager agent helping configure and oversee the agentic social media workflow. Current context: Agent Mode Tab. Your role: Help define content briefs, review agent-generated drafts, suggest approval strategies, and optimize the automated content pipeline.`,
-
-  competitors: `You are the Researcher agent analyzing competitor social media strategies. Current context: Competitor Tracker Tab. Your role: Help analyze competitor content patterns, identify gaps and opportunities, and suggest counter-strategies to gain competitive advantage.`,
-
-  hashtags: `You are the Writer agent helping discover and manage hashtags for maximum reach. Current context: Hashtag Intelligence Tab. Your role: Suggest relevant hashtags, explain trending tags, help build hashtag sets for campaigns, and advise on hashtag strategy.`,
-
-  campaigns: `You are the Social Manager agent helping plan multi-stage social media campaigns. Current context: Campaigns Tab.
-
-Your role: Help design campaign arcs, suggest tweet content for each stage, optimize timing and sequencing, and ensure narrative coherence across a multi-day campaign.
-
-When you have enough information to propose a campaign, output it as a JSON block wrapped in \`\`\`campaign fences. The format:
+When proposing a campaign, output as a JSON block in \`\`\`campaign fences:
 \`\`\`campaign
+{ "title": "...", "subject": "...", "stages": [{ "dayOffset": 0, "time": "10:00", "type": "tweet", "content": "...", "notes": "..." }] }
+\`\`\``,
+
+  engage: `You are the Social Manager agent managing community engagement. Current context: Engage — unified inbox for all incoming mentions, replies, and engagement opportunities.
+
+Your role: Triage mentions by priority, suggest smart replies, identify high-engagement opportunities, manage reply templates, and help craft authentic responses. All replies go through human approval before posting.
+
+When suggesting replies, provide 2-3 options with different tones (professional, casual, witty). Format each option clearly.`,
+
+  intelligence: `You are the Social Manager agent conducting research and competitive intelligence. Current context: Intelligence — search, competitor tracking, and hashtag discovery.
+
+Your role: Search X for trending topics, analyze competitor content strategies, discover high-performing hashtags, identify content gaps, and provide actionable research insights.
+
+Research capabilities:
+- Search recent tweets with engagement metrics
+- Track competitor accounts and their performance
+- Discover trending hashtags and their engagement rates
+- Analyze content patterns across the niche
+
+When presenting findings, include: content/handle, engagement metrics, why it matters, and actionable next steps.`,
+
+  measure: `You are the Social Manager agent reviewing performance analytics. Current context: Measure — analytics dashboard with engagement metrics, content distribution, and growth tracking.
+
+Your role: Interpret performance data, identify trends, suggest content optimizations, analyze content mix balance, and provide data-driven recommendations for improving reach and engagement.
+
+You can run these AI-powered analyses:
+- "Run competitor analysis" — search X for competitor accounts, compare engagement metrics, identify content gaps
+- "Generate weekly report" — summarize post performance, engagement trends, top content, growth insights
+- "Content mix audit" — analyze the balance of content types and suggest optimizations
+- "Best posting times" — analyze when posts get most engagement and recommend schedule changes
+
+When presenting analysis, use markdown tables for metrics and bold key insights.`,
+
+  configure: `You are the Social Manager agent helping configure automation and agent settings. Current context: Configure — agent mode, automation rules, and credential management.
+
+Your role: Help define content briefs for autonomous posting, set up automation rules (auto-reply triggers, scheduled content), review agent-generated drafts, and optimize the automated content pipeline.
+
+When the user wants to create an automation, help them define it conversationally then output a JSON block:
+\`\`\`automation
 {
-  "title": "Campaign Title",
-  "subject": "Brief description of theme/goal",
-  "stages": [
-    { "dayOffset": 0, "time": "10:00", "type": "tweet", "content": "Tweet text here", "notes": "Hook tweet" },
-    { "dayOffset": 1, "time": "12:00", "type": "tweet", "content": "Follow-up tweet", "notes": "Build interest" },
-    { "dayOffset": 3, "time": "10:00", "type": "thread", "content": "Thread content", "notes": "Deep dive" }
-  ]
+  "name": "Auto-reply to mentions with 50+ likes",
+  "description": "Reply to high-engagement mentions automatically",
+  "trigger_type": "mention",
+  "trigger_config": { "min_followers": 100, "mention_type": "reply" },
+  "actions": [{ "type": "reply", "config": { "template": "Thanks for the love, {{username}}!" } }],
+  "max_per_hour": 5,
+  "max_per_day": 20
 }
 \`\`\`
 
-Always explain the campaign strategy in plain text BEFORE the JSON block. The user can edit stages in the middle pane after you propose them. Ask clarifying questions first if needed (topic, audience, duration, tone). Build iteratively — propose, get feedback, refine.`,
+Trigger types: mention, keyword, time, follower, dm
+Action types: reply, like, retweet, dm, add_to_list
+All actions go through human approval — nothing posts directly.`,
 };
 
 export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
@@ -213,14 +145,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const prevTabRef = useRef<XTab>(tab);
 
   // Defensive: validate tab and provide fallback for unknown tabs
-  const validTab: XTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
-  
-  // Defensive: fallback to 'research' agent if tab is not in routing
-  const agentConfig = AGENT_ROUTING[validTab] || { agentId: 'researcher', displayName: 'Researcher' };
-  
-  // Defensive: ensure agentId is always defined
-  const safeAgentId = agentConfig?.agentId || 'researcher';
-  const safeDisplayName = agentConfig?.displayName || 'Researcher';
+  const validTab: XTab = tabsWithoutUndefined.has(tab) ? tab : 'pipeline';
+
+  // Defensive: fallback agent config
+  const agentConfig = AGENT_ROUTING[validTab] || { agentId: 'social-manager', displayName: 'Social Manager' };
+  const safeAgentId = agentConfig.agentId;
+  const safeDisplayName = agentConfig.displayName;
   
   const sessionKey = `agent:${safeAgentId}:xtwitter:${validTab}`;
 
@@ -323,19 +253,21 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     ]);
 
     try {
-      // Build prompt with tab context
-      // Save user message to chat history
-      chatApi.saveMessage(sessionKey, {
-        role: 'user',
-        content: text,
-        timestamp: Date.now(),
-        channel: 'xtwitter',
-      });
+      // Send to agent chat room — the social-manager agent has MCP tools
+      // and can call X API endpoints, search, create tasks, etc.
+      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'pipeline';
 
-      // Get AI response via generate-reply (spawns Claude)
-      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
-      const contextPrompt = `${TAB_CONTEXT[contextTab]}\n\nUser message: ${text}`;
+      // Post to agent-specific chat room (isolated per surface, not shared with main 1-1)
+      const roomId = `social-${safeAgentId}-${validTab}`;
+      try {
+        await fetch(`/api/chat-rooms/${roomId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId: 'human', content: text, role: 'user' }),
+        });
+      } catch { /* non-critical */ }
 
+      // Server pre-fetches live data based on tab + uses agent identity
       const response = await fetch('/api/chat/generate-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -343,6 +275,9 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           message: text,
           context: TAB_CONTEXT[contextTab],
           tone: 'professional',
+          tab: contextTab,
+          agentId: safeAgentId,
+          sessionKey,
         }),
       });
 
@@ -369,6 +304,40 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           timestamp: Date.now(),
           channel: 'xtwitter',
         });
+
+        // Extract actionable content from response and dispatch to editor
+        // Campaign JSON blocks → pipeline campaigns view
+        if (validTab === 'pipeline') {
+          const campaignMatch = agentContent.match(/```campaign\s*\n([\s\S]*?)```/);
+          if (campaignMatch) {
+            try {
+              const campaignData = JSON.parse(campaignMatch[1].trim());
+              window.dispatchEvent(new CustomEvent('x-campaign-proposal', { detail: campaignData }));
+            } catch { /* invalid JSON, ignore */ }
+          }
+        }
+
+        // Tweet drafts → publish composer
+        const tweetMatch = agentContent.match(/```tweet\s*\n([\s\S]*?)```/);
+        if (tweetMatch) {
+          window.dispatchEvent(new CustomEvent('x-draft-proposal', { detail: { content: tweetMatch[1].trim(), tab: validTab } }));
+        }
+
+        // Automation proposals → create via API
+        const autoMatch = agentContent.match(/```automation\s*\n([\s\S]*?)```/);
+        if (autoMatch) {
+          try {
+            const autoData = JSON.parse(autoMatch[1].trim());
+            const res = await fetch('/api/x/automations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(autoData),
+            });
+            if (res.ok) {
+              window.dispatchEvent(new CustomEvent('x-automation-created', { detail: autoData }));
+            }
+          } catch { /* invalid JSON, ignore */ }
+        }
       }
       setLoading(false);
     } catch (err) {
@@ -442,8 +411,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {!historyLoaded ? (
           <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
-            <Loader2 className="w-6 h-6 animate-spin mb-2" />
-            <p className="text-sm">Loading history...</p>
+            <div className="flex gap-1 mb-2">
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-mission-control-text-dim">
@@ -474,8 +446,11 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                       <span>{msg.agentName}</span>
                       {msg.streaming && (
                         <span className="flex items-center gap-1">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          typing...
+                          <span className="flex gap-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </span>
                         </span>
                       )}
                     </div>

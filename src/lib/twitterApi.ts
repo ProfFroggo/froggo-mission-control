@@ -63,18 +63,36 @@ export async function loadCredentials(): Promise<TwitterCredentials> {
 }
 
 // Server-side credential loading (for API routes)
+// Checks: DB settings → keychain → env vars
 export async function loadCredentialsServer(): Promise<TwitterCredentials> {
   const creds: TwitterCredentials = {};
+
+  // 1. Try DB settings (where the wizard saves them)
+  try {
+    const { getDb } = await import('./database');
+    const db = getDb();
+    const get = (key: string) => {
+      const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
+      return row?.value || undefined;
+    };
+    creds.apiKey = get('twitter_api_key');
+    creds.apiSecret = get('twitter_api_secret');
+    creds.bearerToken = get('twitter_bearer_token');
+    creds.oauthClientId = get('twitter_oauth_client_id');
+    creds.oauthClientSecret = get('twitter_oauth_client_secret');
+  } catch { /* DB not ready */ }
+
+  // 2. Try keychain for any missing
   try {
     const { keychainGet } = await import('./keychain');
-    creds.apiKey = await keychainGet('twitter_api_key') ?? undefined;
-    creds.apiSecret = await keychainGet('twitter_api_secret') ?? undefined;
-    creds.bearerToken = await keychainGet('twitter_bearer_token') ?? undefined;
-    creds.oauthClientId = await keychainGet('twitter_oauth_client_id') ?? undefined;
-    creds.oauthClientSecret = await keychainGet('twitter_oauth_client_secret') ?? undefined;
+    if (!creds.apiKey) creds.apiKey = await keychainGet('twitter_api_key') ?? undefined;
+    if (!creds.apiSecret) creds.apiSecret = await keychainGet('twitter_api_secret') ?? undefined;
+    if (!creds.bearerToken) creds.bearerToken = await keychainGet('twitter_bearer_token') ?? undefined;
+    if (!creds.oauthClientId) creds.oauthClientId = await keychainGet('twitter_oauth_client_id') ?? undefined;
+    if (!creds.oauthClientSecret) creds.oauthClientSecret = await keychainGet('twitter_oauth_client_secret') ?? undefined;
   } catch { /* fallback silently */ }
 
-  // Fallback to env vars
+  // 3. Fallback to env vars
   if (!creds.bearerToken) creds.bearerToken = process.env.TWITTER_BEARER_TOKEN;
   if (!creds.apiKey) creds.apiKey = process.env.TWITTER_API_KEY;
   if (!creds.apiSecret) creds.apiSecret = process.env.TWITTER_API_SECRET;
@@ -107,22 +125,41 @@ export async function verifyCredentials(bearerToken: string): Promise<{
   error?: string;
 }> {
   try {
+    // Try /users/me first (requires user-context OAuth 2.0, not app-only bearer)
     const res = await bearerFetch(
       '/users/me?user.fields=profile_image_url,public_metrics,description,verified',
       bearerToken
     );
     const data = await res.json();
 
-    if (data.errors) {
-      const err = data.errors[0] as TwitterError;
-      return { success: false, error: err.detail || err.title || 'Authentication failed' };
+    if (data.data) {
+      return { success: true, user: data.data as TwitterUser };
     }
 
-    if (!data.data) {
-      return { success: false, error: 'No user data returned — check your Bearer token permissions' };
+    // /users/me failed — bearer token is app-only. Verify it works by searching for a known account.
+    // This confirms the token is valid even though we can't get "me".
+    const testRes = await bearerFetch(
+      '/tweets/search/recent?query=from:X&max_results=10',
+      bearerToken
+    );
+
+    if (testRes.ok) {
+      // Token is valid but app-only — we can read but not identify the user
+      return {
+        success: true,
+        user: {
+          id: 'app-only',
+          name: 'App-Only Token',
+          username: 'verified',
+          public_metrics: { followers_count: 0, following_count: 0, tweet_count: 0, listed_count: 0 },
+        },
+        error: undefined,
+      };
     }
 
-    return { success: true, user: data.data as TwitterUser };
+    const errData = await testRes.json().catch(() => ({}));
+    const errMsg = errData?.errors?.[0]?.detail || errData?.detail || `Token rejected (${testRes.status})`;
+    return { success: false, error: errMsg };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : 'Network error' };
   }

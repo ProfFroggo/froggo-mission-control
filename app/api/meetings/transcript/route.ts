@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // POST /api/meetings/transcript — Upload transcript text, save to library, generate summary + extract action items
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/apiAuth';
 import { ENV } from '@/lib/env';
 import fs from 'fs';
 import path from 'path';
@@ -297,6 +298,9 @@ ${truncated}`,
 }
 
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { content, filename } = body as { content?: string; filename?: string };

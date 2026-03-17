@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, KeyboardEvent } from
 import {
   BookOpen, Plus, Search, Pin, Trash2, Edit2, X, Check, ChevronLeft,
   Star, Tag, ChevronRight, History, Clock, Wand2, FileText, Link, AlignLeft, Eye,
-  Network, ChevronDown, Upload, RefreshCw, CheckCircle,
+  Network, ChevronDown, Upload, RefreshCw, CheckCircle, XCircle,
 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import ArticleRevisionHistory from './ArticleRevisionHistory';
@@ -515,7 +515,10 @@ export default function KnowledgeBase() {
   // File drop ingest
   const [isDragOver, setIsDragOver] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [ingestStep, setIngestStep] = useState<'uploading' | 'analyzing' | 'rewriting' | 'saving' | 'done'>('uploading');
+  const [ingestFileName, setIngestFileName] = useState('');
   const [ingestResult, setIngestResult] = useState<{ title: string; category: string; tags: string[] } | null>(null);
+  const [ingestError, setIngestError] = useState<string | null>(null);
 
   const handleFileDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -524,20 +527,41 @@ export default function KnowledgeBase() {
     if (!file) return;
     setIngesting(true);
     setIngestResult(null);
+    setIngestError(null);
+    setIngestFileName(file.name);
+    setIngestStep('uploading');
+
     try {
+      setIngestStep('analyzing');
       const formData = new FormData();
       formData.append('file', file);
+
+      // Simulate step progress since the API is a single call
+      const stepTimer = setTimeout(() => setIngestStep('rewriting'), 5000);
+      const stepTimer2 = setTimeout(() => setIngestStep('saving'), 15000);
+
       const res = await fetch('/api/knowledge/ingest', { method: 'POST', body: formData });
+      clearTimeout(stepTimer);
+      clearTimeout(stepTimer2);
+
       const data = await res.json();
       if (data.success) {
+        setIngestStep('done');
         setIngestResult({ title: data.analysis.title, category: data.analysis.category, tags: data.analysis.tags });
-        // Switch to the new article's category so it's immediately visible
+        // Force fetch ALL articles directly (don't rely on category state)
+        try {
+          const params = new URLSearchParams();
+          if (debouncedSearch) params.set('search', debouncedSearch);
+          const freshRes = await fetch(`/api/knowledge?${params}`);
+          const freshData = await freshRes.json();
+          if (freshData.success) setArticles(freshData.articles);
+        } catch { /* fall back to normal load */ }
         setCategory(data.analysis.category || 'all');
       } else {
-        console.error('Ingest failed:', data.error);
+        setIngestError(data.error || 'Processing failed');
       }
     } catch (err) {
-      console.error('Ingest error:', err);
+      setIngestError(err instanceof Error ? err.message : 'Processing failed');
     } finally {
       setIngesting(false);
     }
@@ -700,13 +724,14 @@ export default function KnowledgeBase() {
 
   const del = async (id: string) => {
     if (!confirm('Delete this article?')) return;
-    await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
+    // Remove from UI immediately
+    setArticles(prev => prev.filter(a => a.id !== id));
     if (viewing?.id === id) setViewing(null);
-    // Remove from starred if present
     if (starred.has(id)) {
       setStarred(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
-    load();
+    // Then delete from DB
+    await fetch(`/api/knowledge/${id}`, { method: 'DELETE' });
   };
 
   const togglePin = async (article: KBArticle) => {
@@ -1075,10 +1100,49 @@ export default function KnowledgeBase() {
       )}
 
       {/* Ingest progress */}
-      {ingesting && (
-        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-accent/30 rounded-lg px-4 py-3 shadow-lg flex items-center gap-3">
-          <RefreshCw size={16} className="text-mission-control-accent animate-spin" />
-          <span className="text-sm text-mission-control-text">Gemini is processing your file...</span>
+      {(ingesting || ingestError) && !ingestResult && (
+        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 shadow-xl w-80">
+          <div className="flex items-center gap-2 mb-3">
+            {ingestError ? (
+              <XCircle size={16} className="text-error shrink-0" />
+            ) : (
+              <RefreshCw size={16} className="text-mission-control-accent animate-spin shrink-0" />
+            )}
+            <span className="text-sm font-medium text-mission-control-text truncate">{ingestFileName}</span>
+          </div>
+
+          {ingestError ? (
+            <p className="text-xs text-error">{ingestError}</p>
+          ) : (
+            <div className="space-y-2">
+              {(['analyzing', 'rewriting', 'saving'] as const).map((step, i) => {
+                const steps = ['analyzing', 'rewriting', 'saving'] as const;
+                const currentIdx = steps.indexOf(ingestStep as typeof steps[number]);
+                const stepIdx = i;
+                const isDone = stepIdx < currentIdx || ingestStep === 'done';
+                const isActive = stepIdx === currentIdx;
+                const labels = { analyzing: 'Analyzing document', rewriting: 'Rewriting as markdown', saving: 'Saving to knowledge base' };
+                return (
+                  <div key={step} className="flex items-center gap-2.5">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      isDone ? 'bg-success' : isActive ? 'bg-mission-control-accent' : 'bg-mission-control-border'
+                    }`}>
+                      {isDone ? (
+                        <Check size={11} className="text-white" />
+                      ) : isActive ? (
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      ) : (
+                        <div className="w-2 h-2 bg-mission-control-text-dim/30 rounded-full" />
+                      )}
+                    </div>
+                    <span className={`text-xs ${isActive ? 'text-mission-control-text font-medium' : isDone ? 'text-success' : 'text-mission-control-text-dim'}`}>
+                      {labels[step]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
