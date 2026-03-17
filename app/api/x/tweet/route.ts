@@ -23,9 +23,11 @@ export async function POST(req: NextRequest) {
 
     const result = await client.v2.tweet(params);
     return NextResponse.json({ ok: true, id: result.data.id, text: result.data.text });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[x/tweet] Error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    const detail = err?.data?.detail || err?.data?.errors?.[0]?.message || err?.errors?.[0]?.message || '';
+    const code = err?.code || err?.data?.status || 500;
+    console.error('[x/tweet] Error:', msg, detail ? `Detail: ${detail}` : '', err?.data ? JSON.stringify(err.data) : '');
+    return NextResponse.json({ error: msg, detail, apiCode: code }, { status: 500 });
   }
 }
