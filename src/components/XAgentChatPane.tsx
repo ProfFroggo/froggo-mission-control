@@ -257,8 +257,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       // and can call X API endpoints, search, create tasks, etc.
       const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'pipeline';
 
-      // Post message to the agent's chat room so it persists
-      const roomId = safeAgentId;
+      // Post to agent-specific chat room (isolated per surface, not shared with main 1-1)
+      const roomId = `social-${safeAgentId}-${validTab}`;
       try {
         await fetch(`/api/chat-rooms/${roomId}/messages`, {
           method: 'POST',
@@ -267,7 +267,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         });
       } catch { /* non-critical */ }
 
-      // Server pre-fetches live data based on tab — no need for client-side tool context
+      // Server pre-fetches live data based on tab + uses agent identity
       const response = await fetch('/api/chat/generate-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -276,6 +276,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           context: TAB_CONTEXT[contextTab],
           tone: 'professional',
           tab: contextTab,
+          agentId: safeAgentId,
+          sessionKey,
         }),
       });
 

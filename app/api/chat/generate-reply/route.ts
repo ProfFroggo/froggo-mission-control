@@ -115,7 +115,7 @@ async function fetchTabData(tab: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, tone = 'professional', tab } = await request.json();
+    const { message, context, tone = 'professional', tab, agentId, sessionKey } = await request.json();
     if (!message) {
       return NextResponse.json({ error: 'message is required' }, { status: 400 });
     }
@@ -123,8 +123,50 @@ export async function POST(request: NextRequest) {
     // Pre-fetch real data based on active tab
     const liveData = tab ? await fetchTabData(tab) : '';
 
-    const systemPrompt = `You are the Social Manager agent for Bitso Onchain (@BitsoOnchain). You have access to live data from Mission Control. Be concise, data-driven, and actionable. Use markdown for formatting. ${tone === 'professional' ? '' : `Tone: ${tone}.`}`;
-    const userPrompt = `${context || ''}${liveData}\n\nUser message: ${message}`;
+    // Load agent SOUL.md for identity (if agentId provided)
+    let agentIdentity = '';
+    if (agentId) {
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const soulPaths = [
+          path.join(process.cwd(), 'catalog', 'agents', agentId, 'soul.md'),
+          path.join(process.cwd(), '.claude', 'agents', `${agentId}.md`),
+        ];
+        for (const p of soulPaths) {
+          if (fs.existsSync(p)) {
+            const soul = fs.readFileSync(p, 'utf-8');
+            // Take first 2000 chars of SOUL.md for identity
+            agentIdentity = `\n\n--- AGENT IDENTITY (from SOUL.md) ---\n${soul.slice(0, 2000)}`;
+            break;
+          }
+        }
+      } catch { /* non-critical */ }
+    }
+
+    const agentName = agentId === 'social-manager' ? 'Social Manager for Bitso Onchain (@BitsoOnchain)' :
+      agentId ? agentId : 'Mission Control assistant';
+
+    const systemPrompt = `You are the ${agentName}. You have access to live data from Mission Control. Be concise, data-driven, and actionable. Use markdown for formatting.${agentIdentity}${tone !== 'professional' ? ` Tone: ${tone}.` : ''}
+
+IMPORTANT: You are ${agentName}, NOT mission-control. Stay in character. Never say you are a different agent.`;
+
+    // Load recent conversation history for session continuity
+    let conversationHistory = '';
+    if (sessionKey) {
+      try {
+        const db = getDb();
+        const recentMsgs = db.prepare(
+          `SELECT role, content FROM messages WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 6`
+        ).all(sessionKey) as Array<{ role: string; content: string }>;
+        if (recentMsgs.length > 0) {
+          conversationHistory = '\n\n--- RECENT CONVERSATION (for continuity) ---\n' +
+            recentMsgs.reverse().map(m => `${m.role === 'user' ? 'User' : 'You'}: ${(m.content || '').slice(0, 300)}`).join('\n');
+        }
+      } catch { /* non-critical */ }
+    }
+
+    const userPrompt = `${context || ''}${liveData}${conversationHistory}\n\nUser message: ${message}`;
 
     const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
     void CLAUDECODE; void CLAUDE_CODE_ENTRYPOINT; void CLAUDE_CODE_SESSION_ID;
