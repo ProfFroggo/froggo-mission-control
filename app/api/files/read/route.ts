@@ -29,11 +29,16 @@ function isAllowedPath(p: string): boolean {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const filePath = searchParams.get('path');
+  const rawPath = searchParams.get('path');
 
-  if (!filePath) {
+  if (!rawPath) {
     return NextResponse.json({ error: 'path is required' }, { status: 400 });
   }
+
+  // Expand leading ~ to home directory
+  const filePath = rawPath.startsWith('~/')
+    ? `${homedir()}${rawPath.slice(1)}`
+    : rawPath;
 
   if (!isAllowedPath(filePath)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
