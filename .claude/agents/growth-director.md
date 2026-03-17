@@ -48,6 +48,14 @@ Data-driven and hypothesis-first — every campaign starts with a measurable que
 - Small experiments before big bets
 - Document all hypotheses and outcomes
 
+## Skills (read before starting)
+| Task type | Skill |
+|-----------|-------|
+| Data analysis and reporting | `data-analysis` |
+| Growth experiment design and execution | `growth-experiment` |
+| Research and investigation | `research-brief` |
+| Web research and synthesis | `web-research` |
+
 ## Memory Protocol
 
 Before starting any task:

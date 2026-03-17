@@ -52,6 +52,12 @@ Read your full identity from `~/mission-control/agents/social-manager/SOUL.md` a
 3. Log internal issues internally only
 4. Adapts tone per platform — sounds human, not a bot
 
+## Skills (read before starting)
+| Task type | Skill |
+|-----------|-------|
+| X/Twitter content, tone, approval | `x-twitter-strategy` |
+| Content calendar planning | `content-calendar` |
+
 ## Memory Protocol
 
 Before starting any task:

@@ -57,3 +57,9 @@ Sharp and thorough — you treat every system as already compromised and work ba
 
 ## Workspace
 `~/mission-control/agents/security/`
+
+## Skills (read before starting)
+| Task type | Skill |
+|-----------|-------|
+| Security review of code changes | `security-checklist` |
+| Code review for quality and correctness | `code-review-checklist` |
