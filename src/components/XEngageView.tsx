@@ -24,6 +24,7 @@ import {
   Settings,
   EyeOff,
   UserX,
+  Edit3,
   Check,
 } from 'lucide-react';
 import { showToast } from './Toast';
@@ -900,22 +901,48 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <div className="space-y-1 mb-2">
                 {aiData.replies.map((reply, idx) => {
                   const isRec = idx === (aiData.recommended ?? 0);
-                  const isActive = isSelected ? replyText === reply : isRec;
+                  const isActive = isSelected ? replyText === reply || (replyText === '' && isRec) : isRec;
+                  const isEditing = isSelected && isActive && replyText !== '';
                   const replyEng = (aiData as any).replies_english?.[idx];
                   return (
-                    <button
+                    <div
                       key={idx}
                       onClick={() => { setSelectedMention(mention.id); setReplyText(reply); }}
-                      className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${
+                      className={`flex items-center w-full rounded-lg border transition-colors cursor-pointer ${
                         isActive
                           ? 'border-info bg-info-subtle/50'
                           : 'border-mission-control-border bg-mission-control-bg hover:border-info/50'
                       }`}
                     >
-                      {isRec && !isSelected && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
-                      {reply}
-                      {replyEng && lang !== 'en' && <span className="block text-[10px] text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
-                    </button>
+                      <div className="flex-1 min-w-0">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full px-2.5 py-1.5 text-xs bg-transparent text-mission-control-text focus:outline-none"
+                            maxLength={280}
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="px-2.5 py-1.5 text-xs">
+                            {isRec && !isSelected && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
+                            <span className="text-mission-control-text">{reply}</span>
+                            {replyEng && lang !== 'en' && <span className="block text-[10px] text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
+                          </div>
+                        )}
+                      </div>
+                      {isActive && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setReplyText(reply); }}
+                          className="flex-shrink-0 p-1.5 mr-1 text-mission-control-text-dim hover:text-info"
+                          title="Edit reply"
+                        >
+                          <Edit3 size={11} />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -923,17 +950,6 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <button onClick={() => generateAIReplies([mention])} className="text-xs text-info hover:underline mb-2 flex items-center gap-1">
                 <Zap size={10} /> Generate replies
               </button>
-            )}
-
-            {/* Inline edit — only when a reply is selected */}
-            {isSelected && (
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="w-full px-2.5 py-1.5 text-xs border border-info rounded-lg resize-none bg-mission-control-bg text-mission-control-text focus:outline-none focus:ring-1 focus:ring-info mb-2"
-                rows={2}
-                maxLength={280}
-              />
             )}
 
             {/* Actions — always visible */}
