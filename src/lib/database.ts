@@ -1182,6 +1182,8 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE sessions ADD COLUMN compact_summary TEXT`,
     // Session context compaction: timestamp of last compaction
     `ALTER TABLE sessions ADD COLUMN last_compact_at INTEGER`,
+    // Automation builder: per-automation AI engine selector (gemini | claude)
+    `ALTER TABLE x_automations ADD COLUMN ai_engine TEXT DEFAULT 'gemini'`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

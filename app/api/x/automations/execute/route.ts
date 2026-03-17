@@ -46,6 +46,7 @@ export async function POST() {
 
         const triggerConfig = typeof auto.trigger_config === 'string' ? JSON.parse(auto.trigger_config) : (auto.trigger_config || {});
         const actions = typeof auto.actions === 'string' ? JSON.parse(auto.actions) : (auto.actions || []);
+        const aiEngine: 'gemini' | 'claude' = (auto.ai_engine || 'gemini') as 'gemini' | 'claude';
 
         // Evaluate trigger
         const triggerMatches = await evaluateTrigger(db, auto.trigger_type, triggerConfig, auto.last_executed_at);
@@ -60,7 +61,7 @@ export async function POST() {
           const actionResults: any[] = [];
 
           for (const action of actions) {
-            const actionResult = await executeAction(db, action, match, auto);
+            const actionResult = await executeAction(db, action, match, auto, aiEngine);
             actionResults.push(actionResult);
             if (actionResult.approval_id) approvalIds.push(actionResult.approval_id);
           }
@@ -198,16 +199,39 @@ async function executeAction(
   action: { type: string; config: Record<string, any> },
   triggerData: any,
   automation: any,
+  aiEngine: 'gemini' | 'claude' = 'gemini',
 ): Promise<any> {
   const apId = `xa-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
   switch (action.type) {
     case 'reply': {
       // Auto-reply to a mention — creates approval, never posts directly
-      const template = action.config.template || 'Thanks for reaching out! We\'ll get back to you.';
-      const replyText = template
-        .replace(/\{\{username\}\}/g, `@${triggerData.author_username || 'user'}`)
-        .replace(/\{\{topic\}\}/g, (triggerData.text || '').slice(0, 30));
+      let replyText: string;
+
+      if (aiEngine === 'claude' && triggerData.text) {
+        // Use Claude (via generate-reply endpoint) to craft a contextual reply
+        try {
+          const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: triggerData.text,
+              context: `Reply to @${triggerData.author_username || 'user'}'s mention. Automation: ${automation.name}.`,
+              tone: 'professional',
+              tab: 'engage',
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          replyText = data.reply || action.config.template || `Thanks for reaching out, @${triggerData.author_username || 'user'}!`;
+        } catch {
+          replyText = action.config.template || `Thanks for reaching out, @${triggerData.author_username || 'user'}!`;
+        }
+      } else {
+        const template = action.config.template || 'Thanks for reaching out! We\'ll get back to you.';
+        replyText = template
+          .replace(/\{\{username\}\}/g, `@${triggerData.author_username || 'user'}`)
+          .replace(/\{\{topic\}\}/g, (triggerData.text || '').slice(0, 30));
+      }
 
       db.prepare(`
         INSERT INTO approvals (id, type, title, content, tier, status, metadata, requester, createdAt)
@@ -225,12 +249,13 @@ async function executeAction(
           tweetId: triggerData.tweet_id,
           replyText,
           mention_author: triggerData.author_username,
+          ai_engine: aiEngine,
         }),
         `automation:${automation.id}`,
         Date.now(),
       );
 
-      return { type: 'reply', approval_id: apId, status: 'queued for approval' };
+      return { type: 'reply', approval_id: apId, status: 'queued for approval', ai_engine: aiEngine };
     }
 
     case 'like': {

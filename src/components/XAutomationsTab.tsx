@@ -204,6 +204,7 @@ export default function XAutomationsTab() {
       setBuilderTriggerType(automation.trigger_type);
       setBuilderTriggerConfig(automation.trigger_config);
       setBuilderActions(automation.actions);
+      setBuilderAiEngine(automation.ai_engine || 'gemini');
       setBuilderMaxHourly(automation.max_executions_per_hour);
       setBuilderMaxDaily(automation.max_executions_per_day);
     } else {
@@ -213,6 +214,7 @@ export default function XAutomationsTab() {
       setBuilderTriggerType('');
       setBuilderTriggerConfig({});
       setBuilderActions([]);
+      setBuilderAiEngine('gemini');
       setBuilderMaxHourly(10);
       setBuilderMaxDaily(50);
     }
@@ -293,6 +295,12 @@ export default function XAutomationsTab() {
         return { template: '' };
       case 'add_to_list':
         return { list_id: '' };
+      case 'report':
+        return { report_type: 'competitor-analysis' };
+      case 'post_content':
+        return { template: '' };
+      case 'custom_prompt':
+        return { prompt: '' };
       default:
         return {};
     }
@@ -458,13 +466,103 @@ export default function XAutomationsTab() {
                 </select>
               </div>
             )}
+
+            {builderTriggerType === 'engagement' && (
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="trigger-min-likes" className="block text-sm font-medium mb-2">
+                    Min likes
+                  </label>
+                  <input
+                    id="trigger-min-likes"
+                    type="number"
+                    value={builderTriggerConfig.min_likes ?? 50}
+                    onChange={e =>
+                      setBuilderTriggerConfig({
+                        ...builderTriggerConfig,
+                        min_likes: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min="0"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="trigger-min-retweets" className="block text-sm font-medium mb-2">
+                    Min retweets
+                  </label>
+                  <input
+                    id="trigger-min-retweets"
+                    type="number"
+                    value={builderTriggerConfig.min_retweets ?? 10}
+                    onChange={e =>
+                      setBuilderTriggerConfig({
+                        ...builderTriggerConfig,
+                        min_retweets: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min="0"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* AI Engine */}
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">
+                2
+              </span>
+              AI Engine
+            </h3>
+            <p className="text-sm text-mission-control-text-dim">
+              Select the AI model used for reply generation and content actions.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => setBuilderAiEngine('gemini')}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
+                  builderAiEngine === 'gemini'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10'
+                    : 'border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+              >
+                <Bot
+                  size={20}
+                  className={builderAiEngine === 'gemini' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}
+                />
+                <div>
+                  <div className="font-medium text-sm">Gemini Flash Lite</div>
+                  <div className="text-xs text-mission-control-text-dim">Fast, cheap — ideal for background automation</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setBuilderAiEngine('claude')}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
+                  builderAiEngine === 'claude'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10'
+                    : 'border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+              >
+                <Sparkles
+                  size={20}
+                  className={builderAiEngine === 'claude' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}
+                />
+                <div>
+                  <div className="font-medium text-sm">Claude Haiku</div>
+                  <div className="text-xs text-mission-control-text-dim">Interactive, nuanced — ideal for replies requiring context</div>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Actions */}
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
               <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">
-                2
+                3
               </span>
               Do this (Actions)
             </h3>
@@ -521,6 +619,61 @@ export default function XAutomationsTab() {
                           placeholder="List ID"
                           className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
                         />
+                      )}
+
+                      {action.type === 'report' && (
+                        <div>
+                          <label htmlFor={`action-report-type-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Report type
+                          </label>
+                          <select
+                            id={`action-report-type-${index}`}
+                            value={action.config.report_type || 'competitor-analysis'}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, report_type: e.target.value })
+                            }
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
+                          >
+                            <option value="competitor-analysis">Competitor analysis</option>
+                            <option value="weekly-summary">Weekly summary</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {action.type === 'post_content' && (
+                        <div>
+                          <label htmlFor={`action-post-template-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Content template
+                          </label>
+                          <textarea
+                            id={`action-post-template-${index}`}
+                            value={action.config.template || ''}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, template: e.target.value })
+                            }
+                            placeholder="Draft post content..."
+                            rows={3}
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                          />
+                        </div>
+                      )}
+
+                      {action.type === 'custom_prompt' && (
+                        <div>
+                          <label htmlFor={`action-prompt-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Custom prompt
+                          </label>
+                          <textarea
+                            id={`action-prompt-${index}`}
+                            value={action.config.prompt || ''}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, prompt: e.target.value })
+                            }
+                            placeholder="Describe what the AI should do with the trigger data..."
+                            rows={3}
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                          />
+                        </div>
                       )}
                     </div>
                   );
