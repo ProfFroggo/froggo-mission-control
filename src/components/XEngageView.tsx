@@ -644,13 +644,13 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     try {
       await approvalApi.create({
         type: 'x-reply',
-        tier: fastTrack ? 1 : 3,
-        payload: { mentionId, tweetId, replyText },
-        requestedBy: 'user',
+        tier: 3,
+        title: `Reply to mention`,
+        content: replyText,
+        metadata: { mentionId, tweetId, replyText, mention_author: '' },
       });
-      // Update local reply status immediately
       setPendingReplies(prev => ({ ...prev, [mentionId]: { text: replyText.trim(), status: 'queued' } }));
-      showToast('success', 'Sent for approval', fastTrack ? 'Fast-tracked (tier 1)' : 'Queued for review (tier 3)');
+      showToast('success', 'Reply queued for approval');
       setReplyText('');
       setSelectedMention(null);
       setShowTemplates(false);
@@ -669,11 +669,10 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     try {
       await approvalApi.create({
         type: 'x-reply',
-        tier: fastTrack ? 1 : 3,
+        tier: 3,
         title: `Reply to @${mention.author_username}`,
-        description: text,
-        payload: { mentionId: mention.id, tweetId: mention.tweet_id, replyText: text },
-        requestedBy: 'user',
+        content: text,
+        metadata: { mentionId: mention.id, tweetId: mention.tweet_id, replyText: text, mention_author: mention.author_username },
       });
       setPendingReplies(prev => ({ ...prev, [mention.id]: { text, status: 'queued' } }));
       showToast('success', 'Reply queued', `Reply to @${mention.author_username} sent for approval`);
