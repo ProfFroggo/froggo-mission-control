@@ -5,75 +5,55 @@
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Tasks flow from creation to completion autonomously with self-healing at every failure point.
-**Current focus:** Phase 3 — Task Dispatcher Hardening
+**Current focus:** Phase 20.11 — Social Module Automation Builder
 
 ## Current Position
 
-Phase: 20 — Social Media Module Consolidation
-Plan: 20.1-01 (Layout Overhaul — Adaptive Layout + Floating Compose)
-Status: Ready to execute
-Last activity: 2026-03-16 — Social consolidation planned (9 plans across 6 phases)
+Phase: 20.11 of 20.12 (Automation Builder)
+Plan: Not yet planned
+Status: Ready to plan
+Last activity: 2026-03-17 — Phases 20.1-20.10 complete (72 commits on dev)
 
-Progress (Agent Autonomy): ███░░░░░░░ 30%
-Progress (Social Consolidation): ░░░░░░░░░░ 0%
-
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 4
-- Phases complete: 3 of 10
+Progress (Agent Autonomy): ███░░░░░░░ 30% (Phases 1-10, paused at Phase 4)
+Progress (Social Module):  █████████░ 83% (10/12 phases complete)
 
 ## Accumulated Context
 
-### Critical Bugs Fixed (outside GSD phases)
+### Social Module — Completed Work (72 commits)
 
-- **DB corruption**: orphan indexes + corrupted B-trees. Fixed with .recover rebuild + permanent auto-repair on startup
-- **Stale --resume sessions**: Claude crashes exit 1 when resuming non-existent session. Fixed with auto-clear fallback on retry
-- **Dispatcher spawning every 30s**: dispatcherCron was re-dispatching tasks already in-progress. Fixed to only recover stuck tasks >10min
-- **dispatchTask guard**: rejects dispatch for tasks not in in-progress/internal-review
-- **Clara rubber-stamp**: pre-review was just checking 3 booleans. Rewritten to actual quality review with 5 evaluation criteria
-- **human-review → done blocked**: status transition + done enforcement skipped for human-review tasks
-- **Automations API column mismatch**: createdAt vs created_at silently breaking all automation creation
+**Layout**: 15 tabs → 5 (Pipeline, Engage, Intelligence, Measure, Configure) + floating Compose
+**DB**: 7 dedicated tables (x_mentions, x_posts, x_campaigns, x_automations, x_automation_log, x_reports, x_analytics_snapshots)
+**AI**: Gemini Flash Lite for background reply generation with Voice & Style Guide compliance
+**MCP**: 8 tools for social-manager agent
+**Automation**: x_automations table IS the cron system — mention processing, competitor reports, all driven by DB entries
+**Credentials**: Settings API always saves to DB (keychain writes fail on Kandji). Consumer Key regenerated March 17.
+**Posting**: Tweet posting confirmed working. All posts require human approval.
+
+### What's Next
+
+Phase 20.11 — Automation Builder:
+- More action types (process_mentions, report, reply, like, retweet, dm, post_content, tag/categorize)
+- AI engine selector (Claude Haiku vs Gemini Flash Lite per automation)
+- Conversational automation creation via agent chat (```automation blocks)
+- Automation execution history UI
+- Pre-built automation templates
+
+Phase 20.12 — Final Polish:
+- Competitor cards stats loading issue
+- UI consistency pass
+- Merge dev → main
+- npm publish
 
 ### Key Decisions
 
-- Automations and cron jobs should be UNIFIED (Phase 8) — currently two parallel systems
-- HR training creates individual tasks for action items, not just log notes
-- Training logs: ~/mission-control/library/docs/hr/training/
-- Reports: ~/mission-control/library/docs/hr/reports/
-- Agents mark subtasks complete ONE BY ONE as they work, not batched at end
-
-### Key Files Modified
-
-- `src/lib/claraReviewCron.ts` — pipeline fixes, Clara review rewrite, error logging, cycle telemetry
-- `src/lib/taskDispatcher.ts` — resume fallback, dispatch guard, feedback injection, spawn logging
-- `src/lib/taskDispatcherCron.ts` — changed from dispatching todo tasks to recovering stuck in-progress
-- `src/lib/database.ts` — auto-repair corrupt DB on startup
-- `src/store/store.ts` — human-review→done transition, same-status no-op
-- `app/api/automations/route.ts` — fixed snake_case column names
-- `app/api/training-logs/route.ts` — separate training/reports dirs
-
-### Deferred Issues
-
-- Automations = cron jobs unification (Phase 8)
-- Agent memory nearly empty — 11/14 agents have zero memory files (Phase 5-6)
-- GSD planning framework for agents (Phase 7)
-
-### What's Working
-
-- Full pipeline: todo → Clara pre-review → in-progress → review → Clara post-review → done
-- Test task completed end-to-end autonomously (haiku task)
-- HR training session completed: 10 agent training logs produced
-- HR team health report completed
-- Re-dispatch after Clara rejection working
-- Stuck task recovery working
-- DB auto-repair on startup
-- Dispatcher: circuit breaker with auto-recovery, exponential backoff, 30-min process timeout
-- Dispatcher: agent busy/idle status tracking
-- Dispatch health API: GET /api/dispatch-health
+- Keychain writes silently fail (Kandji MDM) — DB is primary credential store
+- All external actions require human approval (zero bypass paths)
+- Automations ARE the cron system — no hardcoded cron functions
+- Gemini Flash Lite for background AI (fast, cheap), Claude Haiku for interactive chat
+- Voice & Style Guide read before every AI reply generation
 
 ## Session Continuity
 
-Last session: 2026-03-16
-Stopped at: Social module consolidation planned, ready to execute Phase 20.1
-Resume with: `/gsd:execute-plan` → 20.1-01-PLAN.md
+Last session: 2026-03-17
+Stopped at: Phase 20.10 complete, Phase 20.11 needs planning
+Resume with: `/gsd:plan-phase 20.11`
