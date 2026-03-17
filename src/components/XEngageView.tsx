@@ -300,7 +300,8 @@ export const XEngageView: React.FC = () => {
   // Reply composer
   const [selectedMention, setSelectedMention] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [fastTrack, setFastTrack] = useState(() => loadSettings().defaultReplyTier === 1);
+  const [showSchedulePicker, setShowSchedulePicker] = useState<string | null>(null); // mention ID
+  const [scheduleTime, setScheduleTime] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates] = useState<ReplyTemplate[]>(loadTemplates);
@@ -666,21 +667,64 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
   // ─── One-click send from smart reply ────────────────────────────────────────
 
-  const handleQuickSendReply = async (mention: Mention, text: string) => {
+  // Approve = create approval + immediately approve it → triggers auto-post to X
+  const handleApproveReply = async (mention: Mention, text: string) => {
     if (!text.trim() || text.length > 280) return;
     try {
-      await approvalApi.create({
-        type: 'x-reply',
-        tier: 3,
-        title: `Reply to @${mention.author_username}`,
-        content: text,
-        metadata: { mentionId: mention.id, tweetId: mention.tweet_id, replyText: text, mention_author: mention.author_username },
+      // Step 1: Create the approval
+      const createRes = await fetch('/api/approvals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'x-reply',
+          tier: 1,
+          title: `Reply to @${mention.author_username}`,
+          content: text,
+          metadata: { mentionId: mention.id, tweetId: mention.tweet_id, replyText: text, mention_author: mention.author_username },
+        }),
+      });
+      if (!createRes.ok) throw new Error('Failed to create approval');
+      const approval = await createRes.json();
+
+      // Step 2: Immediately approve it → triggers the auto-post handler
+      await approvalApi.respond(String(approval.id), 'approved', undefined, undefined);
+
+      // Update local state
+      setPendingReplies(prev => ({ ...prev, [mention.id]: { text, status: 'sent' } }));
+      showToast('success', 'Reply posted', `Reply to @${mention.author_username} sent to X`);
+      // Mark mention as replied
+      await fetch('/api/x/mentions/data', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: mention.id, reply_status: 'replied', replied_at: Date.now() }),
+      });
+      await loadMentions();
+    } catch (error) {
+      showToast('error', 'Failed', error instanceof Error ? error.message : 'Could not post reply');
+    }
+  };
+
+  // Schedule = save reply as x_post with scheduled time, goes through normal pipeline
+  const handleScheduleReply = async (mention: Mention, text: string, scheduledFor: number) => {
+    if (!text.trim() || text.length > 280) return;
+    try {
+      await fetch('/api/x/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: text,
+          type: 'reply',
+          status: 'scheduled',
+          scheduled_for: scheduledFor,
+          metadata: { mentionId: mention.id, tweetId: mention.tweet_id, mention_author: mention.author_username, reply_to: mention.tweet_id },
+          proposed_by: 'user',
+        }),
       });
       setPendingReplies(prev => ({ ...prev, [mention.id]: { text, status: 'queued' } }));
-      showToast('success', 'Reply queued', `Reply to @${mention.author_username} sent for approval`);
-      await loadReplyApprovals();
+      showToast('success', 'Reply scheduled', `Will post at ${new Date(scheduledFor).toLocaleTimeString()}`);
+      await loadMentions();
     } catch (error) {
-      showToast('error', 'Failed', error instanceof Error ? error.message : 'Could not queue reply');
+      showToast('error', 'Failed', error instanceof Error ? error.message : 'Could not schedule reply');
     }
   };
 
@@ -959,13 +1003,48 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 onClick={() => {
                   const text = activeReplyText;
                   if (!text) { setSelectedMention(mention.id); return; }
-                  handleQuickSendReply(mention, text);
+                  handleApproveReply(mention, text);
                 }}
                 disabled={!activeReplyText}
                 className="px-3 py-1 text-xs bg-success/10 text-success hover:bg-success/20 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
               >
                 <CheckCircle size={11} /> Approve
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowSchedulePicker(showSchedulePicker === mention.id ? null : mention.id)}
+                  disabled={!activeReplyText}
+                  className="px-3 py-1 text-xs text-info hover:bg-info/10 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
+                >
+                  <Clock size={11} /> Schedule
+                </button>
+                {showSchedulePicker === mention.id && (
+                  <div className="absolute bottom-full left-0 mb-1 p-2 rounded-lg border border-mission-control-border bg-mission-control-surface shadow-lg z-20 flex items-center gap-2"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <input
+                      type="datetime-local"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                      min={new Date(Date.now() + 300000).toISOString().slice(0, 16)}
+                      className="px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                    />
+                    <button
+                      onClick={() => {
+                        if (scheduleTime && activeReplyText) {
+                          handleScheduleReply(mention, activeReplyText, new Date(scheduleTime).getTime());
+                          setShowSchedulePicker(null);
+                          setScheduleTime('');
+                        }
+                      }}
+                      disabled={!scheduleTime}
+                      className="px-2 py-1 text-xs bg-info text-white rounded disabled:opacity-40"
+                    >
+                      Set
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => updateStatus(mention.id, 'ignored')}
                 className="px-3 py-1 text-xs text-mission-control-text-dim hover:text-error hover:bg-error/10 rounded-lg transition-colors flex items-center gap-1"
@@ -1183,7 +1262,6 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   onChange={(e) => {
                     const tier = Number(e.target.value) as 1 | 3;
                     updateSetting('defaultReplyTier', tier);
-                    setFastTrack(tier === 1);
                   }}
                   className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text"
                 >
