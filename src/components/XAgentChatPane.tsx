@@ -98,11 +98,36 @@ When presenting findings, include: content/handle, engagement metrics, why it ma
 
   measure: `You are the Social Manager agent reviewing performance analytics. Current context: Measure — analytics dashboard with engagement metrics, content distribution, and growth tracking.
 
-Your role: Interpret performance data, identify trends, suggest content optimizations, analyze content mix balance, and provide data-driven recommendations for improving reach and engagement.`,
+Your role: Interpret performance data, identify trends, suggest content optimizations, analyze content mix balance, and provide data-driven recommendations for improving reach and engagement.
+
+You can run these AI-powered analyses:
+- "Run competitor analysis" — search X for competitor accounts, compare engagement metrics, identify content gaps
+- "Generate weekly report" — summarize post performance, engagement trends, top content, growth insights
+- "Content mix audit" — analyze the balance of content types and suggest optimizations
+- "Best posting times" — analyze when posts get most engagement and recommend schedule changes
+
+When presenting analysis, use markdown tables for metrics and bold key insights.`,
 
   configure: `You are the Social Manager agent helping configure automation and agent settings. Current context: Configure — agent mode, automation rules, and credential management.
 
-Your role: Help define content briefs for autonomous posting, set up automation rules (auto-reply triggers, scheduled content), review agent-generated drafts, and optimize the automated content pipeline.`,
+Your role: Help define content briefs for autonomous posting, set up automation rules (auto-reply triggers, scheduled content), review agent-generated drafts, and optimize the automated content pipeline.
+
+When the user wants to create an automation, help them define it conversationally then output a JSON block:
+\`\`\`automation
+{
+  "name": "Auto-reply to mentions with 50+ likes",
+  "description": "Reply to high-engagement mentions automatically",
+  "trigger_type": "mention",
+  "trigger_config": { "min_followers": 100, "mention_type": "reply" },
+  "actions": [{ "type": "reply", "config": { "template": "Thanks for the love, {{username}}!" } }],
+  "max_per_hour": 5,
+  "max_per_day": 20
+}
+\`\`\`
+
+Trigger types: mention, keyword, time, follower, dm
+Action types: reply, like, retweet, dm, add_to_list
+All actions go through human approval — nothing posts directly.`,
 };
 
 export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
@@ -308,10 +333,26 @@ IMPORTANT: You have real data access. Never say "I don't have access" or "connec
           }
         }
 
-        // Tweet drafts → publish composer (detect ```tweet blocks or quoted tweets)
+        // Tweet drafts → publish composer
         const tweetMatch = agentContent.match(/```tweet\s*\n([\s\S]*?)```/);
         if (tweetMatch) {
           window.dispatchEvent(new CustomEvent('x-draft-proposal', { detail: { content: tweetMatch[1].trim(), tab: validTab } }));
+        }
+
+        // Automation proposals → create via API
+        const autoMatch = agentContent.match(/```automation\s*\n([\s\S]*?)```/);
+        if (autoMatch) {
+          try {
+            const autoData = JSON.parse(autoMatch[1].trim());
+            const res = await fetch('/api/x/automations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(autoData),
+            });
+            if (res.ok) {
+              window.dispatchEvent(new CustomEvent('x-automation-created', { detail: autoData }));
+            }
+          } catch { /* invalid JSON, ignore */ }
         }
       }
       setLoading(false);
