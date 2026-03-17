@@ -57,9 +57,9 @@ function loadSaved(): string[] {
   }
 }
 function saveSavedToLS(tags: string[]): void {
-  try {
-    localStorage.setItem(LS_SAVED_KEY, JSON.stringify(tags));
-  } catch {}
+  const json = JSON.stringify(tags);
+  localStorage.setItem(LS_SAVED_KEY, json);
+  fetch(`/api/settings/${LS_SAVED_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
 }
 function loadSets(): HashtagSet[] {
   try {
@@ -69,9 +69,9 @@ function loadSets(): HashtagSet[] {
   }
 }
 function saveSetsToLS(sets: HashtagSet[]): void {
-  try {
-    localStorage.setItem(LS_SETS_KEY, JSON.stringify(sets));
-  } catch {}
+  const json = JSON.stringify(sets);
+  localStorage.setItem(LS_SETS_KEY, json);
+  fetch(`/api/settings/${LS_SETS_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
 }
 function loadHistory(): SearchHistoryEntry[] {
   try {
@@ -81,9 +81,9 @@ function loadHistory(): SearchHistoryEntry[] {
   }
 }
 function saveHistoryToLS(history: SearchHistoryEntry[]): void {
-  try {
-    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(history));
-  } catch {}
+  const json = JSON.stringify(history);
+  localStorage.setItem(LS_HISTORY_KEY, json);
+  fetch(`/api/settings/${LS_HISTORY_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

@@ -70,11 +70,13 @@ function loadHandles(): string[] {
 }
 
 function saveHandles(handles: string[]): void {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(handles));
-  } catch {
-    // best-effort
-  }
+  const json = JSON.stringify(handles);
+  localStorage.setItem(LS_KEY, json);
+  fetch(`/api/settings/${LS_KEY}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value: json }),
+  }).catch(() => { /* non-critical */ });
 }
 
 function formatNumber(n: number): string {

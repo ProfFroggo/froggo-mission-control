@@ -280,6 +280,22 @@ export default function XApprovalBadge() {
                           <XCircle size={12} />
                           Reject
                         </button>
+                        <button
+                          onClick={async () => {
+                            setActionLoading(prev => new Set(prev).add(String(item.id)));
+                            try {
+                              await approvalApi.respond(String(item.id), 'rejected', 'Skipped — not needed', undefined);
+                              await loadItems();
+                            } catch { /* non-fatal */ }
+                            setActionLoading(prev => { const n = new Set(prev); n.delete(String(item.id)); return n; });
+                          }}
+                          disabled={isLoading}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt rounded-lg transition-colors disabled:opacity-50"
+                          title="Skip — dismiss without posting"
+                        >
+                          <Clock size={12} />
+                          Skip
+                        </button>
                       </div>
                     </div>
                   );

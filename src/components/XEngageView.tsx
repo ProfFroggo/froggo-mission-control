@@ -109,18 +109,42 @@ const DEFAULT_SETTINGS: EngageSettings = {
   showNotes: true,
 };
 
+// Settings persistence — uses settings API with localStorage fallback
+async function loadFromSetting(key: string, fallback: any): Promise<any> {
+  try {
+    const res = await fetch(`/api/settings/${key}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.value) return JSON.parse(data.value);
+    }
+  } catch { /* fallback to localStorage */ }
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
+function saveToSetting(key: string, value: any): void {
+  const json = JSON.stringify(value);
+  // Save to both settings API and localStorage (API is persistent, localStorage is fast)
+  localStorage.setItem(key, json);
+  fetch(`/api/settings/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value: json }),
+  }).catch(() => { /* non-critical */ });
+}
+
 function loadPriority(): string[] {
   try { return JSON.parse(localStorage.getItem(LS_PRIORITY_KEY) ?? '[]'); } catch { return []; }
 }
-function savePriority(v: string[]): void {
-  try { localStorage.setItem(LS_PRIORITY_KEY, JSON.stringify(v)); } catch { /* noop */ }
-}
+function savePriority(v: string[]): void { saveToSetting(LS_PRIORITY_KEY, v); }
+
 function loadIgnored(): string[] {
   try { return JSON.parse(localStorage.getItem(LS_IGNORED_KEY) ?? '[]'); } catch { return []; }
 }
-function saveIgnored(v: string[]): void {
-  try { localStorage.setItem(LS_IGNORED_KEY, JSON.stringify(v)); } catch { /* noop */ }
-}
+function saveIgnored(v: string[]): void { saveToSetting(LS_IGNORED_KEY, v); }
+
 function loadTemplates(): ReplyTemplate[] {
   try {
     const raw = localStorage.getItem(LS_TEMPLATE_KEY);
@@ -133,9 +157,7 @@ function loadSettings(): EngageSettings {
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
   } catch { return DEFAULT_SETTINGS; }
 }
-function saveSettings(s: EngageSettings): void {
-  try { localStorage.setItem(LS_ENGAGE_SETTINGS_KEY, JSON.stringify(s)); } catch { /* noop */ }
-}
+function saveSettings(s: EngageSettings): void { saveToSetting(LS_ENGAGE_SETTINGS_KEY, s); }
 
 function inferSentiment(text: string): 'positive' | 'negative' | 'neutral' {
   const lower = text.toLowerCase();
@@ -1322,12 +1344,54 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="flex items-center gap-4 px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
-          <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
-          <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
-          <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
-          <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
+        {/* Stats bar + quick actions */}
+        <div className="flex items-center justify-between px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
+          <div className="flex items-center gap-4">
+            <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
+            <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
+            <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
+            <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {counts.spam > 0 && (
+              <button
+                onClick={async () => {
+                  const spamMentions = allMentions.filter(m => m.is_spam);
+                  for (const m of spamMentions) {
+                    await fetch('/api/x/mentions/data', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: m.id, reply_status: 'ignored' }),
+                    });
+                  }
+                  showToast('success', `${spamMentions.length} spam ignored`);
+                  loadMentions();
+                }}
+                className="px-2 py-1 text-xs text-error hover:bg-error/10 rounded transition-colors"
+              >
+                Ignore all spam ({counts.spam})
+              </button>
+            )}
+            {filteredMentions.length > 0 && activeFilter === 'pending' && (
+              <button
+                onClick={async () => {
+                  const pending = filteredMentions.filter(m => m.reply_status === 'pending');
+                  for (const m of pending) {
+                    await fetch('/api/x/mentions/data', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: m.id, reply_status: 'ignored' }),
+                    });
+                  }
+                  showToast('success', `${pending.length} mentions ignored`);
+                  loadMentions();
+                }}
+                className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt rounded transition-colors"
+              >
+                Ignore all pending
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter pills — two rows: status + type */}
