@@ -929,12 +929,20 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           {mention.reply_status === 'replied' && (
             <span className="text-success flex items-center gap-0.5"><CheckCircle size={10} /> Replied</span>
           )}
-          {pendingReplies[mention.id] && (
+          {pendingReplies[mention.id] && mention.reply_status !== 'replied' && (
             <span className="text-info flex items-center gap-0.5"><Clock size={10} /> Reply queued</span>
           )}
         </div>
 
-        {/* Smart replies — always visible for pending mentions */}
+        {/* Show sent reply when replied */}
+        {(mention.reply_status === 'replied' || pendingReplies[mention.id]?.status === 'sent') && pendingReplies[mention.id] && (
+          <div className="mb-2 px-2.5 py-1.5 text-xs rounded-lg border border-success bg-success-subtle/30 text-mission-control-text">
+            <span className="text-success font-medium mr-1.5">Your reply:</span>
+            {pendingReplies[mention.id].text}
+          </div>
+        )}
+
+        {/* Smart replies — visible for pending mentions that haven't been replied to */}
         {mention.reply_status !== 'replied' && !pendingReplies[mention.id] && (
           <>
             {aiLoading.has(mention.id) ? (

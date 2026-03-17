@@ -263,11 +263,11 @@ export async function PATCH(
 
           if (replyData.ok || replyData.id) {
             console.log(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
-            // Update the inbox mention status to 'replied'
+            // Update x_mentions status to 'replied'
             if (meta.mentionId) {
               try {
-                db.prepare(`UPDATE inbox SET status = 'replied', metadata = json_set(metadata, '$.reply_status', 'replied', '$.replied_at', ?, '$.replied_with_id', ?) WHERE id = ?`)
-                  .run(Date.now(), replyData.id, meta.mentionId);
+                db.prepare(`UPDATE x_mentions SET reply_status = 'replied', replied_at = ?, replied_with_id = ?, updated_at = ? WHERE id = ?`)
+                  .run(Date.now(), replyData.id, Date.now(), meta.mentionId);
               } catch { /* non-critical */ }
             }
           } else {
