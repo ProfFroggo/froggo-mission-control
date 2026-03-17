@@ -10,6 +10,7 @@ import { join } from 'path';
 import { getDb } from './database';
 import { ENV } from './env';
 import { randomUUID } from 'crypto';
+import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -738,15 +739,34 @@ export function invokeAgent(
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
   void CLAUDECODE; void CLAUDE_CODE_ENTRYPOINT; void CLAUDE_CODE_SESSION_ID;
 
+  // Load agent's tool permissions based on trust tier
+  const db = getDb();
+  let trustTier = 'worker'; // default
+  try {
+    const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(config.agentId) as { trust_tier: string } | undefined;
+    if (agentRow?.trust_tier) trustTier = agentRow.trust_tier;
+  } catch { /* use default */ }
+
+  const allowedTools = TIER_TOOLS[trustTier] ?? TIER_TOOLS['worker'];
+  const disallowed = loadDisallowedTools(config.agentId);
+  const disallowedStr = disallowed.length > 0 ? disallowed.join(',') : '';
+
+  const cliArgs = [
+    ENV.CLAUDE_SCRIPT,
+    '--print',
+    '--output-format', 'text',
+    '--model', ENV.MODEL_TRIVIAL,
+    '--system-prompt', context.systemPrompt,
+    '--allowedTools', allowedTools.join(','),
+  ];
+  // Only add --disallowedTools if there are entries (empty string crashes CLI)
+  if (disallowedStr) {
+    cliArgs.push('--disallowedTools', disallowedStr);
+  }
+
   const result = spawnSync(
     process.execPath,
-    [
-      ENV.CLAUDE_SCRIPT,
-      '--print',
-      '--output-format', 'text',
-      '--model', ENV.MODEL_TRIVIAL,
-      '--system-prompt', context.systemPrompt,
-    ],
+    cliArgs,
     {
       input: userPrompt,
       encoding: 'utf-8',
