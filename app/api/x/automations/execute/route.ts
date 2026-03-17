@@ -169,9 +169,20 @@ async function evaluateTrigger(
     }
 
     case 'dm': {
-      // DM trigger — would need X API webhook
-      // For now, return empty
       return [];
+    }
+
+    case 'engagement': {
+      // High engagement trigger — mentions exceeding a threshold
+      const minLikes = config.min_likes || 50;
+      const minRetweets = config.min_retweets || 10;
+      const mentions = db.prepare(`
+        SELECT * FROM x_mentions
+        WHERE fetched_at > ? AND reply_status = 'pending'
+        AND (like_count >= ? OR retweet_count >= ?)
+        ORDER BY like_count DESC
+      `).all(since, minLikes, minRetweets) as any[];
+      return mentions;
     }
 
     default:
@@ -308,6 +319,41 @@ async function executeAction(
         return { type: 'report', report_type: reportType, status: data.ok ? 'generated' : 'failed', title: data.report?.title };
       } catch (err: any) {
         return { type: 'report', status: 'error', error: err.message };
+      }
+    }
+
+    case 'post_content': {
+      // Create a draft post in the pipeline
+      const content = action.config.template || action.config.content || '';
+      if (!content) return { type: 'post_content', status: 'skipped — no content template' };
+      try {
+        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/posts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, type: 'tweet', status: 'draft', proposed_by: `automation:${automation.id}` }),
+        });
+        const data = await res.json().catch(() => ({}));
+        return { type: 'post_content', status: data.ok ? 'draft created' : 'failed', post_id: data.post?.id };
+      } catch (err: any) {
+        return { type: 'post_content', status: 'error', error: err.message };
+      }
+    }
+
+    case 'custom_prompt': {
+      // Run a custom prompt via the generate-reply endpoint
+      const prompt = action.config.prompt || '';
+      if (!prompt) return { type: 'custom_prompt', status: 'skipped — no prompt' };
+      try {
+        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: prompt, context: `Automation: ${automation.name}. Trigger data: ${JSON.stringify(triggerData).slice(0, 500)}`, tone: 'professional', tab: 'configure' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        // Store the result in automation log (via the caller)
+        return { type: 'custom_prompt', status: 'executed', result: (data.reply || '').slice(0, 500) };
+      } catch (err: any) {
+        return { type: 'custom_prompt', status: 'error', error: err.message };
       }
     }
 

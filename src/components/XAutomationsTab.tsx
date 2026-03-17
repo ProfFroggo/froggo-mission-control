@@ -14,6 +14,13 @@ import {
   Repeat,
   Send,
   List,
+  TrendingUp,
+  FileText,
+  Bot,
+  History,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { showToast } from './Toast';
 
@@ -22,10 +29,11 @@ interface Automation {
   name: string;
   description: string;
   enabled: boolean;
-  trigger_type: 'mention' | 'keyword' | 'time' | 'follower' | 'dm';
+  trigger_type: 'mention' | 'keyword' | 'time' | 'follower' | 'dm' | 'engagement';
   trigger_config: Record<string, any>;
   conditions: Record<string, any> | null;
   actions: { type: string; config: Record<string, any> }[];
+  ai_engine?: 'gemini' | 'claude';
   max_executions_per_hour: number;
   max_executions_per_day: number;
   total_executions: number;
@@ -77,6 +85,12 @@ const TRIGGER_OPTIONS: TriggerOption[] = [
     icon: Send,
     description: 'Trigger when receiving a DM',
   },
+  {
+    type: 'engagement',
+    label: 'High engagement',
+    icon: TrendingUp,
+    description: 'Trigger when a mention exceeds a like/retweet threshold',
+  },
 ];
 
 const ACTION_OPTIONS: ActionOption[] = [
@@ -89,12 +103,11 @@ const ACTION_OPTIONS: ActionOption[] = [
   { type: 'like', label: 'Like tweet', icon: Heart, description: 'Automatically like the tweet' },
   { type: 'retweet', label: 'Retweet', icon: Repeat, description: 'Automatically retweet' },
   { type: 'dm', label: 'Send DM', icon: Send, description: 'Send a direct message' },
-  {
-    type: 'add_to_list',
-    label: 'Add to list',
-    icon: List,
-    description: 'Add user to a Twitter list',
-  },
+  { type: 'add_to_list', label: 'Add to list', icon: List, description: 'Add user to a Twitter list' },
+  { type: 'process_mentions', label: 'Process mentions', icon: Zap, description: 'Fetch mentions + generate AI reply suggestions' },
+  { type: 'report', label: 'Generate report', icon: FileText, description: 'Run competitor analysis or weekly summary' },
+  { type: 'post_content', label: 'Post content', icon: Edit, description: 'Create a draft post in the pipeline' },
+  { type: 'custom_prompt', label: 'Custom AI action', icon: Bot, description: 'Run a custom prompt with the social manager agent' },
 ];
 
 // ─── API persistence ──────────────────────────────────────────────────────────
@@ -114,11 +127,20 @@ export default function XAutomationsTab() {
   const [builderTriggerType, setBuilderTriggerType] = useState<string>('');
   const [builderTriggerConfig, setBuilderTriggerConfig] = useState<Record<string, any>>({});
   const [builderActions, setBuilderActions] = useState<{ type: string; config: Record<string, any> }[]>([]);
+  const [builderAiEngine, setBuilderAiEngine] = useState<'gemini' | 'claude'>('gemini');
   const [builderMaxHourly, setBuilderMaxHourly] = useState(10);
   const [builderMaxDaily, setBuilderMaxDaily] = useState(50);
+  const [showLog, setShowLog] = useState(false);
 
   useEffect(() => {
     loadAutomations();
+    // Listen for AI-created automations from agent chat
+    const handler = () => {
+      showToast('success', 'Automation created via AI');
+      loadAutomations();
+    };
+    window.addEventListener('x-automation-created', handler);
+    return () => window.removeEventListener('x-automation-created', handler);
   }, []);
 
   const loadAutomations = async () => {
@@ -214,6 +236,7 @@ export default function XAutomationsTab() {
       trigger_type: builderTriggerType,
       trigger_config: builderTriggerConfig,
       actions: builderActions,
+      ai_engine: builderAiEngine,
       max_per_hour: builderMaxHourly,
       max_per_day: builderMaxDaily,
     };
@@ -593,13 +616,26 @@ export default function XAutomationsTab() {
               IFTTT-style automation for your X account
             </p>
           </div>
-          <button
-            onClick={() => openBuilder()}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-          >
-            <Plus size={20} />
-            New Automation
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('x-agent-chat-inject', {
+                  detail: { message: 'I want to create a new automation for my X/Twitter account. Help me define the trigger, conditions, and actions. When ready, output the automation as a ```automation JSON block.' }
+                }));
+              }}
+              className="flex items-center gap-2 px-4 py-2 border border-info text-info rounded-lg hover:bg-info-subtle transition-colors"
+            >
+              <Sparkles size={16} />
+              Create with AI
+            </button>
+            <button
+              onClick={() => openBuilder()}
+              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+            >
+              <Plus size={16} />
+              Manual
+            </button>
+          </div>
         </div>
 
         {/* Automations List */}
@@ -722,6 +758,40 @@ export default function XAutomationsTab() {
             })}
           </div>
         )}
+        {/* Execution Log */}
+        <div className="mt-6">
+          <button
+            onClick={() => setShowLog(!showLog)}
+            className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text mb-3"
+          >
+            {showLog ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <History size={14} />
+            Execution Log ({executionLog.length})
+          </button>
+          {showLog && executionLog.length > 0 && (
+            <div className="space-y-1.5">
+              {executionLog.slice(0, 20).map((entry: any) => (
+                <div key={entry.id} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs">
+                  <span className="text-mission-control-text-dim w-32 flex-shrink-0">
+                    {new Date(entry.executed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="text-mission-control-text font-medium flex-shrink-0 w-16">{entry.trigger_type}</span>
+                  <span className="text-mission-control-text-dim flex-1 truncate">
+                    {(entry.actions_taken || []).map((a: any) => a.type).join(', ') || 'no actions'}
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                    entry.status === 'executed' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+                  }`}>
+                    {entry.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {showLog && executionLog.length === 0 && (
+            <p className="text-xs text-mission-control-text-dim">No executions yet. Automations run every 5 minutes when enabled.</p>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // POST /api/meetings/diarize — Diarize transcript via Gemini (text or audio)
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/apiAuth';
 
 async function getGeminiKey(): Promise<string | null> {
   try {
@@ -12,6 +13,9 @@ async function getGeminiKey(): Promise<string | null> {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = requireAuth(req);
+  if (authError) return authError;
+
   try {
     const apiKey = await getGeminiKey();
     if (!apiKey) {
