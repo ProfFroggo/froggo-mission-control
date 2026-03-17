@@ -227,14 +227,6 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     setInput('');
     setLoading(true);
 
-    // Persist user message via REST API
-    chatApi.saveMessage(sessionKey, {
-      role: 'user',
-      content: userMessage.content,
-      timestamp: userMessage.timestamp,
-      channel: 'xtwitter',
-    });
-
     const agentMsgId = `msg-${Date.now()}-agent`;
     let agentContent = '';
 
@@ -253,31 +245,18 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     ]);
 
     try {
-      // Send to agent chat room — the social-manager agent has MCP tools
-      // and can call X API endpoints, search, create tasks, etc.
-      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'pipeline';
-
-      // Post to agent-specific chat room (isolated per surface, not shared with main 1-1)
-      const roomId = `social-${safeAgentId}-${validTab}`;
-      try {
-        await fetch(`/api/chat-rooms/${roomId}/messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agentId: 'human', content: text, role: 'user' }),
-        });
-      } catch { /* non-critical */ }
-
-      // Server pre-fetches live data based on tab + uses agent identity
-      const response = await fetch('/api/chat/generate-reply', {
+      // Session service handles: user message persistence, context assembly,
+      // agent invocation, and agent response persistence.
+      const response = await fetch('/api/sessions/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          context: TAB_CONTEXT[contextTab],
-          tone: 'professional',
-          tab: contextTab,
-          agentId: safeAgentId,
           sessionKey,
+          agentId: safeAgentId,
+          surface: 'social' as const,
+          contextId: validTab,
+          metadata: { tab: validTab, tabContext: TAB_CONTEXT[validTab] },
         }),
       });
 
@@ -296,16 +275,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         )
       );
 
-      // Persist agent response
+      // Extract actionable content from response and dispatch to editor
       if (agentContent) {
-        chatApi.saveMessage(sessionKey, {
-          role: 'assistant',
-          content: agentContent,
-          timestamp: Date.now(),
-          channel: 'xtwitter',
-        });
-
-        // Extract actionable content from response and dispatch to editor
         // Campaign JSON blocks → pipeline campaigns view
         if (validTab === 'pipeline') {
           const campaignMatch = agentContent.match(/```campaign\s*\n([\s\S]*?)```/);
