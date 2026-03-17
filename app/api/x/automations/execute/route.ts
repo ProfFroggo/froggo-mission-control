@@ -277,8 +277,38 @@ async function executeAction(
     }
 
     case 'add_to_list': {
-      // Add to internal tracking list (no X API needed, no approval needed)
       return { type: 'add_to_list', list: action.config.list_id || 'default', status: 'added' };
+    }
+
+    case 'process_mentions': {
+      // Fetch + process mentions via the mention processor endpoint
+      try {
+        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/mentions/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        const data = await res.json().catch(() => ({}));
+        return { type: 'process_mentions', status: 'executed', fetched: data.fetched, newMentions: data.newMentions, aiReplies: data.aiRepliesGenerated };
+      } catch (err: any) {
+        return { type: 'process_mentions', status: 'error', error: err.message };
+      }
+    }
+
+    case 'report': {
+      // Generate a report via the reports endpoint
+      try {
+        const reportType = action.config.report_type || 'competitor-analysis';
+        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/reports`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: reportType }),
+        });
+        const data = await res.json().catch(() => ({}));
+        return { type: 'report', report_type: reportType, status: data.ok ? 'generated' : 'failed', title: data.report?.title };
+      } catch (err: any) {
+        return { type: 'report', status: 'error', error: err.message };
+      }
     }
 
     default:

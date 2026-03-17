@@ -787,9 +787,8 @@ async function processMentions() {
   }
 }
 
-// Initial run after 30s delay (let server start), then every 15 min
-setTimeout(processMentions, 30_000);
-setInterval(processMentions, MENTION_PROCESS_INTERVAL);
+// REMOVED: processMentions hardcoded cron — now driven by x_automations table
+// The automation executor (every 5 min) handles mention processing via 'process_mentions' action type
 
 // ── Social Media: Automation Execution ───────────────────────────────────────
 // Evaluate and fire enabled automations (all actions queue approvals)
@@ -877,9 +876,8 @@ async function generateDailyCompetitorReport() {
   }
 }
 
-// Run daily at startup + every 24h (first run after 2 min)
-setTimeout(generateDailyCompetitorReport, 2 * 60_000);
-setInterval(generateDailyCompetitorReport, DAILY_REPORT_INTERVAL);
+// REMOVED: generateDailyCompetitorReport hardcoded cron — now driven by x_automations table
+// The automation executor (every 5 min) handles reports via 'report' action type
 
 function shutdown() {
   log('Cron daemon shutting down.');
