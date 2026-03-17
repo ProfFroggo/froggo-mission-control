@@ -423,6 +423,21 @@ export function XEnhancedAnalyticsView() {
             >
               <RefreshCw size={16} />
             </button>
+            <div className="h-4 border-l border-mission-control-border" />
+            {[
+              { label: 'Weekly report', prompt: 'Generate a weekly performance report. Summarize post performance, engagement trends, top content, follower growth, and key insights. Use markdown tables.' },
+              { label: 'Best times', prompt: 'Analyze my posting times vs engagement. When do my posts perform best? Recommend an optimal posting schedule for next week.' },
+              { label: 'Content audit', prompt: 'Audit my content mix. What types of content get the most engagement? What should I post more/less of? Present findings as a table.' },
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: action.prompt } }))}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+              >
+                <Sparkles size={10} />
+                {action.label}
+              </button>
+            ))}
           </div>
         </div>
 

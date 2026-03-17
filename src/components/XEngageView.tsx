@@ -406,11 +406,12 @@ export const XEngageView: React.FC = () => {
       ];
       const replyMap: Record<string, { text: string; status: 'queued' | 'approved' | 'sent' }> = {};
       for (const a of allApprovals) {
-        if (a.type === 'x-reply' && a.payload?.mentionId) {
-          const mentionId = String(a.payload.mentionId);
+        const meta = a.metadata || {};
+        if (a.type === 'x-reply' && meta.mentionId) {
+          const mentionId = String(meta.mentionId);
           const status: 'queued' | 'approved' | 'sent' =
             a.status === 'approved' ? 'approved' : 'queued';
-          replyMap[mentionId] = { text: a.payload.replyText || '', status };
+          replyMap[mentionId] = { text: a.content || meta.replyText || '', status };
         }
       }
       setPendingReplies(replyMap);

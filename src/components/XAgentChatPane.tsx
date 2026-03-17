@@ -55,10 +55,10 @@ const QUICK_PROMPTS: Record<XTab, string[]> = {
     'Analyze my current content mix',
   ],
   configure: [
-    'Suggest automations for my workflow',
-    'What posting frequency works best?',
+    'Create an automation that auto-replies to mentions with 50+ likes',
+    'Set up a daily posting schedule automation',
+    'What automations should I have running?',
     'Review my agent brief and improve it',
-    'What should I automate first?',
   ],
 };
 
