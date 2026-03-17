@@ -4,7 +4,8 @@
 // across all surfaces (chat, task, social, room, library).
 
 import { spawnSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'fs';
+import { homedir } from 'os';
 import { join } from 'path';
 import { getDb } from './database';
 import { ENV } from './env';
@@ -41,6 +42,9 @@ interface SessionRecord {
 
 const BUDGET_HISTORY = 8000;
 const BUDGET_SOUL = 3000;
+const BUDGET_MEMORY = 2000;
+const BUDGET_SHARED_MEMORY = 500;
+const BUDGET_KNOWLEDGE = 1500;
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -116,6 +120,212 @@ export function loadAgentIdentity(agentId: string): string {
   } catch { /* DB not available */ }
 
   return `You are ${agentId}.`;
+}
+
+// ── Agent memory ───────────────────────────────────────────────────────────
+
+interface MemoryFile {
+  name: string;
+  content: string;
+  mtimeMs: number;
+}
+
+function formatTimeAgo(ms: number): string {
+  const diffMs = Date.now() - ms;
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function loadMemoryDir(dirPath: string, budget: number): string {
+  try {
+    if (!existsSync(dirPath)) {
+      mkdirSync(dirPath, { recursive: true });
+      return '';
+    }
+
+    const entries = readdirSync(dirPath).filter(f => f.endsWith('.md'));
+    if (entries.length === 0) return '';
+
+    // Read files with mtime, sort newest first
+    const files: MemoryFile[] = entries.map(name => {
+      const filePath = join(dirPath, name);
+      const stat = statSync(filePath);
+      return {
+        name,
+        content: readFileSync(filePath, 'utf-8').trim(),
+        mtimeMs: stat.mtimeMs,
+      };
+    }).sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+    // Build formatted output, respecting token budget (oldest dropped first)
+    const charBudget = budget * 4;
+    const parts: string[] = [];
+    let totalChars = 0;
+
+    for (const file of files) {
+      const header = `## ${file.name} (modified ${formatTimeAgo(file.mtimeMs)})`;
+      const entry = `${header}\n${file.content}`;
+      if (totalChars + entry.length > charBudget) {
+        // Try truncating this file's content to fit remaining budget
+        const remaining = charBudget - totalChars - header.length - 1;
+        if (remaining > 100) {
+          parts.push(`${header}\n${file.content.slice(0, remaining)}\n...[truncated]`);
+        }
+        break;
+      }
+      parts.push(entry);
+      totalChars += entry.length;
+    }
+
+    return parts.join('\n\n');
+  } catch (err) {
+    console.error('[sessionService] loadMemoryDir error:', err);
+    return '';
+  }
+}
+
+export function loadAgentMemory(agentId: string): string {
+  const memoryRoot = join(homedir(), 'mission-control', 'memory');
+  const agentDir = join(memoryRoot, 'agents', agentId);
+  const sharedDir = join(memoryRoot, 'shared');
+
+  const agentMemory = loadMemoryDir(agentDir, BUDGET_MEMORY);
+  const sharedMemory = loadMemoryDir(sharedDir, BUDGET_SHARED_MEMORY);
+
+  const sections: string[] = [];
+
+  if (agentMemory) {
+    sections.push(
+      '--- YOUR MEMORY FILES ---\n' +
+      'These are your accumulated learnings. Reference them when relevant.\n\n' +
+      agentMemory
+    );
+  }
+
+  if (sharedMemory) {
+    sections.push('## SHARED MEMORY\n' + sharedMemory);
+  }
+
+  return sections.join('\n\n');
+}
+
+// ── Knowledge base ─────────────────────────────────────────────────────────
+
+const SOCIAL_MANAGER_PRIORITY_TAGS = ['brand', 'voice', 'strategy', 'x-twitter'];
+
+export function loadKnowledgeBase(
+  agentId: string,
+  surface: string,
+  metadata?: Record<string, any>
+): string {
+  try {
+    const db = getDb();
+
+    // Fetch articles visible to agents (scope = 'agents' or 'all')
+    const rows = db.prepare(
+      `SELECT id, title, content, tags, scope, updatedAt
+       FROM knowledge_base
+       WHERE scope IN ('agents', 'all')
+       ORDER BY pinned DESC, updatedAt DESC
+       LIMIT 50`
+    ).all() as Array<{
+      id: string;
+      title: string;
+      content: string;
+      tags: string;
+      scope: string;
+      updatedAt: number;
+    }>;
+
+    if (rows.length === 0) return '';
+
+    // Parse tags and score relevance
+    const scored = rows.map(row => {
+      let parsedTags: string[] = [];
+      try { parsedTags = JSON.parse(row.tags || '[]'); } catch { /* */ }
+
+      let score = 0;
+
+      // Social-manager priority tags
+      if (agentId === 'social-manager') {
+        for (const tag of parsedTags) {
+          if (SOCIAL_MANAGER_PRIORITY_TAGS.includes(tag.toLowerCase())) {
+            score += 10;
+          }
+        }
+      }
+
+      // Project tag matching from task metadata
+      if (metadata?.project) {
+        for (const tag of parsedTags) {
+          if (tag.toLowerCase() === metadata.project.toLowerCase()) {
+            score += 5;
+          }
+        }
+      }
+
+      return { ...row, parsedTags, score };
+    });
+
+    // For social-manager: ensure Voice and Style Guide is always included
+    let voiceGuide: typeof scored[number] | undefined;
+    if (agentId === 'social-manager') {
+      voiceGuide = scored.find(r =>
+        r.title.toLowerCase().includes('voice') &&
+        r.title.toLowerCase().includes('style')
+      );
+      if (voiceGuide) {
+        voiceGuide.score = 1000; // Ensure it sorts to top
+      }
+    }
+
+    // Sort by score desc, then recency
+    scored.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt);
+
+    // Take top 5, respecting token budget
+    const charBudget = BUDGET_KNOWLEDGE * 4;
+    const articles: string[] = [];
+    let totalChars = 0;
+    let count = 0;
+
+    for (const row of scored) {
+      if (count >= 5) break;
+
+      // Use content summary: first 300 chars
+      const summary = row.content.length > 300
+        ? row.content.slice(0, 300) + '...'
+        : row.content;
+
+      const entry = `### ${row.title}\n${summary}`;
+      if (totalChars + entry.length > charBudget) {
+        const remaining = charBudget - totalChars;
+        if (remaining > 100) {
+          articles.push(entry.slice(0, remaining) + '\n...[truncated]');
+          count++;
+        }
+        break;
+      }
+
+      articles.push(entry);
+      totalChars += entry.length;
+      count++;
+    }
+
+    if (articles.length === 0) return '';
+
+    return (
+      '--- KNOWLEDGE BASE ---\n' +
+      'Reference these when answering questions or making decisions.\n\n' +
+      articles.join('\n\n')
+    );
+  } catch (err) {
+    console.error('[sessionService] loadKnowledgeBase error:', err);
+    return '';
+  }
 }
 
 // ── Conversation history ────────────────────────────────────────────────────
@@ -198,11 +408,11 @@ export function buildSessionContext(config: SessionConfig): SessionContext {
     surfaceContext = `Current surface: ${config.surface}, context: ${config.metadata.tab}`;
   }
 
-  // 4. Memory context (placeholder — will integrate with memory MCP later)
-  const memoryContext = '';
+  // 4. Agent memory (from ~/mission-control/memory/agents/{agentId}/ + shared)
+  const memoryContext = loadAgentMemory(config.agentId);
 
-  // 5. Knowledge context (placeholder — will integrate with KB later)
-  const knowledgeContext = '';
+  // 5. Knowledge base articles (from knowledge_base table)
+  const knowledgeContext = loadKnowledgeBase(config.agentId, config.surface, config.metadata);
 
   // Build system prompt
   const agentName = config.agentId === 'social-manager'
