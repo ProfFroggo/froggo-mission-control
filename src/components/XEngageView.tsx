@@ -407,7 +407,8 @@ export const XEngageView: React.FC = () => {
       const replyMap: Record<string, { text: string; status: 'queued' | 'approved' | 'sent' }> = {};
       for (const a of allApprovals) {
         const meta = a.metadata || {};
-        if (a.type === 'x-reply' && meta.mentionId) {
+        // Only show status for user-initiated replies, not auto-generated background ones
+        if (a.type === 'x-reply' && meta.mentionId && !meta.auto_generated) {
           const mentionId = String(meta.mentionId);
           const status: 'queued' | 'approved' | 'sent' =
             a.status === 'approved' ? 'approved' : 'queued';
