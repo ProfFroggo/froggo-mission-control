@@ -641,8 +641,7 @@ export function runReviewCycle(): { queued: number } {
   try {
     const todoWithAgent = getDb()
       .prepare(`SELECT id FROM tasks WHERE status = 'todo' AND assignedTo IS NOT NULL AND assignedTo <> ''
-                AND (reviewStatus IS NULL OR reviewStatus NOT IN ('pre-rejected'))
-                AND (reviewNotes IS NULL OR reviewNotes = '')`)
+                AND (reviewStatus IS NULL OR reviewStatus NOT IN ('pre-rejected'))`)
       .all() as { id: string }[];
     if (todoWithAgent.length > 0) {
       const now = Date.now();

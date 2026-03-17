@@ -126,6 +126,24 @@ export async function PATCH(
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
+    // Auto-clear pre-rejected state when the user fixes the blocking fields.
+    // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
+    if (!('reviewStatus' in body) && !('status' in body)) {
+      const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
+        reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
+      } | undefined;
+      if (current?.reviewStatus === 'pre-rejected') {
+        const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
+        const fixingDescription = 'description' in body && body.description;
+        const fixingAssignee = 'assignedTo' in body && body.assignedTo;
+        if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
+          // One of Clara's rejection reasons was just resolved — clear rejection state so auto-advance re-queues it
+          setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
+          values.push(null, null);
+        }
+      }
+    }
+
     // Auto-advance status based on reviewStatus.
     // Only fires when reviewStatus is being set AND body does NOT already contain an explicit status.
     if ('reviewStatus' in body && !('status' in body)) {
