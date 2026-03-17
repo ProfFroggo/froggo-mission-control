@@ -736,6 +736,48 @@ setInterval(checkStuckTasks, STUCK_CHECK_INTERVAL);
 processScheduledItems();
 setInterval(processScheduledItems, CHECK_INTERVAL);
 
+// ── Session cleanup (daily) ──────────────────────────────────────────────────
+const SESSION_CLEANUP_INTERVAL = 24 * 60 * 60_000; // 24 hours
+
+function cleanupStaleSessions() {
+  const database = getDb();
+  if (!database) return;
+
+  try {
+    const now = Date.now();
+    const ageThreshold = now - 30 * 24 * 60 * 60_000;     // 30 days
+    const inactiveThreshold = now - 7 * 24 * 60 * 60_000; // 7 days
+
+    // Find stale sessions: older than 30 days AND inactive for 7+ days
+    const stale = database.prepare(
+      `SELECT key FROM sessions WHERE createdAt < ? AND lastActivity < ?`
+    ).all(ageThreshold, inactiveThreshold);
+
+    if (stale.length > 0) {
+      const delMsg = database.prepare('DELETE FROM messages WHERE sessionKey = ?');
+      const delSes = database.prepare('DELETE FROM sessions WHERE key = ?');
+      for (const s of stale) {
+        delMsg.run(s.key);
+        delSes.run(s.key);
+      }
+      log(`[cleanup] Deleted ${stale.length} stale sessions`);
+    }
+
+    // Clean orphaned messages
+    const orphaned = database.prepare(
+      `DELETE FROM messages WHERE sessionKey NOT IN (SELECT key FROM sessions)`
+    ).run();
+    if (orphaned.changes > 0) {
+      log(`[cleanup] Deleted ${orphaned.changes} orphaned messages`);
+    }
+  } catch (e) {
+    log(`[cleanup] Session cleanup error: ${e.message}`);
+  }
+}
+
+cleanupStaleSessions();
+setInterval(cleanupStaleSessions, SESSION_CLEANUP_INTERVAL);
+
 // ── Social Media: Mention Processing ─────────────────────────────────────────
 // Fetch new mentions from X API, store in inbox, generate AI reply suggestions
 const MENTION_PROCESS_INTERVAL = 15 * 60_000; // every 15 minutes

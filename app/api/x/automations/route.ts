@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
 
     db.prepare(`
-      INSERT INTO x_automations (id, name, description, enabled, trigger_type, trigger_config, conditions, actions, max_per_hour, max_per_day, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO x_automations (id, name, description, enabled, trigger_type, trigger_config, conditions, actions, ai_engine, max_per_hour, max_per_day, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       body.name || 'Untitled Automation',
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       JSON.stringify(body.trigger_config || {}),
       body.conditions ? JSON.stringify(body.conditions) : null,
       JSON.stringify(body.actions || []),
+      body.ai_engine || 'gemini',
       body.max_per_hour ?? 5,
       body.max_per_day ?? 20,
       now, now,
@@ -89,6 +90,7 @@ export async function PATCH(req: NextRequest) {
       trigger_config: (v) => JSON.stringify(v),
       conditions: (v) => v ? JSON.stringify(v) : null,
       actions: (v) => JSON.stringify(v),
+      ai_engine: (v) => v,
       max_per_hour: (v) => v,
       max_per_day: (v) => v,
     };

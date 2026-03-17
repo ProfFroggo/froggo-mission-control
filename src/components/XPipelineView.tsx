@@ -53,6 +53,10 @@ interface ParsedMeta {
     retweet_count?: number;
     reply_count?: number;
   };
+  mention_reply?: boolean;
+  author_username?: string;
+  ai_replies?: string[];
+  ai_recommended?: number;
   [key: string]: unknown;
 }
 
@@ -535,6 +539,13 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
   const badgeLabel = typeBadgeLabel(item.type);
   const proposedBy = item.parsedMeta.proposed_by;
   const ts = relativeTime(Number(item.scheduledFor));
+  const isMentionCard = item.type === 'mention' || !!item.parsedMeta.mention_reply;
+  const mentionAuthorCard = item.parsedMeta.author_username as string | undefined;
+  const aiRepliesCard = item.parsedMeta.ai_replies as string[] | undefined;
+  const aiRecommendedCard = item.parsedMeta.ai_recommended as number | undefined;
+  const suggestedReply = aiRepliesCard && aiRepliesCard.length > 0
+    ? aiRepliesCard[aiRecommendedCard ?? 0] ?? aiRepliesCard[0]
+    : undefined;
 
   const doAction = async (action: string, payload?: Record<string, unknown>) => {
     setActing(true);
@@ -555,13 +566,33 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
         <span className={`px-1.5 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
           {badgeLabel}
         </span>
-        {item.platform && (
+        {mentionAuthorCard && (
+          <span className="px-1.5 py-0.5 text-xs bg-mission-control-surface text-mission-control-text-dim rounded">
+            @{mentionAuthorCard}
+          </span>
+        )}
+        {!mentionAuthorCard && item.platform && (
           <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">{item.platform}</span>
         )}
       </div>
 
-      {/* Content preview */}
-      <p className="text-sm text-mission-control-text leading-relaxed mb-2">{preview}</p>
+      {/* Mention: original tweet + suggested reply */}
+      {isMentionCard ? (
+        <div className="space-y-1.5 mb-2">
+          {preview && (
+            <p className="text-xs text-mission-control-text-dim leading-relaxed line-clamp-2">{preview}</p>
+          )}
+          {suggestedReply && (
+            <div className="border-l-2 border-info/50 pl-2">
+              <p className="text-xs text-mission-control-text-dim mb-0.5 uppercase tracking-wide" style={{ fontSize: '10px' }}>Suggested reply</p>
+              <p className="text-sm text-mission-control-text leading-relaxed line-clamp-2">{suggestedReply}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Content preview */
+        <p className="text-sm text-mission-control-text leading-relaxed mb-2">{preview}</p>
+      )}
 
       {/* Footer: agent + time */}
       <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
@@ -1122,7 +1153,7 @@ export default function XPipelineView() {
           mentionItems = (mentionsData.mentions || []).map((m: Record<string, unknown>) => ({
             id: m.id as string,
             type: 'mention',
-            content: m.mention_text as string || '',
+            content: m.text as string || '',
             scheduledFor: String(m.tweet_created_at || ''),
             metadata: JSON.stringify({
               mention_reply: true,
@@ -1132,6 +1163,7 @@ export default function XPipelineView() {
               is_reply_to_us: m.is_reply_to_us,
               tweet_id: m.tweet_id,
               ai_replies: m.ai_replies,
+              ai_recommended: m.ai_recommended,
               ai_judgment: m.ai_triage ? { triage_reason: m.ai_triage_reason, confidence: m.ai_confidence, safety_flags: m.ai_safety_flags } : null,
               parent_tweet: m.parent_tweet_text ? { text: m.parent_tweet_text } : null,
             }),

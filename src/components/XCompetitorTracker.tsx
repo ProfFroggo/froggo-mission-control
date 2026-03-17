@@ -18,6 +18,7 @@ import {
   Download,
   Zap,
   Loader2,
+  HelpCircle,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import MarkdownMessage from './MarkdownMessage';
@@ -127,7 +128,10 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
                   {formatNumber(data.user.public_metrics.followers_count)} followers
                 </>
               ) : (
-                <span>{data.tweetCount} tweets found via search</span>
+                <>
+                  <HelpCircle size={11} />
+                  <span>Partial data — follower stats unavailable</span>
+                </>
               )}
             </div>
           </div>
@@ -233,7 +237,9 @@ export function XCompetitorTracker() {
   const [handles, setHandles] = useState<string[]>(loadHandles);
   const [competitors, setCompetitors] = useState<CompetitorData[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
+  // Initialize loading=true when handles exist to prevent flicker of the
+  // "Tracked accounts" chip list before the initial fetch fires.
+  const [loading, setLoading] = useState(() => loadHandles().length > 0);
   const [error, setError] = useState<string | null>(null);
   const [latestReport, setLatestReport] = useState<{ id: string; title: string; summary: string; content: string; created_at: number } | null>(null);
   const [showReport, setShowReport] = useState(false);

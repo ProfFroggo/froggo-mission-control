@@ -15,14 +15,13 @@ interface TaskChatTabProps {
 }
 
 export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabProps) {
-  const sessionKey = `task:${taskId}`;
+  // Session key includes agentId so switching agents on same task creates new session
+  const sessionKey = agentId ? `task:${agentId}:${taskId}` : `task:${taskId}`;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [streaming, setStreaming] = useState('');
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -49,99 +48,51 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streaming]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => { abortRef.current?.abort(); };
-  }, []);
-
-  const persistMessage = useCallback(async (role: string, content: string) => {
-    try {
-      await fetch(`/api/chat/sessions/${encodeURIComponent(sessionKey)}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, content }),
-      });
-    } catch { /* non-critical */ }
-  }, [sessionKey]);
+  }, [messages]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || sending || !agentId) return;
     const text = input.trim();
     setInput('');
     setSending(true);
-    setStreaming('');
 
     setMessages(prev => [...prev, { role: 'user', content: text, timestamp: Date.now() }]);
-    persistMessage('user', text);
 
     try {
-      abortRef.current?.abort();
-      const ac = new AbortController();
-      abortRef.current = ac;
-
-      const res = await fetch(`/api/agents/${agentId}/stream`, {
+      const res = await fetch('/api/sessions/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sessionKey }),
-        signal: ac.signal,
+        body: JSON.stringify({
+          message: text,
+          sessionKey,
+          agentId,
+          surface: 'task',
+          contextId: taskId,
+          metadata: { taskId, assignedTo: agentId },
+        }),
       });
 
-      if (!res.body) throw new Error('No stream body');
+      const data = await res.json();
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      let accumulated = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop() ?? '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6).trim();
-          if (raw === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(raw) as {
-              type?: string; text?: string;
-              message?: { content?: { type: string; text: string }[] };
-            };
-            if (evt.type === 'text' && evt.text) {
-              accumulated += evt.text;
-              setStreaming(accumulated);
-            } else if (evt.type === 'assistant' && evt.message?.content) {
-              for (const block of evt.message.content) {
-                if (block.type === 'text') {
-                  accumulated += block.text;
-                  setStreaming(accumulated);
-                }
-              }
-            }
-          } catch { /* not JSON */ }
-        }
-      }
-
-      if (accumulated) {
-        setMessages(prev => [...prev, { role: 'agent', content: accumulated, timestamp: Date.now() }]);
-        persistMessage('assistant', accumulated);
-      }
-    } catch (e: unknown) {
-      if ((e as Error)?.name !== 'AbortError') {
+      if (data.success && data.reply) {
+        setMessages(prev => [...prev, { role: 'agent', content: data.reply, timestamp: Date.now() }]);
+      } else {
         setMessages(prev => [...prev, {
           role: 'system',
-          content: `Error: ${(e as Error)?.message || 'Failed to send'}`,
+          content: `Error: ${data.error || 'Failed to get response'}`,
           timestamp: Date.now(),
         }]);
       }
+    } catch (e: unknown) {
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: `Error: ${(e as Error)?.message || 'Failed to send'}`,
+        timestamp: Date.now(),
+      }]);
     } finally {
-      setStreaming('');
       setSending(false);
     }
-  }, [input, sending, agentId, sessionKey, persistMessage]);
+  }, [input, sending, agentId, sessionKey, taskId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -177,7 +128,7 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
           </div>
         )}
 
-        {!loading && messages.length === 0 && !streaming && (
+        {!loading && messages.length === 0 && (
           <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm">
             No messages yet. Ask {agentName} anything about this task.
           </div>
@@ -212,20 +163,8 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
           </div>
         ))}
 
-        {/* Live streaming bubble */}
-        {streaming && (
-          <div className="flex gap-2">
-            <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
-              <Bot size={12} />
-            </div>
-            <div className="max-w-[80%] px-3 py-2 rounded-lg rounded-tl-sm bg-mission-control-surface border border-mission-control-border text-sm">
-              <p className="whitespace-pre-wrap">{streaming}<span className="animate-pulse">▊</span></p>
-            </div>
-          </div>
-        )}
-
         {/* Thinking indicator */}
-        {sending && !streaming && (
+        {sending && (
           <div className="flex gap-2">
             <div className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white">
               <Bot size={12} />

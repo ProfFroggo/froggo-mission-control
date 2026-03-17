@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
+import { authHeaders } from '../lib/api';
 // GeminiLiveService not used for passive recording — using Web Speech API for live + Gemini audio API for post-meeting diarization
 import { useStore } from '../store/store';
 import { createLogger } from '../utils/logger';
@@ -113,7 +114,7 @@ function TranscriptPreview({ meetingId }: { meetingId?: string }) {
     if (content || !meetingId || loading) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/meetings?status=completed');
+      const res = await fetch('/api/meetings?status=completed', { headers: { ...authHeaders() } });
       if (!res.ok) return;
       const rows = await res.json();
       const match = rows.find((r: Record<string, unknown>) => r.id === meetingId);
@@ -360,7 +361,7 @@ export default function MeetingsPanel() {
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           title,
           description: opts?.agenda || '',
@@ -391,7 +392,7 @@ export default function MeetingsPanel() {
     try {
       await fetch(`/api/meetings/${meetingId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           status: 'completed',
           duration: Math.round(duration / 1000),
@@ -404,7 +405,7 @@ export default function MeetingsPanel() {
   const loadDbMeetings = useCallback(async (): Promise<PastMeeting[]> => {
     // Load from API (scheduled_items where type=meeting and status=completed)
     try {
-      const res = await fetch('/api/meetings?status=completed');
+      const res = await fetch('/api/meetings?status=completed', { headers: { ...authHeaders() } });
       if (!res.ok) return [];
       const rows = await res.json() as Array<Record<string, unknown>>;
       return rows.map((row) => {
@@ -448,7 +449,7 @@ export default function MeetingsPanel() {
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({
             contents: [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
             generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
@@ -506,7 +507,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: { maxOutputTokens: 4096, temperature: 0.2 }
@@ -732,7 +733,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({
             contents: [{
               parts: [
@@ -804,7 +805,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       // POST to server API
       const response = await fetch('/api/meetings/transcript', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ content, filename: file.name }),
       });
 
@@ -1132,7 +1133,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify({
             contents: [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${text}` }] }],
             generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
@@ -1385,7 +1386,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           }
           formData.append('rawTranscript', rawTranscript);
 
-          const diarRes = await fetch('/api/meetings/diarize', { method: 'POST', body: formData });
+          const diarRes = await fetch('/api/meetings/diarize', { method: 'POST', headers: { ...authHeaders() }, body: formData });
           if (diarRes.ok) {
             const diarData = await diarRes.json();
             if (diarData.diarizedTranscript) {
@@ -1400,7 +1401,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         try {
           const res = await fetch('/api/meetings/transcript', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify({
               content: finalTranscript,
               filename: `live-meeting-${new Date().toISOString().slice(0, 10)}.md`,
@@ -1493,7 +1494,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1024 } })
           }
         );
@@ -2174,7 +2175,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
-                              await fetch(`/api/meetings/${selectedMeeting.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'archived' }) });
+                              await fetch(`/api/meetings/${selectedMeeting.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ status: 'archived' }) });
                               setPastMeetings(prev => prev.filter(m => m.id !== selectedMeeting.id));
                               setSelectedMeeting(null);
                               showToast('success', 'Meeting archived');
@@ -2190,7 +2191,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
-                              await fetch(`/api/meetings/${selectedMeeting.id}`, { method: 'DELETE' });
+                              await fetch(`/api/meetings/${selectedMeeting.id}`, { method: 'DELETE', headers: { ...authHeaders() } });
                               setPastMeetings(prev => prev.filter(m => m.id !== selectedMeeting.id));
                               setSelectedMeeting(null);
                               showToast('success', 'Meeting deleted');
@@ -2694,7 +2695,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             // Find the most recent meeting and select it
                             const meetings = await (async () => {
                               try {
-                                const res = await fetch('/api/meetings?status=completed');
+                                const res = await fetch('/api/meetings?status=completed', { headers: { ...authHeaders() } });
                                 if (!res.ok) return [];
                                 return await res.json();
                               } catch { return []; }

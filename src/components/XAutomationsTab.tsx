@@ -131,6 +131,9 @@ export default function XAutomationsTab() {
   const [builderMaxHourly, setBuilderMaxHourly] = useState(10);
   const [builderMaxDaily, setBuilderMaxDaily] = useState(50);
   const [showLog, setShowLog] = useState(false);
+  const [logFilter, setLogFilter] = useState('');
+  const [logDisplayLimit, setLogDisplayLimit] = useState(20);
+  const [expandedLogEntry, setExpandedLogEntry] = useState<string | null>(null);
 
   useEffect(() => {
     loadAutomations();
@@ -204,6 +207,7 @@ export default function XAutomationsTab() {
       setBuilderTriggerType(automation.trigger_type);
       setBuilderTriggerConfig(automation.trigger_config);
       setBuilderActions(automation.actions);
+      setBuilderAiEngine(automation.ai_engine || 'gemini');
       setBuilderMaxHourly(automation.max_executions_per_hour);
       setBuilderMaxDaily(automation.max_executions_per_day);
     } else {
@@ -213,6 +217,7 @@ export default function XAutomationsTab() {
       setBuilderTriggerType('');
       setBuilderTriggerConfig({});
       setBuilderActions([]);
+      setBuilderAiEngine('gemini');
       setBuilderMaxHourly(10);
       setBuilderMaxDaily(50);
     }
@@ -293,6 +298,12 @@ export default function XAutomationsTab() {
         return { template: '' };
       case 'add_to_list':
         return { list_id: '' };
+      case 'report':
+        return { report_type: 'competitor-analysis' };
+      case 'post_content':
+        return { template: '' };
+      case 'custom_prompt':
+        return { prompt: '' };
       default:
         return {};
     }
@@ -458,13 +469,103 @@ export default function XAutomationsTab() {
                 </select>
               </div>
             )}
+
+            {builderTriggerType === 'engagement' && (
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="trigger-min-likes" className="block text-sm font-medium mb-2">
+                    Min likes
+                  </label>
+                  <input
+                    id="trigger-min-likes"
+                    type="number"
+                    value={builderTriggerConfig.min_likes ?? 50}
+                    onChange={e =>
+                      setBuilderTriggerConfig({
+                        ...builderTriggerConfig,
+                        min_likes: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min="0"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="trigger-min-retweets" className="block text-sm font-medium mb-2">
+                    Min retweets
+                  </label>
+                  <input
+                    id="trigger-min-retweets"
+                    type="number"
+                    value={builderTriggerConfig.min_retweets ?? 10}
+                    onChange={e =>
+                      setBuilderTriggerConfig({
+                        ...builderTriggerConfig,
+                        min_retweets: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min="0"
+                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* AI Engine */}
+          <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">
+                2
+              </span>
+              AI Engine
+            </h3>
+            <p className="text-sm text-mission-control-text-dim">
+              Select the AI model used for reply generation and content actions.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => setBuilderAiEngine('gemini')}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
+                  builderAiEngine === 'gemini'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10'
+                    : 'border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+              >
+                <Bot
+                  size={20}
+                  className={builderAiEngine === 'gemini' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}
+                />
+                <div>
+                  <div className="font-medium text-sm">Gemini Flash Lite</div>
+                  <div className="text-xs text-mission-control-text-dim">Fast, cheap — ideal for background automation</div>
+                </div>
+              </button>
+              <button
+                onClick={() => setBuilderAiEngine('claude')}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
+                  builderAiEngine === 'claude'
+                    ? 'border-mission-control-accent bg-mission-control-accent/10'
+                    : 'border-mission-control-border hover:border-mission-control-accent/50'
+                }`}
+              >
+                <Sparkles
+                  size={20}
+                  className={builderAiEngine === 'claude' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}
+                />
+                <div>
+                  <div className="font-medium text-sm">Claude Haiku</div>
+                  <div className="text-xs text-mission-control-text-dim">Interactive, nuanced — ideal for replies requiring context</div>
+                </div>
+              </button>
+            </div>
           </div>
 
           {/* Actions */}
           <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
               <span className="bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center text-sm">
-                2
+                3
               </span>
               Do this (Actions)
             </h3>
@@ -521,6 +622,61 @@ export default function XAutomationsTab() {
                           placeholder="List ID"
                           className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
                         />
+                      )}
+
+                      {action.type === 'report' && (
+                        <div>
+                          <label htmlFor={`action-report-type-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Report type
+                          </label>
+                          <select
+                            id={`action-report-type-${index}`}
+                            value={action.config.report_type || 'competitor-analysis'}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, report_type: e.target.value })
+                            }
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent text-sm"
+                          >
+                            <option value="competitor-analysis">Competitor analysis</option>
+                            <option value="weekly-summary">Weekly summary</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {action.type === 'post_content' && (
+                        <div>
+                          <label htmlFor={`action-post-template-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Content template
+                          </label>
+                          <textarea
+                            id={`action-post-template-${index}`}
+                            value={action.config.template || ''}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, template: e.target.value })
+                            }
+                            placeholder="Draft post content..."
+                            rows={3}
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                          />
+                        </div>
+                      )}
+
+                      {action.type === 'custom_prompt' && (
+                        <div>
+                          <label htmlFor={`action-prompt-${index}`} className="block text-xs font-medium mb-1 text-mission-control-text-dim">
+                            Custom prompt
+                          </label>
+                          <textarea
+                            id={`action-prompt-${index}`}
+                            value={action.config.prompt || ''}
+                            onChange={e =>
+                              updateAction(index, { ...action.config, prompt: e.target.value })
+                            }
+                            placeholder="Describe what the AI should do with the trigger data..."
+                            rows={3}
+                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none text-sm"
+                          />
+                        </div>
                       )}
                     </div>
                   );
@@ -759,37 +915,121 @@ export default function XAutomationsTab() {
           </div>
         )}
         {/* Execution Log */}
-        <div className="mt-6">
+        <div className="mt-6 bg-mission-control-surface rounded-lg border border-mission-control-border">
           <button
             onClick={() => setShowLog(!showLog)}
-            className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text mb-3"
+            className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-medium hover:bg-mission-control-border/30 transition-colors rounded-lg"
           >
             {showLog ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            <History size={14} />
-            Execution Log ({executionLog.length})
+            <History size={14} className="text-mission-control-accent" />
+            <span>Execution Log</span>
+            <span className="text-mission-control-text-dim ml-1">({executionLog.length})</span>
           </button>
-          {showLog && executionLog.length > 0 && (
-            <div className="space-y-1.5">
-              {executionLog.slice(0, 20).map((entry: any) => (
-                <div key={entry.id} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs">
-                  <span className="text-mission-control-text-dim w-32 flex-shrink-0">
-                    {new Date(entry.executed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className="text-mission-control-text font-medium flex-shrink-0 w-16">{entry.trigger_type}</span>
-                  <span className="text-mission-control-text-dim flex-1 truncate">
-                    {(entry.actions_taken || []).map((a: any) => a.type).join(', ') || 'no actions'}
-                  </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                    entry.status === 'executed' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
-                  }`}>
-                    {entry.status}
-                  </span>
-                </div>
-              ))}
+
+          {showLog && (
+            <div className="px-4 pb-4">
+              {/* Filter */}
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={logFilter}
+                  onChange={e => {
+                    setLogFilter(e.target.value);
+                    setLogDisplayLimit(20);
+                  }}
+                  placeholder="Filter by automation name..."
+                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-xs outline-none focus:border-mission-control-accent"
+                />
+              </div>
+
+              {executionLog.length === 0 ? (
+                <p className="text-xs text-mission-control-text-dim py-4 text-center">
+                  No executions yet. Automations run every 5 minutes when enabled.
+                </p>
+              ) : (() => {
+                const filteredLog = logFilter
+                  ? executionLog.filter((entry: any) => {
+                      const automation = automations.find(a => a.id === entry.automation_id);
+                      const name = automation?.name || entry.automation_id || '';
+                      return name.toLowerCase().includes(logFilter.toLowerCase());
+                    })
+                  : executionLog;
+                const visibleLog = filteredLog.slice(0, logDisplayLimit);
+
+                return (
+                  <>
+                    <div className="space-y-1.5">
+                      {visibleLog.map((entry: any) => {
+                        const automation = automations.find(a => a.id === entry.automation_id);
+                        const automationName = automation?.name || entry.automation_id || 'Unknown';
+                        const isExpanded = expandedLogEntry === entry.id;
+                        const actionsTaken: any[] = entry.actions_taken || [];
+
+                        return (
+                          <div key={entry.id} className="rounded-lg border border-mission-control-border bg-mission-control-bg overflow-hidden">
+                            <button
+                              onClick={() => setExpandedLogEntry(isExpanded ? null : entry.id)}
+                              className="flex items-center gap-3 w-full text-left px-3 py-2 text-xs hover:bg-mission-control-border/20 transition-colors"
+                            >
+                              {isExpanded ? <ChevronDown size={12} className="flex-shrink-0" /> : <ChevronRight size={12} className="flex-shrink-0" />}
+                              <span className="text-mission-control-text-dim w-28 flex-shrink-0">
+                                {new Date(entry.executed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span className="text-mission-control-text font-medium flex-1 truncate">{automationName}</span>
+                              <span className="text-mission-control-text-dim flex-shrink-0 mx-2">{entry.trigger_type}</span>
+                              <span className="text-mission-control-text-dim flex-shrink-0 truncate max-w-[120px]">
+                                {actionsTaken.map((a: any) => a.type).join(', ') || 'no actions'}
+                              </span>
+                              <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] flex-shrink-0 ${
+                                entry.status === 'executed' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+                              }`}>
+                                {entry.status}
+                              </span>
+                            </button>
+
+                            {isExpanded && (
+                              <div className="px-3 pb-3 pt-1 border-t border-mission-control-border space-y-2">
+                                <div className="text-[11px] text-mission-control-text-dim">
+                                  <span className="font-medium text-mission-control-text">Automation ID:</span> {entry.automation_id}
+                                </div>
+                                {actionsTaken.length > 0 && (
+                                  <div>
+                                    <div className="text-[11px] font-medium text-mission-control-text mb-1">Actions taken:</div>
+                                    <div className="space-y-1">
+                                      {actionsTaken.map((a: any, i: number) => (
+                                        <div key={i} className="text-[11px] text-mission-control-text-dim bg-mission-control-surface rounded px-2 py-1">
+                                          <span className="font-medium">{a.type}</span>
+                                          {a.status && <span className="ml-2 opacity-70">{a.status}</span>}
+                                          {a.approval_id && <span className="ml-2 opacity-50">approval: {a.approval_id}</span>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {entry.error && (
+                                  <div className="text-[11px] text-error bg-error-subtle rounded px-2 py-1">
+                                    {entry.error}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {filteredLog.length > logDisplayLimit && (
+                      <button
+                        onClick={() => setLogDisplayLimit(prev => prev + 20)}
+                        className="mt-3 w-full text-xs text-mission-control-text-dim hover:text-mission-control-text py-2 border border-mission-control-border rounded-lg hover:bg-mission-control-border/20 transition-colors"
+                      >
+                        Load more ({filteredLog.length - logDisplayLimit} remaining)
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
-          )}
-          {showLog && executionLog.length === 0 && (
-            <p className="text-xs text-mission-control-text-dim">No executions yet. Automations run every 5 minutes when enabled.</p>
           )}
         </div>
       </div>
