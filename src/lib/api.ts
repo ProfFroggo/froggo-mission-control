@@ -10,6 +10,13 @@ type ApiOptions = {
   signal?: AbortSignal;
 };
 
+/** Returns Authorization header object when NEXT_PUBLIC_API_TOKEN is set */
+export function authHeaders(): Record<string, string> {
+  return process.env.NEXT_PUBLIC_API_TOKEN
+    ? { Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}` }
+    : {};
+}
+
 /** Pause for `ms` milliseconds, respecting an optional abort signal */
 function delay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
