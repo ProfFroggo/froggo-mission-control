@@ -14,8 +14,13 @@ import {
   Repeat2,
   MessageCircle,
   ExternalLink,
+  FileText,
+  Download,
+  Zap,
+  Loader2,
 } from 'lucide-react';
 import { showToast } from './Toast';
+import MarkdownMessage from './MarkdownMessage';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -230,6 +235,9 @@ export function XCompetitorTracker() {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [latestReport, setLatestReport] = useState<{ id: string; title: string; summary: string; content: string; created_at: number } | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   const fetchCompetitorData = useCallback(
     async (handle: string): Promise<CompetitorData> => {
@@ -329,11 +337,18 @@ export function XCompetitorTracker() {
 
   const handleRefresh = () => fetchCompetitors(handles);
 
-  // Auto-fetch on mount if handles exist
+  // Auto-fetch on mount if handles exist + load latest report
   useEffect(() => {
     if (handles.length > 0) {
       fetchCompetitors(handles);
     }
+    // Load latest competitor report
+    fetch('/api/x/reports?type=competitor-analysis&limit=1')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.reports?.[0]) setLatestReport(data.reports[0]);
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -351,6 +366,83 @@ export function XCompetitorTracker() {
       </div>
 
       <div className="flex-1 p-4 space-y-6">
+        {/* Latest AI Report */}
+        {latestReport && (
+          <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <FileText size={14} className="text-info" />
+                <span className="text-sm font-medium text-mission-control-text">{latestReport.title}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-mission-control-text-dim">
+                  {new Date(latestReport.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                <button
+                  onClick={() => setShowReport(!showReport)}
+                  className="px-2 py-1 text-xs text-info hover:bg-info-subtle/50 rounded transition-colors"
+                >
+                  {showReport ? 'Collapse' : 'View Report'}
+                </button>
+                <button
+                  onClick={() => {
+                    const blob = new Blob([latestReport.content], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `competitor-analysis-${new Date().toISOString().slice(0, 10)}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
+                  title="Download report"
+                >
+                  <Download size={13} />
+                </button>
+              </div>
+            </div>
+            {!showReport && <p className="text-xs text-mission-control-text-dim">{latestReport.summary}</p>}
+            {showReport && (
+              <div className="mt-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg max-h-[500px] overflow-y-auto text-sm">
+                <MarkdownMessage content={latestReport.content} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Generate Report Button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              setGeneratingReport(true);
+              try {
+                const res = await fetch('/api/x/reports', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ type: 'competitor-analysis', handles }),
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.report) {
+                    setLatestReport(data.report);
+                    setShowReport(true);
+                    showToast('success', 'Report generated');
+                  }
+                } else {
+                  showToast('error', 'Failed to generate report');
+                }
+              } catch { showToast('error', 'Report generation failed'); }
+              setGeneratingReport(false);
+            }}
+            disabled={generatingReport || handles.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-info/10 text-info hover:bg-info/20 rounded-lg transition-colors disabled:opacity-40"
+          >
+            {generatingReport ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            {generatingReport ? 'Generating...' : 'Run Competitor Analysis'}
+          </button>
+          {!latestReport && <span className="text-[10px] text-mission-control-text-dim">Add competitor handles below, then run analysis</span>}
+        </div>
+
         {/* Add handle input */}
         <div>
           <label className="block text-sm font-medium text-mission-control-text mb-2">

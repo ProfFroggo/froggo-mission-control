@@ -16,6 +16,8 @@ tools:
   - WebSearch
   - TodoRead
   - TodoWrite
+  - Write
+  - Edit
 mcpServers:
   - mission-control_db
   - memory

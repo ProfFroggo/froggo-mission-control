@@ -18,6 +18,8 @@ tools:
   - WebFetch
   - TodoRead
   - TodoWrite
+  - Write
+  - Edit
 mcpServers:
   - mission-control_db
   - memory

@@ -834,6 +834,53 @@ async function executeAutomations() {
 setTimeout(executeAutomations, 60_000); // first run after 60s
 setInterval(executeAutomations, AUTOMATION_INTERVAL);
 
+// ── Social Media: Daily Competitor Analysis ──────────────────────────────────
+const DAILY_REPORT_INTERVAL = 24 * 60 * 60_000; // every 24 hours
+
+async function generateDailyCompetitorReport() {
+  try {
+    const flagResult = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
+      }).on('error', () => resolve(null));
+    });
+    if (!flagResult || flagResult.value !== 'true') return;
+
+    log('[social] Generating daily competitor analysis...');
+    const result = await new Promise((resolve) => {
+      const body = JSON.stringify({ type: 'competitor-analysis' });
+      const req = http.request({
+        host: '127.0.0.1', port: 3000,
+        path: '/api/x/reports',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      }, (res) => {
+        let data = '';
+        res.on('data', c => { data += c; });
+        res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve({ error: data }); } });
+      });
+      req.on('error', (e) => resolve({ error: e.message }));
+      req.setTimeout(90000, () => { req.destroy(); resolve({ error: 'timeout' }); });
+      req.write(body);
+      req.end();
+    });
+
+    if (result.ok) {
+      log(`[social] Competitor report generated: ${result.report?.title || 'ok'}`);
+    } else {
+      log(`[social] Competitor report failed: ${result.error || 'unknown'}`);
+    }
+  } catch (e) {
+    log(`[social] Daily report failed: ${e.message || e}`);
+  }
+}
+
+// Run daily at startup + every 24h (first run after 2 min)
+setTimeout(generateDailyCompetitorReport, 2 * 60_000);
+setInterval(generateDailyCompetitorReport, DAILY_REPORT_INTERVAL);
+
 function shutdown() {
   log('Cron daemon shutting down.');
   try { fs.unlinkSync(PID_PATH); } catch {}

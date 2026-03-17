@@ -713,8 +713,19 @@ function initSchema(db: Database.Database) {
       executed_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
     );
 
+    CREATE TABLE IF NOT EXISTS x_reports (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT,
+      content TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_x_automations_enabled ON x_automations(enabled);
     CREATE INDEX IF NOT EXISTS idx_x_automation_log_auto ON x_automation_log(automation_id, executed_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_x_reports_type ON x_reports(type, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_assignedTo ON tasks(assignedTo);
     CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project);

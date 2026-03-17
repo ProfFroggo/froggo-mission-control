@@ -22,7 +22,6 @@ tools:
 mcpServers:
   - mission-control_db
   - memory
-  - memory
 ---
 
 # Coder — Software Engineer
