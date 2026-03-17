@@ -267,33 +267,15 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         });
       } catch { /* non-critical */ }
 
-      // Use generate-reply with full context including available tools
-      const toolContext = `
-You have access to Mission Control's X/Twitter API. When the user asks about mentions, analytics, competitors, etc., use the real data below.
-
-AVAILABLE DATA ENDPOINTS (call these via WebFetch if needed):
-- GET /api/x/analytics — your profile + last 100 tweets with engagement
-- GET /api/x/search?q={query}&max=20 — search tweets
-- GET /api/x/mentions — recent mentions
-- POST /api/x/tweet — post tweet: { text, reply_to? }
-
-AVAILABLE MCP TOOLS:
-- schedule_create — schedule future tweets
-- approval_create — submit for human approval
-- task_create — create content tasks
-- knowledge_search — search brand guidelines
-
-Account: @BitsoOnchain (Onchain.cc) — ~10K followers
-
-IMPORTANT: You have real data access. Never say "I don't have access" or "connect a monitoring tool". Use the endpoints above to get live data and answer with specifics.`;
-
+      // Server pre-fetches live data based on tab — no need for client-side tool context
       const response = await fetch('/api/chat/generate-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          context: TAB_CONTEXT[contextTab] + toolContext,
+          context: TAB_CONTEXT[contextTab],
           tone: 'professional',
+          tab: contextTab,
         }),
       });
 
