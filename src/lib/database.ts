@@ -740,6 +740,8 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_messages_sessionKey ON messages(sessionKey);
     CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
     CREATE INDEX IF NOT EXISTS idx_inbox_status ON inbox(status);
+    CREATE INDEX IF NOT EXISTS idx_sessions_agentId ON sessions(agentId);
+    CREATE INDEX IF NOT EXISTS idx_sessions_lastActivity ON sessions(lastActivity);
     CREATE INDEX IF NOT EXISTS idx_chat_room_messages_room ON chat_room_messages(roomId, timestamp);
     CREATE INDEX IF NOT EXISTS idx_analytics_type ON analytics_events(event_type);
     CREATE INDEX IF NOT EXISTS idx_analytics_timestamp ON analytics_events(timestamp);
@@ -1176,6 +1178,10 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE tasks ADD COLUMN reviewEnteredAt INTEGER`,
     // Session memory extraction: track when learnings were last extracted
     `ALTER TABLE sessions ADD COLUMN lastMemoryExtractAt INTEGER`,
+    // Session context compaction: running summary of older messages
+    `ALTER TABLE sessions ADD COLUMN compact_summary TEXT`,
+    // Session context compaction: timestamp of last compaction
+    `ALTER TABLE sessions ADD COLUMN last_compact_at INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
