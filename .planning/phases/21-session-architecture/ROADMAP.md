@@ -19,11 +19,11 @@ Unified session layer that all chat surfaces use. Every session has: agent ident
 
 ## Phases
 
-- [ ] **21.1: Unified Session Service** — Single server-side service that manages sessions across all surfaces
-- [ ] **21.2: Memory + Knowledge Injection** — Load agent memory files + KB articles into every session
-- [ ] **21.3: Context Compaction** — Intelligent conversation summarization when context grows large
-- [ ] **21.4: Surface-Specific Context** — Task context injection, social tab data, room agent coordination
-- [ ] **21.5: Session UI** — Session indicators, memory status, context usage, session management
+- [x] **21.1: Unified Session Service** — Single server-side service that manages sessions across all surfaces
+- [x] **21.2: Memory + Knowledge Injection** — Load agent memory files + KB articles into every session
+- [x] **21.3: Context Compaction** — Intelligent conversation summarization when context grows large
+- [x] **21.4: Surface-Specific Context** — Task context injection, social tab data, room agent coordination
+- [x] **21.5: Session UI** — Session indicators, memory status, context usage, session management
 
 ## Phase Details
 
@@ -140,5 +140,5 @@ Session management:
 | 21.1 Unified Session Service | 2/2 | Complete |
 | 21.2 Memory + Knowledge | 2/2 | Complete |
 | 21.3 Context Compaction | 1/2 | Complete (plan 01 done, SUMMARY written) |
-| 21.4 Surface Context | 1/2 | Complete (plan 01 done) |
-| 21.5 Session UI | 1/1 | Complete |
+| 21.4 Surface Context | 1/2 | Complete (plan 01 done, SUMMARY written) |
+| 21.5 Session UI | 1/1 | Complete (plan 01 done, SUMMARY written) |

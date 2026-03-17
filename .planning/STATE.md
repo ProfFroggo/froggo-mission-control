@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-15)
 ## Current Position
 
 Phase: 21.5 of 21.5 (Session Architecture — complete)
-Plan: 21.3-01 (complete)
-Status: Phase 21 complete — all session architecture plans executed and documented
-Last activity: 2026-03-17 — Completed 21.3-01-PLAN.md (context compaction engine + session lifecycle)
+Plan: 21.5-01 (complete)
+Status: Phase 21 fully complete — all 5 sub-phases executed, documented, and SUMMARY written
+Last activity: 2026-03-17 — Completed 21.5-01-PLAN.md (session UI: stats bar on all chat surfaces, session management in settings)
 
 Progress (Agent Autonomy): ███░░░░░░░ 30% (Phases 1-10, paused at Phase 4)
 Progress (Social Module):  ██████████ 100% (12/12 phases complete)
@@ -41,5 +41,5 @@ Progress (Social Module):  ██████████ 100% (12/12 phases com
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Phase 21.3-01 complete — Context compaction engine + session lifecycle documented
-Resume with: Next milestone (Agent Autonomy phases 5+ or Phase 22)
+Stopped at: Phase 21.5-01 complete — Session UI (stats bar + session management settings) documented
+Resume with: Next milestone (Agent Autonomy phases 1+ or Phase 22)
