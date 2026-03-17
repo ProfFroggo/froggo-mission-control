@@ -127,8 +127,8 @@ async function loadFromSetting(key: string, fallback: any): Promise<any> {
 
 function saveToSetting(key: string, value: any): void {
   const json = JSON.stringify(value);
-  // Save to both settings API and localStorage (API is persistent, localStorage is fast)
-  localStorage.setItem(key, json);
+  // Settings API is the real persistence, localStorage is just a fast cache
+  try { localStorage.setItem(key, json); } catch { /* quota exceeded — API is the backup */ }
   fetch(`/api/settings/${key}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
