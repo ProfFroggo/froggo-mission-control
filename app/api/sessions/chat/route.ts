@@ -8,12 +8,14 @@ import {
   saveMessage,
   buildSessionContext,
   invokeAgent,
+  extractAndSaveMemory,
 } from '@/lib/sessionService';
 import type { SessionConfig } from '@/lib/sessionService';
 
 export const runtime = 'nodejs';
 
 const VALID_SURFACES = new Set(['chat', 'task', 'social', 'room', 'library']);
+const MEMORY_EXTRACT_EVERY_N = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,6 +68,14 @@ export async function POST(request: NextRequest) {
 
     // ── Persist agent response ────────────────────────────────────────────
     saveMessage(sessionKey, 'assistant', reply);
+
+    // ── Memory extraction (fire-and-forget, every 5th message) ──────────
+    const session = createOrGetSession(config);
+    if (session.messageCount > 0 && session.messageCount % MEMORY_EXTRACT_EVERY_N === 0) {
+      extractAndSaveMemory(sessionKey, agentId).catch(err =>
+        console.error('[sessions/chat] memory extraction failed:', err)
+      );
+    }
 
     return NextResponse.json({
       success: true,

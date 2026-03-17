@@ -1174,6 +1174,8 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE agents ADD COLUMN memoryScope TEXT DEFAULT 'persistent'`,
     // Clara review SLA: timestamp when task entered internal-review status
     `ALTER TABLE tasks ADD COLUMN reviewEnteredAt INTEGER`,
+    // Session memory extraction: track when learnings were last extracted
+    `ALTER TABLE sessions ADD COLUMN lastMemoryExtractAt INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

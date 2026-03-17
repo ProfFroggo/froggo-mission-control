@@ -4,7 +4,7 @@
 // across all surfaces (chat, task, social, room, library).
 
 import { spawnSync } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 import { getDb } from './database';
@@ -36,6 +36,7 @@ interface SessionRecord {
   createdAt: number;
   lastActivity: number;
   messageCount: number;
+  lastMemoryExtractAt?: number | null;
 }
 
 // ── Token estimation ────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ export function createOrGetSession(config: SessionConfig): SessionRecord {
   const now = Date.now();
 
   const existing = db.prepare(
-    'SELECT key, agentId, createdAt, lastActivity, messageCount FROM sessions WHERE key = ?'
+    'SELECT key, agentId, createdAt, lastActivity, messageCount, lastMemoryExtractAt FROM sessions WHERE key = ?'
   ).get(config.sessionKey) as SessionRecord | undefined;
 
   if (existing) {
@@ -388,6 +389,261 @@ export function saveMessage(
   }
 }
 
+// ── Memory extraction ──────────────────────────────────────────────────────
+
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
+const GEMINI_FALLBACK = 'gemini-2.5-flash-preview-05-20';
+const MEMORY_EXTRACT_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const MEMORY_EXTRACT_EVERY_N = 5; // every 5th message
+const LEARNINGS_MAX_CHARS = 5000;
+
+async function getGeminiKey(): Promise<string | null> {
+  try {
+    const { keychainGet } = await import('@/lib/keychain');
+    const val = await keychainGet('gemini_api_key');
+    if (val) return val;
+  } catch { /* ignore */ }
+  return process.env.GEMINI_API_KEY ?? null;
+}
+
+async function geminiGenerate(prompt: string, apiKey: string): Promise<string | null> {
+  for (const model of [GEMINI_MODEL, GEMINI_FALLBACK]) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 1000, temperature: 0.3 },
+          }),
+        }
+      );
+      if (!res.ok) {
+        if (model === GEMINI_MODEL) continue; // try fallback
+        return null;
+      }
+      const data = await res.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    } catch {
+      if (model === GEMINI_MODEL) continue;
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract learnings from the last N messages and save to agent memory.
+ * Fire-and-forget — does not throw, logs errors.
+ */
+export async function extractAndSaveMemory(sessionKey: string, agentId: string): Promise<void> {
+  try {
+    const db = getDb();
+
+    // Check cooldown: skip if extracted less than 5 minutes ago
+    const session = db.prepare(
+      'SELECT lastMemoryExtractAt FROM sessions WHERE key = ?'
+    ).get(sessionKey) as { lastMemoryExtractAt?: number | null } | undefined;
+
+    if (session?.lastMemoryExtractAt) {
+      const elapsed = Date.now() - session.lastMemoryExtractAt;
+      if (elapsed < MEMORY_EXTRACT_COOLDOWN_MS) {
+        return; // too soon
+      }
+    }
+
+    // Load last 10 messages
+    const rows = db.prepare(
+      'SELECT role, content FROM messages WHERE sessionKey = ? ORDER BY timestamp DESC LIMIT 10'
+    ).all(sessionKey) as Array<{ role: string; content: string }>;
+
+    if (rows.length < 3) return; // not enough conversation to extract from
+
+    const conversation = rows.reverse().map(r => {
+      const speaker = r.role === 'user' ? 'User' : 'Agent';
+      return `${speaker}: ${(r.content || '').slice(0, 500)}`;
+    }).join('\n');
+
+    const geminiKey = await getGeminiKey();
+    if (!geminiKey) {
+      console.warn('[sessionService] No Gemini API key — skipping memory extraction');
+      return;
+    }
+
+    const extractPrompt = `Extract key learnings, decisions, user preferences, and patterns from this conversation.
+Return as bullet points. Only include NEW information worth remembering.
+Skip greetings, small talk, and already-known facts.
+Format: one bullet per learning, concise. Each line starts with "- ".
+If there is nothing worth remembering, return "NONE".
+
+Conversation:
+${conversation}`;
+
+    const result = await geminiGenerate(extractPrompt, geminiKey);
+    if (!result || result.trim() === 'NONE' || result.trim().length < 10) {
+      // Nothing worth saving — still update timestamp to avoid re-processing
+      db.prepare(
+        'UPDATE sessions SET lastMemoryExtractAt = ? WHERE key = ?'
+      ).run(Date.now(), sessionKey);
+      return;
+    }
+
+    // Parse bullet points
+    const bullets = result
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.startsWith('- ') || l.startsWith('* '))
+      .map(l => l.startsWith('* ') ? `- ${l.slice(2)}` : l);
+
+    if (bullets.length === 0) {
+      db.prepare(
+        'UPDATE sessions SET lastMemoryExtractAt = ? WHERE key = ?'
+      ).run(Date.now(), sessionKey);
+      return;
+    }
+
+    // Write to learnings.md
+    const memoryRoot = join(homedir(), 'mission-control', 'memory');
+    const agentDir = join(memoryRoot, 'agents', agentId);
+    mkdirSync(agentDir, { recursive: true });
+
+    const learningsPath = join(agentDir, 'learnings.md');
+    const dateHeader = `\n### ${new Date().toISOString().split('T')[0]} — session ${sessionKey.split(':').slice(-1)[0] || sessionKey}\n`;
+    const newContent = dateHeader + bullets.join('\n') + '\n';
+
+    appendFileSync(learningsPath, newContent, 'utf-8');
+
+    // Check if file exceeds limit — summarize older entries
+    const fullContent = readFileSync(learningsPath, 'utf-8');
+    if (fullContent.length > LEARNINGS_MAX_CHARS) {
+      await summarizeOlderLearnings(learningsPath, fullContent, geminiKey);
+    }
+
+    // Update extraction timestamp
+    db.prepare(
+      'UPDATE sessions SET lastMemoryExtractAt = ? WHERE key = ?'
+    ).run(Date.now(), sessionKey);
+
+    console.log(`[sessionService] Extracted ${bullets.length} learnings for agent ${agentId}`);
+  } catch (err) {
+    console.error('[sessionService] extractAndSaveMemory error:', err);
+  }
+}
+
+/**
+ * When learnings.md exceeds max chars, keep last 20 entries verbatim
+ * and summarize everything before them.
+ */
+async function summarizeOlderLearnings(
+  filePath: string,
+  content: string,
+  geminiKey: string
+): Promise<void> {
+  try {
+    // Split by date headers (### YYYY-MM-DD)
+    const sections = content.split(/(?=\n### \d{4}-\d{2}-\d{2})/).filter(s => s.trim());
+
+    if (sections.length <= 20) return; // not enough to summarize
+
+    const keepVerbatim = sections.slice(-20);
+    const toSummarize = sections.slice(0, -20).join('\n');
+
+    if (toSummarize.trim().length < 100) return; // too little to summarize
+
+    const summaryPrompt = `Summarize these agent learnings into a compact bullet list.
+Merge duplicates, remove outdated info, keep the most important patterns and facts.
+Format: one bullet per learning, starting with "- ". Keep it under 1000 characters.
+
+Learnings to summarize:
+${toSummarize.slice(0, 3000)}`;
+
+    const summary = await geminiGenerate(summaryPrompt, geminiKey);
+    if (!summary) return; // keep file as-is if summarization fails
+
+    const summarized = `### Summarized learnings (auto-condensed)\n${summary.trim()}\n`;
+    const newContent = summarized + '\n' + keepVerbatim.join('\n');
+
+    writeFileSync(filePath, newContent, 'utf-8');
+    console.log(`[sessionService] Summarized older learnings in ${filePath}`);
+  } catch (err) {
+    console.error('[sessionService] summarizeOlderLearnings error:', err);
+  }
+}
+
+// ── Memory protocol ────────────────────────────────────────────────────────
+
+interface MemoryMetadata {
+  fileCount: number;
+  totalChars: number;
+  lastUpdated: Date | null;
+}
+
+function getMemoryMetadata(agentId: string): MemoryMetadata {
+  const memoryRoot = join(homedir(), 'mission-control', 'memory');
+  const agentDir = join(memoryRoot, 'agents', agentId);
+
+  try {
+    if (!existsSync(agentDir)) {
+      return { fileCount: 0, totalChars: 0, lastUpdated: null };
+    }
+
+    const entries = readdirSync(agentDir).filter(f => f.endsWith('.md'));
+    if (entries.length === 0) {
+      return { fileCount: 0, totalChars: 0, lastUpdated: null };
+    }
+
+    let totalChars = 0;
+    let latestMtime = 0;
+
+    for (const name of entries) {
+      const filePath = join(agentDir, name);
+      const stat = statSync(filePath);
+      totalChars += stat.size;
+      if (stat.mtimeMs > latestMtime) latestMtime = stat.mtimeMs;
+    }
+
+    return {
+      fileCount: entries.length,
+      totalChars,
+      lastUpdated: latestMtime > 0 ? new Date(latestMtime) : null,
+    };
+  } catch {
+    return { fileCount: 0, totalChars: 0, lastUpdated: null };
+  }
+}
+
+function buildMemoryProtocol(meta: MemoryMetadata): string {
+  const parts: string[] = [];
+  parts.push('\n--- MEMORY PROTOCOL ---');
+  parts.push('You have persistent memory. Your memory files are loaded above.');
+  parts.push('');
+  parts.push('When you learn something important during this conversation:');
+  parts.push('- User preferences (formatting, tone, priorities)');
+  parts.push('- Project decisions (architecture choices, tool selections)');
+  parts.push('- Patterns (what works well, what to avoid)');
+  parts.push('- Context (team dynamics, deadlines, constraints)');
+  parts.push('');
+  parts.push('Remember: your memory is automatically extracted every 5 messages.');
+  parts.push('Reference your memory files when relevant — don\'t re-ask questions you already know the answer to.');
+  parts.push('If your memory contains outdated information, note it in your response.');
+
+  if (meta.fileCount === 0) {
+    parts.push('');
+    parts.push('You have no memory files yet. Your learnings from this conversation will be saved automatically.');
+  } else {
+    parts.push('');
+    const dateStr = meta.lastUpdated
+      ? meta.lastUpdated.toISOString().split('T')[0]
+      : 'unknown';
+    parts.push(`Your memory files were last updated: ${dateStr}`);
+    parts.push(`You have ${meta.fileCount} memory file${meta.fileCount === 1 ? '' : 's'} totaling ${meta.totalChars} characters.`);
+  }
+
+  return parts.join('\n');
+}
+
 // ── Context assembly ────────────────────────────────────────────────────────
 
 export function buildSessionContext(config: SessionConfig): SessionContext {
@@ -434,6 +690,10 @@ export function buildSessionContext(config: SessionConfig): SessionContext {
   if (memoryContext) {
     systemParts.push(`\n--- MEMORY ---\n${memoryContext}`);
   }
+
+  // 6. Memory protocol + metadata
+  const memoryMeta = getMemoryMetadata(config.agentId);
+  systemParts.push(buildMemoryProtocol(memoryMeta));
 
   if (knowledgeContext) {
     systemParts.push(`\n--- KNOWLEDGE ---\n${knowledgeContext}`);
