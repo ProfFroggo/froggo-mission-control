@@ -337,10 +337,12 @@ export function XCompetitorTracker() {
 
   const handleRefresh = () => fetchCompetitors(handles);
 
-  // Auto-fetch on mount if handles exist + load latest report
+  // Auto-fetch on mount if handles exist + load latest report + sync handles to DB
   useEffect(() => {
     if (handles.length > 0) {
       fetchCompetitors(handles);
+      // Ensure handles are in DB for cron job to find
+      saveHandles(handles);
     }
     // Load latest competitor report
     fetch('/api/x/reports?type=competitor-analysis&limit=1')
