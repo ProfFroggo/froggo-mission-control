@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, Loader2, MessageSquare } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import SessionStatsBar from './SessionStatsBar';
 
 interface Message {
   role: 'user' | 'agent' | 'system';
@@ -115,9 +116,12 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Context banner */}
-      <div className="px-4 py-2 border-b border-mission-control-border flex items-center gap-2 text-xs text-mission-control-text-dim flex-shrink-0 bg-mission-control-bg">
-        <Bot size={12} />
-        <span>Direct session — {agentName} has full task context and memory</span>
+      <div className="px-4 py-2 border-b border-mission-control-border flex flex-col gap-1.5 flex-shrink-0 bg-mission-control-bg">
+        <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+          <Bot size={12} />
+          <span>Direct session — {agentName} has full task context and memory</span>
+        </div>
+        <SessionStatsBar sessionKey={sessionKey} onReset={() => setMessages([])} />
       </div>
 
       {/* Messages */}

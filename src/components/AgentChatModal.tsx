@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import SessionStatsBar from './SessionStatsBar';
 import StreamingText from './StreamingText';
 import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
@@ -239,6 +240,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               <p className="text-xs text-mission-control-text-dim">
                 Persistent session — history restored on reconnect
               </p>
+              <SessionStatsBar sessionKey={sessionKey} onReset={() => setMessages([])} className="mt-1" />
             </div>
           </div>
           <div className="flex items-center gap-2">

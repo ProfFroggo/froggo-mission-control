@@ -19,6 +19,7 @@ import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
 import EmptyState from './EmptyState';
+import SessionStatsBar from './SessionStatsBar';
 import ArtifactPanel from './ArtifactPanel';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
@@ -1197,6 +1198,13 @@ export default function ChatPanel() {
           </button>
         </div>
       </div>
+
+      {/* Session stats bar */}
+      {selectedAgent?.dbSessionKey && (
+        <div className="px-4 py-1.5 border-b border-mission-control-border bg-mission-control-bg">
+          <SessionStatsBar sessionKey={selectedAgent.dbSessionKey} showReset={false} />
+        </div>
+      )}
 
       {/* Body — below header: chat left, artifact panel right */}
       <div className="flex-1 flex min-h-0">
