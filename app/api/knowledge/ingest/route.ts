@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { syncArticleToFilesystem } from '@/lib/knowledgeSync';
+import { ENV } from '@/lib/env';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -10,7 +11,7 @@ import os from 'os';
 export const dynamic = 'force-dynamic';
 
 const CATEGORIES = ['Technical', 'Brand', 'Guidelines', 'Onboarding', 'Platform', 'Reference', 'Strategy', 'Tone', 'Customer Service'] as const;
-const LIBRARY_PATH = path.join(os.homedir(), 'mission-control', 'library');
+const LIBRARY_PATH = ENV.LIBRARY_PATH;
 
 // MIME types Gemini can process as inline data
 const GEMINI_INLINE_TYPES = new Set([
