@@ -16,7 +16,7 @@ Transform the social module from 15 scattered tabs into a 5-tab intelligent work
 - [x] **Phase 20.8: Dedicated DB** — x_mentions, x_posts, x_campaigns, x_automations, x_reports tables
 - [x] **Phase 20.9: MCP Tools** — 8 social tools for agent access
 - [x] **Phase 20.10: Background Automation** — Cron-driven mention processing, competitor reports, automation engine
-- [ ] **Phase 20.11: Automation Builder** — More action types, AI engine selector, conversational wizard
+- [x] **Phase 20.11: Automation Builder** — More action types, AI engine selector, conversational wizard
 - [ ] **Phase 20.12: Final Polish** — UI consistency, merge to main, npm publish
 
 ## Progress
@@ -33,5 +33,5 @@ Transform the social module from 15 scattered tabs into a 5-tab intelligent work
 | 20.8 Dedicated DB | Complete | 2026-03-17 |
 | 20.9 MCP Tools | Complete | 2026-03-17 |
 | 20.10 Background Automation | Complete | 2026-03-17 |
-| 20.11 Automation Builder | Not started | — |
+| 20.11 Automation Builder | Complete | 2026-03-17 |
 | 20.12 Final Polish | Not started | — |
