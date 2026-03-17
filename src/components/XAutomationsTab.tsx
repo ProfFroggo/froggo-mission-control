@@ -288,7 +288,7 @@ export default function XAutomationsTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent"></div>
+        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
