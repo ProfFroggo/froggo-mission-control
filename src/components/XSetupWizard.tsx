@@ -85,7 +85,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
     }
     setSaving(false);
     if (ok) {
-      showToast('Keys saved to keychain', 'success');
+      showToast('Credentials saved', 'success');
       setStep('verify');
       // Auto-verify after saving
       handleVerify();
@@ -163,7 +163,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
           </div>
           <h1 className="text-2xl font-bold text-mission-control-text mb-2">Connect X / Twitter</h1>
           <p className="text-sm text-mission-control-text-dim">
-            {step === 'keys' && 'Add your API credentials. Keys are stored securely in your OS keychain.'}
+            {step === 'keys' && 'Add your API credentials. Keys are stored securely in the local database.'}
             {step === 'verify' && 'Testing your credentials against the X API...'}
             {step === 'agent' && 'Configuring your social media agent...'}
             {step === 'done' && 'Everything is connected and ready to go!'}
@@ -351,7 +351,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2">
                   <CheckCircle size={12} className="text-success" />
-                  <span className="text-mission-control-text">API credentials stored in keychain</span>
+                  <span className="text-mission-control-text">API credentials saved</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle size={12} className="text-success" />
@@ -380,7 +380,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
               <CheckCircle size={48} className="mx-auto text-success" />
               <h2 className="text-lg font-semibold text-mission-control-text">X / Twitter Connected</h2>
               <p className="text-sm text-mission-control-text-dim">
-                Your account is verified, credentials are in the keychain, and the social agent is configured.
+                Your account is verified, credentials are saved, and the social agent is configured.
               </p>
             </div>
             <button onClick={async () => {
