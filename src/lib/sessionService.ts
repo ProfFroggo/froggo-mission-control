@@ -10,7 +10,7 @@ import { join } from 'path';
 import { getDb } from './database';
 import { ENV } from './env';
 import { randomUUID } from 'crypto';
-import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
+import { TIER_TOOLS, loadDisallowedTools, loadAgentApiKeyEnv } from './taskDispatcher';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -687,7 +687,7 @@ export function getSessionStats(sessionKey: string): SessionStats | null {
       'SELECT key, agentId, createdAt, lastActivity, messageCount, compact_summary, last_compact_at FROM sessions WHERE key = ?'
     ).get(sessionKey) as SessionRecord | undefined;
 
-    if (!session) return null;
+    if (!session || !session.agentId) return null;
 
     // Count memory files
     const memoryRoot = join(homedir(), 'mission-control', 'memory');
@@ -1382,6 +1382,7 @@ export function invokeAgent(
 
   // Clean env vars that interfere with Claude CLI
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+  const apiKeyEnv = loadAgentApiKeyEnv(config.agentId);
   void CLAUDECODE; void CLAUDE_CODE_ENTRYPOINT; void CLAUDE_CODE_SESSION_ID;
 
   // Load agent's tool permissions based on trust tier
@@ -1415,7 +1416,7 @@ export function invokeAgent(
     {
       input: userPrompt,
       encoding: 'utf-8',
-      env: cleanEnv as NodeJS.ProcessEnv,
+      env: { ...cleanEnv, ...apiKeyEnv } as NodeJS.ProcessEnv,
       timeout: 45_000,
     }
   );

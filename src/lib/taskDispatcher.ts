@@ -270,7 +270,7 @@ const DEFAULT_DISALLOWED = [
 // Reads the agent's assigned key IDs, looks them up in security.keys,
 // and returns them as { ENV_VAR_NAME: value } pairs for process injection.
 
-function loadAgentApiKeyEnv(agentId: string): Record<string, string> {
+export function loadAgentApiKeyEnv(agentId: string): Record<string, string> {
   try {
     const db = getDb();
 
