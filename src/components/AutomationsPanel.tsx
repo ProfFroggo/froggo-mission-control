@@ -600,28 +600,27 @@ export default function AutomationsPanel() {
     setBuilderOpen(true);
   };
 
-  const handleUseGalleryTemplate = async (template: AutomationTemplate) => {
-    try {
-      const res = await fetch('/api/automations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: template.name,
-          description: template.description,
-          trigger_type: template.trigger_type,
-          trigger_config: template.trigger_config,
-          steps: template.steps.map((s, i) => ({ ...s, id: `step-${i + 1}` })),
-          status: 'draft',
-        }),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        setAutomations(prev => [created, ...prev]);
-        setActiveTab('my-automations');
-      }
-    } catch {
-      // silent fail
-    }
+  const handleUseGalleryTemplate = (template: AutomationTemplate) => {
+    // Open builder modal pre-filled with gallery template data
+    setEditTarget(null);
+    setPrefillTemplate({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      category: 'Tasks' as const,
+      icon: Layers,
+      trigger_type: template.trigger_type as TriggerType,
+      trigger_config: template.trigger_config as Record<string, unknown>,
+      steps: template.steps.map((s, i) => ({
+        id: `step-${i + 1}`,
+        type: s.type as AutomationStep['type'],
+        label: s.label,
+        config: s.config as Record<string, unknown>,
+      })),
+    });
+    setTemplatesGalleryOpen(false);
+    setActiveTab('my-automations');
+    setBuilderOpen(true);
   };
 
   const handleSaveAutomation = async (automation: Omit<Automation, 'id' | 'createdAt' | 'updatedAt'>) => {

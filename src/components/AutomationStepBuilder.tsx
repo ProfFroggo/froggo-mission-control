@@ -2,7 +2,7 @@
 'use client';
 import { useState, useCallback } from 'react';
 import {
-  ChevronUp, ChevronDown, Trash2, Plus, ChevronRight, ChevronDown as Expand, X, Save,
+  ChevronUp, ChevronDown, Trash2, Plus, ChevronRight, ChevronDown as Expand, X, Save, Users,
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ function defaultConfig(type: StepType): Record<string, unknown> {
     case 'wait':               return { duration: '1', unit: 'hours' };
     case 'condition':          return { field: '', operator: 'equals', value: '' };
     case 'notify-agent':       return { agentId: '', message: '' };
-    case 'create-task':        return { title: '', description: '', planningNotes: '', priority: 'p2', assignTo: '', subtasks: [] };
+    case 'create-task':        return { title: '', description: '', planningNotes: '', priority: 'p2', assignTo: '', subtasks: [] as Array<{ title: string; assignedTo: string }> };
     case 'update-task-status': return { taskId: '', status: 'in-progress' };
     case 'send-email':         return { to: '', subject: '', body: '' };
     default:                   return {};
@@ -164,7 +164,17 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
         </>
       );
     case 'create-task': {
-      const subtasks: string[] = Array.isArray(c.subtasks) ? c.subtasks as string[] : [];
+      // Normalize subtasks: support both legacy string[] and new {title, assignedTo}[]
+      const rawSubtasks = Array.isArray(c.subtasks) ? c.subtasks : [];
+      const subtasks: Array<{ title: string; assignedTo: string }> = rawSubtasks.map((st: unknown) =>
+        typeof st === 'string' ? { title: st, assignedTo: '' } : { title: (st as { title?: string }).title ?? '', assignedTo: (st as { assignedTo?: string }).assignedTo ?? '' }
+      );
+      const updateSubtask = (i: number, field: 'title' | 'assignedTo', val: string) => {
+        const updated = subtasks.map((s, j) => j === i ? { ...s, [field]: val } : s);
+        set('subtasks', updated);
+      };
+      const addSubtask = () => set('subtasks', [...subtasks, { title: '', assignedTo: '' }]);
+      const removeSubtask = (i: number) => set('subtasks', subtasks.filter((_, j) => j !== i));
       return (
         <>
           <Field label="Title"><input style={inputStyle} value={c.title ?? ''} onChange={e => set('title', e.target.value)} placeholder="Task title" /></Field>
@@ -178,22 +188,58 @@ function ConfigEditor({ step, onChange }: ConfigEditorProps) {
               <option value="p3">P3 — Low</option>
             </select>
           </Field>
-          <Field label="Assign to (Agent ID)"><input style={inputStyle} value={c.assignTo ?? ''} onChange={e => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." /></Field>
+          <Field label="Assign to (Agent ID)">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Users size={13} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
+              <input style={{ ...inputStyle, flex: 1 }} value={c.assignTo ?? ''} onChange={e => set('assignTo', e.target.value)} placeholder="coder, designer, growth-director..." />
+            </div>
+          </Field>
           <Field label="Subtasks">
-            <div className="space-y-1">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {subtasks.map((st, i) => (
-                <div key={i} className="flex gap-1">
-                  <input style={inputStyle} value={st} onChange={e => {
-                    const updated = [...subtasks];
-                    updated[i] = e.target.value;
-                    set('subtasks', updated);
-                  }} placeholder={`Subtask ${i + 1}`} />
-                  <button type="button" onClick={() => set('subtasks', subtasks.filter((_, j) => j !== i))}
-                    className="px-2 text-error hover:bg-error-subtle rounded text-xs">x</button>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--mission-control-border)', background: 'var(--mission-control-bg)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--mission-control-text-dim)', width: 16, flexShrink: 0 }}>{i + 1}</span>
+                    <input
+                      style={{ ...inputStyle, flex: 1 }}
+                      value={st.title}
+                      onChange={e => updateSubtask(i, 'title', e.target.value)}
+                      placeholder={`Subtask ${i + 1} title`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSubtask(i)}
+                      style={{ ...btnIcon, color: 'var(--status-error, #ef4444)', flexShrink: 0 }}
+                      title="Remove subtask"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 20 }}>
+                    <Users size={11} style={{ color: 'var(--mission-control-text-dim)', flexShrink: 0 }} />
+                    <input
+                      style={{ ...inputStyle, fontSize: 11 }}
+                      value={st.assignedTo}
+                      onChange={e => updateSubtask(i, 'assignedTo', e.target.value)}
+                      placeholder="Assign to agent (optional)"
+                    />
+                  </div>
                 </div>
               ))}
-              <button type="button" onClick={() => set('subtasks', [...subtasks, ''])}
-                className="text-xs text-mission-control-accent hover:underline">+ Add subtask</button>
+              <button
+                type="button"
+                onClick={addSubtask}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '6px 10px', borderRadius: 6, fontSize: 12,
+                  border: '1px dashed var(--mission-control-border)',
+                  background: 'transparent',
+                  color: 'var(--mission-control-accent)',
+                  cursor: 'pointer',
+                }}
+              >
+                <Plus size={12} /> Add subtask
+              </button>
             </div>
           </Field>
         </>
