@@ -19,6 +19,7 @@ const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
 import { isProtectedAgent } from '../lib/agentConfig';
+import { useFocusTrap } from '../hooks/useKeyboardNav';
 
 function parseAcceptanceCriteria(planningNotes: string): string[] {
   const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
@@ -96,6 +97,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
   const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
+  // Focus trap for dialog accessibility (WCAG 2.4.3 / 4.1.2)
+  const focusTrapRef = useFocusTrap(!!task);
+  const panelTitleId = 'task-detail-title';
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track current task id for SSE handler
   const taskIdRef = useRef<string | null>(task?.id ?? null);
   taskIdRef.current = task?.id ?? null;
@@ -112,6 +117,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       loadActivityRef.current?.();
     }
   });
+
+  // Save focus on open, restore on close (WCAG 2.4.3)
+  useEffect(() => {
+    if (task) {
+      previousActiveElementRef.current = document.activeElement as HTMLElement;
+    }
+    return () => {
+      previousActiveElementRef.current?.focus();
+    };
+  }, [!!task]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only tracks open/close
+
+  // Prevent body scroll when panel is open
+  useEffect(() => {
+    if (!task) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [task]);
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -226,8 +248,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 
-      // Escape - Close panel
+      // Escape - Close panel (only if no sub-modal is open)
       if (e.key === 'Escape') {
+        // Let sub-modals handle their own Escape key
+        if (showForkModal || showReopenModal || showAgentActiveModal || fileViewer || showPokeModal || open) return;
         e.preventDefault();
         onClose();
         return;
@@ -336,7 +360,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [task, activeTab, onClose, updateTask]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sub-modal states for Escape scoping
+  }, [task, activeTab, onClose, updateTask, showForkModal, showReopenModal, showAgentActiveModal, fileViewer, showPokeModal, open]);
 
   if (!task) return null;
 
@@ -753,7 +778,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-    <div className="w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+    <div
+      ref={focusTrapRef as React.RefObject<HTMLDivElement>}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={panelTitleId}
+      tabIndex={-1}
+      className="w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
+      onClick={e => e.stopPropagation()}
+      onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
+    >
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
@@ -790,12 +825,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
-              <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} className="hover:text-error">×</button>
+              <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error">×</button>
             </span>
           ))}
           <input
             type="text"
             placeholder="+ tag"
+            aria-label="Add tag"
             className="unstyled px-1.5 py-0.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-full focus:outline-none focus:border-mission-control-accent w-14 flex-shrink-0"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
@@ -808,6 +844,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           />
           <button
             onClick={onClose}
+            aria-label="Close task detail"
             className="ml-auto p-1.5 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           >
             <X size={16} />
@@ -815,7 +852,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         </div>
 
         {/* Row 2: title */}
-        <h2 className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
+        <h2 id={panelTitleId} className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
 
         {/* Row 3: description (1 line) */}
         {task.description && (
@@ -1875,16 +1912,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Reopen Task Modal */}
       {showReopenModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowReopenModal(false); setReopenReason(''); }}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reopen-task-title"
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => { if (e.key === 'Escape') { setShowReopenModal(false); setReopenReason(''); } }}
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 className="text-lg font-semibold">Reopen Task</h3>
+              <h3 id="reopen-task-title" className="text-lg font-semibold">Reopen Task</h3>
               <button
                 onClick={() => {
                   setShowReopenModal(false);
                   setReopenReason('');
                 }}
+                aria-label="Close reopen task dialog"
                 className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
@@ -1934,21 +1980,30 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Agent Still Active Warning Modal */}
       {showAgentActiveModal && activeAgentInfo && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowAgentActiveModal(false); setActiveAgentInfo(null); }}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-active-title"
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => { if (e.key === 'Escape') { setShowAgentActiveModal(false); setActiveAgentInfo(null); } }}
+          >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-warning-subtle rounded-lg">
                   <AlertCircle size={24} className="text-warning" />
                 </div>
-                <h3 className="text-lg font-semibold">Agent Still Active</h3>
+                <h3 id="agent-active-title" className="text-lg font-semibold">Agent Still Active</h3>
               </div>
               <button
                 onClick={() => {
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
+                aria-label="Close agent active warning"
                 className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
@@ -2050,12 +2105,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Fork Task Modal */}
       {showForkModal && task && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowForkModal(false)} aria-hidden="true">
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            ref={forkTrapRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fork-task-title"
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => { if (e.key === 'Escape') setShowForkModal(false); }}
+          >
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 className="text-lg font-semibold">🔀 Build on this task</h3>
+              <h3 id="fork-task-title" className="text-lg font-semibold">Build on this task</h3>
               <button
                 onClick={() => setShowForkModal(false)}
+                aria-label="Close fork task dialog"
                 className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               >
                 <X size={16} />
@@ -2137,12 +2202,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* File Viewer Modal */}
       {fileViewer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)} aria-hidden="true">
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            ref={fileViewerTrapRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="file-viewer-title"
+            className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4"
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => { if (e.key === 'Escape') setFileViewer(null); }}
+          >
             <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
               <div className="flex items-center gap-2">
                 <FileText size={16} className="text-mission-control-accent" />
-                <span className="text-sm font-medium">{fileViewer.name}</span>
+                <span id="file-viewer-title" className="text-sm font-medium">{fileViewer.name}</span>
                 <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer.ext}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -2152,7 +2226,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 >
                   Copy
                 </button>
-                <button onClick={() => setFileViewer(null)} className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
+                <button onClick={() => setFileViewer(null)} aria-label="Close file viewer" className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
                   <X size={16} />
                 </button>
               </div>
@@ -2164,6 +2238,6 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         </div>
       )}
     </div>
-    </div>
+    </>
   );
 }
