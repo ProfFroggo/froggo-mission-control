@@ -24,7 +24,7 @@ import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
-import BaseModal from './BaseModal';
+import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
@@ -1553,38 +1553,27 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       </div>
 
       {/* Keyboard Shortcuts Modal */}
-      {showKeyboardHelp && (
-        <div 
-          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" 
-          onClick={() => setShowKeyboardHelp(false)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowKeyboardHelp(false); } }}
-          role="button"
-          tabIndex={0}
-          aria-label="Close keyboard shortcuts"
-        >
-          <div 
-            className="bg-mission-control-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-mission-control-border" 
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => e.stopPropagation()}
-            role="presentation"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="icon-text text-heading-3">
-                <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
-              </h2>
-              <button type="button" onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
-                <X size={16} className="flex-shrink-0" />
-              </button>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></div>
-              <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Cmd+F</kbd></div>
-              <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></div>
-              <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></div>
-            </div>
+      <BaseModal
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+        size="sm"
+        ariaLabel="Keyboard shortcuts"
+      >
+        <BaseModalHeader
+          title="Keyboard Shortcuts"
+          icon={<Keyboard size={20} className="flex-shrink-0" />}
+          onClose={() => setShowKeyboardHelp(false)}
+          closeButtonLabel="Close keyboard shortcuts"
+        />
+        <BaseModalBody>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between"><span>New task</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">N</kbd></div>
+            <div className="flex justify-between"><span>Search</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Cmd+F</kbd></div>
+            <div className="flex justify-between"><span>Close panel</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">Esc</kbd></div>
+            <div className="flex justify-between"><span>This help</span><kbd className="px-2 py-1 bg-mission-control-bg rounded">?</kbd></div>
           </div>
-        </div>
-      )}
+        </BaseModalBody>
+      </BaseModal>
 
       <TaskModal 
         isOpen={modalOpen} 

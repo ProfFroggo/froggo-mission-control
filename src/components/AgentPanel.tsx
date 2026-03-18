@@ -344,7 +344,7 @@ export default function AgentPanel() {
         </div>
 
         {/* View tabs */}
-        <div className="flex border-b border-mission-control-border mb-5">
+        <div role="tablist" aria-label="Agent views" className="flex border-b border-mission-control-border mb-5">
           {([
             { key: 'active'      as const, icon: Bot,     label: 'Active'      },
             { key: 'health'      as const, icon: Activity, label: 'Health'     },
@@ -354,6 +354,10 @@ export default function AgentPanel() {
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              id={`agent-tab-${tab.key}`}
+              aria-selected={view === tab.key}
+              aria-controls={`agent-tabpanel-${tab.key}`}
               onClick={() => setView(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
                 view === tab.key
@@ -361,34 +365,40 @@ export default function AgentPanel() {
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              <tab.icon size={15} /> {tab.label}
+              <tab.icon size={15} aria-hidden="true" /> {tab.label}
             </button>
           ))}
         </div>
 
         {/* Health view */}
         {view === 'health' && (
-          <AgentHealthDashboard
-            onSelectAgent={(id, name) => setManagingAgent({ id, name })}
-          />
+          <div role="tabpanel" id="agent-tabpanel-health" aria-labelledby="agent-tab-health">
+            <AgentHealthDashboard
+              onSelectAgent={(id, name) => setManagingAgent({ id, name })}
+            />
+          </div>
         )}
 
         {/* Library view */}
         {view === 'library' && (
-          <AgentLibraryPanel
-            onHire={(_agent: CatalogAgent) => {
-              setView('active');
-            }}
-          />
+          <div role="tabpanel" id="agent-tabpanel-library" aria-labelledby="agent-tab-library">
+            <AgentLibraryPanel
+              onHire={(_agent: CatalogAgent) => {
+                setView('active');
+              }}
+            />
+          </div>
         )}
 
         {/* Leaderboard view */}
         {view === 'leaderboard' && (
-          <AgentLeaderboard />
+          <div role="tabpanel" id="agent-tabpanel-leaderboard" aria-labelledby="agent-tab-leaderboard">
+            <AgentLeaderboard />
+          </div>
         )}
 
         {/* Active view content */}
-        {view === 'active' && (<>
+        {view === 'active' && (<div role="tabpanel" id="agent-tabpanel-active" aria-labelledby="agent-tab-active">
 
         {/* Analytics */}
         {showAnalytics && (
@@ -745,7 +755,7 @@ export default function AgentPanel() {
           </div>
         )}
 
-        </>)} {/* end active view */}
+        </div>)} {/* end active view */}
 
         {/* Modals */}
         {showCreateModal && <HRAgentCreationModal onClose={() => setShowCreateModal(false)} />}
