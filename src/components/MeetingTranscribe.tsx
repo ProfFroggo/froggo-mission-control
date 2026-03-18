@@ -12,19 +12,8 @@ import {
   Loader2, Sparkles
 } from 'lucide-react';
 import { MeetingTranscriber, Meeting, MeetingTranscript, MeetingSummary } from '../lib/meetingTranscribe';
-import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 import MarkdownMessage from './MarkdownMessage';
 import { showToast } from './Toast';
-
-async function getGeminiKey(): Promise<string | null> {
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    return result?.value ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // Singleton transcriber — no API key required for recording
 const transcriber = new MeetingTranscriber();
@@ -142,15 +131,26 @@ export default function MeetingTranscribe() {
     setActiveMeeting(null);
     await loadMeetings();
 
-    // Summarise with Gemini REST if key is available
+    // Summarise via server-side Gemini proxy (API key never leaves server)
     if (rows.length > 0) {
       setSummarising(true);
       try {
-        const key = await getGeminiKey();
-        if (key) {
-          transcriber.setApiKey(key);
-          const result = await transcriber.summariseMeeting(activeMeeting.id);
-          setSummary(result);
+        const transcriptText = rows
+          .map(t => `[${new Date(t.timestamp).toLocaleTimeString()}] ${t.speaker}: ${t.text}`)
+          .join('\n');
+        const res = await fetch('/api/gemini/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: transcriptText, meetingTitle: activeMeeting.title }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSummary({
+            summary: data.summary || '',
+            actionItems: data.actionItems || [],
+            decisions: data.decisions || [],
+            keyTopics: data.keyTopics || [],
+          });
         }
       } catch { /* summarisation is optional */ }
       finally { setSummarising(false); }
@@ -205,10 +205,16 @@ export default function MeetingTranscribe() {
     setIsUploading(true);
 
     try {
-      const key = await getGeminiKey();
-      if (!key) throw new Error('Gemini API key not set. Add it in Settings > API Keys.');
-      const service = new GeminiTranscriptionService(key);
-      const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
+      // Transcribe via server-side proxy (API key never leaves server)
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', file.type || 'audio/webm');
+      const res = await fetch('/api/gemini/transcribe', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Transcription failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const { transcript } = await res.json();
 
       const meeting = await transcriber.startMeeting(`Upload: ${file.name}`, []);
       await transcriber.saveTranscript(meeting.id, 'Transcript', transcript);

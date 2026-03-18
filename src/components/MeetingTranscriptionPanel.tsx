@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { FileAudio, Loader2, Download, Trash2, Upload, Sparkles } from 'lucide-react';
-import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 
 interface TranscriptionResult {
   id: string;
@@ -28,16 +27,6 @@ export default function MeetingTranscriptionPanel() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getService = useCallback(async () => {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    const apiKey = result?.value;
-    if (!apiKey) {
-      throw new Error('Gemini API key not set. Configure it in Settings > API Keys.');
-    }
-    return new GeminiTranscriptionService(apiKey);
-  }, []);
-
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -46,8 +35,16 @@ export default function MeetingTranscriptionPanel() {
     setIsTranscribing(true);
 
     try {
-      const service = await getService();
-      const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
+      // Transcribe via server-side proxy (API key never leaves server)
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', file.type || 'audio/webm');
+      const res = await fetch('/api/gemini/transcribe', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Transcription failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const { transcript } = await res.json();
 
       const result: TranscriptionResult = {
         id: crypto.randomUUID(),
@@ -67,20 +64,29 @@ export default function MeetingTranscriptionPanel() {
       setIsTranscribing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }, [getService]);
+  }, []);
 
   const summarize = useCallback(async (resultId: string) => {
     const result = results.find(r => r.id === resultId);
     if (!result) return;
 
-    // Clear any previous error for this result before starting (so retry shows clean state immediately)
+    // Clear any previous error for this result before starting
     setErrors(prev => { const next = { ...prev }; delete next[resultId]; return next; });
     // Mark this result as in-flight
     setSummarizingIds(prev => new Set(prev).add(resultId));
 
     try {
-      const service = await getService();
-      const summary = await service.summarizeMeeting(result.transcript);
+      // Summarize via server-side proxy (API key never leaves server)
+      const res = await fetch('/api/gemini/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: result.transcript }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Summarization failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const summary = await res.json();
 
       setResults(prev => {
         const updated = prev.map(r => r.id === resultId ? { ...r, summary } : r);
@@ -88,14 +94,12 @@ export default function MeetingTranscriptionPanel() {
         return updated;
       });
     } catch (err: unknown) {
-      // Record per-result error; other results are unaffected
       const message = err instanceof Error ? err.message : 'Summarization failed';
       setErrors(prev => ({ ...prev, [resultId]: message }));
     } finally {
-      // Always remove from in-flight set, whether success or error
       setSummarizingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
     }
-  }, [results, getService]);
+  }, [results]);
 
   const deleteResult = useCallback((id: string) => {
     setResults(prev => {
@@ -132,7 +136,7 @@ export default function MeetingTranscriptionPanel() {
       <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
           <FileAudio className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-lg font-semibold">🐸 Meeting Transcription</h2>
+          <h2 className="text-lg font-semibold">Meeting Transcription</h2>
         </div>
         <span className="text-xs text-mission-control-text-dim">Powered by Gemini AI</span>
       </div>
@@ -212,13 +216,13 @@ export default function MeetingTranscriptionPanel() {
 
               {result.summary && (
                 <div className="space-y-2 border-t border-mission-control-border pt-3">
-                  <div className="text-sm font-medium text-emerald-400">✨ AI Summary</div>
+                  <div className="text-sm font-medium text-emerald-400">AI Summary</div>
                   <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-warning mb-1">Action Items</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
-                        {result.summary.actionItems.map((item, i) => <li key={i}>• {item}</li>)}
+                        {result.summary.actionItems.map((item, i) => <li key={i}>- {item}</li>)}
                       </ul>
                     </div>
                   )}
@@ -226,7 +230,7 @@ export default function MeetingTranscriptionPanel() {
                     <div>
                       <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
-                        {result.summary.keyDecisions.map((d, i) => <li key={i}>• {d}</li>)}
+                        {result.summary.keyDecisions.map((d, i) => <li key={i}>- {d}</li>)}
                       </ul>
                     </div>
                   )}
