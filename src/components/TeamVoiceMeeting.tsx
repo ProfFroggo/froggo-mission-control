@@ -19,7 +19,7 @@ import { useStore } from '../store/store';
 import { geminiLive, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { createLogger } from '../utils/logger';
-import { speakWithAgentVoice } from '../lib/voiceConfig';
+// speakWithAgentVoice removed — TTS now handled via server proxy (/api/gemini/tts)
 import { geminiTts } from '../lib/geminiTts';
 
 const logger = createLogger('TeamVoice');
@@ -27,12 +27,15 @@ const logger = createLogger('TeamVoice');
 // Legacy Web Speech cancellation (kept for abort path cleanup)
 function stopSpeaking() { window.speechSynthesis.cancel(); }
 
-// API key loading — no hardcoded fallback; uses IPC to fetch from secure store
+// API key loading — fetches from authenticated server endpoint, never from client settings
 async function loadApiKey(): Promise<string> {
   try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    if (result?.value) return result.value;
+    const { authHeaders } = await import('../lib/api');
+    const res = await fetch('/api/gemini/live-token', { headers: authHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      return data.apiKey || '';
+    }
   } catch { /* ignore */ }
   return '';
 }
@@ -684,21 +687,15 @@ Respond as ${agentName(agentId)}:`;
     ttsAbortRef.current = abort;
 
     try {
-      if (apiKeyRef.current) {
-        // Use Gemini TTS — per-agent Chirp 3 voice, interruptible
-        const voice = getGeminiVoiceForAgent(_agentId);
-        await geminiTts(
-          text,
-          voice,
-          apiKeyRef.current,
-          volumeRef.current,
-          speakerDeviceIdRef.current || undefined,
-          abort.signal,
-        );
-      } else {
-        // No Gemini key — fall back to Web Speech API
-        await speakWithAgentVoice(text, _agentId, volumeRef.current);
-      }
+      // Use Gemini TTS via server proxy — per-agent Chirp 3 voice, interruptible
+      const voice = getGeminiVoiceForAgent(_agentId);
+      await geminiTts(
+        text,
+        voice,
+        volumeRef.current,
+        speakerDeviceIdRef.current || undefined,
+        abort.signal,
+      );
     } catch {
       // Silently swallow — never block the meeting
     }

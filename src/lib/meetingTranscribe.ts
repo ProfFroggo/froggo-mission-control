@@ -38,21 +38,11 @@ export interface MeetingSummary {
 export class MeetingTranscriber {
   private recognition: any = null;
   private onTranscriptCallback: ((segment: TranscriptionSegment) => void) | null = null;
-  private geminiApiKey: string | null = null;
 
   // In-memory storage
   private meetingsStore: Meeting[] = [];
   private transcriptsStore: MeetingTranscript[] = [];
   private transcriptIdCounter = 0;
-
-  constructor(apiKey?: string) {
-    this.geminiApiKey = apiKey ?? null;
-  }
-
-  /** Update API key (used for end-of-meeting summarisation only) */
-  setApiKey(apiKey: string) {
-    this.geminiApiKey = apiKey;
-  }
 
   /** Set callback for real-time transcript updates */
   onTranscript(callback: (segment: TranscriptionSegment) => void): void {
@@ -168,12 +158,11 @@ export class MeetingTranscriber {
   }
 
   /**
-   * Summarise a completed meeting using Gemini REST API.
+   * Summarise a completed meeting via the server-side /api/gemini/summarize proxy.
    * Called after endMeeting() — returns structured notes.
+   * API key stays on the server (F-02 fix).
    */
   async summariseMeeting(meetingId: string): Promise<MeetingSummary | null> {
-    if (!this.geminiApiKey) return null;
-
     const transcripts = await this.getMeetingTranscripts(meetingId);
     if (transcripts.length === 0) return null;
 
@@ -182,34 +171,31 @@ export class MeetingTranscriber {
       .map(t => `[${new Date(t.timestamp).toLocaleTimeString()}] ${t.speaker}: ${t.text}`)
       .join('\n');
 
-    const prompt = `You are a meeting assistant. Analyse this meeting transcript and return a JSON object with:
-- summary: 2-3 sentence overview
-- actionItems: array of specific tasks/follow-ups identified
-- decisions: array of decisions made
-- keyTopics: array of main topics discussed
-
-Meeting: ${meeting?.title ?? 'Untitled'}
-Transcript:
-${transcriptText}
-
-Return ONLY valid JSON, no markdown.`;
-
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2 },
-          }),
-        }
-      );
+      let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      try {
+        const { authHeaders } = await import('./api');
+        headers = { ...headers, ...authHeaders() };
+      } catch { /* auth module unavailable */ }
+
+      const res = await fetch('/api/gemini/summarize', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          transcript: transcriptText,
+          meetingTitle: meeting?.title ?? 'Untitled',
+        }),
+      });
+
+      if (!res.ok) return null;
+
       const data = await res.json();
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(cleaned) as MeetingSummary;
+      return {
+        summary: data.summary || '',
+        actionItems: data.actionItems || [],
+        decisions: data.decisions || data.keyDecisions || [],
+        keyTopics: data.keyTopics || [],
+      };
     } catch (err) {
       console.error('[MeetingTranscriber] Summarisation failed:', err);
       return null;

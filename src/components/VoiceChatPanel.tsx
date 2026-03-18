@@ -28,11 +28,15 @@ import EmptyState from './EmptyState';
 
 const logger = createLogger('VoiceChat');
 
-// API key loading — no hardcoded fallback; uses IPC to fetch from secure store
+// API key loading — fetches from authenticated server endpoint, never from client settings
 async function loadApiKey(): Promise<string> {
   try {
-    const result = await import('../lib/api').then(m => m.settingsApi.get('gemini_api_key'));
-    if (result?.value) return result.value;
+    const { authHeaders } = await import('../lib/api');
+    const res = await fetch('/api/gemini/live-token', { headers: authHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      return data.apiKey || '';
+    }
   } catch { /* ignore */ }
   return '';
 }

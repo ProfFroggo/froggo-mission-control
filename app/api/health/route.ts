@@ -13,21 +13,8 @@ import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
 import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispatcher';
 
-// Start background crons on server boot (once-per-process guard against HMR re-runs).
-// Skip during `next build` — the build pre-renders pages which imports this module,
-// but crons must not run during build (they spawn agents and mutate state).
-const isBuildPhase =
-  process.env.NEXT_PHASE === 'phase-production-build' ||
-  process.argv.some((a) => a === 'build') ||
-  !!(globalThis as any).__NEXT_DATA__;
-if (!isBuildPhase && !(globalThis as any).__healthInitialized) {
-  (globalThis as any).__healthInitialized = true;
-  startDispatcherCron();
-  startClaraReviewCron();
-  startSessionKeepalive();
-  startMemoryDecayCron();
-  startAutomationCron();
-}
+// Crons initialized inside GET handler (not at module level) so they only
+// run on real HTTP requests — never during `next build` page-data collection.
 
 function checkClaudeCli(): { found: boolean; authenticated: boolean; path: string } {
   const bin = ENV.CLAUDE_BIN;
@@ -55,6 +42,16 @@ function checkClaudeCli(): { found: boolean; authenticated: boolean; path: strin
 }
 
 export async function GET() {
+  // Start background crons on first real request — not during build.
+  if (!(globalThis as any).__healthInitialized) {
+    (globalThis as any).__healthInitialized = true;
+    startDispatcherCron();
+    startClaraReviewCron();
+    startSessionKeepalive();
+    startMemoryDecayCron();
+    startAutomationCron();
+  }
+
   const dbPath = path.join(homedir(), 'mission-control', 'data', 'mission-control.db');
   const database = existsSync(dbPath);
 

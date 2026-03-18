@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// Gemini TTS — REST-based text-to-speech using Chirp 3 voices.
-// Uses generateContent with responseModalities:AUDIO instead of Gemini Live WebSocket.
+// Gemini TTS — text-to-speech using Chirp 3 voices via server-side proxy.
+// Calls /api/gemini/tts to keep the API key on the server (F-02 fix).
 
 /** Parse sample rate and bit depth from a Gemini audio MIME type string.
  *  e.g. "audio/L16;rate=24000" → { sampleRate: 24000, bitsPerSample: 16 }
@@ -22,16 +22,13 @@ function parseAudioMime(mimeType: string): { sampleRate: number; bitsPerSample: 
   return { sampleRate, bitsPerSample };
 }
 
-const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
-const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_MODEL}:generateContent`;
-
 /**
- * Speak text via Gemini TTS REST API using a named Chirp 3 voice.
+ * Speak text via Gemini TTS using a named Chirp 3 voice.
+ * Calls the server-side /api/gemini/tts proxy — API key never leaves the server.
  * Falls back gracefully — resolves (never rejects) so callers don't crash.
  *
  * @param text      Text to speak
  * @param voiceName Chirp 3 voice name (e.g. 'Puck', 'Zephyr', 'Kore')
- * @param apiKey    Gemini API key
  * @param volume    0.0 – 1.0 playback gain (default 1.0)
  * @param sinkId    Optional audio output device ID (setSinkId)
  * @param signal    Optional AbortSignal — aborts fetch and stops playback
@@ -39,29 +36,24 @@ const TTS_URL = `https://generativelanguage.googleapis.com/v1beta/models/${TTS_M
 export async function geminiTts(
   text: string,
   voiceName: string,
-  apiKey: string,
   volume = 1.0,
   sinkId?: string,
   signal?: AbortSignal,
 ): Promise<void> {
-  if (!text.trim() || !apiKey) return;
+  if (!text.trim()) return;
+
+  let headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const { authHeaders } = await import('./api');
+    headers = { ...headers, ...authHeaders() };
+  } catch { /* auth module unavailable */ }
 
   let response: Response;
   try {
-    response = await fetch(`${TTS_URL}?key=${apiKey}`, {
+    response = await fetch('/api/gemini/tts', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text }] }],
-        generationConfig: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName },
-            },
-          },
-        },
-      }),
+      headers,
+      body: JSON.stringify({ text, voiceName }),
       signal,
     });
   } catch {
