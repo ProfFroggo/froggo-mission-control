@@ -1611,10 +1611,56 @@ export default function ChatPanel() {
 // ============================================
 
 function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Capture current focus on mount, move focus into overlay; restore on unmount
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    overlayRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  // Escape → close; Tab/Shift+Tab → trap focus within dialog
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const focusable = overlayRef.current?.querySelectorAll<HTMLElement>(
+        'a[href]:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  }, [onClose]);
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
       onClick={onClose}
+      onKeyDown={handleKeyDown}
     >
       <div className="relative max-w-4xl max-h-[90vh] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
         <img src={src} alt={alt} className="max-w-full max-h-[80vh] rounded-lg object-contain shadow-2xl" />
