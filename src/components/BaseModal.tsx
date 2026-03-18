@@ -57,7 +57,10 @@ export interface BaseModalProps {
   
   /** ARIA label for the modal */
   ariaLabel?: string;
-  
+
+  /** ARIA labelledby - references a heading element ID for screen readers */
+  ariaLabelledby?: string;
+
   /** ARIA describedby for the modal */
   ariaDescribedby?: string;
   
@@ -107,6 +110,7 @@ export default function BaseModal({
   className = '',
   backdropClassName = '',
   ariaLabel,
+  ariaLabelledby,
   ariaDescribedby,
   animationDuration = 200,
   isClosing: externalIsClosing,
@@ -233,7 +237,8 @@ export default function BaseModal({
           ref={setModalRef}
           role="dialog"
           aria-modal="true"
-          aria-label={ariaLabel}
+          aria-label={ariaLabelledby ? undefined : ariaLabel}
+          aria-labelledby={ariaLabelledby}
           aria-describedby={ariaDescribedby}
           tabIndex={-1}
           className={`
@@ -280,6 +285,8 @@ interface BaseModalHeaderProps {
   showCloseButton?: boolean;
   closeButtonLabel?: string;
   className?: string;
+  /** ID for the heading element, used with ariaLabelledby on BaseModal */
+  titleId?: string;
 }
 
 export function BaseModalHeader({
@@ -290,6 +297,7 @@ export function BaseModalHeader({
   showCloseButton = true,
   closeButtonLabel = 'Close modal',
   className = '',
+  titleId,
 }: BaseModalHeaderProps) {
   return (
     <div className={`flex items-start gap-3 p-6 border-b border-mission-control-border ${className}`}>
@@ -299,7 +307,7 @@ export function BaseModalHeader({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold text-mission-control-text">
+        <h2 id={titleId} className="text-lg sm:text-xl font-semibold text-mission-control-text">
           {title}
         </h2>
         {subtitle && (

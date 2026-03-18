@@ -777,7 +777,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <>
+    {/* Backdrop — aria-hidden so screen readers skip it; click closes dialog */}
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
     {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
     <div
       ref={focusTrapRef as React.RefObject<HTMLDivElement>}
@@ -785,9 +788,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       aria-modal="true"
       aria-labelledby={panelTitleId}
       tabIndex={-1}
-      className="w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
+      className="fixed z-50 inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
       onClick={e => e.stopPropagation()}
-      onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
     >
       {/* Header */}
       <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
@@ -2105,10 +2107,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Fork Task Modal */}
       {showForkModal && task && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowForkModal(false)} aria-hidden="true">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowForkModal(false)}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
-            ref={forkTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="fork-task-title"
@@ -2202,10 +2203,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* File Viewer Modal */}
       {fileViewer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)} aria-hidden="true">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
-            ref={fileViewerTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="file-viewer-title"
