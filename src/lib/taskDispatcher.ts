@@ -1095,7 +1095,7 @@ const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 // ── Concurrency semaphore ─────────────────────────────────────────────────────
 // Limits the number of simultaneous Claude CLI process dispatches.
 let activeDispatches = 0;
-const MAX_CONCURRENT_DISPATCHES = 5;
+const MAX_CONCURRENT_DISPATCHES = 2;
 
 /** Export for health API */
 export function getActiveDispatchCount(): number { return activeDispatches; }

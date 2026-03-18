@@ -26,7 +26,7 @@ export function runDispatchCycle(): { dispatched: number; skipped: number } {
       `SELECT id, assignedTo FROM tasks
        WHERE status = 'in-progress' AND assignedTo IS NOT NULL AND assignedTo != ''
          AND updatedAt < ?`
-    ).all(Date.now() - 10 * 60_000) as Array<{ id: string; assignedTo: string }>;
+    ).all(Date.now() - 30 * 60_000) as Array<{ id: string; assignedTo: string }>;
 
     const now = Date.now();
     for (const task of tasks) {
