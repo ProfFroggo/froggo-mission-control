@@ -24,6 +24,7 @@ import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 import ConfirmDialog from './ConfirmDialog';
+import BaseModal from './BaseModal';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
@@ -934,13 +935,15 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
             <button
               onClick={() => setShowFilters(!showFilters)}
+              aria-label="Filter tasks"
+              aria-pressed={showFilters}
               className={`icon-text px-3 py-2 rounded-lg border transition-all ${
                 activeFiltersCount > 0
                   ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
                   : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
               }`}
             >
-              <Filter size={16} className="flex-shrink-0" />
+              <Filter size={16} className="flex-shrink-0" aria-hidden="true" />
               Filters
               {activeFiltersCount > 0 && (
                 <span className="px-1.5 py-0.5 bg-mission-control-accent text-white text-xs rounded-full flex-shrink-0 whitespace-nowrap">
@@ -952,16 +955,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu(v => !v)}
+                aria-label="Sort tasks"
+                aria-pressed={showSortMenu}
                 className={`icon-text px-3 py-2 rounded-lg border transition-all ${
                   globalSort !== 'newest'
                     ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
                     : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
                 }`}
-                title="Sort tasks"
               >
-                <SortAsc size={16} className="flex-shrink-0" />
+                <SortAsc size={16} className="flex-shrink-0" aria-hidden="true" />
                 Sort
-                <ChevronDown size={14} className="flex-shrink-0" />
+                <ChevronDown size={14} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showSortMenu && (
                 <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[220px] py-1">
@@ -985,10 +989,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <div className="relative">
               <button
                 onClick={() => setShowSaveViewDialog(v => !v)}
+                aria-label="Save current view"
+                aria-pressed={showSaveViewDialog}
                 className="icon-text px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/50 transition-all"
-                title="Save current view"
               >
-                <Save size={16} className="flex-shrink-0" />
+                <Save size={16} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showSaveViewDialog && (
                 <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
@@ -1019,27 +1024,28 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
+              aria-label="Refresh tasks"
               className="icon-btn border border-mission-control-border hover:border-mission-control-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh tasks"
             >
-              <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
             </button>
 
             <button
               onClick={handleHealthCheck}
+              aria-label="Board health check"
               className="icon-text px-3 py-2 border border-success-border text-success rounded-lg hover:bg-success-subtle transition-all"
-              title="Request Mission Control to review board health, merge redundant tasks, and verify workflow"
             >
-              <Stethoscope size={16} className="flex-shrink-0" />
+              <Stethoscope size={16} className="flex-shrink-0" aria-hidden="true" />
             </button>
 
             <div className="relative">
               <button
                 onClick={() => setShowJumpToTask(v => !v)}
+                aria-label="Jump to task"
+                aria-pressed={showJumpToTask}
                 className="icon-text px-3 py-2 border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-all"
-                title="Jump to task by ID or title"
               >
-                <Hash size={16} className="flex-shrink-0" />
+                <Hash size={16} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showJumpToTask && (
                 <div className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
