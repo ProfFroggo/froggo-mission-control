@@ -1456,34 +1456,69 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const query = String(args?.query ?? '').trim();
         if (!query) return { content: [{ type: 'text', text: JSON.stringify({ error: 'query required' }) }], isError: true };
 
-        let articles: Record<string, unknown>[] = [];
-        try {
-          // Try FTS first
-          articles = db.prepare(`
-            SELECT kb.id, kb.title, kb.category, kb.tags, kb.content, kb.scope
-            FROM knowledge_base kb
-            JOIN knowledge_base_fts fts ON fts.rowid = kb.rowid
-            WHERE knowledge_base_fts MATCH ?
-            ORDER BY rank LIMIT 5
-          `).all(query) as Record<string, unknown>[];
-        } catch {
-          // Fallback to LIKE search
-          articles = db.prepare(`
-            SELECT id, title, category, tags, content, scope FROM knowledge_base
-            WHERE title LIKE ? OR content LIKE ? OR tags LIKE ?
-            ORDER BY pinned DESC, updatedAt DESC LIMIT 5
-          `).all(`%${query}%`, `%${query}%`, `%${query}%`) as Record<string, unknown>[];
-        }
+        // Sanitize FTS5 special chars that cause SQLITE_ERROR when passed raw to MATCH.
+        // FTS5 operators stripped: " ( ) * ^ and - (negation).
+        // Hyphen is last in the bracket expression so regex treats it as a literal, not a range.
+        // This is inlined here because the MCP is a separate Node package that cannot import
+        // from the Next.js app's src/lib/knowledgeSearch.ts.
+        const safeQuery = query.replace(/["()*^-]/g, ' ').replace(/\s+/g, ' ').trim();
 
         const category = args?.category as string | undefined;
-        if (category) articles = articles.filter((a) => a.category === category);
+
+        // Build SQL-level category filter (applied in both FTS and fallback paths).
+        // Previously this was a post-query JS filter, which meant: if FTS filled its
+        // LIMIT with wrong-category results, category-filtered searches returned 0 rows
+        // even when matching articles existed. Moving it to SQL fixes that.
+        const categoryClause = category ? ' AND kb.category = ?' : '';
+        const categoryParam = category ? [category] : [];
+
+        let articles: Record<string, unknown>[] = [];
+        if (!safeQuery) {
+          // After sanitization nothing usable remains — return empty rather than crash.
+          articles = [];
+        } else {
+          try {
+            // FTS path: weighted BM25 relevance (title=10×, content=1×, tags=5×)
+            // so a title match ranks far above a body-only match.
+            // snippet() extracts a 15-token match excerpt from the content column
+            // (index 1) with <mark> highlighting so agents can see why each result
+            // matched without having to call knowledge_read for every article.
+            // knowledge_base_fts MUST be the primary (leftmost) table in FROM.
+            // SQLite FTS5 auxiliary functions bm25() and snippet() are only
+            // available when the FTS virtual table owns the query, not as a JOIN
+            // target. We alias it and join the content table on rowid.
+            articles = db.prepare(`
+              SELECT kb.id, kb.title, kb.category, kb.tags, kb.content, kb.scope, kb.pinned,
+                snippet(knowledge_base_fts, 1, '<mark>', '</mark>', '...', 15) AS matchSnippet
+              FROM knowledge_base_fts
+              JOIN knowledge_base kb ON kb.rowid = knowledge_base_fts.rowid
+              WHERE knowledge_base_fts MATCH ?${categoryClause}
+              ORDER BY kb.pinned DESC, bm25(knowledge_base_fts, 10.0, 1.0, 5.0) LIMIT 8
+            `).all(safeQuery, ...categoryParam) as Record<string, unknown>[];
+          } catch {
+            // FTS unavailable or virtual table missing — fall back to LIKE.
+            const likeWhere = category
+              ? '(title LIKE ? OR content LIKE ? OR tags LIKE ?) AND category = ?'
+              : '(title LIKE ? OR content LIKE ? OR tags LIKE ?)';
+            const likeParams = category
+              ? [`%${query}%`, `%${query}%`, `%${query}%`, category]
+              : [`%${query}%`, `%${query}%`, `%${query}%`];
+            articles = db.prepare(`
+              SELECT id, title, category, tags, content, scope, pinned FROM knowledge_base
+              WHERE ${likeWhere}
+              ORDER BY pinned DESC, updatedAt DESC LIMIT 8
+            `).all(...likeParams) as Record<string, unknown>[];
+          }
+        }
 
         const result = articles.map((a) => ({
           id: a.id,
           title: a.title,
           category: a.category,
           tags: (() => { try { return JSON.parse(a.tags as string); } catch { return []; } })(),
-          // Include first 800 chars of content inline so agent doesn't need a second call for short articles
+          // matchSnippet shows exactly why the article matched (FTS path only).
+          // Falls back to null for LIKE-fallback results; agents can use knowledge_read for full content.
+          matchSnippet: (a.matchSnippet as string | undefined) || null,
           contentPreview: (a.content as string).slice(0, 800),
           fullContentAvailable: (a.content as string).length > 800,
         }));
