@@ -1095,7 +1095,7 @@ const _redispatchTimeouts = new Map<string, NodeJS.Timeout>();
 // ── Concurrency semaphore ─────────────────────────────────────────────────────
 // Limits the number of simultaneous Claude CLI process dispatches.
 let activeDispatches = 0;
-const MAX_CONCURRENT_DISPATCHES = 0; // PAUSED — set to 2 when system is stable
+const MAX_CONCURRENT_DISPATCHES = 2;
 
 /** Export for health API */
 export function getActiveDispatchCount(): number { return activeDispatches; }
@@ -1307,23 +1307,15 @@ export function dispatchTask(taskId: string): boolean {
       return false;
     }
 
-    // Agent load balance check — warn if agent has ≥3 in-progress tasks
+    // Per-agent gate — max 1 in-progress task per agent at a time
     try {
       const inProgressCount = (db.prepare(
         `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
       ).get(agentId) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (inProgressCount >= 3) {
-        console.warn(`[taskDispatcher] Agent ${agentId} has ${inProgressCount} in-progress tasks — potentially overloaded`);
-        try {
-          db.prepare(
-            `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-          ).run(
-            taskId, 'system', 'agent_overload_warning',
-            `Warning: agent ${agentId} already has ${inProgressCount} in-progress task(s). Dispatching anyway.`,
-            Date.now()
-          );
-        } catch { /* non-critical */ }
+      if (inProgressCount >= 1) {
+        console.log(`[taskDispatcher] Agent ${agentId} already has ${inProgressCount} in-progress task — skipping ${taskId} until slot opens`);
+        return false;
       }
     } catch { /* non-critical — never block dispatch */ }
 
