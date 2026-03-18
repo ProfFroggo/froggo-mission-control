@@ -148,8 +148,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
 
   return (
     <>
-      <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200" 
+      <header
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200"
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}
@@ -177,12 +177,13 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             )}
           </button>
 
-          {/* Platform Health Indicator */}
+          {/* Platform Health Indicator — WCAG 4.1.3: aria-expanded reflects toggle state; aria-label uses human-readable status */}
           <button
             type="button"
             onClick={() => setHealthDashboardOpen(true)}
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
-            aria-label={`Platform health: ${platformStatus}`}
+            aria-expanded={healthDashboardOpen}
+            aria-label={`Platform health: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
             className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
           >
             <span
@@ -206,12 +207,15 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-hidden="true"
             />
           </button>
-          {/* Connection Status Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region */}
+          {/* Connection Status Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region + aria-label for accessible name */}
           {connectionState !== 'connected' && (
             <span
               role="status"
               aria-live="polite"
               aria-atomic="true"
+              aria-label={connectionState === 'disconnected'
+                ? `Connection: Disconnected. Reconnecting, attempt ${reconnectAttempts}.`
+                : `Connection: Connecting to gateway, attempt ${reconnectAttempts}.`}
               className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
                 connectionState === 'disconnected'
                   ? 'bg-error-subtle text-error'
@@ -238,12 +242,13 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             </span>
           )}
 
-          {/* Offline Queue Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region */}
+          {/* Offline Queue Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region + aria-label for accessible name */}
           {offlineQueueSize > 0 && (
             <span
               role="status"
               aria-live="polite"
               aria-atomic="true"
+              aria-label={`${offlineQueueSize} actions queued for sync`}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
               title={`${offlineQueueSize} actions queued for sync`}
             >
