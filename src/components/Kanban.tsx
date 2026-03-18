@@ -1368,15 +1368,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  // Could open column actions
-                }
-              }}
-              aria-label={`Kanban column: ${column.title}`}
+              role="region"
+              aria-label={`${column.title} column`}
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
