@@ -1114,29 +1114,29 @@ export default function ChatPanel() {
         </div>
       )}
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="p-4 border-b border-mission-control-border flex items-start justify-between bg-mission-control-surface">
+        <div className="flex items-start gap-3 min-w-0">
           <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
-          <div className="flex items-center gap-2 text-xs flex-shrink-0">
-            <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-            <span className="text-mission-control-text-dim">{getStatusText()}</span>
-            {connectionState === 'disconnected' && (
-              <button
-                onClick={reconnect}
-                className="text-mission-control-accent hover:underline flex items-center gap-1"
-              >
-                <RefreshCw size={10} /> Reconnect
-              </button>
-            )}
-            {selectedAgent?.dbSessionKey && (
-              <SessionStatsBar
-                sessionKey={selectedAgent.dbSessionKey}
-                statusText={getStatusText()}
-                onCompact={() => sendMessage('/compact')}
-                onReset={() => setMessages([])}
-              />
-            )}
-          </div>
+          {selectedAgent?.dbSessionKey ? (
+            <SessionStatsBar
+              sessionKey={selectedAgent.dbSessionKey}
+              statusText={getStatusText()}
+              isDisconnected={connectionState === 'disconnected'}
+              onReconnect={reconnect}
+              onCompact={() => sendMessage('/compact')}
+              onReset={() => setMessages([])}
+            />
+          ) : (
+            <div className="flex items-center gap-2 text-xs flex-shrink-0 pt-0.5">
+              <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+              <span className="text-mission-control-text-dim">{getStatusText()}</span>
+              {connectionState === 'disconnected' && (
+                <button onClick={reconnect} className="text-mission-control-accent hover:underline flex items-center gap-1">
+                  <RefreshCw size={10} /> Reconnect
+                </button>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
