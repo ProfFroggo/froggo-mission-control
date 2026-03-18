@@ -3,6 +3,9 @@
 // force-dynamic prevents static prerendering of /_global-error which fails with
 // "Cannot read properties of null (reading 'useContext')" in Next.js 16.1.x
 // because LayoutRouterContext is unavailable during error-boundary prerendering.
+// Build must run with NODE_ENV=production (enforced in package.json build script).
+// Running 'next build' with NODE_ENV=development causes React to load development
+// internals that produce mismatched webpack module IDs, reproducing this crash.
 'use client';
 
 export const dynamic = 'force-dynamic';
