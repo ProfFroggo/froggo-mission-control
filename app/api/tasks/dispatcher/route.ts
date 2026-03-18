@@ -5,8 +5,15 @@ import { startDispatcherCron, runDispatchCycle } from '@/lib/taskDispatcherCron'
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Start the background cron on first module load
-startDispatcherCron();
+// Start the background cron on first module load (skip during next build)
+const _isBuild =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.NEXT_BUILD === '1' ||
+  process.argv.some((a) => a === 'build') ||
+  !!(globalThis as any).__NEXT_DATA__;
+if (!_isBuild) {
+  startDispatcherCron();
+}
 
 /**
  * GET /api/tasks/dispatcher

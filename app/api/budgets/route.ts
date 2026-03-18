@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
-import { calculatePeriodSpend, type BudgetRow, type Period } from '@/lib/budgets';
+import { calculatePeriodSpend } from '@/lib/budgets';
+import type { BudgetRow, Period } from '@/lib/budgets';
 
 export const dynamic = 'force-dynamic';
 

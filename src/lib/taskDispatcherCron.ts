@@ -61,6 +61,13 @@ export function runDispatchCycle(): { dispatched: number; skipped: number } {
 
 // Singleton cron — uses globalThis to survive Next.js HMR in dev
 export function startDispatcherCron(): void {
+  // Skip during next build to avoid spawning agents during static generation
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    process.env.NEXT_BUILD === '1' ||
+    process.argv.some((a: string) => a === 'build')
+  ) return;
+
   const g = globalThis as Record<string, unknown>;
   if (g.__taskDispatcherInterval) return;
   // Set sentinel immediately (before setInterval) to prevent concurrent callers from racing in
