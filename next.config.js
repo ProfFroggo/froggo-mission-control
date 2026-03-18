@@ -6,6 +6,11 @@ const nextConfig = {
   ...(process.env.NEXT_BUILD_OUTPUT ? { distDir: process.env.NEXT_BUILD_OUTPUT } : {}),
   // Native Node addons must not be bundled by Turbopack — loaded at runtime
   serverExternalPackages: ['better-sqlite3', 'keytar'],
+  // Use a single static generation worker to prevent the React null
+  // initialisation race in /_global-error prerender (Next.js 16.1.x + webpack).
+  experimental: {
+    cpus: 1,
+  },
   // @ path alias is picked up automatically from tsconfig paths
   turbopack: {
     root: __dirname,
