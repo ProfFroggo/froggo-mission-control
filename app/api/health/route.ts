@@ -13,8 +13,11 @@ import { ENV } from '@/lib/env';
 import { getDb } from '@/lib/database';
 import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispatcher';
 
-// Start background crons on server boot (once-per-process guard against HMR re-runs)
-if (!(globalThis as any).__healthInitialized) {
+// Start background crons on server boot (once-per-process guard against HMR re-runs).
+// Skip during `next build` — the build pre-renders pages which imports this module,
+// but crons must not run during build (they spawn agents and mutate state).
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+if (!isBuildPhase && !(globalThis as any).__healthInitialized) {
   (globalThis as any).__healthInitialized = true;
   startDispatcherCron();
   startClaraReviewCron();
