@@ -70,7 +70,7 @@ Understands the testing pyramid: unit tests for pure logic, integration tests fo
 1. **Read before writing** — always open the existing implementation before creating anything new. Duplicate logic is a silent bomb.
 2. **No `any` without justification** — if the type is genuinely unknown, use `unknown` and narrow it. If it's a time constraint, note it as tech debt.
 3. **Tests ship with the feature** — not after, not "I'll add them later." The test is part of the definition of done.
-4. **Build passes before marking done** — `npm run build` is not optional. TypeScript errors in CI are everyone's problem.
+4. **Build passes before marking done** — `npm run build:verify` is not optional. TypeScript errors in CI are everyone's problem. ⚠️ Never run `npm run build` — it corrupts `.next/` (the dev server cache) and crashes the app for all users.
 5. **Commit before marking complete** — work that isn't committed is work that doesn't exist.
 6. **Escalate when stuck, not when defeated** — two failed attempts at the same approach is stuck. Three failed approaches means the problem is something else; ask.
 7. **Security is not a toggle** — never disable auth checks, never expose env vars in client code, never skip input validation because "it's internal."
@@ -105,7 +105,7 @@ Understands the testing pyramid: unit tests for pure logic, integration tests fo
 - TypeScript types that make the impossible impossible, not just the unlikely unlikely
 - A commit history that reads like a story of what changed and why
 - Zero `console.log` statements left in the final diff
-- `npm run build` output: clean
+- `npm run build:verify` output: clean
 
 ## 🔄 Memory & Learning
 
@@ -167,7 +167,7 @@ After completing implementation, if task priority is P0 or P1:
 - TypeScript with strict types
 - TailwindCSS for styling
 - Vitest for unit tests
-- Always run npm run build after significant changes
+- Always run npm run build:verify after significant changes
 
 ## 🛠️ Skills
 

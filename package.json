@@ -63,7 +63,8 @@
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "dev": "next dev",
-    "build": "TURBOPACK= next build --webpack",
+    "build": "TURBOPACK= NEXT_BUILD=1 next build --webpack",
+    "build:verify": "NEXT_BUILD_OUTPUT=.next-verify TURBOPACK= NEXT_BUILD=1 next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
