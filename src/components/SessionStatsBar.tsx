@@ -71,13 +71,24 @@ export default function SessionStatsBar({
             Reconnect
           </button>
         ) : (
-          <button
-            onClick={onReset}
-            className="flex items-center gap-1 text-[11px] text-mission-control-text-dim border border-mission-control-border rounded-full px-2.5 py-0.5 hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
-          >
-            <RotateCcw className="w-3 h-3" />
-            New session
-          </button>
+          <>
+            <button
+              onClick={onReset}
+              className="flex items-center gap-1 text-[11px] text-mission-control-text-dim border border-mission-control-border rounded-full px-2.5 py-0.5 hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              New session
+            </button>
+            {onCompact && (
+              <button
+                onClick={onCompact}
+                className="flex items-center gap-1 text-[11px] text-mission-control-text-dim border border-mission-control-border rounded-full px-2.5 py-0.5 hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
+                title="/compact — summarize context and free up space"
+              >
+                Compact
+              </button>
+            )}
+          </>
         )}
       </div>
 
@@ -97,19 +108,15 @@ export default function SessionStatsBar({
         </span>
       </div>
 
-      {/* Row 3: context bar — click to /compact */}
-      <button
-        onClick={onCompact}
-        title="/compact — summarize context and free up space"
-        className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim hover:text-mission-control-text transition-colors w-fit"
-      >
+      {/* Row 3: context bar */}
+      <div className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim">
         <span>Context:</span>
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
         <div className="w-16 h-1 bg-mission-control-border rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(100, contextPct)}%` }} />
         </div>
         <span>{contextPct}%</span>
-      </button>
+      </div>
 
     </div>
   );
