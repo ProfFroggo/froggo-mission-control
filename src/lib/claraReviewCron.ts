@@ -115,7 +115,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
   // Fetch recent activity for context
   let recentActivity = '';
   try {
-    const acts = getDb().prepare('SELECT action, substr(message,1,150) as msg FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 5').all(task.id as string) as { action: string; msg: string }[];
+    const acts = getDb().prepare('SELECT action, substr(message,1,300) as msg FROM task_activity WHERE taskId = ? ORDER BY timestamp DESC LIMIT 5').all(task.id as string) as { action: string; msg: string }[];
     if (acts.length > 0) {
       recentActivity = acts.map(a => `  - [${a.action}] ${a.msg}`).join('\n');
     }
@@ -130,7 +130,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     `**Assigned to:** ${assignedTo || 'UNASSIGNED'}`,
     '',
     '**Planning notes:**',
-    hasPlanningNotes ? (task.planningNotes as string).slice(0, 800) : '(empty)',
+    hasPlanningNotes ? (task.planningNotes as string) : '(empty)',
     '',
     `**Subtasks (${subtaskCount}):**`,
     subtaskDetails || '  (none)',
