@@ -20,6 +20,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
 import { isProtectedAgent } from '../lib/agentConfig';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
+import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
 
 function parseAcceptanceCriteria(planningNotes: string): string[] {
   const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
@@ -100,11 +101,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Focus trap for dialog accessibility (WCAG 2.4.3 / 4.1.2)
   const focusTrapRef = useFocusTrap(!!task);
   const panelTitleId = 'task-detail-title';
-  // Focus traps for sub-modals (Tab/Shift-Tab cycle within each)
-  const reopenModalTrapRef = useFocusTrap(showReopenModal);
+  // Focus trap for agent-active modal (not yet migrated to BaseModal)
   const agentActiveModalTrapRef = useFocusTrap(showAgentActiveModal);
-  const forkModalTrapRef = useFocusTrap(showForkModal);
-  const fileViewerTrapRef = useFocusTrap(!!fileViewer);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track current task id for SSE handler
   const taskIdRef = useRef<string | null>(task?.id ?? null);
@@ -1918,74 +1916,51 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       )}
 
       {/* Reopen Task Modal */}
-      {showReopenModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowReopenModal(false); setReopenReason(''); }}>
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-          <div
-            ref={reopenModalTrapRef as React.RefObject<HTMLDivElement>}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reopen-task-title"
-            tabIndex={-1}
-            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowReopenModal(false); setReopenReason(''); } }}
+      <BaseModal
+        isOpen={showReopenModal}
+        onClose={() => { setShowReopenModal(false); setReopenReason(''); }}
+        size="md"
+        ariaLabel="Reopen task"
+        showCloseButton={false}
+      >
+        <BaseModalHeader
+          title="Reopen Task"
+          titleId="reopen-task-title"
+          onClose={() => { setShowReopenModal(false); setReopenReason(''); }}
+          closeButtonLabel="Close reopen task dialog"
+        />
+        <BaseModalBody>
+          <p className="text-sm text-mission-control-text-dim mb-4">
+            Why are you reopening this task?
+          </p>
+          <textarea
+            value={reopenReason}
+            onChange={(e) => setReopenReason(e.target.value)}
+            placeholder="Enter reason for reopening (required)..."
+            className="w-full h-32 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+          />
+          {reopenReason.trim().length === 0 && (
+            <p className="text-xs text-error mt-2">
+              Reason is required and cannot be empty
+            </p>
+          )}
+        </BaseModalBody>
+        <BaseModalFooter align="right">
+          <button
+            onClick={() => { setShowReopenModal(false); setReopenReason(''); }}
+            className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border/70 transition-colors"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 id="reopen-task-title" className="text-lg font-semibold">Reopen Task</h3>
-              <button
-                onClick={() => {
-                  setShowReopenModal(false);
-                  setReopenReason('');
-                }}
-                aria-label="Close reopen task dialog"
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <p className="text-sm text-mission-control-text-dim mb-4">
-                Why are you reopening this task?
-              </p>
-              <textarea
-                value={reopenReason}
-                onChange={(e) => setReopenReason(e.target.value)}
-                placeholder="Enter reason for reopening (required)..."
-                className="w-full h-32 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
-              />
-              {reopenReason.trim().length === 0 && (
-                <p className="text-xs text-error mt-2">
-                  Reason is required and cannot be empty
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-mission-control-border">
-              <button
-                onClick={() => {
-                  setShowReopenModal(false);
-                  setReopenReason('');
-                }}
-                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border/70 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReopen}
-                disabled={!reopenReason.trim()}
-                className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Reopen Task
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            Cancel
+          </button>
+          <button
+            onClick={handleReopen}
+            disabled={!reopenReason.trim()}
+            className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Reopen Task
+          </button>
+        </BaseModalFooter>
+      </BaseModal>
 
       {/* Agent Still Active Warning Modal */}
       {showAgentActiveModal && activeAgentInfo && (
@@ -2115,91 +2090,80 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       )}
 
       {/* Fork Task Modal */}
-      {showForkModal && task && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowForkModal(false)}>
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-          <div
-            ref={forkModalTrapRef as React.RefObject<HTMLDivElement>}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="fork-task-title"
-            tabIndex={-1}
-            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowForkModal(false); } }}
-          >
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 id="fork-task-title" className="text-lg font-semibold">Build on this task</h3>
-              <button
-                onClick={() => setShowForkModal(false)}
-                aria-label="Close fork task dialog"
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-mission-control-text-dim">What do you want to build next?</p>
-              <textarea
-                value={forkDescription}
-                onChange={e => setForkDescription(e.target.value)}
-                placeholder="Describe the next task..."
-                rows={4}
-                autoFocus
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+      <BaseModal
+        isOpen={showForkModal && !!task}
+        onClose={() => setShowForkModal(false)}
+        size="md"
+        ariaLabel="Fork task"
+        showCloseButton={false}
+      >
+        <BaseModalHeader
+          title="Build on this task"
+          titleId="fork-task-title"
+          onClose={() => setShowForkModal(false)}
+          closeButtonLabel="Close fork task dialog"
+        />
+        <BaseModalBody>
+          <div className="space-y-4">
+            <p className="text-sm text-mission-control-text-dim">What do you want to build next?</p>
+            <textarea
+              value={forkDescription}
+              onChange={e => setForkDescription(e.target.value)}
+              placeholder="Describe the next task..."
+              rows={4}
+              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={forkAssignSameAgent}
+                onChange={e => setForkAssignSameAgent(e.target.checked)}
+                className="rounded"
               />
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={forkAssignSameAgent}
-                  onChange={e => setForkAssignSameAgent(e.target.checked)}
-                  className="rounded"
-                />
-                Assign to same agent{task.assignedTo ? ` (${task.assignedTo})` : ''}
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-mission-control-border">
-              <button
-                onClick={() => setShowForkModal(false)}
-                className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  if (!forkDescription.trim()) return;
-                  try {
-                    // Fork via REST: create a subtask
-                    const result = await taskApi.addSubtask(task.id, {
-                      title: forkDescription.trim().slice(0, 100),
-                      description: forkDescription.trim(),
-                      assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
-                      priority: task.priority,
-                    });
-                    if (result) {
-                      showToast('success', 'Task forked', `Created new task from "${task.title}"`);
-                      setShowForkModal(false);
-                      // Reload child tasks
-                      taskApi.getSubtasks(task.id).then((r: any) => {
-                        const children = Array.isArray(r) ? r : r?.children || [];
-                        setChildTasks(children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
-                      });
-                    } else {
-                      showToast('error', 'Fork failed', 'Unknown error');
-                    }
-                  } catch (err) {
-                    showToast('error', 'Fork failed', (err as Error).message);
-                  }
-                }}
-                disabled={!forkDescription.trim()}
-                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
-              >
-                Create Task
-              </button>
-            </div>
+              Assign to same agent{task?.assignedTo ? ` (${task.assignedTo})` : ''}
+            </label>
           </div>
-        </div>
-      )}
+        </BaseModalBody>
+        <BaseModalFooter>
+          <button
+            onClick={() => setShowForkModal(false)}
+            className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              if (!task || !forkDescription.trim()) return;
+              try {
+                // Fork via REST: create a subtask
+                const result = await taskApi.addSubtask(task.id, {
+                  title: forkDescription.trim().slice(0, 100),
+                  description: forkDescription.trim(),
+                  assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
+                  priority: task.priority,
+                });
+                if (result) {
+                  showToast('success', 'Task forked', `Created new task from "${task.title}"`);
+                  setShowForkModal(false);
+                  // Reload child tasks
+                  taskApi.getSubtasks(task.id).then((r: any) => {
+                    const children = Array.isArray(r) ? r : r?.children || [];
+                    setChildTasks(children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
+                  });
+                } else {
+                  showToast('error', 'Fork failed', 'Unknown error');
+                }
+              } catch (err) {
+                showToast('error', 'Fork failed', (err as Error).message);
+              }
+            }}
+            disabled={!forkDescription.trim()}
+            className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+          >
+            Create Task
+          </button>
+        </BaseModalFooter>
+      </BaseModal>
 
       <ConfirmDialog
         open={open}
@@ -2213,43 +2177,36 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       />
 
       {/* File Viewer Modal */}
-      {fileViewer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-          <div
-            ref={fileViewerTrapRef as React.RefObject<HTMLDivElement>}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="file-viewer-title"
-            tabIndex={-1}
-            className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4 outline-none"
-            onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setFileViewer(null); } }}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
-              <div className="flex items-center gap-2">
-                <FileText size={16} className="text-mission-control-accent" />
-                <span id="file-viewer-title" className="text-sm font-medium">{fileViewer.name}</span>
-                <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer.ext}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); }}
-                  className="px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
-                >
-                  Copy
-                </button>
-                <button onClick={() => setFileViewer(null)} aria-label="Close file viewer" className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-            <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
-              {fileViewer.content}
-            </pre>
+      <BaseModal
+        isOpen={!!fileViewer}
+        onClose={() => setFileViewer(null)}
+        size="xl"
+        ariaLabel={fileViewer ? `View file: ${fileViewer.name}` : 'View file'}
+        maxHeight="85vh"
+        showCloseButton={false}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <FileText size={16} className="text-mission-control-accent" />
+            <span id="file-viewer-title" className="text-sm font-medium">{fileViewer?.name}</span>
+            <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer?.ext}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { if (fileViewer) { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); } }}
+              className="px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
+            >
+              Copy
+            </button>
+            <button onClick={() => setFileViewer(null)} aria-label="Close file viewer" className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
+              <X size={16} />
+            </button>
           </div>
         </div>
-      )}
+        <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
+          {fileViewer?.content}
+        </pre>
+      </BaseModal>
     </div>
     </>
   );
