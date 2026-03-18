@@ -4,11 +4,19 @@
   "cleanupPeriodDays": 30,
   "permissions": {
     "allow": [
-      "Read", "Edit", "Write", "Glob", "Grep", "MultiEdit",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "MultiEdit",
+      "Edit(.claude/agents/)",
       "Bash(*)",
       "mcp__*",
-      "WebFetch(*)", "WebSearch(*)",
-      "TodoRead", "TodoWrite"
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "TodoRead",
+      "TodoWrite"
     ],
     "deny": [
       "Bash(rm -rf /)",
@@ -28,7 +36,9 @@
     "mission-control_db": {
       "type": "stdio",
       "command": "/usr/local/bin/node",
-      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/mission-control-db-mcp/dist/index.js"],
+      "args": [
+        "/Users/kevin.macarthur/git/froggo-mission-control/tools/mission-control-db-mcp/dist/index.js"
+      ],
       "env": {
         "DB_PATH": "/Users/kevin.macarthur/mission-control/data/mission-control.db"
       }
@@ -36,7 +46,9 @@
     "memory": {
       "type": "stdio",
       "command": "/usr/local/bin/node",
-      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/memory-mcp/dist/index.js"],
+      "args": [
+        "/Users/kevin.macarthur/git/froggo-mission-control/tools/memory-mcp/dist/index.js"
+      ],
       "env": {
         "VAULT_PATH": "/Users/kevin.macarthur/mission-control",
         "QMD_BIN": "/Users/kevin.macarthur/.npm-global/bin/qmd",
@@ -46,7 +58,9 @@
     "cron": {
       "type": "stdio",
       "command": "/usr/local/bin/node",
-      "args": ["/Users/kevin.macarthur/git/froggo-mission-control/tools/cron-mcp/dist/index.js"],
+      "args": [
+        "/Users/kevin.macarthur/git/froggo-mission-control/tools/cron-mcp/dist/index.js"
+      ],
       "env": {
         "SCHEDULE_PATH": "/Users/kevin.macarthur/mission-control/data/schedule.json"
       }
