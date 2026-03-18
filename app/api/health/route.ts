@@ -16,7 +16,10 @@ import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispat
 // Start background crons on server boot (once-per-process guard against HMR re-runs).
 // Skip during `next build` — the build pre-renders pages which imports this module,
 // but crons must not run during build (they spawn agents and mutate state).
-const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+const isBuildPhase =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.argv.some((a) => a === 'build') ||
+  !!(globalThis as any).__NEXT_DATA__;
 if (!isBuildPhase && !(globalThis as any).__healthInitialized) {
   (globalThis as any).__healthInitialized = true;
   startDispatcherCron();
