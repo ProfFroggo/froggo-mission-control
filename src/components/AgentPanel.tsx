@@ -472,7 +472,16 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setManagingAgent({ id: agent.id, name: agent.name });
+                    }
+                  }}
+                  aria-label={`Open ${agent.name} management`}
                   className={`group relative rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col ${theme.border}`}
                 >
                   {/* Color accent bar */}
