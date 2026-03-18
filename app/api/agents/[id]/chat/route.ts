@@ -233,6 +233,136 @@ export async function POST(
     return NextResponse.json({ error: 'message is required' }, { status: 400 });
   }
 
+  // ── /compact interceptor ─────────────────────────────────────────────────
+  if (message.trim().toLowerCase() === '/compact') {
+    const encoder2 = new TextEncoder();
+    const readable2 = new ReadableStream({
+      async start(controller) {
+        const enc2 = (obj: unknown) => {
+          try { controller.enqueue(encoder2.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* closed */ }
+        };
+        try {
+          const db = getDb();
+          const rows = db.prepare(
+            `SELECT role, content FROM messages WHERE sessionKey = ? ORDER BY timestamp ASC LIMIT 200`
+          ).all(sessionKey) as { role: string; content: string }[];
+
+          if (rows.length === 0) {
+            enc2({ type: 'text_delta', text: 'Nothing to compact — conversation is empty.' });
+            enc2({ type: 'done', sessionKey });
+            controller.enqueue(encoder2.encode('data: [DONE]\n\n'));
+            controller.close();
+            return;
+          }
+
+          const transcript = rows.map(r =>
+            `${r.role === 'user' ? 'User' : 'Assistant'}: ${r.content.slice(0, 800)}`
+          ).join('\n\n');
+
+          const compactPrompt = `You are a conversation summarizer. Produce a concise summary of this conversation that preserves:
+- All decisions made and conclusions reached
+- Key facts, context, and technical details shared
+- Any tasks, bugs, or action items discussed
+- The current state of any ongoing work
+
+Be dense and factual. Use bullet points. Do not include pleasantries.
+
+CONVERSATION:
+${transcript}
+
+SUMMARY:`;
+
+          const {
+            CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID,
+            ANTHROPIC_API_KEY,
+            ...cleanEnv2
+          } = process.env;
+          if (!cleanEnv2.PATH || cleanEnv2.PATH.length < 20) {
+            cleanEnv2.PATH = [
+              '/opt/homebrew/bin', '/opt/homebrew/sbin',
+              '/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin',
+              join(HOME, '.npm-global', 'bin'),
+              join(HOME, '.local', 'bin'),
+            ].join(':');
+          }
+          const nodeBinDir2 = dirname(process.execPath);
+          if (!cleanEnv2.PATH.includes(nodeBinDir2)) cleanEnv2.PATH = nodeBinDir2 + ':' + cleanEnv2.PATH;
+
+          const compactArgs = [
+            '--print',
+            '--output-format', 'stream-json',
+            '--verbose',
+            '--model', chatModel,
+            '--allowedTools', 'none',
+          ];
+          const compactProc = spawnClaude(compactArgs, { cwd: HOME, env: cleanEnv2, stdio: 'pipe' });
+          compactProc.stdin!.write(compactPrompt);
+          compactProc.stdin!.end();
+
+          let cbuf = '';
+          let summaryText = '';
+          let clastLen = 0;
+
+          compactProc.stdout!.on('data', (data: Buffer) => {
+            cbuf += data.toString();
+            const lines = cbuf.split('\n');
+            cbuf = lines.pop() ?? '';
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const p = JSON.parse(line) as { type?: string; message?: { content?: Array<{ type: string; text?: string }> }; result?: string };
+                if (p.type === 'assistant' && p.message?.content) {
+                  const full = p.message.content.filter(c => c.type === 'text').map(c => c.text ?? '').join('');
+                  if (full.length > clastLen) {
+                    const delta = full.slice(clastLen);
+                    clastLen = full.length;
+                    summaryText += delta;
+                    enc2({ type: 'text_delta', text: delta });
+                  }
+                } else if (p.type === 'result' && p.result && clastLen === 0) {
+                  summaryText = p.result;
+                  enc2({ type: 'text_delta', text: p.result });
+                }
+              } catch { /* skip */ }
+            }
+          });
+
+          await new Promise<void>(resolve => compactProc.on('close', resolve));
+
+          // Evict session — next message starts fresh with summary injected as context
+          sessions.delete(sessionKey);
+          try {
+            db.prepare(`UPDATE agent_sessions SET status = 'compacted' WHERE agentId = ?`).run(sessionKey);
+          } catch { /* non-critical */ }
+
+          // Store summary + clear old messages so sessionService injects summary on next load
+          if (summaryText) {
+            try {
+              const now2 = Date.now();
+              db.prepare(`DELETE FROM messages WHERE sessionKey = ?`).run(sessionKey);
+              db.prepare(
+                `UPDATE sessions SET compact_summary = ?, last_compact_at = ? WHERE key = ?`
+              ).run(summaryText, now2, sessionKey);
+            } catch { /* non-critical */ }
+          }
+
+          enc2({ type: 'done', sessionKey });
+          controller.enqueue(encoder2.encode('data: [DONE]\n\n'));
+          controller.close();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          controller.enqueue(encoder2.encode(`data: ${JSON.stringify({ type: 'error', error: msg })}\n\n`));
+          controller.enqueue(encoder2.encode('data: [DONE]\n\n'));
+          controller.close();
+        }
+      }
+    });
+    return new Response(readable2, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+    });
+  }
+  // ── end /compact ──────────────────────────────────────────────────────────
+
   agentLocks.set(agentId, Date.now());
 
   const encoder = new TextEncoder();
