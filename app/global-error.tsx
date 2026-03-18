@@ -1,7 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // Global error boundary — catches errors in the root layout itself.
-// Required by Next.js 16 for static generation of the /_global-error route.
+// force-dynamic prevents static prerendering of /_global-error which fails with
+// "Cannot read properties of null (reading 'useContext')" in Next.js 16.1.x
+// because LayoutRouterContext is unavailable during error-boundary prerendering.
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 export default function GlobalError({
   error,
