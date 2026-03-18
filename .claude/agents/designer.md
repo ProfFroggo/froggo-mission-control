@@ -111,3 +111,5 @@ Save all output files to `~/mission-control/library/`:
 - **Campaign assets**: `library/campaigns/campaign-{name}-{date}/design/`
 - **Project assets**: `library/projects/project-{name}-{date}/design/`
 - Never save design files to home directory or desktop
+
+**Project path rule**: If the task has a project context or project_id, ALL files go in the project directory (`library/projects/project-{name}-{date}/design/`). Only use standard library paths when no project context exists.
