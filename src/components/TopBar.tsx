@@ -206,16 +206,19 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-hidden="true"
             />
           </button>
-          {/* Connection Status Indicator */}
+          {/* Connection Status Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region */}
           {connectionState !== 'connected' && (
-            <span 
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
               className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
-                connectionState === 'disconnected' 
-                  ? 'bg-error-subtle text-error' 
+                connectionState === 'disconnected'
+                  ? 'bg-error-subtle text-error'
                   : 'bg-warning-subtle text-warning'
               }`}
-              title={connectionState === 'disconnected' 
-                ? `Disconnected. Reconnecting... (${reconnectAttempts})` 
+              title={connectionState === 'disconnected'
+                ? `Disconnected. Reconnecting... (${reconnectAttempts})`
                 : `Connecting to gateway... (${reconnectAttempts})`}
             >
               {connectionState === 'disconnected' ? (
@@ -223,21 +226,30 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               ) : (
                 <Wifi size={12} className="animate-pulse" aria-hidden="true" />
               )}
-              <span>
+              <span aria-hidden="true">
                 {connectionState === 'disconnected' ? 'Offline' : 'Connecting'}
                 {reconnectAttempts > 0 && ` (${reconnectAttempts})`}
+              </span>
+              <span className="sr-only">
+                {connectionState === 'disconnected'
+                  ? `Disconnected. Reconnecting, attempt ${reconnectAttempts}.`
+                  : `Connecting to gateway, attempt ${reconnectAttempts}.`}
               </span>
             </span>
           )}
 
-          {/* Offline Queue Indicator */}
+          {/* Offline Queue Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region */}
           {offlineQueueSize > 0 && (
-            <span 
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
               className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
               title={`${offlineQueueSize} actions queued for sync`}
             >
               <Loader size={12} className="animate-spin" aria-hidden="true" />
-              <span className="tabular-nums">{offlineQueueSize}</span>
+              <span className="tabular-nums" aria-hidden="true">{offlineQueueSize}</span>
+              <span className="sr-only">{offlineQueueSize} actions queued for sync</span>
             </span>
           )}
 
