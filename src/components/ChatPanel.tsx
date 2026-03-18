@@ -1131,7 +1131,9 @@ export default function ChatPanel() {
             {selectedAgent?.dbSessionKey && (
               <SessionStatsBar
                 sessionKey={selectedAgent.dbSessionKey}
+                statusText={getStatusText()}
                 onCompact={() => sendMessage('/compact')}
+                onReset={() => setMessages([])}
               />
             )}
           </div>
