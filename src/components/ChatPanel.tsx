@@ -291,6 +291,52 @@ export default function ChatPanel() {
     }
   };
 
+  // Compact — bypasses sendMessage entirely so /compact never reaches the agent or DB
+  const handleCompact = useCallback(async () => {
+    if (!selectedAgent) return;
+    const assistantId = `msg-${Date.now()}-compact`;
+    setMessages(prev => [...prev, {
+      id: assistantId, role: 'assistant', content: '', timestamp: Date.now(), streaming: true,
+    }]);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/agents/${selectedAgent.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: '/compact', model: 'claude-sonnet-4-6', sessionKey: selectedAgent.dbSessionKey }),
+      });
+      if (!res.body) return;
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let text = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const parts = buf.split('\n\n');
+        buf = parts.pop() ?? '';
+        for (const part of parts) {
+          const line = part.startsWith('data: ') ? part.slice(6) : part;
+          if (line === '[DONE]') break;
+          try {
+            const ev = JSON.parse(line);
+            if (ev.type === 'text_delta') {
+              text += ev.text;
+              setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: text } : m));
+            }
+          } catch { /* skip */ }
+        }
+      }
+      // Mark done, clear old messages from UI (compact summary is now the only message)
+      setMessages([{ id: assistantId, role: 'assistant', content: text || '✓ Context compacted.', timestamp: Date.now(), streaming: false }]);
+    } catch {
+      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: 'Compact failed — try again.', streaming: false } : m));
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedAgent]);
+
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -1123,7 +1169,7 @@ export default function ChatPanel() {
               statusText={getStatusText()}
               isDisconnected={connectionState === 'disconnected'}
               onReconnect={reconnect}
-              onCompact={() => sendMessage('/compact')}
+              onCompact={handleCompact}
               onReset={() => setMessages([])}
             />
           ) : (
