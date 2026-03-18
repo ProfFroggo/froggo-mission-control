@@ -5,56 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { randomUUID } from 'crypto';
+import { calculatePeriodSpend, type BudgetRow, type Period } from '@/lib/budgets';
 
 export const dynamic = 'force-dynamic';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface BudgetRow {
-  id: string;
-  name: string;
-  agentId: string | null;
-  period: string;
-  limitUsd: number;
-  alertAt: number;
-  createdAt: number;
-}
-
-type Period = 'daily' | 'weekly' | 'monthly';
-
-// ── Period helpers ─────────────────────────────────────────────────────────────
-
-function periodStartMs(period: Period): number {
-  const now = new Date();
-  switch (period) {
-    case 'daily': {
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    }
-    case 'weekly': {
-      const day = now.getDay();
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).getTime();
-    }
-    case 'monthly': {
-      return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    }
-  }
-}
-
-export function calculatePeriodSpend(
-  db: ReturnType<typeof getDb>,
-  budget: BudgetRow
-): number {
-  const since = periodStartMs(budget.period as Period);
-  const agentFilter = budget.agentId ? 'AND agentId = ?' : '';
-  const args: unknown[] = budget.agentId ? [since, budget.agentId] : [since];
-
-  const row = db.prepare(
-    `SELECT COALESCE(SUM(costUsd), 0) AS spend FROM token_usage WHERE timestamp >= ? ${agentFilter}`
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ).get(...(args as any[])) as { spend: number };
-
-  return row?.spend ?? 0;
-}
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
