@@ -100,6 +100,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Focus trap for dialog accessibility (WCAG 2.4.3 / 4.1.2)
   const focusTrapRef = useFocusTrap(!!task);
   const panelTitleId = 'task-detail-title';
+  // Focus traps for sub-modals (Tab/Shift-Tab cycle within each)
+  const reopenModalTrapRef = useFocusTrap(showReopenModal);
+  const agentActiveModalTrapRef = useFocusTrap(showAgentActiveModal);
+  const forkModalTrapRef = useFocusTrap(showForkModal);
+  const fileViewerTrapRef = useFocusTrap(!!fileViewer);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track current task id for SSE handler
   const taskIdRef = useRef<string | null>(task?.id ?? null);
@@ -1917,12 +1922,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowReopenModal(false); setReopenReason(''); }}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
+            ref={reopenModalTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="reopen-task-title"
-            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            tabIndex={-1}
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
             onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') { setShowReopenModal(false); setReopenReason(''); } }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowReopenModal(false); setReopenReason(''); } }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
@@ -1985,12 +1992,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setShowAgentActiveModal(false); setActiveAgentInfo(null); }}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
+            ref={agentActiveModalTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="agent-active-title"
-            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            tabIndex={-1}
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
             onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') { setShowAgentActiveModal(false); setActiveAgentInfo(null); } }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowAgentActiveModal(false); setActiveAgentInfo(null); } }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
@@ -2110,12 +2119,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowForkModal(false)}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
+            ref={forkModalTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="fork-task-title"
-            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]"
+            tabIndex={-1}
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
             onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') setShowForkModal(false); }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowForkModal(false); } }}
           >
             <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
               <h3 id="fork-task-title" className="text-lg font-semibold">Build on this task</h3>
@@ -2206,12 +2217,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
+            ref={fileViewerTrapRef as React.RefObject<HTMLDivElement>}
             role="dialog"
             aria-modal="true"
             aria-labelledby="file-viewer-title"
-            className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4"
+            tabIndex={-1}
+            className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4 outline-none"
             onClick={e => e.stopPropagation()}
-            onKeyDown={e => { if (e.key === 'Escape') setFileViewer(null); }}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setFileViewer(null); } }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
               <div className="flex items-center gap-2">
