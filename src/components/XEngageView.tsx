@@ -81,7 +81,8 @@ const LS_PRIORITY_KEY = 'x-reply-priority-accounts';
 const LS_IGNORED_KEY = 'x-reply-ignored-accounts';
 const LS_TEMPLATE_KEY = 'x-reply-templates';
 const LS_ENGAGE_SETTINGS_KEY = 'x-engage-settings';
-const POLL_INTERVAL = 60_000; // auto-refresh mentions every 60s
+const POLL_INTERVAL = 60_000; // auto-refresh mentions from DB every 60s
+const X_FETCH_INTERVAL = 15 * 60_000; // fetch new mentions from X API every 15 min
 
 const DEFAULT_TEMPLATES: ReplyTemplate[] = [
   { id: 'tpl-1', name: 'Agree + Add', body: 'Totally agree, {{username}}. Building on that — [add your point here].' },
@@ -389,9 +390,20 @@ export const XEngageView: React.FC = () => {
 
   useEffect(() => {
     loadMentions();
-    // Auto-refresh polling
+    // Auto-refresh from local DB every 60s
     const interval = setInterval(loadMentions, POLL_INTERVAL);
     return () => clearInterval(interval);
+  }, [loadMentions]);
+
+  // Auto-fetch new mentions from X API every 15 minutes
+  useEffect(() => {
+    const xFetchInterval = setInterval(async () => {
+      try {
+        await fetch('/api/x/mentions/process', { method: 'POST' });
+        await loadMentions();
+      } catch { /* non-critical */ }
+    }, X_FETCH_INTERVAL);
+    return () => clearInterval(xFetchInterval);
   }, [loadMentions]);
 
   // Load reply approvals to show status on cards
@@ -441,38 +453,7 @@ export const XEngageView: React.FC = () => {
   const fetchNewMentions = async () => {
     setFetching(true);
     try {
-      const res = await fetch('/api/x/mentions');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.mentions?.length > 0) {
-          for (const m of data.mentions) {
-            try {
-              await inboxApi.create({
-                type: 'x-mention',
-                title: `@${m.author?.username || 'unknown'}: ${(m.text || '').slice(0, 80)}`,
-                content: m.text,
-                channel: 'x-twitter',
-                status: 'pending',
-                metadata: {
-                  tweet_id: m.id,
-                  author_id: m.author?.id || m.author_id,
-                  author_username: m.author?.username || 'unknown',
-                  author_name: m.author?.name || 'Unknown',
-                  author_followers: m.author?.public_metrics?.followers_count,
-                  conversation_id: m.conversation_id,
-                  in_reply_to_user_id: m.in_reply_to_user_id || '',
-                  mention_type: m.mention_type || 'mention',
-                  is_reply_to_us: m.is_reply_to_us || false,
-                  parent_tweet: m.parent_tweet || null,
-                  reply_status: 'pending',
-                  public_metrics: m.public_metrics || {},
-                  created_at: new Date(m.created_at).getTime(),
-                },
-              });
-            } catch { /* duplicate or DB error — skip */ }
-          }
-        }
-      }
+      await fetch('/api/x/mentions/process', { method: 'POST' });
       await loadMentions();
     } catch {
       await loadMentions();
