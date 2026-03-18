@@ -19,19 +19,6 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('MeetingScribe');
 
-// Gemini API key — loaded dynamically, no hardcoded fallback
-let _cachedScribeKey: string | null = null;
-async function getGeminiApiKey(): Promise<string> {
-  if (_cachedScribeKey) return _cachedScribeKey;
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    if (result?.value) { _cachedScribeKey = result.value; return result.value; }
-  } catch { /* ignore */ }
-  return '';
-}
-const GEMINI_MODEL = 'gemini-2.0-flash';
-
 // How often to send audio chunks for transcription (ms)
 const CHUNK_INTERVAL_MS = 8000;
 
@@ -80,49 +67,25 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 async function transcribeWithGemini(base64Audio: string, mimeType: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              inlineData: {
-                data: base64Audio,
-                mimeType,
-              },
-            },
-            {
-              text: `Transcribe this audio accurately. Common vocabulary: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana", "Dashboard", "Opus", "Sonnet", "Claude".
+  const { authHeaders } = await import('../lib/api');
+  // Convert base64 to Blob for FormData upload
+  const binaryStr = atob(base64Audio);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mimeType });
 
-Rules:
-- Output ONLY the transcript text
-- If no speech detected, return empty string
-- Do NOT add preamble, labels, or explanation
-- Preserve natural speech patterns`,
-            },
-          ],
-        }],
-        generationConfig: {
-          maxOutputTokens: 1024,
-          temperature: 0.1,
-        },
-      }),
-    }
-  );
+  const formData = new FormData();
+  formData.append('audio', blob, 'chunk.webm');
+  formData.append('mimeType', mimeType);
 
-  if (!response.ok) {
-    const err = await response.text();
-    logger.error('Gemini API error:', response.status, err);
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
+  const response = await fetch('/api/gemini/transcribe', {
+    method: 'POST',
+    headers: { ...authHeaders() },
+    body: formData,
+  });
+  if (!response.ok) throw new Error(`Transcription error: ${response.status}`);
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  
-  // Strip common preamble that Gemini sometimes adds despite instructions
+  const text = (data.transcript || '').trim();
   return text
     .replace(/^(Here'?s?\s+)?the\s+transcri(pt|ption)[:\s]*/i, '')
     .replace(/^(Okay|OK|Sure)[,.\s]*/i, '')
@@ -435,7 +398,7 @@ export default function MeetingScribe() {
       '',
       `**Time:** ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
       `**Duration:** ${formatDuration(duration)}`,
-      `**Transcription:** Gemini ${GEMINI_MODEL}`,
+      `**Transcription:** Gemini (server-proxied)`,
       '',
       '## Transcript',
       '',
@@ -484,34 +447,29 @@ export default function MeetingScribe() {
     
     setIsSummarizing(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Summarize this meeting transcript concisely. Include:
+      const prompt = `Summarize this meeting transcript concisely. Include:
 1. **Key Topics** discussed
 2. **Decisions** made
 3. **Action Items** with owners if mentioned
 4. **Next Steps**
 
 Transcript:
-${transcriptText}`,
-              }],
-            }],
-            generationConfig: { maxOutputTokens: 1024 },
-          }),
-        }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        const summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (summaryText) setAiSummary(summaryText);
-      }
+${transcriptText}`;
+
+      const { authHeaders } = await import('../lib/api');
+      const res = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }], role: 'user' }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+        }),
+      });
+      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      const data = await res.json();
+
+      const summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (summaryText) setAiSummary(summaryText);
     } catch (err) {
       // '[Scribe] Summary error:', err;
     } finally {
@@ -639,7 +597,7 @@ ${transcriptText}`,
           )}
           
           <p className="text-xs text-mission-control-text-dim mt-3 text-center">
-            Powered by Gemini {GEMINI_MODEL} • Audio sent in {CHUNK_INTERVAL_MS / 1000}s chunks
+            Powered by Gemini • Audio sent in {CHUNK_INTERVAL_MS / 1000}s chunks
           </p>
         </div>
         

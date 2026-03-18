@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
-import { chatApi, settingsApi } from '../lib/api';
+import { chatApi, authHeaders } from '../lib/api';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('QuickActions');
@@ -654,14 +654,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallRinging(false);
   };
 
-  const getGeminiApiKey = async (): Promise<string> => {
-    try {
-      const result = await settingsApi.get('gemini_api_key');
-      if (result?.value) return result.value;
-    } catch { /* ignore */ }
-    return '';
-  };
-
   // ─── FEATURE 2: Agent call handling (real Gemini Live) ───
   const handleAgentCall = async (agent: ChatAgent) => {
     if (activeCall?.agentId === agent.id) {
@@ -678,8 +670,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       if (isMeetingActive) toggleMeeting();
       showToast('success', 'Call Ended', `Disconnected from ${agent.name}`);
     } else {
-      // Start call
-      const apiKey = await getGeminiApiKey();
+      // Start call — fetch API key from server (F-02: key never stored client-side)
+      let apiKey = '';
+      try {
+        const res = await fetch('/api/gemini/live-token', { headers: { ...authHeaders() } });
+        if (res.ok) { const data = await res.json(); apiKey = data.apiKey || ''; }
+      } catch { /* ignore */ }
       if (!apiKey) {
         showToast('error', 'No API Key', 'Set Gemini API key in Settings');
         return;

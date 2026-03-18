@@ -400,10 +400,15 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: geminiKey.trim() }),
       });
-      // Quick validation: try a minimal Gemini REST call
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey.trim()}`
-      );
+      // Validate via server-side proxy (F-02: key never sent from browser)
+      const res = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Reply with OK' }] }],
+          generationConfig: { maxOutputTokens: 8 },
+        }),
+      });
       if (res.ok) {
         setGeminiStatus('ok');
       } else {

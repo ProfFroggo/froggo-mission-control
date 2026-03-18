@@ -38,19 +38,21 @@ const logger = createLogger('Meetings');
  * 3. Action Items: Clear approve/edit/dismiss workflow
  */
 
-// Gemini API key — loaded dynamically, no hardcoded fallback
-let _cachedGeminiKey: string | null = null;
-async function getGeminiApiKey(): Promise<string> {
-  if (_cachedGeminiKey) return _cachedGeminiKey;
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    if (result?.value) { _cachedGeminiKey = result.value; return result.value; }
-  } catch { /* ignore */ }
-  return '';
+// Server-side Gemini proxy helper — API key never leaves the server (F-02 fix)
+async function geminiGenerate(
+  contents: unknown[],
+  generationConfig?: Record<string, unknown>,
+  model?: string,
+): Promise<{ candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }> {
+  const { authHeaders } = await import('../lib/api');
+  const res = await fetch('/api/gemini/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ contents, generationConfig, model }),
+  });
+  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  return res.json();
 }
-const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
-const GEMINI_MODEL = 'models/gemini-live-2.5-flash-preview';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -445,21 +447,11 @@ export default function MeetingsPanel() {
     setGeneratingSummary(true);
     try {
       const fullText = transcript.join('\n');
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
-            generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
+        { maxOutputTokens: 2048, temperature: 0.3 }
       );
-      if (response.ok) {
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
-      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     } catch (err) {
       // '[Meeting] Summary generation error:', err;
     } finally {
@@ -503,20 +495,12 @@ Based on the transcript, create 1-5 task proposals in this JSON format (only res
 Only include tasks that are clearly mentioned or implied. Assign appropriate agents based on task type.`;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.2 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: prompt }] }],
+        { maxOutputTokens: 4096, temperature: 0.2 }
       );
-      
-      if (response.ok) {
-        const data = await response.json();
+
+      {
         const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         
         if (content) {
@@ -724,30 +708,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         reader.readAsDataURL(file);
       });
 
-      // Transcribe using Gemini API directly in browser
-      // Use Gemini API directly with the base64 data
-      const apiKey = await getGeminiApiKey();
-      if (!apiKey) throw new Error('Gemini API key not configured');
+      // Transcribe via server-side proxy (F-02: API key never leaves server)
       const mimeType = file.type || 'audio/webm';
-      const transcribeResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { inlineData: { mimeType, data: base64 } },
-                { text: 'Transcribe this audio accurately. Output ONLY the transcript text. If no speech detected, return empty string.' }
-              ]
-            }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.1 }
-          })
-        }
-      );
-      if (!transcribeResponse.ok) throw new Error(`Gemini API error: ${transcribeResponse.status}`);
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', mimeType);
+      const { authHeaders: getAuthHeaders } = await import('../lib/api');
+      const transcribeResponse = await fetch('/api/gemini/transcribe', {
+        method: 'POST',
+        headers: { ...getAuthHeaders() },
+        body: formData,
+      });
+      if (!transcribeResponse.ok) throw new Error(`Transcription error: ${transcribeResponse.status}`);
       const transcribeData = await transcribeResponse.json();
-      const result = transcribeData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const result = transcribeData.transcript?.trim() || '';
       setTranscriptionProgress(100);
       setTranscriptionResult(result);
       setStatusMessage('Transcription complete!');
@@ -997,163 +971,23 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     return created;
   }, [meetingActionItems]);
 
-  // --- LEGACY: kept for file-upload transcription path only ---
-  const connectGeminiTranscription = useCallback(async (_stream: MediaStream) => {
-    const apiKey = await getGeminiApiKey();
-    if (!apiKey || apiKey.trim() === '') {
-      throw new Error('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
-    }
-    return new Promise<WebSocket>((resolve, reject) => {
-      const url = `${GEMINI_WS_URL}?key=${apiKey}`;
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          setup: {
-            model: GEMINI_MODEL,
-            generationConfig: { responseModalities: [] },
-            realtimeInputConfig: {
-              mediaResolution: 'MEDIA_RESOLUTION_LOW',
-              speechConfig: { languageCode: 'en' },
-              automaticActivityDetection: {
-                disabled: false,
-                startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
-                endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-                prefixPaddingMs: 100,
-                silenceDurationMs: 1500,
-              },
-            },
-            inputAudioTranscription: {},
-            systemInstruction: {
-              parts: [{ text: 'You are a silent meeting transcriber. Do NOT respond with any text or audio. Only listen and transcribe.' }]
-            }
-          }
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.setupComplete) {
-            resolve(ws);
-            return;
-          }
-          if (data.serverContent?.inputTranscription?.text) {
-            const text = data.serverContent.inputTranscription.text.trim();
-            if (text) {
-              transcriptBufferRef.current += (transcriptBufferRef.current ? ' ' : '') + text;
-              const buffer = transcriptBufferRef.current;
-              if (/[.?!]\s*$/.test(buffer) || buffer.length > 200) {
-                const finalText = buffer.trim();
-                transcriptBufferRef.current = '';
-                setMeetingTranscript(prev => [...prev, finalText]);
-                setMeetingTranscriptLines(prev => [...prev, { text: finalText, timestamp: Date.now() }]);
-                if (meetingDbIdRef.current) {
-                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch((err) => { logger.error('Failed to save transcript:', err); });
-                }
-                const actions = detectActionItems(finalText);
-                if (actions.length > 0) {
-                  setMeetingActionItems(prev => [...prev, ...actions]);
-                }
-                cleanupWithGemini(finalText);
-              }
-            }
-          }
-          if (data.serverContent?.turnComplete) {
-            if (transcriptBufferRef.current.trim()) {
-              const finalText = transcriptBufferRef.current.trim();
-              transcriptBufferRef.current = '';
-              setMeetingTranscript(prev => [...prev, finalText]);
-              const actions = detectActionItems(finalText);
-              if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
-              cleanupWithGemini(finalText);
-            }
-          }
-        } catch (err) {
-          // '[Gemini] Message parse error:', err;
-        }
-      };
-
-      ws.onerror = (err) => {
-        logger.error('Gemini WebSocket error:', err);
-        reject(new Error('Gemini WebSocket connection failed'));
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-      };
-    });
-  }, [detectActionItems]);
-
-  const startAudioStreaming = useCallback((stream: MediaStream, ws: WebSocket) => {
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-    audioContextRef.current = audioContext;
-    streamRef.current = stream;
-    const source = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    analyserRef.current = analyser;
-    const processor = audioContext.createScriptProcessor(4096, 1, 1);
-    processor.onaudioprocess = (e) => {
-      if (!listeningRef.current || !ws || ws.readyState !== WebSocket.OPEN) return;
-      if (isMutedRef.current) { setAudioLevel(0); return; }
-      if (analyserRef.current) {
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        setAudioLevel(avg / 255);
-      }
-      const inputData = e.inputBuffer.getChannelData(0);
-      const pcm16 = new Int16Array(inputData.length);
-      for (let i = 0; i < inputData.length; i++) {
-        pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-      }
-      const bytes = new Uint8Array(pcm16.buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      try {
-        ws.send(JSON.stringify({
-          realtimeInput: {
-            mediaChunks: [{ data: btoa(binary), mimeType: 'audio/pcm;rate=16000' }]
-          }
-        }));
-      } catch { /* ignore */ }
-    };
-    source.connect(processor);
-    processor.connect(audioContext.destination);
-  }, []);
-
   const cleanupWithGemini = useCallback(async (text: string) => {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${text}` }] }],
-            generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${text}` }] }],
+        { maxOutputTokens: 512, temperature: 0.1 }
       );
-      if (response.ok) {
-        const data = await response.json();
-        const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (cleaned && cleaned !== text) {
-          setMeetingTranscript(prev => {
-            const updated = [...prev];
-            const idx = updated.indexOf(text);
-            if (idx !== -1) updated[idx] = cleaned;
-            return updated;
-          });
-        }
+      const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (cleaned && cleaned !== text) {
+        setMeetingTranscript(prev => {
+          const updated = [...prev];
+          const idx = updated.indexOf(text);
+          if (idx !== -1) updated[idx] = cleaned;
+          return updated;
+        });
       }
-    } catch (err) {
-      // '[Gemini] Cleanup error:', err;
+    } catch {
+      // '[Gemini] Cleanup error'
     }
   }, []);
 
@@ -1490,20 +1324,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         }
       } else {
         const prompt = `You are helping Kevin review a meeting transcript. Answer questions about the meeting content.\n\nMeeting from ${meeting.date.toLocaleDateString()}:\n${meeting.rawContent}\n\nUser question: ${question}\n\nGive a helpful, concise answer.`;
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders() },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1024 } })
-          }
+        const data = await geminiGenerate(
+          [{ parts: [{ text: prompt }] }],
+          { maxOutputTokens: 1024 }
         );
-        if (response.ok) {
-          const data = await response.json();
-          const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (answer) {
-            setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: answer, timestamp: Date.now() }]);
-          }
+        const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (answer) {
+          setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: answer, timestamp: Date.now() }]);
         }
       }
     } catch (e) {
