@@ -3,12 +3,13 @@
 // Returns grouped results: { tasks, agents, knowledge, library, campaigns, automations }
 // Each group: { items: [...], total: number }
 // Rank tasks: incomplete first, then by updated_at desc
-// Rank knowledge: title match first, then content match
+// Rank knowledge: FTS5 BM25 relevance (fallback: title match first, then content)
 // Support ?types=tasks,agents to filter result groups
 // Support ?limit=5&offset=0 per group
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
+import { sanitizeFtsQuery } from '@/lib/knowledgeSearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,18 +101,43 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Knowledge base ───────────────────────────────────────────────────────
-    // Rank: title match first, then content-only match
+    // Prefer FTS5 for BM25 relevance ranking; fall back to LIKE (title-first)
+    // when the FTS virtual table is unavailable or the query errors.
     if (wantType('knowledge')) {
       try {
-        const allKnowledge = db.prepare(`
-          SELECT id, title, category, scope, updatedAt,
-            CASE WHEN title LIKE ? THEN 0 ELSE 1 END AS rank_group
-          FROM knowledge_base
-          WHERE title LIKE ? OR content LIKE ?
-          ORDER BY rank_group ASC, updatedAt DESC
-        `).all(like, like, like) as Array<Record<string, unknown>>;
+        let allKnowledge: Array<Record<string, unknown>> = [];
+        const safeQuery = sanitizeFtsQuery(q);
+        let usedFts = false;
+
+        if (safeQuery) {
+          try {
+            allKnowledge = db.prepare(`
+              SELECT kb.id, kb.title, kb.category, kb.scope, kb.updatedAt
+              FROM knowledge_base kb
+              JOIN knowledge_base_fts fts ON fts.rowid = kb.rowid
+              WHERE knowledge_base_fts MATCH ?
+              ORDER BY kb.pinned DESC, rank
+            `).all(safeQuery) as Array<Record<string, unknown>>;
+            usedFts = true;
+          } catch {
+            // FTS virtual table unavailable — fall through to LIKE
+          }
+        }
+
+        if (!usedFts) {
+          // LIKE fallback: title match ranks above content-only match
+          const rows = db.prepare(`
+            SELECT id, title, category, scope, updatedAt,
+              CASE WHEN title LIKE ? THEN 0 ELSE 1 END AS rank_group
+            FROM knowledge_base
+            WHERE title LIKE ? OR content LIKE ?
+            ORDER BY rank_group ASC, updatedAt DESC
+          `).all(like, like, like) as Array<Record<string, unknown>>;
+          allKnowledge = rows.map(({ rank_group: _r, ...rest }) => rest);
+        }
+
         result.knowledge = {
-          items: allKnowledge.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
+          items: allKnowledge.slice(offset, offset + limit),
           total: allKnowledge.length,
         };
       } catch {
