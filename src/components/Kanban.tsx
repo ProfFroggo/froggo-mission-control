@@ -923,9 +923,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           <div className="flex items-center gap-2">
             {/* Group 1: Search + Filters + Sort */}
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim flex-shrink-0" />
+              <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim flex-shrink-0" />
               <input
                 type="text"
+                aria-label="Search tasks"
                 placeholder="Search tasks..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
@@ -936,7 +937,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <button
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Filter tasks"
-              aria-pressed={showFilters}
+              aria-expanded={showFilters}
+              aria-controls="kanban-filters-panel"
+              aria-haspopup="true"
               className={`icon-text px-3 py-2 rounded-lg border transition-all ${
                 activeFiltersCount > 0
                   ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
@@ -956,7 +959,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <button
                 onClick={() => setShowSortMenu(v => !v)}
                 aria-label="Sort tasks"
-                aria-pressed={showSortMenu}
+                aria-expanded={showSortMenu}
+                aria-haspopup="listbox"
+                aria-controls="kanban-sort-menu"
                 className={`icon-text px-3 py-2 rounded-lg border transition-all ${
                   globalSort !== 'newest'
                     ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
@@ -968,10 +973,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 <ChevronDown size={14} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showSortMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[220px] py-1">
+                <div id="kanban-sort-menu" role="listbox" aria-label="Sort options" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[220px] py-1">
                   {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
                     <button
                       key={opt}
+                      role="option"
+                      aria-selected={globalSort === opt}
                       onClick={() => { setGlobalSort(opt); setShowSortMenu(false); }}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-mission-control-border/40 ${globalSort === opt ? 'text-mission-control-accent font-medium' : ''}`}
                     >
@@ -990,13 +997,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <button
                 onClick={() => setShowSaveViewDialog(v => !v)}
                 aria-label="Save current view"
-                aria-pressed={showSaveViewDialog}
+                aria-expanded={showSaveViewDialog}
+                aria-controls="kanban-save-view-panel"
                 className="icon-text px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/50 transition-all"
               >
                 <Save size={16} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showSaveViewDialog && (
-                <div className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
+                <div id="kanban-save-view-panel" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
                   <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
                   <input
                     autoFocus
@@ -1042,13 +1050,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <button
                 onClick={() => setShowJumpToTask(v => !v)}
                 aria-label="Jump to task"
-                aria-pressed={showJumpToTask}
+                aria-expanded={showJumpToTask}
+                aria-controls="kanban-jump-to-panel"
                 className="icon-text px-3 py-2 border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-all"
               >
                 <Hash size={16} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showJumpToTask && (
-                <div className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
+                <div id="kanban-jump-to-panel" className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
                   <input
                     autoFocus
                     type="text"
@@ -1084,14 +1093,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border animate-in slide-in-from-top-2 space-y-3">
+          <div id="kanban-filters-panel" className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border animate-in slide-in-from-top-2 space-y-3">
             {/* Row 1: dropdowns */}
             <div className="flex items-center gap-4 flex-wrap">
               {/* Project — hidden when already scoped to a project */}
               {!projectId && (
                 <div className="icon-text-tight">
-                  <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                  <FolderOpen size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
+                  <label className="sr-only" htmlFor="filter-project">Project</label>
                   <select
+                    id="filter-project"
                     value={filters.project}
                     onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
                     className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
@@ -1105,8 +1116,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
               {/* Assignee dropdown */}
               <div className="icon-text-tight">
-                <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" />
+                <Bot size={16} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
+                <label className="sr-only" htmlFor="filter-assignee">Assignee</label>
                 <select
+                  id="filter-assignee"
                   value={filters.assignee}
                   onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
                   className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-sm"
@@ -1557,10 +1570,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         isOpen={showKeyboardHelp}
         onClose={() => setShowKeyboardHelp(false)}
         size="sm"
-        ariaLabel="Keyboard shortcuts"
+        ariaLabelledby="keyboard-shortcuts-title"
       >
         <BaseModalHeader
           title="Keyboard Shortcuts"
+          titleId="keyboard-shortcuts-title"
           icon={<Keyboard size={20} className="flex-shrink-0" />}
           onClose={() => setShowKeyboardHelp(false)}
           closeButtonLabel="Close keyboard shortcuts"
