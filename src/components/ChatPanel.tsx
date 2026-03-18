@@ -1141,14 +1141,8 @@ export default function ChatPanel() {
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
-          e.preventDefault();
-        }
-      }}
-      aria-label="Chat panel - drop files here"
+      role="region"
+      aria-label="Chat panel"
     >
       {/* Drag overlay */}
       {isDragging && (
@@ -1437,24 +1431,28 @@ export default function ChatPanel() {
               return (
                 <div
                   key={att.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors cursor-pointer"
-                  onClick={() => setPreviewFile(att)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewFile(att); } }}
-                  title="Click to preview"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Preview attachment ${att.name}`}
+                  className="flex items-center gap-1 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
                 >
-                  <Icon size={16} className="text-mission-control-accent" />
-                  <span className="text-sm truncate max-w-32">{att.name}</span>
-                  <span className="text-xs text-mission-control-text-dim">
-                    {(att.size / 1024).toFixed(1)}KB
-                  </span>
                   <button
-                    onClick={() => removeAttachment(att.id)}
-                    className="p-1 hover:bg-mission-control-border rounded"
+                    type="button"
+                    onClick={() => setPreviewFile(att)}
+                    className="flex items-center gap-2 px-3 py-2 cursor-pointer bg-transparent border-none text-inherit"
+                    title="Click to preview"
+                    aria-label={`Preview attachment ${att.name}`}
                   >
-                    <X size={14} className="text-mission-control-text-dim" />
+                    <Icon size={16} className="text-mission-control-accent" aria-hidden="true" />
+                    <span className="text-sm truncate max-w-32">{att.name}</span>
+                    <span className="text-xs text-mission-control-text-dim">
+                      {(att.size / 1024).toFixed(1)}KB
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(att.id)}
+                    className="p-1 mr-1 hover:bg-mission-control-border rounded"
+                    aria-label={`Remove attachment ${att.name}`}
+                  >
+                    <X size={14} className="text-mission-control-text-dim" aria-hidden="true" />
                   </button>
                 </div>
               );
