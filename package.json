@@ -63,7 +63,7 @@
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "dev": "next dev",
-    "build": "next build",
+    "build": "TURBOPACK= next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",

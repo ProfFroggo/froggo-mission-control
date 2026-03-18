@@ -4,31 +4,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { syncArticleToFilesystem } from '@/lib/knowledgeSync';
+import { sanitizeFtsQuery } from '@/lib/knowledgeSearch';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * Sanitize a user-provided search string for safe use in FTS5 MATCH expressions.
- *
- * FTS5 has special syntax characters: " ( ) ^ * - that can cause SQLITE_ERROR
- * when passed directly as MATCH operands. This function strips those characters
- * so that arbitrary user input never triggers a parse error in the FTS engine.
- *
- * Hyphens are also stripped: FTS5 can treat "-term" as a NOT operator, and the
- * unicode61 tokenizer treats hyphens as word boundaries — so stripping them
- * produces the same tokens the tokenizer would anyway (e.g. "step-by-step"
- * becomes "step by step", matching all three terms).
- *
- * We deliberately do NOT support FTS5 boolean operators from user input —
- * the query is treated as a set of plain terms, all of which must appear.
- */
-// Canonical export lives in @/lib/knowledgeSearch — do not export from route file.
-function sanitizeFtsQuery(q: string): string {
-  return q
-    .replace(/["()*^-]/g, ' ') // strip FTS5 special chars (including hyphen/NOT operator)
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 export async function GET(req: NextRequest) {
   const db = getDb();

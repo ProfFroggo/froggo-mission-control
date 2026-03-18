@@ -1,3 +1,6 @@
+// Force dynamic rendering — internal tool, not a public site.
+export const dynamic = 'force-dynamic';
+
 import type { Metadata } from 'next';
 import '../src/index.css';
 import '../src/accessibility.css';

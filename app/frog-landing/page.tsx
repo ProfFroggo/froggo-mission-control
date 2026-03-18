@@ -1,4 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+'use client';
+
 
 /**
  * Frog Landing Page — main route.
