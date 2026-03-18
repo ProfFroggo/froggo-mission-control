@@ -317,6 +317,26 @@ describe('GET /api/knowledge', () => {
     expect(sql).toContain('<mark>');
   });
 
+  it('places knowledge_base_fts as the primary FROM table so bm25/snippet work at runtime', async () => {
+    // SQLite FTS5: bm25() and snippet() require the FTS virtual table to be the
+    // FIRST (leftmost) table in the FROM clause. When it is only a JOIN target,
+    // SQLite raises "no such function" at runtime even though the mock passes.
+    mockAll.mockReturnValue([sampleRow]);
+    const { GET } = await import('../../../app/api/knowledge/route');
+    const req = makeRequest('http://localhost/api/knowledge?search=agent');
+    await GET(req);
+
+    const prepareCall = mockPrepare.mock.calls.find(
+      (call) => (call[0] as string).includes('MATCH')
+    );
+    expect(prepareCall).toBeDefined();
+    const sql = (prepareCall?.[0] as string).replace(/\s+/g, ' ');
+    const ftsFromPos  = sql.indexOf('FROM knowledge_base_fts');
+    const joinKbPos   = sql.indexOf('JOIN knowledge_base');
+    expect(ftsFromPos).toBeGreaterThanOrEqual(0); // FTS table must be in FROM
+    expect(joinKbPos).toBeGreaterThan(ftsFromPos); // real table comes after via JOIN
+  });
+
   it('includes matchSnippet in FTS search results', async () => {
     const rowWithSnippet = {
       ...sampleRow,
