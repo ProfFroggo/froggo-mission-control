@@ -8,8 +8,8 @@ import { sseEmitter } from '@/lib/sseEmitter';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Re-export for convenience (phase 82 compatibility)
-export { emitSSEEvent } from '@/lib/sseEmitter';
+// NOTE: emitSSEEvent is available from '@/lib/sseEmitter' — import directly.
+// Route files must not export non-HTTP symbols (Next.js App Router constraint).
 
 // ── SSE GET handler ────────────────────────────────────────────────────────────
 
