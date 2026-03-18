@@ -22,7 +22,8 @@ export const dynamic = 'force-dynamic';
  * We deliberately do NOT support FTS5 boolean operators from user input —
  * the query is treated as a set of plain terms, all of which must appear.
  */
-export function sanitizeFtsQuery(q: string): string {
+// Canonical export lives in @/lib/knowledgeSearch — do not export from route file.
+function sanitizeFtsQuery(q: string): string {
   return q
     .replace(/["()*^-]/g, ' ') // strip FTS5 special chars (including hyphen/NOT operator)
     .replace(/\s+/g, ' ')
