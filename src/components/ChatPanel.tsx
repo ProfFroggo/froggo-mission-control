@@ -1186,6 +1186,8 @@ export default function ChatPanel() {
               isVoiceMode ? 'bg-review-subtle text-review' : 'bg-mission-control-border text-mission-control-text-dim hover:text-review'
             }`}
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+            aria-label={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+            aria-pressed={isVoiceMode}
           >
             {isVoiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
           </button>
@@ -1195,6 +1197,8 @@ export default function ChatPanel() {
               showSearch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title={showSearch ? 'Hide search' : 'Search messages'}
+            aria-label={showSearch ? 'Hide message search' : 'Search messages'}
+            aria-expanded={showSearch}
           >
             <Search size={16} />
           </button>
@@ -1204,6 +1208,8 @@ export default function ChatPanel() {
               speakResponses ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim'
             }`}
             title={speakResponses ? 'Voice on' : 'Voice off'}
+            aria-label={speakResponses ? 'Disable voice responses' : 'Enable voice responses'}
+            aria-pressed={speakResponses}
           >
             {speakResponses ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
@@ -1211,6 +1217,7 @@ export default function ChatPanel() {
             onClick={clearChat}
             className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             title="Clear chat"
+            aria-label="Clear chat history"
           >
             <Trash2 size={16} />
           </button>
@@ -1229,6 +1236,8 @@ export default function ChatPanel() {
               showRoomList ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
             title="Chat Rooms"
+            aria-label={`Chat rooms (${rooms.length})`}
+            aria-expanded={showRoomList}
           >
             <Users size={16} />
             {rooms.length > 0 && (
@@ -1241,6 +1250,7 @@ export default function ChatPanel() {
             onClick={() => setShowCreateRoom(true)}
             className="p-2 rounded-lg bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
             title="Create Chat Room"
+            aria-label="Create new chat room"
           >
             <MessageSquarePlus size={16} />
           </button>
@@ -1517,14 +1527,16 @@ export default function ChatPanel() {
             type="file"
             multiple
             className="hidden"
+            aria-label="File attachment"
             onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
           />
-          
+
           {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all"
             title="Attach files"
+            aria-label="Attach files"
           >
             <Paperclip size={20} />
           </button>
@@ -1536,6 +1548,8 @@ export default function ChatPanel() {
                 ? 'bg-error text-white animate-pulse'
                 : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
+            aria-label={listening ? 'Stop voice input' : 'Start voice input'}
+            aria-pressed={listening}
           >
             {listening ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
@@ -1550,6 +1564,7 @@ export default function ChatPanel() {
                 : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10'
             }`}
             title="AI suggested replies"
+            aria-label="Generate suggested replies"
           >
             {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
           </button>
@@ -1571,6 +1586,7 @@ export default function ChatPanel() {
             onClick={() => sendMessage()}
             disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
             title="Send message (Enter)"
+            aria-label="Send message"
             className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
