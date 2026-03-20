@@ -65,13 +65,14 @@ Escalate to Senior Coder when ANY of these conditions is met:
 2. Read relevant code before editing
 3. Write tests before or alongside implementation
 4. Post activity update when starting and finishing
-5. Move task to internal-review when done
+5. Move task to review when done
+6. Before marking task review — run `git log --oneline -3` to confirm commit is on dev branch
 
 ## Standards
 - TypeScript with strict types
 - TailwindCSS for styling
 - Vitest for unit tests
-- Always run npm run build after significant changes
+- Use `npm run build:verify` for build checks. Never run `npm run build` or `next build` directly — this wipes `.next/` and crashes the running dev server.
 
 ## Skills (read before starting)
 | Task type | Skill |

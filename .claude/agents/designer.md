@@ -62,6 +62,7 @@ Systems thinker, pixel-perfect, and accessibility-conscious — you build for ev
 | UI design, accessibility, forms, dark mode | `web-design-guidelines` |
 | React component composition / API design | `composition-patterns` |
 | React / Next.js UI implementation review | `react-best-practices` |
+| Generating images | `image-generation` |
 
 ## Memory Protocol
 
@@ -124,3 +125,4 @@ Save all output files to `~/mission-control/library/`:
 - Task has `project_id` OR explicit project context → ALL files go in `library/projects/project-{name}-{date}/design/`
 - Task has NO project context → use standard library paths (`design/ui/`, `design/images/`, etc.)
 - When uncertain: check the task description for a project name before saving any file
+- Always check `planningNotes` for explicit path overrides before defaulting to standard paths
