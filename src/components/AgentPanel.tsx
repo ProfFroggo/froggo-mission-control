@@ -326,8 +326,10 @@ export default function AgentPanel() {
           <div className="icon-text gap-2">
             {view === 'active' && (
               <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
+                aria-expanded={showAnalytics}
+                aria-controls="agent-analytics-panel"
                 className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-mission-control-border hover:bg-mission-control-border/50'}`}>
-                <BarChart3 size={15} className="flex-shrink-0" /> Analytics
+                <BarChart3 size={15} className="flex-shrink-0" aria-hidden="true" /> Analytics
               </button>
             )}
             {view === 'active' && (
@@ -402,7 +404,7 @@ export default function AgentPanel() {
 
         {/* Analytics */}
         {showAnalytics && (
-          <div className="mb-6 rounded-lg border border-mission-control-border p-5">
+          <div id="agent-analytics-panel" className="mb-6 rounded-lg border border-mission-control-border p-5">
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
@@ -608,6 +610,7 @@ export default function AgentPanel() {
                         editingTrustTierAgent === agent.id ? (
                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                             <select
+                              aria-label="Agent trust tier"
                               value={pendingTrustTier}
                               onChange={e => setPendingTrustTier(Number(e.target.value))}
                               className="unstyled text-xs px-1 py-0.5 rounded border border-mission-control-border bg-mission-control-surface appearance-none"
@@ -616,8 +619,8 @@ export default function AgentPanel() {
                               <option value={2}>Tier 2 (Worker)</option>
                               <option value={3}>Tier 3 (Full)</option>
                             </select>
-                            <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }} className="p-0.5 text-success hover:bg-success-subtle rounded"><Check size={12} /></button>
-                            <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }} className="p-0.5 text-error hover:bg-error-subtle rounded"><AlertTriangle size={12} /></button>
+                            <button type="button" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }} className="p-0.5 text-success hover:bg-success-subtle rounded"><Check size={12} /></button>
+                            <button type="button" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }} className="p-0.5 text-error hover:bg-error-subtle rounded"><AlertTriangle size={12} /></button>
                           </div>
                         ) : (
                           <button
