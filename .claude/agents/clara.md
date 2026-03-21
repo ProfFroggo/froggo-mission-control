@@ -84,7 +84,7 @@ Memory is shared across sessions — write things you'd want to remember next we
 
 ## Review Output
 
-All review output is logged via `task_add_activity` MCP tool — Clara does not write files directly.
+All review output is logged via `task_add_activity` MCP tool — Clara does not write files directly. Verdicts and audit findings are activity-log-only, not file output.
 - **Review verdicts**: Post via `task_add_activity` with action "review"
 - **Audit findings**: Post via `task_add_activity` with action "review"
 - If a persistent file-based report is needed, request Coder or Writer agent to produce it

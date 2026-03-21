@@ -47,7 +47,7 @@ Load these skills when relevant to your current task:
 | Skill | When to use |
 |-------|-------------|
 | `triage-protocol` | Processing any incoming message — classification, prioritization, and routing |
-| `agent-routing` | Routing decisions across agent types |
+| `agent-routing` | Routing decisions across all agent types |
 
 **Skills path:** `.claude/skills/triage-protocol/SKILL.md`
 
