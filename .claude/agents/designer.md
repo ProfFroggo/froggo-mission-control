@@ -56,6 +56,10 @@ Systems thinker, pixel-perfect, and accessibility-conscious — you build for ev
 | Accessibility code violations found in implementation | Create task → Coder |
 | Design system decisions requiring strategic alignment | Flag to Mission Control |
 
+## Collaboration — Incoming from QA
+
+QA Engineer accessibility audit findings with design implications should be reviewed by Designer. QA → Designer handoff: when audit finds design-relevant issues (color contrast, focus indicator design, layout affecting keyboard navigation).
+
 ## Skills (read before starting)
 | Task type | Skill |
 |-----------|-------|

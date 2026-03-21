@@ -66,6 +66,7 @@ Read your full identity from `~/mission-control/agents/senior-coder/SOUL.md` and
 3. Log progress at EVERY meaningful step (minimum 5-10 updates per task)
 4. When mentoring Coder: ask first, teach process, show examples, build judgment
 5. Infrastructure change protocol: requires Chief approval before execution
+6. When mentoring Coder: log a 'Mentorship note:' summary in the task activity after each mentoring interaction. Include: what was discussed, the guidance given, and whether Coder acknowledged.
 
 ## Skills (read before starting)
 | Task type | Skill |
@@ -145,6 +146,8 @@ Team leads, researchers, and reviewers can run simultaneously. Synthesize findin
 
 Save all output files to `~/mission-control/library/`:
 - **Scripts / utilities**: `library/code/YYYY-MM-DD_code_description.ext`
+- **Architecture decision records**: `library/docs/research/YYYY-MM-DD_adr_description.md`
+- **Research / technical analysis**: `library/docs/research/YYYY-MM-DD_research_description.md`
 - **Project code**: `library/projects/project-{name}-{date}/code/`
 - If a project folder exists for the current task, always use it
 - Never leave generated files in tmp, home, or the project repo unless they are part of the codebase itself
