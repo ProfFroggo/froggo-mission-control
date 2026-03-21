@@ -235,6 +235,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     return 'newest';
   });
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortTriggerRef = useRef<HTMLButtonElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // Saved views
   const [savedViews, setSavedViews] = useState<SavedView[]>(() => {
@@ -294,6 +296,15 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   useEffect(() => {
     try { localStorage.setItem('kanban.sort', globalSort); } catch { /* ignore */ }
   }, [globalSort]);
+
+  // Focus the currently selected (or first) menu item when the sort menu opens
+  useEffect(() => {
+    if (showSortMenu && sortMenuRef.current) {
+      const items = Array.from(sortMenuRef.current.querySelectorAll<HTMLElement>('[role="menuitemradio"]'));
+      const selected = sortMenuRef.current.querySelector<HTMLElement>('[aria-checked="true"]');
+      (selected ?? items[0])?.focus();
+    }
+  }, [showSortMenu]);
 
   const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
     setColumnSettings(prev => ({
@@ -957,10 +968,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
             <div className="relative">
               <button
+                ref={sortTriggerRef}
                 onClick={() => setShowSortMenu(v => !v)}
                 aria-label="Sort tasks"
                 aria-expanded={showSortMenu}
-                aria-haspopup="listbox"
+                aria-haspopup="menu"
                 aria-controls="kanban-sort-menu"
                 className={`icon-text px-3 py-2 rounded-lg border transition-all ${
                   globalSort !== 'newest'
@@ -973,13 +985,48 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 <ChevronDown size={14} className="flex-shrink-0" aria-hidden="true" />
               </button>
               {showSortMenu && (
-                <div id="kanban-sort-menu" role="listbox" aria-label="Sort options" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[220px] py-1">
+                <div
+                  id="kanban-sort-menu"
+                  ref={sortMenuRef}
+                  role="menu"
+                  aria-label="Sort options"
+                  className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[220px] py-1"
+                  onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                    const items = Array.from(
+                      sortMenuRef.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? []
+                    );
+                    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+                    switch (e.key) {
+                      case 'ArrowDown':
+                        e.preventDefault();
+                        items[(currentIndex + 1) % items.length]?.focus();
+                        break;
+                      case 'ArrowUp':
+                        e.preventDefault();
+                        items[(currentIndex - 1 + items.length) % items.length]?.focus();
+                        break;
+                      case 'Home':
+                        e.preventDefault();
+                        items[0]?.focus();
+                        break;
+                      case 'End':
+                        e.preventDefault();
+                        items[items.length - 1]?.focus();
+                        break;
+                      case 'Escape':
+                        e.preventDefault();
+                        setShowSortMenu(false);
+                        sortTriggerRef.current?.focus();
+                        break;
+                    }
+                  }}
+                >
                   {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
                     <button
                       key={opt}
-                      role="option"
-                      aria-selected={globalSort === opt}
-                      onClick={() => { setGlobalSort(opt); setShowSortMenu(false); }}
+                      role="menuitemradio"
+                      aria-checked={globalSort === opt}
+                      onClick={() => { setGlobalSort(opt); setShowSortMenu(false); sortTriggerRef.current?.focus(); }}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-mission-control-border/40 ${globalSort === opt ? 'text-mission-control-accent font-medium' : ''}`}
                     >
                       {GLOBAL_SORT_LABELS[opt]}
