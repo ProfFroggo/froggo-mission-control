@@ -484,18 +484,19 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setManagingAgent({ id: agent.id, name: agent.name });
-                    }
-                  }}
-                  aria-label={`Open ${agent.name} management`}
                   className={`group relative rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col ${theme.border}`}
                 >
+                  {/* Full-card button — covers background/inactive areas for mouse + keyboard access.
+                      z-[1] puts it above static content (which is z-auto) so pointer events on
+                      non-interactive card areas route here. Interactive sections use relative z-[2]
+                      to sit above this button. Settings button keeps its existing z-10. */}
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
+                    aria-label={`Open ${agent.name} management`}
+                  />
+
                   {/* Color accent bar */}
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
 
@@ -594,8 +595,8 @@ export default function AgentPanel() {
                       </div>
                     )}
 
-                    {/* Footer: capability tags + tier badge */}
-                    <div className="flex items-center gap-1 flex-wrap">
+                    {/* Footer: capability tags + tier badge — relative z-[2] lifts above cover button */}
+                    <div className="flex items-center gap-1 flex-wrap relative z-[2]">
                       {agent.capabilities?.slice(0, 3).map((cap, i) => (
                         <span key={i} className={`px-1.5 py-0.5 text-xs font-medium rounded max-w-[120px] truncate ${theme.bg} ${theme.text}`}>
                           {cap}
@@ -642,8 +643,8 @@ export default function AgentPanel() {
                       )}
                     </div>
 
-                    {/* Start/Stop + Soul link */}
-                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t ${theme.border}`}>
+                    {/* Start/Stop + Soul link — relative z-[2] lifts above cover button */}
+                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t relative z-[2] ${theme.border}`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
                         <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors">
