@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
+import { evaluateTransition, type TaskStatus } from './stateMachine';
 
 // ── DB singleton ──────────────────────────────────────────────────────────────
 // One connection for the lifetime of the MCP process. WAL mode set once.
@@ -812,67 +813,53 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         if (!current) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
 
-        // Agents cannot set internal-review — the system manages Pre-review automatically
-        if (args?.status === 'internal-review') {
-          return { content: [{ type: 'text', text: JSON.stringify({
-            error: 'WORKFLOW_VIOLATION: agents cannot set status to internal-review. The Pre-review column is managed by the system — it is set automatically when a task is assigned to an agent. Clara then reviews and dispatches.',
-            hint: 'If you finished work, set status="review". If blocked, set status="human-review".',
-            recovery: 'Set status="review" with a summary of completed work in lastAgentUpdate. Clara will verify and approve.',
-          })}]};
-        }
-
-        // HARD RULE: todo → in-progress is blocked — tasks must pass Clara's Pre-review gate first
-        if (args?.status === 'in-progress' && current.status === 'todo') {
-          return { content: [{ type: 'text', text: JSON.stringify({
-            error: 'WORKFLOW_VIOLATION: cannot move directly from todo to in-progress. Tasks must pass Clara\'s Pre-review gate first. The system sets internal-review automatically when an agent is assigned — Clara will approve and dispatch the agent.',
-            recovery: 'Check task status with task_get first. Ensure planningNotes and subtasks are set, then wait for Clara\'s pre-review approval before proceeding.',
-          }) }] };
-        }
-
-        // HARD RULE: only Clara can mark a task done — agents must move to review first
-        if (args?.status === 'done' && !['review'].includes(current.status)) {
-          // Allow system/clara to advance (reviewStatus=approved auto-advance is handled below)
-          const callerIsClara = args?.reviewStatus === 'approved'; // Clara sets both together
-          if (!callerIsClara) {
-            return { content: [{ type: 'text', text: JSON.stringify({
-              error: 'WORKFLOW_VIOLATION: agents cannot mark tasks done directly. Move to status="review" first — Clara will approve and advance to done.',
-              hint: 'Set status="review" with lastAgentUpdate describing what was completed. Clara reviews and moves to done.',
-              recovery: 'Set status="review" with lastAgentUpdate summarising what was built and where outputs are. Clara will approve and close the task.',
-            }) }] };
-          }
-        }
-
-        // SOFT GUARD: warn if moving to review with incomplete subtasks
-        if (args?.status === 'review') {
-          const incomplete = (db.prepare(
-            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ? AND completed = 0'
-          ).get(taskId) as { c: number }).c;
-          const total = (db.prepare(
-            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?'
-          ).get(taskId) as { c: number }).c;
-          if (total > 0 && incomplete > 0) {
-            return { content: [{ type: 'text', text: JSON.stringify({
-              error: `INCOMPLETE_WORK: ${incomplete} of ${total} subtasks are not yet completed. Complete all subtasks before submitting for review, or mark irrelevant ones complete with a note.`,
-              incomplete,
-              total,
-              recovery: `Use task_get to see the incompleteSubtasks list with their IDs, then call subtask_update({ id: "<subtask-id>", completed: true }) for each one before retrying.`,
-            }) }] };
-          }
-        }
-
-        const sets = ['updatedAt = ?'];
-        const vals: any[] = [now];
-
+        // ── Compute effective new status (auto-advance applies reviewStatus changes) ─
+        // Must happen BEFORE the state machine check so guards run on the final status.
         let newStatus = args?.status as string | undefined;
         let newReviewStatus = args?.reviewStatus as string | undefined;
 
-        // Auto-advance status based on reviewStatus.
-        // Fires when reviewStatus is being set AND the task is (or is moving to) 'review'.
+        // Auto-advance: when reviewStatus is being set AND the effective status is 'review',
+        // advance to 'done' (approved) or return to 'in-progress' (rejected/needs-changes).
         const effectiveStatus = newStatus ?? current.status;
         if (newReviewStatus !== undefined && effectiveStatus === 'review') {
           if (newReviewStatus === 'approved') newStatus = 'done';
           else if (newReviewStatus === 'rejected' || newReviewStatus === 'needs-changes') newStatus = 'in-progress';
         }
+
+        // ── State machine guard ─────────────────────────────────────────────────
+        // Validates every status change (including auto-advanced ones) through the
+        // formal pipeline state machine. Absent from TRANSITIONS = blocked (whitelist).
+        // Invalid transitions return a structured InvalidTransition error with
+        // reason, hint, and recovery. guardsPassed is captured for the audit trail.
+        let smGuardsPassed: string[] = [];
+        if (newStatus !== undefined && newStatus !== current.status) {
+          // Fetch subtask counts for the allSubtasksComplete guard (single cheap query)
+          const subtaskCounts = db.prepare(
+            'SELECT COUNT(*) as total, SUM(CASE WHEN completed = 0 THEN 1 ELSE 0 END) as incomplete FROM subtasks WHERE taskId = ?'
+          ).get(taskId) as { total: number; incomplete: number | null } | undefined;
+
+          const smResult = evaluateTransition({
+            from: current.status as TaskStatus,
+            to: newStatus as TaskStatus,
+            args: {
+              reviewStatus: newReviewStatus,
+              agentId: args?.agentId as string | undefined,
+            },
+            task: {
+              incompleteSubtaskCount: subtaskCounts?.incomplete ?? 0,
+              totalSubtaskCount: subtaskCounts?.total ?? 0,
+            },
+          });
+
+          if (!smResult.allowed) {
+            return { content: [{ type: 'text', text: JSON.stringify(smResult) }] };
+          }
+
+          smGuardsPassed = smResult.guardsPassed;
+        }
+
+        const sets = ['updatedAt = ?'];
+        const vals: any[] = [now];
 
         if (newStatus !== undefined)               { sets.push('status = ?');          vals.push(newStatus); }
         if (args?.description !== undefined)        { sets.push('description = ?');      vals.push(args.description); }
