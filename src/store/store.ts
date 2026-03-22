@@ -229,6 +229,9 @@ interface Store {
   tasks: Task[];
   taskCounts: { totalDone: number; totalArchived: number };
   loadTasksFromDB: () => Promise<void>;
+  /** Merge fields into local store state only — does NOT persist to the database.
+   *  Use for hydrating deferred fields (e.g. planningNotes loaded lazily on task open). */
+  patchTaskLocal: (id: string, updates: Partial<Task>) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (id: string, status: TaskStatus) => void;
@@ -519,7 +522,10 @@ export const useStore = create<Store>()(
           get().setLoading('tasks', true);
           // ?include=subtasks eliminates the N+1 subtask waterfall (was 20+ sequential HTTP rounds
           // for ~200 tasks in batches of 10, adding ~8 s to LCP). One request, two DB queries.
-          const result = await taskApi.getAll({ include: 'subtasks' });
+          // ?summary=1 excludes planningNotes and subtask descriptions from the bulk response
+          // (~396 KB saved → ~311 KB payload) so the dashboard paints faster. TaskDetailPanel
+          // lazy-hydrates planningNotes via patchTaskLocal when a task is first opened.
+          const result = await taskApi.getAll({ include: 'subtasks', summary: '1' });
           // API returns a plain array; support both plain array and legacy wrapped format
           const taskArray: any[] = Array.isArray(result) ? result : (result?.tasks ?? []);
           // Convert to store format — DB uses camelCase column names.
@@ -559,6 +565,13 @@ export const useStore = create<Store>()(
           get().setLoading('tasks', false);
           setTimeout(() => { (globalThis as any).__taskLoadInFlight = false; }, 3000);
         }
+      },
+      patchTaskLocal: (id: string, updates: Partial<Task>) => {
+        // Local-only state merge — does NOT persist to the database.
+        // Used to hydrate deferred fields (e.g. planningNotes) after lazy-fetch in TaskDetailPanel.
+        set((s: Store) => ({
+          tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates } : t)
+        }));
       },
       addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
         const newTask: Task = {

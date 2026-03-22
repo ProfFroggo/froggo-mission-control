@@ -1,8 +1,38 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextRequest, NextResponse } from 'next/server';
+import { gzipSync } from 'zlib';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { createNotification } from '@/lib/notificationWriter';
+
+/** Serialize `data` to JSON and gzip-compress it if the client supports it.
+ *  Next.js App Router does not apply the global compression middleware to
+ *  API routes, so large responses must be compressed here explicitly. */
+function jsonResponse(
+  data: unknown,
+  request: NextRequest,
+  init?: ResponseInit
+): NextResponse {
+  const json = JSON.stringify(data);
+  const acceptEncoding = request.headers.get('Accept-Encoding') ?? '';
+  const supportsGzip = acceptEncoding.includes('gzip');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
+    'Vary': 'Accept-Encoding',
+    ...((init?.headers ?? {}) as Record<string, string>),
+  };
+
+  if (supportsGzip) {
+    const compressed = gzipSync(Buffer.from(json, 'utf8'), { level: 6 });
+    headers['Content-Encoding'] = 'gzip';
+    headers['Content-Length'] = String(compressed.length);
+    return new NextResponse(compressed, { ...init, headers });
+  }
+
+  return new NextResponse(json, { ...init, headers });
+}
 
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
@@ -82,6 +112,16 @@ export async function GET(request: NextRequest) {
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
 
+    // ?summary=1 — strip large text-only fields to reduce initial payload for faster LCP.
+    // Excluded fields are lazy-hydrated by TaskDetailPanel when a task is opened.
+    // Savings: planningNotes (~319KB) + subtask descriptions (~77KB) = ~396KB off the wire.
+    const summaryMode = searchParams.get('summary') === '1';
+    if (summaryMode) {
+      for (const task of tasks) {
+        delete (task as any).planningNotes;
+      }
+    }
+
     // ?include=subtasks — fetch all subtasks for these tasks in one query instead of N+1 round-trips.
     // This is critical for LCP: without it, the client makes 20+ sequential HTTP rounds to load
     // subtasks for 200 tasks (batches of 10), adding ~8 seconds to LCP.
@@ -89,8 +129,15 @@ export async function GET(request: NextRequest) {
     if (includeSubtasks && tasks.length > 0) {
       const taskIds = tasks.map((t) => t.id as string);
       const placeholders = taskIds.map(() => '?').join(',');
+
+      // In summary mode, only select fields needed for Kanban board rendering (not description —
+      // that's loaded fresh by TaskDetailPanel via loadSubtasksForTask on open).
+      const subtaskSelect = summaryMode
+        ? 'SELECT id, taskId, title, completed, position, assignedTo, createdAt FROM subtasks'
+        : 'SELECT * FROM subtasks';
+
       const subtaskRows = db.prepare(
-        `SELECT * FROM subtasks WHERE taskId IN (${placeholders}) ORDER BY taskId, position ASC, createdAt ASC`
+        `${subtaskSelect} WHERE taskId IN (${placeholders}) ORDER BY taskId, position ASC, createdAt ASC`
       ).all(...taskIds) as Record<string, unknown>[];
 
       // Group subtasks by taskId and coerce completed boolean
@@ -108,13 +155,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(tasks, {
-      headers: {
-        'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
-        'Content-Type': 'application/json',
-        'Vary': 'Accept-Encoding',
-      },
-    });
+    return jsonResponse(tasks, request);
   } catch (error) {
     console.error('GET /api/tasks error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

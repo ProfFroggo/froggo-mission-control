@@ -60,6 +60,7 @@ interface TaskDetailPanelProps {
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const agents = useStore(s => s.agents);
   const updateTask = useStore(s => s.updateTask);
+  const patchTaskLocal = useStore(s => s.patchTaskLocal);
   const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
   const loadSubtasksForTask = useStore(s => s.loadSubtasksForTask);
   const addSubtask = useStore(s => s.addSubtask);
@@ -137,6 +138,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, [task]);
+
+  // Hydrate planningNotes lazily — the initial bulk load uses ?summary=1 which omits this
+  // large field (~319 KB across all tasks) to keep LCP fast. Fetch the full task once on open.
+  // planningNotes === undefined means "not yet loaded"; '' means "genuinely empty".
+  useEffect(() => {
+    if (!task || task.planningNotes !== undefined) return;
+    taskApi.getById(task.id).then((fullTask: any) => {
+      if (fullTask && 'planningNotes' in fullTask) {
+        patchTaskLocal(task.id, { planningNotes: fullTask.planningNotes ?? '' });
+      }
+    }).catch(() => {}); // Non-critical — panel shows empty textarea which is usable
+  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: re-run per task ID only
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;

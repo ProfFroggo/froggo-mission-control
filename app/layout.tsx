@@ -30,10 +30,10 @@ export default function RootLayout({
           one full RTT from the data-fetch waterfall.
 
           Must match the exact URLs constructed by apiCall() in src/lib/api.ts:
-          - taskApi.getAll({ includeSubtasks: 'true' }) → /api/tasks?includeSubtasks=true
+          - taskApi.getAll({ include: 'subtasks', summary: '1' }) → /api/tasks?include=subtasks&summary=1
           - agentApi.getAll() → /api/agents
         */}
-        <link rel="preload" href="/api/tasks?includeSubtasks=true" as="fetch" crossOrigin="anonymous" />
+        <link rel="preload" href="/api/tasks?include=subtasks&summary=1" as="fetch" crossOrigin="anonymous" />
         <link rel="preload" href="/api/agents" as="fetch" crossOrigin="anonymous" />
       </head>
       <body>{children}</body>
