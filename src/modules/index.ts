@@ -12,7 +12,8 @@
  * 3. Add a catalog/modules/<name>.json manifest
  */
 
-// Core modules — always active, cannot be uninstalled
+// Core modules — always active, cannot be uninstalled.
+// These are imported synchronously so their nav items appear immediately.
 import './settings';
 import './inbox';
 import './chat';
@@ -20,10 +21,5 @@ import './kanban';
 import './approvals';
 import './notifications';
 import './agent-mgmt';
-import './library';
-import './knowledge';
-import './projects';
-import './campaigns';
-import './automations';
-import './schedule';
-import './automations';
+// library, knowledge, projects, campaigns, automations, schedule are deferred:
+// loaded asynchronously in ModuleLoader.initAll() via deferred-core-registry.ts

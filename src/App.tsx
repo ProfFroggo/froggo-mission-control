@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import LoadingPanel from './components/LoadingPanel';
@@ -15,25 +16,35 @@ import './core/CoreViews.tsx';
 import './modules';
 import { ViewRegistry } from './core/ViewRegistry';
 import { ModuleLoader } from './core/ModuleLoader';
-import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
-import GlobalSearch from './components/GlobalSearch';
-import KeyboardShortcuts from './components/KeyboardShortcuts';
-import MorningBrief from './components/MorningBrief';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
-import ContactModal from './components/ContactModal';
-import SkillModal from './components/SkillModal';
-import HelpPanel from './components/HelpPanel';
-import EditPanelsModal from './components/EditPanelsModal';
 import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
-import OnboardingWizard from './components/OnboardingWizard';
 import OnboardingFlow, { QuickTips, useOnboardingFlow } from './components/OnboardingFlow';
 import NetworkStatus from './components/NetworkStatus';
 import { DependencyGate } from './components/DependencyGate';
-import ShortcutsModal from './components/ShortcutsModal';
 import { useKeyboardShortcuts, useChordShortcuts } from './lib/useKeyboardShortcuts';
+
+// ─── Lazy-loaded overlays — only downloaded when first rendered ───────────────
+// Splitting these into separate async chunks reduces initial JS parse cost and
+// lowers Lighthouse "unused JS" bytes on first page load.
+const CommandPalette    = dynamic(() => import('./components/CommandPalette'),    { ssr: false });
+const GlobalSearch      = dynamic(() => import('./components/GlobalSearch'),      { ssr: false });
+const KeyboardShortcuts = dynamic(() => import('./components/KeyboardShortcuts'), { ssr: false });
+const ShortcutsModal    = dynamic(() => import('./components/ShortcutsModal'),    { ssr: false });
+const HelpPanel         = dynamic(() => import('./components/HelpPanel'),         { ssr: false });
+const MorningBrief      = dynamic(() => import('./components/MorningBrief'),      { ssr: false });
+const ContactModal      = dynamic(() => import('./components/ContactModal'),      { ssr: false });
+const SkillModal        = dynamic(() => import('./components/SkillModal'),        { ssr: false });
+const EditPanelsModal   = dynamic(() => import('./components/EditPanelsModal'),   { ssr: false });
+
+// OnboardingWizard is shown to every first-time user immediately on mount.
+// Preloading the chunk at module-eval time means it's already downloading when
+// useFirstTimeUser fires setShowOnboardingWizard(true), eliminating the sequential
+// chunk-download → render waterfall that was gating LCP on first load.
+const _onboardingWizardPreload = import('./components/OnboardingWizard');
+const OnboardingWizard = dynamic(() => _onboardingWizardPreload, { ssr: false });
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;

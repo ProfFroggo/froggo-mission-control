@@ -11,6 +11,7 @@ import { ServiceRegistry } from './ServiceRegistry';
 import { validateManifestSafe } from './manifestSchema';
 import { moduleApi, catalogApi } from '../lib/api';
 import { OPTIONAL_MODULE_IMPORTS } from '../modules/optional-registry';
+import { DEFERRED_CORE_MODULE_IMPORTS } from '../modules/deferred-core-registry';
 import type { CatalogModule } from '../types/catalog';
 
 // ─── Manifest types ─────────────────────────────────────────────
@@ -138,7 +139,17 @@ class ModuleLoaderClass {
   async initAll(): Promise<void> {
     if (this.initialized) return;
 
-    // Load optional modules that are installed+enabled in the catalog
+    // Start loading deferred core modules immediately (always-on, no catalog check).
+    // Running in parallel with the catalog fetch keeps total wait time minimal.
+    const deferredImports = Promise.all(
+      Object.values(DEFERRED_CORE_MODULE_IMPORTS).map(importer =>
+        importer().catch((err: unknown) => {
+          console.error('[ModuleLoader] Failed to import deferred core module:', err);
+        })
+      )
+    );
+
+    // Load catalog for optional module activation (non-fatal on failure)
     let catalogModules: CatalogModule[] = [];
     try {
       catalogModules = await catalogApi.listModules() as CatalogModule[];
@@ -146,6 +157,9 @@ class ModuleLoaderClass {
       // Catalog fetch failure is non-fatal — only core modules will load
       console.warn('[ModuleLoader] Could not fetch catalog state — optional modules skipped');
     }
+
+    // Ensure all deferred core modules have finished loading before we init
+    await deferredImports;
 
     // Dynamically import installed optional modules so they self-register
     const installedOptional = catalogModules.filter(m => !m.core && m.installed && m.enabled);
