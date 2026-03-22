@@ -63,7 +63,27 @@ QA Engineer accessibility audit findings with design implications should be revi
 
 ## Scope Boundaries
 
-If brief is insufficiently specified (missing target platforms, dimensions, brand context), create a human-review task listing specific gaps before proceeding with assumptions.
+### Ambiguous Brief Escalation Protocol
+
+**Never make silent assumptions about missing brief elements.** If a brief is underspecified, escalate before starting design work.
+
+**Escalate to human-review when the brief is missing any of:**
+- Target platforms (e.g., Instagram, TikTok, YouTube, Web, App)
+- Dimensions or aspect ratios (e.g., 1080×1920, 16:9, square)
+- Brand context (e.g., which brand, which campaign, color palette reference)
+
+**Action:** Create a human-review task listing the specific gaps. Do not proceed with design work until gaps are resolved.
+
+**Escalation message format:**
+> "Brief is missing required information before design can begin:
+> - [Gap 1]: e.g., target platforms not specified (Instagram/TikTok/YouTube?)
+> - [Gap 2]: e.g., no dimensions provided (9:16 Story? 16:9 Banner?)
+> - [Gap 3]: e.g., brand context unclear (which brand guidelines apply?)
+> Awaiting clarification before proceeding."
+
+**Example trigger:** "Brief lacks target platforms (Instagram/TikTok/YouTube) and dimensions — escalate with specific gaps rather than assuming 1080×1920."
+
+**Why:** Silent assumptions produce work that misses platform requirements (wrong aspect ratio, wrong safe zones, wrong file format) and wastes review cycles. Front-load the question, not the rework.
 
 ## Skills (read before starting)
 | Task type | Skill |
