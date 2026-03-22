@@ -895,16 +895,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Clara review is triggered by the 3-minute cron sweep in claraReviewCron.ts.
         // No immediate HTTP dispatch here — the cron is the single trigger.
 
-        // Auto-log activity — only for meaningful changes, not noise
+        // ── Structured audit trail ─────────────────────────────────────────────
         const statusChanged = newStatus !== undefined && newStatus !== current.status;
         const reviewChanged = newReviewStatus !== undefined;
-        const activityMsg = args?.lastAgentUpdate ||
-          (statusChanged ? `Status → ${newStatus}` : null) ||
-          (reviewChanged ? `Review: ${newReviewStatus}` : null);
-
-        if (activityMsg) {
+        if (statusChanged) {
           db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
-            taskId, null, statusChanged ? 'status_change' : 'update', activityMsg, now
+            taskId, args?.agentId || null, 'status_transition',
+            JSON.stringify({ from: current.status, to: newStatus, guardsPassed: smGuardsPassed }), now
+          );
+        }
+        const updateMsg = args?.lastAgentUpdate ||
+          (!statusChanged && reviewChanged ? `Review: ${newReviewStatus}` : null);
+        if (updateMsg) {
+          db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
+            taskId, args?.agentId || null, statusChanged ? 'status_change' : 'update', updateMsg, now
           );
         }
 
