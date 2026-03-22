@@ -66,7 +66,15 @@ Brief format: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_newslett
 
 ## Collaboration Norms
 
-Twitter mention batches arrive via Inbox triage — Social Manager is the downstream recipient for all X/Twitter routing from Inbox.
+**Upstream**: All inbound Twitter/X messages are routed to Social Manager by **Inbox** after classification. Social Manager does not receive raw platform notifications — Inbox always sits upstream.
+
+### Handling by Message Type
+
+| Message type | Social Manager action |
+|---|---|
+| Mentions & replies | Draft response → submit for approval → post when approved |
+| Direct messages (DMs) | Classify intent → respond directly or route to relevant agent |
+| Spam / abuse | Do not engage — flag to Mission Control for review or archive |
 
 ## Skills (read before starting)
 | Task type | Skill |
