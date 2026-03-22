@@ -517,11 +517,14 @@ export const useStore = create<Store>()(
         g.__taskLoadInFlight = true;
         try {
           get().setLoading('tasks', true);
-          const result = await taskApi.getAll();
+          // ?include=subtasks eliminates the N+1 subtask waterfall (was 20+ sequential HTTP rounds
+          // for ~200 tasks in batches of 10, adding ~8 s to LCP). One request, two DB queries.
+          const result = await taskApi.getAll({ include: 'subtasks' });
           // API returns a plain array; support both plain array and legacy wrapped format
           const taskArray: any[] = Array.isArray(result) ? result : (result?.tasks ?? []);
-          // Convert to store format — DB uses camelCase column names
-          const tasksWithoutSubtasks = taskArray.map((t: any) => ({
+          // Convert to store format — DB uses camelCase column names.
+          // Subtasks are already embedded by the API when include=subtasks is set.
+          const tasksWithSubtasks: Task[] = taskArray.map((t: any) => ({
             id: t.id,
             title: t.title,
             description: t.description || '',
@@ -538,30 +541,10 @@ export const useStore = create<Store>()(
             lastAgentUpdate: t.lastAgentUpdate || undefined,
             createdAt: t.createdAt || Date.now(),
             updatedAt: t.updatedAt || Date.now(),
-            subtasks: [] as Subtask[],
+            subtasks: Array.isArray(t.subtasks) ? t.subtasks as Subtask[] : [],
             recurrence: t.recurrence ?? null,
             recurrenceParentId: t.recurrenceParentId ?? null,
           }));
-
-          // Load subtasks in parallel with batching (10 at a time)
-          const BATCH_SIZE = 10;
-          const tasksWithSubtasks: Task[] = [];
-
-          for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
-            const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
-            const batchResults = await Promise.all(
-              batch.map(async (task) => {
-                try {
-                  const subtaskResult = await taskApi.getSubtasks(task.id);
-                  // API returns plain array
-                  const subtasks = Array.isArray(subtaskResult) ? subtaskResult : (subtaskResult?.subtasks ?? []);
-                  return { ...task, subtasks: subtasks as Subtask[] };
-                } catch { /* ignore error */ }
-                return task;
-              })
-            );
-            tasksWithSubtasks.push(...batchResults as Task[]);
-          }
 
           set({
             tasks: tasksWithSubtasks,

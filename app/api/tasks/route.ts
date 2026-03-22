@@ -82,6 +82,32 @@ export async function GET(request: NextRequest) {
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
 
+    // ?include=subtasks — fetch all subtasks for these tasks in one query instead of N+1 round-trips.
+    // This is critical for LCP: without it, the client makes 20+ sequential HTTP rounds to load
+    // subtasks for 200 tasks (batches of 10), adding ~8 seconds to LCP.
+    const includeSubtasks = searchParams.get('include') === 'subtasks';
+    if (includeSubtasks && tasks.length > 0) {
+      const taskIds = tasks.map((t) => t.id as string);
+      const placeholders = taskIds.map(() => '?').join(',');
+      const subtaskRows = db.prepare(
+        `SELECT * FROM subtasks WHERE taskId IN (${placeholders}) ORDER BY taskId, position ASC, createdAt ASC`
+      ).all(...taskIds) as Record<string, unknown>[];
+
+      // Group subtasks by taskId and coerce completed boolean
+      const subtasksByTaskId = new Map<string, Record<string, unknown>[]>();
+      for (const row of subtaskRows) {
+        const taskId = row.taskId as string;
+        const normalized = { ...row, completed: row.completed === 1 || row.completed === true };
+        if (!subtasksByTaskId.has(taskId)) subtasksByTaskId.set(taskId, []);
+        subtasksByTaskId.get(taskId)!.push(normalized);
+      }
+
+      // Attach subtasks to each task
+      for (const task of tasks) {
+        (task as any).subtasks = subtasksByTaskId.get(task.id as string) ?? [];
+      }
+    }
+
     return NextResponse.json(tasks, {
       headers: {
         'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
