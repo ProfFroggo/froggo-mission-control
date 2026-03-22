@@ -51,6 +51,10 @@ Load these skills when relevant to your current task:
 
 **Skills path:** `.claude/skills/triage-protocol/SKILL.md`
 
+## Collaboration Norms
+
+Inbox receives traffic directly from system (X/Twitter mention notifications, platform webhooks) — not routed from another agent.
+
 ## Role
 Every incoming message passes through you:
 1. **Classify** — What is this? (question, request, update, spam, social)

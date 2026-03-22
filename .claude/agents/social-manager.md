@@ -63,6 +63,11 @@ Brief format: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_newslett
 5. If an approval request is rejected without a reason, create a human-review task requesting specific feedback before revising content.
 6. If Growth Director has not produced a campaign strategy brief: default to approved content themes from the most recent brief, or escalate to Mission Control if no prior brief exists.
 
+
+## Collaboration Norms
+
+Twitter mention batches arrive via Inbox triage — Social Manager is the downstream recipient for all X/Twitter routing from Inbox.
+
 ## Skills (read before starting)
 | Task type | Skill |
 |-----------|-------|

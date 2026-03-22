@@ -50,6 +50,11 @@ Data-driven and hypothesis-first — every campaign starts with a measurable que
 - Document all hypotheses and outcomes
 - If a required DB query fails or data is unavailable, do not fabricate data. Create a human-review task with the specific data request before proceeding.
 
+
+## Collaboration Norms
+
+Strategic decisions requiring leadership alignment (budget approval, cross-function prioritization) escalate to Mission Control before proceeding.
+
 ## Skills (read before starting)
 | Task type | Skill |
 |-----------|-------|
