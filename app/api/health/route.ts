@@ -16,11 +16,19 @@ import { getCircuitBreakerState, getActiveDispatchCount } from '@/lib/taskDispat
 // Crons initialized inside GET handler (not at module level) so they only
 // run on real HTTP requests — never during `next build` page-data collection.
 
+// Cache the claude CLI check result for 60 seconds.
+// The slow path (execSync claude --version, up to 3s) must never run on every request.
+let _claudeCache: { result: { found: boolean; authenticated: boolean; path: string }; expiresAt: number } | null = null;
+
 function checkClaudeCli(): { found: boolean; authenticated: boolean; path: string } {
+  if (_claudeCache && Date.now() < _claudeCache.expiresAt) {
+    return _claudeCache.result;
+  }
+
   const bin = ENV.CLAUDE_BIN;
   const found = !!(bin && (bin === 'claude' || existsSync(bin)));
 
-  // Check ~/.claude.json for auth state
+  // Fast path: check ~/.claude.json for auth state — file read, no exec needed.
   let authenticated = false;
   try {
     const cfgPath = path.join(homedir(), '.claude.json');
@@ -30,7 +38,8 @@ function checkClaudeCli(): { found: boolean; authenticated: boolean; path: strin
     }
   } catch { /* unreadable */ }
 
-  // Fallback: try running claude --version (quick, non-interactive)
+  // Slow fallback: run claude --version ONLY if file check was inconclusive.
+  // Cache the result aggressively so repeated health checks don't re-run this.
   if (found && !authenticated) {
     try {
       execSync(`"${bin}" --version`, { timeout: 3000, stdio: 'pipe' });
@@ -38,7 +47,10 @@ function checkClaudeCli(): { found: boolean; authenticated: boolean; path: strin
     } catch { /* not authenticated or not found */ }
   }
 
-  return { found, authenticated, path: bin };
+  const result = { found, authenticated, path: bin };
+  // Cache for 60 seconds — claude auth state doesn't change between requests
+  _claudeCache = { result, expiresAt: Date.now() + 60_000 };
+  return result;
 }
 
 export async function GET() {
