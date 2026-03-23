@@ -6,7 +6,7 @@ description: >-
   task is complex (4+ hours), touches core architecture, requires deep system
   understanding, or coder needs guidance.
 model: claude-opus-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 80
 memory: user
 tools:
