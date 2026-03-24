@@ -6,7 +6,7 @@ import {
   Bell, LayoutGrid, Clock, FolderOpen, Megaphone, CheckSquare, Star, ChevronRight, ArrowUp,
   ArrowDown, CornerDownLeft, X, Filter,
 } from 'lucide-react';
-import { IconButton, TextField } from '@radix-ui/themes';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import Fuse from 'fuse.js';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
@@ -781,18 +781,17 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             <div className="flex gap-1 px-4 pb-3 overflow-x-auto" role="group" aria-label="Filter by type">
               <Filter size={12} className="text-mission-control-text-dim self-center mr-1 flex-shrink-0" aria-hidden="true" />
               {FILTER_PILLS.map(pill => (
-                <button
+                <Button
                   key={pill.key}
+                  variant={activeFilter === pill.key ? 'solid' : 'soft'}
+                  color={activeFilter === pill.key ? 'grass' : 'gray'}
+                  size="1"
                   onClick={() => setActiveFilter(pill.key)}
-                  className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap transition-colors ${
-                    activeFilter === pill.key
-                      ? 'bg-[--accent-9] text-[--accent-1]'
-                      : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-surface'
-                  }`}
+                  className="whitespace-nowrap rounded-full"
                   aria-pressed={activeFilter === pill.key}
                 >
                   {pill.label}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -836,19 +835,24 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                       <div className="flex flex-wrap gap-1">
                         {savedSearches.map(s => (
                           <div key={s} className="flex items-center gap-0.5 bg-mission-control-border rounded-full pl-2 pr-1 py-0.5">
-                            <button
+                            <Button
+                              variant="ghost"
+                              color="gray"
+                              size="1"
                               onClick={() => setQuery(s)}
-                              className="text-xs text-mission-control-text hover:text-[--accent-11]"
+                              className="text-xs"
                             >
                               {s}
-                            </button>
-                            <button
+                            </Button>
+                            <IconButton
+                              variant="ghost"
+                              color="gray"
+                              size="1"
                               onClick={() => removeSavedSearch(s)}
-                              className="text-mission-control-text-dim hover:text-mission-control-text ml-0.5"
                               aria-label={`Remove saved search "${s}"`}
                             >
                               <X size={10} />
-                            </button>
+                            </IconButton>
                           </div>
                         ))}
                       </div>
@@ -859,17 +863,20 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Recent Searches</div>
-                        <button onClick={clearHistory} className="text-xs text-mission-control-text-dim hover:text-mission-control-text">Clear</button>
+                        <Button variant="ghost" color="gray" size="1" onClick={clearHistory}>Clear</Button>
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {searchHistory.slice(0, 8).map(h => (
-                          <button
+                          <Button
                             key={h}
+                            variant="soft"
+                            color="gray"
+                            size="1"
                             onClick={() => setQuery(h)}
-                            className="px-2 py-0.5 text-xs bg-mission-control-border rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                            className="rounded-full"
                           >
                             {h}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -966,14 +973,16 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                         {isExpanded && (
                           <div className="flex gap-1 px-8 pb-2" role="group" aria-label={`Actions for ${item.title}`}>
                             {inlineActions.map(action => (
-                              <button
+                              <Button
                                 key={action.id}
+                                variant="soft"
+                                color="gray"
+                                size="1"
                                 onClick={() => action.run()}
-                                className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-border hover:bg-mission-control-surface rounded transition-colors"
                               >
                                 <span aria-hidden="true">{action.icon}</span>
                                 {action.label}
-                              </button>
+                              </Button>
                             ))}
                           </div>
                         )}

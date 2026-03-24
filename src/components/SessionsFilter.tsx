@@ -4,6 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
+import { Button, IconButton, TextField, Checkbox } from '@radix-ui/themes';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle, ClipboardList, MessageCircle, Gamepad2, Monitor, Bot, Send as SendPlane } from 'lucide-react';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
@@ -533,35 +534,36 @@ export default function SessionsFilter() {
             )}
           </h2>
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
+              variant={showSnoozed ? 'ghost' : 'soft'}
+              color={showSnoozed ? 'gray' : 'blue'}
+              size="2"
               onClick={() => setShowSnoozed(!showSnoozed)}
-              className={`p-2 rounded-lg transition-colors ${
-                showSnoozed 
-                  ? 'hover:bg-mission-control-border' 
-                  : 'bg-info-subtle text-info border border-info-border'
-              }`}
               title={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
+              aria-label={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
             >
               <Moon size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
+              variant={bulkMode ? 'soft' : 'ghost'}
+              color={bulkMode ? 'grass' : 'gray'}
+              size="2"
               onClick={toggleBulkMode}
-              className={`p-2 rounded-lg transition-colors ${
-                bulkMode 
-                  ? 'bg-mission-control-accent text-white' 
-                  : 'hover:bg-mission-control-border'
-              }`}
               title={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
+              aria-label={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
             >
               {bulkMode ? <CheckSquare size={16} /> : <Square size={16} />}
-            </button>
-            <button
+            </IconButton>
+            <IconButton
+              variant="ghost"
+              color="gray"
+              size="2"
               onClick={fetchSessions}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh"
+              aria-label="Refresh sessions"
             >
               <RefreshCw size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -570,103 +572,120 @@ export default function SessionsFilter() {
           <div className="mb-4 p-3 bg-mission-control-bg border border-mission-control-border rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="soft"
+                  color="gray"
+                  size="1"
                   onClick={selectAll}
-                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                 >
                   Select All ({filteredSessions.length})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="gray"
+                  size="1"
                   onClick={selectNone}
-                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                   disabled={selectedSessions.size === 0}
                 >
                   Clear Selection
-                </button>
+                </Button>
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="soft"
+                  color="green"
+                  size="1"
                   onClick={handleBulkMarkRead}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-success-subtle text-success border border-success-border hover:bg-success-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckSquare size={14} />
                   Mark Read ({selectedSessions.size})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="blue"
+                  size="1"
                   onClick={handleBulkFolderAssign}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-info-subtle text-info border border-info-border hover:bg-info-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FolderPlus size={14} />
                   Assign to Folders
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="orange"
+                  size="1"
                   onClick={handleBulkArchive}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-warning-subtle text-warning border border-warning-border hover:bg-warning-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Archive size={14} />
                   Archive ({selectedSessions.size})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="red"
+                  size="1"
                   onClick={handleBulkDelete}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-error-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={14} />
                   Delete ({selectedSessions.size})
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         )}
 
         {/* Search */}
-        <div className="relative mb-3">
-          <label htmlFor="sessions-search" className="sr-only">Search sessions</label>
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
+        <div className="mb-3">
+          <TextField.Root
             id="sessions-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search sessions..."
-            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              aria-label="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
-            >
-              <X size={14} />
-            </button>
-          )}
+            size="2"
+            className="w-full"
+            aria-label="Search sessions"
+          >
+            <TextField.Slot>
+              <Search size={16} />
+            </TextField.Slot>
+            {search && (
+              <TextField.Slot side="right">
+                <IconButton
+                  variant="ghost"
+                  color="gray"
+                  size="1"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </IconButton>
+              </TextField.Slot>
+            )}
+          </TextField.Root>
         </div>
 
         {/* Channel Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {channelCounts.map((ch) => (
-            <button
+            <Button
               key={ch.id}
+              variant={filter === ch.id ? 'solid' : 'soft'}
+              color={filter === ch.id ? 'grass' : 'gray'}
+              size="1"
               onClick={() => setFilter(ch.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
-                filter === ch.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              className="whitespace-nowrap rounded-full"
             >
               <span>{ch.icon}</span>
               <span>{ch.label}</span>
               {ch.count > 0 && (
-                <span className={`text-xs px-1.5 rounded-full ${
-                  filter === ch.id ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
-                }`}>
+                <span className="text-xs opacity-70">
                   {ch.count}
                 </span>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -727,11 +746,11 @@ export default function SessionsFilter() {
                   <div className="flex items-start gap-3">
                     {bulkMode && (
                       <div className="pt-1">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selectedSessions.has(session.key)}
-                          onChange={() => toggleSessionSelection(session.key)}
-                          className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
+                          onCheckedChange={() => toggleSessionSelection(session.key)}
+                          color="grass"
+                          size="2"
                         />
                       </div>
                     )}
@@ -801,46 +820,58 @@ export default function SessionsFilter() {
                       )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <IconButton
+                        variant="ghost"
+                        color={pinnedSessions.has(session.key) ? 'grass' : 'gray'}
+                        size="1"
                         onClick={(e) => {
                           e.stopPropagation();
                           togglePin(session.key);
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${pinnedSessions.has(session.key) ? 'text-mission-control-accent' : ''}`}
                         title={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
+                        aria-label={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
                       >
                         <Pin size={14} className={pinnedSessions.has(session.key) ? 'fill-current' : ''} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        color={isSnoozeExpired ? 'red' : isSnoozed ? 'blue' : 'gray'}
+                        size="1"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                         title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
+                        aria-label="Snooze conversation"
                       >
                         {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        color={isMuted ? 'orange' : 'gray'}
+                        size="1"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                         title="Notification settings"
+                        aria-label="Notification settings"
                       >
                         {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        color="gray"
+                        size="1"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowFolderSelector(session.key);
                         }}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Assign to folders"
+                        aria-label="Assign to folders"
                       >
                         <Tag size={14} />
-                      </button>
+                      </IconButton>
                       <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                           </div>
                         </div>
@@ -890,11 +921,11 @@ export default function SessionsFilter() {
                       <div className="flex items-start gap-3">
                         {bulkMode && (
                           <div className="pt-1">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={selectedSessions.has(session.key)}
-                              onChange={() => toggleSessionSelection(session.key)}
-                              className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
+                              onCheckedChange={() => toggleSessionSelection(session.key)}
+                              color="grass"
+                              size="2"
                             />
                           </div>
                         )}
@@ -958,46 +989,58 @@ export default function SessionsFilter() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
+                          <IconButton
+                            variant="ghost"
+                            color="gray"
+                            size="1"
                             onClick={(e) => {
                               e.stopPropagation();
                               togglePin(session.key);
                             }}
-                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Pin conversation"
+                            aria-label="Pin conversation"
                           >
                             <Pin size={14} />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
+                            variant="ghost"
+                            color={isSnoozeExpired ? 'red' : isSnoozed ? 'blue' : 'gray'}
+                            size="1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                             title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
+                            aria-label="Snooze conversation"
                           >
                             {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
+                            variant="ghost"
+                            color={isMuted ? 'orange' : 'gray'}
+                            size="1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                             title="Notification settings"
+                            aria-label="Notification settings"
                           >
                             {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton
+                            variant="ghost"
+                            color="gray"
+                            size="1"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowFolderSelector(session.key);
                             }}
-                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Assign to folders"
+                            aria-label="Assign to folders"
                           >
                             <Tag size={14} />
-                          </button>
+                          </IconButton>
                           <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                         </div>
                       </div>

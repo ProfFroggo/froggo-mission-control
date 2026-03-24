@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useEventBus } from '../lib/useEventBus';
 import { createPortal } from 'react-dom';
 import {
@@ -945,17 +946,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               />
             </div>
 
-            <button
+            <Button
+              variant={activeFiltersCount > 0 ? 'soft' : 'ghost'}
+              size="1"
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Filter tasks"
               aria-expanded={showFilters}
               aria-controls="kanban-filters-panel"
               aria-haspopup="true"
-              className={`icon-text px-3 py-2 rounded-lg border transition-all ${
-                activeFiltersCount > 0
-                  ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
-                  : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
-              }`}
             >
               <Filter size={16} className="flex-shrink-0" aria-hidden="true" />
               Filters
@@ -964,26 +962,23 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   {activeFiltersCount}
                 </span>
               )}
-            </button>
+            </Button>
 
             <div className="relative">
-              <button
+              <Button
                 ref={sortTriggerRef}
+                variant={globalSort !== 'newest' ? 'soft' : 'ghost'}
+                size="1"
                 onClick={() => setShowSortMenu(v => !v)}
                 aria-label="Sort tasks"
                 aria-expanded={showSortMenu}
                 aria-haspopup="menu"
                 aria-controls="kanban-sort-menu"
-                className={`icon-text px-3 py-2 rounded-lg border transition-all ${
-                  globalSort !== 'newest'
-                    ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
-                    : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
-                }`}
               >
                 <SortAsc size={16} className="flex-shrink-0" aria-hidden="true" />
                 Sort
                 <ChevronDown size={14} className="flex-shrink-0" aria-hidden="true" />
-              </button>
+              </Button>
               {showSortMenu && (
                 <div
                   id="kanban-sort-menu"
@@ -1022,15 +1017,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   }}
                 >
                   {(Object.keys(GLOBAL_SORT_LABELS) as GlobalSortOption[]).map(opt => (
-                    <button
+                    <Button
                       key={opt}
                       role="menuitemradio"
                       aria-checked={globalSort === opt}
+                      variant={globalSort === opt ? 'soft' : 'ghost'}
+                      size="1"
                       onClick={() => { setGlobalSort(opt); setShowSortMenu(false); sortTriggerRef.current?.focus(); }}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-mission-control-border/40 ${globalSort === opt ? 'text-mission-control-accent font-medium' : ''}`}
+                      style={{ width: '100%', justifyContent: 'flex-start' }}
                     >
                       {GLOBAL_SORT_LABELS[opt]}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -1041,15 +1038,16 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
             {/* Group 2: Utility actions */}
             <div className="relative">
-              <button
+              <IconButton
+                variant="ghost"
+                size="1"
                 onClick={() => setShowSaveViewDialog(v => !v)}
                 aria-label="Save current view"
                 aria-expanded={showSaveViewDialog}
                 aria-controls="kanban-save-view-panel"
-                className="icon-text px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/50 transition-all"
               >
-                <Save size={16} className="flex-shrink-0" aria-hidden="true" />
-              </button>
+                <Save size={16} aria-hidden="true" />
+              </IconButton>
               {showSaveViewDialog && (
                 <div id="kanban-save-view-panel" className="absolute right-0 top-full mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 w-64 p-3">
                   <p className="text-xs font-semibold text-mission-control-text-dim mb-2">Save current filters &amp; sort</p>
@@ -1065,44 +1063,43 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     placeholder="View name..."
                     className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent mb-2"
                   />
-                  <button
-                    onClick={saveCurrentView}
-                    disabled={!newViewName.trim()}
-                    className="w-full px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  <Button variant="solid" size="1" onClick={saveCurrentView} disabled={!newViewName.trim()} style={{ width: '100%', justifyContent: 'center' }}>
                     Save
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
 
-            <button
+            <IconButton
+              variant="ghost"
+              size="1"
               onClick={handleRefresh}
               disabled={isRefreshing}
               aria-label="Refresh tasks"
-              className="icon-btn border border-mission-control-border hover:border-mission-control-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-            </button>
+            </IconButton>
 
-            <button
+            <IconButton
+              variant="ghost"
+              size="1"
               onClick={handleHealthCheck}
               aria-label="Board health check"
-              className="icon-text px-3 py-2 border border-success-border text-success rounded-lg hover:bg-success-subtle transition-all"
             >
               <Stethoscope size={16} className="flex-shrink-0" aria-hidden="true" />
-            </button>
+            </IconButton>
 
             <div className="relative">
-              <button
+              <IconButton
+                variant="ghost"
+                size="1"
                 onClick={() => setShowJumpToTask(v => !v)}
                 aria-label="Jump to task"
                 aria-expanded={showJumpToTask}
                 aria-controls="kanban-jump-to-panel"
-                className="icon-text px-3 py-2 border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-all"
               >
-                <Hash size={16} className="flex-shrink-0" aria-hidden="true" />
-              </button>
+                <Hash size={16} aria-hidden="true" />
+              </IconButton>
               {showJumpToTask && (
                 <div id="kanban-jump-to-panel" className="absolute right-0 top-full mt-1 z-50 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg p-2 w-64">
                   <input
@@ -1126,15 +1123,11 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <div className="w-px h-6 bg-mission-control-border flex-shrink-0" />
 
             {/* Group 3: Primary action */}
-            <button
-              onClick={() => handleAddTask('todo')}
-              title="New task (N)"
-              className="icon-text px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-all hover:scale-105"
-            >
+            <Button variant="solid" size="1" onClick={() => handleAddTask('todo')} title="New task (N)">
               <Plus size={16} className="flex-shrink-0" />
               New Task
               <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">N</kbd>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1200,12 +1193,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
               {/* Clear filters */}
               {activeFiltersCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="icon-text-tight text-sm text-mission-control-accent hover:underline ml-auto"
-                >
+                <Button variant="ghost" size="1" onClick={clearFilters} style={{ marginLeft: 'auto' }}>
                   <X size={16} className="flex-shrink-0" /> Clear all
-                </button>
+                </Button>
               )}
             </div>
 
@@ -1214,25 +1204,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <Flag size={14} className="text-mission-control-text-dim flex-shrink-0" />
               <span className="text-xs text-mission-control-text-dim font-medium mr-1">Priority:</span>
               {(['all', 'p0', 'p1', 'p2', 'p3'] as const).map(p => (
-                <button
+                <Button
                   key={p}
+                  variant={filters.priority === p ? 'soft' : 'ghost'}
+                  size="1"
                   onClick={() => setFilters(f => ({ ...f, priority: p }))}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
-                    filters.priority === p
-                      ? p === 'all'
-                        ? 'bg-mission-control-accent text-white border-mission-control-accent'
-                        : p === 'p0'
-                        ? 'bg-error-subtle text-error border-error-border'
-                        : p === 'p1'
-                        ? 'bg-warning-subtle text-warning border-warning-border'
-                        : p === 'p2'
-                        ? 'bg-info-subtle text-info border-info-border'
-                        : 'bg-mission-control-bg text-mission-control-text border-mission-control-border'
-                      : 'border-mission-control-border hover:border-mission-control-accent/50'
-                  }`}
                 >
                   {p === 'all' ? 'All' : p.toUpperCase()}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -1247,19 +1226,14 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 { id: 'this-week', label: 'Due this week' },
                 { id: 'no-due-date', label: 'No due date' },
               ] as { id: DueFilter; label: string }[]).map(opt => (
-                <button
+                <Button
                   key={opt.id}
+                  variant={filters.dueFilter === opt.id ? 'soft' : 'ghost'}
+                  size="1"
                   onClick={() => setFilters(f => ({ ...f, dueFilter: opt.id }))}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
-                    filters.dueFilter === opt.id
-                      ? opt.id === 'overdue'
-                        ? 'bg-error-subtle text-error border-error-border'
-                        : 'bg-mission-control-accent text-white border-mission-control-accent'
-                      : 'border-mission-control-border hover:border-mission-control-accent/50'
-                  }`}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -1271,32 +1245,26 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 {uniqueLabels.map(label => {
                   const isActive = filters.labels.includes(label);
                   return (
-                    <button
+                    <Button
                       key={label}
+                      variant={isActive ? 'soft' : 'ghost'}
+                      size="1"
                       onClick={() => setFilters(f => ({
                         ...f,
                         labels: isActive
                           ? f.labels.filter(l => l !== label)
                           : [...f.labels, label],
                       }))}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
-                        isActive
-                          ? 'bg-mission-control-accent text-white border-mission-control-accent'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
-                      }`}
                     >
                       {label}
-                    </button>
+                    </Button>
                   );
                 })}
                 {filters.labels.length > 0 && (
-                  <button
-                    onClick={() => setFilters(f => ({ ...f, labels: [] }))}
-                    className="text-xs text-mission-control-text-dim hover:text-mission-control-text icon-text-tight"
-                  >
+                  <Button variant="ghost" size="1" onClick={() => setFilters(f => ({ ...f, labels: [] }))}>
                     <X size={11} />
                     Clear
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -1309,19 +1277,12 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
             <span className="text-xs text-mission-control-text-dim font-medium">Saved views:</span>
             {savedViews.map(view => (
               <div key={view.name} className="flex items-center gap-0.5">
-                <button
-                  onClick={() => applySavedView(view)}
-                  className="text-xs px-2.5 py-1 rounded-l-lg border border-mission-control-border hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-all"
-                >
+                <Button variant="ghost" size="1" onClick={() => applySavedView(view)}>
                   {view.name}
-                </button>
-                <button
-                  onClick={() => deleteSavedView(view.name)}
-                  className="text-xs px-1.5 py-1 rounded-r-lg border border-l-0 border-mission-control-border hover:border-error-border hover:text-error transition-all"
-                  title="Delete saved view"
-                >
+                </Button>
+                <IconButton variant="ghost" size="1" onClick={() => deleteSavedView(view.name)} title="Delete saved view">
                   <X size={10} />
-                </button>
+                </IconButton>
               </div>
             ))}
           </div>
@@ -1347,41 +1308,36 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       {/* Mobile column navigator */}
       {isMobile && !(!loading.tasks && filteredTasks.length === 0) && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-          <button
+          <IconButton
+            variant="ghost"
+            size="1"
             onClick={() => setMobileColumnIndex(prev => Math.max(prev - 1, 0))}
             disabled={mobileColumnIndex === 0}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Previous column"
           >
             <ChevronLeft size={20} aria-hidden="true" />
-          </button>
+          </IconButton>
           <div className="flex flex-col items-center gap-1">
             <span className="text-sm font-medium text-mission-control-text">
               {columns[mobileColumnIndex]?.title ?? ''}
             </span>
             <div className="flex items-center gap-1">
               {columns.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setMobileColumnIndex(i)}
-                  className={`h-2 rounded-full transition-all ${
-                    i === mobileColumnIndex
-                      ? 'bg-mission-control-accent w-4'
-                      : 'bg-mission-control-border w-2'
-                  }`}
-                  aria-label={`Go to column ${columns[i].title}`}
-                />
+                <IconButton key={i} variant={i === mobileColumnIndex ? 'solid' : 'ghost'} size="1" onClick={() => setMobileColumnIndex(i)} aria-label={`Go to column ${columns[i].title}`}>
+                  <span className={`block rounded-full ${i === mobileColumnIndex ? 'w-4 h-2' : 'w-2 h-2'}`} />
+                </IconButton>
               ))}
             </div>
           </div>
-          <button
+          <IconButton
+            variant="ghost"
+            size="1"
             onClick={() => setMobileColumnIndex(prev => Math.min(prev + 1, columns.length - 1))}
             disabled={mobileColumnIndex === columns.length - 1}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Next column"
           >
             <ChevronRight size={20} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       )}
 
@@ -1422,13 +1378,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               <div className={`p-3 border-b border-mission-control-border border-t-2 ${column.color} rounded-t-2xl`}>
                 <div className={`flex items-center justify-between ${isCollapsed ? '' : 'mb-2'}`}>
                   <div className={`icon-text ${isCollapsed ? 'flex-col gap-2' : ''}`}>
-                    <button
-                      onClick={() => toggleColumnCollapse(column.id)}
-                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
-                      title={isCollapsed ? 'Expand column' : 'Collapse column'}
-                    >
+                    <IconButton variant="ghost" size="1" onClick={() => toggleColumnCollapse(column.id)} title={isCollapsed ? 'Expand column' : 'Collapse column'}>
                       {isCollapsed ? <ChevronRight size={14} className="flex-shrink-0" /> : <ChevronDown size={14} className="flex-shrink-0" />}
-                    </button>
+                    </IconButton>
                     <span className={column.iconColor}>{column.icon}</span>
                     {!isCollapsed && <h3 className="font-semibold text-sm">{column.title}</h3>}
                     <span className={`text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full ${column.bg} ${column.iconColor}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
@@ -1438,21 +1390,13 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                     </span>
                   </div>
                   {!isCollapsed && (column.id === 'done' ? (
-                    <button
-                      onClick={() => setShowArchiveConfirm(true)}
-                      disabled={isArchiving || columnTasks.length === 0}
-                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-50"
-                      title="Archive all done tasks"
-                    >
+                    <IconButton variant="ghost" size="1" onClick={() => setShowArchiveConfirm(true)} disabled={isArchiving || columnTasks.length === 0} title="Archive all done tasks">
                       <Archive size={16} className="flex-shrink-0" />
-                    </button>
+                    </IconButton>
                   ) : (
-                    <button
-                      onClick={() => handleAddTask(column.id)}
-                      className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text"
-                    >
+                    <IconButton variant="ghost" size="1" onClick={() => handleAddTask(column.id)}>
                       <Plus size={16} className="flex-shrink-0" />
-                    </button>
+                    </IconButton>
                   ))}
                 </div>
 
@@ -1460,22 +1404,18 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                 {!isCollapsed && <div className="flex items-center gap-1">
                   {/* Sort Dropdown */}
                   <div className="relative">
-                    <button
-                      onClick={() => toggleColumnDropdown(column.id, 'sort')}
-                      className={`icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text ${settings.sortBy !== 'newest' ? 'text-mission-control-accent' : ''}`}
-                      title="Sort"
-                    >
+                    <IconButton variant={settings.sortBy !== 'newest' ? 'soft' : 'ghost'} size="1" onClick={() => toggleColumnDropdown(column.id, 'sort')} title="Sort">
                       <ArrowDown size={14} className="flex-shrink-0" />
-                    </button>
+                    </IconButton>
                     {dropdowns.sort && (
                       <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-1">
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'newest' ? 'text-mission-control-accent' : ''}`}>Newest First</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'oldest' ? 'text-mission-control-accent' : ''}`}>Oldest First</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-mission-control-accent' : ''}`}>Priority: Low → High</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-mission-control-accent' : ''}`}>Priority: High → Low</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-mission-control-accent' : ''}`}>Progress: 0% → 100%</button>
-                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-mission-control-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-mission-control-accent' : ''}`}>Progress: 100% → 0%</button>
+                          <Button variant={settings.sortBy === 'newest' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Newest First</Button>
+                          <Button variant={settings.sortBy === 'oldest' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Oldest First</Button>
+                          <Button variant={settings.sortBy === 'priority-asc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Priority: Low → High</Button>
+                          <Button variant={settings.sortBy === 'priority-desc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Priority: High → Low</Button>
+                          <Button variant={settings.sortBy === 'progress-asc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Progress: 0% → 100%</Button>
+                          <Button variant={settings.sortBy === 'progress-desc' ? 'soft' : 'ghost'} size="1" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} style={{ width: '100%', justifyContent: 'flex-start' }}>Progress: 100% → 0%</Button>
                         </div>
                       </div>
                     )}
@@ -1483,13 +1423,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
                   {/* Filter Dropdown */}
                   <div className="relative">
-                    <button
-                      onClick={() => toggleColumnDropdown(column.id, 'filter')}
-                      className={`icon-btn-sm text-mission-control-text-dim hover:text-mission-control-text ${settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'text-mission-control-accent' : ''}`}
-                      title="Filter"
-                    >
+                    <IconButton variant={settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'soft' : 'ghost'} size="1" onClick={() => toggleColumnDropdown(column.id, 'filter')} title="Filter">
                       <Filter size={14} className="flex-shrink-0" />
-                    </button>
+                    </IconButton>
                     {dropdowns.filter && (
                       <div className="absolute top-full left-0 mt-1 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-2 border-b border-mission-control-border">
@@ -1521,15 +1457,9 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                         </div>
                         {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
                           <div className="p-2 border-t border-mission-control-border">
-                            <button
-                              onClick={() => {
-                                updateColumnSetting(column.id, 'filterAgent', 'all');
-                                updateColumnSetting(column.id, 'filterPriority', 'all');
-                              }}
-                              className="w-full text-sm text-mission-control-accent hover:underline"
-                            >
+                            <Button variant="ghost" size="1" onClick={() => { updateColumnSetting(column.id, 'filterAgent', 'all'); updateColumnSetting(column.id, 'filterPriority', 'all'); }} style={{ width: '100%', justifyContent: 'center' }}>
                               Clear Filters
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -1728,26 +1658,18 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Mark Done */}
-          <button
-            onClick={handleBulkMarkDone}
-            disabled={isBulkUpdating || isBulkDeleting}
-            className="icon-text px-3 py-1.5 bg-success-subtle text-success border border-success-border rounded-lg text-sm hover:bg-success hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="soft" size="1" onClick={handleBulkMarkDone} disabled={isBulkUpdating || isBulkDeleting}>
             <CheckCircle size={15} className="flex-shrink-0" />
             Mark Done
-          </button>
+          </Button>
 
           {/* Assign Agent */}
           <div className="relative">
-            <button
-              onClick={() => setShowBulkAssign(v => !v)}
-              disabled={isBulkUpdating || isBulkDeleting}
-              className="icon-text px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button variant="ghost" size="1" onClick={() => setShowBulkAssign(v => !v)} disabled={isBulkUpdating || isBulkDeleting}>
               <UserCheck size={15} className="flex-shrink-0" />
               Assign Agent
               <ChevronDown size={13} className="flex-shrink-0" />
-            </button>
+            </Button>
             {showBulkAssign && (
               <>
                 <div
@@ -1762,14 +1684,10 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
                   {agents.filter(a => !isProtectedAgent(a.id)).length === 0 ? (
                     <div className="px-4 py-3 text-sm text-mission-control-text-dim">No agents available</div>
                   ) : agents.filter(a => !isProtectedAgent(a.id)).map(a => (
-                    <button
-                      key={a.id}
-                      onClick={() => handleBulkAssign(a.id)}
-                      className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border transition-colors"
-                    >
+                    <Button key={a.id} variant="ghost" size="1" onClick={() => handleBulkAssign(a.id)} style={{ width: '100%', justifyContent: 'flex-start' }}>
                       <AgentAvatar agentId={a.id} fallbackEmoji={a.avatar} size="xs" />
                       {a.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </>
@@ -1777,25 +1695,17 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
           </div>
 
           {/* Delete */}
-          <button
-            onClick={() => setShowBulkDeleteConfirm(true)}
-            disabled={isBulkUpdating || isBulkDeleting}
-            className="icon-text px-3 py-1.5 bg-error-subtle text-error border border-error-border rounded-lg text-sm hover:bg-error hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="soft" color="red" size="1" onClick={() => setShowBulkDeleteConfirm(true)} disabled={isBulkUpdating || isBulkDeleting}>
             <Trash2 size={15} className="flex-shrink-0" />
             Delete
-          </button>
+          </Button>
 
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Clear selection */}
-          <button
-            onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }}
-            className="icon-btn text-mission-control-text-dim hover:text-mission-control-text"
-            title="Clear selection (Esc)"
-          >
+          <IconButton variant="ghost" size="1" onClick={() => { setSelectedIds(new Set()); setLastSelectedId(null); setShowBulkAssign(false); }} title="Clear selection (Esc)">
             <X size={16} className="flex-shrink-0" />
-          </button>
+          </IconButton>
         </div>
       )}
     </div>
@@ -1987,8 +1897,10 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       <div className="flex items-start gap-1.5 mb-2">
         {/* Selection checkbox — visible on hover or when any task is selected */}
         {onToggleSelect && (
-          <button
-            className={`flex-shrink-0 mt-0.5 transition-opacity ${isAnySelected || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-60 hover:!opacity-100'}`}
+          <IconButton
+            variant="ghost"
+            size="1"
+            style={{ flexShrink: 0, marginTop: '2px', opacity: isAnySelected || isSelected ? 1 : 0 }}
             onClick={(e) => { e.stopPropagation(); onToggleSelect(task.id, e.shiftKey); }}
             title={isSelected ? 'Deselect task' : 'Select task (Shift+click for range)'}
             aria-label={isSelected ? 'Deselect task' : 'Select task'}
@@ -1997,26 +1909,27 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
               ? <CheckSquare size={15} className="text-mission-control-accent flex-shrink-0" />
               : <Square size={15} className="text-mission-control-text-dim flex-shrink-0" />
             }
-          </button>
+          </IconButton>
         )}
         {/* Priority indicator */}
         {priorityConfig && (
           <div className="relative flex-shrink-0">
-            <button
+            <IconButton
               ref={priorityBtnRef}
-              onClick={(e) => { 
-                e.stopPropagation(); 
+              variant="ghost"
+              size="1"
+              onClick={(e) => {
+                e.stopPropagation();
                 if (!showPriority && priorityBtnRef.current) {
                   const rect = priorityBtnRef.current.getBoundingClientRect();
                   setPriorityBtnPos({ top: rect.bottom + 4, left: rect.left });
                 }
-                setShowPriority(!showPriority); 
+                setShowPriority(!showPriority);
               }}
-              className={`p-0.5 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
               title={priorityConfig.label}
             >
               {priorityConfig.icon}
-            </button>
+            </IconButton>
             
             {/* Priority Picker Modal */}
             {showPriority && priorityBtnPos && createPortal(
@@ -2039,16 +1952,10 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Set Priority</div>
                   <div className="space-y-1">
                     {PRIORITIES.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                        className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
-                          task.priority === p.id ? `${p.bg} ${p.color}` : ''
-                        }`}
-                      >
+                      <Button key={p.id} variant={task.priority === p.id ? 'soft' : 'ghost'} size="1" onClick={() => { onSetPriority(p.id); setShowPriority(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                         <span className={p.color}>{p.icon}</span>
                         {p.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -2081,13 +1988,9 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                 onDoubleClick={startEditTitle}
                 title="Double-click to edit"
               >{task.title}</h4>
-              <button
-                onClick={startEditTitle}
-                className="opacity-0 group-hover/title:opacity-60 hover:!opacity-100 flex-shrink-0 p-0.5 rounded hover:bg-mission-control-border transition-opacity"
-                title="Edit title"
-              >
+              <IconButton variant="ghost" size="1" onClick={startEditTitle} title="Edit title" style={{ opacity: 0 }}>
                 <Pencil size={11} />
-              </button>
+              </IconButton>
             </div>
           )}
           {task.updatedAt && (
@@ -2139,9 +2042,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         )}
         
         {/* Quick-edit pencil button — visible on hover */}
-        <button
+        <IconButton
           ref={quickEditBtnRef}
-          className="icon-btn-sm text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100 flex-shrink-0 transition-opacity"
+          variant="ghost"
+          size="1"
+          style={{ flexShrink: 0, opacity: 0 }}
           onClick={(e) => {
             e.stopPropagation();
             if (quickEditBtnRef.current) {
@@ -2153,12 +2058,13 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           aria-label="Quick edit task"
         >
           <Pencil size={14} className="flex-shrink-0" />
-        </button>
+        </IconButton>
 
         <div className="relative flex-shrink-0">
-          <button
+          <IconButton
             ref={menuBtnRef}
-            className="icon-btn-sm text-mission-control-text-dim opacity-60 hover:opacity-100"
+            variant="ghost"
+            size="1"
             onClick={(e) => {
               e.stopPropagation();
               if (!showMenu && menuBtnRef.current) {
@@ -2169,54 +2075,27 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             }}
           >
             <MoreHorizontal size={16} className="flex-shrink-0" />
-          </button>
+          </IconButton>
           
           {showMenu && menuBtnPos && createPortal(
             <>
               <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMenu(false); } }} role="button" tabIndex={0} aria-label="Close menu" />
               <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1 z-[101] min-w-40"
                 style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
-                <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (menuBtnPos) {
-                      setPriorityBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
-                    }
-                    setShowPriority(true); 
-                    setShowMenu(false); 
-                  }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
-                >
+                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); if (menuBtnPos) { setPriorityBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left }); } setShowPriority(true); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                   <Flag size={16} className="flex-shrink-0" /> Set Priority
-                </button>
-                <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (menuBtnPos) {
-                      setAssignBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
-                    }
-                    setShowAssign(true); 
-                    setShowMenu(false); 
-                  }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
-                >
+                </Button>
+                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); if (menuBtnPos) { setAssignBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left }); } setShowAssign(true); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                   <Bot size={16} className="flex-shrink-0" /> Assign Agent
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border"
-                >
+                </Button>
+                <Button variant="ghost" size="1" onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                   <Hand size={16} className="flex-shrink-0" /> Poke
-                </button>
+                </Button>
                 <hr className="my-1 border-mission-control-border" />
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
-                  disabled={isDeleting}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-mission-control-border text-error disabled:opacity-50"
-                >
-                  {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />} 
+                <Button variant="soft" color="red" size="1" onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }} disabled={isDeleting} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />}
                   {isDeleting ? 'Deleting...' : 'Delete'}
-                </button>
+                </Button>
               </div>
             </>,
             document.body
@@ -2348,18 +2227,14 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
-                  disabled={isSpawning}
-                  className="icon-badge-sm bg-success text-white hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Start agent"
-                >
+                <IconButton variant="solid" size="1" onClick={(e) => { e.stopPropagation(); onStartAgent(); }} disabled={isSpawning} title="Start agent">
                   {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
-                </button>
+                </IconButton>
               ) : null}
-              <button
+              <Button
                 ref={assignBtnRef}
-                className="icon-text-tight px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent rounded hover:bg-mission-control-accent/20 no-shrink"
+                variant="soft"
+                size="1"
                 title={assignedAgent?.name || task.assignedTo}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -2376,23 +2251,24 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
                   size="xs"
                   status={getAgentStatus()}
                 />
-              </button>
+              </Button>
             </div>
           ) : (
-            <button 
+            <IconButton
               ref={assignBtnRef}
-              className="icon-btn-sm text-mission-control-text-dim hover:text-mission-control-accent no-shrink"
-              onClick={(e) => { 
-                e.stopPropagation(); 
+              variant="ghost"
+              size="1"
+              onClick={(e) => {
+                e.stopPropagation();
                 if (!showAssign && assignBtnRef.current) {
                   const rect = assignBtnRef.current.getBoundingClientRect();
                   setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
                 }
-                setShowAssign(true); 
+                setShowAssign(true);
               }}
             >
               <User size={14} className="no-shrink" />
-            </button>
+            </IconButton>
           )}
           
           {/* Assign Agent Modal */}
@@ -2408,26 +2284,15 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
               >
                 <div className="text-xs text-mission-control-text-dim mb-2 font-medium px-2">Assign to agent</div>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => { onAssign(''); setShowAssign(false); }}
-                    className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
-                      !task.assignedTo ? 'bg-mission-control-border' : ''
-                    }`}
-                  >
+                  <Button variant={!task.assignedTo ? 'soft' : 'ghost'} size="1" onClick={() => { onAssign(''); setShowAssign(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                     <User size={16} className="text-mission-control-text-dim" />
                     Unassigned
-                  </button>
+                  </Button>
                   {agents.map(agent => (
-                    <button
-                      key={agent.id}
-                      onClick={() => { onAssign(agent.id); setShowAssign(false); }}
-                      className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-mission-control-border transition-colors ${
-                        task.assignedTo === agent.id ? 'bg-mission-control-accent/20 text-mission-control-accent' : ''
-                      }`}
-                    >
+                    <Button key={agent.id} variant={task.assignedTo === agent.id ? 'soft' : 'ghost'} size="1" onClick={() => { onAssign(agent.id); setShowAssign(false); }} style={{ width: '100%', justifyContent: 'flex-start' }}>
                       <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                       {agent.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

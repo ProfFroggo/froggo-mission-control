@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle, Edit2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -227,12 +228,12 @@ export default function CronTab() {
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-mission-control-text-dim">{jobs.length} cron job{jobs.length !== 1 ? 's' : ''}</div>
         <div className="flex gap-2">
-          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm">
+          <Button variant="solid" size="2" onClick={() => setShowAddModal(true)}>
             <Plus size={14} /> Add Job
-          </button>
-          <button onClick={loadJobs} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          </Button>
+          <Button variant="surface" color="gray" size="2" onClick={loadJobs} disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -289,15 +290,15 @@ export default function CronTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={e => { e.stopPropagation(); runJob(job.id); }} className="p-2 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-accent" title="Run now">
+                    <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); runJob(job.id); }} aria-label="Run job now">
                       <Play size={14} />
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); openEdit(job); }} className="p-2 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text" title="Edit">
+                    </IconButton>
+                    <IconButton variant="ghost" size="1" onClick={e => { e.stopPropagation(); openEdit(job); }} aria-label="Edit job">
                       <Edit2 size={14} />
-                    </button>
-                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-error-subtle rounded-lg text-mission-control-text-dim hover:text-error" title="Delete">
+                    </IconButton>
+                    <IconButton variant="ghost" color="red" size="1" onClick={e => { e.stopPropagation(); removeJob(job); }} aria-label="Delete job">
                       <Trash2 size={14} />
-                    </button>
+                    </IconButton>
                     {isExpanded ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
                   </div>
                 </div>
@@ -395,14 +396,26 @@ export default function CronTab() {
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Execution Mode</label>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'task' }))}
-                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'task' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                  <Button
+                    type="button"
+                    variant={newJob.mode === 'task' ? 'soft' : 'surface'}
+                    color={newJob.mode === 'task' ? undefined : 'gray'}
+                    size="2"
+                    onClick={() => setNewJob(p => ({ ...p, mode: 'task' }))}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
                     Create Task
-                  </button>
-                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'message' }))}
-                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'message' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={newJob.mode === 'message' ? 'soft' : 'surface'}
+                    color={newJob.mode === 'message' ? undefined : 'gray'}
+                    size="2"
+                    onClick={() => setNewJob(p => ({ ...p, mode: 'message' }))}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
                     Message Agent
-                  </button>
+                  </Button>
                 </div>
                 <p className="text-xs text-mission-control-text-dim mt-1">
                   {newJob.mode === 'task' ? 'Creates a task in the pipeline with planning notes, subtasks, and agent assignment.' : 'Sends a message directly to an agent session (bypasses task pipeline).'}
@@ -479,8 +492,8 @@ export default function CronTab() {
               )}
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={closeModal} className="flex-1 px-4 py-2 bg-mission-control-border rounded-lg text-sm">Cancel</button>
-              <button onClick={addJob} className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm">{editingJobId ? 'Save' : 'Create'}</button>
+              <Button variant="surface" color="gray" size="2" onClick={closeModal} style={{ flex: 1, justifyContent: 'center' }}>Cancel</Button>
+              <Button variant="solid" size="2" onClick={addJob} style={{ flex: 1, justifyContent: 'center' }}>{editingJobId ? 'Save' : 'Create'}</Button>
             </div>
           </div>
         </div>

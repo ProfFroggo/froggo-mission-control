@@ -9,6 +9,7 @@ import {
   Rocket,
   ChevronDown,
 } from 'lucide-react';
+import { Button, IconButton, Select, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 
 // ─────────────────────────────────────────────
@@ -114,13 +115,10 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         ))}
       </div>
 
-      <button
-        onClick={onNext}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-      >
+      <Button onClick={onNext} variant="solid" color="grass" size="3" className="w-full">
         Get started
         <ArrowRight size={16} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -157,13 +155,14 @@ function StepPlatformSetup({
           <label htmlFor="ob-platform-name" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Platform name
           </label>
-          <input
+          <TextField.Root
             id="ob-platform-name"
+            size="2"
+            className="w-full"
             type="text"
             value={data.platformName}
-            onChange={e => onChange({ ...data, platformName: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...data, platformName: e.target.value })}
             placeholder="e.g. Acme Corp Command Center"
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
           />
         </div>
 
@@ -171,22 +170,19 @@ function StepPlatformSetup({
           <label htmlFor="ob-industry" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Industry / use case
           </label>
-          <div className="relative">
-            <select
-              id="ob-industry"
-              value={data.industry}
-              onChange={e => onChange({ ...data, industry: e.target.value })}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="">Select one</option>
-              <option value="agency">Agency</option>
-              <option value="startup">Startup</option>
-              <option value="enterprise">Enterprise</option>
-              <option value="solo">Solo Creator</option>
-              <option value="other">Other</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-          </div>
+          <Select.Root
+            value={data.industry || ''}
+            onValueChange={(v) => onChange({ ...data, industry: v })}
+          >
+            <Select.Trigger id="ob-industry" className="w-full" placeholder="Select one" />
+            <Select.Content>
+              <Select.Item value="agency">Agency</Select.Item>
+              <Select.Item value="startup">Startup</Select.Item>
+              <Select.Item value="enterprise">Enterprise</Select.Item>
+              <Select.Item value="solo">Solo Creator</Select.Item>
+              <Select.Item value="other">Other</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         <div>
@@ -218,20 +214,14 @@ function StepPlatformSetup({
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-        >
+        <Button onClick={onBack} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-        >
+        </Button>
+        <Button onClick={onNext} variant="solid" color="grass" size="2" className="flex-1">
           Continue
           <ArrowRight size={16} />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -321,21 +311,21 @@ function StepMeetAgents({
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-        >
+        <Button onClick={onBack} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onNext}
           disabled={selected.size === 0 || creating}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          variant="solid"
+          color="grass"
+          size="2"
+          className="flex-1"
         >
           {creating ? 'Adding agents...' : `Add ${selected.size} agent${selected.size !== 1 ? 's' : ''} & continue`}
           {!creating && <ArrowRight size={16} />}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -388,73 +378,72 @@ function StepFirstTask({
       <div className="space-y-3.5">
         <div>
           <label htmlFor="ob-task-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
-            Task title <span className="text-red-500">*</span>
+            Task title <span className="text-error">*</span>
           </label>
-          <input
+          <TextField.Root
             id="ob-task-title"
+            size="2"
+            className="w-full"
             type="text"
             value={data.title}
-            onChange={e => { onChange({ ...data, title: e.target.value }); setError(''); }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { onChange({ ...data, title: e.target.value }); setError(''); }}
             placeholder="e.g. Draft a product announcement"
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
             disabled={taskCreated}
           />
-          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+          {error && <p className="mt-1 text-xs text-error">{error}</p>}
         </div>
 
         <div>
           <label htmlFor="ob-priority" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Priority
           </label>
-          <div className="relative">
-            <select
-              id="ob-priority"
-              value={data.priority}
-              onChange={e => onChange({ ...data, priority: e.target.value as 'low' | 'medium' | 'high' })}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-              disabled={taskCreated}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-          </div>
+          <Select.Root
+            value={data.priority}
+            onValueChange={(v) => onChange({ ...data, priority: v as 'low' | 'medium' | 'high' })}
+            disabled={taskCreated}
+          >
+            <Select.Trigger id="ob-priority" className="w-full" />
+            <Select.Content>
+              <Select.Item value="low">Low</Select.Item>
+              <Select.Item value="medium">Medium</Select.Item>
+              <Select.Item value="high">High</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         <div>
           <label htmlFor="ob-due-date" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Due date <span className="text-mission-control-text-dim font-normal">(optional)</span>
           </label>
-          <input
+          <TextField.Root
             id="ob-due-date"
+            size="2"
+            className="w-full"
             type="date"
             value={data.dueDate}
-            onChange={e => onChange({ ...data, dueDate: e.target.value })}
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...data, dueDate: e.target.value })}
             disabled={taskCreated}
           />
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-          disabled={loading}
-        >
+        <Button onClick={onBack} disabled={loading} variant="ghost" color="gray" size="2">
           <ArrowLeft size={14} />
           Back
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSubmit}
           disabled={loading || taskCreated}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          variant="solid"
+          color="grass"
+          size="2"
+          className="flex-1"
         >
           {loading ? 'Creating...' : taskCreated ? 'Task created' : 'Create task & continue'}
           {!loading && !taskCreated && <ArrowRight size={16} />}
           {taskCreated && <Check size={16} />}
-        </button>
+        </Button>
       </div>
 
       <div className="text-center">
@@ -527,14 +516,10 @@ function StepReady({
         ))}
       </div>
 
-      <button
-        onClick={onLaunch}
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-      >
+      <Button onClick={onLaunch} disabled={loading} variant="solid" color="grass" size="3" className="w-full">
         {loading ? 'Saving...' : 'Launch Mission Control'}
         {!loading && <Rocket size={16} />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -762,13 +747,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 pt-5 pb-0">
             <StepDots total={TOTAL_STEPS} current={step} />
-            <button
-              onClick={handleSkipAll}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors p-1.5 rounded-lg hover:bg-mission-control-border"
-              aria-label="Skip onboarding"
-            >
+            <IconButton onClick={handleSkipAll} variant="ghost" color="gray" size="1" aria-label="Skip onboarding">
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Step content */}
@@ -968,13 +949,9 @@ export function QuickTips({ onDone }: QuickTipsProps) {
               <h3 className="text-sm font-semibold text-mission-control-text mt-0.5">{tip.title}</h3>
               <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">{tip.content}</p>
             </div>
-            <button
-              onClick={handleSkip}
-              className="flex-shrink-0 p-1 rounded text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-              aria-label="Close tips"
-            >
+            <IconButton onClick={handleSkip} variant="ghost" color="gray" size="1" aria-label="Close tips" className="flex-shrink-0">
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="h-0.5 bg-mission-control-border rounded-full overflow-hidden">
@@ -985,16 +962,10 @@ export function QuickTips({ onDone }: QuickTipsProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <button
-              onClick={handleSkip}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-            >
+            <Button onClick={handleSkip} variant="ghost" color="gray" size="1">
               Skip tips
-            </button>
-            <button
-              onClick={handleNext}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-            >
+            </Button>
+            <Button onClick={handleNext} variant="solid" color="grass" size="1">
               {isLast ? (
                 <>
                   <Check size={12} />
@@ -1006,7 +977,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
                   <ArrowRight size={12} />
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

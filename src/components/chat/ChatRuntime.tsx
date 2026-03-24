@@ -34,15 +34,23 @@ export function convertToThreadMessage(
 
   const role = msg.role as "user" | "assistant" | "system";
 
-  return {
+  const base = {
     id: msg.id,
     role,
-    content: [{ type: "text", text: textContent }],
-    status: msg.streaming
-      ? { type: "running" }
-      : { type: "complete", reason: "stop" },
+    content: [{ type: "text" as const, text: textContent }],
     createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
   };
+
+  if (role === "assistant") {
+    return {
+      ...base,
+      status: msg.streaming
+        ? { type: "running" as const }
+        : { type: "complete" as const, reason: "stop" as const },
+    };
+  }
+
+  return base;
 }
 
 /**

@@ -261,13 +261,13 @@ function ReviewStep({
         {!testing && testResult && (
           <div className="space-y-2">
             {testResult.success ? (
-              <div className="flex items-center gap-2 text-green-400 text-sm">
+              <div className="flex items-center gap-2 text-success text-sm">
                 <CheckCircle size={16} />
                 <span>Connection successful!</span>
               </div>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-start gap-2 text-red-400 text-sm">
+                <div className="flex items-start gap-2 text-error text-sm">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{testResult.error || 'Connection failed'}</span>
                 </div>

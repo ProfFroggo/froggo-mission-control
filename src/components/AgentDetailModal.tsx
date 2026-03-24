@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
-import { Button, IconButton } from '@radix-ui/themes';
+import { Button, IconButton, Select, TextArea, TextField } from '@radix-ui/themes';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star, Wrench, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Link, Upload, Send, Key } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
@@ -1098,12 +1098,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               {/* Editable description */}
               {editingDesc ? (
                 <div className="mt-1.5 flex items-start gap-1.5">
-                  <textarea
+                  <TextArea
                     ref={descInputRef}
                     value={descDraft}
                     onChange={e => setDescDraft(e.target.value)}
                     rows={2}
-                    className="flex-1 text-sm px-2 py-1 rounded border border-mission-control-accent/60 bg-mission-control-bg text-mission-control-text resize-none focus:outline-none focus:border-mission-control-accent"
+                    variant="soft"
+                    className="flex-1 text-sm resize-none"
                     placeholder="Add a description for this agent…"
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveDesc(); } if (e.key === 'Escape') cancelEditDesc(); }}
                   />
@@ -1117,17 +1118,17 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="1"
                   onClick={startEditDesc}
-                  className="group flex items-center gap-1.5 mt-0.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors text-left"
                   title="Click to edit description"
                 >
                   <span className={agent.description ? '' : 'italic opacity-60'}>
                     {agent.description || 'Add a description…'}
                   </span>
-                  <Edit size={12} className="opacity-0 group-hover:opacity-60 flex-shrink-0 transition-opacity" />
-                </button>
+                  <Edit size={12} className="flex-shrink-0" />
+                </Button>
               )}
 
             </div>
@@ -1155,18 +1156,16 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
             { key: 'chat' as const, icon: MessageSquare, label: 'Chat' },
           ]).map((tab) => (
-            <button
+            <Button
               key={tab.key}
+              variant={activeTab === tab.key ? 'solid' : 'ghost'}
+              color={activeTab === tab.key ? 'violet' : 'gray'}
+              size="1"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-shrink-0 px-3 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.key
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               <tab.icon size={14} className="inline mr-1" />
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -1320,15 +1319,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           {AGENT_STATUSES.map(s => (
-                            <button
+                            <Button
                               key={s.value}
-                              type="button"
+                              variant={statusOverride === s.value ? 'solid' : 'ghost'}
+                              color={statusOverride === s.value ? 'violet' : 'gray'}
+                              size="1"
                               onClick={() => setStatusOverride(s.value)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all text-left ${
-                                statusOverride === s.value
-                                  ? 'border-mission-control-accent bg-mission-control-accent/10'
-                                  : 'border-mission-control-border hover:border-mission-control-accent/40'
-                              }`}
                             >
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                                 s.value === 'active' ? 'bg-success' :
@@ -1336,7 +1332,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 s.value === 'disabled' ? 'bg-error' : 'bg-mission-control-text-dim'
                               }`} />
                               <span className={s.color}>{s.label}</span>
-                            </button>
+                            </Button>
                           ))}
                         </div>
                         <Button
@@ -1441,13 +1437,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                     {/* Add input */}
                     <div className="flex items-center gap-2">
-                      <input
-                        type="text"
+                      <TextField.Root
                         value={capInput}
                         onChange={e => setCapInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCapTag(); } }}
                         placeholder="Add capability (press Enter)"
-                        className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
+                        size="2"
+                        className="flex-1"
                       />
                       <IconButton variant="ghost" size="1" onClick={addCapTag} disabled={!capInput.trim()} title="Add capability">
                         <Plus size={14} />
@@ -1473,16 +1469,16 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {skillGaps.map(gap => (
-                          <button
+                          <Button
                             key={gap}
-                            type="button"
+                            variant="ghost"
+                            size="1"
                             onClick={() => { if (!capTags.includes(gap)) { setCapTags(prev => [...prev, gap]); setCapDirty(true); } }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-info-border text-info hover:bg-info/10 transition-colors"
                             title={`Add "${gap}" to capabilities`}
                           >
                             <Plus size={10} />
                             {gap}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -1512,32 +1508,30 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <span className="text-xs font-medium text-mission-control-text">New Skill</span>
                           <Button variant="ghost" color="red" size="1" onClick={() => setAddSkillMode(null)}>Cancel</Button>
                         </div>
-                        <input
-                          className={`${inputBase} text-xs`}
+                        <TextField.Root
                           placeholder="Skill name"
                           value={addSkillName}
                           onChange={e => setAddSkillName(e.target.value)}
+                          size="1"
+                          className="w-full"
                         />
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => setAddSkillMode('url')}
-                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                          <Button variant={addSkillMode === 'url' ? 'solid' : 'ghost'} color={addSkillMode === 'url' ? 'violet' : 'gray'} size="1" onClick={() => setAddSkillMode('url')}>
                             <Link size={10} /> From URL
-                          </button>
-                          <button type="button" onClick={() => setAddSkillMode('text')}
-                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                          </Button>
+                          <Button variant={addSkillMode === 'text' ? 'solid' : 'ghost'} color={addSkillMode === 'text' ? 'violet' : 'gray'} size="1" onClick={() => setAddSkillMode('text')}>
                             <FileText size={10} /> Write / Paste
-                          </button>
-                          <button type="button" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
-                            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+                          </Button>
+                          <Button variant="ghost" size="1" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}>
                             <Upload size={10} /> Upload .md
-                          </button>
+                          </Button>
                           <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
                         </div>
                         {addSkillMode === 'url' && (
-                          <input className={`${inputBase} text-xs`} placeholder="https://example.com/skill.md" value={addSkillUrl} onChange={e => setAddSkillUrl(e.target.value)} />
+                          <TextField.Root placeholder="https://example.com/skill.md" value={addSkillUrl} onChange={e => setAddSkillUrl(e.target.value)} size="1" className="w-full font-mono" />
                         )}
                         {addSkillMode === 'text' && (
-                          <textarea className={`${inputBase} h-36 font-mono text-xs resize-none`} placeholder={'# Skill Name\n\nDescribe what this skill does...'} value={addSkillContent} onChange={e => setAddSkillContent(e.target.value)} />
+                          <TextArea variant="soft" className="h-36 font-mono text-xs resize-none w-full" placeholder={'# Skill Name\n\nDescribe what this skill does...'} value={addSkillContent} onChange={e => setAddSkillContent(e.target.value)} />
                         )}
                         <Button variant="solid" size="1" onClick={handleAddSkill} disabled={addSkillWorking}>
                           {addSkillWorking ? 'Creating...' : 'Create Skill'}
@@ -1553,14 +1547,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         {allSkills.map(skill => {
                           const on = activeSkills.includes(skill.slug);
                           return (
-                            <button key={skill.id} type="button" onClick={() => toggleSkill(skill.slug)}
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-success/40 bg-success/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}>
+                            <Button key={skill.id} variant={on ? 'soft' : 'ghost'} color={on ? 'green' : 'gray'} size="1" onClick={() => toggleSkill(skill.slug)}>
                               <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
                                 {on && <Check size={10} className="text-white" />}
                               </div>
                               <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
                               <span className="text-xs text-mission-control-text-dim font-mono">{skill.slug}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -1748,10 +1741,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <p className="text-xs text-mission-control-text-dim mb-3">Select the Claude model tier for this agent.</p>
                     <div className="space-y-2">
                       {CLAUDE_MODELS.map(m => (
-                        <button key={m.id} type="button" onClick={() => { setModel(m.id); setModelDirty(true); }}
-                          className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
-                            model === m.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/50'
-                          }`}>
+                        <Button key={m.id} variant={model === m.id ? 'solid' : 'ghost'} color={model === m.id ? 'violet' : 'gray'} size="1" onClick={() => { setModel(m.id); setModelDirty(true); }}>
                           <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
                             {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
                           </div>
@@ -1759,7 +1749,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <div className="font-medium text-sm text-mission-control-text">{m.label}</div>
                             <div className="text-xs text-mission-control-text-dim mt-0.5">{m.desc}</div>
                           </div>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                     {modelDirty && (
@@ -1797,8 +1787,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     </div>
                     {rulesEditing ? (
                       <div className="space-y-3">
-                        <textarea
-                          className={`${inputBase} h-72 font-mono resize-none`}
+                        <TextArea
+                          variant="soft"
+                          className="h-72 font-mono resize-none w-full"
                           value={rulesDraft}
                           onChange={e => setRulesDraft(e.target.value)}
                           placeholder="No AGENT.md file found"
@@ -1842,8 +1833,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <IconButton variant="ghost" size="1" onClick={() => setShowRestartBanner(false)} className="ml-auto"><X size={12} /></IconButton>
                     </div>
                   )}
-                  <textarea
-                    className={`${inputBase} h-72 font-mono resize-none`}
+                  <TextArea
+                    variant="soft"
+                    className="h-72 font-mono resize-none w-full"
                     value={soul}
                     onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                     placeholder="No SOUL.md found for this agent."
@@ -1875,8 +1867,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     const isOpen = expandedGroups[`tools-${server.id}`] ?? false;
                     return (
                       <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
-                        <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [`tools-${server.id}`]: !isOpen }))}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left">
+                        <Button variant="ghost" size="1" onClick={() => setExpandedGroups(prev => ({ ...prev, [`tools-${server.id}`]: !isOpen }))}>
                           <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
                             <Server size={11} /> {server.label}
                           </span>
@@ -1884,25 +1875,23 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <span className={`text-xs ${allOn ? 'text-success' : someOn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                               {enabledCount}/{server.tools.length}
                             </span>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}
-                              className={`text-xs px-2 py-0.5 rounded-lg transition-colors ${allOn ? 'bg-success/20 text-success' : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                            <Button variant={allOn ? 'soft' : 'ghost'} color={allOn ? 'green' : 'gray'} size="1" onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}>
                               {allOn ? 'Disable all' : 'Enable all'}
-                            </button>
+                            </Button>
                             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </span>
-                        </button>
+                        </Button>
                         {isOpen && (
                           <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                             {server.tools.map(tool => {
                               const on = activeTools.includes(tool);
                               return (
-                                <button key={tool} type="button" onClick={() => toggleTool(tool)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-mission-control-surface/50 transition-colors">
+                                <Button key={tool} variant={on ? 'soft' : 'ghost'} color={on ? 'violet' : 'gray'} size="1" onClick={() => toggleTool(tool)}>
                                   <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                                     {on && <Check size={9} className="text-white" />}
                                   </div>
                                   <span className={`text-xs font-mono ${on ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>{tool}</span>
-                                </button>
+                                </Button>
                               );
                             })}
                           </div>
@@ -1956,20 +1945,23 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
                           <Button variant="ghost" color="red" size="1" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }}>Cancel</Button>
                         </div>
-                        <input className={`${inputBase} text-xs`} placeholder="Server name (e.g. Filesystem MCP)" value={newMcp.name} onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))} />
-                        <select className={`${inputBase} text-xs`} value={newMcp.transport} onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}>
-                          <option value="stdio">stdio -- local process</option>
-                          <option value="http">HTTP / SSE -- remote endpoint</option>
-                        </select>
+                        <TextField.Root placeholder="Server name (e.g. Filesystem MCP)" value={newMcp.name} onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))} size="1" className="w-full" />
+                        <Select.Root value={newMcp.transport} onValueChange={val => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
+                          <Select.Trigger className="w-full" />
+                          <Select.Content>
+                            <Select.Item value="stdio">stdio -- local process</Select.Item>
+                            <Select.Item value="http">HTTP / SSE -- remote endpoint</Select.Item>
+                          </Select.Content>
+                        </Select.Root>
                         {newMcp.transport === 'stdio' ? (
                           <>
-                            <input className={`${inputBase} text-xs font-mono`} placeholder="Command (e.g. npx, node, python)" value={newMcp.command} onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))} />
-                            <input className={`${inputBase} text-xs font-mono`} placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)" value={newMcp.args} onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))} />
+                            <TextField.Root placeholder="Command (e.g. npx, node, python)" value={newMcp.command} onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))} size="1" className="w-full font-mono" />
+                            <TextField.Root placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)" value={newMcp.args} onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))} size="1" className="w-full font-mono" />
                           </>
                         ) : (
-                          <input className={`${inputBase} text-xs font-mono`} placeholder="URL (e.g. https://mcp.example.com)" value={newMcp.url} onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))} />
+                          <TextField.Root placeholder="URL (e.g. https://mcp.example.com)" value={newMcp.url} onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))} size="1" className="w-full font-mono" />
                         )}
-                        <textarea className={`${inputBase} text-xs font-mono resize-none`} placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'} rows={3} value={newMcp.env} onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))} />
+                        <TextArea variant="soft" className="text-xs font-mono resize-none w-full" placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'} rows={3} value={newMcp.env} onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))} />
                         <Button variant="solid" size="1" onClick={addMcpServer} disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}>
                           Add Server
                         </Button>
@@ -1992,7 +1984,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
                     <div className="grid grid-cols-5 gap-1.5">
                       {TRUST_TIERS.map(tier => (
-                        <button key={tier.id} type="button"
+                        <Button key={tier.id} variant={trustTier === tier.id ? 'solid' : 'ghost'} color={trustTier === tier.id ? 'violet' : 'gray'} size="1"
                           onClick={() => {
                             if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
@@ -2006,10 +1998,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                               setTimeout(() => setPresetApplied(null), 2000);
                             }
                             setPermDirty(true);
-                          }}
-                          className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}>
+                          }}>
                           <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                     <div className="flex items-center justify-between mt-2 px-1">
@@ -2043,8 +2034,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         const overrideCount = group.perms.filter(p => permOverrides[p.id] !== undefined).length;
                         return (
                           <div key={group.label} className="border border-mission-control-border rounded-lg overflow-hidden">
-                            <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
-                              className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left">
+                            <Button variant="ghost" size="1" onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}>
                               <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
                                 <Shield size={11} /> {group.label}
                               </span>
@@ -2052,7 +2042,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {overrideCount > 0 && <span className="text-xs text-mission-control-accent">{overrideCount} override{overrideCount > 1 ? 's' : ''}</span>}
                                 {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                               </span>
-                            </button>
+                            </Button>
                             {isOpen && (
                               <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                                 {group.perms.map(perm => {
@@ -2098,10 +2088,14 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns.</p>
                     <div className="border border-mission-control-border rounded-lg overflow-hidden">
                       <div className="p-2 bg-mission-control-surface flex gap-2">
-                        <input type="text" value={newDisallowed} onChange={e => setNewDisallowed(e.target.value)}
+                        <TextField.Root
+                          value={newDisallowed}
+                          onChange={e => setNewDisallowed(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
                           placeholder="e.g. Bash(git push *)"
-                          className="flex-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono" />
+                          size="1"
+                          className="flex-1 font-mono"
+                        />
                         <Button variant="soft" size="1" onClick={handleAddAgentDisallowed}>
                           <Plus size={10} /> Block
                         </Button>
@@ -2151,13 +2145,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div ref={chatEndRef} />
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-mission-control-border">
-                    <input
-                      type="text"
+                    <TextField.Root
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
                       placeholder={`Message ${agent.name}...`}
-                      className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                      size="2"
+                      className="flex-1"
                       disabled={chatSending}
                     />
                     <IconButton variant="solid" size="2" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}>

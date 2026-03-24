@@ -500,7 +500,7 @@ function ConfigurePanel({
               Cancel
             </Button>
             <Button type="submit" disabled={saving} variant="solid" color="grass" size="1">
-              {saving ? <Spinner size="1" /> : <CheckCircle2 size={11} />}
+              {saving ? <RadixSpinner size="1" /> : <CheckCircle2 size={11} />}
               Save Configuration
             </Button>
           </div>
@@ -1120,7 +1120,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     <div className="flex items-center gap-2">
                       {phase === 'installing' ? (
                         <div className="flex items-center gap-1.5 text-xs text-info flex-1">
-                          <Spinner size="1" />
+                          <RadixSpinner size="1" />
                           <span>Installing…</span>
                         </div>
                       ) : (
@@ -1174,7 +1174,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     </div>
                   ) : phase === 'installing' ? (
                     <div className="flex items-center gap-1.5 text-xs text-info">
-                      <Spinner size="1" />
+                      <RadixSpinner size="1" />
                       <span>Installing…</span>
                     </div>
                   ) : phase === 'error' ? (

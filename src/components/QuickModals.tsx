@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Mail, MessageSquare, RefreshCw, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 import { useUserSettings } from '../store/userSettings';
 
@@ -89,15 +90,15 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
       />
       
       <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
-        <button 
-          onClick={fetchEvents} 
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
+        <IconButton
+          variant="ghost"
+          size="2"
+          onClick={fetchEvents}
           disabled={loading}
-          type="button"
           aria-label="Refresh events"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <BaseModalBody noPadding maxHeight="60vh">
@@ -193,15 +194,15 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
       />
       
       <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
-        <button 
-          onClick={fetchEmails} 
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
+        <IconButton
+          variant="ghost"
+          size="2"
+          onClick={fetchEmails}
           disabled={loading}
-          type="button"
           aria-label="Refresh emails"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <BaseModalBody noPadding maxHeight="60vh">
@@ -272,15 +273,15 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       />
       
       <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
-        <button 
-          onClick={fetchMentions} 
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
+        <IconButton
+          variant="ghost"
+          size="2"
+          onClick={fetchMentions}
           disabled={loading}
-          type="button"
           aria-label="Refresh mentions"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <BaseModalBody noPadding maxHeight="60vh">
@@ -375,15 +376,15 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
       />
       
       <div className="flex items-center justify-end px-6 py-2 border-b border-mission-control-border/50">
-        <button 
-          onClick={fetchMessages} 
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors" 
+        <IconButton
+          variant="ghost"
+          size="2"
+          onClick={fetchMessages}
           disabled={loading}
-          type="button"
           aria-label="Refresh messages"
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <BaseModalBody noPadding maxHeight="60vh">

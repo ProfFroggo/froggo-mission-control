@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { X, CheckCircle, XCircle, Loader2, Download, Key, Package, Bot } from 'lucide-react';
 import { moduleApi, catalogApi } from '../lib/api';
 import type { CatalogModule } from '../types/catalog';
@@ -101,7 +102,7 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={onClose} type="button" aria-label="Close" />
+      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default border-0 outline-none" onClick={onClose} type="button" aria-label="Close" />
       <div className="relative w-full max-w-md bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
 
         {/* Header */}
@@ -113,9 +114,9 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
             <h2 className="font-bold">Install {module.name}</h2>
             <p className="text-xs text-mission-control-text-dim truncate">{module.description}</p>
           </div>
-          <button onClick={onClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface transition-colors">
+          <IconButton variant="ghost" size="1" onClick={onClose} aria-label="Close install modal">
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -202,21 +203,23 @@ export default function ModuleInstallModal({ module, onClose, onInstalled }: Mod
         <div className="flex items-center gap-3 p-4 border-t border-mission-control-border">
           {!started ? (
             <>
-              <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors">
+              <Button type="button" variant="surface" color="gray" size="2" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="solid"
+                size="2"
                 onClick={runInstall}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                style={{ flex: 1, justifyContent: 'center' }}
               >
                 <Download size={14} /> Install
-              </button>
+              </Button>
             </>
           ) : done || failed ? (
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors">
+            <Button type="button" variant="surface" color="gray" size="2" onClick={onClose} style={{ flex: 1, justifyContent: 'center' }}>
               Close
-            </button>
+            </Button>
           ) : (
             <div className="flex-1 text-center text-sm text-mission-control-text-dim">
               Installing…

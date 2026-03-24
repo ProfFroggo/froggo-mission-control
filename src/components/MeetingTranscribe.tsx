@@ -304,7 +304,7 @@ export default function MeetingTranscribe() {
             >
               {isUploading ? <><Loader2 className="w-4 h-4 animate-spin" />Transcribing…</> : <><Upload className="w-4 h-4" />Upload Recording</>}
             </Button>
-            <p className="text-[11px] text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
+            <p className="text-xs text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
             {uploadError && <div className="mt-2 p-2 bg-error-subtle text-error rounded-lg text-xs">{uploadError}</div>}
           </div>
 
@@ -340,7 +340,7 @@ export default function MeetingTranscribe() {
                           </IconButton>
                         </div>
                         {meeting.status === 'active' && (
-                          <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded-full">Live</span>
+                          <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded-full">Live</span>
                         )}
                       </button>
                       {isExpanded && (
@@ -441,7 +441,7 @@ export default function MeetingTranscribe() {
                           <Users className="w-3.5 h-3.5 text-review" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 text-[11px] text-mission-control-text-dim mb-1">
+                          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mb-1">
                             <span className="font-medium">{t.speaker}</span>
                             <span>·</span>
                             <span>{new Date(t.timestamp).toLocaleTimeString()}</span>
@@ -459,7 +459,7 @@ export default function MeetingTranscribe() {
                           <Mic className="w-3.5 h-3.5 text-review animate-pulse" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-[11px] text-mission-control-text-dim mb-1">You · now</div>
+                          <div className="text-xs text-mission-control-text-dim mb-1">You · now</div>
                           <div className="bg-mission-control-surface rounded-lg px-3 py-2 text-sm italic text-mission-control-text-dim">
                             {interimText}
                           </div>

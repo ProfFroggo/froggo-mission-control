@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { X, CheckCircle, Loader2, AlertTriangle, Sparkles, Flag, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
@@ -464,9 +465,9 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Board Health Check</h2>
-                <button onClick={handleClose} className="p-1.5 hover:bg-mission-control-bg rounded-lg transition-colors">
+                <IconButton variant="ghost" size="1" onClick={handleClose} aria-label="Close health check">
                   <X size={18} />
-                </button>
+                </IconButton>
               </div>
               <p className="text-sm text-mission-control-text-dim mt-0.5">
                 {phase === 'scanning' && 'Scanning...'}
@@ -605,21 +606,21 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               className="w-full px-3 py-2 bg-mission-control-bg rounded-lg border border-mission-control-border text-sm focus:outline-none focus:border-mission-control-accent"
             />
             <div className="flex gap-2">
-              <button onClick={handleClose} className="flex-1 px-4 py-2 bg-mission-control-bg border border-mission-control-border text-sm rounded-lg hover:border-mission-control-text-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+              <Button variant="surface" color="gray" size="2" onClick={handleClose} style={{ flex: 1, justifyContent: 'center' }}>
                 Cancel
-              </button>
-              <button onClick={handleConfirm} className="flex-1 px-4 py-2 bg-success text-white text-sm font-medium rounded-lg hover:bg-success/90 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+              </Button>
+              <Button variant="solid" color="green" size="2" onClick={handleConfirm} style={{ flex: 1, justifyContent: 'center' }}>
                 <Check size={16} /> Proceed
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {phase === 'done' && (
           <div className="border-t border-mission-control-border p-4 flex-shrink-0">
-            <button onClick={handleClose} className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">
+            <Button variant="solid" size="2" onClick={handleClose} style={{ width: '100%', justifyContent: 'center' }}>
               Done
-            </button>
+            </Button>
           </div>
         )}
       </div>

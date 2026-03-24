@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button } from '@radix-ui/themes';
 import { RefreshCw, Download, Pause, Play, ArrowDown } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
@@ -67,27 +68,31 @@ export default function LogsTab() {
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => setPolling(!polling)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            polling ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim'
-          }`}>
+        <Button
+          type="button"
+          variant={polling ? 'soft' : 'surface'}
+          color={polling ? 'green' : 'gray'}
+          size="2"
+          onClick={() => setPolling(!polling)}
+        >
           {polling ? <Pause size={14} /> : <Play size={14} />}
           {polling ? 'Live' : 'Paused'}
-        </button>
-        <button type="button" onClick={() => setAutoScroll(!autoScroll)}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            autoScroll ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'
-          }`}>
+        </Button>
+        <Button
+          type="button"
+          variant={autoScroll ? 'soft' : 'surface'}
+          color={autoScroll ? undefined : 'gray'}
+          size="2"
+          onClick={() => setAutoScroll(!autoScroll)}
+        >
           <ArrowDown size={14} /> Auto-scroll
-        </button>
-        <button type="button" onClick={handleDownload}
-          className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/80">
+        </Button>
+        <Button type="button" variant="surface" color="gray" size="2" onClick={handleDownload}>
           <Download size={14} /> Download
-        </button>
-        <button type="button" onClick={() => setLines([])}
-          className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:bg-mission-control-border/80">
+        </Button>
+        <Button type="button" variant="surface" color="gray" size="2" onClick={() => setLines([])}>
           Clear
-        </button>
+        </Button>
         <div className="flex-1" />
         {fileInfo && (
           <span className="text-xs text-mission-control-text-dim">

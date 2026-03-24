@@ -922,17 +922,14 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           <div className="px-4 py-3 border-t border-mission-control-border flex gap-2">
-            <button
-              onClick={async () => {
+            <Button variant="solid" size="1" onClick={async () => {
                 setPhase('confirm');
                 const names = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
                 const userText = names.length > 0 ? `Team: ${names.join(', ')}` : 'No agents yet';
                 await mcAsk(userText, 'confirm', "Here's what I'll set up:");
-              }}
-              className="flex-1 py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium"
-            >
+              }} style={{ flex: 1, justifyContent: 'center' }}>
               {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -949,9 +946,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <LayoutTemplate size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold text-mission-control-text">New Project</span>
             </div>
-            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+            <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
             <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
@@ -1015,9 +1012,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             <div className="text-sm font-semibold text-mission-control-text">New Project Setup</div>
           </div>
           {phase !== 'creating' && (
-            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+            <IconButton variant="ghost" size="1" onClick={onClose}>
               <X size={16} />
-            </button>
+            </IconButton>
           )}
         </div>
 
@@ -1126,19 +1123,16 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         <div className="p-3 border-t border-mission-control-border">
           {phase === 'done' && created ? (
             <div className="flex gap-2">
-              <button onClick={() => onCreated(created)}
-                className="flex-1 py-2.5 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/90 transition-colors flex items-center justify-center gap-2">
+              <Button variant="solid" size="1" onClick={() => onCreated(created)} style={{ flex: 1, justifyContent: 'center' }}>
                 <Check size={15} /> Open Project
-              </button>
-              <button onClick={onClose}
-                className="px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-surface transition-colors">
+              </Button>
+              <Button variant="ghost" size="1" onClick={onClose}>
                 Close
-              </button>
+              </Button>
             </div>
           ) : phase === 'creating' && createError ? (
             <div className="flex gap-2">
-              <button onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }}
-                className="flex-1 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">Retry</button>
+              <Button variant="ghost" size="1" onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }} style={{ flex: 1, justifyContent: 'center' }}>Retry</Button>
             </div>
           ) : phase === 'creating' ? (
             <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
@@ -1157,10 +1151,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
               />
-              <button onClick={handleSend} disabled={!input.trim() || mcTyping}
-                className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <IconButton variant="solid" size="1" onClick={handleSend} disabled={!input.trim() || mcTyping}>
                 <Send size={18} />
-              </button>
+              </IconButton>
             </div>
           ) : null}
         </div>
