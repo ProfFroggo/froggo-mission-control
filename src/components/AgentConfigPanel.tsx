@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, X } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -625,16 +626,10 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
       {/* Sub-tabs — horizontal pills */}
       <div className="flex gap-1 mb-4 overflow-x-auto">
         {TABS.map(t => (
-          <button key={t.id} type="button" onClick={() => setTab(t.id)}
-            className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap relative ${
-              tab === t.id
-                ? 'bg-mission-control-surface text-mission-control-text border border-mission-control-border'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
-            }`}
-          >
+          <Button key={t.id} variant={tab === t.id ? 'solid' : 'ghost'} size="1" onClick={() => setTab(t.id)} style={{ flexShrink: 0, position: 'relative' }}>
             {t.label}
             {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -651,9 +646,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded text-warning text-xs">
                   <AlertCircle size={12} />
                   Restart {agentName} for changes to take effect.
-                  <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto opacity-60 hover:opacity-100">
+                  <IconButton variant="ghost" size="1" onClick={() => setShowRestartBanner(false)} style={{ marginLeft: 'auto' }}>
                     <X size={10} />
-                  </button>
+                  </IconButton>
                 </div>
               )}
               <textarea
@@ -662,9 +657,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                 placeholder="No SOUL.md found for this agent."
               />
-              <button type="button" onClick={saveSoul} disabled={!soulDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={saveSoul} disabled={!soulDirty || saving}>
                 {saving ? 'Saving...' : 'Save Soul'}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -674,13 +669,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
               <p className="text-xs text-mission-control-text-dim">All agents run Claude directly via Anthropic's API. Select the model tier for this agent.</p>
               <div className="space-y-2">
                 {CLAUDE_MODELS.map(m => (
-                  <button
+                  <Button
                     key={m.id}
-                    type="button"
+                    variant={model === m.id ? 'soft' : 'ghost'}
+                    size="1"
                     onClick={() => { setModel(m.id); setModelDirty(true); }}
-                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
-                      model === m.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/50'
-                    }`}
+                    style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}
                   >
                     <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
                       {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
@@ -689,12 +683,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       <div className="font-medium text-sm text-mission-control-text">{m.label}</div>
                       <div className="text-xs text-mission-control-text-dim mt-0.5">{m.desc}</div>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
-              <button type="button" onClick={saveModel} disabled={!modelDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={saveModel} disabled={!modelDirty || saving}>
                 {saving ? 'Saving...' : 'Save Model'}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -708,13 +702,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 </p>
                 {addSkillMode === null && (
                   <div className="relative group">
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                      onClick={() => setAddSkillMode('url')}
-                    >
+                    <Button variant="soft" size="1" onClick={() => setAddSkillMode('url')}>
                       <Plus size={11} /> Add Skill <ChevronDown size={11} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -724,7 +714,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-mission-control-text">New Skill</span>
-                    <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
+                    <Button variant="ghost" size="1" onClick={() => setAddSkillMode(null)}>Cancel</Button>
                   </div>
 
                   <input
@@ -736,27 +726,15 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
                   {/* Source type toggle */}
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setAddSkillMode('url')}
-                      className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
-                    >
+                    <Button variant={addSkillMode === 'url' ? 'soft' : 'ghost'} size="1" onClick={() => setAddSkillMode('url')}>
                       <Link size={10} /> From URL
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAddSkillMode('text')}
-                      className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
-                    >
+                    </Button>
+                    <Button variant={addSkillMode === 'text' ? 'soft' : 'ghost'} size="1" onClick={() => setAddSkillMode('text')}>
                       <FileText size={10} /> Write / Paste
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                    >
+                    </Button>
+                    <Button variant="ghost" size="1" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}>
                       <Upload size={10} /> Upload .md
-                    </button>
+                    </Button>
                     <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
                   </div>
 
@@ -778,14 +756,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     />
                   )}
 
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    disabled={addSkillWorking}
-                    className="btn-primary text-xs py-1.5 disabled:opacity-40"
-                  >
+                  <Button variant="solid" size="1" onClick={handleAddSkill} disabled={addSkillWorking}>
                     {addSkillWorking ? 'Creating...' : 'Create Skill'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -797,26 +770,27 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   {allSkills.map(skill => {
                     const on = activeSkills.includes(skill.slug);
                     return (
-                      <button
+                      <Button
                         key={skill.id}
-                        type="button"
+                        variant={on ? 'soft' : 'ghost'}
+                        size="1"
                         onClick={() => toggleSkill(skill.slug)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-success/40 bg-success/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
                       >
                         <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
                           {on && <Check size={10} className="text-white" />}
                         </div>
                         <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
                         <span className="text-xs text-mission-control-text-dim font-mono">{skill.slug}</span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
               )}
 
-              <button type="button" onClick={saveSkills} disabled={!skillsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={saveSkills} disabled={!skillsDirty || saving}>
                 {saving ? 'Saving...' : 'Save Skills'}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -831,38 +805,39 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
                     <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
                       <span className="text-sm font-medium text-mission-control-text">{server.label}</span>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="1"
                         onClick={() => toggleServer(server.tools, !allOn)}
-                        className={`text-xs px-2 py-0.5 rounded transition-colors ${allOn ? 'bg-success/20 text-success' : someOn ? 'bg-warning/20 text-warning' : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface'}`}
                       >
                         {allOn ? 'All on' : someOn ? 'Partial' : 'All off'} — toggle all
-                      </button>
+                      </Button>
                     </div>
                     <div className="divide-y divide-mission-control-border">
                       {server.tools.map(tool => {
                         const on = activeTools.includes(tool);
                         return (
-                          <button
+                          <Button
                             key={tool}
-                            type="button"
+                            variant={on ? 'soft' : 'ghost'}
+                            size="1"
                             onClick={() => toggleTool(tool)}
-                            className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-mission-control-surface/50 transition-colors"
+                            style={{ width: '100%', justifyContent: 'flex-start' }}
                           >
                             <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                               {on && <Check size={9} className="text-white" />}
                             </div>
                             <span className={`text-xs font-mono ${on ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>{tool}</span>
-                          </button>
+                          </Button>
                         );
                       })}
                     </div>
                   </div>
                 );
               })}
-              <button type="button" onClick={saveTools} disabled={!toolsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={saveTools} disabled={!toolsDirty || saving}>
                 {saving ? 'Saving...' : 'Save Tool Access'}
-              </button>
+              </Button>
 
               {/* ── Custom MCP Servers ── */}
               <div className="border-t border-mission-control-border pt-4 space-y-3">
@@ -872,13 +847,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
                   </div>
                   {!showAddMcp && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddMcp(true)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                    >
+                    <Button variant="soft" size="1" onClick={() => setShowAddMcp(true)}>
                       <Plus size={11} /> Add Server
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -894,13 +865,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                               : `http: ${server.url}`}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeMcpServer(server.id)}
-                          className="flex-shrink-0 ml-3 text-mission-control-text-dim hover:text-error transition-colors"
-                        >
+                        <IconButton variant="ghost" size="1" onClick={() => removeMcpServer(server.id)} style={{ flexShrink: 0, marginLeft: '12px' }}>
                           <Trash2 size={13} />
-                        </button>
+                        </IconButton>
                       </div>
                     ))}
                   </div>
@@ -914,7 +881,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
-                      <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
+                      <Button variant="ghost" size="1" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }}>Cancel</Button>
                     </div>
                     <input
                       className={`${inputBase} text-xs`}
@@ -960,21 +927,16 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       value={newMcp.env}
                       onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))}
                     />
-                    <button
-                      type="button"
-                      onClick={addMcpServer}
-                      disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}
-                      className="btn-primary text-xs disabled:opacity-40"
-                    >
+                    <Button variant="solid" size="1" onClick={addMcpServer} disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}>
                       Add Server
-                    </button>
+                    </Button>
                   </div>
                 )}
 
                 {mcpDirty && (
-                  <button type="button" onClick={saveMcp} disabled={saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="1" onClick={saveMcp} disabled={saving}>
                     {saving ? 'Saving...' : 'Save MCP Servers'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -986,13 +948,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
               <div className="flex items-center justify-between">
                 <p className="text-xs text-mission-control-text-dim">Grant {agentName} access to API keys and credentials.</p>
                 {!showAddKey && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAddKey(true)}
-                    className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                  >
+                  <Button variant="soft" size="1" onClick={() => setShowAddKey(true)}>
                     <Plus size={11} /> Add Credential
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -1001,7 +959,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-mission-control-text">New Credential</span>
-                    <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
+                    <Button variant="ghost" size="1" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }}>Cancel</Button>
                   </div>
                   <select
                     className={`${inputBase} text-xs`}
@@ -1035,14 +993,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     onChange={e => setNewKey(k => ({ ...k, key: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
                   />
-                  <button
-                    type="button"
-                    onClick={handleCreateKey}
-                    disabled={addingKey}
-                    className="btn-primary text-xs py-1.5 disabled:opacity-40"
-                  >
+                  <Button variant="solid" size="1" onClick={handleCreateKey} disabled={addingKey}>
                     {addingKey ? 'Saving...' : 'Add & Assign to Agent'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -1056,11 +1009,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                   {allApiKeys.map(key => {
                     const on = activeApiKeys.includes(key.id);
                     return (
-                      <button
+                      <Button
                         key={key.id}
-                        type="button"
+                        variant={on ? 'soft' : 'ghost'}
+                        size="1"
                         onClick={() => toggleApiKey(key.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-mission-control-accent/40 bg-mission-control-accent/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
+                        style={{ width: '100%', justifyContent: 'flex-start' }}
                       >
                         <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                           {on && <Check size={10} className="text-white" />}
@@ -1070,14 +1024,14 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                           <div className="text-xs text-mission-control-text-dim">{key.service}</div>
                         </div>
                         <Key size={12} className={on ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
               )}
-              <button type="button" onClick={saveApiKeys} disabled={!apiKeysDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={saveApiKeys} disabled={!apiKeysDirty || saving}>
                 {saving ? 'Saving...' : 'Save API Access'}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -1090,9 +1044,10 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {TRUST_TIERS.map(tier => (
-                    <button
+                    <Button
                       key={tier.id}
-                      type="button"
+                      variant={trustTier === tier.id ? 'soft' : 'ghost'}
+                      size="1"
                       onClick={() => {
                         if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                         setTrustTier(tier.id);
@@ -1109,10 +1064,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                         }
                         setPermDirty(true);
                       }}
-                      className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}
                     >
                       <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {/* Description + preset flash */}
@@ -1158,10 +1112,11 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     const overrideCount = group.perms.filter(p => permOverrides[p.id] !== undefined).length;
                     return (
                       <div key={group.label} className="border border-mission-control-border rounded-lg overflow-hidden">
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="1"
                           onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left"
+                          style={{ width: '100%', justifyContent: 'space-between' }}
                         >
                           <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
                             <Shield size={11} /> {group.label}
@@ -1172,7 +1127,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                             )}
                             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </span>
-                        </button>
+                        </Button>
                         {isOpen && (
                           <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                             {group.perms.map(perm => {
@@ -1186,22 +1141,10 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {hasOverride && (
-                                      <button
-                                        type="button"
-                                        onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
-                                        className="text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded border border-mission-control-border transition-colors"
-                                      >Reset</button>
+                                      <Button variant="ghost" size="1" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}>Reset</Button>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === true ? 'bg-success/20 text-success border-success/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/40'}`}
-                                    >Allow</button>
-                                    <button
-                                      type="button"
-                                      onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                      className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === false ? 'bg-error/20 text-error border-error/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40'}`}
-                                    >Deny</button>
+                                    <Button variant={overrideVal === true ? 'soft' : 'ghost'} size="1" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}>Allow</Button>
+                                    <Button variant={overrideVal === false ? 'soft' : 'ghost'} color={overrideVal === false ? 'red' : undefined} size="1" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}>Deny</Button>
                                   </div>
                                 </div>
                               );
@@ -1228,22 +1171,18 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       placeholder="e.g. Bash(git push *)"
                       className="flex-1 text-xs bg-mission-control-bg0 border border-mission-control-border rounded px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono"
                     />
-                    <button
-                      type="button"
-                      onClick={handleAddAgentDisallowed}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded hover:bg-mission-control-accent/20 transition-colors"
-                    >
+                    <Button variant="soft" size="1" onClick={handleAddAgentDisallowed}>
                       <Plus size={10} /> Block
-                    </button>
+                    </Button>
                   </div>
                   {agentDisallowed.length > 0 && (
                     <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                       {agentDisallowed.map(tool => (
                         <div key={tool} className="flex items-center justify-between px-3 py-1.5">
                           <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                          <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors">
+                          <IconButton variant="ghost" size="1" onClick={() => handleRemoveAgentDisallowed(tool)}>
                             <X size={12} />
-                          </button>
+                          </IconButton>
                         </div>
                       ))}
                     </div>
@@ -1251,9 +1190,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 </div>
               </div>
 
-              <button type="button" onClick={savePermissions} disabled={!permDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+              <Button variant="solid" size="1" onClick={savePermissions} disabled={!permDirty || saving}>
                 {saving ? 'Saving...' : 'Save Permissions'}
-              </button>
+              </Button>
             </div>
           )}
 
@@ -1349,13 +1288,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => { setMetrics(null); }}
-                    className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                  >
+                  <Button variant="ghost" size="1" onClick={() => { setMetrics(null); }}>
                     Refresh metrics
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -1367,8 +1302,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
       {!loading && !isProtectedAgent(agentId) && (
         <div className="flex items-center gap-2 pt-4 mt-4 border-t border-mission-control-border">
           {agentStatus === 'disabled' ? (
-            <button
-              type="button"
+            <Button
+              variant="soft"
+              size="1"
               disabled={hrActionLoading}
               onClick={async () => {
                 setHrActionLoading(true);
@@ -1379,29 +1315,18 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 } catch { showToast('Failed to enable agent', 'error'); }
                 finally { setHrActionLoading(false); }
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40"
             >
               <Power size={14} /> Enable Agent
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              disabled={hrActionLoading}
-              onClick={() => setShowDisableConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40"
-            >
+            <Button variant="soft" size="1" disabled={hrActionLoading} onClick={() => setShowDisableConfirm(true)}>
               <PowerOff size={14} /> Disable Agent
-            </button>
+            </Button>
           )}
           <div className="flex-1" />
-          <button
-            type="button"
-            disabled={hrActionLoading}
-            onClick={() => setShowFireConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40"
-          >
+          <Button variant="soft" color="red" size="1" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}>
             <UserMinus size={14} /> Fire Agent
-          </button>
+          </Button>
         </div>
       )}
 
