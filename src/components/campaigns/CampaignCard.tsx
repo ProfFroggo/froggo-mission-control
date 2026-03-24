@@ -121,20 +121,20 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
                 {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
                 {sc.label}
               </span>
-            </div>
+            </Flex>
             {campaign.description && (
               <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{campaign.description}</p>
             )}
-          </div>
+          </Box>
 
           {/* Task progress pill */}
           <div className="flex-shrink-0 w-28 hidden sm:block">
             {totalTasks > 0 ? (
               <div>
-                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-0.5">
+                <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-0.5">
                   <span>{doneTasks}/{totalTasks}</span>
                   <span>{progress}%</span>
-                </div>
+                </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
@@ -148,22 +148,22 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           </div>
 
           {/* Members */}
-          <div className="flex-shrink-0 flex items-center -space-x-1.5">
+          <Flex align="center" className="flex-shrink-0 -space-x-1.5">
             {members.slice(0, 3).map((m: any) => (
               <AgentAvatar key={m.agentId} agentId={m.agentId} fallbackEmoji={m.agentEmoji} size="xs" className="ring-1 ring-mission-control-bg0" />
             ))}
             {members.length > 3 && (
-              <div className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
+              <Flex align="center" justify="center" className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
                 +{members.length - 3}
-              </div>
+              </Flex>
             )}
             {members.length === 0 && (
-              <span className="text-xs text-mission-control-text-dim flex items-center gap-1"><Users size={11} /> 0</span>
+              <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim"><Users size={11} /> 0</Flex>
             )}
-          </div>
+          </Flex>
 
           {/* Date / time info */}
-          <div className="flex-shrink-0 flex items-center gap-3 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3" className="flex-shrink-0 text-xs text-mission-control-text-dim">
             {daysRemaining !== null && campaign.status !== 'completed' && campaign.status !== 'archived' && (
               <span className={`flex items-center gap-1 ${isOverdue ? 'text-error' : daysRemaining <= 7 ? 'text-warning' : ''}`}>
                 <CalendarDays size={11} />
@@ -174,7 +174,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
               <span className="flex items-center gap-1 text-warning"><Zap size={11} /> {inProgressTasks}</span>
             )}
             <span className="flex items-center gap-1"><Clock size={11} /> {formatTimeAgo(lastActivity)}</span>
-          </div>
+          </Flex>
 
           {onArchive && campaign.status !== 'archived' && (
             <IconButton
@@ -188,7 +188,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
             </IconButton>
           )}
           <ChevronRight size={14} className="flex-shrink-0 text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
-        </div>
+        </Flex>
       </button>
     );
   }
@@ -201,38 +201,40 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
       className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-5 transition-all duration-200 focus:outline-none"
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <div
-            className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center mt-0.5"
+      <Flex align="start" justify="between" gap="3" mb="3">
+        <Flex align="start" gap="3" className="min-w-0">
+          <Flex
+            align="center"
+            justify="center"
+            className="flex-shrink-0 w-9 h-9 rounded-lg mt-0.5"
             style={{ backgroundColor: `${campaign.color}20`, border: `1px solid ${campaign.color}40` }}
           >
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: campaign.color }} />
-          </div>
-          <div className="min-w-0">
+          </Flex>
+          <Box className="min-w-0">
             <h3 className="font-semibold text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors text-sm">
               {campaign.name}
             </h3>
             {campaign.description && (
               <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{campaign.description}</p>
             )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+          </Box>
+        </Flex>
+        <Flex align="center" gap="2" className="flex-shrink-0">
           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${tc}`}>
             {typeLabel}
           </span>
           <ChevronRight size={14} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Status + channels row */}
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" mb="3">
         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.cls}`}>
           {sc.dot && <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />}
           {sc.label}
         </span>
-        <div className="flex items-center gap-1 ml-1">
+        <Flex align="center" gap="1" className="ml-1">
           {channels.slice(0, 5).map((ch: string) => {
             const Icon = CHANNEL_ICONS[ch];
             if (!Icon) return null;
@@ -245,33 +247,33 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           {channels.length > 5 && (
             <span className="text-xs text-mission-control-text-dim">+{channels.length - 5}</span>
           )}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Task progress */}
       {totalTasks > 0 && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+        <Box mb="3">
+          <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
             <span>{doneTasks}/{totalTasks} tasks</span>
             <span>{progress}%</span>
-          </div>
+          </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress}%`, backgroundColor: campaign.color }}
             />
           </div>
-        </div>
+        </Box>
       )}
 
       {/* Timeline progress — shown when campaign has start/end dates */}
       {timelineProgress !== null && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
-            <span className="flex items-center gap-1">
+        <Box mb="3">
+          <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
+            <Flex align="center" gap="1">
               <CalendarDays size={10} />
               {start ? new Date(start).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
-            </span>
+            </Flex>
             <span className={isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : ''}>
               {isOverdue
                 ? 'Overdue'
@@ -281,7 +283,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
                     ? `${daysRemaining}d left`
                     : `${timelineProgress}%`}
             </span>
-          </div>
+          </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
@@ -295,16 +297,16 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
               }}
             />
           </div>
-        </div>
+        </Box>
       )}
 
       {/* Budget bar */}
       {budget != null && budget > 0 && (
-        <div className="mb-3">
-          <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+        <Box mb="3">
+          <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
             <span>Budget</span>
             <span>{formatBudget(budgetSpent)} / {formatBudget(budget)}</span>
-          </div>
+          </Flex>
           <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
@@ -314,13 +316,13 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
               }}
             />
           </div>
-        </div>
+        </Box>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         {/* Member avatars */}
-        <div className="flex items-center -space-x-1.5">
+        <Flex align="center" className="-space-x-1.5">
           {members.slice(0, 4).map((m: any) => (
             <AgentAvatar
               key={m.agentId}
@@ -331,19 +333,19 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
             />
           ))}
           {members.length > 4 && (
-            <div className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border flex items-center justify-center text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
+            <Flex align="center" justify="center" className="w-5 h-5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs text-mission-control-text-dim ring-1 ring-mission-control-bg0">
               +{members.length - 4}
-            </div>
+            </Flex>
           )}
           {members.length === 0 && (
-            <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
+            <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim">
               <Users size={11} /> No agents
-            </span>
+            </Flex>
           )}
-        </div>
+        </Flex>
 
         {/* Stats */}
-        <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+        <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
           {inProgressTasks > 0 && (
             <span className="flex items-center gap-1 text-warning">
               <Zap size={11} /> {inProgressTasks}
@@ -352,8 +354,8 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           <span className="flex items-center gap-1">
             <Clock size={11} /> {formatTimeAgo(lastActivity)}
           </span>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
     </button>
   );
 }

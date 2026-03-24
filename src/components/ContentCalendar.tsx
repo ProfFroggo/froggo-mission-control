@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Button, IconButton, Heading } from '@radix-ui/themes';
+import { Button, IconButton, Heading, Box, Flex } from '@radix-ui/themes';
 import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Eye } from 'lucide-react';
 
 // X logo component
@@ -108,11 +108,11 @@ export default function ContentCalendar() {
   const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+      <Box p="6" className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" mb="4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-review-subtle rounded-lg">
               <Calendar size={24} className="text-review" />
             </div>
@@ -122,9 +122,9 @@ export default function ContentCalendar() {
                 Schedule and manage your content
               </p>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
+          </Flex>
+
+          <Flex align="center" gap="2">
             <Button
               variant="surface"
               size="2"
@@ -143,11 +143,11 @@ export default function ContentCalendar() {
               <Plus size={16} />
               Schedule
             </Button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Month navigation */}
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <IconButton variant="ghost" size="2" onClick={() => navigateMonth(-1)}>
             <ChevronLeft size={20} />
           </IconButton>
@@ -155,11 +155,11 @@ export default function ContentCalendar() {
           <IconButton variant="ghost" size="2" onClick={() => navigateMonth(1)}>
             <ChevronRight size={20} />
           </IconButton>
-        </div>
-      </div>
+        </Flex>
+      </Box>
 
       {/* Calendar Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <Box p="6" className="flex-1 overflow-y-auto">
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -229,19 +229,19 @@ export default function ContentCalendar() {
             );
           })}
         </div>
-      </div>
+      </Box>
 
       {/* Selected date panel */}
       {selectedDate && (
-        <div className="border-t border-mission-control-border bg-mission-control-surface p-4">
-          <div className="flex items-center justify-between mb-3">
+        <Box p="4" className="border-t border-mission-control-border bg-mission-control-surface">
+          <Flex align="center" justify="between" mb="3">
             <Heading size="3" weight="medium">
               {selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Heading>
             <IconButton variant="ghost" size="1" onClick={() => setSelectedDate(null)}>
               ×
             </IconButton>
-          </div>
+          </Flex>
 
           {getItemsForDate(selectedDate).length === 0 ? (
             <div className="text-center py-4 text-mission-control-text-dim">
@@ -253,31 +253,34 @@ export default function ContentCalendar() {
                 const config = typeConfig[item.type];
                 const Icon = config.icon;
                 return (
-                  <div
+                  <Flex
                     key={item.id}
-                    className="flex items-center gap-3 p-2 bg-mission-control-bg rounded-lg"
+                    align="center"
+                    gap="3"
+                    p="2"
+                    className="bg-mission-control-bg rounded-lg"
                   >
                     <div className={`p-1.5 rounded ${config.bg}`}>
                       <Icon size={14} className={config.color} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <Box className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{item.title}</div>
                       <div className="text-xs text-mission-control-text-dim">
                         {new Date(item.scheduledFor).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                    </div>
-                    <div className="flex gap-1">
+                    </Box>
+                    <Flex gap="1">
                       <IconButton variant="ghost" size="1" onClick={() => showToast('info', `Preview: ${item.content}`)} title="Preview">
                         <Eye size={14} className="text-mission-control-text-dim" />
                       </IconButton>
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
                 );
               })}
             </div>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Flex>
   );
 }
