@@ -1,5 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star, Wrench, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Link, Upload, Send, Key } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
@@ -1107,12 +1108,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveDesc(); } if (e.key === 'Escape') cancelEditDesc(); }}
                   />
                   <div className="flex flex-col gap-1 flex-shrink-0">
-                    <button type="button" onClick={saveDesc} disabled={descSaving} className="p-1 rounded text-success hover:bg-success-subtle transition-colors disabled:opacity-50" title="Save">
+                    <IconButton variant="ghost" color="green" size="1" onClick={saveDesc} disabled={descSaving} title="Save">
                       {descSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-                    </button>
-                    <button type="button" onClick={cancelEditDesc} className="p-1 rounded text-error hover:bg-error-subtle transition-colors" title="Cancel">
+                    </IconButton>
+                    <IconButton variant="ghost" color="red" size="1" onClick={cancelEditDesc} title="Cancel">
                       <X size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               ) : (
@@ -1132,20 +1133,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={buildDetailsFromRealData}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              title="Refresh (⌘R)"
-            >
+            <IconButton variant="ghost" size="1" onClick={buildDetailsFromRealData} title="Refresh (⌘R)">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              aria-label="Close modal"
-            >
+            </IconButton>
+            <IconButton variant="ghost" size="1" onClick={handleClose} aria-label="Close modal">
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -1299,13 +1292,13 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         <Power size={15} className="text-warning flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-mission-control-text">Force Status</h3>
                       </div>
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="1"
                         onClick={() => setShowStatusOverride(v => !v)}
-                        className="text-xs px-3 py-1.5 border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors text-mission-control-text-dim"
                       >
                         {showStatusOverride ? 'Cancel' : 'Override'}
-                      </button>
+                      </Button>
                     </div>
 
                     <div className="flex items-center gap-2 mb-2">
@@ -1346,15 +1339,17 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             </button>
                           ))}
                         </div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="solid"
+                          color="yellow"
+                          size="1"
                           onClick={applyStatusOverride}
                           disabled={!statusOverride || statusSaving}
-                          className="w-full py-2 text-sm bg-warning text-white rounded-lg hover:brightness-110 transition-all disabled:opacity-40 font-medium"
+                          className="w-full"
                         >
-                          {statusSaving ? <RefreshCw size={14} className="inline animate-spin mr-1" /> : <Power size={14} className="inline mr-1" />}
+                          {statusSaving ? <RefreshCw size={14} className="animate-spin" /> : <Power size={14} />}
                           {statusSaving ? 'Applying…' : `Force ${statusOverride || 'status'}`}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1437,14 +1432,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       {capTags.map(tag => (
                         <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border">
                           {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeCapTag(tag)}
-                            className="ml-0.5 hover:text-error transition-colors rounded-full"
-                            title={`Remove ${tag}`}
-                          >
+                          <IconButton variant="ghost" color="red" size="1" onClick={() => removeCapTag(tag)} title={`Remove ${tag}`}>
                             <X size={10} />
-                          </button>
+                          </IconButton>
                         </span>
                       ))}
                     </div>
@@ -1459,25 +1449,14 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         placeholder="Add capability (press Enter)"
                         className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
                       />
-                      <button
-                        type="button"
-                        onClick={addCapTag}
-                        disabled={!capInput.trim()}
-                        className="p-1.5 rounded-lg border border-mission-control-border hover:bg-mission-control-surface disabled:opacity-40 transition-colors"
-                        title="Add capability"
-                      >
+                      <IconButton variant="ghost" size="1" onClick={addCapTag} disabled={!capInput.trim()} title="Add capability">
                         <Plus size={14} />
-                      </button>
+                      </IconButton>
                       {capDirty && (
-                        <button
-                          type="button"
-                          onClick={saveCaps}
-                          disabled={capSaving}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim disabled:opacity-50 transition-colors"
-                        >
+                        <Button variant="solid" size="1" onClick={saveCaps} disabled={capSaving}>
                           {capSaving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           {capSaving ? 'Saving…' : 'Save'}
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -1520,13 +1499,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         </h3>
                       </div>
                       {addSkillMode === null && (
-                        <button
-                          type="button"
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                          onClick={() => setAddSkillMode('url')}
-                        >
+                        <Button variant="soft" size="1" onClick={() => setAddSkillMode('url')}>
                           <Plus size={11} /> Add Skill
-                        </button>
+                        </Button>
                       )}
                     </div>
 
@@ -1535,7 +1510,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5 mb-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-mission-control-text">New Skill</span>
-                          <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
+                          <Button variant="ghost" color="red" size="1" onClick={() => setAddSkillMode(null)}>Cancel</Button>
                         </div>
                         <input
                           className={`${inputBase} text-xs`}
@@ -1564,10 +1539,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         {addSkillMode === 'text' && (
                           <textarea className={`${inputBase} h-36 font-mono text-xs resize-none`} placeholder={'# Skill Name\n\nDescribe what this skill does...'} value={addSkillContent} onChange={e => setAddSkillContent(e.target.value)} />
                         )}
-                        <button type="button" onClick={handleAddSkill} disabled={addSkillWorking}
-                          className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                        <Button variant="solid" size="1" onClick={handleAddSkill} disabled={addSkillWorking}>
                           {addSkillWorking ? 'Creating...' : 'Create Skill'}
-                        </button>
+                        </Button>
                       </div>
                     )}
 
@@ -1592,10 +1566,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       </div>
                     )}
                     {skillsDirty && (
-                      <button type="button" onClick={saveSkills} disabled={saving}
-                        className="mt-3 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="1" onClick={saveSkills} disabled={saving} className="mt-3">
                         {saving ? 'Saving...' : 'Save Skills'}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -1740,13 +1713,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             <div className="text-xs text-mission-control-text-dim/60 truncate flex-1" title={session.key}>
                               {session.key}
                             </div>
-                            <button
-                              onClick={() => setViewingSessionKey(session.key)}
-                              className="ml-2 px-3 py-1.5 text-xs bg-mission-control-accent/10 hover:bg-mission-control-accent/20 text-mission-control-accent rounded-lg flex items-center gap-1.5 transition-colors"
-                            >
+                            <Button variant="soft" size="1" onClick={() => setViewingSessionKey(session.key)} className="ml-2">
                               <MessageSquare size={12} />
                               View Chat
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -1793,10 +1763,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       ))}
                     </div>
                     {modelDirty && (
-                      <button type="button" onClick={saveModel} disabled={saving}
-                        className="mt-3 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="1" onClick={saveModel} disabled={saving} className="mt-3">
                         {saving ? 'Saving...' : 'Save Model'}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -1821,10 +1790,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase">AGENTS.md</h4>
                       {!rulesEditing && (
-                        <button type="button" onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 border border-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                        <Button variant="ghost" size="1" onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }}>
                           <Edit size={11} /> Edit
-                        </button>
+                        </Button>
                       )}
                     </div>
                     {rulesEditing ? (
@@ -1836,14 +1804,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           placeholder="No AGENT.md file found"
                         />
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={saveRules} disabled={rulesSaving}
-                            className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                          <Button variant="solid" size="1" onClick={saveRules} disabled={rulesSaving}>
                             {rulesSaving ? 'Saving...' : 'Save Rules'}
-                          </button>
-                          <button type="button" onClick={() => setRulesEditing(false)}
-                            className="px-4 py-2 text-sm border border-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-surface transition-colors">
+                          </Button>
+                          <Button variant="ghost" color="red" size="1" onClick={() => setRulesEditing(false)}>
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -1873,7 +1839,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg text-warning text-xs">
                       <AlertTriangle size={12} />
                       Restart {agent.name} for changes to take effect.
-                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto opacity-60 hover:opacity-100"><X size={12} /></button>
+                      <IconButton variant="ghost" size="1" onClick={() => setShowRestartBanner(false)} className="ml-auto"><X size={12} /></IconButton>
                     </div>
                   )}
                   <textarea
@@ -1882,10 +1848,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                     placeholder="No SOUL.md found for this agent."
                   />
-                  <button type="button" onClick={saveSoul} disabled={!soulDirty || saving}
-                    className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                  <Button variant="solid" size="1" onClick={saveSoul} disabled={!soulDirty || saving}>
                     {saving ? 'Saving...' : 'Save Soul'}
-                  </button>
+                  </Button>
                   {/* Also keep the full editor for advanced editing */}
                   <div className="border-t border-mission-control-border pt-4 mt-4">
                     <AgentSoulEditor agentId={agent.id} agentName={agent.name} />
@@ -1947,10 +1912,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   })}
                   </div>
                   {toolsDirty && (
-                    <button type="button" onClick={saveTools} disabled={saving}
-                      className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                    <Button variant="solid" size="1" onClick={saveTools} disabled={saving}>
                       {saving ? 'Saving...' : 'Save Tool Access'}
-                    </button>
+                    </Button>
                   )}
 
                   {/* Custom MCP Servers */}
@@ -1961,10 +1925,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
                       </div>
                       {!showAddMcp && (
-                        <button type="button" onClick={() => setShowAddMcp(true)}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors">
+                        <Button variant="soft" size="1" onClick={() => setShowAddMcp(true)}>
                           <Plus size={11} /> Add Server
-                        </button>
+                        </Button>
                       )}
                     </div>
                     {mcpServers.length > 0 && (
@@ -1977,10 +1940,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {server.transport === 'stdio' ? `stdio: ${server.command} ${(server.args || []).join(' ')}` : `http: ${server.url}`}
                               </p>
                             </div>
-                            <button type="button" onClick={() => removeMcpServer(server.id)}
-                              className="flex-shrink-0 ml-3 text-mission-control-text-dim hover:text-error transition-colors">
+                            <IconButton variant="ghost" color="red" size="1" onClick={() => removeMcpServer(server.id)} className="flex-shrink-0 ml-3">
                               <Trash2 size={13} />
-                            </button>
+                            </IconButton>
                           </div>
                         ))}
                       </div>
@@ -1992,7 +1954,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
-                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
+                          <Button variant="ghost" color="red" size="1" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }}>Cancel</Button>
                         </div>
                         <input className={`${inputBase} text-xs`} placeholder="Server name (e.g. Filesystem MCP)" value={newMcp.name} onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))} />
                         <select className={`${inputBase} text-xs`} value={newMcp.transport} onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}>
@@ -2008,18 +1970,15 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           <input className={`${inputBase} text-xs font-mono`} placeholder="URL (e.g. https://mcp.example.com)" value={newMcp.url} onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))} />
                         )}
                         <textarea className={`${inputBase} text-xs font-mono resize-none`} placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'} rows={3} value={newMcp.env} onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))} />
-                        <button type="button" onClick={addMcpServer}
-                          disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}
-                          className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                        <Button variant="solid" size="1" onClick={addMcpServer} disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}>
                           Add Server
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {mcpDirty && (
-                      <button type="button" onClick={saveMcp} disabled={saving}
-                        className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="1" onClick={saveMcp} disabled={saving}>
                         {saving ? 'Saving...' : 'Save MCP Servers'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -2107,13 +2066,20 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                       </div>
                                       <div className="flex items-center gap-1 flex-shrink-0">
                                         {hasOverride && (
-                                          <button type="button" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
-                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded-lg border border-mission-control-border transition-colors">Reset</button>
+                                          <Button variant="ghost" size="1" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}>Reset</Button>
                                         )}
-                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${overrideVal === true ? 'bg-success/20 text-success border-success/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/40'}`}>Allow</button>
-                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${overrideVal === false ? 'bg-error/20 text-error border-error/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40'}`}>Deny</button>
+                                        <Button
+                                          variant={overrideVal === true ? 'soft' : 'ghost'}
+                                          color="green"
+                                          size="1"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
+                                        >Allow</Button>
+                                        <Button
+                                          variant={overrideVal === false ? 'soft' : 'ghost'}
+                                          color="red"
+                                          size="1"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
+                                        >Deny</Button>
                                       </div>
                                     </div>
                                   );
@@ -2136,17 +2102,16 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
                           placeholder="e.g. Bash(git push *)"
                           className="flex-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono" />
-                        <button type="button" onClick={handleAddAgentDisallowed}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors">
+                        <Button variant="soft" size="1" onClick={handleAddAgentDisallowed}>
                           <Plus size={10} /> Block
-                        </button>
+                        </Button>
                       </div>
                       {agentDisallowed.length > 0 && (
                         <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                           {agentDisallowed.map(tool => (
                             <div key={tool} className="flex items-center justify-between px-3 py-1.5">
                               <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors"><X size={12} /></button>
+                              <IconButton variant="ghost" color="red" size="1" onClick={() => handleRemoveAgentDisallowed(tool)}><X size={12} /></IconButton>
                             </div>
                           ))}
                         </div>
@@ -2155,10 +2120,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   </div>
 
                   {permDirty && (
-                    <button type="button" onClick={savePermissions} disabled={saving}
-                      className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                    <Button variant="solid" size="1" onClick={savePermissions} disabled={saving}>
                       {saving ? 'Saving...' : 'Save Permissions'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -2196,10 +2160,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                       disabled={chatSending}
                     />
-                    <button type="button" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}
-                      className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-40 transition-colors">
+                    <IconButton variant="solid" size="2" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}>
                       <Send size={14} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               )}
@@ -2209,9 +2172,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             <div className="text-center py-12 text-mission-control-text-dim">
               <XCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p>Failed to load agent details</p>
-              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 text-mission-control-accent hover:underline text-sm">
+              <Button variant="ghost" size="1" onClick={buildDetailsFromRealData} className="mt-2">
                 Retry
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -2220,7 +2183,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
         {!isProtectedAgent(agentId) && (
           <div className="flex items-center gap-2 px-6 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
             {agentStatus === 'disabled' ? (
-              <button type="button" disabled={hrActionLoading}
+              <Button
+                variant="soft"
+                color="green"
+                size="1"
+                disabled={hrActionLoading}
                 onClick={async () => {
                   setHrActionLoading(true);
                   try {
@@ -2231,20 +2198,18 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   } catch { showToast('error', 'Failed to enable agent'); }
                   finally { setHrActionLoading(false); }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40">
+              >
                 <Power size={14} /> Enable Agent
-              </button>
+              </Button>
             ) : (
-              <button type="button" disabled={hrActionLoading} onClick={() => setShowDisableConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40">
+              <Button variant="soft" color="yellow" size="1" disabled={hrActionLoading} onClick={() => setShowDisableConfirm(true)}>
                 <PowerOff size={14} /> Disable Agent
-              </button>
+              </Button>
             )}
             <div className="flex-1" />
-            <button type="button" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40">
+            <Button variant="soft" color="red" size="1" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}>
               <UserMinus size={14} /> Fire Agent
-            </button>
+            </Button>
           </div>
         )}
       </div>
