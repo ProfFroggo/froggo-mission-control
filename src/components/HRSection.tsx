@@ -125,7 +125,7 @@ export default function HRSection() {
             <div className="flex-1">
               <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-success-border">
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-success-subtle text-success border border-success-border">
                   Agent Management
                 </span>
               </h2>
@@ -141,28 +141,28 @@ export default function HRSection() {
           {teamHealth && (
             <div className="grid grid-cols-4 gap-px bg-mission-control-border/30">
               <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.totalAgents}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.totalAgents}</div>
+                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Users size={10} /> Agents
                 </div>
               </div>
               <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.avgProficiency}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.avgProficiency}</div>
+                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Target size={10} /> Avg Skill
                 </div>
               </div>
               <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.recentTrainings}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.recentTrainings}</div>
+                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <BookOpen size={10} /> Total Trainings
                 </div>
               </div>
               <div className="p-3 bg-mission-control-bg">
-                <div className={`text-lg font-bold ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-amber-400' : 'text-success'}`}>
+                <div className={`text-lg font-bold tabular-nums ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-warning' : 'text-success'}`}>
                   {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '✓'}
                 </div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-xs text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   {teamHealth.agentsNeedingTraining.length > 0 ? <AlertTriangle size={10} /> : <CheckCircle size={10} />}
                   Gaps
                 </div>
@@ -208,7 +208,7 @@ export default function HRSection() {
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning-border text-xs text-amber-300">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning-subtle border border-warning-border text-xs text-warning">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}

@@ -270,7 +270,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
       {activeTab === 'catalog' && <div className="flex gap-4">
         {/* ── Category sidebar ── */}
         <aside className="flex-shrink-0 w-44">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
             Roles
           </p>
           <nav className="space-y-0.5">
@@ -290,7 +290,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   }`}
                 >
                   <span>{cat.label}</span>
-                  <span className={`text-[11px] tabular-nums ${roleCategory === cat.id ? 'text-mission-control-accent/70' : 'text-mission-control-text-dim/60'}`}>
+                  <span className={`text-xs tabular-nums ${roleCategory === cat.id ? 'text-mission-control-accent/70' : 'text-mission-control-text-dim/60'}`}>
                     {count}
                   </span>
                 </button>
@@ -369,7 +369,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 placeholder="Search agents…"
                 className="w-full pl-8 pr-20 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono bg-mission-control-bg border border-mission-control-border rounded text-mission-control-text-dim select-none">
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs font-mono bg-mission-control-bg border border-mission-control-border rounded text-mission-control-text-dim select-none">
                 ⌘F
               </kbd>
             </div>
@@ -452,7 +452,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   >
                     {/* Featured badge */}
                     {isFeatured && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-subtle border border-warning-border text-warning text-[10px] font-medium">
+                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-subtle border border-warning-border text-warning text-xs font-medium">
                         <Star size={9} className="fill-warning" />
                         Featured
                       </div>
@@ -476,10 +476,10 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                     {/* Badges row */}
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
+                      <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
                         {categoryLabel}
                       </span>
-                      <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${modelBadge.cls}`}>
+                      <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${modelBadge.cls}`}>
                         {modelBadge.label}
                       </span>
                     </div>
@@ -488,12 +488,12 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                     {agent.capabilities.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
                         {agent.capabilities.slice(0, 4).map((cap, i) => (
-                          <span key={i} className="px-1.5 py-0.5 text-[11px] rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                          <span key={i} className="px-1.5 py-0.5 text-xs rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
                             {cap}
                           </span>
                         ))}
                         {agent.capabilities.length > 4 && (
-                          <span className="text-[11px] text-mission-control-text-dim px-1">
+                          <span className="text-xs text-mission-control-text-dim px-1">
                             +{agent.capabilities.length - 4}
                           </span>
                         )}
@@ -502,7 +502,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                     {/* Required APIs warning */}
                     {agent.requiredApis.length > 0 && !isInstalled && (
-                      <div className="flex items-center gap-1 text-[11px] text-warning mb-3">
+                      <div className="flex items-center gap-1 text-xs text-warning mb-3">
                         <Cpu size={11} className="flex-shrink-0" />
                         <span>Requires: {agent.requiredApis.join(', ')}</span>
                       </div>
@@ -521,7 +521,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             type="button"
                             onClick={() => toggleCompare(agent.id)}
                             title="Compare this agent"
-                            className={`p-1.5 rounded-lg text-[11px] border transition-colors ${
+                            className={`p-1.5 rounded-lg text-xs border transition-colors ${
                               isInCompare
                                 ? 'bg-info-subtle border-info text-info'
                                 : 'border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info'
@@ -542,7 +542,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                                   await load(false);
                                 } finally { setFiring(null); }
                               }}
-                              className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
                             >
                               <Trash2 size={10} /> Fire
                             </button>
@@ -575,7 +575,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             type="button"
                             onClick={() => toggleCompare(agent.id)}
                             title={isInCompare ? 'Remove from comparison' : 'Add to comparison'}
-                            className={`px-2 py-1.5 rounded-lg text-[11px] border transition-colors ${
+                            className={`px-2 py-1.5 rounded-lg text-xs border transition-colors ${
                               isInCompare
                                 ? 'bg-info-subtle border-info text-info'
                                 : 'border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info'

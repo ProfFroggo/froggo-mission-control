@@ -57,9 +57,9 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
         relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
         border-b-2 whitespace-nowrap cursor-move
         ${isActive 
-          ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
+          ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5'
           : isDropOver || isOver
-          ? 'border-green-500 text-mission-control-text bg-success-subtle'
+          ? 'border-success text-mission-control-text bg-success-subtle'
           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
         }
       `}

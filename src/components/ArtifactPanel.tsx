@@ -37,12 +37,12 @@ const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
 };
 
 const ARTIFACT_COLORS: Record<ArtifactType, string> = {
-  code: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
-  image: 'text-green-500 bg-green-500/10 border-green-500/30',
-  file: 'text-purple-500 bg-purple-500/10 border-purple-500/30',
-  text: 'text-muted bg-muted-subtle border-muted-border',
-  diagram: 'text-orange-500 bg-orange-500/10 border-orange-500/30',
-  data: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30',
+  code: 'text-info bg-info-subtle border-info-border',
+  image: 'text-success bg-success-subtle border-success-border',
+  file: 'text-review bg-review-subtle border-review-border',
+  text: 'text-mission-control-text-dim bg-mission-control-border/30 border-mission-control-border',
+  diagram: 'text-danger bg-warning-subtle border-warning-border',
+  data: 'text-info bg-info-subtle border-info-border',
 };
 
 function isPreviewable(artifact: Artifact): boolean {
@@ -333,7 +333,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             <span className={`px-1.5 py-0.5 rounded text-xs border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
               {selectedArtifact.type}
             </span>
-            <span className="text-xs text-mission-control-text-dim flex-shrink-0">v{selectedArtifact.currentVersion}</span>
+            <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
               <button onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)} className={`p-1.5 rounded hover:bg-mission-control-border transition-colors flex items-center gap-1 text-xs ${copiedId === selectedArtifact.id ? 'text-success' : 'text-mission-control-text-dim hover:text-mission-control-text'}`} title="Copy">
                 <Copy size={13} />{copiedId === selectedArtifact.id && <span>Copied!</span>}
@@ -504,10 +504,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       ) : (
         <div className="flex-1 overflow-y-auto">
           {displayArtifacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-mission-control-text-dim">
-              <FileText size={48} className="mb-4 opacity-30" />
-              <p className="text-sm font-medium mb-2">No artifacts yet</p>
-              <p className="text-xs">
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center gap-3">
+              <FileText size={32} className="text-mission-control-text-dim opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text">No artifacts yet</p>
+              <p className="text-xs text-mission-control-text-dim max-w-xs">
                 {agentName
                   ? `Ask ${agentName} to generate code, images, or files — they'll appear here.`
                   : 'Artifacts like code, diagrams, and images will appear here as agents create them.'}

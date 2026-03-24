@@ -382,7 +382,7 @@ Provide a brief, actionable summary.`;
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs px-2 py-1 bg-mission-control-border rounded flex items-center gap-1">
-                          {(() => { const ToneIcon = toneIcons[suggestion.tone]; return ToneIcon ? <ToneIcon size={12} className="text-mission-control-text-muted" /> : null; })()}
+                          {(() => { const ToneIcon = toneIcons[suggestion.tone]; return ToneIcon ? <ToneIcon size={12} className="text-mission-control-text-dim" /> : null; })()}
                           <span className="capitalize">{suggestion.tone}</span>
                         </span>
                         <div className="flex gap-1">
@@ -425,7 +425,7 @@ Provide a brief, actionable summary.`;
                     <span className={`px-3 py-1.5 rounded-lg capitalize font-medium ${sentimentColors[sentiment.overall]}`}>
                       {sentiment.overall}
                     </span>
-                    <span className="text-sm text-mission-control-text-dim">
+                    <span className="text-sm text-mission-control-text-dim tabular-nums">
                       {Math.round(sentiment.confidence * 100)}% confidence
                     </span>
                   </div>

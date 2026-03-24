@@ -4,6 +4,7 @@
 // historical spend chart, and total monthly spend.
 
 import { useState, useEffect, useCallback } from 'react';
+import { Button, IconButton, Badge, Heading } from '@radix-ui/themes';
 import {
   DollarSign,
   TrendingUp,
@@ -57,9 +58,9 @@ function CircularProgress({
 
   const color =
     status === 'exceeded'
-      ? 'var(--color-error, #ef4444)'
+      ? 'var(--error, #ef4444)'
       : status === 'warning'
-      ? 'var(--color-warning, #f59e0b)'
+      ? 'var(--warning, #f59e0b)'
       : 'var(--mission-control-accent, #22c55e)';
 
   return (
@@ -191,19 +192,23 @@ function BudgetCard({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span
-            className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${statusClasses[budget.status]}`}
+          <Badge
+            color={budget.status === 'exceeded' ? 'red' : budget.status === 'warning' ? 'amber' : 'grass'}
+            variant="soft"
+            size="1"
           >
             {statusLabel[budget.status]}
-          </span>
-          <button
+          </Badge>
+          <IconButton
             type="button"
+            variant="ghost"
+            size="1"
+            color="red"
             onClick={() => onDelete(budget.id)}
-            className="text-mission-control-text-dim hover:text-error transition-colors"
             aria-label={`Delete budget ${budget.name}`}
           >
             <Trash2 size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -229,7 +234,7 @@ function BudgetCard({
 
       {/* 7-day chart */}
       <div>
-        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1 flex items-center gap-1">
+        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1 flex items-center gap-1">
           <BarChart3 size={10} /> 7-day spend
         </div>
         <SpendBarChart budgetId={budget.id} />
@@ -311,14 +316,9 @@ function AddBudgetForm({
           <PiggyBank size={16} className="text-mission-control-accent" />
           New Budget
         </span>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-mission-control-text-dim hover:text-mission-control-text"
-          aria-label="Cancel"
-        >
+        <IconButton type="button" variant="ghost" size="1" onClick={onCancel} aria-label="Cancel">
           <X size={16} />
-        </button>
+        </IconButton>
       </div>
 
       {error && (
@@ -407,25 +407,10 @@ function AddBudgetForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-ghost text-sm px-3 py-1.5"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-primary text-sm px-3 py-1.5 flex items-center gap-1.5"
-        >
-          {saving ? 'Creating…' : (
-            <>
-              <Plus size={14} />
-              Create Budget
-            </>
-          )}
-        </button>
+        <Button type="button" variant="ghost" size="2" onClick={onCancel}>Cancel</Button>
+        <Button type="submit" size="2" disabled={saving}>
+          {saving ? 'Creating…' : (<><Plus size={14} /> Create Budget</>)}
+        </Button>
       </div>
     </form>
   );
@@ -494,16 +479,12 @@ export default function BudgetDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PiggyBank size={18} className="text-mission-control-accent" />
-          <h2 className="text-base font-semibold">Cost Budgets</h2>
+          <Heading size="3" weight="medium">Cost Budgets</Heading>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm(s => !s)}
-          className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
-        >
+        <Button type="button" size="1" onClick={() => setShowForm(s => !s)}>
           <Plus size={14} />
           Add Budget
-        </button>
+        </Button>
       </div>
 
       {/* Total spend this month */}
@@ -536,7 +517,7 @@ export default function BudgetDashboard() {
               }`}
             >
               <AlertTriangle size={13} className="shrink-0" />
-              <span>
+              <span className="tabular-nums">
                 <strong>{b.name}</strong>:{' '}
                 {b.status === 'exceeded' ? 'Budget exceeded' : 'Approaching limit'} —
                 ${b.currentUsd.toFixed(4)} / ${b.limitUsd.toFixed(2)} (

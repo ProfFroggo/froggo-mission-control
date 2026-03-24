@@ -510,20 +510,20 @@ export default function FinancePanel() {
                 {/* Overall Progress */}
                 <div className="mb-6">
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-2xl font-bold">
+                    <span className="text-2xl font-bold font-mono tabular-nums">
                       {formatCurrency(familyBudget.total_spent, familyBudget.currency)}
                     </span>
-                    <span className="text-sm text-mission-control-text/60">
+                    <span className="text-sm text-mission-control-text-dim tabular-nums">
                       of {formatCurrency(familyBudget.total_limit, familyBudget.currency)}
                     </span>
                   </div>
                   <div className="w-full bg-mission-control-bg rounded-full h-3 overflow-hidden">
                     <div
-                      className={`h-full ${getProgressColor((familyBudget.total_spent / familyBudget.total_limit) * 100)}`}
+                      className={`h-full rounded-full ${getProgressColor((familyBudget.total_spent / familyBudget.total_limit) * 100)}`}
                       style={{ width: `${Math.min((familyBudget.total_spent / familyBudget.total_limit) * 100, 100)}%` }}
                     />
                   </div>
-                  <div className="text-right mt-1 text-sm text-mission-control-text/60">
+                  <div className="text-right mt-1 text-sm text-mission-control-text-dim tabular-nums">
                     {((familyBudget.total_spent / familyBudget.total_limit) * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -539,13 +539,13 @@ export default function FinancePanel() {
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-error' : ''}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </div>
                         <div className="w-full bg-mission-control-bg rounded-full h-1.5">
                           <div
-                            className={getProgressColor(percentage)}
+                            className={`rounded-full ${getProgressColor(percentage)}`}
                             style={{ width: `${Math.min(percentage, 100)}%` }}
                           />
                         </div>
@@ -587,20 +587,20 @@ export default function FinancePanel() {
                 {/* Overall Progress */}
                 <div className="mb-6">
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-2xl font-bold">
+                    <span className="text-2xl font-bold font-mono tabular-nums">
                       {formatCurrency(cryptoBudget.total_spent, cryptoBudget.currency)}
                     </span>
-                    <span className="text-sm text-mission-control-text/60">
+                    <span className="text-sm text-mission-control-text-dim tabular-nums">
                       of {formatCurrency(cryptoBudget.total_limit, cryptoBudget.currency)}
                     </span>
                   </div>
                   <div className="w-full bg-mission-control-bg rounded-full h-3 overflow-hidden">
                     <div
-                      className={`h-full ${getProgressColor((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100)}`}
+                      className={`h-full rounded-full ${getProgressColor((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100)}`}
                       style={{ width: `${Math.min((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100, 100)}%` }}
                     />
                   </div>
-                  <div className="text-right mt-1 text-sm text-mission-control-text/60">
+                  <div className="text-right mt-1 text-sm text-mission-control-text-dim tabular-nums">
                     {((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -616,13 +616,13 @@ export default function FinancePanel() {
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-error' : ''}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </div>
                         <div className="w-full bg-mission-control-bg rounded-full h-1.5">
                           <div
-                            className={getProgressColor(percentage)}
+                            className={`rounded-full ${getProgressColor(percentage)}`}
                             style={{ width: `${Math.min(percentage, 100)}%` }}
                           />
                         </div>
@@ -661,11 +661,11 @@ export default function FinancePanel() {
                     <div className="flex items-center gap-2">
                       <span className="text-mission-control-text font-medium truncate">{item.description}</span>
                       {item.status === 'confirmed' && (
-                        <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">Confirmed</span>
+                        <span className="text-xs bg-success-subtle text-success border border-success-border rounded-full px-2 py-0.5">Confirmed</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-mission-control-text-dim text-sm font-mono">{item.currency} {Math.abs(item.amount).toFixed(2)}</span>
+                      <span className="text-mission-control-text-dim text-sm font-mono tabular-nums">{item.currency} {Math.abs(item.amount).toFixed(2)}</span>
                       <span className="text-xs bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/30 rounded-full px-2 py-0.5 capitalize">{item.frequency}</span>
                       {item.next_expected_date && (
                         <span className="text-mission-control-text-dim text-xs">Next: {new Date(item.next_expected_date).toLocaleDateString()}</span>
@@ -759,7 +759,7 @@ export default function FinancePanel() {
                         </div>
                       </div>
                     </div>
-                    <div className={`text-lg font-semibold flex-shrink-0 ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
+                    <div className={`text-lg font-semibold flex-shrink-0 font-mono tabular-nums ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
                       {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
                     </div>
                   </div>
@@ -1082,7 +1082,7 @@ export default function FinancePanel() {
 
               {/* Result message */}
               {exportResult && (
-                <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-red-400' : 'text-green-400'}`}>
+                <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-error' : 'text-success'}`}>
                   {exportResult}
                 </p>
               )}

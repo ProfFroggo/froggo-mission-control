@@ -2091,7 +2091,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             </div>
           )}
           {task.updatedAt && (
-            <span className="text-xs text-mission-control-text-dim mt-0.5">
+            <span className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
               {(() => {
                 const diff = Date.now() - task.updatedAt;
                 if (diff < 60000) return 'just now';
@@ -2306,7 +2306,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         <div className="mb-2">
           <div className="icon-text-tight text-xs text-mission-control-text-dim mb-1">
             <CheckSquare size={14} className="flex-shrink-0" />
-            <span>{completedSubtasks}/{subtaskCount}</span>
+            <span className="tabular-nums">{completedSubtasks}/{subtaskCount}</span>
           </div>
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
             <div 
