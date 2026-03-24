@@ -228,13 +228,13 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {pendingApprovals.length > 0 && (
-                  <span className="px-3 py-1 bg-danger text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
+                  <span className="px-3 py-1 bg-danger text-white text-sm font-bold rounded-full animate-pulse shadow-lg tabular-nums">
                     {pendingApprovals.length}
                   </span>
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-orange-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-orange-600 bg-clip-text text-transparent">
                 {pendingApprovals.length}
               </div>
               
@@ -268,7 +268,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-blue-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-blue-600 bg-clip-text text-transparent">
                 {inProgressTasks.length}
               </div>
               
@@ -305,7 +305,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-yellow-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-yellow-600 bg-clip-text text-transparent">
                 {urgentTasks.length + unassignedTasks.length}
               </div>
               
@@ -336,7 +336,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 )}
               </div>
               
-              <div className="text-5xl font-bold mb-2 bg-gradient-to-br from-mission-control-text to-green-600 bg-clip-text text-transparent">
+              <div className="text-5xl font-bold mb-2 tabular-nums bg-gradient-to-br from-mission-control-text to-green-600 bg-clip-text text-transparent">
                 {totalAgentCount}
               </div>
               
@@ -538,7 +538,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                             <span className="text-mission-control-text-dim flex-shrink-0">{getSessionIcon(s)}</span>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
-                              <div className="text-xs text-mission-control-text-dim">{formatTimeAgo(s.updatedAt)}</div>
+                              <div className="text-xs text-mission-control-text-dim tabular-nums">{formatTimeAgo(s.updatedAt)}</div>
                             </div>
                             <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
                           </div>
@@ -583,7 +583,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                             <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium truncate">{session.displayName}</div>
-                              <div className="text-xs text-mission-control-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
+                              <div className="text-xs text-mission-control-text-dim tabular-nums">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>
                             </div>
                           </div>
                         ))}

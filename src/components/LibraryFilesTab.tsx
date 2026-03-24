@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link,
   RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette,
@@ -732,49 +733,58 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
           {/* View toggle */}
           <div className="flex gap-0.5 flex-shrink-0 border border-mission-control-border rounded-lg overflow-hidden">
-            <button
+            <IconButton
+              variant={viewMode === 'list' ? 'solid' : 'ghost'}
+              size="1"
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
             >
               <List size={14} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
+              variant={viewMode === 'grid' ? 'solid' : 'ghost'}
+              size="1"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
             >
               <Grid size={14} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="w-px h-5 bg-mission-control-border flex-shrink-0" />
 
           {/* Ask Agent */}
-          <button
+          <Button
+            variant={searchMode === 'ask' ? 'solid' : 'surface'}
+            color={searchMode === 'ask' ? undefined : 'gray'}
+            size="1"
             onClick={() => { setSearchMode(searchMode === 'ask' ? 'filter' : 'ask'); setAskResponse(null); }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs flex-shrink-0 transition-colors ${
-              searchMode === 'ask' ? 'bg-mission-control-accent text-white' : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
           >
             <Bot size={12} /> Ask
-          </button>
+          </Button>
 
           {/* Refresh */}
-          <button
+          <IconButton
+            variant="surface"
+            color="gray"
+            size="1"
             onClick={loadFiles}
             disabled={loading}
-            className="p-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors disabled:opacity-50 flex-shrink-0"
-            title="Refresh"
+            aria-label="Refresh files"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
 
           {/* Upload */}
-          <button
+          <Button
+            variant="solid"
+            size="1"
             onClick={handleUpload}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs flex-shrink-0"
           >
             <Upload size={12} /> Upload
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -784,9 +794,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="flex items-start gap-2">
             <Bot size={14} className="text-mission-control-accent flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed flex-1">{askResponse}</p>
-            <button onClick={() => setAskResponse(null)} className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text">
+            <IconButton variant="ghost" size="1" onClick={() => setAskResponse(null)} aria-label="Dismiss ask response">
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
