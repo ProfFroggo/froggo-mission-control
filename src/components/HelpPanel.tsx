@@ -267,15 +267,18 @@ function NavButton({ icon, label, active, onClick }: {
   onClick: () => void;
 }) {
   return (
-    <Button
+    <button
       onClick={onClick}
-      variant={active ? 'solid' : 'ghost'}
-      color={active ? 'blue' : 'gray'}
-      size="2"
+      className={[
+        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+        active
+          ? 'border-mission-control-accent text-mission-control-accent'
+          : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border',
+      ].join(' ')}
     >
       {icon}
-      <span className="text-sm font-medium">{label}</span>
-    </Button>
+      <span>{label}</span>
+    </button>
   );
 }
 

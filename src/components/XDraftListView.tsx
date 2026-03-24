@@ -224,7 +224,7 @@ export default function XDraftListView() {
             <Button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              variant={filter === f.id ? 'solid' : 'outline'}
+              variant={filter === f.id ? 'soft' : 'ghost'}
               color={filter === f.id ? 'blue' : 'gray'}
               size="1"
               radius="full"
