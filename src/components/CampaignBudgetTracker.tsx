@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Heading } from '@radix-ui/themes';
+import { Heading, Box, Flex } from '@radix-ui/themes';
 
 interface BudgetCategory {
   name: string;
@@ -99,34 +99,34 @@ export default function CampaignBudgetTracker({
     n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-4">
-      <div className="flex items-center gap-1.5">
+    <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg space-y-4">
+      <Flex align="center" gap="1">
         <DollarSign size={14} className="text-mission-control-text-dim" />
         <Heading size="2" weight="medium">Budget Tracker</Heading>
-      </div>
+      </Flex>
 
       {/* Ring + stats */}
-      <div className="flex items-center gap-6">
+      <Flex align="center" gap="6">
         {/* Circular progress ring */}
-        <div className="relative flex-shrink-0" style={{ width: 88, height: 88 }}>
+        <Box className="relative flex-shrink-0" style={{ width: 88, height: 88 }}>
           <ProgressRing radius={44} strokeWidth={8} percentage={consumedPct} color={ringColor} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <Flex direction="column" align="center" justify="center" className="absolute inset-0">
             <span className="text-base font-bold leading-none tabular-nums" style={{ color: ringColor }}>
               {consumedPct}%
             </span>
             <span className="text-xs text-mission-control-text-dim mt-0.5">used</span>
-          </div>
-        </div>
+          </Flex>
+        </Box>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-1 gap-2 flex-1 min-w-0">
-          <div className="flex items-center justify-between">
+        <Box className="grid grid-cols-1 gap-2 flex-1 min-w-0">
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Total budget</span>
             <span className="text-sm font-semibold tabular-nums text-mission-control-text">
               {currency} {fmt(budget)}
             </span>
-          </div>
-          <div className="flex items-center justify-between">
+          </Flex>
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Spent</span>
             <span
               className="text-sm font-semibold tabular-nums"
@@ -137,63 +137,63 @@ export default function CampaignBudgetTracker({
                 <span className="text-xs font-normal ml-1 text-error">(over budget)</span>
               )}
             </span>
-          </div>
-          <div className="flex items-center justify-between">
+          </Flex>
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Remaining</span>
             <span className="text-sm font-semibold tabular-nums text-success">
               {currency} {fmt(remaining)}
             </span>
-          </div>
-        </div>
-      </div>
+          </Flex>
+        </Box>
+      </Flex>
 
       {/* Progress bar */}
-      <div>
-        <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
-          <div
+      <Box>
+        <Box className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+          <Box
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.min(100, consumedPct)}%`, backgroundColor: ringColor }}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Category breakdown */}
       {categories.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-mission-control-border">
+        <Box pt="2" className="space-y-2 border-t border-mission-control-border">
           <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider">
             By Category
           </Heading>
-          <div className="space-y-2">
+          <Box className="space-y-2">
             {categories.map(cat => {
               const catPct = cat.planned > 0 ? Math.min(100, Math.round((cat.actual / cat.planned) * 100)) : 0;
               const color = varianceColor(cat.planned, cat.actual);
               return (
-                <div key={cat.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
+                <Box key={cat.name} className="space-y-1">
+                  <Flex align="center" justify="between" className="text-xs">
+                    <Flex align="center" gap="1">
                       <VarianceIcon planned={cat.planned} actual={cat.actual} />
                       <span className="text-mission-control-text font-medium">{cat.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-mission-control-text-dim">
+                    </Flex>
+                    <Flex align="center" gap="2" className="text-mission-control-text-dim">
                       <span>
                         <span style={{ color }}>{currency} {fmt(cat.actual)}</span>
                         {' / '}
                         <span>{currency} {fmt(cat.planned)}</span>
                       </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
-                    <div
+                    </Flex>
+                  </Flex>
+                  <Box className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+                    <Box
                       className="h-full rounded-full transition-all"
                       style={{ width: `${catPct}%`, backgroundColor: color }}
                     />
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               );
             })}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
