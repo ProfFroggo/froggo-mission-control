@@ -441,10 +441,10 @@ export default function CronTab() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="cron-task-assign" className="block text-sm text-mission-control-text-dim mb-1">Assign To</label>
-                      <Select.Root value={newJob.taskAssignTo} onValueChange={(val) => setNewJob(p => ({ ...p, taskAssignTo: val }))}>
+                      <Select.Root value={newJob.taskAssignTo || '__auto__'} onValueChange={(val) => setNewJob(p => ({ ...p, taskAssignTo: val === '__auto__' ? '' : val }))}>
                         <Select.Trigger id="cron-task-assign" style={{ width: '100%' }} />
                         <Select.Content>
-                          <Select.Item value="">Auto (Clara assigns)</Select.Item>
+                          <Select.Item value="__auto__">Auto (Clara assigns)</Select.Item>
                           <Select.Item value="mission-control">Mission Control</Select.Item>
                           <Select.Item value="hr">HR</Select.Item>
                           <Select.Item value="coder">Coder</Select.Item>

@@ -895,10 +895,10 @@ export default function FinancePanel() {
               {/* Account scope selector */}
               <div>
                 <label htmlFor="budget-account-id" className="block text-sm text-mission-control-text-dim mb-1">Scope to Account</label>
-                <Select.Root value={budgetAccountId} onValueChange={setBudgetAccountId}>
+                <Select.Root value={budgetAccountId || '__all__'} onValueChange={val => setBudgetAccountId(val === '__all__' ? '' : val)}>
                   <Select.Trigger id="budget-account-id" style={{ width: '100%' }} />
                   <Select.Content>
-                    <Select.Item value="">All Accounts (Global)</Select.Item>
+                    <Select.Item value="__all__">All Accounts (Global)</Select.Item>
                     {accounts.map((acc) => (
                       <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
                     ))}
@@ -1042,10 +1042,10 @@ export default function FinancePanel() {
               {/* Account filter */}
               <div>
                 <label htmlFor="export-account-id" className="block text-sm text-mission-control-text-dim mb-1">Account</label>
-                <Select.Root value={exportAccountId} onValueChange={setExportAccountId}>
+                <Select.Root value={exportAccountId || '__all__'} onValueChange={val => setExportAccountId(val === '__all__' ? '' : val)}>
                   <Select.Trigger id="export-account-id" style={{ width: '100%' }} />
                   <Select.Content>
-                    <Select.Item value="">All Accounts</Select.Item>
+                    <Select.Item value="__all__">All Accounts</Select.Item>
                     {accounts.map(acc => (
                       <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
                     ))}

@@ -1531,10 +1531,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Microphone</label>
-                          <Select.Root value={selectedDeviceId || ''} onValueChange={setSelectedDeviceId}>
+                          <Select.Root value={selectedDeviceId || '__default__'} onValueChange={val => setSelectedDeviceId(val === '__default__' ? '' : val)}>
                             <Select.Trigger className="w-full" />
                             <Select.Content>
-                              <Select.Item value="">System Default</Select.Item>
+                              <Select.Item value="__default__">System Default</Select.Item>
                               {audioDevices.map(d => (
                                 <Select.Item key={d.deviceId} value={d.deviceId}>
                                   {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}

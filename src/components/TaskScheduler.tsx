@@ -303,10 +303,10 @@ export default function TaskScheduler() {
             {mode === 'existing' && !editingId ? (
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Task</label>
-                <Select.Root value={existingTaskId} onValueChange={setExistingTaskId}>
+                <Select.Root value={existingTaskId || '__placeholder__'} onValueChange={val => setExistingTaskId(val === '__placeholder__' ? '' : val)}>
                   <Select.Trigger style={{ width: '100%' }} />
                   <Select.Content>
-                    <Select.Item value="">Select unscheduled task…</Select.Item>
+                    <Select.Item value="__placeholder__" disabled>Select unscheduled task…</Select.Item>
                     {unscheduledTasks.map(t => (
                       <Select.Item key={t.id} value={t.id}>{t.title}</Select.Item>
                     ))}
@@ -343,10 +343,10 @@ export default function TaskScheduler() {
                   </div>
                   <div>
                     <label className="block text-sm text-mission-control-text-dim mb-1">Assign to</label>
-                    <Select.Root value={formAssignee} onValueChange={setFormAssignee}>
+                    <Select.Root value={formAssignee || '__unassigned__'} onValueChange={val => setFormAssignee(val === '__unassigned__' ? '' : val)}>
                       <Select.Trigger style={{ width: '100%' }} />
                       <Select.Content>
-                        <Select.Item value="">Unassigned</Select.Item>
+                        <Select.Item value="__unassigned__">Unassigned</Select.Item>
                         {agents
                           .filter(a => a.status !== 'archived' && a.status !== 'disabled')
                           .map(a => (

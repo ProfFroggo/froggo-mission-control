@@ -216,13 +216,13 @@ export default function XDraftComposer() {
                 Content Plan <span className="text-xs text-mission-control-text-dim">(optional)</span>
               </label>
               <Select.Root
-                value={selectedPlanId}
-                onValueChange={setSelectedPlanId}
+                value={selectedPlanId || '__placeholder__'}
+                onValueChange={val => setSelectedPlanId(val === '__placeholder__' ? '' : val)}
                 disabled={submitting}
               >
                 <Select.Trigger id="content-plan" className="w-full" />
                 <Select.Content>
-                  <Select.Item value="">Select a content plan...</Select.Item>
+                  <Select.Item value="__placeholder__" disabled>Select a content plan...</Select.Item>
                   {contentPlans.map((plan) => (
                     <Select.Item key={plan.id} value={plan.id}>
                       {plan.title} ({plan.thread_length} tweet{plan.thread_length > 1 ? 's' : ''})

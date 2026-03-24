@@ -675,10 +675,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {/* Microphone */}
             <div>
               <label htmlFor="mic-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Microphone</label>
-              <Select.Root value={selectedMic} onValueChange={setSelectedMic} disabled={callActive} size="1">
+              <Select.Root value={selectedMic || '__default__'} onValueChange={val => setSelectedMic(val === '__default__' ? '' : val)} disabled={callActive} size="1">
                 <Select.Trigger id="mic-select" style={{ width: '100%' }} />
                 <Select.Content>
-                  <Select.Item value="">System default</Select.Item>
+                  <Select.Item value="__default__">System default</Select.Item>
                   {audioInputs.map(d => (
                     <Select.Item key={d.deviceId} value={d.deviceId}>{d.label || `Microphone ${d.deviceId.slice(0, 6)}`}</Select.Item>
                   ))}
@@ -688,10 +688,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {/* Speaker */}
             <div>
               <label htmlFor="speaker-select" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Speaker</label>
-              <Select.Root value={selectedSpeaker} onValueChange={setSelectedSpeaker} size="1">
+              <Select.Root value={selectedSpeaker || '__default__'} onValueChange={val => setSelectedSpeaker(val === '__default__' ? '' : val)} size="1">
                 <Select.Trigger id="speaker-select" style={{ width: '100%' }} />
                 <Select.Content>
-                  <Select.Item value="">System default</Select.Item>
+                  <Select.Item value="__default__">System default</Select.Item>
                   {audioOutputs.map(d => (
                     <Select.Item key={d.deviceId} value={d.deviceId}>{d.label || `Speaker ${d.deviceId.slice(0, 6)}`}</Select.Item>
                   ))}

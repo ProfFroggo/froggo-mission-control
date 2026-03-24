@@ -711,10 +711,10 @@ function InvoiceModal({ data, quarterId, currency, categories, allInvoices, onSa
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category">
-            <Select.Root value={form.category_id || ''} onValueChange={val => setForm(p => ({ ...p, category_id: val }))}>
+            <Select.Root value={form.category_id || '__uncategorized__'} onValueChange={val => setForm(p => ({ ...p, category_id: val === '__uncategorized__' ? '' : val }))}>
               <Select.Trigger className="w-full" />
               <Select.Content>
-                <Select.Item value="">Uncategorized</Select.Item>
+                <Select.Item value="__uncategorized__">Uncategorized</Select.Item>
                 {categories.map(c => <Select.Item key={c.id} value={c.id}>{c.name}</Select.Item>)}
               </Select.Content>
             </Select.Root>
@@ -1676,10 +1676,10 @@ export default function BudgetPanel() {
               </div>
 
               {/* Category filter */}
-              <Select.Root value={categoryFilter} onValueChange={val => setCategoryFilter(val)}>
+              <Select.Root value={categoryFilter || '__all__'} onValueChange={val => setCategoryFilter(val === '__all__' ? '' : val)}>
                 <Select.Trigger placeholder="All categories" />
                 <Select.Content>
-                  <Select.Item value="">All categories</Select.Item>
+                  <Select.Item value="__all__">All categories</Select.Item>
                   {categories.map(c => <Select.Item key={c.id} value={c.id}>{c.name}</Select.Item>)}
                 </Select.Content>
               </Select.Root>

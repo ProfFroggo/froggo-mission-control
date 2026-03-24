@@ -127,10 +127,10 @@ export default function XPlanThreadComposer() {
               <label htmlFor="research-idea-select" className="block text-sm font-medium text-mission-control-text mb-2">
                 Based on Research Idea <span className="text-xs text-mission-control-text-dim">(optional)</span>
               </label>
-              <Select.Root value={selectedResearchId} onValueChange={setSelectedResearchId} disabled={submitting}>
+              <Select.Root value={selectedResearchId || '__none__'} onValueChange={val => setSelectedResearchId(val === '__none__' ? '' : val)} disabled={submitting}>
                 <Select.Trigger placeholder="Select a research idea..." className="w-full" />
                 <Select.Content>
-                  <Select.Item value="">None</Select.Item>
+                  <Select.Item value="__none__">None</Select.Item>
                   {researchIdeas.map((idea) => (
                     <Select.Item key={idea.id} value={idea.id}>
                       {idea.title}

@@ -2,7 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { ChevronRight, Clock, Users, Zap, CalendarDays, Archive } from 'lucide-react';
-import { IconButton } from '@radix-ui/themes';
+import { IconButton, Box, Flex } from '@radix-ui/themes';
 import { formatTimeAgo } from '../../utils/formatting';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
@@ -97,18 +97,20 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
         onClick={onClick}
         className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 transition-all duration-200 focus:outline-none"
       >
-        <div className="flex items-center gap-4">
+        <Flex align="center" gap="4">
           {/* Color dot */}
-          <div
-            className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+          <Flex
+            align="center"
+            justify="center"
+            className="flex-shrink-0 w-7 h-7 rounded-lg"
             style={{ backgroundColor: `${campaign.color}20`, border: `1px solid ${campaign.color}40` }}
           >
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: campaign.color }} />
-          </div>
+          </Flex>
 
           {/* Name + description */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+          <Box className="flex-1 min-w-0">
+            <Flex align="center" gap="2">
               <span className="font-medium text-sm text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
                 {campaign.name}
               </span>
