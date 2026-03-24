@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
+import { Button, IconButton, Badge } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
@@ -419,22 +420,27 @@ function HumanReviewSection({ tasks }: { tasks: HumanReviewTask[] }) {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       onClick={() => resume(task.id, feedback[task.id])}
                       disabled={isBusy}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
+                      color="grass"
+                      size="2"
+                      className="flex-1"
                     >
                       {isBusy ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                       {feedback[task.id]?.trim() ? 'Send Feedback & Resume' : 'Resume Work'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => close(task.id)}
                       disabled={isBusy}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-xs font-medium hover:bg-mission-control-surface hover:text-error hover:border-error-border transition-all disabled:opacity-50"
+                      color="red"
+                      variant="outline"
+                      size="2"
+                      className="flex-1"
                     >
                       {isBusy ? <RefreshCw size={12} className="animate-spin" /> : <X size={12} />}
                       Cancel Task
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -482,9 +488,9 @@ function ApprovalDetailPane({
   const urgencyBorderClass = tier === 0 ? 'border-l-4 border-error' : tier === 1 ? 'border-l-4 border-warning' : '';
 
   const urgencyLabel = tier === 0
-    ? <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-error/20 text-error">P0</span>
+    ? <Badge color="red" variant="soft">P0</Badge>
     : tier === 1
-    ? <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-warning/20 text-warning">P1</span>
+    ? <Badge color="amber" variant="soft">P1</Badge>
     : null;
 
   const handleApproveClick = () => {
@@ -521,9 +527,9 @@ function ApprovalDetailPane({
           {urgencyLabel}
           <span className="text-sm font-semibold text-mission-control-text truncate">{approval.title}</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim shrink-0">
+        <IconButton onClick={onClose} variant="ghost" size="2" color="gray" className="shrink-0">
           <X className="w-4 h-4" />
-        </button>
+        </IconButton>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -600,39 +606,49 @@ function ApprovalDetailPane({
             </div>
           )}
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={handleApproveClick}
               disabled={isResponding}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold transition-all disabled:opacity-50 shadow-sm ${approveConfirm ? 'bg-success/80 animate-pulse' : 'bg-success hover:brightness-110'}`}
+              color="grass"
+              variant={approveConfirm ? 'soft' : 'solid'}
+              size="2"
+              className="flex-1"
             >
               {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
               {approveConfirm ? 'Confirm Approve?' : 'Approve'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleRejectClick}
               disabled={isResponding || (rejectConfirm && rejectReason.trim().length === 0)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all disabled:opacity-50 ${rejectConfirm ? 'bg-error text-white border-error animate-pulse' : 'bg-error-subtle text-error border-error-border hover:bg-error/20'}`}
+              color="red"
+              variant={rejectConfirm ? 'solid' : 'soft'}
+              size="2"
+              className="flex-1"
             >
               {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
               {rejectConfirm ? 'Confirm Reject?' : 'Reject'}
-            </button>
+            </Button>
             {approval.requester && (
-              <button
+              <IconButton
                 onClick={handleDiscuss}
                 title="Open chat with this agent"
-                className="flex items-center justify-center px-3 py-2.5 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all"
+                variant="outline"
+                size="2"
               >
                 <MessageSquare className="w-4 h-4" />
-              </button>
+              </IconButton>
             )}
           </div>
           {(rejectConfirm || approveConfirm) && (
-            <button
+            <Button
               onClick={() => { setRejectConfirm(false); setApproveConfirm(false); setRejectReason(''); }}
-              className="w-full text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              variant="ghost"
+              size="1"
+              color="gray"
+              className="w-full"
             >
               Cancel
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -810,14 +826,16 @@ export default function ApprovalQueuePanel() {
             <p className="text-sm text-mission-control-text-dim">Review and approve agent actions</p>
           </div>
         </div>
-        <button
+        <IconButton
           onClick={() => load(true)}
           disabled={refreshing}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          variant="ghost"
+          color="gray"
+          size="2"
           title="Refresh"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
+        </IconButton>
       </div>
 
       <ApprovalStatsStrip approvals={approvals} allApprovals={allApprovals} humanReviewCount={tasks.filter(t => t.status === 'human-review').length} />
@@ -842,18 +860,20 @@ export default function ApprovalQueuePanel() {
         <div className="flex items-center gap-1 px-3 py-2 border-b border-mission-control-border/50 bg-mission-control-surface/50">
           <Filter className="w-3 h-3 text-mission-control-text-dim shrink-0 mr-0.5" />
           {FILTER_TABS.map(tab => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setFilterTab(tab.id)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${filterTab === tab.id ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'}`}
+              variant={filterTab === tab.id ? 'soft' : 'ghost'}
+              size="1"
+              radius="full"
             >
               {tab.label}
               {pendingCounts && pendingCounts[tab.id] > 0 && (
-                <span className={`text-xs rounded-full px-1.5 ${filterTab === tab.id ? 'bg-mission-control-accent/30 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+                <Badge color={filterTab === tab.id ? 'blue' : 'gray'} variant="soft" size="1">
                   {pendingCounts[tab.id]}
-                </span>
+                </Badge>
               )}
-            </button>
+            </Button>
           ))}
           {uniqueRequesters.length > 0 && (
             <div className="flex items-center gap-1 ml-1">
@@ -869,14 +889,18 @@ export default function ApprovalQueuePanel() {
             </div>
           )}
           {statusTab === 'pending' && filtered.length > 1 && (
-            <button
+            <Button
               onClick={approveAll}
               disabled={batchWorking2}
-              className={`ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${batchConfirm ? 'bg-success text-white animate-pulse' : 'bg-success-subtle text-success border border-success-border hover:bg-success/20'}`}
+              color="grass"
+              variant={batchConfirm ? 'solid' : 'soft'}
+              size="1"
+              radius="full"
+              className="ml-auto"
             >
               {batchWorking2 ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckSquare className="w-3 h-3" />}
-              {batchConfirm ? `Confirm \u2014 approve all ${filtered.length}` : `Approve all ${filtered.length}`}
-            </button>
+              {batchConfirm ? `Confirm — approve all ${filtered.length}` : `Approve all ${filtered.length}`}
+            </Button>
           )}
         </div>
       )}
@@ -944,24 +968,24 @@ export default function ApprovalQueuePanel() {
                     className="flex-1 text-xs bg-mission-control-bg border border-error-border rounded-lg px-3 py-1.5 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-error"
                     autoFocus
                   />
-                  <button onClick={() => { setShowBatchRejectInput(false); setBatchRejectReason(''); }} className="text-xs text-mission-control-text-dim hover:text-mission-control-text">
+                  <IconButton onClick={() => { setShowBatchRejectInput(false); setBatchRejectReason(''); }} variant="ghost" color="gray" size="2">
                     <X className="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <button onClick={() => setSelected(new Set())} className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim" title="Clear selection">
+                <IconButton onClick={() => setSelected(new Set())} variant="ghost" color="gray" size="2" title="Clear selection">
                   <Square className="w-4 h-4" />
-                </button>
+                </IconButton>
                 <span className="text-xs text-mission-control-text-dim flex-1">{selected.size} selected</span>
-                <button onClick={batchApproveSelected} disabled={batchWorking} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-all">
+                <Button onClick={batchApproveSelected} disabled={batchWorking} color="grass" size="1">
                   {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                   Approve selected ({selected.size})
-                </button>
-                <button onClick={batchRejectSelected} disabled={batchWorking} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error-subtle text-error border border-error-border text-xs font-semibold hover:bg-error/20 disabled:opacity-50 transition-all">
+                </Button>
+                <Button onClick={batchRejectSelected} disabled={batchWorking} color="red" variant="soft" size="1">
                   {batchWorking ? <RefreshCw className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
                   {showBatchRejectInput ? 'Confirm Reject' : `Reject selected (${selected.size})`}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -1025,7 +1049,7 @@ function AgentActionCard({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-sm">{approval.title}</span>
             {approval.status !== 'pending' && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${approval.status === 'approved' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'}`}>{approval.status}</span>
+              <Badge color={approval.status === 'approved' ? 'grass' : 'red'} variant="soft" size="1">{approval.status}</Badge>
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5 text-xs text-mission-control-text-dim">
@@ -1066,17 +1090,17 @@ function AgentActionCard({
             className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
           />
           <div className="flex gap-2">
-            <button onClick={onApprove} disabled={isResponding} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-success text-white text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-50 shadow-sm">
+            <Button onClick={onApprove} disabled={isResponding} color="grass" size="2" className="flex-1">
               {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               {hasNote ? 'Approve with Feedback' : 'Approve'}
-            </button>
-            <button onClick={onReject} disabled={isResponding} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-error-border bg-error-subtle text-error text-sm font-semibold hover:bg-error/20 transition-all disabled:opacity-50">
+            </Button>
+            <Button onClick={onReject} disabled={isResponding} color="red" variant="soft" size="2" className="flex-1">
               {isResponding ? <RefreshCw className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
               {hasNote ? 'Reject with Reason' : 'Deny'}
-            </button>
-            <button onClick={handleDiscuss} title="Open chat with this agent" className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm font-medium hover:bg-mission-control-surface hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-all">
+            </Button>
+            <IconButton onClick={handleDiscuss} title="Open chat with this agent" variant="outline" size="2">
               <MessageSquare className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -1131,9 +1155,9 @@ function ApprovalListRow({
     >
       <div className="flex items-start gap-3">
         {showActions && (hovered || isSelected) ? (
-          <button onClick={onSelect} className="mt-0.5 p-0.5 shrink-0 text-mission-control-text-dim hover:text-mission-control-accent" title="Select for batch action">
+          <IconButton onClick={onSelect} variant="ghost" color="gray" size="1" className="mt-0.5 shrink-0" title="Select for batch action">
             {isSelected ? <CheckSquare className="w-4 h-4 text-mission-control-accent" /> : <Square className="w-4 h-4" />}
-          </button>
+          </IconButton>
         ) : (
           <div className={`mt-0.5 p-1.5 rounded-md ${cfg.bg} shrink-0`}><Icon className={`w-3.5 h-3.5 ${cfg.color}`} /></div>
         )}
@@ -1143,15 +1167,15 @@ function ApprovalListRow({
             <span className="font-medium text-sm truncate">{approval.title}</span>
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${getApprovalTypeConfig(approval.type).className}`}>{getApprovalTypeConfig(approval.type).label}</span>
             {tier <= 1 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${tier === 0 ? 'bg-error/20 text-error' : 'bg-warning/20 text-warning'}`}>P{tier}</span>
+              <Badge color={tier === 0 ? 'red' : 'amber'} variant="soft" size="1">P{tier}</Badge>
             )}
             {isExecutable && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-mission-control-border/40 text-mission-control-text-dim">
+              <Badge color="gray" variant="soft" size="1">
                 {approval.category === 'scheduled_action' ? 'Scheduled' : 'Executor'}
-              </span>
+              </Badge>
             )}
             {approval.status !== 'pending' && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${approval.status === 'approved' ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'}`}>{approval.status}</span>
+              <Badge color={approval.status === 'approved' ? 'grass' : 'red'} variant="soft" size="1">{approval.status}</Badge>
             )}
           </div>
           <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
@@ -1165,9 +1189,9 @@ function ApprovalListRow({
         <div className="flex items-center gap-1 shrink-0">
           {approval.status === 'approved' ? <ShieldCheck className="w-4 h-4 text-success" /> : approval.status === 'rejected' ? <ShieldX className="w-4 h-4 text-error" /> : <Clock className="w-4 h-4 text-warning" />}
           <ChevronRight className={`w-4 h-4 text-mission-control-text-dim transition-transform ${isDetailOpen ? 'rotate-90' : ''}`} />
-          <button onClick={e => { e.stopPropagation(); onToggle(); }} className="p-1 rounded hover:bg-mission-control-border/50 text-mission-control-text-dim">
+          <IconButton onClick={e => { e.stopPropagation(); onToggle(); }} variant="ghost" color="gray" size="1">
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -1208,31 +1232,31 @@ function ApprovalListRow({
       {showActions && isExpanded && (
         <div className="mt-3 ml-9 space-y-2" onClick={e => e.stopPropagation()}>
           {(approval.type === 'post_x' || approval.type === 'tweet') && (
-            <button onClick={onEditToggle} className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${isEditing ? 'bg-info-subtle text-info border-info-border' : 'bg-mission-control-border/20 text-mission-control-text-dim border-mission-control-border hover:text-mission-control-text'}`}>
+            <Button onClick={onEditToggle} variant={isEditing ? 'soft' : 'outline'} color={isEditing ? 'blue' : 'gray'} size="1">
               <Edit2 className="w-3.5 h-3.5" />
               {isEditing ? 'Done editing' : 'Edit before approving'}
-            </button>
+            </Button>
           )}
           <div className="flex items-center gap-2">
             <input type="text" placeholder="Notes (optional)…" value={note} onChange={e => onNoteChange(e.target.value)} className="flex-1 text-xs bg-mission-control-border/30 border border-mission-control-border rounded-lg px-3 py-1.5 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50" />
-            <button onClick={onApprove} disabled={isResponding} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success text-white text-sm font-semibold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm">
+            <Button onClick={onApprove} disabled={isResponding} color="grass" size="2">
               {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               {isExecutable ? 'Approve & Run' : 'Approve'}
-            </button>
-            <button onClick={onReject} disabled={isResponding} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-error-subtle hover:bg-error/20 text-error text-sm font-semibold border border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            </Button>
+            <Button onClick={onReject} disabled={isResponding} color="red" variant="soft" size="2">
               {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
               Deny
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {isScheduledView && (
         <div className="mt-3 ml-9" onClick={e => e.stopPropagation()}>
-          <button onClick={onCancel} disabled={isResponding} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-border/20 hover:bg-error-subtle text-mission-control-text-dim hover:text-error text-xs font-medium border border-mission-control-border hover:border-error-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <Button onClick={onCancel} disabled={isResponding} color="red" variant="outline" size="1">
             {isResponding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
             Cancel scheduled action
-          </button>
+          </Button>
         </div>
       )}
     </div>

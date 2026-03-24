@@ -138,7 +138,7 @@ export default function ThreadListItem({
             </button>
 
             {/* Timestamp */}
-            <span className="text-xs text-mission-control-text-dim whitespace-nowrap">
+            <span className="text-xs tabular-nums text-mission-control-text-dim whitespace-nowrap">
               {formatRelativeTime(thread.last_activity)}
             </span>
 

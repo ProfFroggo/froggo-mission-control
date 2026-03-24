@@ -11,6 +11,7 @@ import {
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
   Send, Settings,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -597,10 +598,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           
           {callActive && (
             <div className="flex items-center gap-2 ml-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-xs text-success">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
-                <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
+                <span className="text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
                   🧠 {agentContext.tasks.length}
                 </span>
               )}
@@ -611,22 +612,51 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         
         <div className="flex items-center gap-2">
           {onSwitchToText && (
-            <button onClick={onSwitchToText} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors" title="Switch to text chat">
+            <IconButton
+              variant="ghost"
+              size="2"
+              color="gray"
+              onClick={onSwitchToText}
+              title="Switch to text chat"
+              aria-label="Switch to text chat"
+            >
               <MessageSquare size={16} />
-            </button>
+            </IconButton>
           )}
-          
-          <button data-voice-settings onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors" title="Settings">
+
+          <IconButton
+            data-voice-settings
+            variant="ghost"
+            size="2"
+            color="gray"
+            onClick={() => setShowSettings(!showSettings)}
+            title="Settings"
+            aria-label="Settings"
+          >
             <Settings size={16} />
-          </button>
-          
-          <button onClick={() => setMuted(!muted)} className={`p-2 rounded-lg transition-colors ${muted ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`} title={muted ? 'Unmute' : 'Mute'}>
+          </IconButton>
+
+          <IconButton
+            variant={muted ? 'soft' : 'ghost'}
+            size="2"
+            color={muted ? 'red' : 'gray'}
+            onClick={() => setMuted(!muted)}
+            title={muted ? 'Unmute' : 'Mute'}
+            aria-label={muted ? 'Unmute' : 'Mute'}
+          >
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
-          
-          <button onClick={clearHistory} className="p-2 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-error transition-colors" title="Clear history">
+          </IconButton>
+
+          <IconButton
+            variant="ghost"
+            size="2"
+            color="gray"
+            onClick={clearHistory}
+            title="Clear history"
+            aria-label="Clear history"
+          >
             <Trash2 size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
       
@@ -721,17 +751,17 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               </div>
             )}
             
-            <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-              msg.role === 'user' ? 'bg-mission-control-accent text-white'
-                : msg.role === 'system' ? 'bg-mission-control-border/50 text-mission-control-text-dim text-xs italic px-3 py-1.5'
-                : 'bg-mission-control-card text-mission-control-text border border-mission-control-border'
+            <div className={`max-w-[80%] px-4 py-3 ${
+              msg.role === 'user' ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm'
+                : msg.role === 'system' ? 'bg-mission-control-border/50 text-mission-control-text-dim text-xs italic px-3 py-1.5 rounded-xl'
+                : 'bg-mission-control-surface/80 text-mission-control-text border border-mission-control-border rounded-xl rounded-tl-sm'
             }`}>
               {msg.role === 'assistant' && msg.content ? (
                 <MarkdownMessage content={msg.content} />
               ) : (
                 <p className="text-sm">{msg.content || '...'}</p>
               )}
-              <div className="text-[10px] opacity-40 mt-1">
+              <div className="text-xs tabular-nums text-mission-control-text-dim opacity-40 mt-1">
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
@@ -750,12 +780,17 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {/* Enable Audio button - shown when AudioContext is suspended */}
       {callActive && audioState === 'suspended' && (
         <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
-          <button onClick={handleEnableAudio}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-mission-control-bg font-medium transition-colors">
+          <Button
+            variant="solid"
+            color="amber"
+            size="2"
+            onClick={handleEnableAudio}
+            className="w-full justify-center"
+          >
             <Volume2 size={18} />
             Enable Audio
-          </button>
-          <p className="text-center text-[10px] text-warning/70 mt-1">Browser requires a click to play audio</p>
+          </Button>
+          <p className="text-center text-xs text-warning/70 mt-1">Browser requires a click to play audio</p>
         </div>
       )}
       
@@ -784,14 +819,24 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {callActive && (
         <div className="px-4 py-3 border-t border-mission-control-border">
           <div className="flex gap-2">
-            <input type="text" value={textInput} onChange={(e) => setTextInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendText()}
+            <TextField.Root
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleSendText()}
               placeholder="Type a message (optional)…"
-              className="flex-1 px-4 py-2 rounded-lg bg-mission-control-card border border-mission-control-border text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent" />
-            <button onClick={handleSendText} disabled={!textInput.trim()}
-              className="p-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40" title="Send text">
+              className="flex-1"
+            />
+            <IconButton
+              variant="solid"
+              size="3"
+              color="grass"
+              onClick={handleSendText}
+              disabled={!textInput.trim()}
+              title="Send text"
+              aria-label="Send text"
+            >
               <Send size={20} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -800,31 +845,59 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       <div className="border-t border-mission-control-border p-4">
         <div className="flex items-center justify-center gap-4">
           {callActive && (
-            <button data-voice-meeting onClick={toggleMic} disabled={speaking}
-              className={`p-4 rounded-full transition-all ${listening ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/30 scale-110' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'} disabled:opacity-40`}
-              title={listening ? 'Pause mic' : 'Resume mic'}>
+            <IconButton
+              data-voice-meeting
+              variant={listening ? 'solid' : 'soft'}
+              size="4"
+              color={listening ? 'blue' : 'gray'}
+              onClick={toggleMic}
+              disabled={speaking}
+              title={listening ? 'Pause mic' : 'Resume mic'}
+              aria-label={listening ? 'Pause mic' : 'Resume mic'}
+              className="rounded-full p-4"
+            >
               {listening ? <Mic size={22} /> : <MicOff size={22} />}
-            </button>
+            </IconButton>
           )}
-          
-          <button data-voice-orb onClick={() => callActive ? endCall() : startCall()} disabled={connecting}
-            className={`p-5 rounded-full transition-all ${callActive ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30' : 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30'} disabled:opacity-40`}
-            title={callActive ? 'End call' : 'Start call'}>
+
+          <IconButton
+            data-voice-orb
+            variant="solid"
+            size="4"
+            color={callActive ? 'red' : 'grass'}
+            onClick={() => callActive ? endCall() : startCall()}
+            disabled={connecting}
+            title={callActive ? 'End call' : 'Start call'}
+            aria-label={callActive ? 'End call' : 'Start call'}
+            className="rounded-full p-5"
+          >
             {connecting ? <Loader2 size={26} className="animate-spin" /> : callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
-          </button>
-          
+          </IconButton>
+
           {callActive && (
             <>
-              <button onClick={toggleScreenShare}
-                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'screen' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'}`}
-                title="Screen share">
+              <IconButton
+                variant={videoActive && geminiLive.videoMode === 'screen' ? 'solid' : 'soft'}
+                size="4"
+                color={videoActive && geminiLive.videoMode === 'screen' ? 'blue' : 'gray'}
+                onClick={toggleScreenShare}
+                title="Screen share"
+                aria-label="Screen share"
+                className="rounded-full p-4"
+              >
                 {videoActive && geminiLive.videoMode === 'screen' ? <MonitorOff size={22} /> : <Monitor size={22} />}
-              </button>
-              <button onClick={toggleVideo}
-                className={`p-4 rounded-full transition-all ${videoActive && geminiLive.videoMode === 'camera' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-card hover:text-mission-control-text'}`}
-                title="Camera">
+              </IconButton>
+              <IconButton
+                variant={videoActive && geminiLive.videoMode === 'camera' ? 'solid' : 'soft'}
+                size="4"
+                color={videoActive && geminiLive.videoMode === 'camera' ? 'violet' : 'gray'}
+                onClick={toggleVideo}
+                title="Camera"
+                aria-label="Camera"
+                className="rounded-full p-4"
+              >
                 {videoActive && geminiLive.videoMode === 'camera' ? <VideoOff size={22} /> : <Video size={22} />}
-              </button>
+              </IconButton>
             </>
           )}
         </div>

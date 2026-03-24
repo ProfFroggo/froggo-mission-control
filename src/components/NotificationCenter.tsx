@@ -165,7 +165,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
                 onClick={markAllRead}
                 title="Mark all as read"
                 aria-label="Mark all as read"
-                className="text-[11px] flex items-center gap-1 px-2"
+                className="text-xs flex items-center gap-1 px-2"
               >
                 <CheckCheck size={14} aria-hidden="true" />
                 <span>Mark all read</span>
@@ -191,7 +191,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-2 text-[11px] font-medium transition-colors ${
+              className={`flex-1 py-2 text-xs font-medium transition-colors ${
                 tab === t.id
                   ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
                   : 'text-mission-control-text-dim hover:text-mission-control-text'
@@ -239,11 +239,11 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
                       {n.title}
                     </p>
                     {n.body && (
-                      <p className="text-[11px] text-mission-control-text-dim mt-0.5 line-clamp-2">
+                      <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">
                         {n.body}
                       </p>
                     )}
-                    <p className="text-[10px] text-mission-control-text-dim mt-1 tabular-nums">
+                    <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
                       {relativeTime(n.createdAt)}
                     </p>
                   </div>

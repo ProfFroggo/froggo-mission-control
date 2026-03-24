@@ -1117,7 +1117,7 @@ export default function ChatPanel() {
         <Spinner size={32} />
       </div>
     ) : (
-      <div className="flex flex-col items-center justify-center h-full text-mission-control-text-muted">
+      <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim">
         <MessageCircle size={40} className="mb-4 opacity-30" />
         <p className="text-sm font-medium">Select an agent to start chatting</p>
         <p className="text-xs mt-1 opacity-70">Choose from the agent panel on the left</p>
@@ -1241,7 +1241,7 @@ export default function ChatPanel() {
           >
             <Users size={16} />
             {rooms.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-white text-xs font-bold rounded-full flex items-center justify-center">
                 {rooms.length}
               </span>
             )}
@@ -1432,7 +1432,7 @@ export default function ChatPanel() {
       {/* Connection banner removed — chat uses REST API, gateway is optional */}
 
       {/* Input — sticky bottom on mobile so it's always accessible */}
-      <div className={`p-4 border-t border-mission-control-border bg-mission-control-surface sticky bottom-0 sm:relative ${isVoiceMode ? 'hidden' : ''}`}>
+      <div className={`p-3 border-t border-mission-control-border bg-mission-control-bg sticky bottom-0 sm:relative ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1828,7 +1828,7 @@ const MessageItem = memo(function MessageItem({
               >
                 <ThumbsUp size={13} className={reaction.mine === 'up' ? 'fill-current' : ''} />
                 {reaction.up > 0 && (
-                  <span className="text-[10px] font-medium leading-none">{reaction.up}</span>
+                  <span className="text-xs font-medium leading-none">{reaction.up}</span>
                 )}
               </button>
               {/* Thumbs down */}
@@ -1844,7 +1844,7 @@ const MessageItem = memo(function MessageItem({
               >
                 <ThumbsDown size={13} className={reaction.mine === 'down' ? 'fill-current' : ''} />
                 {reaction.down > 0 && (
-                  <span className="text-[10px] font-medium leading-none">{reaction.down}</span>
+                  <span className="text-xs font-medium leading-none">{reaction.down}</span>
                 )}
               </button>
               <button
@@ -1887,12 +1887,12 @@ const MessageItem = memo(function MessageItem({
 
           {/* ChatMessage bubble */}
           <div
-            className={`relative rounded-2xl shadow-sm break-words ${
+            className={`relative shadow-sm break-words ${
               isUser
-                ? 'bg-mission-control-accent text-white rounded-tr-sm px-4 py-3'
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm px-4 py-3'
                 : msg.subtle
-                  ? 'bg-transparent text-mission-control-text-dim border border-mission-control-border/50 rounded-tl-sm px-3 py-1.5 text-sm'
-                  : 'bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-tl-sm px-4 py-3'
+                  ? 'bg-transparent text-mission-control-text-dim border border-mission-control-border/50 rounded-xl rounded-tl-sm px-3 py-1.5 text-sm'
+                  : 'bg-mission-control-surface/80 border border-mission-control-border text-mission-control-text rounded-xl rounded-tl-sm px-4 py-3'
             }`}
             onClick={(e) => {
               if (onImageClick && e.target instanceof HTMLImageElement) {
@@ -1945,7 +1945,7 @@ const MessageItem = memo(function MessageItem({
         
         {/* Timestamp and status */}
         <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
-          <span className="text-xs text-mission-control-text-dim font-medium">
+          <span className="text-xs tabular-nums text-mission-control-text-dim font-medium">
             {time}
           </span>
           {isStarred && (

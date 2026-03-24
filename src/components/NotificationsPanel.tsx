@@ -148,7 +148,7 @@ export default function NotificationsPanel() {
             </div>
             <div>
               <h1 className="text-heading-2">Notifications</h1>
-              <p className="text-secondary">
+              <p className="text-secondary tabular-nums">
                 {unreadCount} unread {urgentCount > 0 && `• ${urgentCount} urgent`}
               </p>
             </div>
@@ -223,7 +223,7 @@ export default function NotificationsPanel() {
                           {config.label}
                         </span>
                         <Clock size={10} />
-                        <span>{formatTimeAgo(notif.timestamp)}</span>
+                        <span className="tabular-nums">{formatTimeAgo(notif.timestamp)}</span>
                       </div>
                     </div>
 

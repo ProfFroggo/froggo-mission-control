@@ -506,7 +506,7 @@ function LeftPane({
                 if (groupAccounts.length === 0) return null;
                 return (
                   <div key={label}>
-                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim">
+                    <div className="px-4 pt-2 pb-1 text-xs font-semibold uppercase tracking-widest text-mission-control-text-dim">
                       {label}
                     </div>
                     {groupAccounts.map(account => (
@@ -523,7 +523,7 @@ function LeftPane({
                         <div className="flex flex-col items-start flex-1 min-w-0">
                           <span className="truncate w-full text-left">{account.label}</span>
                           {account.address && (
-                            <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
+                            <span className="text-xs text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
                           )}
                         </div>
                         {(accountCounts[account.id] || 0) > 0 && (
@@ -728,7 +728,7 @@ function CenterPane({
                       <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
                         {conv.name || conv.from || 'Unknown'}
                       </span>
-                      <span className="text-[11px] text-mission-control-text-dim flex-shrink-0">{conv.relativeTime}</span>
+                      <span className="text-xs tabular-nums text-mission-control-text-dim flex-shrink-0">{conv.relativeTime}</span>
                     </div>
                     {conv.subject && (
                       <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
@@ -747,20 +747,20 @@ function CenterPane({
                         />
                       )}
                       {conv.message_count && conv.message_count > 1 && (
-                        <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
+                        <span className="text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
                           {conv.message_count}
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
                         <span
-                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold tabular-nums bg-warning text-white rounded-full flex-shrink-0"
+                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-xs font-bold tabular-nums bg-warning text-white rounded-full flex-shrink-0"
                           title={`${conv.unread_count} unread`}
                         >
                           {conv.unread_count > 99 ? '99+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-xs text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
@@ -891,19 +891,19 @@ function InboxDashboard({
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-mission-control-accent">{unreadCount}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Unread</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Action</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-mission-control-text">{messages.length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Total</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Total</div>
           </div>
         </div>
 
@@ -944,14 +944,14 @@ function InboxDashboard({
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className={`${platformColor(msg.platform)}`}>{platformIcon(msg.platform, 11)}</span>
                           <span className="text-sm font-medium truncate">{msg.name || msg.from}</span>
-                          <span className="text-[10px] text-mission-control-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
+                          <span className="text-xs tabular-nums text-mission-control-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
                         </div>
                         {analysis?.summary && (
                           <p className="text-xs text-mission-control-text/70 truncate">{analysis.summary}</p>
                         )}
                         {/* Quick action hint */}
                         {analysis?.reply_needed && (
-                          <span className="text-[10px] text-mission-control-accent mt-1 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-xs text-mission-control-accent mt-1 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Reply size={9} /> Click to reply
                           </span>
                         )}
@@ -977,11 +977,11 @@ function InboxDashboard({
                   <span className={`flex-shrink-0 ${platformColor(item.platform)}`}>{platformIcon(item.platform, 11)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{item.task.title}</p>
-                    <p className="text-[10px] text-mission-control-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
+                    <p className="text-xs text-mission-control-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
                   </div>
                   <button
                     onClick={() => onCreateTask(item.task)}
-                    className="flex-shrink-0 text-[10px] px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-colors font-medium"
+                    className="flex-shrink-0 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-all duration-150 font-medium"
                   >
                     Create
                   </button>
@@ -996,7 +996,7 @@ function InboxDashboard({
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <Sparkles size={32} className="mb-3 text-mission-control-text-dim/30" />
             <p className="text-sm text-mission-control-text-dim">AI is analyzing your messages...</p>
-            <p className="text-[10px] text-mission-control-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
+            <p className="text-xs text-mission-control-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
           </div>
         )}
 
@@ -1297,7 +1297,7 @@ function RightPane({
           {/* Summary + Triage */}
           <div className="flex items-center gap-2 mb-1.5">
             <Sparkles size={13} className="text-mission-control-accent flex-shrink-0" />
-            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+            <span className={`text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
               aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
               aiAnalysis.triage === 'action' ? 'bg-warning-subtle text-warning' :
               aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
@@ -1306,7 +1306,7 @@ function RightPane({
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-[10px] text-success bg-success-subtle px-1.5 py-0.5 rounded font-medium">
+              <span className="text-xs text-success bg-success-subtle px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
@@ -1320,7 +1320,7 @@ function RightPane({
                 <button
                   key={task.title}
                   onClick={() => onCreateTask?.(task)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-colors"
+                  className="flex items-center gap-1 text-xs px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-all duration-150"
                   title={task.description}
                 >
                   <ListPlus size={10} />
@@ -1337,7 +1337,7 @@ function RightPane({
                 <button
                   key={event.title || `${event.date}-${event.time}`}
                   onClick={() => onCreateEvent?.(event)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:bg-review-subtle transition-colors"
+                  className="flex items-center gap-1 text-xs px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:brightness-110 transition-all duration-150"
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />
@@ -1378,7 +1378,7 @@ function RightPane({
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
-                    <span className="text-[10px] text-mission-control-text-dim">{msg.timestamp}</span>
+                    <span className="text-xs tabular-nums text-mission-control-text-dim">{msg.timestamp}</span>
                   </div>
                   {isHtmlContent(msg.text)
                     ? /* SECURITY: sanitizeInlineHtml → sanitizeHtml (DOMPurify) strips all unsafe HTML/attrs */
@@ -1450,7 +1450,7 @@ function RightPane({
           {/* Response Planner */}
           <div>
             <span className="text-xs font-medium text-mission-control-text-dim mb-2 block">Response Planner</span>
-            <p className="text-[10px] text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
+            <p className="text-xs text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1563,7 +1563,7 @@ function RightPane({
             />
           </div>
           <div className="flex items-center justify-between mt-2">
-            <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
+            <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
             <div className="flex gap-2">
               {replyText && (
                 <button

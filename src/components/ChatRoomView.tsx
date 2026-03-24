@@ -683,7 +683,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         {/* Header */}
         {!hideHeader && <div className={`p-4 border-b border-mission-control-border flex items-center gap-3 ${
           isTeamMeeting
-            ? 'bg-warning/10 border-amber-500/30'
+            ? 'bg-warning/10 border-warning/30'
             : 'bg-mission-control-surface'
         }`}>
         <button
@@ -706,7 +706,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </div>
           )}
           <div>
-            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-amber-500' : ''}`}>
+            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-warning' : ''}`}>
               {room.name}
             </h2>
             <p className="text-xs text-mission-control-text-dim">
@@ -780,7 +780,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
             <button
               onClick={stopAll}
-              className="w-8 h-8 rounded-lg border-2 border-red-500 text-error hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
+              className="w-8 h-8 rounded-lg border-2 border-error text-error hover:bg-error hover:text-white transition-all duration-150 flex items-center justify-center"
               title="Stop all agents"
             >
               <Square size={14} fill="currentColor" />
@@ -788,7 +788,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           ) : stopped ? (
             <button
               onClick={resumeAgents}
-              className="w-8 h-8 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center"
+              className="w-8 h-8 rounded-lg bg-error text-white hover:brightness-110 transition-all duration-150 flex items-center justify-center"
               title="Resume agents"
             >
               <Square size={12} fill="white" />
@@ -829,7 +829,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             }}
             className={`p-2 rounded-lg transition-colors ${
               isTeamMeeting
-                ? 'text-amber-400 hover:text-error hover:bg-error-subtle'
+                ? 'text-warning hover:text-error hover:bg-error-subtle'
                 : 'text-mission-control-text-dim hover:text-error hover:bg-error-subtle'
             }`}
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
@@ -914,9 +914,9 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {isTeamMeeting ? (
               <>
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                  <UsersRound size={40} className="text-amber-500" />
+                  <UsersRound size={40} className="text-warning" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started</p>
+                <p className="text-lg font-medium mb-2 text-warning">Team Meeting Started</p>
                 <p className="text-sm mb-4">
                   All {room.agents.length} agents are present and ready.
                 </p>
@@ -937,7 +937,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <button
                       key={i}
                       onClick={() => setInput(q)}
-                      className="px-3 py-1.5 text-xs bg-warning/10 border border-amber-500/30 rounded-lg hover:border-amber-500 transition-colors"
+                      className="px-3 py-1.5 text-xs bg-warning/10 border border-warning/30 rounded-lg hover:border-warning transition-all duration-150"
                     >
                       {q}
                     </button>
@@ -1016,10 +1016,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     </div>
                   )}
                   <div
-                    className={`px-4 py-3 rounded-2xl break-words ${
+                    className={`px-4 py-3 break-words ${
                       isUser
-                        ? 'bg-mission-control-accent text-white rounded-tr-sm'
-                        : `bg-mission-control-surface/90 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm shadow-sm`
+                        ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text rounded-xl rounded-tr-sm'
+                        : `bg-mission-control-surface/80 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-xl rounded-tl-sm shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
@@ -1055,7 +1055,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-mission-control-text-dim mt-1 px-1">{time}</span>
+                  <span className="text-xs tabular-nums text-mission-control-text-dim mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
                   <div className={`flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <button
@@ -1143,7 +1143,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Input */}
       <div
-        className="p-4 border-t border-mission-control-border bg-mission-control-surface relative"
+        className="p-3 border-t border-mission-control-border bg-mission-control-bg relative"
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
         role="button"
@@ -1189,7 +1189,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   )}
                   <button
                     onClick={() => removeAttachment(att.id)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150"
                   >
                     <X size={12} />
                   </button>
