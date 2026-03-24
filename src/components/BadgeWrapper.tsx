@@ -37,9 +37,9 @@ export default function BadgeWrapper({
   const variantClasses = {
     'primary': 'bg-mission-control-accent text-white',
     'secondary': 'bg-mission-control-border text-mission-control-text',
-    'danger': 'bg-error text-white',
-    'warning': 'bg-warning text-white',
-    'success': 'bg-success text-white',
+    'danger': 'bg-error text-error',
+    'warning': 'bg-warning text-warning',
+    'success': 'bg-success text-success',
   };
 
   // Size classes - increased min-width to properly accommodate "99+"

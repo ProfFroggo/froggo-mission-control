@@ -265,7 +265,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-mission-control-text-dim'}`} />
                 {needsReview.length > 0 && (
-                  <span className="px-2.5 py-0.5 bg-review-subtle text-white text-xs font-medium rounded-full">
+                  <span className="px-2.5 py-0.5 bg-review text-review text-xs font-medium rounded-full">
                     {needsReview.length} review
                   </span>
                 )}
@@ -303,7 +303,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {urgentTasks.length > 0 && (
-                  <span className="px-2.5 py-0.5 bg-error text-white text-xs font-bold rounded-full">
+                  <span className="px-2.5 py-0.5 bg-error text-error text-xs font-bold rounded-full">
                     P0
                   </span>
                 )}

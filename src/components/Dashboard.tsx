@@ -524,7 +524,7 @@ function ApprovalsQueue({
           <Inbox size={16} className={pending.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'} />
           <h2 className="font-semibold text-sm">Needs Your Decision</h2>
           {pending.length > 0 && (
-            <span className="px-2 py-0.5 bg-warning text-white text-xs font-bold rounded-full tabular-nums">
+            <span className="px-2 py-0.5 bg-warning text-warning text-xs font-bold rounded-full tabular-nums">
               {pending.length}
             </span>
           )}
@@ -1344,7 +1344,7 @@ function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
                       <p className={`text-sm font-medium truncate ${happening ? 'text-info' : 'text-mission-control-text'}`}>
                         {event.summary}
                         {happening && (
-                          <span className="ml-2 px-1.5 py-0.5 bg-info text-white text-xs rounded-full font-bold">
+                          <span className="ml-2 px-1.5 py-0.5 bg-info text-info text-xs rounded-full font-bold">
                             NOW
                           </span>
                         )}

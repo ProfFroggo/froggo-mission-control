@@ -69,7 +69,7 @@ export default function InboxWidget() {
           className={unreadCount > 0 ? 'text-info' : 'text-mission-control-text-dim'}
         />
         {unreadCount > 0 && (
-          <span className="px-3 py-1 bg-info text-white text-sm font-bold tabular-nums rounded-full animate-pulse shadow-lg">
+          <span className="px-3 py-1 bg-info text-info text-sm font-bold tabular-nums rounded-full animate-pulse shadow-lg">
             {unreadCount}
           </span>
         )}
