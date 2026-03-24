@@ -67,6 +67,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
 };
 
 import { catalogApi } from '../lib/api';
+import TabNav from './TabNav';
 import type { CatalogModule } from '../types/catalog';
 import { Spinner } from './LoadingStates';
 import ModuleInstallModal from './ModuleInstallModal';
@@ -894,19 +895,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             </TextField.Slot>
           </TextField.Root>
         </div>
-        <div className="flex gap-1">
-          {(['all', 'installed', 'available'] as const).map(f => (
-            <Button
-              key={f}
-              size="1"
-              variant={filter === f ? 'solid' : 'ghost'}
-              color={filter === f ? 'indigo' : 'gray'}
-              onClick={() => setFilter(f)}
-              className="capitalize"
-            >
-              {f}
-            </Button>
-          ))}
+        <div className="border-b border-mission-control-border">
+          <TabNav
+            tabs={[
+              { id: 'all',       label: 'All'       },
+              { id: 'installed', label: 'Installed' },
+              { id: 'available', label: 'Available' },
+            ]}
+            activeTab={filter}
+            onTabChange={(id) => setFilter(id as 'all' | 'installed' | 'available')}
+            paddingX="px-0"
+          />
         </div>
       </div>
 

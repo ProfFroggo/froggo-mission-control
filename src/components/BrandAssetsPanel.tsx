@@ -646,14 +646,45 @@ export default function BrandAssetsPanel() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {assets.map(asset => (
-                    <AssetCard
-                      key={asset.id}
-                      asset={asset}
-                      onClick={() => setSelected(prev => prev?.id === asset.id ? null : asset)}
-                    />
-                  ))}
+                <div className="flex flex-col gap-2">
+                  {assets.map(asset => {
+                    const FileIcon = getFileIcon(asset.fileType);
+                    const isSelected = selected?.id === asset.id;
+                    return (
+                      <div
+                        key={asset.id}
+                        onClick={() => setSelected(prev => prev?.id === asset.id ? null : asset)}
+                        className={`border rounded-lg p-4 bg-mission-control-surface cursor-pointer transition-colors hover:border-info/40 ${
+                          isSelected ? 'border-mission-control-accent/60' : 'border-mission-control-border'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-mission-control-accent/20 rounded-lg shrink-0">
+                            <FileIcon size={18} className="text-mission-control-accent" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-mission-control-text truncate">{asset.name}</p>
+                            {asset.description && (
+                              <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{asset.description}</p>
+                            )}
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${getCategoryColor(asset.category)}`}>
+                                {asset.category}
+                              </span>
+                              {asset.tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim">
+                                  {tag}
+                                </span>
+                              ))}
+                              {asset.tags.length > 2 && (
+                                <span className="text-xs text-mission-control-text-dim">+{asset.tags.length - 2}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

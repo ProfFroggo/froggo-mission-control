@@ -17,6 +17,8 @@ import { inboxApi, taskApi, sessionApi, approvalApi, scheduleApi } from '../lib/
 import { useEventBus } from '../lib/useEventBus';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 import { getApprovalTypeConfig } from '../lib/approvalTypes';
+import TabNav from './TabNav';
+import type { TabNavItem } from './TabNav';
 
 const logger = createLogger('InboxPanel');
 
@@ -1163,43 +1165,17 @@ export default function InboxPanel() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={activeTab === 'all' ? 'solid' : 'soft'}
-            color={activeTab === 'all' ? 'violet' : 'gray'}
-            size="2"
-            onClick={() => { setActiveTab('all'); setFocusedIndex(0); }}
-          >
-            <Inbox size={16} className="flex-shrink-0" />
-            All
-            <Badge color={activeTab === 'all' ? 'violet' : 'gray'} variant="soft" className="ml-1">
-              {pendingItems.length}
-            </Badge>
-          </Button>
-          <Button
-            variant={activeTab === 'approvals' ? 'solid' : 'soft'}
-            color={activeTab === 'approvals' ? 'violet' : 'gray'}
-            size="2"
-            onClick={() => { setActiveTab('approvals'); setFocusedIndex(0); }}
-          >
-            <ShieldAlert size={16} className="flex-shrink-0" />
-            Approvals
-            <Badge color={activeTab === 'approvals' ? 'violet' : 'gray'} variant="soft" className="ml-1">
-              {pendingItems.filter(i => !isReviewItem(i)).length}
-            </Badge>
-          </Button>
-          <Button
-            variant={activeTab === 'reviews' ? 'solid' : 'soft'}
-            color={activeTab === 'reviews' ? 'violet' : 'gray'}
-            size="2"
-            onClick={() => { setActiveTab('reviews'); setFocusedIndex(0); }}
-          >
-            <CheckCircle size={16} className="flex-shrink-0" />
-            Reviews
-            <Badge color={activeTab === 'reviews' ? 'violet' : 'gray'} variant="soft" className="ml-1">
-              {pendingItems.filter(i => isReviewItem(i)).length}
-            </Badge>
-          </Button>
+        <div className="border-b border-mission-control-border mb-3 -mx-4 px-0">
+          <TabNav
+            tabs={[
+              { id: 'all',       label: 'All',       icon: Inbox,        badge: pendingItems.length },
+              { id: 'approvals', label: 'Approvals', icon: ShieldAlert,  badge: pendingItems.filter(i => !isReviewItem(i)).length },
+              { id: 'reviews',   label: 'Reviews',   icon: CheckCircle,  badge: pendingItems.filter(i => isReviewItem(i)).length },
+            ] satisfies TabNavItem[]}
+            activeTab={activeTab}
+            onTabChange={(id) => { setActiveTab(id as TabType); setFocusedIndex(0); }}
+            paddingX="px-4"
+          />
         </div>
 
         {/* Sort Controls */}
