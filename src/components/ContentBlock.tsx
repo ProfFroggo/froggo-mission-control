@@ -52,14 +52,14 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
   // Tool use blocks - show tool name and input
   if (block.type === 'tool_use') {
     return (
-      <div className="my-3 border border-blue-500/30 rounded-lg bg-blue-500/5 overflow-hidden">
+      <div className="my-3 border border-info/30 rounded-lg bg-info/5 overflow-hidden">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-blue-500/10 transition-colors text-left"
+          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-info transition-colors text-left"
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          <Code size={14} className="text-blue-500" />
-          <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+          <Code size={14} className="text-info" />
+          <span className="text-xs font-medium text-info">
             {block.name || 'tool'}
           </span>
           {block.id && (
@@ -69,7 +69,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
           )}
         </button>
         {isExpanded && (
-          <div className="px-4 py-3 border-t border-blue-500/30">
+          <div className="px-4 py-3 border-t border-info/30">
             <div className="text-[10px] text-mission-control-text-dim/60 uppercase tracking-wide mb-1">
               Input
             </div>
@@ -87,19 +87,19 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
     const isError = block.text?.includes('error') || block.text?.includes('Error');
     return (
       <div className={`my-3 border rounded-lg overflow-hidden ${
-        isError 
-          ? 'border-red-500/30 bg-red-500/5' 
-          : 'border-green-500/30 bg-green-500/5'
+        isError
+          ? 'border-error/30 bg-error'
+          : 'border-success/30 bg-success'
       }`}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className={`w-full px-3 py-2 flex items-center gap-2 transition-colors text-left ${
-            isError ? 'hover:bg-red-500/10' : 'hover:bg-green-500/10'
+            isError ? 'hover:bg-error' : 'hover:bg-success'
           }`}
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <span className={`text-xs font-medium ${
-            isError ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+            isError ? 'text-error' : 'text-success'
           }`}>
             {isError ? <span className="inline-flex items-center gap-1"><AlertTriangle size={14} /> Error</span> : <span className="inline-flex items-center gap-1"><Check size={14} /> Result</span>}
           </span>
@@ -109,7 +109,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
         </button>
         {isExpanded && (
           <div className={`px-4 py-3 border-t ${
-            isError ? 'border-red-500/30' : 'border-green-500/30'
+            isError ? 'border-error/30' : 'border-success/30'
           }`}>
             <pre className="text-xs bg-mission-control-bg rounded p-2 overflow-x-auto font-mono whitespace-pre-wrap">
               {block.text}

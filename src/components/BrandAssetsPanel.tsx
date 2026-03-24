@@ -4,6 +4,8 @@ import {
   Image, FileText, Film, Palette, Type, Layout, BookOpen,
   Plus, Search, X, Trash2, Edit, ExternalLink,
 } from 'lucide-react';
+// eslint-disable-next-line import/order
+import { Button, IconButton } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -63,10 +65,10 @@ const SCOPE_OPTIONS = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  logos:         'text-blue-400 bg-blue-500/10',
-  colors:        'text-purple-400 bg-purple-500/10',
-  typography:    'text-green-400 bg-green-500/10',
-  imagery:       'text-orange-400 bg-orange-500/10',
+  logos:         'text-info bg-info',
+  colors:        'text-review bg-review',
+  typography:    'text-success bg-success',
+  imagery:       'text-danger bg-danger',
   presentations: 'text-pink-400 bg-pink-500/10',
   guidelines:    'text-mission-control-accent bg-mission-control-accent/10',
   general:       'text-mission-control-text-dim bg-muted-subtle',
@@ -93,9 +95,9 @@ function getFileIcon(fileType: string): React.ElementType {
 
 function getFileTypeBg(fileType: string): string {
   switch (fileType) {
-    case 'pdf':      return 'bg-red-500/10';
-    case 'video':    return 'bg-purple-500/10';
-    case 'document': return 'bg-blue-500/10';
+    case 'pdf':      return 'bg-error';
+    case 'video':    return 'bg-review';
+    case 'document': return 'bg-info';
     default:         return 'bg-muted-subtle';
   }
 }
@@ -121,7 +123,7 @@ function AssetCard({ asset, onClick }: AssetCardProps) {
   return (
     <div
       onClick={onClick}
-      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-blue-500/40 cursor-pointer transition-colors overflow-hidden"
+      className="group rounded-lg bg-mission-control-surface border border-mission-control-border hover:border-info/40 cursor-pointer transition-colors overflow-hidden"
     >
       {/* Preview area */}
       <div className="w-full h-28 overflow-hidden flex items-center justify-center bg-mission-control-bg">
@@ -244,26 +246,28 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
           <span className="font-semibold text-mission-control-text text-sm">
             {initial ? 'Edit Asset' : 'Add Brand Asset'}
           </span>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            variant="ghost"
+            color="gray"
+            size="2"
             aria-label="Close"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
         <div className="p-4 space-y-3 overflow-y-auto max-h-[70vh]">
           {error && (
-            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{error}</p>
+            <p className="text-xs text-error bg-error border border-error rounded px-3 py-2">{error}</p>
           )}
 
           <input
             value={form.name}
             onChange={e => set('name', e.target.value)}
             placeholder="Asset name..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
 
           <div className="flex gap-2">
@@ -302,14 +306,14 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             value={form.url}
             onChange={e => set('url', e.target.value)}
             placeholder="URL or image link..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
 
           <input
             value={form.fileName}
             onChange={e => set('fileName', e.target.value)}
             placeholder="File name (optional)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
 
           <textarea
@@ -317,32 +321,34 @@ function AssetModal({ initial, onClose, onSaved }: AssetModalProps) {
             onChange={e => set('description', e.target.value)}
             placeholder="Description (optional)..."
             rows={3}
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info resize-none"
           />
 
           <input
             value={form.tags}
             onChange={e => set('tags', e.target.value)}
             placeholder="Tags: brand, primary, dark (comma-separated)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
         </div>
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-mission-control-border">
-          <button
+          <Button
             onClick={onClose}
-            className="px-3 py-1.5 rounded text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50"
+            size="2"
           >
             {saving ? 'Saving...' : initial ? 'Save Changes' : 'Add Asset'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -373,13 +379,16 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
         <span className="font-semibold text-mission-control-text text-sm truncate">{asset.name}</span>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim shrink-0 ml-2"
+          variant="ghost"
+          color="gray"
+          size="2"
           aria-label="Close"
+          className="shrink-0 ml-2"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Preview */}
@@ -424,7 +433,7 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors truncate"
+            className="flex items-center gap-1.5 text-xs text-info hover:text-info transition-colors truncate"
           >
             <ExternalLink size={12} className="shrink-0" />
             <span className="truncate">{asset.url}</span>
@@ -457,20 +466,24 @@ function AssetDrawer({ asset, onClose, onEdit, onDelete }: AssetDrawerProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2 p-4 border-t border-mission-control-border">
-        <button
+        <Button
           onClick={onEdit}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs hover:border-blue-500/40 transition-colors"
+          variant="outline"
+          color="gray"
+          size="1"
         >
           <Edit size={12} />
           Edit
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleDelete}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-mission-control-bg border border-mission-control-border text-red-400 text-xs hover:border-red-500/40 hover:bg-red-500/10 transition-colors"
+          variant="outline"
+          color="red"
+          size="1"
         >
           <Trash2 size={12} />
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -558,7 +571,7 @@ export default function BrandAssetsPanel() {
                 onClick={() => setCategory(value)}
                 className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
                   active
-                    ? 'bg-blue-600/20 text-blue-400 font-medium'
+                    ? 'bg-info/20 text-info font-medium'
                     : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
                 }`}
               >
@@ -581,25 +594,29 @@ export default function BrandAssetsPanel() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search brand assets..."
-                className="w-full pl-8 pr-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-blue-500"
+                className="w-full pl-8 pr-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-info"
               />
               {search && (
-                <button
+                <IconButton
                   onClick={() => setSearch('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
+                  variant="ghost"
+                  color="gray"
+                  size="1"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2"
                   aria-label="Clear search"
                 >
                   <X size={13} />
-                </button>
+                </IconButton>
               )}
             </div>
-            <button
+            <Button
               onClick={() => { setEditing(null); setShowModal(true); }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs shrink-0"
+              size="2"
+              className="shrink-0"
             >
               <Plus size={12} />
               Add Asset
-            </button>
+            </Button>
           </div>
 
           {/* Grid + drawer */}
@@ -619,13 +636,13 @@ export default function BrandAssetsPanel() {
                       Add logos, color palettes, typography guides, and other visual resources.
                     </p>
                   </div>
-                  <button
+                  <Button
                     onClick={() => { setEditing(null); setShowModal(true); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+                    size="1"
                   >
                     <Plus size={12} />
                     Add first asset
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

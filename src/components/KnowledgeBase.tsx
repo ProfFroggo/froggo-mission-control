@@ -10,6 +10,8 @@ import ArticleRevisionHistory from './ArticleRevisionHistory';
 import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
+// eslint-disable-next-line import/order
+import { Button, IconButton } from '@radix-ui/themes';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -392,7 +394,7 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
           <button
             key={key++}
             onClick={() => onNavigate(target)}
-            className="text-blue-400 hover:underline inline font-medium"
+            className="text-info hover:underline inline font-medium"
             title={`View article: ${target.title}`}
           >
             <Link size={10} className="inline mr-0.5 opacity-70" />
@@ -423,7 +425,7 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
           href={first.match[3]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:underline"
+          className="text-info hover:underline"
         >
           {first.match[2]}
         </a>
@@ -848,13 +850,15 @@ export default function KnowledgeBase() {
         {/* Reader */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
           <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-            <button
+            <IconButton
               onClick={() => setViewing(null)}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
+              variant="ghost"
+              color="gray"
+              size="2"
               aria-label="Back to list"
             >
               <ChevronLeft size={16} />
-            </button>
+            </IconButton>
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-mission-control-text truncate">{viewing.title}</h2>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -875,31 +879,37 @@ export default function KnowledgeBase() {
                 )}
               </div>
             </div>
-            <button
+            <IconButton
               onClick={() => setVersionsArticleId(viewing.id)}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
+              variant="ghost"
+              color="gray"
+              size="2"
               aria-label="Version history"
               title="Version history"
             >
               <History size={14} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={() => toggleStar(viewing.id)}
-              className={`p-1.5 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-amber-400' : 'text-mission-control-text-dim hover:text-amber-400'}`}
+              variant="ghost"
+              color="gray"
+              size="2"
               aria-label={isStarred ? 'Unstar article' : 'Star article'}
             >
-              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} />
-            </button>
-            <button
+              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-warning' : ''} />
+            </IconButton>
+            <IconButton
               onClick={() => {
                 setEditing({ ...viewing, tags: viewing.tags.join(', ') });
                 setViewing(null);
               }}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
+              variant="ghost"
+              color="gray"
+              size="2"
               aria-label="Edit article"
             >
               <Edit2 size={14} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
@@ -915,7 +925,7 @@ export default function KnowledgeBase() {
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-sm text-blue-400 hover:underline mb-1"
+                      className="block text-sm text-info hover:underline mb-1"
                     >
                       {l.title || l.url}
                     </a>
@@ -941,7 +951,7 @@ export default function KnowledgeBase() {
                       <button
                         key={r.id}
                         onClick={() => setViewing(r)}
-                        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface hover:border-blue-500/40 border border-mission-control-border transition-colors"
+                        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface hover:border-info/40 border border-mission-control-border transition-colors"
                       >
                         <BookOpen size={12} className="text-mission-control-text-dim shrink-0" />
                         <span className="text-sm text-mission-control-text truncate">{r.title}</span>
@@ -988,27 +998,29 @@ export default function KnowledgeBase() {
           <span className="font-semibold text-mission-control-text flex-1">
             {editing.id ? 'Edit Article' : 'New Article'}
           </span>
-          <button
+          <IconButton
             onClick={() => setEditing(null)}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            variant="ghost"
+            color="gray"
+            size="2"
             aria-label="Cancel"
           >
             <X size={14} />
-          </button>
-          <button
+          </IconButton>
+          <Button
             onClick={save}
-            className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm flex items-center gap-1.5"
+            size="2"
           >
             <Check size={13} />
             Save
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <input
             value={editing.title || ''}
             onChange={e => setEditing(v => ({ ...v, title: e.target.value }))}
             placeholder="Article title..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
           <div className="flex gap-2">
             <select
@@ -1030,7 +1042,7 @@ export default function KnowledgeBase() {
               ))}
             </select>
             <label className="flex items-center gap-2 px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text cursor-pointer select-none">
-              <Pin size={13} className={editing.pinned ? 'text-amber-400' : 'text-mission-control-text-dim'} />
+              <Pin size={13} className={editing.pinned ? 'text-warning' : 'text-mission-control-text-dim'} />
               <input
                 type="checkbox"
                 checked={!!editing.pinned}
@@ -1044,14 +1056,14 @@ export default function KnowledgeBase() {
             value={typeof editing.tags === 'string' ? editing.tags : (editing.tags || []).join(', ')}
             onChange={e => setEditing(v => ({ ...v, tags: e.target.value }))}
             placeholder="Tags: brand, design, tone (comma-separated)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
           <textarea
             value={editing.content || ''}
             onChange={e => setEditing(v => ({ ...v, content: e.target.value }))}
             placeholder="Write your guidelines in Markdown..."
             rows={18}
-            className="w-full px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-info resize-none"
           />
           <p className="text-xs text-mission-control-text-dim">
             Markdown supported. Pinned articles are always injected into agent context. Use [[Article Title]] to link to other articles.
@@ -1160,9 +1172,9 @@ export default function KnowledgeBase() {
                 ))}
               </div>
             </div>
-            <button onClick={() => setIngestResult(null)} className="text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0">
+            <IconButton onClick={() => setIngestResult(null)} variant="ghost" color="gray" size="1" className="flex-shrink-0">
               <X size={14} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}
@@ -1186,14 +1198,16 @@ export default function KnowledgeBase() {
               <span className="font-semibold text-mission-control-text text-sm">Knowledge Base</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              <button
+              <Button
                 onClick={() => setShowGraph(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                variant="outline"
+                color="gray"
+                size="1"
                 title="Graph view"
               >
                 <Network size={12} />
                 Graph
-              </button>
+              </Button>
               <div className="relative" ref={templateDropdownRef}>
                 <button
                   onClick={() => setShowTemplateDropdown(v => !v)}
@@ -1223,13 +1237,13 @@ export default function KnowledgeBase() {
                   </div>
                 )}
               </div>
-              <button
+              <Button
                 onClick={() => setQuickCreate(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+                size="1"
               >
                 <Plus size={12} />
                 New Article
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1244,16 +1258,19 @@ export default function KnowledgeBase() {
               onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search guidelines, brand voice, context..."
-              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
             />
             {search && (
-              <button
+              <IconButton
                 onClick={() => { setSearch(''); setSearchCursor(-1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
+                variant="ghost"
+                color="gray"
+                size="1"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2"
                 aria-label="Clear search"
               >
                 <X size={12} />
-              </button>
+              </IconButton>
             )}
           </div>
 
@@ -1263,7 +1280,7 @@ export default function KnowledgeBase() {
               onClick={() => setShowStarred(v => !v)}
               className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs transition-colors ${
                 showStarred
-                  ? 'bg-amber-500/20 text-amber-400'
+                  ? 'bg-warning text-warning'
                   : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
@@ -1404,7 +1421,7 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
         onClick={() => onSelect('all')}
         className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
           selected === 'all'
-            ? 'bg-blue-600/20 text-blue-400 font-medium'
+            ? 'bg-info/20 text-info font-medium'
             : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
         }`}
       >
@@ -1417,7 +1434,7 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
           onClick={() => onSelect(cat)}
           className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
             selected === cat
-              ? 'bg-blue-600/20 text-blue-400 font-medium'
+              ? 'bg-info/20 text-info font-medium'
               : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
           }`}
         >
@@ -1465,7 +1482,7 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
           onClick={() => onSelect('brand-assets')}
           className={`w-full text-left flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors ${
             selected === 'brand-assets'
-              ? 'bg-blue-600/20 text-blue-400 font-medium'
+              ? 'bg-info/20 text-info font-medium'
               : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
           }`}
         >
@@ -1500,15 +1517,15 @@ function ArticleCard({
     <div
       className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer ${
         isKeyboardFocused
-          ? 'border-blue-500/70 ring-1 ring-blue-500/30'
-          : 'border-mission-control-border hover:border-blue-500/40'
+          ? 'border-info/70 ring-1 ring-info/30'
+          : 'border-mission-control-border hover:border-info/40'
       }`}
       style={{ padding: '0.75rem' }}
       onClick={onView}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
-          {article.pinned && <Pin size={11} className="text-amber-400 shrink-0" />}
+          {article.pinned && <Pin size={11} className="text-warning shrink-0" />}
           <span className="font-medium text-mission-control-text text-sm truncate">
             {highlightText(article.title, searchTerm)}
           </span>
@@ -1516,7 +1533,7 @@ function ArticleCard({
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
-            className={`p-1 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-amber-400' : 'text-mission-control-text-dim hover:text-amber-400'}`}
+            className={`p-1 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-warning' : 'text-mission-control-text-dim hover:text-warning'}`}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
@@ -1531,7 +1548,7 @@ function ArticleCard({
           </button>
           <button
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-amber-400"
+            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-warning"
             aria-label={article.pinned ? 'Unpin article' : 'Pin article'}
             title={article.pinned ? 'Unpin' : 'Pin — always inject into agent context'}
           >
@@ -1546,7 +1563,7 @@ function ArticleCard({
           </button>
           <button
             onClick={e => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-red-400"
+            className="p-1 rounded hover:bg-mission-control-border text-error"
             aria-label="Delete article"
           >
             <Trash2 size={12} />
@@ -1561,7 +1578,7 @@ function ArticleCard({
           {article.category}
         </span>
         {isStarred && (
-          <span className="px-1.5 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 flex items-center gap-1">
+          <span className="px-1.5 py-0.5 rounded text-xs bg-warning text-warning flex items-center gap-1">
             <Star size={9} fill="currentColor" />
             Starred
           </span>
@@ -1630,13 +1647,15 @@ function QuickCreateModal({
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <BookOpen size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">New Article</span>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            variant="ghost"
+            color="gray"
+            size="2"
             aria-label="Close"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1645,7 +1664,7 @@ function QuickCreateModal({
             value={title}
             onChange={e => onChangeTitle(e.target.value)}
             placeholder="Article title (required)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
           />
 
           <div className="flex gap-2">
@@ -1665,7 +1684,7 @@ function QuickCreateModal({
                   value={categoryCustom}
                   onChange={e => onChangeCategoryCustom(e.target.value)}
                   placeholder="Category name..."
-                  className="mt-1.5 w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+                  className="mt-1.5 w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-info"
                 />
               )}
             </div>
@@ -1725,25 +1744,27 @@ function QuickCreateModal({
             onChange={e => onChangeContent(e.target.value)}
             placeholder="Article content (required)..."
             rows={10}
-            className="w-full px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-info resize-none"
           />
         </div>
 
         <div className="flex items-center justify-end gap-2 p-4 border-t border-mission-control-border">
-          <button
+          <Button
             onClick={onClose}
-            className="px-3 py-1.5 rounded text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onSave}
             disabled={!canSave}
-            className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm flex items-center gap-1.5"
+            size="2"
           >
             <Check size={13} />
             {saving ? 'Saving...' : 'Save Article'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1770,13 +1791,15 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
       <div className="flex items-center gap-2 p-3 border-b border-mission-control-border">
         <History size={14} className="text-mission-control-text-dim" />
         <span className="text-sm font-medium text-mission-control-text flex-1">Version History</span>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+          variant="ghost"
+          color="gray"
+          size="1"
           aria-label="Close version history"
         >
           <X size={13} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Content preview pane */}
@@ -1796,13 +1819,14 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
           <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
             {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
           </div>
-          <button
+          <Button
             onClick={() => onRestore(previewVersion)}
-            className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+            size="1"
+            className="w-full justify-center"
           >
             <History size={11} />
             Restore this version
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1827,7 +1851,7 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
                 onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
                 className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
                   previewVersion?.id === v.id
-                    ? 'bg-blue-600/20 border border-blue-500/40'
+                    ? 'bg-info/20 border border-info/40'
                     : 'hover:bg-mission-control-border border border-transparent'
                 }`}
               >

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings, Bell, Moon, Sun, Palette, Save, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Key, Activity, Map, Package, AlertCircle, ArrowUpCircle, Terminal, Loader2, ChevronDown, ChevronRight, Clock, DollarSign } from 'lucide-react';
+import { Button, Select, TextField } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 import { settingsApi, updateApi } from '../lib/api';
 import { useSettings } from '../hooks/useSettings';
@@ -213,14 +214,16 @@ function PlatformUpdateTab() {
             <Package size={16} />
             Platform Updates
           </h2>
-          <button
+          <Button
             onClick={checkVersion}
             disabled={checking}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1 transition-colors disabled:opacity-50"
+            variant="ghost"
+            color="gray"
+            size="1"
           >
             <RefreshCw size={12} className={checking ? 'animate-spin' : ''} />
             {checking ? 'Checking...' : 'Check now'}
-          </button>
+          </Button>
         </div>
 
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-3">
@@ -284,17 +287,20 @@ function PlatformUpdateTab() {
 
       {/* Update button */}
       {versionInfo?.updateAvailable && !updateDone?.success && (
-        <button
+        <Button
           onClick={handleUpdate}
           disabled={updating}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+          variant="solid"
+          color="grass"
+          size="3"
+          className="w-full"
         >
           {updating ? (
             <><Loader2 size={16} className="animate-spin" /> Updating...</>
           ) : (
             <><ArrowUpCircle size={16} /> Update to v{versionInfo.latest}</>
           )}
-        </button>
+        </Button>
       )}
 
       {/* Live log */}
@@ -306,7 +312,7 @@ function PlatformUpdateTab() {
           </div>
           <div
             ref={logRef}
-            className="bg-black rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-green-400 space-y-0.5"
+            className="bg-black rounded-lg border border-mission-control-border p-3 h-48 overflow-y-auto font-mono text-xs text-success space-y-0.5"
           >
             {log.map((line, i) => (
               <div key={i} className="leading-5">{line || '\u00a0'}</div>
@@ -368,14 +374,17 @@ function SettingsAuditLog() {
 
   return (
     <section>
-      <button
+      <Button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text transition-colors mb-2"
+        variant="ghost"
+        color="gray"
+        size="2"
+        className="mb-2"
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Clock size={14} />
         Recent Changes
-      </button>
+      </Button>
 
       {open && (
         <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-3 space-y-1">
@@ -533,126 +542,32 @@ export default function SettingsPanel() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-mission-control-border overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'general'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            General
-          </button>
-          <button
-            onClick={() => setActiveTab('appearance')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'appearance'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Palette size={16} />
-            Appearance
-          </button>
-          <button
-            onClick={() => setActiveTab('accessibility')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'accessibility'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Type size={16} />
-            Accessibility
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'notifications'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Bell size={16} />
-            Notifications
-          </button>
-          <button
-            onClick={() => setActiveTab('shortcuts')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'shortcuts'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Keyboard size={16} />
-            Shortcuts
-          </button>
-          <button
-            onClick={() => setActiveTab('accounts')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'accounts'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <LinkIcon size={16} />
-            Google Workspace
-          </button>
-          <button
-            onClick={() => setActiveTab('security')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'security'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Shield size={16} />
-            Security
-          </button>
-          <button
-            onClick={() => setActiveTab('automation')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
-              activeTab === 'automation'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            Automation
-          </button>
-          <button
-            onClick={() => setActiveTab('exportBackup')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'exportBackup'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Database size={16} />
-            Export & Backup
-          </button>
-          <button
-            onClick={() => setActiveTab('platform')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'platform'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <Package size={16} />
-            Platform
-          </button>
-          <button
-            onClick={() => setActiveTab('budgets')}
-            className={`px-4 py-2 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'budgets'
-                ? 'border-mission-control-accent text-mission-control-accent'
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            <DollarSign size={16} />
-            Budgets
-          </button>
+        <div className="flex gap-1 mb-6 border-b border-mission-control-border overflow-x-auto pb-px">
+          {([
+            { id: 'general', label: 'General', icon: null },
+            { id: 'appearance', label: 'Appearance', icon: <Palette size={14} /> },
+            { id: 'accessibility', label: 'Accessibility', icon: <Type size={14} /> },
+            { id: 'notifications', label: 'Notifications', icon: <Bell size={14} /> },
+            { id: 'shortcuts', label: 'Shortcuts', icon: <Keyboard size={14} /> },
+            { id: 'accounts', label: 'Google Workspace', icon: <LinkIcon size={14} /> },
+            { id: 'security', label: 'Security', icon: <Shield size={14} /> },
+            { id: 'automation', label: 'Automation', icon: null },
+            { id: 'exportBackup', label: 'Export & Backup', icon: <Database size={14} /> },
+            { id: 'platform', label: 'Platform', icon: <Package size={14} /> },
+            { id: 'budgets', label: 'Budgets', icon: <DollarSign size={14} /> },
+          ] as { id: Tab; label: string; icon: React.ReactNode }[]).map(tab => (
+            <Button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              variant={activeTab === tab.id ? 'soft' : 'ghost'}
+              color={activeTab === tab.id ? 'grass' : 'gray'}
+              size="2"
+              className="whitespace-nowrap flex-shrink-0"
+            >
+              {tab.icon}
+              {tab.label}
+            </Button>
+          ))}
         </div>
 
         {/* Tab Content */}
@@ -672,17 +587,19 @@ export default function SettingsPanel() {
                 <h2 className="text-heading-3 flex items-center gap-2">
                   <Activity size={16} /> System Status
                 </h2>
-                <button
+                <Button
                   onClick={() => {
                     setHealth(null);
                     setAgentCount(null);
                     fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => {});
                     fetch('/api/agents').then(r => r.json()).then(d => { if (Array.isArray(d)) setAgentCount(d.length); }).catch(() => {});
                   }}
-                  className="text-xs text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1 transition-colors"
+                  variant="ghost"
+                  color="gray"
+                  size="1"
                 >
                   <RefreshCw size={12} /> Refresh
-                </button>
+                </Button>
               </div>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-2 text-sm">
                 <StatusRow
@@ -711,22 +628,23 @@ export default function SettingsPanel() {
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
                 <div>
                   <label htmlFor="default-panel" className="block text-sm text-mission-control-text-dim mb-2">Default Panel on Startup</label>
-                  <select
-                    id="default-panel"
+                  <Select.Root
                     value={settings.defaultPanel}
-                    onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    onValueChange={(val) => setSettings(s => ({ ...s, defaultPanel: val }))}
                   >
-                    <option value="dashboard">Dashboard</option>
-                    <option value="inbox">Inbox</option>
-                    <option value="comms">Communications</option>
-                    <option value="analytics">Analytics</option>
-                    <option value="kanban">Tasks (Kanban)</option>
-                    <option value="agents">Agents</option>
-                    <option value="twitter">Social Media</option>
-                    <option value="voice">Voice</option>
-                    <option value="chat">Chat</option>
-                  </select>
+                    <Select.Trigger />
+                    <Select.Content>
+                      <Select.Item value="dashboard">Dashboard</Select.Item>
+                      <Select.Item value="inbox">Inbox</Select.Item>
+                      <Select.Item value="comms">Communications</Select.Item>
+                      <Select.Item value="analytics">Analytics</Select.Item>
+                      <Select.Item value="kanban">Tasks (Kanban)</Select.Item>
+                      <Select.Item value="agents">Agents</Select.Item>
+                      <Select.Item value="twitter">Social Media</Select.Item>
+                      <Select.Item value="voice">Voice</Select.Item>
+                      <Select.Item value="chat">Chat</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
                   <p className="text-xs text-mission-control-text-dim mt-1">This panel will open when you launch the app</p>
                 </div>
               </div>
@@ -768,13 +686,13 @@ export default function SettingsPanel() {
                     Google Gemini API Key
                   </label>
                   <p className="text-xs text-mission-control-text-dim mb-2">Required for voice chat, meeting transcription, and PDF extraction</p>
-                  <input
+                  <TextField.Root
                     id="gemini-api-key"
                     type="password"
+                    size="2"
                     value={settings.geminiApiKey}
                     onChange={(e) => setSettings(s => ({ ...s, geminiApiKey: e.target.value }))}
                     placeholder="AIza..."
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent font-mono text-sm"
                   />
                 </div>
               </div>
@@ -787,20 +705,26 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
                 <div className="flex gap-3">
-                  <button
+                  <Button
                     onClick={handleExport}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+                    variant="soft"
+                    color="gray"
+                    size="2"
+                    className="flex-1"
                   >
                     <Download size={16} />
                     Export Settings
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+                    variant="soft"
+                    color="gray"
+                    size="2"
+                    className="flex-1"
                   >
                     <Upload size={16} />
                     Import Settings
-                  </button>
+                  </Button>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -824,13 +748,15 @@ export default function SettingsPanel() {
                 <p className="text-sm text-mission-control-text-dim">
                   Re-launch the 8-stop guided tour to explore Dashboard, Tasks, Agents, Inbox, Memory, Library, Analytics, and Settings.
                 </p>
-                <button
+                <Button
                   onClick={() => window.dispatchEvent(new Event('restart-platform-tour'))}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                  variant="solid"
+                  color="grass"
+                  size="2"
                 >
                   <Map size={14} />
                   Restart Tour
-                </button>
+                </Button>
               </div>
             </section>
 
@@ -843,13 +769,15 @@ export default function SettingsPanel() {
                 <p className="text-sm text-mission-control-text-dim">
                   Re-run the setup wizard — platform name, agent selection, first task, and launch.
                 </p>
-                <button
+                <Button
                   onClick={() => window.dispatchEvent(new Event('restart-onboarding'))}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:border-mission-control-accent/60 hover:text-mission-control-accent transition-colors"
+                  variant="soft"
+                  color="gray"
+                  size="2"
                 >
                   <RefreshCw size={14} />
                   Re-run setup wizard
-                </button>
+                </Button>
               </div>
             </section>
 
@@ -915,20 +843,19 @@ export default function SettingsPanel() {
                   <label htmlFor="color-mode" className="block text-sm text-mission-control-text-dim mb-2">Color Mode</label>
                   <div className="flex gap-2">
                     {(['dark', 'light', 'system'] as const).map((t) => (
-                      <button
+                      <Button
                         key={t}
                         onClick={() => setSettings(s => ({ ...s, theme: t }))}
-                        className={`flex-1 py-2 px-4 rounded-lg border transition-colors ${
-                          settings.theme === t 
-                            ? 'border-mission-control-accent bg-mission-control-accent/20 text-mission-control-accent' 
-                            : 'border-mission-control-border hover:border-mission-control-accent/50'
-                        }`}
+                        variant={settings.theme === t ? 'solid' : 'soft'}
+                        color={settings.theme === t ? 'grass' : 'gray'}
+                        size="2"
+                        className="flex-1"
                       >
-                        {t === 'dark' && <Moon size={16} className="inline mr-2" />}
-                        {t === 'light' && <Sun size={16} className="inline mr-2" />}
-                        {t === 'system' && <Monitor size={16} className="inline mr-2" />}
+                        {t === 'dark' && <Moon size={16} />}
+                        {t === 'light' && <Sun size={16} />}
+                        {t === 'system' && <Monitor size={16} />}
                         {t.charAt(0).toUpperCase() + t.slice(1)}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -966,17 +893,18 @@ export default function SettingsPanel() {
               <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4 space-y-4">
                 <div>
                   <label htmlFor="font-family-select" className="block text-sm text-mission-control-text-dim mb-2">Font Family</label>
-                  <select
-                    id="font-family-select"
+                  <Select.Root
                     value={settings.fontFamily}
-                    onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    onValueChange={(val) => setSettings(s => ({ ...s, fontFamily: val }))}
                   >
-                    <option value="system">System Default</option>
-                    <option value="inter">Inter</option>
-                    <option value="roboto-mono">Roboto Mono (Monospace)</option>
-                    <option value="sf-pro">SF Pro Display</option>
-                  </select>
+                    <Select.Trigger id="font-family-select" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="system">System Default</Select.Item>
+                      <Select.Item value="inter">Inter</Select.Item>
+                      <Select.Item value="roboto-mono">Roboto Mono (Monospace)</Select.Item>
+                      <Select.Item value="sf-pro">SF Pro Display</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
                 </div>
                 <div>
                   <label htmlFor="font-size" className="block text-sm text-mission-control-text-dim mb-2">
@@ -1089,19 +1017,24 @@ export default function SettingsPanel() {
         {/* Actions (shown for most tabs except special ones) */}
         {!['security', 'accounts', 'config', 'logs', 'exportBackup', 'platform', 'budgets'].includes(activeTab) && (
           <div className="flex gap-3 mt-8">
-            <button
+            <Button
               onClick={handleSave}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+              variant="solid"
+              color="grass"
+              size="3"
+              className="flex-1"
             >
               {saved ? <Check size={16} /> : <Save size={16} />}
               {saved ? 'Saved!' : 'Save Settings'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleReset}
-              className="px-6 py-3 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
+              variant="soft"
+              color="gray"
+              size="3"
             >
               Reset
-            </button>
+            </Button>
           </div>
         )}
       </div>

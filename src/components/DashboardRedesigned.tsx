@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button, IconButton, Badge, Heading, Text } from '@radix-ui/themes';
 import { formatTimeAgo } from '../utils/formatting';
 import {
   Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff,
@@ -136,44 +137,40 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           {/* Greeting & Status Row */}
           <div className="flex items-center justify-between mb-6">
             <div className="space-y-2">
-              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text via-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
+              <Heading size="8" weight="bold" className="bg-gradient-to-r from-mission-control-text via-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
                 {greeting}, Kevin
-              </h1>
+              </Heading>
               
               {/* Status Pills */}
               <div className="flex items-center gap-3 flex-wrap">
                 {/* Connection Status */}
-                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-                  connected 
-                    ? 'bg-success-subtle text-success border border-success-border' 
-                    : 'bg-error-subtle text-error border border-error-border'
-                }`}>
+                <Badge color={connected ? 'grass' : 'red'} variant="soft" radius="full" size="1">
                   {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
                   {connected ? 'All Systems Online' : 'Connecting...'}
-                </div>
+                </Badge>
 
                 {/* Urgent Items */}
                 {urgentCount > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-warning-subtle text-warning border border-warning-border backdrop-blur-sm animate-pulse">
+                  <Badge color="amber" variant="soft" radius="full" size="1">
                     <AlertTriangle size={12} />
                     {urgentCount} urgent {urgentCount === 1 ? 'item' : 'items'}
-                  </div>
+                  </Badge>
                 )}
 
                 {/* Active Agents */}
                 {activeSubagents.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border backdrop-blur-sm">
+                  <Badge color="blue" variant="soft" radius="full" size="1">
                     <Bot size={12} />
                     {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
-                  </div>
+                  </Badge>
                 )}
 
                 {/* Completed Today */}
                 {completedToday > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-success-subtle text-success border border-success-border backdrop-blur-sm">
+                  <Badge color="grass" variant="soft" radius="full" size="1">
                     <CheckCircle size={12} />
                     {completedToday} completed today
-                  </div>
+                  </Badge>
                 )}
               </div>
             </div>
@@ -302,7 +299,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-warning' : 'text-mission-control-text-dim'}`} />
                 {urgentTasks.length > 0 && (
-                  <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                  <span className="px-2.5 py-0.5 bg-error text-white text-xs font-bold rounded-full">
                     P0
                   </span>
                 )}
@@ -361,22 +358,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           <div className="lg:col-span-2">
             <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border/50 overflow-hidden shadow-xl">
               <div className="p-6 border-b border-mission-control-border/50 flex items-center justify-between bg-gradient-to-r from-mission-control-surface to-mission-control-bg">
-                <h2 className="flex items-center gap-3 text-lg font-semibold">
+                <Heading size="4" weight="bold" className="flex items-center gap-3">
                   <Activity size={20} className="text-info" />
                   Active Work
                   {inProgressTasks.length > 0 && (
-                    <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
-                      {inProgressTasks.length}
-                    </span>
+                    <Badge color="blue" variant="soft" size="1">{inProgressTasks.length}</Badge>
                   )}
-                </h2>
-                <button 
-                  onClick={() => onNavigate?.('kanban')}
-                  className="flex items-center gap-2 text-sm text-mission-control-accent hover:text-mission-control-accent-dim transition-colors group"
-                >
-                  View All 
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Heading>
+                <Button variant="ghost" size="2" onClick={() => onNavigate?.('kanban')}>
+                  View All
+                  <ArrowRight size={16} />
+                </Button>
               </div>
               
               <div className="divide-y divide-mission-control-border/30 max-h-96 overflow-y-auto">
@@ -391,12 +383,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     <CheckCircle size={48} className="mx-auto mb-4 text-success/50" />
                     <p className="text-lg font-medium text-mission-control-text-dim mb-2">All caught up!</p>
                     <p className="text-sm text-mission-control-text-dim mb-4">No active tasks at the moment</p>
-                    <button 
-                      onClick={() => onNavigate?.('kanban')}
-                      className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-                    >
+                    <Button onClick={() => onNavigate?.('kanban')} size="2">
                       Create a task
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   [...inProgressTasks, ...needsReview].slice(0, 8).map((task) => {
@@ -420,16 +409,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                           
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-3 mb-1">
-                              <h3 className="font-medium text-mission-control-text group-hover:text-mission-control-accent transition-colors">
+                              <Text as="p" weight="medium" className="group-hover:text-mission-control-accent transition-colors">
                                 {task.title}
-                              </h3>
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
-                                task.status === 'review' 
-                                  ? 'bg-review-subtle text-review border border-review-border' 
-                                  : 'bg-info-subtle text-info border border-info-border'
-                              }`}>
+                              </Text>
+                              <Badge
+                                color={task.status === 'review' ? 'purple' : 'blue'}
+                                variant="soft"
+                                radius="full"
+                                size="1"
+                              >
                                 {task.status === 'in-progress' ? 'working' : task.status}
-                              </span>
+                              </Badge>
                             </div>
                             
                             <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
@@ -498,21 +488,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               </div>
               
               <div className="text-left">
-                <h3 className="text-lg font-semibold mb-1">Activity Stream</h3>
-                <p className="text-sm text-mission-control-text-dim">
+                <Heading size="4" weight="bold" mb="1">Activity Stream</Heading>
+                <Text size="2" color="gray">
                   {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
-                </p>
+                </Text>
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              <button 
-                onClick={(e) => { e.stopPropagation(); fetchSessions(); }}
-                className="p-2 hover:bg-mission-control-border/50 rounded-lg transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw size={18} className="text-mission-control-text-dim hover:text-mission-control-accent transition-colors" />
-              </button>
+              <IconButton variant="ghost" size="2" onClick={(e) => { e.stopPropagation(); fetchSessions(); }} aria-label="Refresh">
+                <RefreshCw size={18} />
+              </IconButton>
               <div className={`transform transition-transform duration-200 ${showActivityStream ? 'rotate-180' : ''}`}>
                 <ChevronDown size={24} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
               </div>
@@ -614,12 +600,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       Notifications ({activities.length})
                     </h4>
                     {activities.length > 0 && (
-                      <button 
-                        onClick={clearActivities}
-                        className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
-                      >
+                      <Button variant="ghost" size="1" onClick={clearActivities}>
                         Clear all
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
