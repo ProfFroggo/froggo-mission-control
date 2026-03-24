@@ -611,7 +611,7 @@ export default function ContentScheduler() {
                   </div>
                   <div className="mt-0.5">
                     {isToday ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-info text-white text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-info text-info text-xs font-semibold">
                         {day.getDate()}
                       </span>
                     ) : (

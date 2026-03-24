@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { formatDueDate } from '../utils/formatting';
 import { ListTodo, Clock, Plus, Trash2, Edit2, RefreshCw, X, Check, User, Repeat, CalendarDays, AlertTriangle } from 'lucide-react';
-import { Button, Badge, Select, TextArea, TextField } from '@radix-ui/themes';
+import { Button, Badge, Select, Switch, TextArea, TextField } from '@radix-ui/themes';
 import { useStore, type Task, type TaskStatus, type TaskPriority, type TaskRecurrence } from '../store/store';
 import { taskApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -398,9 +398,7 @@ export default function TaskScheduler() {
                     <Repeat size={15} />
                     <span className="text-sm font-medium">Recurring task</span>
                   </div>
-                  <div className={`w-9 h-5 rounded-full transition-colors relative ${isRecurring ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`}>
-                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${isRecurring ? 'left-4' : 'left-0.5'}`} />
-                  </div>
+                  <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                 </Button>
 
                 {isRecurring && (

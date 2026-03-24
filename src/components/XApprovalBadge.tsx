@@ -203,7 +203,7 @@ export default function XApprovalBadge() {
       >
         <Bell size={15} />
         {count > 0 && (
-          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold bg-warning text-white rounded-full tabular-nums">
+          <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold bg-warning text-warning rounded-full tabular-nums">
             {count}
           </span>
         )}

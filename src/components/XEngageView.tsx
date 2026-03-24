@@ -962,7 +962,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                           />
                         ) : (
                           <div className="px-2.5 py-1.5 text-xs">
-                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
+                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-info text-info mr-1.5">BEST</span>}
                             <span className="text-mission-control-text">{reply}</span>
                             {replyEng && lang !== 'en' && <span className="block text-xs text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
                           </div>

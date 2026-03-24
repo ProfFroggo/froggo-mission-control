@@ -820,7 +820,7 @@ export default function ApprovalQueuePanel() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold text-mission-control-text">Approval Queue</h1>
               {statusTab === 'pending' && approvals.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-warning text-white text-xs font-bold tabular-nums min-w-[20px] text-center">
+                <span className="px-1.5 py-0.5 rounded-full bg-warning text-warning text-xs font-bold tabular-nums min-w-[20px] text-center">
                   {approvals.length}
                 </span>
               )}

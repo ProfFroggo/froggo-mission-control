@@ -45,7 +45,8 @@ export default function NetworkStatus() {
       <div
         role="alert"
         aria-live="assertive"
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 bg-warning text-white text-sm font-medium shadow-md"
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium shadow-md"
+        style={{ background: 'var(--color-warning)' }}
       >
         <WifiOff size={16} aria-hidden />
         <span>No internet connection. Some features may be unavailable.</span>
@@ -67,7 +68,8 @@ export default function NetworkStatus() {
       <div
         role="status"
         aria-live="polite"
-        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 bg-success text-white text-sm font-medium shadow-md"
+        className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-medium shadow-md"
+        style={{ background: 'var(--color-success)' }}
       >
         <Wifi size={16} aria-hidden />
         <span>Back online</span>

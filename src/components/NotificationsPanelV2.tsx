@@ -573,7 +573,7 @@ export default function NotificationsPanelV2() {
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
-                <div className="absolute -top-1 -right-1 bg-error text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 bg-error text-error text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </div>
               )}
@@ -770,7 +770,7 @@ export default function NotificationsPanelV2() {
                                     {/* High-priority red "!" badge */}
                                     {highPriority && (
                                       <span
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error text-white text-xs font-bold flex-shrink-0"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error text-error text-xs font-bold flex-shrink-0"
                                         title="High priority"
                                         aria-label="High priority"
                                       >

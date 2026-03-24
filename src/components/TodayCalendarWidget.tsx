@@ -156,7 +156,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                           }`}>
                             {event.summary}
                             {happening && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-info text-white text-xs rounded-full">
+                              <span className="ml-2 px-1.5 py-0.5 bg-info text-info text-xs rounded-full">
                                 Now
                               </span>
                             )}

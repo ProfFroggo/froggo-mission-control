@@ -2301,7 +2301,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               <div key={`${msg.role}-${msg.timestamp}-${msg.content.slice(0, 20)}`} className={`text-sm ${msg.role === 'user' ? 'text-right' : ''}`}>
                                 <span className={`inline-block rounded-lg px-3 py-2 max-w-[90%] ${
                                   msg.role === 'user' 
-                                    ? 'bg-success text-white' 
+                                    ? 'bg-success text-success'
                                     : 'bg-mission-control-bg border border-mission-control-border'
                                 }`}>
                                   {msg.role === 'assistant' ? <MarkdownMessage content={msg.content} /> : msg.content}
