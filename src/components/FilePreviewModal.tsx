@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
+import { IconButton, Button } from '@radix-ui/themes';
 
 interface FilePreviewModalProps {
   isOpen: boolean;
@@ -105,24 +106,26 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <IconButton
               onClick={handleDownload}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Download"
               aria-label="Download file"
-              type="button"
             >
               <Download size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={handleClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Close (ESC)"
               aria-label="Close modal"
-              type="button"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -156,13 +159,16 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
                 <p className="text-sm text-mission-control-text-dim mb-4">
                   This file type can&apos;t be previewed in the browser.
                 </p>
-                <button
+                <Button
                   onClick={handleDownload}
-                  className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+                  size="2"
+                  variant="solid"
+                  radius="medium"
+                  className="mx-auto"
                 >
                   <Download size={16} />
                   Download File
-                </button>
+                </Button>
               </div>
             </div>
           )}

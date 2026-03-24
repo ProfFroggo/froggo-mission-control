@@ -555,51 +555,51 @@ ${skillData.instructions}
               <Brain className="text-[--accent-11]" size={24} />
               <h2 className="text-xl font-semibold">Add New Skill</h2>
             </div>
-            <button
+            <IconButton
               onClick={handleClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               aria-label="Close modal"
+              variant="ghost"
+              color="gray"
+              size="2"
+              radius="medium"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Mode Selector */}
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => setMode('suggest')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'suggest'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
+              variant={mode === 'suggest' ? 'solid' : 'outline'}
+              color={mode === 'suggest' ? 'violet' : 'gray'}
+              size="2"
+              className="flex-1"
             >
               <Lightbulb size={16} />
               <span className="font-medium">Suggest</span>
               <Sparkles size={14} className={mode === 'suggest' ? 'animate-pulse' : 'opacity-50'} />
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMode('dialogue')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'dialogue'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
+              variant={mode === 'dialogue' ? 'solid' : 'outline'}
+              color={mode === 'dialogue' ? 'violet' : 'gray'}
+              size="2"
+              className="flex-1"
             >
               <MessageSquare size={16} />
               <span className="font-medium">Dialogue</span>
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMode('manual')}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'manual'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]/50'
-              }`}
+              variant={mode === 'manual' ? 'solid' : 'outline'}
+              color={mode === 'manual' ? 'violet' : 'gray'}
+              size="2"
+              className="flex-1"
             >
               <Edit3 size={16} />
               <span className="font-medium">Manual</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -752,12 +752,15 @@ ${skillData.instructions}
                       {extractedData.description && <div><strong>Description:</strong> {extractedData.description.slice(0, 100)}...</div>}
                       <div><strong>Type:</strong> {extractedData.skillType}</div>
                     </div>
-                    <button
+                    <Button
                       onClick={handleCreateFromChat}
+                      variant="solid"
+                      color="violet"
+                      size="2"
                       className="mt-3 w-full"
                     >
                       Create Skill & Implementation Task
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, TextField, TextArea } from '@radix-ui/themes';
 import type { TimelineEvent } from '../../store/memoryStore';
 
 interface TimelineFormProps {
@@ -30,35 +31,37 @@ export default function TimelineForm({ event, onCancel, onSave, nextPosition }: 
 
   return (
     <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-mission-control-bg/50 rounded border border-mission-control-border">
-      <input
-        type="text"
+      <TextField.Root
         value={date}
         onChange={(e) => setDate(e.target.value)}
         placeholder="Date (e.g. Summer 1995)"
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+        size="1"
       />
-      <textarea
+      <TextArea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="What happened?"
         rows={3}
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent resize-none"
+        size="1"
+        style={{ resize: 'none' }}
       />
       <div className="flex gap-1">
-        <button
+        <Button
           type="submit"
+          size="1"
+          variant="solid"
           disabled={!date.trim() || !description.trim() || saving}
-          className="px-2 py-0.5 rounded bg-mission-control-accent text-white text-[10px] font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
         >
           {saving ? '...' : event ? 'Update' : 'Add'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          size="1"
+          variant="ghost"
           onClick={onCancel}
-          className="px-2 py-0.5 rounded text-mission-control-text-dim text-[10px] hover:bg-mission-control-border transition-colors"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

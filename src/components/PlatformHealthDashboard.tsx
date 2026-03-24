@@ -14,6 +14,7 @@ import {
   Download,
   X,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader } from './BaseModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -331,38 +332,41 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         </span>
 
         {/* Refresh button */}
-        <button
+        <IconButton
           onClick={fetchMetrics}
           disabled={loading}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-50"
-          title="Refresh metrics"
-          type="button"
+          size="2"
+          variant="ghost"
+          radius="medium"
           aria-label="Refresh metrics"
+          title="Refresh metrics"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
 
         {/* Export CSV */}
-        <button
+        <Button
           onClick={() => exportCsv(history)}
           disabled={history.length === 0}
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border transition-colors text-mission-control-text disabled:opacity-40"
+          size="1"
+          variant="soft"
+          radius="medium"
           title="Export metrics as CSV"
-          type="button"
         >
           <Download size={12} aria-hidden="true" />
           Export
-        </button>
+        </Button>
 
         {/* Close */}
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
-          type="button"
+          size="2"
+          variant="ghost"
+          radius="medium"
           aria-label="Close health dashboard"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
 
       <div className="overflow-y-auto p-6 flex flex-col gap-6" style={{ maxHeight: 'calc(90vh - 64px)' }}>

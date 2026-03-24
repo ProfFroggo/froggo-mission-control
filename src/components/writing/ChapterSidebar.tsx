@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import ChapterListItem from './ChapterListItem';
 import { ArrowLeft, Plus, ChevronDown } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -88,13 +89,15 @@ export default function ChapterSidebar() {
       {/* Header */}
       <div className="px-3 py-3 border-b border-mission-control-border flex-shrink-0">
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={closeProject}
-            className="p-1 rounded text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
             title="Back to projects"
           >
             <ArrowLeft size={16} />
-          </button>
+          </IconButton>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-semibold text-mission-control-text truncate">
               {activeProject.title}
@@ -110,9 +113,8 @@ export default function ChapterSidebar() {
       <div className="px-3 py-2 border-b border-mission-control-border flex-shrink-0">
         {showAddInput ? (
           <div className="space-y-1.5">
-            <input
+            <TextField.Root
               ref={addInputRef}
-              type="text"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -120,47 +122,54 @@ export default function ChapterSidebar() {
                 if (e.key === 'Escape') handleCancelAdd();
               }}
               placeholder="Chapter title..."
-              className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+              size="1"
               disabled={creating}
             />
             <div className="flex gap-1">
-              <button
+              <Button
+                size="1"
+                variant="solid"
                 onClick={handleCreateChapter}
                 disabled={!newTitle.trim() || creating}
-                className="px-2 py-0.5 rounded bg-mission-control-accent text-white text-[10px] font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
               >
                 {creating ? '...' : 'Add'}
-              </button>
-              <button
+              </Button>
+              <Button
+                size="1"
+                variant="ghost"
                 onClick={handleCancelAdd}
-                className="px-2 py-0.5 rounded text-mission-control-text-dim text-[10px] hover:bg-mission-control-border transition-colors"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          <button
+          <Button
+            size="1"
+            variant="ghost"
+            className="w-full justify-start"
             onClick={() => setShowAddInput(true)}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Chapter
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Chapters section header */}
-      <button
+      <Button
+        variant="ghost"
+        size="1"
         onClick={() => setChaptersCollapsed(!chaptersCollapsed)}
-        className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
+        className="px-3 py-1.5 w-full justify-between flex-shrink-0 uppercase tracking-wider"
+        style={{ fontSize: '10px' }}
       >
         <span>Chapters ({chapters.length})</span>
         <ChevronDown
           size={12}
           className={`transition-transform ${chaptersCollapsed ? '-rotate-90' : ''}`}
         />
-      </button>
+      </Button>
 
       {/* Chapter list */}
       <div className="flex-1 overflow-y-auto">

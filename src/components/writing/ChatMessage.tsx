@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -71,32 +72,35 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
                 Inserted
               </span>
             ) : (
-              <button
+              <Button
+                size="1"
+                variant="ghost"
                 onClick={handleSendToEditor}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-accent px-1.5 py-0.5 rounded hover:bg-mission-control-accent/10 transition-colors"
                 title="Send to editor"
               >
                 <ArrowDownToLine className="w-3 h-3" />
                 Send to editor
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              size="1"
+              variant="ghost"
               onClick={handleCopy}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded hover:bg-mission-control-border transition-colors"
               title="Copy to clipboard"
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Copy'}
-            </button>
+            </Button>
             {onRetry && (
-              <button
+              <Button
+                size="1"
+                variant="ghost"
                 onClick={() => onRetry(message.content)}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded hover:bg-mission-control-border transition-colors"
                 title="Retry — remove this response and re-send the question"
               >
                 <RotateCcw className="w-3 h-3" />
                 Retry
-              </button>
+              </Button>
             )}
           </div>
         )}

@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useWritingStore } from '../../store/writingStore';
 import { useVersionStore } from '../../store/versionStore';
 import VersionDiff from './VersionDiff';
@@ -98,18 +99,23 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
         <h3 className="text-xs font-semibold text-mission-control-text uppercase tracking-wide">Versions</h3>
-        <button
+        <IconButton
+          size="1"
+          variant="ghost"
+          radius="medium"
           onClick={onClose}
-          className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
           title="Close versions panel"
         >
           <X size={14} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Save button */}
       <div className="px-3 py-2 border-b border-mission-control-border">
-        <button
+        <Button
+          size="1"
+          variant="soft"
+          className="w-full"
           onClick={() => {
             saveDialog.showConfirm({
               title: 'Save Snapshot',
@@ -119,12 +125,11 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
             }, handleSaveConfirm);
           }}
           disabled={!activeChapterId}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Saves the current chapter content as a version snapshot"
         >
           <Save size={13} />
           Save Snapshot
-        </button>
+        </Button>
       </div>
 
       {/* Version list */}
@@ -150,15 +155,20 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button
+                    <IconButton
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                       onClick={() => handleCompare(v.id)}
                       disabled={diffLoading}
-                      className="p-1 text-mission-control-text-dim hover:text-mission-control-accent rounded transition-colors"
                       title="Compare with current"
                     >
                       <GitCompare size={13} />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                       onClick={() => {
                         setRestoreTarget({ id: v.id, label: v.label });
                         restoreDialog.showConfirm({
@@ -168,12 +178,14 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                           type: 'warning',
                         }, handleRestoreConfirm);
                       }}
-                      className="p-1 text-mission-control-text-dim hover:text-warning rounded transition-colors"
                       title="Restore this version"
                     >
                       <RotateCcw size={13} />
-                    </button>
-                    <button
+                    </IconButton>
+                    <IconButton
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                       onClick={() => {
                         setDeleteTarget({ id: v.id, label: v.label });
                         deleteDialog.showConfirm({
@@ -183,11 +195,10 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                           type: 'danger',
                         }, handleDeleteConfirm);
                       }}
-                      className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                       title="Delete this version"
                     >
                       <Trash2 size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
               </div>

@@ -487,6 +487,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             type="button"
             onClick={() => setShowActivityStream(!showActivityStream)}
             className="w-full p-6 flex items-center justify-between hover:bg-mission-control-bg/20 transition-all group"
+            aria-expanded={showActivityStream}
           >
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--color-review)]/20 to-[var(--color-info)]/20 border border-review-border">

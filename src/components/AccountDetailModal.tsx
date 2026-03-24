@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink, Mail, Calendar, HardDrive, Users, ListTodo, BarChart2, Lock, type LucideIcon } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { ConnectedAccount, DataType } from '../types/accounts';
 
 interface Props {
@@ -134,32 +135,34 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </span>
             </div>
           </div>
-          <button
+          <IconButton
             onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             aria-label="Close modal"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 px-6 pt-4 border-b border-mission-control-border">
           {(['overview', 'permissions', 'security'] as const).map((tab) => (
-            <button
+            <Button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition-colors capitalize ${
-                activeTab === tab
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              variant={activeTab === tab ? 'soft' : 'ghost'}
+              color={activeTab === tab ? 'blue' : 'gray'}
+              size="2"
+              className="capitalize rounded-none"
             >
               {tab === 'overview' && <BarChart2 size={14} />}
               {tab === 'permissions' && <Lock size={14} />}
               {tab === 'security' && <Shield size={14} />}
               {tab}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -474,12 +477,14 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                   Removing this account will revoke Mission Control&apos;s access and delete all stored credentials.
                   This action cannot be undone.
                 </p>
-                <button
+                <Button
                   onClick={onRemove}
-                  className="px-4 py-2 bg-error text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
+                  variant="solid"
+                  color="red"
+                  size="2"
                 >
                   Remove Account
-                </button>
+                </Button>
               </section>
             </div>
           )}
@@ -487,19 +492,22 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
         {/* Footer Actions */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
-          <button
+          <Button
             onClick={onRefresh}
-            className="px-4 py-2 text-sm text-mission-control-text-dim hover:bg-mission-control-border rounded-lg transition-colors flex items-center gap-2"
+            variant="ghost"
+            color="gray"
+            size="2"
           >
             <RefreshCw size={16} />
             Test Connection
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleClose}
-            className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            variant="solid"
+            size="2"
           >
             Done
-          </button>
+          </Button>
         </div>
       </div>
     </div>

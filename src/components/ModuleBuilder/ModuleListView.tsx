@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Package, Clock, CheckCircle2 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import ErrorDisplay from '../ErrorDisplay';
 import { showToast } from '../Toast';
 
@@ -46,12 +47,13 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
     return (
       <div className="mt-3 flex items-center justify-between">
         <span className="text-xs text-mission-control-text-dim">Not started</span>
-        <button
+        <Button
+          size="1"
+          variant="solid"
           onClick={(e) => { e.stopPropagation(); onBuild(); }}
-          className="text-xs px-2.5 py-1 bg-mission-control-accent hover:opacity-90 text-white rounded transition-opacity"
         >
           Build
-        </button>
+        </Button>
       </div>
     );
   }
@@ -150,12 +152,13 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <h1 className="text-lg font-semibold text-mission-control-text">My Modules</h1>
-        <button
+        <Button
+          size="2"
+          variant="solid"
           onClick={onCreateNew}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-opacity"
         >
           <Plus size={14} /> Create New
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
@@ -165,12 +168,13 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
             <Package size={48} className="opacity-30" />
             <p className="text-lg">No modules yet</p>
             <p className="text-sm">Create your first module spec to get started.</p>
-            <button
+            <Button
+              size="2"
+              variant="solid"
               onClick={onCreateNew}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 text-white rounded-lg transition-opacity"
             >
               <Plus size={14} /> Create New Module
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -189,13 +193,17 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
                   }`}>
                     {mod.status === 'built' || mod.status === 'finished' ? 'Built' : 'In Progress'}
                   </span>
-                  <button
-                    onClick={(e) => handleDelete(e, mod.id, mod.name)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-error/20 rounded transition-all"
+                  <IconButton
+                    size="2"
+                    variant="ghost"
+                    radius="medium"
+                    color="red"
+                    className="opacity-0 group-hover:opacity-100 transition-all"
                     title="Delete module"
+                    onClick={(e) => handleDelete(e, mod.id, mod.name)}
                   >
-                    <Trash2 size={14} className="text-error" />
-                  </button>
+                    <Trash2 size={14} />
+                  </IconButton>
                 </div>
 
                 {/* Name */}

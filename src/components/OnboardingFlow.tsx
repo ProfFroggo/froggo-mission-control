@@ -196,18 +196,15 @@ function StepPlatformSetup({
               { value: '6-20', label: '6–20' },
               { value: '20+', label: '20+' },
             ].map(opt => (
-              <button
+              <Button
                 key={opt.value}
-                type="button"
                 onClick={() => onChange({ ...data, teamSize: opt.value })}
-                className={`px-2 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  data.teamSize === opt.value
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border bg-mission-control-bg text-mission-control-text-dim hover:border-mission-control-accent/40 hover:text-mission-control-text'
-                }`}
+                size="2"
+                variant={data.teamSize === opt.value ? 'soft' : 'outline'}
+                radius="medium"
               >
                 {opt.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -447,12 +444,15 @@ function StepFirstTask({
       </div>
 
       <div className="text-center">
-        <button
+        <Button
           onClick={onSkip}
-          className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors underline-offset-2 hover:underline"
+          variant="ghost"
+          size="1"
+          radius="medium"
+          color="gray"
         >
           Skip for now
-        </button>
+        </Button>
       </div>
     </div>
   );

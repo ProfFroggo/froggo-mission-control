@@ -210,36 +210,30 @@ export const XMentionsView: React.FC = () => {
 
         {/* Status badges */}
         <div className="flex items-center gap-2 mb-3">
-          <button
+          <Button
             onClick={() => updateStatus(mention.id, 'pending')}
-            className={`px-2 py-1 text-xs rounded ${
-              mention.reply_status === 'pending'
-                ? 'bg-warning-subtle text-warning border border-warning'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
-            }`}
+            variant={mention.reply_status === 'pending' ? 'soft' : 'ghost'}
+            color={mention.reply_status === 'pending' ? 'amber' : 'gray'}
+            size="1"
           >
-            <Clock size={12} className="inline" /> Pending
-          </button>
-          <button
+            <Clock size={12} /> Pending
+          </Button>
+          <Button
             onClick={() => updateStatus(mention.id, 'considering')}
-            className={`px-2 py-1 text-xs rounded ${
-              mention.reply_status === 'considering'
-                ? 'bg-info-subtle text-info border border-info'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
-            }`}
+            variant={mention.reply_status === 'considering' ? 'soft' : 'ghost'}
+            color={mention.reply_status === 'considering' ? 'blue' : 'gray'}
+            size="1"
           >
-            <HelpCircle size={12} className="inline" /> Considering
-          </button>
-          <button
+            <HelpCircle size={12} /> Considering
+          </Button>
+          <Button
             onClick={() => updateStatus(mention.id, 'ignored')}
-            className={`px-2 py-1 text-xs rounded ${
-              mention.reply_status === 'ignored'
-                ? 'bg-mission-control-surface text-mission-control-text border border-mission-control-border'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
-            }`}
+            variant={mention.reply_status === 'ignored' ? 'soft' : 'ghost'}
+            color="gray"
+            size="1"
           >
-            <Ban size={12} className="inline" /> Ignored
-          </button>
+            <Ban size={12} /> Ignored
+          </Button>
           {mention.reply_status === 'replied' && (
             <div className="px-2 py-1 text-xs rounded bg-success-subtle text-success border border-success">
               <CheckCircle size={12} className="inline" /> Replied

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, Wind, Droplets, RefreshCw, AlertCircle, Thermometer, ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { IconButton, Button } from '@radix-ui/themes';
 import WidgetLoading from './WidgetLoading';
 
 interface WeatherCondition {
@@ -91,14 +92,17 @@ export default function WeatherWidget() {
           <h2 className="font-semibold">Weather</h2>
           <span className="text-xs text-mission-control-text-dim">Gibraltar</span>
         </div>
-        <button
+        <IconButton
           onClick={fetchWeather}
           disabled={loading}
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+          size="2"
+          variant="ghost"
+          radius="medium"
           title="Refresh"
+          aria-label="Refresh weather"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <div className="p-4">
@@ -113,9 +117,9 @@ export default function WeatherWidget() {
           <div className="text-center py-6 text-mission-control-text-dim">
             <AlertCircle size={32} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
-            <button onClick={fetchWeather} className="mt-2 text-xs text-mission-control-accent hover:underline">
+            <Button onClick={fetchWeather} size="1" variant="ghost" radius="medium" className="mt-2">
               Try again
-            </button>
+            </Button>
           </div>
         ) : current && today ? (
           <div className="space-y-4">
@@ -161,13 +165,16 @@ export default function WeatherWidget() {
             {/* 3-Day Forecast (Expandable) */}
             {forecast && forecast.length > 0 && (
               <div className="pt-3 border-t border-mission-control-border">
-                <button
+                <Button
                   onClick={() => setExpanded(!expanded)}
-                  className="w-full flex items-center justify-between text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                  variant="ghost"
+                  size="2"
+                  radius="medium"
+                  className="w-full justify-between"
                 >
                   <span>3-Day Forecast</span>
                   {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
+                </Button>
                 
                 {expanded && (
                   <div className="mt-3 space-y-2">

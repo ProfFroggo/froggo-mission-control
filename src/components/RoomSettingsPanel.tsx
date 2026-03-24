@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { X, Bell, BellOff, BellRing, Pin } from 'lucide-react';
+import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import { type ChatRoom } from '../store/chatRoomStore';
 
 export type NotificationSetting = 'all' | 'mentions' | 'muted';
@@ -68,65 +69,72 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
         {/* Header */}
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between shrink-0">
           <h3 className="font-semibold text-sm">Room Settings</h3>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            aria-label="Close settings"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="overflow-y-auto flex-1 min-h-0 p-4 space-y-5">
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">Room Name</label>
-            <input
+            <TextField.Root
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
               placeholder="Room name"
               maxLength={80}
+              size="2"
+              className="w-full"
             />
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">Description</label>
-            <textarea
+            <TextArea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
               placeholder="Optional description..."
               maxLength={200}
+              size="2"
+              className="w-full"
             />
           </div>
 
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
+            variant="solid"
+            size="2"
+            className="w-full"
           >
             {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
 
           {/* Notifications */}
           <div>
             <p className="text-xs font-medium text-mission-control-text-dim mb-2">Notifications</p>
             <div className="space-y-1">
               {NOTIF_OPTIONS.map(opt => (
-                <button
+                <Button
                   key={opt.value}
                   onClick={() => handleNotif(opt.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    notif === opt.value
-                      ? 'bg-mission-control-accent/15 text-mission-control-accent ring-1 ring-mission-control-accent/30'
-                      : 'text-mission-control-text hover:bg-mission-control-border'
-                  }`}
+                  variant={notif === opt.value ? 'soft' : 'ghost'}
+                  color={notif === opt.value ? 'blue' : 'gray'}
+                  size="2"
+                  className="w-full justify-start"
                 >
                   {opt.icon}
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -135,13 +143,16 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
           {room.pinnedMessageId ? (
             <div>
               <p className="text-xs font-medium text-mission-control-text-dim mb-2">Pinned Message</p>
-              <button
+              <Button
                 onClick={onUnpin}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="ghost"
+                color="gray"
+                size="2"
+                className="w-full justify-start"
               >
                 <Pin size={14} />
                 Unpin current message
-              </button>
+              </Button>
             </div>
           ) : (
             <div>
@@ -155,12 +166,15 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
 
         {/* Leave room */}
         <div className="p-4 border-t border-mission-control-border shrink-0">
-          <button
+          <Button
             onClick={onLeave}
-            className="w-full py-2 text-sm text-error hover:bg-error-subtle rounded-lg transition-colors"
+            variant="ghost"
+            color="red"
+            size="2"
+            className="w-full"
           >
             Leave Room
-          </button>
+          </Button>
         </div>
       </div>
     </div>

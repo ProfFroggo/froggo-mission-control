@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
 import { SmilePlus, ThumbsUp, Check, X, Lightbulb, Flame, Eye } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 
 export interface ReactionSummary {
   reaction: string;
@@ -82,6 +83,7 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
       {reactions.map(r => (
         <button
           key={r.reaction}
+          type="button"
           onClick={() => toggleReaction(r.reaction)}
           title={`${r.label ?? r.reaction}: ${r.count}`}
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
@@ -95,16 +97,19 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
         </button>
       ))}
 
-      {/* Add reaction button — always shown */}
       {/* Add reaction button */}
       <div className="relative" ref={pickerRef}>
-        <button
+        <IconButton
           onClick={() => setShowPicker(v => !v)}
           title="Add reaction"
-          className="p-0.5 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100"
+          size="1"
+          variant="ghost"
+          radius="full"
+          aria-label="Add reaction"
+          className="opacity-0 group-hover:opacity-100"
         >
           <SmilePlus size={13} />
-        </button>
+        </IconButton>
 
         {showPicker && (
           <div
@@ -113,16 +118,17 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
             }`}
           >
             {QUICK_REACTIONS.map(({ emoji, icon, label }) => (
-              <button
+              <IconButton
                 key={emoji}
                 onClick={() => toggleReaction(emoji)}
                 title={label}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors hover:bg-mission-control-border ${
-                  myReactions.has(emoji) ? 'bg-mission-control-accent/20 ring-1 ring-mission-control-accent/40' : ''
-                }`}
+                size="2"
+                variant={myReactions.has(emoji) ? 'soft' : 'ghost'}
+                radius="medium"
+                aria-label={label}
               >
                 {icon}
-              </button>
+              </IconButton>
             ))}
           </div>
         )}

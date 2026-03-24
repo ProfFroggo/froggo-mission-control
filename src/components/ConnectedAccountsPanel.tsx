@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, RefreshCw, Mail, Calendar, HardDrive, MessageSquare } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface GoogleAuthStatus {
@@ -115,28 +116,35 @@ export default function ConnectedAccountsPanel() {
         <div className="mt-4 flex gap-3">
           {status?.authenticated ? (
             <>
-              <button
+              <Button
                 onClick={loadStatus}
-                className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-colors"
+                size="2"
+                variant="soft"
+                radius="medium"
               >
                 <RefreshCw size={14} /> Refresh
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleRevoke}
                 disabled={revoking}
-                className="flex items-center gap-2 px-4 py-2 bg-error-subtle border border-error-border text-error rounded-lg text-sm hover:opacity-80 transition-opacity disabled:opacity-50"
+                size="2"
+                variant="soft"
+                color="red"
+                radius="medium"
               >
                 {revoking ? <RefreshCw size={14} className="animate-spin" /> : <XCircle size={14} />}
                 Disconnect
-              </button>
+              </Button>
             </>
           ) : status?.hasCredentials ? (
-            <button
+            <Button
               onClick={handleConnect}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-colors"
+              size="2"
+              variant="solid"
+              radius="medium"
             >
               Connect Google Workspace
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

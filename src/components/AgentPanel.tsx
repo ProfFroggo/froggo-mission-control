@@ -24,7 +24,7 @@ import type { CatalogAgent } from '../types/catalog';
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
 import { agentApi, analyticsApi } from '../lib/api';
-import { Button, IconButton, Badge, TextField } from '@radix-ui/themes';
+import { Button, IconButton, Badge, TextField, Select } from '@radix-ui/themes';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
@@ -374,22 +374,21 @@ export default function AgentPanel() {
             { key: 'library'     as const, icon: Library,  label: 'Library'    },
             { key: 'leaderboard' as const, icon: Trophy,   label: 'Leaderboard'},
           ]).map(tab => (
-            <button
+            <Button
               key={tab.key}
               type="button"
+              variant={view === tab.key ? 'soft' : 'ghost'}
+              color={view === tab.key ? 'indigo' : 'gray'}
+              size="2"
               role="tab"
               id={`agent-tab-${tab.key}`}
               aria-selected={view === tab.key}
               aria-controls={`agent-tabpanel-${tab.key}`}
               onClick={() => setView(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                view === tab.key
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              className="-mb-px rounded-none border-b-2 border-transparent data-[state=active]:border-mission-control-accent"
             >
               <tab.icon size={15} aria-hidden="true" /> {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -525,15 +524,18 @@ export default function AgentPanel() {
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
 
                   {/* Settings icon — top-right, hover reveal */}
-                  <button
+                  <IconButton
                     type="button"
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                    className="absolute top-2 right-2 p-1 rounded-md text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-all hover:text-mission-control-text hover:bg-mission-control-border/50 z-10"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all z-10"
                     title="Manage agent"
                     aria-label={`Manage ${agent.name}`}
                   >
                     <Settings size={12} />
-                  </button>
+                  </IconButton>
 
                   <div className="p-4 flex flex-col flex-1">
 
@@ -639,35 +641,39 @@ export default function AgentPanel() {
                       {agent.trust_tier && (
                         editingTrustTierAgent === agent.id ? (
                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <select
-                              aria-label="Agent trust tier"
-                              value={pendingTrustTier}
-                              onChange={e => setPendingTrustTier(Number(e.target.value))}
-                              className="unstyled text-xs px-1 py-0.5 rounded border border-mission-control-border bg-mission-control-surface appearance-none"
+                            <Select.Root
+                              size="1"
+                              value={String(pendingTrustTier)}
+                              onValueChange={val => setPendingTrustTier(Number(val))}
                             >
-                              <option value={1}>Tier 1 (Restricted)</option>
-                              <option value={2}>Tier 2 (Worker)</option>
-                              <option value={3}>Tier 3 (Full)</option>
-                            </select>
+                              <Select.Trigger aria-label="Agent trust tier" onClick={e => e.stopPropagation()} />
+                              <Select.Content>
+                                <Select.Item value="1">Tier 1 (Restricted)</Select.Item>
+                                <Select.Item value="2">Tier 2 (Worker)</Select.Item>
+                                <Select.Item value="3">Tier 3 (Full)</Select.Item>
+                              </Select.Content>
+                            </Select.Root>
                             <IconButton type="button" variant="ghost" color="green" size="1" aria-label="Save trust tier" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }}><Check size={12} /></IconButton>
                             <IconButton type="button" variant="ghost" color="red" size="1" aria-label="Cancel trust tier edit" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }}><AlertTriangle size={12} /></IconButton>
                           </div>
                         ) : (
-                          <button
+                          <Button
                             type="button"
+                            size="1"
+                            variant="soft"
+                            color={
+                              agent.trust_tier === 'admin' ? 'violet' :
+                              agent.trust_tier === 'trusted' ? 'green' :
+                              agent.trust_tier === 'worker' ? 'blue' :
+                              agent.trust_tier === 'restricted' ? 'red' : 'gray'
+                            }
                             onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
-                            className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded font-medium opacity-50 group-hover:opacity-100 transition-opacity ${
-                              agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
-                              agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
-                              agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
-                              agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
-                              'bg-mission-control-border text-mission-control-text-dim'
-                            } hover:brightness-110`}
+                            className="opacity-50 group-hover:opacity-100 transition-opacity"
                             title="Click to edit trust tier"
                           >
                             {agent.trust_tier === 'admin' ? 'Admin' : agent.trust_tier === 'trusted' ? 'Trusted' : agent.trust_tier === 'worker' ? 'Worker' : agent.trust_tier === 'restricted' ? 'Restricted' : `Tier ${agent.trust_tier}`}
                             <Pencil size={8} className="opacity-0 group-hover:opacity-100" />
-                          </button>
+                          </Button>
                         )
                       )}
                     </div>

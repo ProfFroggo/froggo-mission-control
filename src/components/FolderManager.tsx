@@ -218,16 +218,17 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                   {iconOptions.map((opt) => {
                     const OptIcon = opt.icon;
                     return (
-                      <button
+                      <IconButton
                         key={opt.value}
                         onClick={() => setFormData({ ...formData, icon: opt.value })}
                         title={opt.label}
-                        className={`flex items-center justify-center p-1.5 rounded transition-colors ${
-                          formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
-                        }`}
+                        size="1"
+                        variant={formData.icon === opt.value ? 'soft' : 'ghost'}
+                        radius="medium"
+                        aria-label={opt.label}
                       >
                         <OptIcon size={16} />
-                      </button>
+                      </IconButton>
                     );
                   })}
                 </div>
@@ -264,6 +265,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                   {colorOptions.map((color) => (
                     <button
                       key={color}
+                      type="button"
                       onClick={() => setFormData({ ...formData, color })}
                       className={`w-6 h-6 rounded transition-all ${
                         formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
@@ -319,16 +321,17 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                           {iconOptions.map((opt) => {
                             const OptIcon = opt.icon;
                             return (
-                              <button
+                              <IconButton
                                 key={opt.value}
                                 onClick={() => setFormData({ ...formData, icon: opt.value })}
                                 title={opt.label}
-                                className={`flex items-center justify-center p-1.5 rounded transition-colors ${
-                                  formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
-                                }`}
+                                size="1"
+                                variant={formData.icon === opt.value ? 'soft' : 'ghost'}
+                                radius="medium"
+                                aria-label={opt.label}
                               >
                                 <OptIcon size={16} />
-                              </button>
+                              </IconButton>
                             );
                           })}
                         </div>
@@ -353,6 +356,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                           {colorOptions.map((color) => (
                             <button
                               key={color}
+                              type="button"
                               onClick={() => setFormData({ ...formData, color })}
                               className={`w-6 h-6 rounded transition-all ${
                                 formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -83,9 +84,9 @@ export default function DebugTab() {
             <Activity size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
           </div>
-          <button type="button" onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          <Button onClick={handleReconnect} size="2" variant="soft" radius="medium">
             <RefreshCw size={14} /> Reconnect
-          </button>
+          </Button>
         </div>
         <div className="p-4">
           <div className="flex items-center gap-3 mb-3">
@@ -105,9 +106,9 @@ export default function DebugTab() {
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </div>
-          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80" aria-label="Refresh sessions">
+          <IconButton onClick={loadData} disabled={loading} size="2" variant="ghost" radius="medium" aria-label="Refresh sessions">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
         <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
           {sessions.length === 0 ? (
@@ -134,9 +135,9 @@ export default function DebugTab() {
             <AlertCircle size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
           </div>
-          <button type="button" onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          <Button onClick={refreshLogs} size="2" variant="soft" radius="medium">
             <RefreshCw size={14} /> Load More
-          </button>
+          </Button>
         </div>
         <div className="max-h-80 overflow-y-auto p-2 bg-mission-control-bg font-mono text-xs">
           {logs.length === 0 ? (

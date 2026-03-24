@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FolderPlus, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 
@@ -85,12 +86,16 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
           <FolderPlus size={20} className="text-mission-control-accent" />
           <h3 className="font-semibold">Bulk Folder Assignment</h3>
         </div>
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1 hover:bg-mission-control-border rounded transition-colors"
+          aria-label="Close"
+          variant="ghost"
+          color="gray"
+          size="2"
+          radius="medium"
         >
           <X size={16} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Info */}
@@ -116,13 +121,16 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
             {folders.map((folder) => {
               const isSelected = selectedFolders.has(folder.id);
               return (
-                <button
+                <Button
                   key={folder.id}
                   onClick={() => toggleFolder(folder.id)}
+                  variant={isSelected ? 'soft' : 'ghost'}
+                  color="gray"
+                  size="3"
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                     isSelected
-                      ? 'border-mission-control-accent bg-mission-control-accent/10'
-                      : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-bg'
+                      ? 'border-mission-control-accent'
+                      : 'border-mission-control-border'
                   }`}
                 >
                   <div className="flex-shrink-0">
@@ -146,7 +154,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
                       </div>
                     )}
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -159,17 +167,20 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
           {selectedFolders.size} folder{selectedFolders.size !== 1 ? 's' : ''} selected
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={onClose}
-            className="px-4 py-2 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
             disabled={assigning}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleAssign}
             disabled={selectedFolders.size === 0 || assigning}
-            className="px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            variant="solid"
+            size="2"
           >
             {assigning ? (
               <>
@@ -182,7 +193,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
                 Assign to Folders
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

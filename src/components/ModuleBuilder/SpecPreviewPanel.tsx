@@ -3,6 +3,7 @@ import {
   CheckCircle2, Circle, Package, Layers, Database, Settings, Shield, Code2,
   LayoutGrid, ListChecks, User, RefreshCw,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import type { ModuleSpec, SectionProgress } from './types';
 import type { LiveTask } from './useConversationFlow';
 import { generateTaskPlan } from './TaskGenerator';
@@ -90,14 +91,12 @@ export default function SpecPreviewPanel({
         </div>
         <div className="flex gap-1">
           {tabs.map(tab => (
-            <button
+            <Button
               key={tab.id}
+              size="1"
+              variant={activeTab === tab.id ? 'soft' : 'ghost'}
+              color={activeTab === tab.id ? 'indigo' : 'gray'}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-mission-control-surface text-mission-control-text shadow-sm'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               {tab.icon}
               {tab.label}
@@ -107,7 +106,7 @@ export default function SpecPreviewPanel({
                 </span>
               )}
               {tab.action}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -121,19 +120,23 @@ export default function SpecPreviewPanel({
 
       {/* Action buttons */}
       <div className="px-5 py-4 border-t border-mission-control-border flex gap-3">
-        <button
-          onClick={onGenerateTasks}
+        <Button
+          size="2"
+          variant="solid"
           disabled={!isComplete}
-          className="flex-1 px-4 py-2.5 bg-mission-control-accent hover:opacity-90 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-opacity"
+          className="flex-1"
+          onClick={onGenerateTasks}
         >
           Push to mission-control-db
-        </button>
-        <button
+        </Button>
+        <Button
+          size="2"
+          variant="surface"
+          color="gray"
           onClick={onExportJson}
-          className="px-4 py-2.5 border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface text-sm font-medium rounded-lg transition-colors"
         >
           Export JSON
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -323,12 +326,14 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
           {spec.name || 'Module'} Layout
         </h3>
         {onRegenerate && (
-          <button
+          <Button
+            size="1"
+            variant="surface"
+            color="gray"
             onClick={onRegenerate}
-            className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded border border-mission-control-border"
           >
             <RefreshCw size={11} /> Regenerate
-          </button>
+          </Button>
         )}
       </div>
       <div

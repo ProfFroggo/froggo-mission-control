@@ -11,6 +11,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Maximize2, Monitor, Video, Move, Camera } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('VideoWindow');
@@ -131,16 +132,18 @@ export default function DraggableVideoWindow({
           <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
           </span>
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-error transition-colors"
             aria-label="Close video window"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
     );
@@ -180,34 +183,42 @@ export default function DraggableVideoWindow({
         
         <div className="flex items-center gap-1">
           {videoMode === 'screen' && onSwitchSource && (
-            <button
+            <Button
+              size="1"
+              variant="solid"
+              color="gray"
               onClick={onSwitchSource}
-              className="px-2 py-1 rounded bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors"
             >
               Switch Source
-            </button>
+            </Button>
           )}
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={minimize}
-            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title="Minimize"
           >
             <Minimize2 size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={toggleViewMode}
-            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
           >
             <Maximize2 size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={onClose}
-            className="p-1 rounded hover:bg-error-subtle text-white transition-colors"
             title="Close"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

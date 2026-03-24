@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { X, ChevronDown, ChevronRight, User, LayoutGrid, CheckCircle2 } from 'lucide-react';
+import { Button, IconButton, Select } from '@radix-ui/themes';
 import type { ModuleSpec } from './types';
 import { generateTasksForModule, type GeneratedTask } from './TaskGenerator';
 
@@ -56,9 +57,9 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
             <h2 className="text-base font-semibold text-mission-control-text">Build Plan Review</h2>
             <p className="text-sm text-mission-control-text-dim mt-0.5">{spec.name}</p>
           </div>
-          <button onClick={onCancel} className="p-1 hover:bg-mission-control-bg rounded transition-colors text-mission-control-text-dim">
+          <IconButton size="2" variant="ghost" radius="medium" onClick={onCancel} aria-label="Close">
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Scrollable body */}
@@ -97,9 +98,9 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
                 className="flex items-start gap-3 px-4 py-3 bg-mission-control-bg cursor-pointer hover:bg-mission-control-bg/80 transition-colors"
                 onClick={() => toggleExpand(i)}
               >
-                <button className="mt-0.5 text-mission-control-text-dim flex-shrink-0">
+                <IconButton size="1" variant="ghost" radius="medium" className="mt-0.5 flex-shrink-0" aria-label={expandedTasks.has(i) ? 'Collapse' : 'Expand'}>
                   {expandedTasks.has(i) ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                </button>
+                </IconButton>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-mission-control-text leading-snug">{task.title}</p>
                   <p className="text-xs text-mission-control-text-dim mt-0.5">{task.subtasks.length} subtasks</p>
@@ -107,17 +108,18 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
                 {/* Agent selector */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <User size={12} className="text-mission-control-text-dim" />
-                  <select
+                  <Select.Root
+                    size="1"
                     value={agentOverrides[i] ?? task.assignedTo}
-                    onChange={(e) => { e.stopPropagation(); setAgentOverrides(prev => ({ ...prev, [i]: e.target.value })); }}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`text-xs px-2 py-0.5 rounded-full border-0 cursor-pointer font-medium ${agentColors[agentOverrides[i] ?? task.assignedTo] || 'bg-mission-control-border text-mission-control-text-dim'}`}
-                    style={{ background: 'transparent' }}
+                    onValueChange={(val) => setAgentOverrides(prev => ({ ...prev, [i]: val }))}
                   >
-                    {agentOptions.map(a => (
-                      <option key={a} value={a} style={{ background: 'var(--color-bg-surface)', color: 'var(--color-text)' }}>{a}</option>
-                    ))}
-                  </select>
+                    <Select.Trigger onClick={(e) => e.stopPropagation()} />
+                    <Select.Content>
+                      {agentOptions.map(a => (
+                        <Select.Item key={a} value={a}>{a}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               </div>
               {expandedTasks.has(i) && task.subtasks.length > 0 && (
@@ -138,18 +140,12 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-sm border border-mission-control-border text-mission-control-text hover:bg-mission-control-bg rounded-lg transition-colors"
-          >
+          <Button size="2" variant="surface" color="gray" onClick={onCancel}>
             Edit Spec
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 text-white font-medium rounded-lg transition-opacity"
-          >
+          </Button>
+          <Button size="2" variant="solid" onClick={onConfirm}>
             Confirm & Build ({tasks.length} tasks)
-          </button>
+          </Button>
         </div>
       </div>
     </div>

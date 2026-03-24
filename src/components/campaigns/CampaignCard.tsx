@@ -2,6 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { ChevronRight, Clock, Users, Zap, CalendarDays, Archive } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import { formatTimeAgo } from '../../utils/formatting';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS } from './channelIcons';
@@ -93,7 +94,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
     return (
       <button
         onClick={onClick}
-        className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 hover:border-mission-control-accent/50 hover:bg-mission-control-surface/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-mission-control-accent/30"
+        className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 transition-all duration-200 focus:outline-none"
       >
         <div className="flex items-center gap-4">
           {/* Color dot */}
@@ -173,9 +174,15 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
           </div>
 
           {onArchive && campaign.status !== 'archived' && (
-            <button onClick={(e) => { e.stopPropagation(); onArchive(); }} className="p-1 rounded hover:bg-mission-control-surface text-mission-control-text-dim hover:text-warning transition-colors" title="Archive">
+            <IconButton
+              size="1"
+              variant="ghost"
+              radius="medium"
+              onClick={(e) => { e.stopPropagation(); onArchive(); }}
+              title="Archive"
+            >
               <Archive size={13} />
-            </button>
+            </IconButton>
           )}
           <ChevronRight size={14} className="flex-shrink-0 text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
         </div>
@@ -187,7 +194,7 @@ export default function CampaignCard({ campaign, onClick, onArchive, viewMode = 
   return (
     <button
       onClick={onClick}
-      className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-5 hover:border-mission-control-accent/50 hover:bg-mission-control-surface/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-mission-control-accent/30"
+      className="group w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-5 transition-all duration-200 focus:outline-none"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">

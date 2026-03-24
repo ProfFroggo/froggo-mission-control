@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Download,
 } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import TaskTrendsChart from './TaskTrendsChart';
 import AgentUtilizationChart from './AgentUtilizationChart';
 import ProductivityHeatmap from './ProductivityHeatmap';
@@ -162,37 +163,38 @@ export default function AnalyticsPanel() {
 
         <div className="flex items-center gap-3">
           {/* Time range selector */}
-          <div className="flex bg-mission-control-border rounded-lg p-1">
+          <div className="flex gap-1">
             {(['7d', '30d', '90d'] as const).map((range) => (
-              <button
+              <Button
                 key={range}
+                size="2"
+                variant={timeRange === range ? 'solid' : 'ghost'}
+                color={timeRange === range ? 'indigo' : 'gray'}
                 onClick={() => setTimeRange(range)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  timeRange === range
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
               >
                 {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : '90 Days'}
-              </button>
+              </Button>
             ))}
           </div>
 
-          <button
+          <IconButton
+            size="2"
+            variant="ghost"
+            radius="medium"
             onClick={loadAnalytics}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
-          </button>
+          </IconButton>
 
-          <button
+          <Button
+            size="2"
+            variant="solid"
             onClick={exportData}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
           >
             <Download size={16} />
             Export
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -208,18 +210,17 @@ export default function AnalyticsPanel() {
           { id: 'time', label: 'Time Tracking', icon: Clock },
           { id: 'projects', label: 'Projects', icon: Calendar },
         ].map(({ id, label, icon: Icon }) => (
-          <button
+          <Button
             key={id}
+            size="2"
+            variant={view === id ? 'solid' : 'surface'}
+            color={view === id ? 'indigo' : 'gray'}
             onClick={() => setView(id as AnalyticsView)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              view === id
-                ? 'bg-mission-control-accent text-white'
-                : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
-            }`}
+            className="whitespace-nowrap"
           >
             <Icon size={16} />
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 

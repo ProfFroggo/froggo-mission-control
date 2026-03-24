@@ -2,6 +2,7 @@ import { memo, useState, type ComponentPropsWithoutRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
+import { IconButton, Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
@@ -168,15 +169,26 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
       <span className="text-xs font-medium text-mission-control-text flex-1 truncate">{title}</span>
       <span className="text-xs text-mission-control-text-dim font-mono opacity-60">{lang.toUpperCase()}</span>
       <span className="text-xs text-mission-control-text-dim opacity-50">{lineCount}L</span>
-      <button onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-        className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100" title="Copy code">
+      <IconButton
+        onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+        size="1"
+        variant="ghost"
+        radius="medium"
+        title="Copy code"
+        aria-label="Copy code"
+        className="opacity-0 group-hover:opacity-100"
+      >
         {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
-      </button>
+      </IconButton>
       {onOpen && (
-        <button onClick={() => onOpen(lang, code)}
-          className="flex items-center gap-1 px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 text-xs rounded hover:bg-mission-control-accent hover:text-white transition-colors">
+        <Button
+          onClick={() => onOpen(lang, code)}
+          size="1"
+          variant="soft"
+          radius="medium"
+        >
           <ExternalLink size={11} /> Open
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -189,11 +201,16 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
     <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
       <div className="flex items-center justify-between px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
         <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">{language || 'code'}</span>
-        <button onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded text-mission-control-text-dim hover:bg-mission-control-border/50 hover:text-mission-control-text transition-all" title="Copy code">
+        <Button
+          onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+          size="1"
+          variant="ghost"
+          radius="medium"
+          title="Copy code"
+        >
           {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
-        </button>
+        </Button>
       </div>
       <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
         <code className="font-mono text-mission-control-text break-words whitespace-pre-wrap">{code}</code>

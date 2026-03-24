@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, X, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { chatApi } from '../lib/api';
 import { createLogger } from '../utils/logger';
@@ -30,12 +31,16 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputWrapperRef = useRef<HTMLDivElement>(null);
+
+  const focusInput = () => {
+    inputWrapperRef.current?.querySelector('input')?.focus();
+  };
 
   useEffect(() => {
     if (isOpen) {
       loadChatHistory();
-      inputRef.current?.focus();
+      focusInput();
     }
   }, [isOpen]);
 
@@ -168,7 +173,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
       showToast('error', 'Failed to send message');
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
+      focusInput();
     }
   };
 
@@ -224,23 +229,27 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
         </div>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={clearHistory}
-              className="p-2 hover:bg-mission-control-bg-alt rounded-lg transition-colors"
               title="Clear chat history"
               aria-label="Clear chat history"
             >
-              <Trash2 className="w-4 h-4 text-mission-control-text-dim" />
-            </button>
+              <Trash2 className="w-4 h-4" />
+            </IconButton>
           )}
           {onClose && (
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-bg-alt rounded-lg transition-colors"
               aria-label="Close chat"
             >
-              <X className="w-4 h-4 text-mission-control-text-dim" />
-            </button>
+              <X className="w-4 h-4" />
+            </IconButton>
           )}
         </div>
       </div>
@@ -314,12 +323,15 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
           <AlertCircle className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm text-error">{error}</p>
-            <button
+            <Button
+              size="1"
+              variant="ghost"
+              color="red"
               onClick={() => setError(null)}
-              className="text-xs text-error hover:text-error mt-1"
+              className="mt-1"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -327,20 +339,23 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
       {/* Input */}
       <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
         <div className="flex gap-2">
-          <input
-            ref={inputRef}
+          <TextField.Root
+            ref={inputWrapperRef}
+            size="2"
+            className="flex-1"
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about your finances..."
-            className="flex-1 bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent transition-colors"
             disabled={loading || initializing}
           />
-          <button
+          <IconButton
+            size="2"
+            variant="solid"
+            radius="medium"
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
-            className="p-2 bg-mission-control-accent hover:opacity-90 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             aria-label={loading ? "Sending message" : "Send message"}
           >
             {loading ? (
@@ -348,7 +363,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             ) : (
               <Send className="w-5 h-5" />
             )}
-          </button>
+          </IconButton>
         </div>
         <p className="text-xs text-mission-control-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line

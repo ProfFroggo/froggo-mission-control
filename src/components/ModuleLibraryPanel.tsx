@@ -205,20 +205,21 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
         const v = i + 1;
         const filled = v <= (hover || value);
         return (
-          <button
+          <IconButton
             key={i}
-            type="button"
+            size="2"
+            variant="ghost"
+            radius="medium"
             onMouseEnter={() => setHover(v)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(v)}
             aria-label={`Rate ${v} star${v > 1 ? 's' : ''}`}
-            className="focus:outline-none"
           >
             <Star
               size={20}
               className={filled ? 'text-warning fill-warning' : 'text-mission-control-border hover:text-warning transition-colors'}
             />
-          </button>
+          </IconButton>
         );
       })}
     </span>
@@ -893,20 +894,18 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             </TextField.Slot>
           </TextField.Root>
         </div>
-        <div className="flex border border-mission-control-border rounded-lg overflow-hidden text-xs">
+        <div className="flex gap-1">
           {(['all', 'installed', 'available'] as const).map(f => (
-            <button
+            <Button
               key={f}
-              type="button"
+              size="1"
+              variant={filter === f ? 'solid' : 'ghost'}
+              color={filter === f ? 'indigo' : 'gray'}
               onClick={() => setFilter(f)}
-              className={`px-3 py-2 capitalize transition-colors ${
-                filter === f
-                  ? 'bg-mission-control-accent text-white'
-                  : 'hover:bg-mission-control-surface'
-              }`}
+              className="capitalize"
             >
               {f}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -915,18 +914,16 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       <div className="flex items-center gap-1.5 mb-5 flex-wrap">
         <Filter size={12} className="text-mission-control-text-dim flex-shrink-0" />
         {FILTER_CATEGORIES.map(cat => (
-          <button
+          <Button
             key={cat}
-            type="button"
+            size="1"
+            variant={categoryFilter === cat ? 'soft' : 'ghost'}
+            color={categoryFilter === cat ? 'indigo' : 'gray'}
+            radius="full"
             onClick={() => setCategoryFilter(cat)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-              categoryFilter === cat
-                ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
-            }`}
           >
             {cat}
-          </button>
+          </Button>
         ))}
       </div>
 

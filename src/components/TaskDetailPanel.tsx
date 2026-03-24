@@ -848,17 +848,19 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
             </span>
           ))}
-          <input
-            type="text"
+          <TextField.Root
             placeholder="+ tag"
             aria-label="Add tag"
-            className="unstyled px-1.5 py-0.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-full focus:outline-none focus:border-mission-control-accent w-14 flex-shrink-0"
+            size="1"
+            radius="full"
+            className="w-14 flex-shrink-0"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                const newTag = e.currentTarget.value.trim();
+              const input = e.currentTarget.querySelector('input');
+              if (e.key === 'Enter' && input && input.value.trim()) {
+                const newTag = input.value.trim();
                 const currentTags = JSON.parse(task.tags || '[]');
                 if (!currentTags.includes(newTag)) updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
-                e.currentTarget.value = '';
+                input.value = '';
               }
             }}
           />
@@ -1021,14 +1023,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           It serves as a historical record and should never be hidden when task is complete. */}
       <div className="flex border-b border-mission-control-border flex-shrink-0">
         {(['subtasks', 'planning', 'activity', 'files', 'review', 'chat'] as const).map((tab) => (
-          <button
+          <Button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-                : 'text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
+            variant={activeTab === tab ? 'soft' : 'ghost'}
+            color={activeTab === tab ? 'blue' : 'gray'}
+            size="2"
+            className="flex-1 rounded-none"
           >
             {tab === 'subtasks' && (
               <span className="flex items-center justify-center gap-2">
@@ -1067,7 +1068,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 Chat
               </span>
             )}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -1263,29 +1264,30 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       }`}
                     >
                       {/* Selection checkbox — appears on hover or when selected */}
-                      <button
+                      <IconButton
                         onClick={() => handleToggleSubtaskSelect(st.id)}
-                        className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
-                          isSelected
-                            ? 'bg-mission-control-accent border-mission-control-accent text-white opacity-100'
-                            : 'border-mission-control-border opacity-0 group-hover:opacity-100'
-                        }`}
-                        title="Select subtask"
+                        aria-label="Select subtask"
+                        variant={isSelected ? 'solid' : 'outline'}
+                        color={isSelected ? 'blue' : 'gray'}
+                        size="1"
+                        radius="small"
+                        className={`mt-0.5 flex-shrink-0 transition-all ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                       >
                         {isSelected && <Check size={10} />}
-                      </button>
+                      </IconButton>
 
                       {/* Completion toggle */}
-                      <button
+                      <IconButton
                         onClick={() => handleToggleSubtask(st.id)}
-                        className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
-                          st.completed
-                            ? 'bg-success text-white'
-                            : 'border-2 border-mission-control-border hover:border-mission-control-accent'
-                        }`}
+                        aria-label="Toggle subtask completion"
+                        variant={st.completed ? 'solid' : 'outline'}
+                        color={st.completed ? 'green' : 'gray'}
+                        size="1"
+                        radius="small"
+                        className="mt-0.5 flex-shrink-0"
                       >
                         {st.completed && <Check size={13} />}
-                      </button>
+                      </IconButton>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
@@ -1330,20 +1332,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                               size="1"
                             />
                           ) : (
-                            <button
+                            <Button
                               onClick={() => setEditingDueDateId(st.id)}
-                              className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded transition-colors ${
-                                isOverdue
-                                  ? 'text-error bg-error/10 border border-error/30'
-                                  : dueDateDisplay
-                                    ? 'text-mission-control-text-dim bg-mission-control-border'
-                                    : 'text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100'
-                              }`}
+                              variant="ghost"
+                              color={isOverdue ? 'red' : 'gray'}
+                              size="1"
                               title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
+                              className={`${!isOverdue && !dueDateDisplay ? 'opacity-0 group-hover:opacity-60 hover:!opacity-100' : ''}`}
                             >
                               <Calendar size={10} />
                               {dueDateDisplay ?? 'Due date'}
-                            </button>
+                            </Button>
                           )}
 
                           {st.completedAt && (
@@ -1477,12 +1476,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               ) : (
                 <p className="text-xs text-mission-control-text-dim mb-3">No dependencies</p>
               )}
-              <select
-                defaultValue=""
-                onChange={async (e) => {
-                  const depId = e.target.value;
+              <Select.Root
+                value=""
+                onValueChange={async (depId) => {
                   if (!depId) return;
-                  e.target.value = '';
                   const current = (task.blockedBy as string[]) || [];
                   if (current.includes(depId)) return;
                   // Simple cycle check: ensure depId doesn't already block this task
@@ -1496,15 +1493,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     showToast('success', 'Dependency added');
                   } catch { showToast('error', 'Failed to add dependency'); }
                 }}
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent text-mission-control-text"
+                size="2"
               >
-                <option value="">+ Add dependency (blocked by)...</option>
-                {useStore.getState().tasks
-                  .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
-                  .map(t => (
-                    <option key={t.id} value={t.id}>{t.title} [{t.status}]</option>
-                  ))}
-              </select>
+                <Select.Trigger className="w-full" placeholder="+ Add dependency (blocked by)..." />
+                <Select.Content>
+                  {useStore.getState().tasks
+                    .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
+                    .map(t => (
+                      <Select.Item key={t.id} value={t.id}>{t.title} [{t.status}]</Select.Item>
+                    ))}
+                </Select.Content>
+              </Select.Root>
             </div>
 
             {/* Related Tasks */}

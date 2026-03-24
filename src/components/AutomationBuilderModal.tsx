@@ -107,19 +107,6 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
   const setConfig = (key: string, value: unknown) =>
     onChange({ ...step, config: { ...step.config, [key]: value } });
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '7px 10px',
-    borderRadius: 7,
-    border: '1px solid var(--mission-control-border)',
-    backgroundColor: 'var(--mission-control-surface)',
-    color: 'var(--mission-control-text)',
-    fontSize: 12,
-    outline: 'none',
-    boxSizing: 'border-box',
-  };
-
-  const selectStyle: React.CSSProperties = { ...inputStyle };
 
   return (
     <div
@@ -155,26 +142,38 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
           {step.label || STEP_TYPES.find(s => s.value === step.type)?.label || 'New step'}
         </span>
         <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
-          <button
+          <IconButton
             disabled={index === 0}
             onClick={onMoveUp}
-            style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: index === 0 ? 'default' : 'pointer', color: 'var(--mission-control-text-dim)', opacity: index === 0 ? 0.3 : 1 }}
+            aria-label="Move step up"
+            variant="ghost"
+            color="gray"
+            size="1"
+            radius="medium"
           >
             <ChevronUp size={12} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             disabled={index === total - 1}
             onClick={onMoveDown}
-            style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: index === total - 1 ? 'default' : 'pointer', color: 'var(--mission-control-text-dim)', opacity: index === total - 1 ? 0.3 : 1 }}
+            aria-label="Move step down"
+            variant="ghost"
+            color="gray"
+            size="1"
+            radius="medium"
           >
             <ChevronDown size={12} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={onRemove}
-            style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--mission-control-text-dim)' }}
+            aria-label="Remove step"
+            variant="ghost"
+            color="red"
+            size="1"
+            radius="medium"
           >
             <Trash2 size={12} />
-          </button>
+          </IconButton>
         </div>
         {collapsed ? <ChevronDown size={14} style={{ color: 'var(--mission-control-text-dim)' }} /> : <ChevronUp size={14} style={{ color: 'var(--mission-control-text-dim)' }} />}
       </div>
@@ -186,11 +185,14 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Action type
             </label>
-            <select value={step.type} onChange={e => setType(e.target.value as StepType)} style={selectStyle}>
-              {STEP_TYPES.map(s => (
-                <option key={s.value} value={s.value}>{s.label} — {s.description}</option>
-              ))}
-            </select>
+            <Select.Root value={step.type} onValueChange={val => setType(val as StepType)} size="1">
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                {STEP_TYPES.map(s => (
+                  <Select.Item key={s.value} value={s.value}>{s.label} — {s.description}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Step label */}
@@ -198,12 +200,11 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Label
             </label>
-            <input
-              type="text"
+            <TextField.Root
               placeholder="Describe this step..."
               value={step.label}
               onChange={e => setLabel(e.target.value)}
-              style={inputStyle}
+              size="1"
             />
           </div>
 
@@ -214,24 +215,23 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Agent role
                 </label>
-                <input
-                  type="text"
+                <TextField.Root
                   placeholder="e.g. researcher, analytics, writer"
                   value={(step.config.agentRole as string) ?? ''}
                   onChange={e => setConfig('agentRole', e.target.value)}
-                  style={inputStyle}
+                  size="1"
                 />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Prompt / instruction
                 </label>
-                <textarea
+                <TextArea
                   placeholder="What should the agent do?"
                   value={(step.config.prompt as string) ?? ''}
                   onChange={e => setConfig('prompt', e.target.value)}
                   rows={3}
-                  style={{ ...inputStyle, resize: 'vertical' }}
+                  size="1"
                 />
               </div>
             </>
@@ -243,24 +243,23 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Chat room
                 </label>
-                <input
-                  type="text"
+                <TextField.Root
                   placeholder="e.g. general, ops, content"
                   value={(step.config.room as string) ?? ''}
                   onChange={e => setConfig('room', e.target.value)}
-                  style={inputStyle}
+                  size="1"
                 />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Message template (optional)
                 </label>
-                <textarea
+                <TextArea
                   placeholder="e.g. New task assigned: {{title}}"
                   value={(step.config.template as string) ?? ''}
                   onChange={e => setConfig('template', e.target.value)}
                   rows={2}
-                  style={{ ...inputStyle, resize: 'vertical' }}
+                  size="1"
                 />
               </div>
             </>
@@ -271,12 +270,11 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Folder
               </label>
-              <input
-                type="text"
+              <TextField.Root
                 placeholder="e.g. reports, research"
                 value={(step.config.folder as string) ?? ''}
                 onChange={e => setConfig('folder', e.target.value)}
-                style={inputStyle}
+                size="1"
               />
             </div>
           )}
@@ -288,7 +286,6 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
                 id={`auto-approve-${step.id}`}
                 checked={!!(step.config.autoApprove)}
                 onChange={e => setConfig('autoApprove', e.target.checked)}
-                style={{ accentColor: 'var(--mission-control-accent)' }}
               />
               <label htmlFor={`auto-approve-${step.id}`} style={{ fontSize: 12, color: 'var(--mission-control-text)' }}>
                 Auto-approve if criteria pass (escalate on failure)
@@ -301,13 +298,14 @@ function StepEditor({ step, index, total, onChange, onRemove, onMoveUp, onMoveDo
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--mission-control-text-dim)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Delay (minutes)
               </label>
-              <input
+              <TextField.Root
                 type="number"
                 min={1}
                 placeholder="e.g. 60"
                 value={(step.config.minutes as string) ?? ''}
                 onChange={e => setConfig('minutes', parseInt(e.target.value, 10) || 1)}
-                style={{ ...inputStyle, maxWidth: 120 }}
+                size="1"
+                style={{ maxWidth: 120 }}
               />
             </div>
           )}
@@ -532,36 +530,29 @@ export default function AutomationBuilderModal({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* Mode toggle */}
-            <div
-              style={{
-                display: 'flex', gap: 2,
-                background: 'var(--mission-control-bg)',
-                borderRadius: 8, padding: 2,
-                border: '1px solid var(--mission-control-border)',
-              }}
-            >
+            <div style={{ display: 'flex', gap: 2, background: 'var(--mission-control-bg)', borderRadius: 8, padding: 2, border: '1px solid var(--mission-control-border)' }}>
               {(['natural', 'manual'] as BuildMode[]).map(m => (
-                <button
+                <Button
                   key={m}
                   onClick={() => setMode(m)}
-                  style={{
-                    padding: '4px 10px', borderRadius: 6, border: 'none',
-                    fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                    background: mode === m ? 'var(--mission-control-surface)' : 'transparent',
-                    color: mode === m ? 'var(--mission-control-text)' : 'var(--mission-control-text-dim)',
-                    transition: 'all 0.15s',
-                  }}
+                  variant={mode === m ? 'soft' : 'ghost'}
+                  color={mode === m ? 'blue' : 'gray'}
+                  size="1"
                 >
                   {m === 'natural' ? 'Natural language' : 'Manual builder'}
-                </button>
+                </Button>
               ))}
             </div>
-            <button
+            <IconButton
               onClick={onClose}
-              style={{ padding: 6, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--mission-control-text-dim)', display: 'flex' }}
+              aria-label="Close"
+              variant="ghost"
+              color="gray"
+              size="2"
+              radius="medium"
             >
               <X size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 

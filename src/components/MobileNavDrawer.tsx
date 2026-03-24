@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
   FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Zap,
 } from 'lucide-react';
-import { IconButton, Text, Badge, Flex, Box } from '@radix-ui/themes';
+import { Button, IconButton, Text, Badge, Flex, Box } from '@radix-ui/themes';
 import { usePanelConfigStore } from '../store/panelConfig';
 import { ViewRegistry } from '../core/ViewRegistry';
 
@@ -118,17 +118,20 @@ export default function MobileNavDrawer({
         {/* Search button */}
         {onOpenSearch && (
           <Box className="px-3 pt-3 pb-1">
-            <button
+            <Button
               onClick={() => { onOpenSearch(); onClose(); }}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all border border-mission-control-border/50"
+              variant="outline"
+              color="gray"
+              size="2"
               aria-label="Search (Cmd+K)"
+              className="w-full justify-start"
             >
               <Search size={16} className="flex-shrink-0" aria-hidden="true" />
               <span className="flex-1 text-sm text-left truncate">Search...</span>
               <kbd className="text-xs px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
                 K
               </kbd>
-            </button>
+            </Button>
           </Box>
         )}
 
@@ -155,16 +158,15 @@ export default function MobileNavDrawer({
               if (id === 'kanban') badge = activeTasks;
 
               return (
-                <button
+                <Button
                   key={id}
                   onClick={() => handleNavigate(id)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
-                    isActive
-                      ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                  }`}
+                  variant={isActive ? 'solid' : 'ghost'}
+                  color={isActive ? 'blue' : 'gray'}
+                  size="3"
                   aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
                   aria-current={isActive ? 'page' : undefined}
+                  className="w-full justify-start relative"
                 >
                   <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
@@ -186,7 +188,7 @@ export default function MobileNavDrawer({
                       {badge > 99 ? '99+' : badge}
                     </Badge>
                   )}
-                </button>
+                </Button>
               );
             })}
         </nav>
@@ -194,40 +196,45 @@ export default function MobileNavDrawer({
         {/* Bottom actions */}
         <Box className="p-3 border-t border-mission-control-border space-y-1">
           {onOpenEditPanels && (
-            <button
+            <Button
               onClick={() => { onOpenEditPanels(); onClose(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
+              variant="ghost"
+              color="gray"
+              size="3"
               aria-label="Edit Panels"
+              className="w-full justify-start"
             >
               <SlidersHorizontal size={18} aria-hidden="true" />
               <span className="text-sm font-medium">Edit Panels</span>
-            </button>
+            </Button>
           )}
 
           {onOpenHelp && (
-            <button
+            <Button
               onClick={() => { onOpenHelp(); onClose(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
+              variant="ghost"
+              color="gray"
+              size="3"
               aria-label="Help"
+              className="w-full justify-start"
             >
               <HelpCircle size={18} aria-hidden="true" />
               <span className="text-sm font-medium">Help</span>
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
             onClick={() => handleNavigate('settings')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${
-              currentView === 'settings'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-            }`}
+            variant={currentView === 'settings' ? 'solid' : 'ghost'}
+            color={currentView === 'settings' ? 'blue' : 'gray'}
+            size="3"
             aria-label="Settings"
             aria-current={currentView === 'settings' ? 'page' : undefined}
+            className="w-full justify-start"
           >
             <Settings size={18} aria-hidden="true" />
             <span className="text-sm font-medium">Settings</span>
-          </button>
+          </Button>
         </Box>
       </div>
     </>

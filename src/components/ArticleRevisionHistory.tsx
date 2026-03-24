@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { History, X, Clock, RotateCcw } from 'lucide-react';
+import { IconButton, Button } from '@radix-ui/themes';
 
 interface KBVersion {
   id: number;
@@ -113,13 +114,15 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border shrink-0">
           <History size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">Revision History</span>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
+            size="1"
+            variant="ghost"
+            radius="medium"
             aria-label="Close"
           >
             <X size={14} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="flex flex-1 min-h-0">
@@ -149,6 +152,7 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                     return (
                       <button
                         key={v.id}
+                        type="button"
                         onClick={() => setSelected(selected?.id === v.id ? null : v)}
                         className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
                           selected?.id === v.id
@@ -202,14 +206,17 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                       <span className="ml-2 text-xs text-mission-control-text-dim opacity-70">· {selected.versionNote}</span>
                     )}
                   </div>
-                  <button
+                  <Button
                     onClick={handleRestore}
                     disabled={restoring}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-info hover:bg-info/80 disabled:opacity-50 text-white text-xs"
+                    size="1"
+                    variant="solid"
+                    color="blue"
+                    radius="medium"
                   >
                     <RotateCcw size={11} />
                     {restoring ? 'Restoring...' : 'Restore this version'}
-                  </button>
+                  </Button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex gap-2 mb-3 text-xs text-mission-control-text-dim">

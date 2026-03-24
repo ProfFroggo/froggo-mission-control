@@ -1,5 +1,6 @@
 import { useState, useEffect, memo, useRef } from 'react';
 import { MessageSquare, RefreshCw, MessageCircle, Send, Gamepad2, Globe, Lock, Briefcase, Mic, Clock, Settings, WifiOff, Inbox, Bot } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import type { LucideIcon } from 'lucide-react';
@@ -134,41 +135,45 @@ const ActivityFeed = memo(function ActivityFeed() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <IconButton
+            size="2"
+            variant="ghost"
+            radius="medium"
             onClick={fetchSessions}
             disabled={loading || !connected}
-            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {/* Filters */}
       {channels.length > 1 && (
         <div className="p-2 border-b border-mission-control-border flex gap-1 overflow-x-auto">
-          <button
+          <Button
+            size="1"
+            variant={!filter ? 'solid' : 'ghost'}
+            color={!filter ? 'indigo' : 'gray'}
+            className="whitespace-nowrap"
             onClick={() => setFilter(null)}
-            className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-              !filter ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
           >
             All
-          </button>
+          </Button>
           {channels.map(ch => {
             const info = getChannelInfo(ch);
             const ChannelIcon = info.icon;
             return (
-              <button
+              <Button
                 key={ch}
+                size="1"
+                variant={filter === ch ? 'solid' : 'ghost'}
+                color={filter === ch ? 'indigo' : 'gray'}
+                className="whitespace-nowrap"
                 onClick={() => setFilter(ch)}
-                className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-                  filter === ch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
               >
                 <ChannelIcon size={12} /> {info.label}
-              </button>
+              </Button>
             );
           })}
         </div>

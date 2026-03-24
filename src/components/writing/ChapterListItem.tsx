@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { WritingChapter } from '../../store/writingStore';
@@ -81,9 +82,8 @@ export default function ChapterListItem({
     return (
       <div ref={setNodeRef} style={style} className="flex items-center group">
         <div className="px-3 py-2 flex-1">
-          <input
+          <TextField.Root
             ref={inputRef}
-            type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -91,7 +91,7 @@ export default function ChapterListItem({
               if (e.key === 'Escape') handleRenameCancel();
             }}
             onBlur={handleRenameConfirm}
-            className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-accent text-mission-control-text text-xs focus:outline-none"
+            size="1"
           />
         </div>
       </div>
@@ -101,20 +101,23 @@ export default function ChapterListItem({
   return (
     <>
       <div ref={setNodeRef} style={style} className="flex items-center group">
-        <button
+        <IconButton
           {...attributes}
           {...listeners}
-          className="p-1 ml-1 text-mission-control-text-dim hover:text-mission-control-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          size="1"
+          variant="ghost"
+          radius="medium"
+          className="ml-1 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
           aria-label={`Drag to reorder ${chapter.title}`}
         >
           <GripVertical size={14} />
-        </button>
-        <button
+        </IconButton>
+        <Button
+          variant={isActive ? 'soft' : 'ghost'}
+          size="1"
           onClick={onSelect}
-          className={`flex-1 text-left px-2 py-2 transition-colors relative ${
-            isActive
-              ? 'bg-mission-control-border/50 border-l-2 border-l-mission-control-accent'
-              : 'hover:bg-mission-control-border/30 border-l-2 border-l-transparent'
+          className={`flex-1 text-left px-2 py-2 relative ${
+            isActive ? 'border-l-2 border-l-mission-control-accent' : 'border-l-2 border-l-transparent'
           }`}
         >
           <div className="flex items-start justify-between min-w-0">
@@ -134,23 +137,27 @@ export default function ChapterListItem({
 
             {/* Action buttons — visible on hover */}
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-              <button
+              <IconButton
+                size="1"
+                variant="ghost"
+                radius="medium"
                 onClick={handleStartRename}
-                className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                 title="Rename chapter"
               >
                 <Pencil size={12} />
-              </button>
-              <button
+              </IconButton>
+              <IconButton
+                size="1"
+                variant="ghost"
+                radius="medium"
                 onClick={handleDelete}
-                className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                 title="Delete chapter"
               >
                 <Trash2 size={12} />
-              </button>
+              </IconButton>
             </div>
           </div>
-        </button>
+        </Button>
       </div>
 
       {/* Delete Dialog */}

@@ -349,34 +349,32 @@ export function XHashtagIntelligence() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
+                        <IconButton
                           onClick={() => handleInsert(result.tag)}
-                          title="Insert into composer"
-                          className="p-1 rounded hover:bg-mission-control-bg transition-colors text-mission-control-text-dim"
+                          aria-label="Insert into composer"
+                          variant="ghost"
+                          size="2"
+                          radius="medium"
                         >
                           <Copy size={14} />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           onClick={() =>
                             savedTags.includes(result.tag)
                               ? handleRemoveSaved(result.tag)
                               : handleSave(result.tag)
                           }
-                          title={
-                            savedTags.includes(result.tag) ? 'Remove from saved' : 'Save hashtag'
-                          }
-                          className="p-1 rounded hover:bg-mission-control-bg transition-colors"
-                          style={{
-                            color: savedTags.includes(result.tag)
-                              ? 'var(--color-info)'
-                              : 'var(--mission-control-text-dim)',
-                          }}
+                          aria-label={savedTags.includes(result.tag) ? 'Remove from saved' : 'Save hashtag'}
+                          variant="ghost"
+                          color={savedTags.includes(result.tag) ? 'blue' : 'gray'}
+                          size="2"
+                          radius="medium"
                         >
                           <Bookmark
                             size={14}
                             fill={savedTags.includes(result.tag) ? 'currentColor' : 'none'}
                           />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
 
@@ -503,20 +501,27 @@ export function XHashtagIntelligence() {
                   }}
                 >
                   {tag}
-                  <button
+                  <IconButton
                     onClick={() => handleInsert(tag)}
-                    title="Insert"
+                    aria-label="Insert"
+                    variant="ghost"
+                    size="1"
+                    radius="medium"
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Copy size={10} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     onClick={() => handleRemoveSaved(tag)}
-                    title="Remove"
+                    aria-label="Remove"
+                    variant="ghost"
+                    color="red"
+                    size="1"
+                    radius="medium"
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X size={10} />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>

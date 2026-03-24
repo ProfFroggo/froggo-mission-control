@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import type { PanelImperativeHandle, Layout, PanelSize } from 'react-resizable-panels';
 import { BookOpen, History, PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react';
+import { IconButton } from '@radix-ui/themes';
 import ChapterSidebar from './ChapterSidebar';
 import ChapterEditor from './ChapterEditor';
 import ChatPane from './ChatPane';
@@ -187,52 +188,48 @@ export default function ProjectEditor() {
         <div className="relative h-full">
           {/* Collapse toggle buttons */}
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={toggleChaptersPanel}
-              className="p-1.5 rounded transition-colors bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title={isChaptersCollapsed ? 'Show chapters sidebar' : 'Hide chapters sidebar'}
             >
               {isChaptersCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-            </button>
-            <button
+            </IconButton>
+            <IconButton
+              size="2"
+              variant={isChatCollapsed ? 'ghost' : 'soft'}
+              radius="medium"
               onClick={toggleChatPanel}
-              className={`p-1.5 rounded transition-colors ${
-                isChatCollapsed
-                  ? 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                  : 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-              }`}
               title={isChatCollapsed ? 'Show chat pane' : 'Hide chat pane'}
             >
               <MessageSquare size={16} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Panel toggle buttons (context/version) */}
           <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
             {activeChapterId && (
-              <button
+              <IconButton
+                size="2"
+                variant={versionOpen ? 'soft' : 'ghost'}
+                radius="medium"
                 onClick={toggleVersion}
-                className={`p-1.5 rounded transition-colors ${
-                  versionOpen
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                }`}
                 title={versionOpen ? 'Hide version history' : 'Show version history'}
               >
                 <History size={16} />
-              </button>
+              </IconButton>
             )}
-            <button
+            <IconButton
+              size="2"
+              variant={contextOpen ? 'soft' : 'ghost'}
+              radius="medium"
               onClick={toggleContext}
-              className={`p-1.5 rounded transition-colors ${
-                contextOpen
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                  : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-              }`}
               title={contextOpen ? 'Hide context panel' : 'Show context panel'}
             >
               <BookOpen size={16} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Editor content */}

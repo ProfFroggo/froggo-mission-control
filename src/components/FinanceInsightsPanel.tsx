@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -154,12 +155,15 @@ export default function FinanceInsightsPanel() {
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
         </div>
-        <button
+        <Button
+          size="1"
+          variant="ghost"
+          color="red"
           onClick={loadInsights}
-          className="mt-2 text-sm text-error hover:text-error"
+          className="mt-2"
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -191,24 +195,27 @@ export default function FinanceInsightsPanel() {
           )}
         </h3>
         <div className="flex items-center gap-2">
-          <button
-            onClick={generateInsights}
+          <Button
+            size="2"
+            variant="soft"
+            color="yellow"
             disabled={detectingAnomalies || analyzing}
-            className="px-3 py-1.5 bg-warning/20 hover:bg-warning/30 disabled:opacity-50 disabled:cursor-not-allowed text-warning rounded-lg flex items-center gap-2 transition-colors text-sm border border-warning/30"
+            onClick={generateInsights}
             title="Run SQL-based anomaly detection on spending patterns"
           >
             <Zap className={`w-4 h-4 ${detectingAnomalies ? 'animate-pulse' : ''}`} />
             {detectingAnomalies ? 'Detecting...' : 'Detect Anomalies'}
-          </button>
-          <button
-            onClick={triggerAnalysis}
+          </Button>
+          <Button
+            size="2"
+            variant="solid"
             disabled={analyzing || detectingAnomalies}
-            className="px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:bg-mission-control-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+            onClick={triggerAnalysis}
             title="Run AI analysis on recent transactions"
           >
             <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
             {analyzing ? 'Analyzing...' : 'Run Analysis'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -232,13 +239,15 @@ export default function FinanceInsightsPanel() {
                 </div>
               </div>
             </div>
-            <button
+            <IconButton
+              size="1"
+              variant="ghost"
+              radius="medium"
               onClick={() => dismissInsight(insight.id)}
-              className="p-1 hover:bg-mission-control-bg-alt rounded transition-colors flex-shrink-0"
               title="Dismiss insight"
             >
-              <X className="w-4 h-4 text-mission-control-text-dim" />
-            </button>
+              <X className="w-4 h-4" />
+            </IconButton>
           </div>
         </div>
       ))}

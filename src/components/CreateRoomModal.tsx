@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Users, MessageSquarePlus } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useStore } from '../store/store';
@@ -54,9 +55,16 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
               <p className="text-xs text-mission-control-text-dim">Multi-agent discussion space</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-mission-control-border transition-colors">
+          <IconButton
+            onClick={onClose}
+            aria-label="Close"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
+          >
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -64,14 +72,14 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
           {/* Room Name */}
           <div>
             <label htmlFor="room-name" className="block text-sm font-medium mb-2">Room Name (optional)</label>
-            <input
+            <TextField.Root
               id="room-name"
-              type="text"
               aria-label="Room name input"
               value={roomName}
               onChange={e => setRoomName(e.target.value)}
               placeholder={defaultName || 'e.g., Architecture Discussion'}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-mission-control-accent"
+              size="2"
+              className="w-full"
             />
           </div>
 
@@ -85,13 +93,16 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
                 const theme = getAgentTheme(agent.id);
                 const selected = selectedAgents.has(agent.id);
                 return (
-                  <button
+                  <Button
                     key={agent.id}
                     onClick={() => toggleAgent(agent.id)}
+                    variant={selected ? 'soft' : 'ghost'}
+                    color="gray"
+                    size="3"
                     className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                       selected
                         ? `${theme.border} ${theme.bg} ring-1 ${theme.ring}`
-                        : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-bg'
+                        : 'border-mission-control-border'
                     }`}
                   >
                     <AgentAvatar agentId={agent.id} size="md" ring={selected} />
@@ -108,7 +119,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
                         </svg>
                       )}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -121,20 +132,23 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
             You + {selectedAgents.size} agent{selectedAgents.size !== 1 ? 's' : ''}
           </span>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
+              variant="ghost"
+              color="gray"
+              size="2"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCreate}
               disabled={selectedAgents.size < 1}
-              className="px-4 py-2 text-sm rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-40 transition-all flex items-center gap-2"
+              variant="solid"
+              size="2"
             >
               <MessageSquarePlus size={16} />
               Create Room
-            </button>
+            </Button>
           </div>
         </div>
       </div>

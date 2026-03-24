@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -102,24 +103,25 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         </div>
         <div className="px-4 space-y-2">
           {items.map((file) => (
-            <button
+            <Button
               key={file.name}
+              variant={selectedFile?.name === file.name ? 'soft' : 'ghost'}
+              color={selectedFile?.name === file.name ? 'indigo' : 'gray'}
+              size="2"
+              className="w-full text-left"
               onClick={() => loadFileContent(file)}
-              className={`w-full text-left p-3 rounded-lg border transition-all ${
-                selectedFile?.name === file.name
-                  ? 'border-mission-control-accent/50 bg-mission-control-accent/10'
-                  : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
-              }`}
             >
-              <div className="font-medium text-sm mb-1 line-clamp-1">{file.name}</div>
-              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
-                <Calendar size={12} />
-                {formatDate(file.modifiedAt)}
+              <div className="w-full">
+                <div className="font-medium text-sm mb-1 line-clamp-1">{file.name}</div>
+                <div className="flex items-center gap-2 text-xs opacity-70">
+                  <Calendar size={12} />
+                  {formatDate(file.modifiedAt)}
+                </div>
+                <div className="text-xs opacity-70 mt-1">
+                  {formatSize(file.size)}
+                </div>
               </div>
-              <div className="text-xs text-mission-control-text-dim mt-1">
-                {formatSize(file.size)}
-              </div>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -143,29 +145,25 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={loadFiles}
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               disabled={loading}
-              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
               title="Refresh"
+              onClick={loadFiles}
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
+            </IconButton>
             {selectedFile && fileContent && (
-              <button
-                onClick={downloadReport}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-              >
+              <Button size="2" variant="solid" onClick={downloadReport}>
                 <Download size={16} />
                 Download
-              </button>
+              </Button>
             )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors"
-            >
+            <IconButton size="2" variant="ghost" radius="medium" onClick={onClose} aria-label="Close">
               <X size={20} />
-            </button>
+            </IconButton>
           </div>
         </div>
 

@@ -814,15 +814,18 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                     Recently Opened
                   </div>
                   {recentItems.map(item => (
-                    <button
+                    <Button
                       key={item.id}
+                      variant="ghost"
+                      color="gray"
+                      size="2"
+                      className="w-full text-left"
                       onClick={() => { onNavigate(item.nav, item.id); onClose(); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-mission-control-border transition-colors"
                     >
                       <span className="text-mission-control-text-dim" aria-hidden="true">{TYPE_ICONS[item.type]}</span>
                       <span className="flex-1 text-left text-sm truncate">{item.title}</span>
                       <span className="text-xs text-mission-control-text-dim capitalize">{item.type}</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -898,20 +901,21 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                 </div>
               )}
               {filteredActionCommands.map((cmd, idx) => (
-                <button
+                <Button
                   key={cmd.id}
+                  variant={selectedIndex === idx ? 'solid' : 'ghost'}
+                  color={selectedIndex === idx ? 'indigo' : 'gray'}
+                  size="2"
+                  className="w-full text-left"
                   onClick={() => { const parsed = parseActionCommand(query); cmd.action(parsed?.arg); }}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    selectedIndex === idx ? 'bg-[--accent-9] text-[--accent-1]' : 'hover:bg-mission-control-border'
-                  }`}
                   role="option"
                   aria-selected={selectedIndex === idx}
                 >
-                  <span className={selectedIndex === idx ? 'text-[--accent-1]' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
+                  <span aria-hidden="true">{cmd.icon}</span>
                   <span className="flex-1 text-left">{cmd.label}</span>
-                  <ChevronRight size={14} className="text-mission-control-text-dim" aria-hidden="true" />
-                </button>
+                  <ChevronRight size={14} aria-hidden="true" />
+                </Button>
               ))}
             </div>
           )}
@@ -960,15 +964,17 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                               </span>
                             )}
                           </span>
-                          <button
+                          <Button
+                            size="1"
+                            variant={isSelected ? 'soft' : 'surface'}
+                            color={isSelected ? 'indigo' : 'gray'}
                             onClick={(e) => { e.stopPropagation(); setExpandedItemId(isExpanded ? null : item.id); }}
-                            className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${isSelected ? 'bg-[--accent-9]/20 text-[--accent-1]' : 'bg-mission-control-border text-mission-control-text-dim'} hover:opacity-80`}
                             aria-expanded={isExpanded}
                             aria-label="Show inline actions"
                             title="Tab for actions"
                           >
                             Tab
-                          </button>
+                          </Button>
                         </div>
                         {isExpanded && (
                           <div className="flex gap-1 px-8 pb-2" role="group" aria-label={`Actions for ${item.title}`}>
@@ -1021,19 +1027,20 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                 const currentIndex = flatIndex++;
                 const isSelected = currentIndex === selectedIndex;
                 return (
-                  <button
+                  <Button
                     key={cmd.id}
                     id={cmd.id}
+                    variant={isSelected ? 'solid' : 'ghost'}
+                    color={isSelected ? 'indigo' : 'gray'}
+                    size="2"
+                    className="w-full text-left"
                     onClick={cmd.action}
                     onMouseEnter={() => setSelectedIndex(currentIndex)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isSelected ? 'bg-[--accent-9] text-[--accent-1]' : 'hover:bg-mission-control-border'
-                    }`}
                     role="option"
                     aria-selected={isSelected}
                     aria-label={`${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ''}`}
                   >
-                    <span className={isSelected ? 'text-[--accent-1]' : 'text-mission-control-text-dim'} aria-hidden="true">{cmd.icon}</span>
+                    <span aria-hidden="true">{cmd.icon}</span>
                     <span className="flex-1 text-left">{cmd.label}</span>
                     {cmd.meta && (
                       <span className={`px-2 py-0.5 text-xs rounded ${isSelected ? 'bg-mission-control-text/20' : 'bg-mission-control-border'}`}>
@@ -1045,7 +1052,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                         {cmd.shortcut}
                       </kbd>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

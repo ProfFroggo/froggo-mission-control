@@ -3,6 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState } from 'react';
 import { X, Bot, Send, AlertTriangle, Megaphone } from 'lucide-react';
+import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import { campaignsApi } from '../../lib/api';
 import type { Campaign, CampaignMember } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
@@ -61,12 +62,14 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
             <Bot size={16} className="text-mission-control-accent" />
             <span className="font-semibold text-mission-control-text text-sm">Dispatch Agent</span>
           </div>
-          <button
+          <IconButton
+            size="1"
+            variant="ghost"
+            radius="medium"
             onClick={onClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded transition-colors"
           >
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -100,23 +103,21 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
             ) : (
               <div className="space-y-1.5">
                 {members.map(m => (
-                  <button
+                  <Button
                     key={m.agentId}
+                    variant={agentId === m.agentId ? 'soft' : 'ghost'}
+                    size="2"
+                    className="w-full justify-start"
                     onClick={() => setAgentId(m.agentId)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border transition-all text-left ${
-                      agentId === m.agentId
-                        ? 'border-mission-control-accent/50 bg-mission-control-accent/10'
-                        : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'
-                    }`}
                   >
                     <AgentAvatar agentId={m.agentId} size="sm" />
-                    <span className="text-sm text-mission-control-text">{(m as any).agentName || m.agentId}</span>
+                    <span className="text-sm">{(m as any).agentName || m.agentId}</span>
                     {agentId === m.agentId && (
                       <div className="ml-auto w-4 h-4 rounded-full bg-mission-control-accent flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-white" />
                       </div>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -125,13 +126,11 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
           {/* Task title */}
           <div>
             <label className="text-xs text-mission-control-text-dim mb-1.5 block">Task title *</label>
-            <input
-              type="text"
+            <TextField.Root
               placeholder="What should the agent do?"
               value={title}
               onChange={e => setTitle(e.target.value)}
               autoFocus
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50"
             />
           </div>
 
@@ -140,12 +139,12 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
             <label className="text-xs text-mission-control-text-dim mb-1.5 block">
               Brief <span className="opacity-50">(optional — campaign context is auto-included)</span>
             </label>
-            <textarea
+            <TextArea
               placeholder="Additional context, requirements, or constraints..."
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim text-sm focus:outline-none focus:border-mission-control-accent/50 resize-none"
+              style={{ resize: 'none' }}
             />
           </div>
 
@@ -154,17 +153,15 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
             <label className="text-xs text-mission-control-text-dim mb-1.5 block">Priority</label>
             <div className="flex gap-2">
               {PRIORITY_OPTIONS.map(p => (
-                <button
+                <Button
                   key={p.value}
+                  size="1"
+                  variant={priority === p.value ? 'soft' : 'ghost'}
+                  className="flex-1"
                   onClick={() => setPriority(p.value as typeof priority)}
-                  className={`flex-1 py-1.5 text-xs rounded-lg border transition-all ${
-                    priority === p.value
-                      ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/30'
-                  }`}
                 >
                   {p.value.toUpperCase()}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -172,20 +169,23 @@ export default function CampaignDispatchModal({ campaign, members, onClose, onDi
 
         {/* Footer */}
         <div className="flex items-center gap-2 px-5 py-4 border-t border-mission-control-border">
-          <button
+          <Button
+            size="2"
+            variant="ghost"
             onClick={onClose}
-            className="px-4 py-2 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text hover:bg-mission-control-surface transition-colors text-sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="2"
+            variant="solid"
+            className="flex-1"
             onClick={handleDispatch}
             disabled={!canDispatch}
-            className="flex-1 flex items-center justify-center gap-2 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium"
           >
             <Send size={14} />
             {dispatching ? 'Dispatching...' : 'Dispatch Task'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

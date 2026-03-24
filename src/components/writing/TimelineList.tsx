@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import TimelineForm from './TimelineForm';
@@ -58,20 +59,24 @@ export default function TimelineList() {
                   <span className="text-xs font-medium text-mission-control-accent">{evt.date}</span>
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => setEditingId(evt.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => handleDelete(evt.id, evt.date)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
               <p className="text-[10px] text-mission-control-text-dim mt-0.5 line-clamp-2">{evt.description}</p>
@@ -90,13 +95,15 @@ export default function TimelineList() {
 
       {editingId !== 'new-timeline' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
-          <button
+          <Button
+            size="1"
+            variant="ghost"
+            className="w-full justify-start"
             onClick={() => setEditingId('new-timeline')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Event
-          </button>
+          </Button>
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import FolderManager from './FolderManager';
 import ErrorDisplay from './ErrorDisplay';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
@@ -186,31 +187,27 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
       <div className="border-b border-mission-control-border bg-mission-control-surface">
         <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
           {/* All Sessions Tab */}
-          <button
+          <Button
+            variant={selectedFolder === null ? 'soft' : 'ghost'}
+            color={selectedFolder === null ? 'indigo' : 'gray'}
+            size="2"
             onClick={() => onSelectFolder(null)}
-            className={`
-              relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
-              border-b-2 whitespace-nowrap
-              ${selectedFolder === null 
-                ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
-              }
-            `}
+            className="px-4 min-w-[140px] whitespace-nowrap rounded-none"
           >
             <Inbox size={16} />
             <span className="font-medium text-sm">All Messages</span>
             {allSessionsCount > 0 && (
               <span className={`
                 text-xs px-2 py-0.5 rounded-full
-                ${selectedFolder === null 
-                  ? 'bg-mission-control-accent text-white' 
+                ${selectedFolder === null
+                  ? 'bg-mission-control-accent text-white'
                   : 'bg-mission-control-border text-mission-control-text-dim'
                 }
               `}>
                 {allSessionsCount}
               </span>
             )}
-          </button>
+          </Button>
 
           {/* Folder load error */}
           {folderLoadError && (
@@ -251,20 +248,24 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1 px-2 ml-auto border-l border-mission-control-border">
-            <button
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={handleCreateFolder}
-              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Create new folder"
             >
               <Plus size={16} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               onClick={() => setShowManager(true)}
-              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Manage folders"
             >
               <Settings size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

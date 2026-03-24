@@ -4,6 +4,7 @@ import {
   Search, CheckSquare, Bot, BookOpen, Library, Megaphone, Zap,
   Download, X, ArrowUpDown, Calendar,
 } from 'lucide-react';
+import { Button, IconButton, TextField, Checkbox } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SortMode = 'relevance' | 'date' | 'name';
@@ -182,20 +183,21 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
       <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
         <form onSubmit={handleSubmit} className="flex items-center gap-3 flex-1">
           <Search size={20} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
-          <input
-            type="text"
+          <TextField.Root
             value={draftQuery}
             onChange={e => setDraftQuery(e.target.value)}
             placeholder="Search everything..."
-            className="flex-1 bg-transparent outline-none text-lg"
             aria-label="Search query"
+            size="3"
+            className="flex-1"
           />
-          <button
+          <Button
             type="submit"
-            className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:opacity-90 transition-opacity"
+            variant="solid"
+            size="2"
           >
             Search
-          </button>
+          </Button>
         </form>
         {query && (
           <span className="text-sm text-mission-control-text-dim flex-shrink-0">
@@ -203,23 +205,30 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
           </span>
         )}
         {data && (
-          <button
+          <Button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-surface rounded-lg transition-colors flex-shrink-0"
+            variant="outline"
+            color="gray"
+            size="2"
+            className="flex-shrink-0"
             title="Export as CSV"
           >
             <Download size={14} aria-hidden="true" />
             Export
-          </button>
+          </Button>
         )}
         {onClose && (
-          <button
+          <IconButton
             onClick={onClose}
-            className="text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
             aria-label="Close search"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
+            className="flex-shrink-0"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -238,11 +247,10 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
                   key={cfg.key}
                   className="flex items-center gap-2 cursor-pointer group"
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={enabledTypes.has(cfg.key)}
-                    onChange={() => toggleType(cfg.key)}
-                    className="rounded"
+                    onCheckedChange={() => toggleType(cfg.key)}
+                    size="2"
                   />
                   <span className="text-mission-control-text-dim group-hover:text-mission-control-text transition-colors" aria-hidden="true">
                     {cfg.icon}
@@ -262,29 +270,33 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
             <div className="space-y-2">
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-0.5 block">From</label>
-                <input
+                <TextField.Root
                   type="date"
                   value={dateFrom}
                   onChange={e => setDateFrom(e.target.value)}
-                  className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 outline-none focus:border-mission-control-accent"
+                  size="1"
+                  className="w-full"
                 />
               </div>
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-0.5 block">To</label>
-                <input
+                <TextField.Root
                   type="date"
                   value={dateTo}
                   onChange={e => setDateTo(e.target.value)}
-                  className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 outline-none focus:border-mission-control-accent"
+                  size="1"
+                  className="w-full"
                 />
               </div>
               {(dateFrom || dateTo) && (
-                <button
+                <Button
                   onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                  variant="ghost"
+                  color="gray"
+                  size="1"
                 >
                   Clear dates
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -297,18 +309,17 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
             </div>
             <div className="space-y-1">
               {(['relevance', 'date', 'name'] as SortMode[]).map(mode => (
-                <button
+                <Button
                   key={mode}
                   onClick={() => setSortMode(mode)}
-                  className={`w-full text-left px-2 py-1 text-sm rounded transition-colors capitalize ${
-                    sortMode === mode
-                      ? 'bg-mission-control-accent text-white'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-border'
-                  }`}
+                  variant={sortMode === mode ? 'solid' : 'ghost'}
+                  color={sortMode === mode ? 'blue' : 'gray'}
+                  size="1"
+                  className="w-full capitalize"
                   aria-pressed={sortMode === mode}
                 >
                   {mode}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

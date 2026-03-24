@@ -6,6 +6,7 @@ import {
   Image as ImageIcon, FileText, Video, File as FileIcon,
   Upload, X, Eye, Loader2, Trash2, StickyNote, CheckCircle2, Circle,
 } from 'lucide-react';
+import { IconButton, TextArea } from '@radix-ui/themes';
 
 interface ContextFile {
   id: string;
@@ -169,12 +170,13 @@ export default function ContextPanel({ entityType, entityId }: Props) {
             <span className="text-xs text-mission-control-text-dim ml-auto">Saving...</span>
           )}
         </div>
-        <textarea
+        <TextArea
           value={contextNotes}
           onChange={e => handleNotesChange(e.target.value)}
           placeholder="Add notes for AI agents working on this — goals, constraints, brand voice, key facts..."
           rows={4}
-          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2.5 text-sm text-mission-control-text placeholder:text-mission-control-text-dim resize-none focus:outline-none focus:ring-1 focus:ring-mission-control-accent"
+          size="2"
+          className="w-full"
         />
       </section>
 
@@ -270,21 +272,28 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {file.processedContent && (
-                    <button
+                    <IconButton
                       onClick={() => setViewingFile(file)}
-                      className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg rounded-lg transition-colors"
+                      size="1"
+                      variant="ghost"
+                      radius="medium"
                       title="View processed content"
+                      aria-label="View processed content"
                     >
                       <Eye size={13} />
-                    </button>
+                    </IconButton>
                   )}
-                  <button
+                  <IconButton
                     onClick={() => handleDelete(file.id)}
-                    className="p-1.5 text-mission-control-text-dim hover:text-error hover:bg-mission-control-bg rounded-lg transition-colors"
+                    size="1"
+                    variant="ghost"
+                    color="red"
+                    radius="medium"
                     title="Delete file"
+                    aria-label="Delete file"
                   >
                     <Trash2 size={13} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             ))}
@@ -307,12 +316,15 @@ export default function ContextPanel({ entityType, entityId }: Props) {
                 <FileTypeIcon fileType={viewingFile.fileType} />
                 <span className="text-sm font-semibold text-mission-control-text truncate">{viewingFile.originalName}</span>
               </div>
-              <button
+              <IconButton
                 onClick={() => setViewingFile(null)}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
+                size="1"
+                variant="ghost"
+                radius="medium"
+                aria-label="Close"
               >
                 <X size={15} />
-              </button>
+              </IconButton>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <pre className="text-xs text-mission-control-text whitespace-pre-wrap font-mono leading-relaxed">

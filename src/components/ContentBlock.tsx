@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Zap, Code, AlertTriangle, Check } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import MarkdownMessage from './MarkdownMessage';
 
 interface ContentBlockProps {
@@ -27,9 +28,12 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
     if (!block.text?.trim()) return null;
     return (
       <div className="my-3 border border-mission-control-border/50 rounded-lg bg-mission-control-bg/30 overflow-hidden">
-        <button
+        <Button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-mission-control-border/30 transition-colors text-left"
+          variant="ghost"
+          size="1"
+          radius="none"
+          className="w-full px-3 py-2 justify-start"
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <Zap size={14} className="text-violet-500" />
@@ -39,7 +43,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
           <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
             {block.text?.length || 0} chars
           </span>
-        </button>
+        </Button>
         {isExpanded && (
           <div className="px-4 py-3 border-t border-mission-control-border/50 text-xs text-mission-control-text-dim leading-relaxed whitespace-pre-wrap font-mono">
             {block.text}
@@ -53,9 +57,12 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
   if (block.type === 'tool_use') {
     return (
       <div className="my-3 border border-info/30 rounded-lg bg-info/5 overflow-hidden">
-        <button
+        <Button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-3 py-2 flex items-center gap-2 hover:bg-info transition-colors text-left"
+          variant="ghost"
+          size="1"
+          radius="none"
+          className="w-full px-3 py-2 justify-start"
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <Code size={14} className="text-info" />
@@ -67,7 +74,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
               {block.id.slice(0, 8)}
             </span>
           )}
-        </button>
+        </Button>
         {isExpanded && (
           <div className="px-4 py-3 border-t border-info/30">
             <div className="text-[10px] text-mission-control-text-dim/60 uppercase tracking-wide mb-1">
@@ -91,11 +98,12 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
           ? 'border-error/30 bg-error'
           : 'border-success/30 bg-success'
       }`}>
-        <button
+        <Button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`w-full px-3 py-2 flex items-center gap-2 transition-colors text-left ${
-            isError ? 'hover:bg-error' : 'hover:bg-success'
-          }`}
+          variant="ghost"
+          size="1"
+          radius="none"
+          className="w-full px-3 py-2 justify-start"
         >
           {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           <span className={`text-xs font-medium ${
@@ -106,7 +114,7 @@ export default function ContentBlock({ block, index: _index, onArtifactOpen }: C
           <span className="ml-auto text-[10px] text-mission-control-text-dim/60">
             {block.text?.length || 0} chars
           </span>
-        </button>
+        </Button>
         {isExpanded && (
           <div className={`px-4 py-3 border-t ${
             isError ? 'border-error/30' : 'border-success/30'

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { useResearchStore } from '../../store/researchStore';
 import { useWritingStore } from '../../store/writingStore';
 import SourceForm from './SourceForm';
@@ -98,20 +99,24 @@ export default function SourceList() {
                   )}
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <button
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => setEditingId(source.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    radius="medium"
                     onClick={() => handleDelete(source.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
               {source.notes && (
@@ -131,13 +136,15 @@ export default function SourceList() {
 
       {editingId !== 'new-source' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
-          <button
+          <Button
+            size="1"
+            variant="ghost"
+            className="w-full justify-start"
             onClick={() => setEditingId('new-source')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Source
-          </button>
+          </Button>
         </div>
       )}
 

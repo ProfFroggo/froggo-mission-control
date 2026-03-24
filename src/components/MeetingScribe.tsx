@@ -650,14 +650,16 @@ ${transcriptText}`;
         {/* Action Items */}
         {actionItems.length > 0 && (
           <div className="border-t border-mission-control-border p-4">
-            <button
+            <Button
               onClick={() => setShowActionItems(!showActionItems)}
-              className="flex items-center gap-2 mb-2 text-sm font-medium text-warning w-full"
+              variant="ghost"
+              size="2"
+              className="mb-2 w-full justify-start"
             >
               <ListTodo size={16} />
               Action Items ({actionItems.length})
               {showActionItems ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
+            </Button>
             {showActionItems && (
               <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
@@ -702,17 +704,20 @@ ${transcriptText}`;
                 <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={generateAiSummary}
                 disabled={isSummarizing || !hasTranscript}
-                className="w-full mb-4 py-3 bg-review-subtle hover:bg-review-subtle border border-review-border rounded-lg text-sm text-review flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                variant="soft"
+                color="violet"
+                size="2"
+                className="w-full mb-4"
               >
                 {isSummarizing ? (
                   <><Spinner /> Generating summary...</>
                 ) : (
                   <><Sparkles size={16} /> Generate AI Summary</>
                 )}
-              </button>
+              </Button>
             )}
             
             {/* Action buttons */}
@@ -755,12 +760,15 @@ ${transcriptText}`;
             </div>
             
             {/* Clear */}
-            <button
+            <Button
               onClick={clearAll}
-              className="mt-6 text-sm text-mission-control-text-dim hover:text-error flex items-center gap-1"
+              variant="ghost"
+              color="red"
+              size="2"
+              className="mt-6"
             >
               <Trash2 size={14} /> Clear
-            </button>
+            </Button>
           </div>
         ) : !isRecording && !hasTranscript ? (
           /* Empty state */

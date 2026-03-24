@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Play } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import type { ConversationMessage, SectionProgress, SectionId } from './types';
 import { SECTION_ORDER, SECTION_LABELS } from './types';
 
@@ -68,19 +69,15 @@ export default function ConversationPanel({
         {/* Section pills */}
         <div className="flex gap-1.5 mt-2 flex-wrap">
           {sectionProgress.map(s => (
-            <button
+            <Button
               key={s.id}
+              size="1"
+              variant={s.complete ? 'soft' : s.id === currentSection ? 'soft' : 'ghost'}
+              color={s.complete ? 'green' : s.id === currentSection ? 'indigo' : 'gray'}
               onClick={() => onJumpToSection(s.id)}
-              className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
-                s.complete
-                  ? 'bg-success-subtle text-success'
-                  : s.id === currentSection
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               {s.complete ? '✓ ' : ''}{s.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -94,12 +91,9 @@ export default function ConversationPanel({
             <p className="text-sm text-mission-control-text-dim mb-6 max-w-xs">
               I'll walk you through a series of questions to design your module spec. Ready?
             </p>
-            <button
-              onClick={onStart}
-              className="flex items-center gap-2 px-5 py-2.5 bg-mission-control-accent hover:opacity-90 text-white text-sm font-medium rounded-lg transition-opacity"
-            >
+            <Button size="3" variant="solid" onClick={onStart}>
               <Play size={16} /> Start Interview
-            </button>
+            </Button>
           </div>
         )}
 
@@ -147,20 +141,23 @@ export default function ConversationPanel({
       {isStarted && (
         <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-mission-control-border">
           <div className="flex gap-2">
-            <input
+            <TextField.Root
+              size="2"
+              className="flex-1"
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={isFinished ? 'Interview complete! Review your spec →' : isStreaming ? 'Thinking...' : 'Type your answer...'}
               disabled={isFinished || isStreaming}
-              className="flex-1 px-4 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent disabled:opacity-50"
             />
-            <button
+            <IconButton
               type="submit"
+              size="2"
+              variant="solid"
+              radius="medium"
               disabled={!input.trim() || isFinished || isStreaming}
-              className="px-3 py-2 bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-opacity"
             >
               <Send size={16} />
-            </button>
+            </IconButton>
           </div>
         </form>
       )}

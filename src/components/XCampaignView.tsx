@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
-import { Button, Badge, Spinner } from '@radix-ui/themes';
+import { Button, IconButton, Badge, Spinner, TextField, TextArea, Select } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface CampaignStage {
@@ -314,24 +314,23 @@ export default function XCampaignView() {
           <div className="space-y-4">
             <div>
               <label htmlFor="campaign-title" className="block text-sm font-medium text-mission-control-text mb-2">Campaign Title</label>
-              <input
+              <TextField.Root
                 id="campaign-title"
-                type="text"
                 value={editingCampaign.title}
                 onChange={e => setEditingCampaign({ ...editingCampaign, title: e.target.value })}
                 placeholder="e.g., AI Agents Launch Week"
-                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
             <div>
               <label htmlFor="campaign-subject" className="block text-sm font-medium text-mission-control-text mb-2">Subject / Theme</label>
-              <textarea
+              <TextArea
                 id="campaign-subject"
                 value={editingCampaign.subject}
                 onChange={e => setEditingCampaign({ ...editingCampaign, subject: e.target.value })}
                 placeholder="What is this campaign about? Describe the narrative arc, key messages, and goals..."
                 rows={3}
-                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+                size="2"
               />
             </div>
             <div className="flex gap-4">
@@ -340,12 +339,12 @@ export default function XCampaignView() {
                   <Calendar className="w-4 h-4 inline mr-1" />
                   Start Date
                 </label>
-                <input
+                <TextField.Root
                   id="campaign-start-date"
                   type="date"
                   value={editingCampaign.start_date || ''}
                   onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
-                  className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
               <div className="flex-1">
@@ -360,13 +359,14 @@ export default function XCampaignView() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-mission-control-text">Campaign Timeline</h4>
-              <button
+              <Button
                 onClick={addStage}
-                className="flex items-center gap-1 text-sm text-info hover:text-info/80 transition-colors"
+                variant="ghost"
+                size="2"
               >
                 <Plus className="w-4 h-4" />
                 Add Stage
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-3">
@@ -377,6 +377,7 @@ export default function XCampaignView() {
                     <button
                       onClick={() => toggleStage(stage.id)}
                       className="w-full flex items-center gap-3 p-3 hover:bg-mission-control-surface transition-colors text-left"
+                      type="button"
                     >
                       <GripVertical className="w-4 h-4 text-mission-control-text-dim flex-shrink-0" />
                       <span className="w-8 h-8 flex items-center justify-center bg-info/20 text-info text-sm font-bold rounded-full flex-shrink-0">
@@ -402,49 +403,51 @@ export default function XCampaignView() {
                         <div className="flex gap-3 pt-3">
                           <div className="w-24">
                             <label htmlFor={`stage-day-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Day</label>
-                            <input
+                            <TextField.Root
                               id={`stage-day-${stage.id}`}
                               type="number"
                               min={0}
                               value={stage.dayOffset}
                               onChange={e => updateStage(stage.id, { dayOffset: Math.max(0, parseInt(e.target.value) || 0) })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              size="2"
                             />
                           </div>
                           <div className="w-28">
                             <label htmlFor={`stage-time-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Time</label>
-                            <input
+                            <TextField.Root
                               id={`stage-time-${stage.id}`}
                               type="time"
                               value={stage.time}
                               onChange={e => updateStage(stage.id, { time: e.target.value })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              size="2"
                             />
                           </div>
                           <div className="flex-1">
                             <label htmlFor={`stage-type-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Type</label>
-                            <select
-                              id={`stage-type-${stage.id}`}
+                            <Select.Root
                               value={stage.type}
-                              onChange={e => updateStage(stage.id, { type: e.target.value as CampaignStage['type'] })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              onValueChange={val => updateStage(stage.id, { type: val as CampaignStage['type'] })}
+                              size="2"
                             >
-                              {STAGE_TYPES.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
-                              ))}
-                            </select>
+                              <Select.Trigger className="w-full" />
+                              <Select.Content>
+                                {STAGE_TYPES.map(t => (
+                                  <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>
+                                ))}
+                              </Select.Content>
+                            </Select.Root>
                           </div>
                         </div>
 
                         <div>
                           <label htmlFor={`stage-content-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Tweet Content</label>
-                          <textarea
+                          <TextArea
                             id={`stage-content-${stage.id}`}
                             value={stage.content}
                             onChange={e => updateStage(stage.id, { content: e.target.value })}
                             placeholder="Write the tweet content for this stage..."
                             rows={3}
-                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
+                            size="2"
                           />
                           <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             <span className="tabular-nums">{countChars(stage.content)}/280</span>
@@ -453,24 +456,25 @@ export default function XCampaignView() {
 
                         <div>
                           <label htmlFor={`stage-notes-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Notes (internal)</label>
-                          <input
+                          <TextField.Root
                             id={`stage-notes-${stage.id}`}
-                            type="text"
                             value={stage.notes}
                             onChange={e => updateStage(stage.id, { notes: e.target.value })}
                             placeholder="e.g., Hook tweet, builds curiosity..."
-                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-1.5 text-sm"
+                            size="2"
                           />
                         </div>
 
                         {editingCampaign.stages.length > 1 && (
-                          <button
+                          <Button
                             onClick={() => removeStage(stage.id)}
-                            className="flex items-center gap-1 text-xs text-error hover:text-error/80 transition-colors"
+                            variant="ghost"
+                            color="red"
+                            size="1"
                           >
                             <Trash2 className="w-3 h-3" />
                             Remove stage
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -547,16 +551,18 @@ export default function XCampaignView() {
             <p className="font-medium text-mission-control-text">No campaigns yet</p>
             <p className="text-sm mt-2">Build campaigns two ways:</p>
             <div className="mt-4 space-y-3">
-              <button
+              <Button
                 onClick={createNewCampaign}
-                className="w-full px-4 py-3 text-sm bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text rounded-lg border border-mission-control-border transition-colors flex items-center gap-3"
+                variant="ghost"
+                size="3"
+                className="w-full flex items-center gap-3 justify-start"
               >
-                <Plus className="w-5 h-5 text-info" />
+                <Plus className="w-5 h-5" />
                 <div className="text-left">
                   <span className="font-medium block">Manual</span>
-                  <span className="text-xs text-mission-control-text-dim">Build stages yourself</span>
+                  <span className="text-xs opacity-70">Build stages yourself</span>
                 </div>
-              </button>
+              </Button>
               <div className="w-full px-4 py-3 text-sm bg-mission-control-accent/10 text-mission-control-text rounded-lg border border-mission-control-accent/30 flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-mission-control-accent" />
                 <div className="text-left">
@@ -601,12 +607,16 @@ export default function XCampaignView() {
                   <span>{stageCount} stage{stageCount !== 1 ? 's' : ''}</span>
                   <span>{daySpan} day{daySpan !== 1 ? 's' : ''}</span>
                   <span>{new Date(campaign.created_at).toLocaleDateString()}</span>
-                  <button
+                  <IconButton
                     onClick={e => { e.stopPropagation(); deleteCampaign(campaign.id); }}
-                    className="ml-auto text-error hover:text-error/80 transition-colors"
+                    aria-label="Delete campaign"
+                    variant="ghost"
+                    color="red"
+                    size="1"
+                    className="ml-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             );

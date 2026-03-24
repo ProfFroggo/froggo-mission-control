@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import ModuleBuildProgress from './ModuleBuildProgress';
@@ -170,8 +171,8 @@ export default function ModuleBuilderPage() {
       {resumeDraft && (
         <div className="flex items-center gap-3 px-5 py-2.5 bg-mission-control-surface border-b border-mission-control-accent/40 text-sm">
           <span className="text-mission-control-text-dim">Unfinished module: <strong className="text-mission-control-text">{resumeDraft.name}</strong></span>
-          <button onClick={handleResumeDraft} className="px-2.5 py-1 rounded bg-mission-control-accent text-white text-xs font-medium">Resume</button>
-          <button onClick={handleDismissResume} className="px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim text-xs">Start New</button>
+          <Button size="1" variant="solid" onClick={handleResumeDraft}>Resume</Button>
+          <Button size="1" variant="surface" color="gray" onClick={handleDismissResume}>Start New</Button>
         </div>
       )}
 
@@ -179,12 +180,9 @@ export default function ModuleBuilderPage() {
       <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <h1 className="text-lg font-semibold text-mission-control-text">Module Builder</h1>
         <div className="flex gap-2">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-mission-control-border hover:bg-mission-control-bg text-mission-control-text rounded-lg transition-colors"
-          >
+          <Button size="2" variant="surface" color="gray" onClick={handleReset}>
             <Plus size={14} /> New Module
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import { useWizardStore } from '../../store/wizardStore';
 import { AlertCircle, RotateCcw, Trash2 } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import ProjectSelector from './ProjectSelector';
 import ProjectEditor from './ProjectEditor';
 import SetupWizard from './SetupWizard';
@@ -81,20 +82,24 @@ export default function WritingWorkspace() {
                   : 'In progress'}
               </p>
             </div>
-            <button
+            <Button
+              size="1"
+              variant="solid"
               onClick={handleResume}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-accent text-white text-xs font-medium hover:bg-mission-control-accent-dim transition-colors flex-shrink-0"
+              className="flex-shrink-0"
             >
               <RotateCcw size={12} />
               Resume
-            </button>
-            <button
+            </Button>
+            <Button
+              size="1"
+              variant="ghost"
               onClick={handleDiscard}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-mission-control-border text-xs text-mission-control-text-dim hover:text-error hover:border-error-border transition-colors flex-shrink-0"
+              className="flex-shrink-0"
             >
               <Trash2 size={12} />
               Discard
-            </button>
+            </Button>
           </div>
         )}
         <div className="flex-1 min-h-0">

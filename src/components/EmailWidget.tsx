@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag, Briefcase, Diamond } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useUserSettings } from '../store/userSettings';
 import WidgetLoading from './WidgetLoading';
@@ -84,14 +85,16 @@ export default function EmailWidget() {
             </span>
           )}
         </div>
-        <button
+        <IconButton
+          size="2"
+          variant="ghost"
+          radius="medium"
           onClick={fetchEmail}
           disabled={loading}
-          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
           title="Refresh"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       <div className="divide-y divide-mission-control-border">
@@ -106,28 +109,30 @@ export default function EmailWidget() {
           <div className="p-6 text-center text-mission-control-text-dim">
             <AlertCircle size={24} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
-            <button onClick={fetchEmail} className="mt-2 text-xs text-mission-control-accent hover:underline">
+            <Button size="1" variant="ghost" onClick={fetchEmail} className="mt-2">
               Try again
-            </button>
+            </Button>
           </div>
         ) : accounts.length === 0 ? (
           <div className="p-6 text-center text-mission-control-text-dim">
             <Inbox size={24} className="mx-auto mb-2 opacity-50" />
             <p className="text-sm">Click refresh to check email</p>
-            <button onClick={fetchEmail} className="mt-2 text-xs text-mission-control-accent hover:underline">
+            <Button size="1" variant="ghost" onClick={fetchEmail} className="mt-2">
               Fetch now
-            </button>
+            </Button>
           </div>
         ) : (
           accounts.map((account) => (
-            <button
+            <Button
               key={account.email}
+              variant="ghost"
+              color="gray"
+              size="2"
+              className="w-full text-left"
               onClick={() => quickCheck(account.label)}
-              onKeyDown={(e) => { if (e.key === 'Enter') quickCheck(account.label); }}
-              className="w-full p-3 hover:bg-mission-control-bg/50 transition-colors cursor-pointer group text-left"
               aria-label={`Quick check ${account.label} account`}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
                   <span className={`text-lg ${ACCOUNTS.find(a => a.email === account.email)?.color}`}>
                     {account.label === 'Bitso' ? <Briefcase size={18} /> : account.label === 'Carbium' ? <Diamond size={18} /> : <Mail size={18} />}
@@ -157,7 +162,7 @@ export default function EmailWidget() {
                   )}
                 </div>
               </div>
-            </button>
+            </Button>
           ))
         )}
       </div>

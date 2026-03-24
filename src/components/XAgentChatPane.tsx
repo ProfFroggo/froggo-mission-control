@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Loader2, Users, AlertCircle, Zap, RotateCcw, Brain, BookOpen, MessageSquare, Archive } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import type { XTab } from './XTwitterPage';
 import MarkdownMessage from './MarkdownMessage';
 import { chatApi } from '../lib/api';
@@ -406,14 +407,16 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             <h3 className="text-sm font-semibold text-mission-control-text">Agent Chat</h3>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               onClick={handleNewSession}
               title="New session"
-              className="flex items-center gap-1 px-2 py-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border rounded-full transition-colors"
+              variant="outline"
+              size="1"
+              radius="full"
             >
               <RotateCcw className="w-3 h-3" />
               New session
-            </button>
+            </Button>
             <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
               isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
             }`}>
@@ -559,15 +562,18 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {(QUICK_PROMPTS[validTab] || []).slice(0, 4).map((prompt) => (
-            <button
+            <Button
               key={prompt}
               onClick={() => handleQuickPrompt(prompt)}
               disabled={loading}
               title={prompt}
-              className="px-3 py-1.5 text-xs rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info transition-colors disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap max-w-[180px] overflow-hidden text-ellipsis"
+              variant="outline"
+              size="1"
+              radius="full"
+              className="whitespace-nowrap max-w-[180px] overflow-hidden text-ellipsis"
             >
               {prompt}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -575,22 +581,25 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       {/* Input */}
       <div className="px-4 pb-4 pt-2 bg-mission-control-surface">
         <div className="flex gap-2">
-          <input
-            type="text"
+          <TextField.Root
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Ask ${safeDisplayName} about ${tab}...`}
-            className="flex-1 bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-info"
             disabled={loading}
+            size="3"
+            className="flex-1"
           />
-          <button
+          <IconButton
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="bg-mission-control-accent hover:bg-mission-control-accent-dim text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="solid"
+            size="3"
+            radius="medium"
+            aria-label="Send"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </button>
+          </IconButton>
         </div>
         <p className="text-xs text-mission-control-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line

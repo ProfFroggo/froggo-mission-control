@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, BookOpen, RefreshCw } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -91,12 +92,16 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
           <BookOpen size={20} className="text-mission-control-accent" />
           <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
-          <button
+          <IconButton
             onClick={handleClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface"
+            aria-label="Close"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
           >
             <X size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -111,18 +116,17 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               files.map((file) => (
-                <button
+                <Button
                   key={file.name}
                   onClick={() => loadFileContent(file)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    selectedFile?.name === file.name
-                      ? 'bg-mission-control-accent/15 text-mission-control-accent border border-mission-control-accent/30'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-surface hover:text-mission-control-text border border-transparent'
-                  }`}
+                  variant={selectedFile?.name === file.name ? 'soft' : 'ghost'}
+                  color={selectedFile?.name === file.name ? 'blue' : 'gray'}
+                  size="2"
+                  className="w-full text-left px-3 py-2 rounded-lg flex-col items-start h-auto"
                 >
                   <div className="font-medium text-xs line-clamp-2 mb-0.5">{file.name}</div>
                   <div className="text-[10px] opacity-70">{formatDate(file.modifiedAt)}</div>
-                </button>
+                </Button>
               ))
             )}
           </div>

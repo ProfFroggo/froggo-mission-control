@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { Users, Loader2, Download, Copy, Check } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 
 interface DailyPoint {
   date: string;
@@ -178,22 +179,26 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
           <span className="text-xs text-mission-control-text-dim">last {days} days</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            size="1"
+            variant="surface"
+            color="gray"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Export agent trends as CSV"
           >
             <Download size={12} />
             CSV
-          </button>
-          <button
+          </Button>
+          <Button
+            size="1"
+            variant="surface"
+            color={copied ? 'green' : 'gray'}
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Copy to clipboard"
           >
-            {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
+            {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -203,19 +208,19 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
           const color = AGENT_COLORS[idx % AGENT_COLORS.length];
           const isHidden = hidden.has(agent.id);
           return (
-            <button
+            <Button
               key={agent.id}
+              size="1"
+              variant={isHidden ? 'surface' : 'solid'}
+              color="gray"
+              radius="full"
               onClick={() => toggleAgent(agent.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                isHidden
-                  ? 'border-mission-control-border text-mission-control-text-dim bg-transparent opacity-50'
-                  : 'border-transparent text-white'
-              }`}
-              style={isHidden ? {} : { background: color }}
+              style={isHidden ? {} : { background: color, borderColor: color }}
               title={isHidden ? `Show ${agent.name}` : `Hide ${agent.name}`}
+              className={isHidden ? 'opacity-50' : ''}
             >
               {agent.name}
-            </button>
+            </Button>
           );
         })}
       </div>

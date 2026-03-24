@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, GripVertical } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -48,14 +49,18 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
         isDragging ? 'shadow-xl scale-[1.02]' : ''
       }`}
     >
-      <button
+      <IconButton
         {...attributes}
         {...listeners}
-        className="text-mission-control-text-dim hover:text-mission-control-text cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
         aria-label={`Drag to reorder ${panel.label}`}
+        variant="ghost"
+        color="gray"
+        size="2"
+        radius="medium"
+        className="cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
       >
         <GripVertical size={20} />
-      </button>
+      </IconButton>
       <span className="flex-1 text-mission-control-text text-sm font-medium">{panel.label}</span>
       <Toggle
         checked={panel.visible}
@@ -139,13 +144,16 @@ export default function EditPanelsModal() {
             <h2 className="text-xl font-bold text-mission-control-text">Edit Panels</h2>
             <p className="text-sm text-mission-control-text-dim mt-1">Showing {visibleCount} of {draft.length} Panels</p>
           </div>
-          <button
+          <IconButton
             onClick={closeEditModal}
-            className="text-mission-control-text-dim hover:text-mission-control-text transition-colors p-1"
             aria-label="Close"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
           >
             <X size={22} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Panel list */}
@@ -170,18 +178,23 @@ export default function EditPanelsModal() {
 
         {/* Footer buttons */}
         <div className="flex gap-3 p-6 pt-4 border-t border-mission-control-border">
-          <button
+          <Button
             onClick={handleReset}
-            className="flex-1 py-3 rounded-lg border border-mission-control-border text-mission-control-text font-semibold text-sm hover:bg-mission-control-surface transition-colors"
+            variant="outline"
+            color="gray"
+            size="3"
+            className="flex-1"
           >
             Reset
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-lg bg-mission-control-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+            variant="solid"
+            size="3"
+            className="flex-1"
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>

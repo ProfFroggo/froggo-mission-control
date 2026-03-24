@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { Button, IconButton } from '@radix-ui/themes';
 
 export interface TourStep {
   target: string; // CSS selector for element to highlight
@@ -215,12 +216,15 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
               Step {currentStep + 1} of {tour.steps.length}
             </p>
           </div>
-          <button
+          <IconButton
+            size="2"
+            variant="ghost"
+            radius="medium"
             onClick={onSkip}
-            className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
+            aria-label="Skip tour"
           >
             <X size={16} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -240,36 +244,42 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
         {/* Footer */}
         <div className="p-4 border-t border-mission-control-border flex items-center justify-between">
-          <button
+          <Button
+            variant="ghost"
+            color="gray"
+            size="2"
             onClick={onSkip}
-            className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Skip Tour
-          </button>
+          </Button>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrevious}
+            <IconButton
+              size="2"
+              variant="ghost"
+              radius="medium"
               disabled={currentStep === 0}
-              className="p-2 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              onClick={handlePrevious}
+              aria-label="Previous step"
             >
               <ChevronLeft size={16} />
-            </button>
-            <button
+            </IconButton>
+            <Button
+              size="2"
+              variant="solid"
               onClick={handleNext}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
             >
               {currentStep === tour.steps.length - 1 ? (
                 <>
                   <Check size={16} />
-                  <span className="text-sm font-medium">Complete</span>
+                  Complete
                 </>
               ) : (
                 <>
-                  <span className="text-sm font-medium">Next</span>
+                  Next
                   <ChevronRight size={16} />
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { IconButton, Button } from '@radix-ui/themes';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
 
 export interface BaseModalProps {
@@ -257,14 +258,16 @@ export default function BaseModal({
         >
           {/* Floating Close Button - Enhanced visibility and responsive positioning */}
           {showCloseButton && closeButtonPosition === 'floating' && (
-            <button
+            <IconButton
               onClick={handleClose}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-mission-control-surface/90 hover:bg-mission-control-border rounded-lg transition-all duration-200 shadow-lg backdrop-blur-sm hover:scale-105"
+              size="2"
+              variant="soft"
+              radius="medium"
               aria-label={closeButtonLabel}
-              type="button"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 shadow-lg"
             >
-              <X size={16} className="text-mission-control-text hover:text-mission-control-accent" />
-            </button>
+              <X size={16} />
+            </IconButton>
           )}
 
           {children}
@@ -319,14 +322,16 @@ export function BaseModalHeader({
         </div>
       </div>
       {showCloseButton && onClose && (
-        <button
+        <IconButton
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
+          size="2"
+          variant="ghost"
+          radius="medium"
           aria-label={closeButtonLabel}
-          type="button"
+          className="flex-shrink-0"
         >
           <X size={16} />
-        </button>
+        </IconButton>
       )}
     </div>
   );
@@ -408,32 +413,32 @@ export function BaseModalButton({
   className = '',
   size = 'md',
 }: BaseModalButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-  
-  const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-2.5 text-base',
-  }[size];
-  
-  const variantStyles = {
-    primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim',
-    secondary: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
-    danger: 'bg-error text-white hover:bg-error-hover',
-    ghost: 'hover:bg-mission-control-border',
-  }[variant];
+  const radixVariant: 'solid' | 'soft' | 'ghost' =
+    variant === 'primary' ? 'solid' :
+    variant === 'ghost' ? 'ghost' :
+    'soft';
+
+  const radixColor: 'red' | undefined =
+    variant === 'danger' ? 'red' : undefined;
+
+  const radixSize: '1' | '2' | '3' =
+    size === 'sm' ? '1' : size === 'lg' ? '3' : '2';
 
   return (
-    <button
+    <Button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${className}`}
+      variant={radixVariant}
+      color={radixColor}
+      size={radixSize}
+      radius="medium"
+      className={className}
     >
       {loading ? (
         <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : icon}
       {children}
-    </button>
+    </Button>
   );
 }

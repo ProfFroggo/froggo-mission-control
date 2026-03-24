@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Calendar, X } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 
 export interface DateRange {
   start: Date;
@@ -71,18 +72,19 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
 
   return (
     <div className="relative">
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setIsOpen(!isOpen); } }}
-        tabIndex={0}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         aria-label={`Date range picker, currently ${formatDateRange(value)}`}
-        className="flex items-center gap-2 px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+        variant="outline"
+        color="gray"
+        size="2"
       >
         <Calendar size={16} />
         <span className="text-sm">{formatDateRange(value)}</span>
-      </button>
+      </Button>
 
       {isOpen && (
         <>
@@ -97,12 +99,16 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
           <div className="absolute right-0 top-full mt-2 w-96 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Select Date Range</h3>
-              <button
+              <IconButton
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-mission-control-border rounded transition-colors"
+                aria-label="Close date range picker"
+                variant="ghost"
+                color="gray"
+                size="2"
+                radius="medium"
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             </div>
 
             {presets && (
@@ -110,13 +116,16 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                 <div className="text-sm text-mission-control-text-dim mb-2">Quick Presets</div>
                 <div className="grid grid-cols-2 gap-2">
                   {PRESETS.map((preset) => (
-                    <button
+                    <Button
                       key={preset.label}
                       onClick={() => applyPreset(preset)}
-                      className="px-3 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left"
+                      variant="ghost"
+                      color="gray"
+                      size="2"
+                      className="justify-start"
                     >
                       {preset.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -129,36 +138,40 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                   <label htmlFor="date-range-start" className="block text-xs text-mission-control-text-dim mb-1">
                     Start Date
                   </label>
-                  <input
+                  <TextField.Root
                     id="date-range-start"
                     type="date"
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
                     max={customEnd}
-                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="w-full"
                   />
                 </div>
                 <div>
                   <label htmlFor="date-range-end" className="block text-xs text-mission-control-text-dim mb-1">
                     End Date
                   </label>
-                  <input
+                  <TextField.Root
                     id="date-range-end"
                     type="date"
                     value={customEnd}
                     onChange={(e) => setCustomEnd(e.target.value)}
                     min={customStart}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="w-full"
                   />
                 </div>
-                <button
+                <Button
                   onClick={applyCustomRange}
                   disabled={!customStart || !customEnd || customStart > customEnd}
-                  className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="solid"
+                  size="2"
+                  className="w-full"
                 >
                   Apply Custom Range
-                </button>
+                </Button>
               </div>
             </div>
           </div>

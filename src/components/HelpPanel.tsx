@@ -6,6 +6,7 @@ import {
   MessageCircle, Lightbulb, ChevronRight,
   Keyboard, Star, Zap
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { 
   helpArticles, 
   faqs, 
@@ -131,20 +132,22 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
               </p>
             </div>
           </div>
-          <button
+          <IconButton
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            aria-label="Close help"
+            variant="ghost"
+            color="gray"
+            size="2"
+            radius="medium"
           >
             <X size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Search Bar */}
         <div className="p-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div>
+            <TextField.Root
               placeholder="Search help articles, FAQs, and guides..."
               value={searchQuery}
               onChange={(e) => {
@@ -155,8 +158,13 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
                   setViewMode('browse');
                 }
               }}
-              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
-            />
+              size="2"
+              className="w-full"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
         </div>
 
@@ -252,24 +260,22 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
 }
 
 // Nav Button Component
-function NavButton({ icon, label, active, onClick }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  active: boolean; 
-  onClick: () => void; 
+function NavButton({ icon, label, active, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-        active 
-          ? 'bg-mission-control-accent text-white' 
-          : 'bg-mission-control-bg hover:bg-mission-control-border text-mission-control-text-dim'
-      }`}
+      variant={active ? 'solid' : 'ghost'}
+      color={active ? 'blue' : 'gray'}
+      size="2"
     >
       {icon}
       <span className="text-sm font-medium">{label}</span>
-    </button>
+    </Button>
   );
 }
 
@@ -381,22 +387,25 @@ function BrowseView({
 // Article Card Component
 function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () => void }) {
   return (
-    <button
+    <Button
       onClick={onClick}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left group"
+      variant="ghost"
+      color="gray"
+      size="3"
+      className="w-full justify-start text-left group"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 w-full">
         <div className="flex-1">
-          <h4 className="font-medium mb-1 group-hover:text-mission-control-accent transition-colors">
+          <h4 className="font-medium mb-1">
             {article.title}
           </h4>
           <p className="text-sm text-mission-control-text-dim line-clamp-2">
             {article.content.split('\n')[0]}
           </p>
         </div>
-        <ChevronRight size={20} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors flex-shrink-0" />
+        <ChevronRight size={20} className="text-mission-control-text-dim flex-shrink-0" />
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -404,13 +413,16 @@ function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () =
 function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => void }) {
   return (
     <div>
-      <button
+      <Button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-accent mb-4 transition-colors"
+        variant="ghost"
+        color="gray"
+        size="2"
+        className="mb-4"
       >
         <ChevronRight size={16} className="rotate-180" />
         Back to browse
-      </button>
+      </Button>
 
       <div className="space-y-4">
         <div>
@@ -486,11 +498,14 @@ function FAQView({
 // FAQ Card Component
 function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean; onToggle: () => void }) {
   return (
-    <button
+    <Button
       onClick={onToggle}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left"
+      variant="ghost"
+      color="gray"
+      size="3"
+      className="w-full justify-start text-left"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 w-full">
         <div className="flex-1">
           <h4 className="font-medium mb-1">{faq.question}</h4>
           {expanded && (
@@ -499,14 +514,14 @@ function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean;
             </p>
           )}
         </div>
-        <ChevronRight 
-          size={20} 
+        <ChevronRight
+          size={20}
           className={`text-mission-control-text-dim transition-transform flex-shrink-0 ${
             expanded ? 'rotate-90' : ''
           }`}
         />
       </div>
-    </button>
+    </Button>
   );
 }
 

@@ -5,6 +5,7 @@ import {
   CheckCircle2, AlertTriangle, RefreshCw, Zap,
   CalendarDays, Share2, Target,
 } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type Period = '7d' | '30d' | '90d';
@@ -325,42 +326,44 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
-            <button
+            <Button
               key={p}
               type="button"
+              size="1"
+              variant={period === p ? 'solid' : 'ghost'}
+              color={period === p ? 'indigo' : 'gray'}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                period === p
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
             >
               {p}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-1">
           {data && (
-            <button
+            <IconButton
               type="button"
-              onClick={handleShareReport}
-              className="icon-btn border border-mission-control-border"
+              size="2"
+              variant="ghost"
+              radius="medium"
               title="Copy report to clipboard"
               aria-label="Share performance report"
+              onClick={handleShareReport}
             >
               <Share2 size={14} />
-            </button>
+            </IconButton>
           )}
-          <button
+          <IconButton
             type="button"
-            onClick={() => void fetchReview(period)}
+            size="2"
+            variant="ghost"
+            radius="medium"
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
             title="Refresh review"
             aria-label="Refresh performance review"
+            onClick={() => void fetchReview(period)}
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -496,15 +499,17 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                     </span>
                   ))}
                 </div>
-                <button
+                <Button
                   type="button"
+                  size="2"
+                  variant="ghost"
+                  className="mt-1 w-full"
                   onClick={() => {
                     showToast('success', 'Training scheduled', `${agentName} has been queued for skill coaching`);
                   }}
-                  className="mt-1 w-full py-2 text-sm font-medium rounded-lg border border-mission-control-border bg-mission-control-surface hover:bg-mission-control-border/50 text-mission-control-text transition-colors"
                 >
                   Train on this
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -518,16 +523,18 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                   4-Week Coaching Plan
                 </h4>
               </div>
-              <button
+              <IconButton
                 type="button"
-                onClick={() => void refreshPlan()}
+                size="2"
+                variant="ghost"
+                radius="medium"
                 disabled={planLoading}
-                className="icon-btn border border-mission-control-border disabled:opacity-50"
                 title="Refresh coaching plan"
                 aria-label="Refresh coaching plan"
+                onClick={() => void refreshPlan()}
               >
                 <RefreshCw size={12} className={planLoading ? 'animate-spin' : ''} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Focus goal input */}
@@ -536,23 +543,25 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 Coaching focus goal
               </label>
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
+                <TextField.Root
+                  size="2"
+                  className="flex-1"
                   value={focusInput}
                   onChange={e => setFocusInput(e.target.value)}
                   placeholder="e.g. Improve success rate to 90% by end of quarter"
-                  className="flex-1 text-sm"
                   maxLength={500}
                   onKeyDown={e => { if (e.key === 'Enter') void saveFocus(); }}
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={() => void saveFocus()}
+                  size="2"
+                  variant="solid"
                   disabled={focusSaving}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity flex-shrink-0"
+                  className="flex-shrink-0"
+                  onClick={() => void saveFocus()}
                 >
                   {focusSaving ? 'Saving...' : 'Save'}
-                </button>
+                </Button>
               </div>
             </div>
 

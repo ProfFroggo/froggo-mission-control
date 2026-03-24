@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, TextField, Select, TextArea } from '@radix-ui/themes';
 import type { ResearchSource } from '../../store/researchStore';
 
 interface SourceFormProps {
@@ -42,58 +43,57 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
 
   return (
     <form onSubmit={handleSubmit} className="p-2 space-y-2 bg-mission-control-bg/50 rounded border border-mission-control-border">
-      <input
-        type="text"
+      <TextField.Root
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (required)"
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+        size="1"
       />
-      <input
-        type="text"
+      <TextField.Root
         value={author}
         onChange={(e) => setAuthor(e.target.value)}
         placeholder="Author"
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+        size="1"
       />
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value as ResearchSource['type'])}
-        className="w-full px-2 py-1 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent"
-      >
-        {SOURCE_TYPES.map((t) => (
-          <option key={t.value} value={t.value}>{t.label}</option>
-        ))}
-      </select>
-      <input
-        type="text"
+      <Select.Root value={type} onValueChange={(val) => setType(val as ResearchSource['type'])} size="1">
+        <Select.Trigger className="w-full" />
+        <Select.Content>
+          {SOURCE_TYPES.map((t) => (
+            <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
+      <TextField.Root
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="URL"
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+        size="1"
       />
-      <textarea
+      <TextArea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
         rows={2}
-        className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent resize-none"
+        size="1"
+        style={{ resize: 'none' }}
       />
       <div className="flex gap-1">
-        <button
+        <Button
           type="submit"
+          size="1"
+          variant="solid"
           disabled={!title.trim() || saving}
-          className="px-2 py-0.5 rounded bg-mission-control-accent text-white text-[10px] font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
         >
           {saving ? '...' : source ? 'Update' : 'Add'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          size="1"
+          variant="ghost"
           onClick={onCancel}
-          className="px-2 py-0.5 rounded text-mission-control-text-dim text-[10px] hover:bg-mission-control-border transition-colors"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -353,35 +353,33 @@ Be conversational, friendly, and help design an effective agent.`;
 
           {/* Mode Selector */}
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => setMode('chat')}
               type="button"
               aria-pressed={mode === 'chat'}
               aria-label="Chat with Mission Control mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'chat'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]'
-              }`}
+              variant={mode === 'chat' ? 'solid' : 'outline'}
+              color="gray"
+              size="3"
+              className="flex-1"
             >
               <MessageSquare size={16} />
               <span className="font-medium">Chat with Mission Control</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setMode('manual')}
               type="button"
               aria-pressed={mode === 'manual'}
               aria-label="Manual entry mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'manual'
-                  ? 'bg-[--accent-9] text-[--accent-1] border-[--accent-9] shadow-lg shadow-[--accent-9]/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-[--accent-8]'
-              }`}
+              variant={mode === 'manual' ? 'solid' : 'outline'}
+              color="gray"
+              size="3"
+              className="flex-1"
             >
               <Edit3 size={16} />
               <span className="font-medium">Manual Entry</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -595,23 +593,22 @@ Be conversational, friendly, and help design an effective agent.`;
                 <span className="block text-sm text-mission-control-text-dim mb-1">Model</span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
-                    <button
+                    <Button
                       key={opt.id}
                       type="button"
                       onClick={() => setModel(opt.id as 'sonnet' | 'opus')}
                       aria-pressed={model === opt.id}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        model === opt.id
-                          ? 'border-[--accent-9] bg-[--accent-3]'
-                          : 'border-mission-control-border hover:border-[--accent-8]'
-                      }`}
+                      variant={model === opt.id ? 'soft' : 'outline'}
+                      color="gray"
+                      size="3"
+                      className="p-3 rounded-lg text-left h-auto flex-col items-start"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         {model === opt.id && <CheckCircle size={16} className="text-[--accent-11]" />}
                         <span className="font-medium text-sm">{opt.label}</span>
                       </div>
                       <p className="text-xs text-mission-control-text-dim">{opt.description}</p>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

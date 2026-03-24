@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, Star, Mail, Check, User, Paperclip } from 'lucide-react';
+import { Button, IconButton, TextArea } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 import { inboxApi } from '../lib/api';
 
@@ -109,26 +110,28 @@ function ThreadMessage({
           {/* Message actions bar */}
           <div className={`absolute ${isMe ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200`}>
             {onToggleStar && (
-              <button
+              <IconButton
                 onClick={() => onToggleStar(message.id)}
-                className={`p-1.5 rounded-lg transition-all ${
-                  message.is_starred
-                    ? 'bg-warning text-warning shadow-sm'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-warning border border-mission-control-border'
-                }`}
-                title={message.is_starred ? 'Unstar' : 'Star'}
+                aria-label={message.is_starred ? 'Unstar' : 'Star'}
+                variant={message.is_starred ? 'solid' : 'outline'}
+                color={message.is_starred ? 'amber' : 'gray'}
+                size="2"
+                radius="medium"
               >
                 <Star size={14} fill={message.is_starred ? 'currentColor' : 'none'} />
-              </button>
+              </IconButton>
             )}
             {!isMe && onMarkRead && (
-              <button
+              <IconButton
                 onClick={() => onMarkRead(message.id, !message.is_read)}
-                className="p-1.5 rounded-lg bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border border border-mission-control-border transition-all"
-                title={message.is_read ? 'Mark unread' : 'Mark read'}
+                aria-label={message.is_read ? 'Mark unread' : 'Mark read'}
+                variant="outline"
+                color="gray"
+                size="2"
+                radius="medium"
               >
                 {message.is_read ? <Mail size={14} /> : <Check size={14} />}
-              </button>
+              </IconButton>
             )}
           </div>
 
@@ -160,11 +163,11 @@ function ThreadMessage({
 
             {/* Expand/collapse for long messages */}
             {hasFullContent && (
-              <button
+              <Button
                 onClick={() => setExpanded(!expanded)}
-                className={`text-xs mt-3 flex items-center gap-1 transition-opacity ${
-                  isMe ? 'opacity-80 hover:opacity-100' : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                variant="ghost"
+                size="1"
+                className="mt-3"
               >
                 {expanded ? (
                   <>
@@ -175,7 +178,7 @@ function ThreadMessage({
                     <ChevronDown size={14} /> Show more
                   </>
                 )}
-              </button>
+              </Button>
             )}
 
             {/* Attachments indicator */}
@@ -272,12 +275,15 @@ export default function ThreadView({
           </div>
         </div>
         {onClose && (
-          <button
+          <Button
             onClick={onClose}
-            className="ml-2 px-3 py-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            variant="ghost"
+            color="gray"
+            size="2"
+            className="ml-2"
           >
             Close
-          </button>
+          </Button>
         )}
       </div>
 
@@ -314,7 +320,7 @@ export default function ThreadView({
       {onReply && (
         <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
           <div className="flex gap-2">
-            <textarea
+            <TextArea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               onKeyDown={(e) => {
@@ -323,16 +329,19 @@ export default function ThreadView({
                 }
               }}
               placeholder="Type your reply... (⌘↵ to send)"
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               rows={3}
+              size="2"
+              className="flex-1"
             />
-            <button
+            <Button
               onClick={handleReply}
               disabled={!replyText.trim() || sending}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium self-end"
+              variant="solid"
+              size="2"
+              className="self-end"
             >
               {sending ? 'Sending...' : 'Send'}
-            </button>
+            </Button>
           </div>
           <div className="text-xs text-mission-control-text-dim mt-2">
             Press ⌘+Enter to send

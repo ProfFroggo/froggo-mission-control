@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
+import { Button, IconButton, TextField } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext } from '../../lib/writingContext';
 import { useWritingStore } from '../../store/writingStore';
@@ -340,21 +341,21 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       {/* Agent picker row + fact check */}
       <div className="flex items-center justify-between">
         <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
-        <button
+        <Button
+          size="1"
+          variant="ghost"
           onClick={handleFactCheck}
           disabled={streaming}
-          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Fact-check highlighted claim"
         >
           <ShieldCheck className="w-3 h-3" />
-          <span>Fact Check</span>
-        </button>
+          Fact Check
+        </Button>
       </div>
 
       {/* Instruction input + send button */}
       <div className="flex gap-2 mt-2">
-        <input
-          type="text"
+        <TextField.Root
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           onKeyDown={(e) => {
@@ -368,16 +369,18 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
               : selectedAgent === 'researcher' ? 'What should be checked?'
               : 'How should this be rewritten?'
           }
-          className="flex-1 bg-mission-control-bg border border-mission-control-border rounded px-2 py-1.5 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
           disabled={streaming}
+          className="flex-1"
         />
-        <button
+        <IconButton
+          size="2"
+          variant="soft"
+          radius="medium"
           onClick={handleSend}
           disabled={streaming || !instructions.trim()}
-          className="px-2 py-1.5 rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
+        </IconButton>
       </div>
 
       {/* Streaming content (raw text while streaming) */}
@@ -393,12 +396,13 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           {alternatives.map((alt) => (
             <FeedbackAlternative key={alt.text} index={alternatives.indexOf(alt)} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
           ))}
-          <button
+          <Button
+            size="1"
+            variant="ghost"
             onClick={handleDismiss}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
