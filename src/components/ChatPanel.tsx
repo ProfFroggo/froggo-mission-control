@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { AssistantRuntimeProvider } from '@assistant-ui/react';
+import { useMissionControlRuntime } from './chat/ChatRuntime';
+import { MissionControlThread, MissionControlComposer } from './chat/ThreadStyles';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, useAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
@@ -108,6 +111,16 @@ export default function ChatPanel() {
   const [lightboxSrc, setLightboxSrc] = useState<{ src: string; alt: string } | null>(null);
 
   const currentSessionId = selectedAgent?.sessionKey ?? selectedAgent?.id ?? '';
+
+  // Build the assistant-ui ExternalStoreRuntime bridging our messages + sendMessage.
+  // sendMessage is defined later — use a stable ref to avoid stale closures.
+  const sendMessageRef = useRef<(text: string) => Promise<void>>(async () => {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assistantRuntime = useMissionControlRuntime(
+    messages as any[],
+    loading,
+    useCallback((text: string) => sendMessageRef.current(text), [])
+  );
 
   // Auto-extract artifacts from 1-1 chat messages
   useArtifactExtraction(
@@ -1026,6 +1039,9 @@ export default function ChatPanel() {
     }
   };
 
+  // Keep ref in sync so the assistant-ui runtime always calls the latest sendMessage.
+  sendMessageRef.current = (text: string) => sendMessage(text);
+
   const handleRetry = () => {
     if (!lastUserMessageRef.current) return;
     setInput(lastUserMessageRef.current);
@@ -1136,6 +1152,7 @@ export default function ChatPanel() {
   }
 
   return (
+    <AssistantRuntimeProvider runtime={assistantRuntime}>
     <div
       className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-mission-control-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -1344,12 +1361,8 @@ export default function ChatPanel() {
         </div>
       )}
 
-      {/* Messages */}
-      <div
-        className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}
-        aria-live="polite"
-        aria-label="Conversation messages"
-      >
+      {/* Messages — rendered by assistant-ui Thread primitives */}
+      <div className={`flex-1 min-h-0 ${isVoiceMode ? 'hidden' : ''}`} aria-label="Conversation messages">
         {loadingMessages ? (
           <div className="space-y-3 p-4">
             {[1, 2, 3].map(i => (
@@ -1362,8 +1375,15 @@ export default function ChatPanel() {
               </div>
             ))}
           </div>
+        ) : searchQuery && filteredMessages.length === 0 ? (
+          <div className="p-4">
+            <EmptyState
+              type="search"
+              action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
+            />
+          </div>
         ) : messages.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-full">
             <EmptyState
               icon={MessageSquare}
               title="No messages yet"
@@ -1371,35 +1391,8 @@ export default function ChatPanel() {
               size="md"
             />
           </div>
-        ) : searchQuery && filteredMessages.length === 0 ? (
-          <EmptyState
-            type="search"
-            action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
-          />
         ) : (
-          filteredMessages.map((msg, idx) => {
-            const isUser = msg.role === 'user';
-            const showAvatar = idx === 0 || filteredMessages[idx - 1]?.role !== msg.role;
-            const isLastInGroup = idx === filteredMessages.length - 1 || filteredMessages[idx + 1]?.role !== msg.role;
-            const time = formatMessageTime(msg.timestamp);
-            const isStarred = starredMessageIds.has(msg.id ?? '');
-            
-            return (
-              <MessageItem
-                key={msg.id}
-                msg={msg}
-                isUser={isUser}
-                showAvatar={showAvatar}
-                isLastInGroup={isLastInGroup}
-                time={time}
-                isStarred={isStarred}
-                selectedAgent={selectedAgent}
-                onToggleStar={handleToggleStar}
-                onArtifactOpen={handleArtifactOpen}
-                onImageClick={(src, alt) => setLightboxSrc({ src, alt })}
-              />
-            );
-          })
+          <MissionControlThread />
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -1569,28 +1562,12 @@ export default function ChatPanel() {
             {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
           </button>
 
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              aria-label={`Message ${selectedAgent.name}`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Message ${selectedAgent.name}...`}
-              rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
-            />
-          </div>
-
-          <button
-            onClick={() => sendMessage()}
-            disabled={(!input.trim() && attachments.length === 0) || loading || messages.some(m => !!m.streaming)}
-            title="Send message (Enter)"
-            aria-label="Send message"
-            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
-          >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-          </button>
+          {/* Composer — textarea + send handled by assistant-ui ComposerPrimitive */}
+          <MissionControlComposer
+            placeholder={`Message ${selectedAgent.name}...`}
+            disabled={loading || messages.some(m => !!m.streaming)}
+            loading={loading}
+          />
         </div>
       </div>
 
@@ -1619,6 +1596,7 @@ export default function ChatPanel() {
       {/* Image lightbox */}
       {lightboxSrc && <ImageLightbox src={lightboxSrc.src} alt={lightboxSrc.alt} onClose={() => setLightboxSrc(null)} />}
     </div>
+    </AssistantRuntimeProvider>
   );
 }
 
