@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronRight, Volume2, VolumeX, ExternalLink,
   MessageSquare, Calendar
 } from 'lucide-react';
-import { Button, IconButton, Select, Checkbox } from '@radix-ui/themes';
+import { Button, IconButton, Select, Checkbox, Switch } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
@@ -148,21 +148,11 @@ function firePushNotification(message: string): void {
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors focus:outline-none ${
-        checked ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
+      size="2"
+    />
   );
 }
 
@@ -670,22 +660,33 @@ export default function NotificationsPanelV2() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-2">
+        <div className="flex items-center border-b border-mission-control-border -mb-px">
           {(['all', 'unread', 'urgent', 'actionable'] as const).map((f) => {
             const count = f === 'all' ? stats.total
               : f === 'unread' ? stats.unread
               : f === 'urgent' ? stats.urgent
               : stats.actionable;
+            const isActive = filter === f;
             return (
-              <Button
+              <button
                 key={f}
-                size="2"
-                variant={filter === f ? 'soft' : 'ghost'}
-                color={filter === f ? undefined : 'gray'}
+                type="button"
                 onClick={() => setFilter(f)}
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
-                {f.charAt(0).toUpperCase() + f.slice(1)} ({count || 0})
-              </Button>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                  isActive
+                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                    : 'bg-mission-control-border text-mission-control-text-dim'
+                }`}>
+                  {count || 0}
+                </span>
+              </button>
             );
           })}
         </div>

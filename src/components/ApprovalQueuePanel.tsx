@@ -10,6 +10,7 @@ import { approvalApi } from '../lib/api';
 import { showToast } from './Toast';
 import { Button, IconButton, Badge, Select, TextArea, TextField } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
+import TabNav, { type TabNavItem } from './TabNav';
 import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
 import { getApprovalTypeConfig } from '../lib/approvalTypes';
@@ -841,41 +842,40 @@ export default function ApprovalQueuePanel() {
 
       <ApprovalStatsStrip approvals={approvals} allApprovals={allApprovals} humanReviewCount={tasks.filter(t => t.status === 'human-review').length} />
 
-      <div className="flex border-b border-mission-control-border bg-mission-control-surface">
-        {STATUS_TABS.map(tab => {
-          const TabIcon = tab.icon;
-          return (
-            <button
-              type="button"
-              key={tab.id}
-              onClick={() => { setStatusTab(tab.id); setSelectedId(null); setSelected(new Set()); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${statusTab === tab.id ? 'text-mission-control-text border-b-2 border-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
-            >
-              <TabIcon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="border-b border-mission-control-border bg-mission-control-surface">
+        <TabNav
+          tabs={STATUS_TABS.map(tab => ({ id: tab.id, label: tab.label, icon: tab.icon as TabNavItem['icon'] }))}
+          activeTab={statusTab}
+          onTabChange={(id) => { setStatusTab(id as StatusTab); setSelectedId(null); setSelected(new Set()); }}
+          paddingX="px-4"
+        />
       </div>
 
       {statusTab !== 'scheduled' && (
         <div className="flex items-center gap-1 px-3 py-2 border-b border-mission-control-border/50 bg-mission-control-surface/50">
           <Filter className="w-3 h-3 text-mission-control-text-dim shrink-0 mr-0.5" />
           {FILTER_TABS.map(tab => (
-            <Button
+            <button
               key={tab.id}
+              type="button"
               onClick={() => setFilterTab(tab.id)}
-              variant={filterTab === tab.id ? 'soft' : 'ghost'}
-              size="1"
-              radius="full"
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 -mb-px transition-colors ${
+                filterTab === tab.id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {tab.label}
               {pendingCounts && pendingCounts[tab.id] > 0 && (
-                <Badge color={filterTab === tab.id ? 'blue' : 'gray'} variant="soft" size="1">
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                  filterTab === tab.id
+                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                    : 'bg-mission-control-border text-mission-control-text-dim'
+                }`}>
                   {pendingCounts[tab.id]}
-                </Badge>
+                </span>
               )}
-            </Button>
+            </button>
           ))}
           {uniqueRequesters.length > 0 && (
             <div className="flex items-center gap-1 ml-1">
